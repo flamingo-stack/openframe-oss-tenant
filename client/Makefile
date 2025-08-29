@@ -71,4 +71,3 @@ clippy:
 
 clean:
 	$(CARGO) clean
-

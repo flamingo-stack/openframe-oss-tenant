@@ -28,66 +28,98 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: "flamingo-cx"
   REPOSITORY: "openframe"
+  # Cache optimization
+  MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
 
 jobs:
-
-  changes:
-    name: Changes
-    uses: ./.github/workflows/changes.yml
+  # Combine changes and matrix into a single setup job
+  setup:
+    name: Setup Build Matrix
+    runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      matrix_java: ${{ steps.matrix.outputs.matrix_java }}
+      changes: ${{ steps.changes.outputs.changes }}
+      commit_sha: ${{ steps.changes.outputs.commit_sha }}
+      timestamp_tag: ${{ steps.changes.outputs.timestamp_tag }}
+      should_build_client: ${{ steps.changes.outputs.client }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
+      - name: Detect changes
+        id: changes
+        uses: ./.github/workflows/changes.yml
 
-  matrix:
-    name: Matrix
-    uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'push'
+      - name: Generate matrix
+        id: matrix
+        uses: ./.github/workflows/matrix.yml
 
-
+  # Optimized Java build with better caching and parallel execution
   build_java:
     name: "Build Java: ${{ matrix.name }}"
-    needs: [changes, matrix]
+    needs: [setup]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
+        include: ${{ fromJson(needs.setup.outputs.matrix_java) }}
     steps:
+      - name: Skip if no changes
+        if: "!contains(needs.setup.outputs.changes[matrix.name], 'true')"
+        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
+
       - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1  # Reduced fetch depth since we only need current commit
 
-      - name: Set up Maven Central Repository with JDK 21
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+      - name: Set up JDK 21 with Maven Central
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: |
-            ${{ matrix.path }}/pom.xml
-            **/pom.xml
-          check-latest: true
+          cache-dependency-path: '**/pom.xml'  # Simplified pattern
 
-      - name: Cache Maven packages
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+      # Enhanced Maven cache with multiple restore keys
+      - name: Cache Maven dependencies
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         uses: actions/cache@v4
         with:
           path: |
             ~/.m2/repository
             ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.name }}
           restore-keys: |
+            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
             ${{ runner.os }}-maven-
 
+      # Parallel Maven build with optimized flags
       - name: Build with Maven
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        run: |
+          mvn clean install \
+            -pl ${{ matrix.path }} \
+            -am \
+            -Dcompress \
+            -T 2C \
+            --batch-mode \
+            --no-transfer-progress \
+            -Dmaven.javadoc.skip=true \
+            -DskipTests=false
 
       - name: Upload Java artifacts
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -97,76 +129,91 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
+          compression-level: 6  # Balanced compression
 
-
-  build:
-    name: "Build image: ${{ matrix.name }}"
-    needs: [build_java, matrix, changes]
+  # Optimized Docker build with enhanced caching
+  build_images:
+    name: "Build: ${{ matrix.name }}"
+    needs: [build_java, setup]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+        include: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
+      - name: Skip if no changes
+        if: "!contains(needs.setup.outputs.changes[matrix.name], 'true')"
+        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
+
       - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
 
       - name: Download Java artifacts
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          contains(fromJSON(toJSON(matrix.type)), 'java') && 
+          matrix.artifact_name != '' && 
+          contains(needs.setup.outputs.changes[matrix.name], 'true')
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.path }}/target
 
+      # Configure Docker with optimizations
+      - name: Set up Docker Buildx
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+            image=moby/buildkit:buildx-stable-1
+
+      - name: Set up QEMU
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+
       - name: Log in to GitHub Container Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-
-      - name: Set up Docker Buildx
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-buildx-action@v3
-
+      # Enhanced metadata generation
       - name: Generate metadata
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
-            type=raw,value=${{ needs.changes.outputs.commit_sha }}
-            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
-            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ needs.setup.outputs.commit_sha }}
+            type=raw,value=${{ needs.setup.outputs.timestamp_tag }}
+            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.vendor=FlamingoCX
-            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.description=OpenFrame OSS is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Format build arguments
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         id: format_args
         uses: ./.github/steps/docker-format-build-args
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
-        env:
-          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
+      # Optimized Docker build with registry cache
       - name: Build and push image
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.setup.outputs.changes[matrix.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -174,101 +221,161 @@ jobs:
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
-          provenance: false
+          provenance: mode=max
+          sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            ${{ env.BUILD_ARGS }}
+          build-args: ${{ steps.format_args.outputs.formatted_args }}
+          cache-from: |
+            type=gha,scope=${{ matrix.name }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
+          cache-to: |
+            type=gha,scope=${{ matrix.name }},mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
-      - name: Delete old versions
-        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
+      # Improved cleanup with error handling
+      - name: Cleanup old container versions
+        if: |
+          contains(needs.setup.outputs.changes[matrix.name], 'true') && 
+          steps.docker_build.outcome == 'success'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+          exclude-tags: |
+            latest
+            test-*
+            ${{ needs.setup.outputs.commit_sha }}
+            ${{ needs.setup.outputs.timestamp_tag }}
+          keep-last: 10
 
-  
-#  build_client:
-#    name: "Build Rust Client"
-#    needs: [changes]
-#    runs-on: ${{ matrix.os }}
-#    if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest, windows-latest, macos-latest]
-#        include:
-#          - os: ubuntu-latest
-#            target: x86_64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
-#          - os: macos-latest
-#            target: x86_64-apple-darwin
-#            artifact_name: openframe-oss-client-macos-x64
+  # Optimized Rust client build
   build_client:
-    name: "Build Rust Client"
-    needs: [changes]
+    name: "Build Rust Client (${{ matrix.os }})"
+    needs: [setup]
     runs-on: ${{ matrix.os }}
-    if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
+    if: github.event_name == 'push' && contains(needs.setup.outputs.should_build_client, 'true')
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest]
         include:
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: openframe-oss-client-macos-x64
+            cross: false
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64
+            cross: false
+#          - os: ubuntu-latest
+#            target: x86_64-unknown-linux-gnu
+#            artifact_name: openframe-oss-client-linux-x64
+#            cross: false
+#          # Add ARM64 builds
+#          - os: ubuntu-latest
+#            target: aarch64-unknown-linux-gnu
+#            artifact_name: openframe-oss-client-linux-arm64
+#            cross: true
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
 
+      # Use official rust-toolchain action for better caching
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
+          targets: ${{ matrix.target }}
+          components: clippy, rustfmt
 
+      # Enhanced Rust caching
       - name: Cache Rust dependencies
-        uses: actions/cache@v4
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            client/target
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('client/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-
-            ${{ runner.os }}-cargo-
+          workspaces: client
+          prefix-key: "v1-rust"
+          shared-key: ${{ matrix.target }}
+          cache-targets: true
+          cache-on-failure: true
 
+      # Install cross-compilation tools if needed
+      - name: Install cross-compilation tools
+        if: matrix.cross
+        run: |
+          cargo install cross --git https://github.com/cross-rs/cross
+        
+      # Optimized linting (run in parallel with build preparation)
       - name: Run lint
         working-directory: client
         run: |
-          make lint
+          if command -v make >/dev/null 2>&1; then
+            make lint
+            make clippy
+          else
+            cargo fmt --all -- --check
+            cargo clippy --all-targets --all-features -- -D warnings
+          fi
         continue-on-error: true
 
+      # Optimized build with cross-compilation support
       - name: Build client
         working-directory: client
         run: |
-          make build
+          if [ "${{ matrix.cross }}" == "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          elif command -v make >/dev/null 2>&1; then
+            make build
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+        env:
+          CARGO_TARGET_DIR: target
 
-## muted as tests are flacky
-#      - name: Test client
-#        working-directory: client
-#        run: |
-#          make test
+      # Run tests only for native builds to save time
+      - name: Test client
+        if: "!matrix.cross"
+        working-directory: client
+        run: |
+          if command -v make >/dev/null 2>&1; then
+            make test
+          else
+            cargo test --release
+          fi
 
+      # More specific artifact collection
       - name: Upload client artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            client/target/release/openframe*
-            !client/target/release/*.d
-            !client/target/release/*.pdb
+            client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+            client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          if-no-files-found: warn
           retention-days: 30
+          compression-level: 9
+
+  # Summary job for status checks
+  build_complete:
+    name: Build Complete
+    needs: [build_java, build_images, build_client, setup]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check build status
+        run: |
+          echo "Java build: ${{ needs.build_java.result }}"
+          echo "Image build: ${{ needs.build_images.result }}"
+          echo "Client build: ${{ needs.build_client.result }}"
+          
+          if [ "${{ needs.build_java.result }}" == "failure" ] || 
+             [ "${{ needs.build_images.result }}" == "failure" ] || 
+             [ "${{ needs.build_client.result }}" == "failure" ]; then
+            echo "One or more builds failed"
+            exit 1
+          fi
+          
+          echo "All builds completed successfully"
