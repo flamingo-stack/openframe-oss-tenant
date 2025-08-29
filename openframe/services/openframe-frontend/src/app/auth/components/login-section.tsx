@@ -51,21 +51,15 @@ export function AuthLoginSection({
   const hasOpenFrameSSO = availableProviders.includes('openframe-sso')
   const standardProviders = availableProviders.filter(provider => provider !== 'openframe-sso')
 
-  // const enabledProviders: SSOProvider[] = standardProviders.map(provider => ({
-  //   provider: provider,
-  //   enabled: true,
-  //   displayName: provider === 'google' ? 'Google' : 
-  //                provider === 'microsoft' ? 'Microsoft' : 
-  //                provider === 'slack' ? 'Slack' :
-  //                provider === 'github' ? 'GitHub' :
-  //                provider.charAt(0).toUpperCase() + provider.slice(1)
-  // }))
-
-  const enabledProviders = [
-    { provider: 'google', enabled: true },
-    { provider: 'microsoft', enabled: true },
-    { provider: 'github', enabled: true }
-  ]
+  const enabledProviders: SSOProvider[] = standardProviders.map(provider => ({
+    provider: provider,
+    enabled: true,
+    displayName: provider === 'google' ? 'Google' : 
+                 provider === 'microsoft' ? 'Microsoft' : 
+                 provider === 'slack' ? 'Slack' :
+                 provider === 'github' ? 'GitHub' :
+                 provider.charAt(0).toUpperCase() + provider.slice(1)
+  }))
 
   const handleSSOClick = async (provider: string) => {
     setLoginMethod('sso')
