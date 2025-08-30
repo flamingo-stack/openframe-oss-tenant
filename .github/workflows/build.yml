@@ -146,31 +146,11 @@ jobs:
           if echo "$PACKAGE_CHECK" | grep -q '"message":\s*"Not Found"'; then
             echo "📦 Package doesn't exist yet"
             
-            # For OSS repos, proactively create package with public visibility
+            # For OSS repos, we need to fix visibility immediately after Docker push creates it
             if [[ "${{ env.IMAGE_VISIBILITY }}" == "public" ]]; then
-              echo "🏗️ Pre-creating package with PUBLIC visibility to prevent Docker push creating private package..."
-              
-              CREATE_RESPONSE=$(curl -s -X POST \
-                -H "Accept: application/vnd.github.package-deletes-preview+json" \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                -H "Content-Type: application/json" \
-                -d "{
-                  \"name\": \"${{ env.REPOSITORY }}/${{ matrix.name }}\",
-                  \"visibility\": \"public\",
-                  \"package_type\": \"container\",
-                  \"description\": \"OpenFrame container package for ${{ matrix.name }}\"
-                }" \
-                "https://api.github.com/orgs/${ORG_LOWER}/packages" 2>&1)
-              
-              echo "Create response: $CREATE_RESPONSE"
-              
-              if echo "$CREATE_RESPONSE" | grep -q '"visibility":\s*"public"' || echo "$CREATE_RESPONSE" | grep -q '"name"'; then
-                echo "✅ PACKAGE PRE-CREATED as PUBLIC - Docker push will add images to existing public package"
-              else
-                echo "⚠️ Package pre-creation failed: $CREATE_RESPONSE"
-                echo "🔄 Docker push will create package (may default to private)"
-              fi
+              echo "🏗️ Docker push will create package as private first, then we'll IMMEDIATELY fix visibility..."
+              echo "📝 Setting flag to fix visibility immediately after first push"
+              echo "NEEDS_IMMEDIATE_VISIBILITY_FIX=true" >> $GITHUB_ENV
             else
               echo "✅ Package will be created as private (SAAS repo)"
             fi
@@ -198,29 +178,11 @@ jobs:
                 echo "⏳ Waiting for deletion to propagate..."
                 sleep 5
                 
-                # IMMEDIATELY create the package with correct visibility BEFORE Docker push
-                echo "🏗️ Creating package with ${{ env.IMAGE_VISIBILITY }} visibility..."
-                CREATE_RESPONSE=$(curl -s -X POST \
-                  -H "Accept: application/vnd.github.package-deletes-preview+json" \
-                  -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                  -H "X-GitHub-Api-Version: 2022-11-28" \
-                  -H "Content-Type: application/json" \
-                  -d "{
-                    \"name\": \"${{ env.REPOSITORY }}/${{ matrix.name }}\",
-                    \"visibility\": \"${{ env.IMAGE_VISIBILITY }}\",
-                    \"package_type\": \"container\",
-                    \"description\": \"OpenFrame container package for ${{ matrix.name }}\"
-                  }" \
-                  "https://api.github.com/orgs/${ORG_LOWER}/packages" 2>&1)
-                
-                echo "Create response: $CREATE_RESPONSE"
-                
-                if echo "$CREATE_RESPONSE" | grep -q '"visibility":\s*"${{ env.IMAGE_VISIBILITY }}"' || echo "$CREATE_RESPONSE" | grep -q '"name"'; then
-                  echo "✅ PACKAGE CREATED with ${{ env.IMAGE_VISIBILITY }} visibility - Docker push will add to existing package"
-                else
-                  echo "⚠️ Package creation response unclear: $CREATE_RESPONSE"
-                  echo "🔄 Proceeding with Docker push - will verify visibility after"
-                fi
+                # GitHub doesn't allow direct package creation via API
+                # We need to push a dummy image first, then immediately change visibility
+                echo "🏗️ Will create package via Docker push, then IMMEDIATELY fix visibility..."
+                echo "📝 Setting flag to fix visibility immediately after first push"
+                echo "NEEDS_IMMEDIATE_VISIBILITY_FIX=true" >> $GITHUB_ENV
               else
                 echo "❌ DELETION FAILED: $DELETE_RESPONSE"
                 echo "🛑 BUILD WILL CONTINUE BUT PACKAGE WILL HAVE WRONG VISIBILITY"
@@ -230,6 +192,31 @@ jobs:
               echo "✅ Package already has correct visibility: $CURRENT_VISIBILITY"
             fi
           fi
+
+      - name: Configure Docker for GitHub Container Registry
+        if: contains(needs.changes.outputs[matrix.name], 'true')
+        run: |
+          # Set Docker config that might influence package creation
+          mkdir -p ~/.docker
+          cat > ~/.docker/config.json << EOF
+          {
+            "auths": {
+              "${{ env.REGISTRY }}": {
+                "username": "${{ github.actor }}",
+                "password": "${{ secrets.GITHUB_TOKEN }}"
+              }
+            },
+            "experimental": "enabled",
+            "features": {
+              "buildkit": true
+            },
+            "plugins": {
+              "ghcr": {
+                "default-visibility": "${{ env.IMAGE_VISIBILITY }}"
+              }
+            }
+          }
+          EOF
 
       - name: Log in to GitHub Container Registry
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -272,6 +259,8 @@ jobs:
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
             org.opencontainers.image.visibility=${{ env.IMAGE_VISIBILITY }}
+            com.github.package.visibility=${{ env.IMAGE_VISIBILITY }}
+            com.github.package.type=container
 
       - name: Format build arguments
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -294,8 +283,46 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: |
+            index:com.github.package.visibility=${{ env.IMAGE_VISIBILITY }}
+            index:org.opencontainers.image.visibility=${{ env.IMAGE_VISIBILITY }}
+            manifest:com.github.package.visibility=${{ env.IMAGE_VISIBILITY }}
+            manifest:org.opencontainers.image.visibility=${{ env.IMAGE_VISIBILITY }}
           build-args: |
             ${{ env.BUILD_ARGS }}
+
+      - name: IMMEDIATELY fix package visibility after creation
+        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success' && env.NEEDS_IMMEDIATE_VISIBILITY_FIX == 'true'
+        run: |
+          echo "🚨 IMMEDIATE VISIBILITY FIX: Package was just created, fixing visibility NOW before it gets locked..."
+          
+          # Package name and setup
+          PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+          ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
+          
+          echo "⚡ Attempting visibility fix immediately after package creation..."
+          
+          # Try multiple rapid attempts while package is still "fresh"
+          for attempt in 1 2 3; do
+            echo "🔄 Rapid attempt $attempt..."
+            
+            FIX_RESPONSE=$(curl -s -X PATCH \
+              -H "Accept: application/vnd.github.package-deletes-preview+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d '{"visibility":"${{ env.IMAGE_VISIBILITY }}"}' \
+              "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
+            
+            if echo "$FIX_RESPONSE" | grep -q '"visibility":\s*"${{ env.IMAGE_VISIBILITY }}"'; then
+              echo "✅ SUCCESS: Fixed visibility to ${{ env.IMAGE_VISIBILITY }} on attempt $attempt!"
+              break
+            else
+              echo "❌ Attempt $attempt failed: $FIX_RESPONSE"
+              if [[ $attempt -lt 3 ]]; then
+                sleep 2  # Brief pause before retry
+              fi
+            fi
+          done
 
       - name: Verify package recreated with correct visibility
         if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
