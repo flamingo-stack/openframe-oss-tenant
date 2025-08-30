@@ -13,7 +13,6 @@ spec:
       restartPolicy: Never
       {{- if ne .Values.registry.ghcr.password "" }}
       imagePullSecrets:
-        - name: github-pat-secret
       {{- end }}
 
       containers:
