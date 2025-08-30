@@ -30,7 +30,6 @@ concurrency:
 
 env:
   REGISTRY: "ghcr.io"
-  # 🚀 DYNAMIC: Auto-detects org and repo from GitHub context
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
@@ -147,24 +146,17 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
-      - name: Convert organization to lowercase
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: lowercase
-        run: |
-          echo "org_lower=$(echo '${{ env.ORGANISATION }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-          echo "repo_lower=$(echo '${{ env.REPOSITORY }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
       - name: Generate metadata
         if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.org_lower }}/${{ steps.lowercase.outputs.repo_lower }}/${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
           labels: |
-            org.opencontainers.image.vendor=${{ steps.lowercase.outputs.org_lower }}
+            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
@@ -257,20 +249,14 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Convert repository to lowercase
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: lowercase
-        run: |
-          echo "repo_lower=$(echo '${{ env.REPOSITORY }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          password: ${{ github.token }}
       
       - name: Delete the CI tag
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: ${{ steps.lowercase.outputs.repo_lower }}/${{ matrix.name }}
+          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.commit_sha }}
           exclude-tags: latest

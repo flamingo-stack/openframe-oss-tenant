@@ -12,7 +12,7 @@ spec:
       labels:
         app: openframe-authorization-server
     spec:
-      {{- if or (ne .Values.registry.ghcr.password "") (ne .Values.registry.docker.password "") }}
+      {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
         {{- if ne .Values.registry.docker.password "" }}
         - name: docker-pat-secret

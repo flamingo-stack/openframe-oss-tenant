@@ -4,7 +4,7 @@ metadata:
   name: fleetmdm
 build:
   artifacts:
-    - image: ghcr.io/Flamingo-CX/openframe-oss-tenant/fleetmdm
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/fleetmdm
       context: .
       sync: 
         manual:

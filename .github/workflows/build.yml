@@ -16,43 +16,31 @@ on:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
-  # 🚀 MANUAL TRIGGER: Force rebuild all images from GitHub UI
-  workflow_dispatch:
-    inputs:
-      force_all_builds:
-        description: 'Force build all images (ignores change detection)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
 
 env:
   REGISTRY: "ghcr.io"
-  # 🚀 DYNAMIC: Auto-detects org and repo from GitHub context
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  REPO_NAME: ${{ github.repository }}
-  # 🔥 FORCE BUILD: Manual trigger to build all images
-  FORCE_ALL_BUILDS: ${{ github.event.inputs.force_all_builds == 'true' }}
 
 jobs:
 
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
-    with:
-      force_all_builds: ${{ github.event.inputs.force_all_builds || 'false' }}
+    if: github.event_name == 'push'
+
 
   matrix:
     name: Matrix
     uses: ./.github/workflows/matrix.yml
+    if: github.event_name == 'push'
+
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -108,6 +96,7 @@ jobs:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -144,26 +133,19 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
-      - name: Convert organization to lowercase
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: lowercase
-        run: |
-          echo "org_lower=$(echo '${{ env.ORGANISATION }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-          echo "repo_lower=$(echo '${{ env.REPOSITORY }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
       - name: Generate metadata
         if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.org_lower }}/${{ steps.lowercase.outputs.repo_lower }}/${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
             type=raw,value=latest
           labels: |
-            org.opencontainers.image.vendor=${{ steps.lowercase.outputs.org_lower }}
+            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
@@ -196,7 +178,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: ${{ steps.lowercase.outputs.repo_lower }}/${{ matrix.name }}
+          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: latest,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+          exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}

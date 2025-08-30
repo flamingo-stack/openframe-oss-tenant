@@ -4,5 +4,5 @@ global:
 
 postgres:
   image: 
-    repo: ghcr.io/flamingo-cx/openframe-oss-tenant/authentik-postgresql
+    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/authentik-postgresql
     tag: latest

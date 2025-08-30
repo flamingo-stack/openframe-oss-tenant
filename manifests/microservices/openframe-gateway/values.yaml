@@ -43,5 +43,5 @@ deployment:
 
 # Application configuration
 image:
-  repo: ghcr.io/flamingo-cx/openframe-oss-tenant/openframe-gateway
+  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
   tag: latest

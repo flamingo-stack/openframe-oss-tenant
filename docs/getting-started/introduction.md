@@ -121,7 +121,7 @@ To get started with OpenFrame:
 
 For additional support and resources:
 
-- Visit our [GitHub repository](https://github.com/Flamingo-CX/openframe-oss-tenant)
+- Visit our [GitHub repository](https://github.com/flamingo-stack/openframe-oss-tenant)
 - Join our community discussions
 - Contact our support team
 
