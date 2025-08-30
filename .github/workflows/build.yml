@@ -144,7 +144,36 @@ jobs:
             "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
           
           if echo "$PACKAGE_CHECK" | grep -q '"message":\s*"Not Found"'; then
-            echo "✅ Package doesn't exist yet - will be created fresh"
+            echo "📦 Package doesn't exist yet"
+            
+            # For OSS repos, proactively create package with public visibility
+            if [[ "${{ env.IMAGE_VISIBILITY }}" == "public" ]]; then
+              echo "🏗️ Pre-creating package with PUBLIC visibility to prevent Docker push creating private package..."
+              
+              CREATE_RESPONSE=$(curl -s -X POST \
+                -H "Accept: application/vnd.github.package-deletes-preview+json" \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"name\": \"${{ env.REPOSITORY }}/${{ matrix.name }}\",
+                  \"visibility\": \"public\",
+                  \"package_type\": \"container\",
+                  \"description\": \"OpenFrame container package for ${{ matrix.name }}\"
+                }" \
+                "https://api.github.com/orgs/${ORG_LOWER}/packages" 2>&1)
+              
+              echo "Create response: $CREATE_RESPONSE"
+              
+              if echo "$CREATE_RESPONSE" | grep -q '"visibility":\s*"public"' || echo "$CREATE_RESPONSE" | grep -q '"name"'; then
+                echo "✅ PACKAGE PRE-CREATED as PUBLIC - Docker push will add images to existing public package"
+              else
+                echo "⚠️ Package pre-creation failed: $CREATE_RESPONSE"
+                echo "🔄 Docker push will create package (may default to private)"
+              fi
+            else
+              echo "✅ Package will be created as private (SAAS repo)"
+            fi
           else
             # Package exists, check visibility
             CURRENT_VISIBILITY=$(echo "$PACKAGE_CHECK" | grep -o '"visibility":\s*"[^"]*"' | cut -d'"' -f4)
@@ -165,9 +194,33 @@ jobs:
               echo "Delete response: $DELETE_RESPONSE"
               
               if echo "$DELETE_RESPONSE" | grep -q '"message":\s*"Not Found"' || [[ -z "$DELETE_RESPONSE" ]] || echo "$DELETE_RESPONSE" | grep -q '"message":\s*"Successful"'; then
-                echo "✅ PACKAGE DELETED - Build will recreate it with ${{ env.IMAGE_VISIBILITY }} visibility"
+                echo "✅ PACKAGE DELETED - Now creating package with correct visibility IMMEDIATELY"
                 echo "⏳ Waiting for deletion to propagate..."
                 sleep 5
+                
+                # IMMEDIATELY create the package with correct visibility BEFORE Docker push
+                echo "🏗️ Creating package with ${{ env.IMAGE_VISIBILITY }} visibility..."
+                CREATE_RESPONSE=$(curl -s -X POST \
+                  -H "Accept: application/vnd.github.package-deletes-preview+json" \
+                  -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  -H "Content-Type: application/json" \
+                  -d "{
+                    \"name\": \"${{ env.REPOSITORY }}/${{ matrix.name }}\",
+                    \"visibility\": \"${{ env.IMAGE_VISIBILITY }}\",
+                    \"package_type\": \"container\",
+                    \"description\": \"OpenFrame container package for ${{ matrix.name }}\"
+                  }" \
+                  "https://api.github.com/orgs/${ORG_LOWER}/packages" 2>&1)
+                
+                echo "Create response: $CREATE_RESPONSE"
+                
+                if echo "$CREATE_RESPONSE" | grep -q '"visibility":\s*"${{ env.IMAGE_VISIBILITY }}"' || echo "$CREATE_RESPONSE" | grep -q '"name"'; then
+                  echo "✅ PACKAGE CREATED with ${{ env.IMAGE_VISIBILITY }} visibility - Docker push will add to existing package"
+                else
+                  echo "⚠️ Package creation response unclear: $CREATE_RESPONSE"
+                  echo "🔄 Proceeding with Docker push - will verify visibility after"
+                fi
               else
                 echo "❌ DELETION FAILED: $DELETE_RESPONSE"
                 echo "🛑 BUILD WILL CONTINUE BUT PACKAGE WILL HAVE WRONG VISIBILITY"
