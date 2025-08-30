@@ -2,6 +2,12 @@ name: Generate Changes
 
 on:
   workflow_call:
+    inputs:
+      force_all_builds:
+        description: 'Force all builds'
+        required: false
+        default: 'false' 
+        type: string
     outputs:      
       openframe-core: 
         value: ${{ jobs.changes.outputs.openframe-core }}
@@ -55,26 +61,26 @@ jobs:
     name: Changes check
     runs-on: ubuntu-latest
     outputs:
-      openframe-core: ${{ steps.filter.outputs.openframe-core }}
-      openframe-data: ${{ steps.filter.outputs.openframe-data }}
-      openframe-jwt: ${{ steps.filter.outputs.openframe-jwt }}
-      api-library: ${{ steps.filter.outputs.api-library }}
-      sdk-fleetmdm: ${{ steps.filter.outputs.sdk-fleetmdm }}
-      openframe-api: ${{ steps.filter.outputs.openframe-api }}
-      openframe-authorization-server: ${{ steps.filter.outputs.openframe-authorization-server }}
-      openframe-external-api: ${{ steps.filter.outputs.openframe-external-api }}
-      openframe-client: ${{ steps.filter.outputs.openframe-client }}
-      openframe-config: ${{ steps.filter.outputs.openframe-config }}
-      openframe-gateway: ${{ steps.filter.outputs.openframe-gateway }}
-      openframe-management: ${{ steps.filter.outputs.openframe-management }}
-      openframe-stream: ${{ steps.filter.outputs.openframe-stream }}
-      openframe-ui: ${{ steps.filter.outputs.openframe-ui }}
-      authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
-      fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
-      meshcentral: ${{ steps.filter.outputs.meshcentral }}
-      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
-      tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
-      tactical-base: ${{ steps.filter.outputs.tactical-base }}
+      openframe-core: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-core }}
+      openframe-data: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-data }}
+      openframe-jwt: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-jwt }}
+      api-library: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.api-library }}
+      sdk-fleetmdm: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.sdk-fleetmdm }}
+      openframe-api: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-api }}
+      openframe-authorization-server: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-authorization-server }}
+      openframe-external-api: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-external-api }}
+      openframe-client: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-client }}
+      openframe-config: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-config }}
+      openframe-gateway: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-gateway }}
+      openframe-management: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-management }}
+      openframe-stream: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-stream }}
+      openframe-ui: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.openframe-ui }}
+      authentik-postgresql: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.authentik-postgresql }}
+      fleetmdm: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.fleetmdm }}
+      meshcentral: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.meshcentral }}
+      tactical-frontend: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.tactical-frontend }}
+      tactical-nginx: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.tactical-nginx }}
+      tactical-base: ${{ inputs.force_all_builds == 'true' && 'true' || steps.filter.outputs.tactical-base }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
       commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
@@ -92,6 +98,7 @@ jobs:
 
       - uses: dorny/paths-filter@v2
         id: filter
+        if: github.event_name == 'push'
         with:
           filters: |
             openframe-core:
