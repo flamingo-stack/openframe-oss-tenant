@@ -302,20 +302,19 @@ jobs:
               echo "❌ Method 4 failed: $METHOD4_RESPONSE"
             fi
             
-            # If all methods fail, provide detailed debugging info
-            echo "❌ All automatic methods failed - package will remain private"
-            echo "🔍 DEBUG INFO:"
-            echo "  - Repository: ${{ env.REPO_NAME }}"
-            echo "  - Package: ${{ matrix.name }}"
-            echo "  - Full package name: ${PACKAGE_NAME}"
-            echo "  - Target visibility: ${{ env.IMAGE_VISIBILITY }}"
-            echo "  - Image path: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ matrix.name }}"
+            # GitHub API limitation: Organization packages can't change visibility via API
+            echo "⚠️ KNOWN LIMITATION: GitHub API does not support changing visibility for organization-owned packages"
+            echo "📋 This is a GitHub API restriction, not a configuration error"
             echo ""
-            echo "📋 MANUAL STEPS to make repository-owned package public:"
-            echo "1. Go to: https://github.com/${{ env.REPO_NAME }}/packages"
-            echo "2. Find package: ${{ env.REPO_NAME }}/${{ matrix.name }}"
+            echo "🔧 SOLUTION: Package must be made public manually:"
+            echo "1. Go to: https://github.com/orgs/${ORG_LOWER}/packages"
+            echo "2. Find package: ${REPO_LOWER}/${{ matrix.name }}"
             echo "3. Click 'Package settings' → 'Change visibility' → 'Public'"
-            echo "4. Or visit: https://github.com/${{ env.REPO_NAME }}/pkgs/container/${{ env.REPO_NAME }}%2F${{ matrix.name }}/settings"
+            echo ""
+            echo "🔗 Direct link: https://github.com/orgs/${ORG_LOWER}/packages/container/${REPO_LOWER}%2F${{ matrix.name }}"
+            echo ""
+            echo "ℹ️  Alternative: Use Personal Access Token instead of GITHUB_TOKEN to create user-owned packages"
+            echo "   User-owned packages support API visibility changes, organization-owned packages do not"
             
           else
             echo "ℹ️  Package will remain private (repository doesn't match OSS naming pattern)"
