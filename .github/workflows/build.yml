@@ -151,7 +151,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
@@ -198,14 +198,14 @@ jobs:
             echo "⏳ Waiting for package to be available in registry..."
             sleep 20
             
-            # Package name encoding for API calls  
-            PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+            # Package name encoding for API calls (now repo-owned)
+            PACKAGE_NAME="${{ env.REPO_NAME }}%2F${{ matrix.name }}"
             echo "📦 Encoded package name: ${PACKAGE_NAME}"
             
             # First, check if package exists and get its current state
             echo "🔍 Checking if package exists..."
             PACKAGE_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" 2>&1)
+              "https://api.github.com/user/packages/container/${PACKAGE_NAME}" 2>&1)
             if [[ "$PACKAGE_CHECK" =~ "Not Found" ]] || [[ "$PACKAGE_CHECK" =~ "404" ]]; then
               echo "⚠️ Package not found in org packages, trying different approaches..."
               # Try without URL encoding first
@@ -215,58 +215,65 @@ jobs:
               echo "✅ Package found in registry"
             fi
             
-            # BULLETPROOF METHOD 1: Try with preview header (most reliable)
-            echo "🔄 Method 1: Using preview API with special headers..."
-            if curl -s -X PATCH \
-              -H "Accept: application/vnd.github.package-deletes-preview+json" \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -d '{"visibility":"public"}' \
-              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" \
-              | grep -q '"visibility":\s*"public"'; then
-              echo "✅ SUCCESS: Package visibility set to public via preview API"
-              exit 0
-            fi
-            
-            # BULLETPROOF METHOD 2: Try the /visibility endpoint
-            echo "🔄 Method 2: Using visibility endpoint..."
-            METHOD2_RESPONSE=$(curl -s -X PATCH \
-              -H "Accept: application/vnd.github.package-deletes-preview+json" \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -d '{"visibility":"public"}' \
-              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}/visibility" 2>&1)
-            if [[ ! "$METHOD2_RESPONSE" =~ "Not Found" ]] && [[ ! "$METHOD2_RESPONSE" =~ "404" ]] && [[ ! "$METHOD2_RESPONSE" =~ "error" ]]; then
-              echo "✅ SUCCESS: Package visibility set to public via visibility endpoint"
-              exit 0
-            else
-              echo "❌ Method 2 failed: $METHOD2_RESPONSE"
-            fi
-            
-            # BULLETPROOF METHOD 3: Try user endpoint (fallback)
-            echo "🔄 Method 3: Trying user endpoint..."
-            METHOD3_RESPONSE=$(curl -s -X PATCH \
+            # BULLETPROOF METHOD 1: Try with user endpoint (repository-owned packages)
+            echo "🔄 Method 1: Using user endpoint for repository-owned package..."
+            METHOD1_RESPONSE=$(curl -s -X PATCH \
               -H "Accept: application/vnd.github.package-deletes-preview+json" \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -d '{"visibility":"public"}' \
               "https://api.github.com/user/packages/container/${PACKAGE_NAME}" 2>&1)
-            if [[ ! "$METHOD3_RESPONSE" =~ "Not Found" ]] && [[ ! "$METHOD3_RESPONSE" =~ "404" ]] && [[ ! "$METHOD3_RESPONSE" =~ "error" ]]; then
+            if echo "$METHOD1_RESPONSE" | grep -q '"visibility":\s*"public"'; then
               echo "✅ SUCCESS: Package visibility set to public via user endpoint"
+              echo "Response: $METHOD1_RESPONSE"
+              exit 0
+            else
+              echo "❌ Method 1 failed: $METHOD1_RESPONSE"
+            fi
+            
+            # BULLETPROOF METHOD 2: Try the user visibility endpoint
+            echo "🔄 Method 2: Using user visibility endpoint..."
+            METHOD2_RESPONSE=$(curl -s -X PATCH \
+              -H "Accept: application/vnd.github.package-deletes-preview+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d '{"visibility":"public"}' \
+              "https://api.github.com/user/packages/container/${PACKAGE_NAME}/visibility" 2>&1)
+            if echo "$METHOD2_RESPONSE" | grep -q '"visibility":\s*"public"'; then
+              echo "✅ SUCCESS: Package visibility set to public via user visibility endpoint"
+              echo "Response: $METHOD2_RESPONSE"
+              exit 0
+            else
+              echo "❌ Method 2 failed: $METHOD2_RESPONSE"
+            fi
+            
+            # BULLETPROOF METHOD 3: Try without URL encoding
+            echo "🔄 Method 3: Trying without URL encoding..."
+            SIMPLE_PACKAGE_NAME="${{ env.REPO_NAME }}/${{ matrix.name }}"
+            METHOD3_RESPONSE=$(curl -s -X PATCH \
+              -H "Accept: application/vnd.github.package-deletes-preview+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d '{"visibility":"public"}' \
+              "https://api.github.com/user/packages/container/${SIMPLE_PACKAGE_NAME}" 2>&1)
+            if echo "$METHOD3_RESPONSE" | grep -q '"visibility":\s*"public"'; then
+              echo "✅ SUCCESS: Package visibility set to public without URL encoding"
+              echo "Response: $METHOD3_RESPONSE"
               exit 0
             else
               echo "❌ Method 3 failed: $METHOD3_RESPONSE"
             fi
             
-            # BULLETPROOF METHOD 4: Use GitHub CLI as final attempt
-            echo "🔄 Method 4: Using GitHub CLI..."
+            # BULLETPROOF METHOD 4: Use GitHub CLI with user endpoint
+            echo "🔄 Method 4: Using GitHub CLI with user endpoint..."
             METHOD4_RESPONSE=$(gh api --method PATCH \
               --header "Accept: application/vnd.github.package-deletes-preview+json" \
               --header "X-GitHub-Api-Version: 2022-11-28" \
               --field visibility=public \
-              "/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" 2>&1)
-            if [[ ! "$METHOD4_RESPONSE" =~ "Not Found" ]] && [[ ! "$METHOD4_RESPONSE" =~ "404" ]] && [[ ! "$METHOD4_RESPONSE" =~ "error" ]]; then
+              "/user/packages/container/${PACKAGE_NAME}" 2>&1)
+            if echo "$METHOD4_RESPONSE" | grep -q '"visibility":\s*"public"'; then
               echo "✅ SUCCESS: Package visibility set to public via GitHub CLI"
+              echo "Response: $METHOD4_RESPONSE"
               exit 0
             else
               echo "❌ Method 4 failed: $METHOD4_RESPONSE"
@@ -275,17 +282,17 @@ jobs:
             # If all methods fail, provide detailed debugging info
             echo "❌ All automatic methods failed - package will remain private"
             echo "🔍 DEBUG INFO:"
-            echo "  - Organization: ${{ env.ORGANISATION }}"  
-            echo "  - Repository: ${{ env.REPOSITORY }}"
+            echo "  - Repository: ${{ env.REPO_NAME }}"
             echo "  - Package: ${{ matrix.name }}"
             echo "  - Full package name: ${PACKAGE_NAME}"
             echo "  - Target visibility: ${{ env.IMAGE_VISIBILITY }}"
+            echo "  - Image path: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ matrix.name }}"
             echo ""
-            echo "📋 MANUAL STEPS to make package public:"
-            echo "1. Go to: https://github.com/orgs/${{ env.ORGANISATION }}/packages"
-            echo "2. Find package: ${{ env.REPOSITORY }}/${{ matrix.name }}"
+            echo "📋 MANUAL STEPS to make repository-owned package public:"
+            echo "1. Go to: https://github.com/${{ env.REPO_NAME }}/packages"
+            echo "2. Find package: ${{ env.REPO_NAME }}/${{ matrix.name }}"
             echo "3. Click 'Package settings' → 'Change visibility' → 'Public'"
-            echo "4. Or visit: https://github.com/${{ env.REPO_NAME }}/pkgs/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}/settings"
+            echo "4. Or visit: https://github.com/${{ env.REPO_NAME }}/pkgs/container/${{ env.REPO_NAME }}%2F${{ matrix.name }}/settings"
             
           else
             echo "ℹ️  Package will remain private (repository doesn't match OSS naming pattern)"
@@ -298,7 +305,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
+          package: ${{ env.REPO_NAME }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
