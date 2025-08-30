@@ -8,5 +8,5 @@ image:
   tag: latest
 
 config:
-  repo: "openframe-config"
+  repo: "openframe-oss-tenant-cfg"
   branch: "main"
