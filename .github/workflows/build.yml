@@ -33,9 +33,7 @@ env:
   # 🚀 DYNAMIC: Auto-detects org and repo from GitHub context
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  # 🎯 BULLETPROOF: Repository-based image visibility
   REPO_NAME: ${{ github.repository }}
-  IMAGE_VISIBILITY: ${{ (contains(github.repository, '-oss-') && 'public') || (contains(github.repository, 'oss') && 'public') || (contains(github.repository, '-saas-') && 'private') || (contains(github.repository, 'saas') && 'private') || 'private' }}
   # 🔥 FORCE BUILD: Manual trigger to build all images
   FORCE_ALL_BUILDS: ${{ github.event.inputs.force_all_builds == 'true' }}
 
@@ -128,96 +126,6 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.path }}/target
 
-      - name: Check and fix package visibility before build
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        continue-on-error: true
-        run: |
-          echo "🔍 Checking existing package visibility for ${{ matrix.name }}..."
-          
-          # Package name for API calls
-          PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
-          ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
-          
-          # Check if package exists in organization
-          echo "📦 Checking package: ${PACKAGE_NAME}"
-          PACKAGE_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
-          
-          if echo "$PACKAGE_CHECK" | grep -q '"message":\s*"Not Found"'; then
-            echo "📦 Package doesn't exist yet"
-            
-            # For OSS repos, we need to fix visibility immediately after Docker push creates it
-            if [[ "${{ env.IMAGE_VISIBILITY }}" == "public" ]]; then
-              echo "🏗️ Docker push will create package as private first, then we'll IMMEDIATELY fix visibility..."
-              echo "📝 Setting flag to fix visibility immediately after first push"
-              echo "NEEDS_IMMEDIATE_VISIBILITY_FIX=true" >> $GITHUB_ENV
-            else
-              echo "✅ Package will be created as private (SAAS repo)"
-            fi
-          else
-            # Package exists, check visibility
-            CURRENT_VISIBILITY=$(echo "$PACKAGE_CHECK" | grep -o '"visibility":\s*"[^"]*"' | cut -d'"' -f4)
-            echo "📋 Current package visibility: $CURRENT_VISIBILITY"
-            echo "🎯 Desired visibility: ${{ env.IMAGE_VISIBILITY }}"
-            
-            if [[ "$CURRENT_VISIBILITY" != "${{ env.IMAGE_VISIBILITY }}" ]]; then
-              echo "❌ WRONG VISIBILITY: Package is $CURRENT_VISIBILITY but should be ${{ env.IMAGE_VISIBILITY }}"
-              echo "🗑️ DELETING ENTIRE PACKAGE to force recreation with correct visibility..."
-              
-              # Delete the entire package - no mercy, full deletion
-              DELETE_RESPONSE=$(curl -s -X DELETE \
-                -H "Accept: application/vnd.github.package-deletes-preview+json" \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
-              
-              echo "Delete response: $DELETE_RESPONSE"
-              
-              if echo "$DELETE_RESPONSE" | grep -q '"message":\s*"Not Found"' || [[ -z "$DELETE_RESPONSE" ]] || echo "$DELETE_RESPONSE" | grep -q '"message":\s*"Successful"'; then
-                echo "✅ PACKAGE DELETED - Now creating package with correct visibility IMMEDIATELY"
-                echo "⏳ Waiting for deletion to propagate..."
-                sleep 5
-                
-                # GitHub doesn't allow direct package creation via API
-                # We need to push a dummy image first, then immediately change visibility
-                echo "🏗️ Will create package via Docker push, then IMMEDIATELY fix visibility..."
-                echo "📝 Setting flag to fix visibility immediately after first push"
-                echo "NEEDS_IMMEDIATE_VISIBILITY_FIX=true" >> $GITHUB_ENV
-              else
-                echo "❌ DELETION FAILED: $DELETE_RESPONSE"
-                echo "🛑 BUILD WILL CONTINUE BUT PACKAGE WILL HAVE WRONG VISIBILITY"
-                exit 1
-              fi
-            else
-              echo "✅ Package already has correct visibility: $CURRENT_VISIBILITY"
-            fi
-          fi
-
-      - name: Configure Docker for GitHub Container Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: |
-          # Set Docker config that might influence package creation
-          mkdir -p ~/.docker
-          cat > ~/.docker/config.json << EOF
-          {
-            "auths": {
-              "${{ env.REGISTRY }}": {
-                "username": "${{ github.actor }}",
-                "password": "${{ secrets.GITHUB_TOKEN }}"
-              }
-            },
-            "experimental": "enabled",
-            "features": {
-              "buildkit": true
-            },
-            "plugins": {
-              "ghcr": {
-                "default-visibility": "${{ env.IMAGE_VISIBILITY }}"
-              }
-            }
-          }
-          EOF
-
       - name: Log in to GitHub Container Registry
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
@@ -258,9 +166,6 @@ jobs:
             org.opencontainers.image.vendor=${{ steps.lowercase.outputs.org_lower }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
-            org.opencontainers.image.visibility=${{ env.IMAGE_VISIBILITY }}
-            com.github.package.visibility=${{ env.IMAGE_VISIBILITY }}
-            com.github.package.type=container
 
       - name: Format build arguments
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -283,80 +188,8 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          annotations: |
-            index:com.github.package.visibility=${{ env.IMAGE_VISIBILITY }}
-            index:org.opencontainers.image.visibility=${{ env.IMAGE_VISIBILITY }}
-            manifest:com.github.package.visibility=${{ env.IMAGE_VISIBILITY }}
-            manifest:org.opencontainers.image.visibility=${{ env.IMAGE_VISIBILITY }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-
-      - name: IMMEDIATELY fix package visibility after creation
-        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success' && env.NEEDS_IMMEDIATE_VISIBILITY_FIX == 'true'
-        run: |
-          echo "🚨 IMMEDIATE VISIBILITY FIX: Package was just created, fixing visibility NOW before it gets locked..."
-          
-          # Package name and setup
-          PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
-          ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
-          
-          echo "⚡ Attempting visibility fix immediately after package creation..."
-          
-          # Try multiple rapid attempts while package is still "fresh"
-          for attempt in 1 2 3; do
-            echo "🔄 Rapid attempt $attempt..."
-            
-            FIX_RESPONSE=$(curl -s -X PATCH \
-              -H "Accept: application/vnd.github.package-deletes-preview+json" \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -d '{"visibility":"${{ env.IMAGE_VISIBILITY }}"}' \
-              "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
-            
-            if echo "$FIX_RESPONSE" | grep -q '"visibility":\s*"${{ env.IMAGE_VISIBILITY }}"'; then
-              echo "✅ SUCCESS: Fixed visibility to ${{ env.IMAGE_VISIBILITY }} on attempt $attempt!"
-              break
-            else
-              echo "❌ Attempt $attempt failed: $FIX_RESPONSE"
-              if [[ $attempt -lt 3 ]]; then
-                sleep 2  # Brief pause before retry
-              fi
-            fi
-          done
-
-      - name: Verify package recreated with correct visibility
-        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
-        continue-on-error: true
-        run: |
-          echo "🔍 Verifying package ${{ matrix.name }} was created with correct visibility..."
-          
-          # Wait for package to be fully processed
-          sleep 10
-          
-          # Package name and setup
-          PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
-          ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
-          REPO_LOWER=$(echo "${{ env.REPOSITORY }}" | tr '[:upper:]' '[:lower:]')
-          
-          # Check the recreated package visibility
-          VERIFY_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
-          
-          if echo "$VERIFY_CHECK" | grep -q '"message":\s*"Not Found"'; then
-            echo "❓ Package not yet available in API - still processing"
-          else
-            FINAL_VISIBILITY=$(echo "$VERIFY_CHECK" | grep -o '"visibility":\s*"[^"]*"' | cut -d'"' -f4)
-            echo "📋 Package recreated with visibility: $FINAL_VISIBILITY"
-            echo "🎯 Expected visibility: ${{ env.IMAGE_VISIBILITY }}"
-            
-            if [[ "$FINAL_VISIBILITY" == "${{ env.IMAGE_VISIBILITY }}" ]]; then
-              echo "✅ SUCCESS: Package recreated with correct visibility!"
-            else
-              echo "❌ FAILED: Package recreated with wrong visibility!"
-              echo "🔗 Manual fix needed: https://github.com/orgs/${ORG_LOWER}/packages/container/package/${REPO_LOWER}%2F${{ matrix.name }}"
-              echo "   Go to Package settings → Change visibility → ${{ env.IMAGE_VISIBILITY }}"
-            fi
-          fi
 
       - name: Delete old versions
         if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
