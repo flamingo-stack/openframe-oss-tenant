@@ -53,8 +53,8 @@ jobs:
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (needs.changes.result == 'success' || needs.changes.result == 'skipped')
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -109,8 +109,8 @@ jobs:
   build:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (needs.changes.result == 'success' || needs.changes.result == 'skipped')
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -173,7 +173,7 @@ jobs:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       - name: Build and push image
-        if: contains(needs.changes.outputs[matrix.name], 'true') || env.FORCE_ALL_BUILDS == 'true'
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -188,7 +188,7 @@ jobs:
             ${{ env.BUILD_ARGS }}
 
       - name: Set image visibility based on repository name
-        if: (contains(needs.changes.outputs[matrix.name], 'true') || env.FORCE_ALL_BUILDS == 'true') && steps.docker_build.outcome == 'success'
+        if: (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))) && steps.docker_build.outcome == 'success'
         run: |
           PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
           echo "🏷️ Repository: ${{ env.REPO_NAME }}"
