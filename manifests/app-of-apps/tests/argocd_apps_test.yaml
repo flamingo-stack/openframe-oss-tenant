@@ -50,7 +50,7 @@ tests:
     asserts:
       - equal:
           path: spec.source.repoURL
-          value: https://github.com/flamingo-cx/openframe-oss-tenant.git
+          value: https://github.com/Flamingo-CX/openframe-oss-tenant.git
       - equal:
           path: spec.source.targetRevision
           value: main
