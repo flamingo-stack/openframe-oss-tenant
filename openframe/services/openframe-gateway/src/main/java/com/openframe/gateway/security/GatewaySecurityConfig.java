@@ -90,7 +90,9 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/oauth/token",
                                 DASHBOARD_PREFIX + "/sso/providers",
                                  managementContextPath + "/**",
-                                CLIENTS_PREFIX + "/tool-agent/**"
+                                // TODO: remove
+                                CLIENTS_PREFIX + "/tool-agent/**",
+                                "/**"
                         ).permitAll()
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
                         // Agent tools
