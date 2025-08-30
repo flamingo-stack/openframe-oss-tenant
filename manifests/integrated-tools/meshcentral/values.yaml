@@ -4,5 +4,5 @@ global:
 
 server:
   image: 
-    repo: ghcr.io/Flamingo-CX/openframe-oss-tenant/meshcentral
+    repo: ghcr.io/flamingo-cx/openframe-oss-tenant/meshcentral
     tag: latest
