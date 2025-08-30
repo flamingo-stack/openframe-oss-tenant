@@ -128,6 +128,56 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.path }}/target
 
+      - name: Check and fix package visibility before build
+        if: contains(needs.changes.outputs[matrix.name], 'true')
+        continue-on-error: true
+        run: |
+          echo "🔍 Checking existing package visibility for ${{ matrix.name }}..."
+          
+          # Package name for API calls
+          PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+          ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Check if package exists in organization
+          echo "📦 Checking package: ${PACKAGE_NAME}"
+          PACKAGE_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
+          
+          if echo "$PACKAGE_CHECK" | grep -q '"message":\s*"Not Found"'; then
+            echo "✅ Package doesn't exist yet - will be created fresh"
+          else
+            # Package exists, check visibility
+            CURRENT_VISIBILITY=$(echo "$PACKAGE_CHECK" | grep -o '"visibility":\s*"[^"]*"' | cut -d'"' -f4)
+            echo "📋 Current package visibility: $CURRENT_VISIBILITY"
+            echo "🎯 Desired visibility: ${{ env.IMAGE_VISIBILITY }}"
+            
+            if [[ "$CURRENT_VISIBILITY" != "${{ env.IMAGE_VISIBILITY }}" ]]; then
+              echo "❌ WRONG VISIBILITY: Package is $CURRENT_VISIBILITY but should be ${{ env.IMAGE_VISIBILITY }}"
+              echo "🗑️ DELETING ENTIRE PACKAGE to force recreation with correct visibility..."
+              
+              # Delete the entire package - no mercy, full deletion
+              DELETE_RESPONSE=$(curl -s -X DELETE \
+                -H "Accept: application/vnd.github.package-deletes-preview+json" \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
+              
+              echo "Delete response: $DELETE_RESPONSE"
+              
+              if echo "$DELETE_RESPONSE" | grep -q '"message":\s*"Not Found"' || [[ -z "$DELETE_RESPONSE" ]] || echo "$DELETE_RESPONSE" | grep -q '"message":\s*"Successful"'; then
+                echo "✅ PACKAGE DELETED - Build will recreate it with ${{ env.IMAGE_VISIBILITY }} visibility"
+                echo "⏳ Waiting for deletion to propagate..."
+                sleep 5
+              else
+                echo "❌ DELETION FAILED: $DELETE_RESPONSE"
+                echo "🛑 BUILD WILL CONTINUE BUT PACKAGE WILL HAVE WRONG VISIBILITY"
+                exit 1
+              fi
+            else
+              echo "✅ Package already has correct visibility: $CURRENT_VISIBILITY"
+            fi
+          fi
+
       - name: Log in to GitHub Container Registry
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
@@ -168,6 +218,7 @@ jobs:
             org.opencontainers.image.vendor=${{ steps.lowercase.outputs.org_lower }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+            org.opencontainers.image.visibility=${{ env.IMAGE_VISIBILITY }}
 
       - name: Format build arguments
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -193,134 +244,39 @@ jobs:
           build-args: |
             ${{ env.BUILD_ARGS }}
 
-      - name: Set image visibility based on repository name  
+      - name: Verify package recreated with correct visibility
         if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
         continue-on-error: true
         run: |
-          echo "🏷️ Repository: ${{ env.REPO_NAME }}"
-          echo "🎯 Setting ${{ matrix.name }} visibility to: ${{ env.IMAGE_VISIBILITY }}"
+          echo "🔍 Verifying package ${{ matrix.name }} was created with correct visibility..."
           
-          # Only proceed if we want to make it public
-          if [[ "${{ env.IMAGE_VISIBILITY }}" == "public" ]]; then
-            echo "⏳ Waiting for package to be available in registry..."
-            sleep 20
-            
-            # Package name - try both organization and user endpoints
-            PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
-            echo "📦 Encoded package name: ${PACKAGE_NAME}"
-            
-            # Convert to lowercase for API calls
-            ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
-            REPO_LOWER=$(echo "${{ env.REPOSITORY }}" | tr '[:upper:]' '[:lower:]')
-            
-            # First, check if package exists in organization packages (use lowercase org name)
-            echo "🔍 Checking if package exists in organization (${ORG_LOWER})..."
-            ORG_PACKAGE_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
-            
-            # Also check user packages
-            echo "🔍 Checking if package exists in user packages..."
-            USER_PACKAGE_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/user/packages/container/${PACKAGE_NAME}" 2>&1)
-            
-            # Determine package ownership
-            PACKAGE_ENDPOINT=""
-            if [[ ! "$ORG_PACKAGE_CHECK" =~ "Not Found" ]] && [[ ! "$ORG_PACKAGE_CHECK" =~ "404" ]]; then
-              echo "✅ Package found in organization packages"
-              PACKAGE_ENDPOINT="orgs/${ORG_LOWER}"
-              echo "🔧 Using lowercase org name: ${ORG_LOWER}"
-            elif [[ ! "$USER_PACKAGE_CHECK" =~ "Not Found" ]] && [[ ! "$USER_PACKAGE_CHECK" =~ "404" ]]; then
-              echo "✅ Package found in user packages"
-              PACKAGE_ENDPOINT="user"
-            else
-              echo "⚠️ Package not found in either location, will try all methods"
-              PACKAGE_ENDPOINT="orgs/${ORG_LOWER}"  # Default to lowercase org
-              echo "🔧 Defaulting to lowercase org name: ${ORG_LOWER}"
-            fi
-            
-            # BULLETPROOF METHOD 1: Try with detected endpoint
-            echo "🔄 Method 1: Using ${PACKAGE_ENDPOINT} endpoint..."
-            METHOD1_RESPONSE=$(curl -s -X PATCH \
-              -H "Accept: application/vnd.github.package-deletes-preview+json" \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -d '{"visibility":"public"}' \
-              "https://api.github.com/${PACKAGE_ENDPOINT}/packages/container/${PACKAGE_NAME}" 2>&1)
-            if echo "$METHOD1_RESPONSE" | grep -q '"visibility":\s*"public"'; then
-              echo "✅ SUCCESS: Package visibility set to public via ${PACKAGE_ENDPOINT} endpoint"
-              echo "Response: $METHOD1_RESPONSE"
-              exit 0
-            else
-              echo "❌ Method 1 failed: $METHOD1_RESPONSE"
-            fi
-            
-            # BULLETPROOF METHOD 2: Try the visibility endpoint
-            echo "🔄 Method 2: Using ${PACKAGE_ENDPOINT} visibility endpoint..."
-            METHOD2_RESPONSE=$(curl -s -X PATCH \
-              -H "Accept: application/vnd.github.package-deletes-preview+json" \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -d '{"visibility":"public"}' \
-              "https://api.github.com/${PACKAGE_ENDPOINT}/packages/container/${PACKAGE_NAME}/visibility" 2>&1)
-            if echo "$METHOD2_RESPONSE" | grep -q '"visibility":\s*"public"'; then
-              echo "✅ SUCCESS: Package visibility set to public via ${PACKAGE_ENDPOINT} visibility endpoint"
-              echo "Response: $METHOD2_RESPONSE"
-              exit 0
-            else
-              echo "❌ Method 2 failed: $METHOD2_RESPONSE"
-            fi
-            
-            # BULLETPROOF METHOD 3: Try without URL encoding
-            echo "🔄 Method 3: Trying ${PACKAGE_ENDPOINT} without URL encoding..."
-            SIMPLE_PACKAGE_NAME="${{ env.REPOSITORY }}/${{ matrix.name }}"
-            METHOD3_RESPONSE=$(curl -s -X PATCH \
-              -H "Accept: application/vnd.github.package-deletes-preview+json" \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -d '{"visibility":"public"}' \
-              "https://api.github.com/${PACKAGE_ENDPOINT}/packages/container/${SIMPLE_PACKAGE_NAME}" 2>&1)
-            if echo "$METHOD3_RESPONSE" | grep -q '"visibility":\s*"public"'; then
-              echo "✅ SUCCESS: Package visibility set to public without URL encoding"
-              echo "Response: $METHOD3_RESPONSE"
-              exit 0
-            else
-              echo "❌ Method 3 failed: $METHOD3_RESPONSE"
-            fi
-            
-            # BULLETPROOF METHOD 4: Use GitHub CLI with detected endpoint
-            echo "🔄 Method 4: Using GitHub CLI with ${PACKAGE_ENDPOINT} endpoint..."
-            METHOD4_RESPONSE=$(gh api --method PATCH \
-              --header "Accept: application/vnd.github.package-deletes-preview+json" \
-              --header "X-GitHub-Api-Version: 2022-11-28" \
-              --field visibility=public \
-              "/${PACKAGE_ENDPOINT}/packages/container/${PACKAGE_NAME}" 2>&1)
-            if echo "$METHOD4_RESPONSE" | grep -q '"visibility":\s*"public"'; then
-              echo "✅ SUCCESS: Package visibility set to public via GitHub CLI"
-              echo "Response: $METHOD4_RESPONSE"
-              exit 0
-            else
-              echo "❌ Method 4 failed: $METHOD4_RESPONSE"
-            fi
-            
-            # GitHub API limitation: Organization packages can't change visibility via API
-            echo "⚠️ KNOWN LIMITATION: GitHub API does not support changing visibility for organization-owned packages"
-            echo "📋 This is a GitHub API restriction, not a configuration error"
-            echo ""
-            echo "🔧 SOLUTION: Package must be made public manually:"
-            echo "1. Go to: https://github.com/orgs/${ORG_LOWER}/packages"
-            echo "2. Find package: ${REPO_LOWER}/${{ matrix.name }}"
-            echo "3. Click 'Package settings' → 'Change visibility' → 'Public'"
-            echo ""
-            echo "🔗 Direct link: https://github.com/orgs/${ORG_LOWER}/packages/container/${REPO_LOWER}%2F${{ matrix.name }}"
-            echo ""
-            echo "ℹ️  Alternative: Use Personal Access Token instead of GITHUB_TOKEN to create user-owned packages"
-            echo "   User-owned packages support API visibility changes, organization-owned packages do not"
-            
+          # Wait for package to be fully processed
+          sleep 10
+          
+          # Package name and setup
+          PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+          ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
+          REPO_LOWER=$(echo "${{ env.REPOSITORY }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Check the recreated package visibility
+          VERIFY_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
+          
+          if echo "$VERIFY_CHECK" | grep -q '"message":\s*"Not Found"'; then
+            echo "❓ Package not yet available in API - still processing"
           else
-            echo "ℹ️  Package will remain private (repository doesn't match OSS naming pattern)"
+            FINAL_VISIBILITY=$(echo "$VERIFY_CHECK" | grep -o '"visibility":\s*"[^"]*"' | cut -d'"' -f4)
+            echo "📋 Package recreated with visibility: $FINAL_VISIBILITY"
+            echo "🎯 Expected visibility: ${{ env.IMAGE_VISIBILITY }}"
+            
+            if [[ "$FINAL_VISIBILITY" == "${{ env.IMAGE_VISIBILITY }}" ]]; then
+              echo "✅ SUCCESS: Package recreated with correct visibility!"
+            else
+              echo "❌ FAILED: Package recreated with wrong visibility!"
+              echo "🔗 Manual fix needed: https://github.com/orgs/${ORG_LOWER}/packages/container/package/${REPO_LOWER}%2F${{ matrix.name }}"
+              echo "   Go to Package settings → Change visibility → ${{ env.IMAGE_VISIBILITY }}"
+            fi
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete old versions
         if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'

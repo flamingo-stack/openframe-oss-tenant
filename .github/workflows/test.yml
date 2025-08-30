@@ -257,7 +257,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ github.token }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Convert repository to lowercase
         if: contains(needs.changes.outputs[matrix.name], 'true')
