@@ -198,9 +198,22 @@ jobs:
             echo "⏳ Waiting for package to be available in registry..."
             sleep 20
             
-            # Package name encoding for API calls
+            # Package name encoding for API calls  
             PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
             echo "📦 Encoded package name: ${PACKAGE_NAME}"
+            
+            # First, check if package exists and get its current state
+            echo "🔍 Checking if package exists..."
+            PACKAGE_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" 2>&1)
+            if [[ "$PACKAGE_CHECK" =~ "Not Found" ]] || [[ "$PACKAGE_CHECK" =~ "404" ]]; then
+              echo "⚠️ Package not found in org packages, trying different approaches..."
+              # Try without URL encoding first
+              SIMPLE_PACKAGE_NAME="${{ env.REPOSITORY }}/${{ matrix.name }}"
+              echo "📦 Trying simple package name: ${SIMPLE_PACKAGE_NAME}"
+            else
+              echo "✅ Package found in registry"
+            fi
             
             # BULLETPROOF METHOD 1: Try with preview header (most reliable)
             echo "🔄 Method 1: Using preview API with special headers..."
@@ -217,39 +230,46 @@ jobs:
             
             # BULLETPROOF METHOD 2: Try the /visibility endpoint
             echo "🔄 Method 2: Using visibility endpoint..."
-            if curl -s -X PATCH \
+            METHOD2_RESPONSE=$(curl -s -X PATCH \
               -H "Accept: application/vnd.github.package-deletes-preview+json" \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -d '{"visibility":"public"}' \
-              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}/visibility" \
-              2>/dev/null; then
+              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}/visibility" 2>&1)
+            if [[ ! "$METHOD2_RESPONSE" =~ "Not Found" ]] && [[ ! "$METHOD2_RESPONSE" =~ "404" ]] && [[ ! "$METHOD2_RESPONSE" =~ "error" ]]; then
               echo "✅ SUCCESS: Package visibility set to public via visibility endpoint"
               exit 0
+            else
+              echo "❌ Method 2 failed: $METHOD2_RESPONSE"
             fi
             
             # BULLETPROOF METHOD 3: Try user endpoint (fallback)
             echo "🔄 Method 3: Trying user endpoint..."
-            if curl -s -X PATCH \
+            METHOD3_RESPONSE=$(curl -s -X PATCH \
               -H "Accept: application/vnd.github.package-deletes-preview+json" \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -d '{"visibility":"public"}' \
-              "https://api.github.com/user/packages/container/${PACKAGE_NAME}" \
-              2>/dev/null; then
+              "https://api.github.com/user/packages/container/${PACKAGE_NAME}" 2>&1)
+            if [[ ! "$METHOD3_RESPONSE" =~ "Not Found" ]] && [[ ! "$METHOD3_RESPONSE" =~ "404" ]] && [[ ! "$METHOD3_RESPONSE" =~ "error" ]]; then
               echo "✅ SUCCESS: Package visibility set to public via user endpoint"
               exit 0
+            else
+              echo "❌ Method 3 failed: $METHOD3_RESPONSE"
             fi
             
             # BULLETPROOF METHOD 4: Use GitHub CLI as final attempt
             echo "🔄 Method 4: Using GitHub CLI..."
-            if gh api --method PATCH \
+            METHOD4_RESPONSE=$(gh api --method PATCH \
               --header "Accept: application/vnd.github.package-deletes-preview+json" \
               --header "X-GitHub-Api-Version: 2022-11-28" \
               --field visibility=public \
-              "/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" 2>/dev/null; then
+              "/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" 2>&1)
+            if [[ ! "$METHOD4_RESPONSE" =~ "Not Found" ]] && [[ ! "$METHOD4_RESPONSE" =~ "404" ]] && [[ ! "$METHOD4_RESPONSE" =~ "error" ]]; then
               echo "✅ SUCCESS: Package visibility set to public via GitHub CLI"
               exit 0
+            else
+              echo "❌ Method 4 failed: $METHOD4_RESPONSE"
             fi
             
             # If all methods fail, provide detailed debugging info
