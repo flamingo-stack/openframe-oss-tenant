@@ -31,10 +31,10 @@ on:
 env:
   REGISTRY: "ghcr.io"
   # 🚀 DYNAMIC: Auto-detects org and repo from GitHub context
-  ORGANISATION: ${{ lower(github.repository_owner) }}
-  REPOSITORY: ${{ lower(github.event.repository.name) }}
+  ORGANISATION: ${{ github.repository_owner }}
+  REPOSITORY: ${{ github.event.repository.name }}
   # 🎯 BULLETPROOF: Repository-based image visibility
-  REPO_NAME: ${{ lower(github.repository) }}
+  REPO_NAME: ${{ github.repository }}
   IMAGE_VISIBILITY: ${{ (contains(github.repository, '-oss-') && 'public') || (contains(github.repository, 'oss') && 'public') || (contains(github.repository, '-saas-') && 'private') || (contains(github.repository, 'saas') && 'private') || 'private' }}
   # 🔥 FORCE BUILD: Manual trigger to build all images
   FORCE_ALL_BUILDS: ${{ github.event.inputs.force_all_builds == 'true' }}
@@ -146,19 +146,26 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
+      - name: Convert organization to lowercase
+        if: contains(needs.changes.outputs[matrix.name], 'true')
+        id: lowercase
+        run: |
+          echo "org_lower=$(echo '${{ env.ORGANISATION }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "repo_lower=$(echo '${{ env.REPOSITORY }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Generate metadata
         if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+          images: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.org_lower }}/${{ steps.lowercase.outputs.repo_lower }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
             type=raw,value=latest
           labels: |
-            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
+            org.opencontainers.image.vendor=${{ steps.lowercase.outputs.org_lower }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
@@ -202,10 +209,14 @@ jobs:
             PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
             echo "📦 Encoded package name: ${PACKAGE_NAME}"
             
+            # Convert to lowercase for API calls
+            ORG_LOWER=$(echo "${{ env.ORGANISATION }}" | tr '[:upper:]' '[:lower:]')
+            REPO_LOWER=$(echo "${{ env.REPOSITORY }}" | tr '[:upper:]' '[:lower:]')
+            
             # First, check if package exists in organization packages (use lowercase org name)
-            echo "🔍 Checking if package exists in organization (${{ env.ORGANISATION }})..."
+            echo "🔍 Checking if package exists in organization (${ORG_LOWER})..."
             ORG_PACKAGE_CHECK=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" 2>&1)
+              "https://api.github.com/orgs/${ORG_LOWER}/packages/container/${PACKAGE_NAME}" 2>&1)
             
             # Also check user packages
             echo "🔍 Checking if package exists in user packages..."
@@ -216,15 +227,15 @@ jobs:
             PACKAGE_ENDPOINT=""
             if [[ ! "$ORG_PACKAGE_CHECK" =~ "Not Found" ]] && [[ ! "$ORG_PACKAGE_CHECK" =~ "404" ]]; then
               echo "✅ Package found in organization packages"
-              PACKAGE_ENDPOINT="orgs/${{ env.ORGANISATION }}"
-              echo "🔧 Using lowercase org name: ${{ env.ORGANISATION }}"
+              PACKAGE_ENDPOINT="orgs/${ORG_LOWER}"
+              echo "🔧 Using lowercase org name: ${ORG_LOWER}"
             elif [[ ! "$USER_PACKAGE_CHECK" =~ "Not Found" ]] && [[ ! "$USER_PACKAGE_CHECK" =~ "404" ]]; then
               echo "✅ Package found in user packages"
               PACKAGE_ENDPOINT="user"
             else
               echo "⚠️ Package not found in either location, will try all methods"
-              PACKAGE_ENDPOINT="orgs/${{ env.ORGANISATION }}"  # Default to lowercase org
-              echo "🔧 Defaulting to lowercase org name: ${{ env.ORGANISATION }}"
+              PACKAGE_ENDPOINT="orgs/${ORG_LOWER}"  # Default to lowercase org
+              echo "🔧 Defaulting to lowercase org name: ${ORG_LOWER}"
             fi
             
             # BULLETPROOF METHOD 1: Try with detected endpoint
@@ -317,7 +328,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
+          package: ${{ steps.lowercase.outputs.repo_lower }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
