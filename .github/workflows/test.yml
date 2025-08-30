@@ -31,8 +31,8 @@ concurrency:
 env:
   REGISTRY: "ghcr.io"
   # 🚀 DYNAMIC: Auto-detects org and repo from GitHub context
-  ORGANISATION: ${{ github.repository_owner }}
-  REPOSITORY: ${{ github.event.repository.name }}
+  ORGANISATION: ${{ lower(github.repository_owner) }}
+  REPOSITORY: ${{ lower(github.event.repository.name) }}
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
 
 # =============================================================================
@@ -157,7 +157,7 @@ jobs:
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
           labels: |
-            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
