@@ -69,8 +69,16 @@ impl ToolInstallationService {
             .get_tool_agent_file(tool_id.clone())
             .await?;
 
-        let tool_folder_path = self.directory_manager.app_support_dir();
-        let file_path = tool_folder_path.join(format!("{}_agent", tool_id));
+        // Create tool-specific directory
+        let base_folder_path = self.directory_manager.app_support_dir();
+        let tool_folder_path = base_folder_path.join(tool_id);
+        
+        // Ensure tool-specific directory exists
+        fs::create_dir_all(&tool_folder_path)
+            .await
+            .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
+
+        let file_path = tool_folder_path.join("agent");
         
         File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
 
@@ -101,7 +109,7 @@ impl ToolInstallationService {
                 }
             };
 
-            let asset_path = tool_folder_path.join(format!("{}_{}", tool_id, asset.id));
+            let asset_path = tool_folder_path.join(&asset.id);
             
             File::create(&asset_path).await?.write_all(&asset_bytes).await?;
             
