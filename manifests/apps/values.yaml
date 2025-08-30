@@ -33,9 +33,9 @@ registry:
     email: ""
   ghcr:
     server: ghcr.io
-    username: CI
-    password: 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
-    email: CI@flamingo.cx
+    username: ""
+    password: ""
+    email: ""
     
 apps:
   # example-app:
