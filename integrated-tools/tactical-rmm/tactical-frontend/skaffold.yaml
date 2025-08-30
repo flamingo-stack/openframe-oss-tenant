@@ -4,7 +4,7 @@ metadata:
   name: tactical-frontend
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe-oss-tenant/tactical-frontend
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-frontend
       context: ../.
       sync: 
         manual:

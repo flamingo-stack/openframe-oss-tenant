@@ -4,7 +4,7 @@ metadata:
   name: meshcentral
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe-oss-tenant/meshcentral
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral
       context: .
       sync: 
         manual:

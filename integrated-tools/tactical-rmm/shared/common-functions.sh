@@ -170,8 +170,8 @@ function installNATs() {
         rm -rf /tmp/nats.tar.gz /tmp/nats-server-v2.10.22-linux-amd64
 
         # Download specific NATS API version 2.10.22
-        wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_DIR}/bin/nats-api
-        wget https://raw.githubusercontent.com/Flamingo-CX/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_DIR}/bin/nats-api-arm64
+        wget https://raw.githubusercontent.com/flamingo-stack/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api -O ${TACTICAL_DIR}/bin/nats-api
+        wget https://raw.githubusercontent.com/flamingo-stack/tacticalrmm/refs/heads/develop/natsapi/bin/nats-api-arm64 -O ${TACTICAL_DIR}/bin/nats-api-arm64
 
         # Make the API binaries executable
         chmod +x ${TACTICAL_DIR}/bin/nats-api

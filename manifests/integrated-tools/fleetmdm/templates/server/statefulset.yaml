@@ -13,9 +13,6 @@ spec:
       labels:
         app: fleetmdm-server
     spec:
-      {{- if ne .Values.registry.ghcr.password "" }}
-      imagePullSecrets:
-      {{- end }}
 
       containers:
       - name: fleetmdm

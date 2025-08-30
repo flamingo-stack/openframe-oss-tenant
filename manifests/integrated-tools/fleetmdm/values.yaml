@@ -4,5 +4,5 @@ global:
 
 server:
   image: 
-    repo: ghcr.io/flamingo-cx/openframe-oss-tenant/fleetmdm
+    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/fleetmdm
     tag: latest
