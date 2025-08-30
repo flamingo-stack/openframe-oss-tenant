@@ -15,13 +15,13 @@ pub struct ToolInstallationMessage {
 pub struct Asset {
     pub id: String,
     pub source: AssetSource,
-    pub path: String,
+    pub path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AssetSource {
-    #[serde(rename = "artifactory")]
+    #[serde(rename = "ARTIFACTORY")]
     Artifactory,
-    #[serde(rename = "tool-api")]
+    #[serde(rename = "TOOL_API")]
     ToolApi,
 }

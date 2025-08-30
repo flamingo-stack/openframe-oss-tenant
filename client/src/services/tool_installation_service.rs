@@ -92,9 +92,10 @@ impl ToolInstallationService {
                         .with_context(|| format!("Failed to download artifactory asset: {}", asset.id))?
                 },
                 AssetSource::ToolApi => {
-                    info!("Downloading tool API asset: {} with path: {}", asset.id, asset.path);
+                    let path = asset.path.as_deref().unwrap_or("");
+                    info!("Downloading tool API asset: {} with path: {}", asset.id, path);
                     self.tool_api_client
-                        .get_tool_asset(tool_id.clone(), asset.path.clone())
+                        .get_tool_asset(tool_id.clone(), asset.path.clone().unwrap_or_default())
                         .await
                         .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
                 }

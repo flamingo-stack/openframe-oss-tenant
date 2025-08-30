@@ -148,7 +148,7 @@ spec:
                   "--openframe-secret", "${openframeSecret}",
                   "--openframe-osquery-path", "${openframeOsqueryPath}",
                   "--openframe-token-path", "${openframeTokenPath}"
-                ]
+                ],
                 "assets": [
                   {
                     "id": "osquery",

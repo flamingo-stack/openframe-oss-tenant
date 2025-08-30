@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @RestController
-@RequestMapping("/tool-agent/{toolId}")
+@RequestMapping("/tool-agent/{assetId}")
 public class ToolAgentFileController {
 
     // TODO: remove after github artifact is implemented
