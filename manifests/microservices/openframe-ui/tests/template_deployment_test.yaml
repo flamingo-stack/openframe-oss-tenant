@@ -3,11 +3,11 @@ templates:
   - templates/deployment.yaml
 tests:
   # Basic deployment rendering
-  - it: should render deployment for selfHosted localhost
+  - it: should render deployment for oss localhost
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -24,12 +24,12 @@ tests:
           path: spec.selector.matchLabels.app
           value: openframe-ui
 
-  - it: should render deployment for selfHosted ngrok
+  - it: should render deployment for oss ngrok
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -42,7 +42,7 @@ tests:
 
   - it: should render deployment for saas localhost
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
@@ -57,8 +57,8 @@ tests:
   # Container configuration
   - it: should configure container correctly
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
       image.repo: "test-repo"
       image.tag: "test-tag"
@@ -79,19 +79,18 @@ tests:
   # Image pull secrets
   - it: should include image pull secrets
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.template.spec.imagePullSecrets[0].name
-          value: github-pat-secret
 
   # Health checks
   - it: should configure health checks
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -110,8 +109,8 @@ tests:
   # Static environment variables
   - it: should configure static environment variables
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - contains:

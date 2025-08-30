@@ -8,8 +8,8 @@ Usage:
 
 Rules:
 1. If `enabled: false` → skip
-2. If deployment.selfHosted.enabled and ingress.localhost.enabled → skip "ngrok-operator"
-3. If deployment.selfHosted.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
+2. If deployment.oss.enabled and ingress.localhost.enabled → skip "ngrok-operator"
+3. If deployment.oss.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
 4. If deployment.saas.enabled and ingress.localhost.enabled → skip "openframe-authorization-server" and "ngrok-operator"
 */}}
 
@@ -24,16 +24,16 @@ Rules:
 {{- else }}
 
 {{/* Extract deployment and ingress configuration */}}
-{{- $selfHosted := $vals.deployment.selfHosted.enabled | default false }}
+{{- $oss := $vals.deployment.oss.enabled | default false }}
 {{- $saas := $vals.deployment.saas.enabled | default false }}
-{{- $selfHostedLocalhost := $vals.deployment.selfHosted.ingress.localhost.enabled | default false }}
-{{- $selfHostedNgrok := $vals.deployment.selfHosted.ingress.ngrok.enabled | default false }}
+{{- $ossLocalhost := $vals.deployment.oss.ingress.localhost.enabled | default false }}
+{{- $ossNgrok := $vals.deployment.oss.ingress.ngrok.enabled | default false }}
 {{- $saasLocalhost := $vals.deployment.saas.ingress.localhost.enabled | default false }}
 
 {{/* Apply skipping logic */}}
-{{- if and $selfHosted $selfHostedLocalhost (eq $name "ngrok-operator") }}
+{{- if and $oss $ossLocalhost (eq $name "ngrok-operator") }}
   true
-{{- else if and $selfHosted $selfHostedNgrok (eq $name "ingress-nginx") }}
+{{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
   true
 {{- else if and $saas $saasLocalhost (or (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
   true
@@ -57,7 +57,7 @@ To add a new helper:
 {{- $vals := index . 2 -}}
 
 {{/* Apps with helpers - update this list when adding new helper files */}}
-{{- $availableHelpers := list "ngrok-operator" -}}
+{{- $availableHelpers := list "ngrok-operator" "grafana" "kafka-ui" "prometheus" "loki" "promtail" "cert-manager" "cassandra" "redis" "kafka" "mongodb-exporter" "redis-exporter" -}}
 
 {{- if has $name $availableHelpers -}}
   {{- $helper := printf "app-helpers.%s" $name -}}

@@ -13,8 +13,6 @@ spec:
       labels:
         app: fleetmdm-server
     spec:
-      imagePullSecrets:
-        - name: github-pat-secret
 
       containers:
       - name: fleetmdm

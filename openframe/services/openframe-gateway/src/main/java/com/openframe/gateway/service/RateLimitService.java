@@ -3,7 +3,7 @@ package com.openframe.gateway.service;
 import com.openframe.data.model.enums.RateLimitWindow;
 import com.openframe.data.repository.redis.ReactiveRateLimitRepository;
 import com.openframe.data.repository.redis.ReactiveRateLimitRepository.RateLimitResult;
-import com.openframe.gateway.config.RateLimitProperties;
+import com.openframe.gateway.config.prop.RateLimitProperties;
 import com.openframe.gateway.constants.RateLimitConstants;
 import com.openframe.gateway.model.RateLimitStatus;
 import lombok.RequiredArgsConstructor;

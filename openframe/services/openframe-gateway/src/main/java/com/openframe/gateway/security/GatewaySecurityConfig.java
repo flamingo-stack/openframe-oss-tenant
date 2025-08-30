@@ -1,6 +1,6 @@
 package com.openframe.gateway.security;
 
-import com.openframe.gateway.security.filter.CookieToHeaderFilter;
+import com.openframe.gateway.security.filter.AddAuthorizationHeaderFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 
@@ -34,8 +37,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @RequiredArgsConstructor
 @Slf4j
 public class GatewaySecurityConfig {
-
-    private final CookieToHeaderFilter cookieToHeaderFilter;
 
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
@@ -64,19 +65,21 @@ public class GatewaySecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(
             ServerHttpSecurity http,
             @Value("${management.endpoints.web.base-path}") String managementBasePath,
-            ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver
+            ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver,
+            AddAuthorizationHeaderFilter addAuthorizationHeaderFilter
     ) {
         String managementContextPath = isNotBlank(managementBasePath)
                 ? managementBasePath: "/actuator";
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .addFilterBefore(cookieToHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .authenticationManagerResolver(issuerResolver)
                 )
+                .addFilterBefore(addAuthorizationHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS,    "/**").permitAll()
                         .pathMatchers(
@@ -90,16 +93,37 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
-//                        // Agent tools
+                        // Agent tools
                                 .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
                                 .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
-//                        // Api tools
+                        // Api tools
                                 .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers("/**").permitAll()
                 )
                 .build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowCredentials(true);
+        configuration.addAllowedOriginPattern("http://localhost:*"); // Allow any localhost port for development
+        configuration.addAllowedOriginPattern("https://localhost:*"); // Allow any localhost port for development
+        configuration.addAllowedOriginPattern("http://localhost"); // Allow any localhost port for development
+        configuration.addAllowedOriginPattern("https://localhost"); // Allow any localhost port for development
+        configuration.addAllowedHeader("*");
+        configuration.addAllowedMethod("*");
+        configuration.setMaxAge(3600L);
+        configuration.addExposedHeader("Authorization");
+        configuration.addExposedHeader("Content-Type");
+        configuration.addExposedHeader(ACCESS_TOKEN_HEADER);
+        configuration.addExposedHeader(REFRESH_TOKEN_HEADER);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

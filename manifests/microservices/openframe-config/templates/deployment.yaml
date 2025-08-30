@@ -13,8 +13,6 @@ spec:
       labels:
         app: openframe-config
     spec:
-      imagePullSecrets:
-        - name: github-pat-secret
 
       containers:
         - name: openframe-config

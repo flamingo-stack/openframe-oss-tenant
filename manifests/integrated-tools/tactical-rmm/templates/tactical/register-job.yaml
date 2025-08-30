@@ -11,6 +11,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
+
       containers:
       - name: register
         image: ghcr.io/sap/kubectl-container:v1.31.6

@@ -4,7 +4,7 @@ metadata:
   name: openframe-authorization-server
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/openframe-authorization-server
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-authorization-server
       context: .
       sync: 
         manual:

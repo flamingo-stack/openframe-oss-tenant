@@ -1,10 +1,10 @@
 apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
-  name: tactical-rmm
+  name: tactical-base
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/tactical-base
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base
       context: ../.
       sync: 
         manual:

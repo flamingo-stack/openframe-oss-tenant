@@ -3,9 +3,6 @@ registerJob:
 
 
 kafka-ui:
-  imagePullSecrets: 
-    - name: docker-pat-secret
-
   yamlApplicationConfig:
     auth:
       type: disabled

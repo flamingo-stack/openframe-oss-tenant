@@ -4,7 +4,7 @@ metadata:
   name: openframe-gateway
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/openframe-gateway
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
       context: .
       sync: 
         manual:

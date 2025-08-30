@@ -3,10 +3,10 @@ templates:
   - templates/ingress.yaml
 tests:
   # Localhost ingress rendering
-  - it: should render localhost ingress for selfHosted
+  - it: should render localhost ingress for oss
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -28,7 +28,7 @@ tests:
 
   - it: should render localhost ingress for saas
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
@@ -42,12 +42,12 @@ tests:
           value: localhost
 
   # Ngrok ingress rendering
-  - it: should render ngrok ingress for selfHosted
+  - it: should render ngrok ingress for oss
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -65,8 +65,8 @@ tests:
   # TLS configuration
   - it: should include TLS section for localhost
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -75,10 +75,10 @@ tests:
 
   - it: should not include TLS for ngrok
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
       deployment.saas.enabled: false
     asserts:
       - isNull:
@@ -87,9 +87,9 @@ tests:
   # No ingress scenarios
   - it: should not render when deployment enabled but no ingress
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - failedTemplate: {}

@@ -12,8 +12,12 @@ spec:
       labels:
         app: openframe-external-api
     spec:
+      {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
-        - name: github-pat-secret
+        {{- if ne .Values.registry.docker.password "" }}
+        - name: docker-pat-secret
+        {{- end }}
+      {{- end }}
 
       initContainers:
         - name: wait-for-config-server

@@ -35,17 +35,24 @@ spec:
 
   {{- $autoSync := (hasKey $.Values.global "autoSync") | ternary $.Values.global.autoSync true }}
   syncPolicy:
-    automated:
-      prune: {{ $autoSync }}
-      selfHeal: {{ $autoSync }}
-    syncOptions:
-      - CreateNamespace=false
-      - ServerSideApply={{ (get $app "syncOptions" | default dict).ServerSideApply | default false }}
     retry:
       limit: -1
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 30m
+    automated:
+      prune: {{ $autoSync }}
+      selfHeal: {{ $autoSync }}
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply={{ (get $app "syncOptions" | default dict).ServerSideApply | default false }}
+      - RespectIgnoreDifferences={{ (get $app "syncOptions" | default dict).RespectIgnoreDifferences | default false }}
+
+  {{- if get ($app.syncOptions | default dict) "RespectIgnoreDifferences" | default false }}
+  ignoreDifferences:
+{{ include (printf "app-helpers.%s.ignoreDifferences" $name) . | indent 4 }}
+  {{- end }}
+  
   {{- end }}
 {{- end }}

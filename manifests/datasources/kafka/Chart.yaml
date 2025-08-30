@@ -8,4 +8,4 @@ appVersion: "1.0"
 dependencies:
   - name: kafka
     version: ">=32.2.18"
-    repository: https://charts.bitnami.com/bitnami
+    repository: https://charts.bitnami.com/bitnami  # should be migrated

@@ -5,8 +5,8 @@ tests:
   # Register job enabled
   - it: should render register job when enabled
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
@@ -21,8 +21,8 @@ tests:
   # Register job disabled
   - it: should not render register job when disabled
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
       registerJob.enabled: false
     asserts:
@@ -32,8 +32,8 @@ tests:
   # Job configuration
   - it: should configure job correctly
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
@@ -53,8 +53,8 @@ tests:
   # ArgoCD annotations
   - it: should include ArgoCD annotations
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
@@ -66,12 +66,12 @@ tests:
           value: HookSucceeded
 
   # Job works with different deployment types
-  - it: should render job for selfHosted ngrok
+  - it: should render job for oss ngrok
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
       deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
@@ -82,7 +82,7 @@ tests:
 
   - it: should render job for saas localhost
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
       registerJob.enabled: true
@@ -95,8 +95,8 @@ tests:
   # Job command validation
   - it: should use shell command with registration script
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:

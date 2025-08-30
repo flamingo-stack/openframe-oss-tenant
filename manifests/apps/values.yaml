@@ -1,5 +1,5 @@
 deployment:
-  selfHosted:
+  oss:
     enabled: true    
     # Ingress configuration - enable only ONE of the following
     ingress:
@@ -8,8 +8,8 @@ deployment:
       ngrok:
         enabled: false  # Enable ngrok ingress for external access
         credentials:
-          apiKey: "30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
-          authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
+          apiKey: ""
+          authtoken: ""
   saas:
     enabled: false
     # Ingress configuration for SaaS deployment
@@ -20,7 +20,7 @@ deployment:
 global:
   repoDir: manifests
   appsDir: apps
-  repoURL: https://github.com/Flamingo-CX/openframe.git
+  repoURL: https://github.com/flamingo-stack/openframe-oss-tenant.git
 
   repoBranch: main
   autoSync: true
@@ -28,15 +28,10 @@ global:
 registry:
   docker:
     server: https://index.docker.io/v1/
-    username: dmtkov
-    password: dckr_pat_F8RaMkC4mda5BSmT4yUlf8BwxiA
-    email: dmtkov@flamingo.cx
-  ghcr:
-    server: ghcr.io
-    username: CI
-    password: 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
-    email: CI@flamingo.cx
-    
+    username: ""
+    password: ""
+    email: ""
+
 apps:
   # example-app:
   #   enabled: true
@@ -93,6 +88,7 @@ apps:
     syncWave: "0"
     syncOptions:
       ServerSideApply: true
+      RespectIgnoreDifferences: true
 
   namespace-datasources:
     enabled: true
@@ -224,6 +220,8 @@ apps:
     project: client-tools
     namespace: client-tools
     syncWave: "2"
+    syncOptions:
+      RespectIgnoreDifferences: true
 
   namespace-integrated-tools:
     enabled: true

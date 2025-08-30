@@ -1,6 +1,6 @@
 # Deployment configuration
 deployment:
-  selfHosted:
+  oss:
     enabled: true    
     # Ingress configuration - enable only ONE of the following
     ingress:
@@ -20,8 +20,8 @@ deployment:
         # URL is required when ngrok is enabled
         url: your-ngrok-domain.ngrok.io
         credentials:
-          apiKey: "30Bqy4q2XNGwghXCxgPmYcCdz53_3bCTd8wUiYU1boR8ZXnQp"
-          authtoken: "30Br0Ay1WMmlKmy5bNfAPTdIFdB_76FoX6oj3TmqWLDbbD7GL"
+          apiKey: ""
+          authtoken: ""
   saas:
     enabled: false
     # Ingress configuration for SaaS deployment
@@ -35,5 +35,5 @@ registerJob:
   enabled: true
 
 image:
-  repo: ghcr.io/flamingo-cx/openframe/openframe-ui
+  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-ui
   tag: latest

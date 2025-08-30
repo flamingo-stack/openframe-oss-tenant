@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,15 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.openframe.gateway.security.SecurityConstants.*;
+import static java.util.UUID.randomUUID;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpStatus.FOUND;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
+import static org.springframework.util.StringUtils.hasText;
 
 @RestController
 @RequestMapping("/oauth")
@@ -27,6 +37,9 @@ public class AuthController {
 
     private final WebClient.Builder webClientBuilder;
     private final CookieService cookieService;
+
+    // Dev-only in-memory ticket store (localhost only)
+    private static final Map<String, TokenResponse> DEV_TICKETS = new ConcurrentHashMap<>();
 
     @Value("${openframe.auth.server.url}")
     private String authServerUrl;
@@ -44,7 +57,10 @@ public class AuthController {
     private String redirectUri;
 
     @GetMapping("/login")
-    public Mono<ResponseEntity<Void>> login(@RequestParam String tenantId, WebSession session) {
+    public Mono<ResponseEntity<Void>> login(@RequestParam String tenantId,
+                                            @RequestParam(value = "redirectTo", required = false) String redirectTo,
+                                            WebSession session,
+                                            ServerHttpRequest request) {
         log.info("🔑 [AuthController] /auth/login called with tenantId: {}", tenantId);
         log.debug("Starting OAuth2 login flow for tenant: {}", tenantId);
         
@@ -55,6 +71,11 @@ public class AuthController {
         session.getAttributes().put("oauth:state", state);
         session.getAttributes().put("oauth:code_verifier:" + state, codeVerifier);
         session.getAttributes().put("oauth:tenant_id:" + state, tenantId);
+
+        String effectiveRedirect = resolveRedirectTarget(redirectTo, request);
+        if (isAbsoluteUrl(effectiveRedirect)) {
+            session.getAttributes().put("oauth:redirect_to:" + state, effectiveRedirect);
+        }
 
         String authorizeUrl = buildAuthorizeUrl(tenantId, codeChallenge, state);
         log.debug("Redirecting to authorization endpoint for tenant: {}", tenantId);
@@ -67,7 +88,8 @@ public class AuthController {
     @GetMapping("/callback")
     public Mono<ResponseEntity<Void>> callback(@RequestParam String code,
                                                @RequestParam String state,
-                                               WebSession session) {
+                                               WebSession session,
+                                               ServerHttpRequest request) {
         log.debug("Processing OAuth2 callback");
         
         OAuthSessionData sessionData = validateAndExtractSessionData(session, state);
@@ -76,36 +98,40 @@ public class AuthController {
             return Mono.just(ResponseEntity.badRequest().build());
         }
 
+        boolean includeDevTicket = isLocalHost(request);
+
         return exchangeCodeForTokens(sessionData, code)
-            .map(tokens -> createSuccessResponse(tokens, sessionData.tenantId()));
+                .map(tokens -> createSuccessResponse(tokens, sessionData.tenantId(), sessionData.redirectTo(), includeDevTicket));
     }
 
     @PostMapping("/refresh")
     public Mono<ResponseEntity<Void>> refresh(@RequestParam String tenantId,
-                                              @CookieValue(name = "refresh_token", required = false) String refreshCookie) {
-        if (refreshCookie == null || refreshCookie.isBlank()) {
-            log.warn("Refresh token cookie missing for tenant: {}", tenantId);
+                                              @CookieValue(name = REFRESH_TOKEN, required = false) String refreshCookie,
+                                              ServerHttpRequest request) {
+        String token = hasText(refreshCookie) ? refreshCookie : request.getHeaders().getFirst(REFRESH_TOKEN_HEADER);
+        if (!hasText(token)) {
+            log.warn("Refresh token not provided via cookie or header for tenant: {}", tenantId);
             return Mono.just(ResponseEntity.status(401).build());
         }
 
         log.debug("Refreshing tokens for tenant: {}", tenantId);
-        return refreshTokens(tenantId, refreshCookie)
-            .map(this::createRefreshResponse);
+        boolean includeDevHeaders = isLocalHost(request);
+        return refreshTokens(tenantId, token)
+                .map(tokens -> createRefreshResponse(tokens, includeDevHeaders));
     }
 
     @GetMapping("/logout")
     public Mono<ResponseEntity<Void>> logout(@RequestParam String tenantId, WebSession session) {
         log.debug("Logging out user for tenant: {}", tenantId);
-        // Invalidate session to prevent session fixation and clear state
-        
+
         HttpHeaders headers = new HttpHeaders();
-        
-        ResponseCookie clearedAccess = ResponseCookie.from("access_token", "")
+
+        ResponseCookie clearedAccess = ResponseCookie.from(ACCESS_TOKEN, "")
             .path("/")
             .maxAge(0)
             .build();
-        
-        ResponseCookie clearedRefresh = ResponseCookie.from("refresh_token", "")
+
+        ResponseCookie clearedRefresh = ResponseCookie.from(REFRESH_TOKEN, "")
             .path("/oauth/refresh")
             .maxAge(0)
             .build();
@@ -113,10 +139,8 @@ public class AuthController {
         headers.add(HttpHeaders.SET_COOKIE, clearedAccess.toString());
         headers.add(HttpHeaders.SET_COOKIE, clearedRefresh.toString());
         
-        headers.add(HttpHeaders.LOCATION, "/");
-        
         log.debug("Successfully logged out user for tenant: {}", tenantId);
-        return session.invalidate().then(Mono.just(new ResponseEntity<>(headers, org.springframework.http.HttpStatus.FOUND)));
+        return session.invalidate().then(Mono.just(new ResponseEntity<>(headers, NO_CONTENT)));
     }
 
     private String buildAuthorizeUrl(String tenantId, String codeChallenge, String state) {
@@ -138,6 +162,7 @@ public class AuthController {
 
         String codeVerifier = (String) session.getAttributes().get("oauth:code_verifier:" + state);
         String tenantId = (String) session.getAttributes().get("oauth:tenant_id:" + state);
+        String redirectTo = (String) session.getAttributes().get("oauth:redirect_to:" + state);
         
         if (codeVerifier == null || tenantId == null) {
             return null;
@@ -146,8 +171,9 @@ public class AuthController {
         session.getAttributes().remove("oauth:state");
         session.getAttributes().remove("oauth:code_verifier:" + state);
         session.getAttributes().remove("oauth:tenant_id:" + state);
+        session.getAttributes().remove("oauth:redirect_to:" + state);
 
-        return new OAuthSessionData(codeVerifier, tenantId);
+        return new OAuthSessionData(codeVerifier, tenantId, isAbsoluteUrl(redirectTo) ? redirectTo : null);
     }
 
     private Mono<TokenResponse> exchangeCodeForTokens(OAuthSessionData sessionData, String code) {
@@ -160,7 +186,7 @@ public class AuthController {
         return webClientBuilder.build()
             .post()
             .uri(String.format("%s/%s/oauth2/token", authServerUrl, sessionData.tenantId()))
-            .header(HttpHeaders.AUTHORIZATION, basicAuth(clientId, clientSecret))
+                .header(AUTHORIZATION, basicAuth(clientId, clientSecret))
             .body(BodyInserters.fromFormData(form))
             .retrieve()
                 .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> {
@@ -178,7 +204,7 @@ public class AuthController {
         return webClientBuilder.build()
             .post()
             .uri(String.format("%s/%s/oauth2/token", authServerUrl, tenantId))
-            .header(HttpHeaders.AUTHORIZATION, basicAuth(clientId, clientSecret))
+                .header(AUTHORIZATION, basicAuth(clientId, clientSecret))
             .body(BodyInserters.fromFormData(form))
             .retrieve()
                 .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> {
@@ -188,9 +214,21 @@ public class AuthController {
             .bodyToMono(TokenResponse.class);
     }
 
-    private ResponseEntity<Void> createSuccessResponse(TokenResponse tokens, String tenantId) {
+    private ResponseEntity<Void> createSuccessResponse(TokenResponse tokens, String tenantId, String redirectTo, boolean includeDevTicket) {
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.LOCATION, "/");
+        String target = redirectTo != null && !redirectTo.isBlank() ? redirectTo : "/";
+
+        if (includeDevTicket) {
+            String ticket = randomUUID().toString();
+            DEV_TICKETS.put(ticket, tokens);
+            if (target.contains("?")) {
+                target = target + "&devTicket=" + ticket;
+            } else {
+                target = target + "?devTicket=" + ticket;
+            }
+        }
+
+        headers.add(HttpHeaders.LOCATION, target);
 
         ResponseCookie access = cookieService.createAccessTokenCookie(tokens.access_token());
         ResponseCookie refresh = cookieService.createRefreshTokenCookie(tokens.refresh_token());
@@ -199,10 +237,10 @@ public class AuthController {
         headers.add(HttpHeaders.SET_COOKIE, refresh.toString());
 
         log.debug("Successfully set tokens for tenant: {}", tenantId);
-        return new ResponseEntity<>(headers, org.springframework.http.HttpStatus.FOUND);
+        return new ResponseEntity<>(headers, FOUND);
     }
 
-    private ResponseEntity<Void> createRefreshResponse(TokenResponse tokens) {
+    private ResponseEntity<Void> createRefreshResponse(TokenResponse tokens, boolean includeDevHeaders) {
         HttpHeaders headers = new HttpHeaders();
         
         ResponseCookie access = cookieService.createAccessTokenCookie(tokens.access_token());
@@ -210,18 +248,73 @@ public class AuthController {
         
         headers.add(HttpHeaders.SET_COOKIE, access.toString());
         headers.add(HttpHeaders.SET_COOKIE, refresh.toString());
-        
+        if (includeDevHeaders) {
+            if (hasText(tokens.access_token())) {
+                headers.add(ACCESS_TOKEN_HEADER, tokens.access_token());
+            }
+            if (hasText(tokens.refresh_token())) {
+                headers.add(REFRESH_TOKEN_HEADER, tokens.refresh_token());
+            }
+        }
+
         log.debug("Successfully refreshed tokens");
-        return new ResponseEntity<>(headers, org.springframework.http.HttpStatus.NO_CONTENT);
+        return new ResponseEntity<>(headers, NO_CONTENT);
     }
 
+    @GetMapping("/dev-exchange")
+    public ResponseEntity<Void> devExchange(@RequestParam("ticket") String ticket,
+                                            ServerHttpRequest request) {
+        if (!isLocalHost(request)) {
+            return ResponseEntity.status(404).build();
+        }
+        TokenResponse tokens = DEV_TICKETS.remove(ticket);
+        if (tokens == null) {
+            return ResponseEntity.status(404).build();
+        }
+        HttpHeaders headers = new HttpHeaders();
+        if (hasText(tokens.access_token())) {
+            headers.add(ACCESS_TOKEN_HEADER, tokens.access_token());
+        }
+        if (hasText(tokens.refresh_token())) {
+            headers.add(REFRESH_TOKEN_HEADER, tokens.refresh_token());
+        }
+        return new ResponseEntity<>(headers, NO_CONTENT);
+    }
 
     private String basicAuth(String clientId, String clientSecret) {
         String raw = clientId + ":" + clientSecret;
         return "Basic " + Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
     }
 
-    private record OAuthSessionData(String codeVerifier, String tenantId) {}
+    private static boolean isAbsoluteUrl(String url) {
+        if (url == null) return false;
+        String u = url.toLowerCase();
+        return (u.startsWith("https://") || u.startsWith("http://"));
+    }
+
+    private record OAuthSessionData(String codeVerifier, String tenantId, String redirectTo) {
+    }
+
+    private String resolveRedirectTarget(String redirectTo, ServerHttpRequest request) {
+        String effectiveRedirect = redirectTo;
+        if (!hasText(effectiveRedirect)) {
+            String referer = request.getHeaders().getFirst(HttpHeaders.REFERER);
+            if (hasText(referer)) {
+                effectiveRedirect = referer;
+                log.debug("Captured redirect target from Referer header: {}", referer);
+            }
+        }
+        return effectiveRedirect;
+    }
+
+    private boolean isLocalHost(ServerHttpRequest request) {
+        String host = request.getURI().getHost();
+        if (hasText(host) && "localhost".equalsIgnoreCase(host)) {
+            return true;
+        }
+        String hostHeader = request.getHeaders().getFirst(HttpHeaders.HOST);
+        return hasText(hostHeader) && hostHeader.toLowerCase().startsWith("localhost");
+    }
 }
 
 

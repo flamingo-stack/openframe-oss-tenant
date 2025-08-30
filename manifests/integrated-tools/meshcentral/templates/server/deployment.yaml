@@ -12,8 +12,12 @@ spec:
       labels:
         app: meshcentral-server
     spec:
+      {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
-        - name: github-pat-secret
+        {{- if ne .Values.registry.docker.password "" }}
+        - name: docker-pat-secret
+        {{- end }}
+      {{- end }}
       securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
         runAsUser: 0
       
