@@ -188,44 +188,32 @@ jobs:
 
       - name: Set image visibility based on repository name
         if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
+        continue-on-error: true
         run: |
-          PACKAGE_NAME="${{ env.REPOSITORY }}/${{ matrix.name }}"
           echo "🏷️ Repository: ${{ env.REPO_NAME }}"
           echo "🎯 Setting ${{ matrix.name }} visibility to: ${{ env.IMAGE_VISIBILITY }}"
-          echo "📦 Package: ${PACKAGE_NAME}"
           
-          # Set package visibility based on repository naming convention
-          # Wait a moment for package to be available
-          sleep 10
+          # Wait for package to be available in registry
+          echo "⏳ Waiting for package to be available..."
+          sleep 15
           
-          # Try different API endpoints for setting visibility
+          # Try to set visibility with correct API endpoint
           echo "🔄 Attempting to set package visibility..."
           
-          # Method 1: Try the package visibility API
-          gh api --method PATCH \
-            "/orgs/${{ env.ORGANISATION }}/packages/container/$(echo ${PACKAGE_NAME} | sed 's/\//%2F/g')/visibility" \
-            --field visibility=${{ env.IMAGE_VISIBILITY }} 2>/dev/null || \
-          
-          # Method 2: Try with different encoding
-          gh api --method PATCH \
-            "/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME//\//%2F}/visibility" \
-            --field visibility=${{ env.IMAGE_VISIBILITY }} 2>/dev/null || \
-          
-          # Method 3: Try repo-level package API
-          gh api --method PATCH \
-            "/repos/${{ env.REPO_NAME }}/packages/container/${{ matrix.name }}/visibility" \
-            --field visibility=${{ env.IMAGE_VISIBILITY }} 2>/dev/null || {
-            
-            echo "❌ All methods failed to update visibility for ${{ matrix.name }}"
-            echo "ℹ️  Package may not exist yet or permissions may be insufficient"
-            echo "ℹ️  Visibility can be set manually in GitHub Package settings"
-            
-            # List available packages for debugging
-            echo "📋 Available packages:"
-            gh api "/orgs/${{ env.ORGANISATION }}/packages?package_type=container" --jq '.[].name' 2>/dev/null || echo "Could not list packages"
-          }
-          
-          echo "✅ Image visibility configured successfully"
+          # The correct API endpoint format for GHCR packages
+          if gh api --method PATCH \
+            "/orgs/${{ env.ORGANISATION }}/packages/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}/visibility" \
+            --field visibility=${{ env.IMAGE_VISIBILITY }} --silent; then
+            echo "✅ Successfully set ${{ matrix.name }} visibility to ${{ env.IMAGE_VISIBILITY }}"
+          elif gh api --method PATCH \
+            "/user/packages/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}/visibility" \
+            --field visibility=${{ env.IMAGE_VISIBILITY }} --silent; then
+            echo "✅ Successfully set ${{ matrix.name }} visibility to ${{ env.IMAGE_VISIBILITY }} (user endpoint)"
+          else
+            echo "⚠️  Could not set visibility for ${{ matrix.name }} automatically"
+            echo "ℹ️  This is normal for new packages - visibility can be set manually in GitHub Package settings"
+            echo "ℹ️  Package URL: https://github.com/${{ env.REPO_NAME }}/pkgs/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
