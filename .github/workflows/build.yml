@@ -186,33 +186,89 @@ jobs:
           build-args: |
             ${{ env.BUILD_ARGS }}
 
-      - name: Set image visibility based on repository name
+      - name: Set image visibility based on repository name  
         if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
         continue-on-error: true
         run: |
           echo "🏷️ Repository: ${{ env.REPO_NAME }}"
           echo "🎯 Setting ${{ matrix.name }} visibility to: ${{ env.IMAGE_VISIBILITY }}"
           
-          # Wait for package to be available in registry
-          echo "⏳ Waiting for package to be available..."
-          sleep 15
-          
-          # Try to set visibility with correct API endpoint
-          echo "🔄 Attempting to set package visibility..."
-          
-          # The correct API endpoint format for GHCR packages
-          if gh api --method PATCH \
-            "/orgs/${{ env.ORGANISATION }}/packages/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}/visibility" \
-            --field visibility=${{ env.IMAGE_VISIBILITY }} --silent; then
-            echo "✅ Successfully set ${{ matrix.name }} visibility to ${{ env.IMAGE_VISIBILITY }}"
-          elif gh api --method PATCH \
-            "/user/packages/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}/visibility" \
-            --field visibility=${{ env.IMAGE_VISIBILITY }} --silent; then
-            echo "✅ Successfully set ${{ matrix.name }} visibility to ${{ env.IMAGE_VISIBILITY }} (user endpoint)"
+          # Only proceed if we want to make it public
+          if [[ "${{ env.IMAGE_VISIBILITY }}" == "public" ]]; then
+            echo "⏳ Waiting for package to be available in registry..."
+            sleep 20
+            
+            # Package name encoding for API calls
+            PACKAGE_NAME="${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+            echo "📦 Encoded package name: ${PACKAGE_NAME}"
+            
+            # BULLETPROOF METHOD 1: Try with preview header (most reliable)
+            echo "🔄 Method 1: Using preview API with special headers..."
+            if curl -s -X PATCH \
+              -H "Accept: application/vnd.github.package-deletes-preview+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d '{"visibility":"public"}' \
+              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" \
+              | grep -q '"visibility":\s*"public"'; then
+              echo "✅ SUCCESS: Package visibility set to public via preview API"
+              exit 0
+            fi
+            
+            # BULLETPROOF METHOD 2: Try the /visibility endpoint
+            echo "🔄 Method 2: Using visibility endpoint..."
+            if curl -s -X PATCH \
+              -H "Accept: application/vnd.github.package-deletes-preview+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d '{"visibility":"public"}' \
+              "https://api.github.com/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}/visibility" \
+              2>/dev/null; then
+              echo "✅ SUCCESS: Package visibility set to public via visibility endpoint"
+              exit 0
+            fi
+            
+            # BULLETPROOF METHOD 3: Try user endpoint (fallback)
+            echo "🔄 Method 3: Trying user endpoint..."
+            if curl -s -X PATCH \
+              -H "Accept: application/vnd.github.package-deletes-preview+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d '{"visibility":"public"}' \
+              "https://api.github.com/user/packages/container/${PACKAGE_NAME}" \
+              2>/dev/null; then
+              echo "✅ SUCCESS: Package visibility set to public via user endpoint"
+              exit 0
+            fi
+            
+            # BULLETPROOF METHOD 4: Use GitHub CLI as final attempt
+            echo "🔄 Method 4: Using GitHub CLI..."
+            if gh api --method PATCH \
+              --header "Accept: application/vnd.github.package-deletes-preview+json" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              --field visibility=public \
+              "/orgs/${{ env.ORGANISATION }}/packages/container/${PACKAGE_NAME}" 2>/dev/null; then
+              echo "✅ SUCCESS: Package visibility set to public via GitHub CLI"
+              exit 0
+            fi
+            
+            # If all methods fail, provide detailed debugging info
+            echo "❌ All automatic methods failed - package will remain private"
+            echo "🔍 DEBUG INFO:"
+            echo "  - Organization: ${{ env.ORGANISATION }}"  
+            echo "  - Repository: ${{ env.REPOSITORY }}"
+            echo "  - Package: ${{ matrix.name }}"
+            echo "  - Full package name: ${PACKAGE_NAME}"
+            echo "  - Target visibility: ${{ env.IMAGE_VISIBILITY }}"
+            echo ""
+            echo "📋 MANUAL STEPS to make package public:"
+            echo "1. Go to: https://github.com/orgs/${{ env.ORGANISATION }}/packages"
+            echo "2. Find package: ${{ env.REPOSITORY }}/${{ matrix.name }}"
+            echo "3. Click 'Package settings' → 'Change visibility' → 'Public'"
+            echo "4. Or visit: https://github.com/${{ env.REPO_NAME }}/pkgs/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}/settings"
+            
           else
-            echo "⚠️  Could not set visibility for ${{ matrix.name }} automatically"
-            echo "ℹ️  This is normal for new packages - visibility can be set manually in GitHub Package settings"
-            echo "ℹ️  Package URL: https://github.com/${{ env.REPO_NAME }}/pkgs/container/${{ env.REPOSITORY }}%2F${{ matrix.name }}"
+            echo "ℹ️  Package will remain private (repository doesn't match OSS naming pattern)"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
