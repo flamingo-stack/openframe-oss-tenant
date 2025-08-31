@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use tracing::{info, warn, error};
+use std::process::Command;
 
 use crate::models::installed_tool::ToolStatus;
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_installation_command_params_processor::ToolInstallationCommandParamsProcessor;
-use crate::platform::permissions::PermissionUtils;
 
 pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
@@ -52,10 +52,40 @@ impl ToolRunManager {
                         }
                     };
 
-                    let args_ref: Vec<&str> = processed_args.iter().map(|s| s.as_str()).collect();
+                    let command_path = "/Users/kirillgontar/Library/Logs/OpenFrame/meshcentral-server/agent";
+                    
+                    info!(
+                        tool_id = %tool.tool_id, 
+                        command = %command_path, 
+                        args = ?processed_args, 
+                        "TOOL_LOG: Executing tool command"
+                    );
 
-                    if let Err(e) = PermissionUtils::run_as_admin("/Users/kirillgontar/Library/Logs/OpenFrame/meshcentral-server/agent", &args_ref) {
-                        error!(tool_id = %tool.tool_id, err = %e, stacktrace = ?e, "Failed to run tool");
+                    let mut cmd = Command::new(command_path);
+                    cmd.args(&processed_args);
+
+                    match cmd.spawn() {
+                        Ok(mut child) => {
+                            info!(tool_id = %tool.tool_id, "TOOL_LOG: Tool process started successfully");
+                            // Optionally wait for the process or let it run in background
+                            tokio::spawn(async move {
+                                match child.wait() {
+                                    Ok(status) => {
+                                        if status.success() {
+                                            info!(tool_id = %tool.tool_id, "TOOL_LOG: Tool completed successfully");
+                                        } else {
+                                            error!(tool_id = %tool.tool_id, exit_code = ?status.code(), "TOOL_LOG: Tool exited with error");
+                                        }
+                                    }
+                                    Err(e) => {
+                                        error!(tool_id = %tool.tool_id, error = ?e, "Failed to wait for tool process");
+                                    }
+                                }
+                            });
+                        }
+                        Err(e) => {
+                            error!(error = ?e, "Failed to start tool process");
+                        }
                     }
                     Ok(())
                 }).await.unwrap_or_else(|e| Err(anyhow::anyhow!(e)));
