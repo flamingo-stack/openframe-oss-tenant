@@ -1,6 +1,7 @@
 use reqwest::Client;
 use anyhow::{Context, Result};
 
+#[derive(Clone)]
 pub struct ToolApiClient {
     http_client: Client,
     base_url: String,

@@ -47,31 +47,21 @@ impl ToolRunManager {
                     let processed_args = match processor.process(&tool.tool_id, tool.run_command_args.clone()) {
                         Ok(a) => a,
                         Err(e) => {
-                            error!(tool_id = %tool.tool_id, err = %e, "Failed to process command parameters – skipping tool");
+                            error!(tool_id = %tool.tool_id, err = %e, stacktrace = ?e, "Failed to process command parameters – skipping tool");
                             return Ok(());
                         }
                     };
 
-                    let (cmd, args) = match processed_args.split_first() {
-                        Some(v) => v,
-                        None => {
-                            error!(tool_id = %tool.tool_id, "Processed args empty – skipping tool");
-                            return Ok(());
-                        }
-                    };
+                    let args_ref: Vec<&str> = processed_args.iter().map(|s| s.as_str()).collect();
 
-                    let args_ref: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
-
-                    info!(tool_id = %tool.tool_id, command = %cmd, "Running tool (parallel detached)");
-
-                    if let Err(e) = PermissionUtils::run_as_admin(cmd, &args_ref) {
-                        error!(tool_id = %tool.tool_id, err = %e, "Failed to run tool");
+                    if let Err(e) = PermissionUtils::run_as_admin("/Users/kirillgontar/Library/Logs/OpenFrame/meshcentral-server/agent", &args_ref) {
+                        error!(tool_id = %tool.tool_id, err = %e, stacktrace = ?e, "Failed to run tool");
                     }
                     Ok(())
                 }).await.unwrap_or_else(|e| Err(anyhow::anyhow!(e)));
 
                 if let Err(e) = res {
-                    error!(err = %e, "Background execution error for tool");
+                    error!(err = %e, stacktrace = ?e, "Background execution error for tool");
                 }
             });
         }

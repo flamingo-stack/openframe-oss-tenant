@@ -10,6 +10,7 @@ use tracing::{error, info};
 use crate::services::AgentConfigurationService;
 use crate::models::tool_installation_message::ToolInstallationMessage;
 
+#[derive(Clone)]
 pub struct ToolInstallationMessageListener {
     pub nats_connection_manager: NatsConnectionManager,
     pub tool_installation_service: ToolInstallationService,
@@ -32,8 +33,20 @@ impl ToolInstallationMessageListener {
         }
     }
 
+    /// Start listening for messages in a background task
+    pub async fn start(&self) -> Result<tokio::task::JoinHandle<()>> {
+        let listener = self.clone();
+        let handle = tokio::spawn(async move {
+            if let Err(e) = listener.listen().await {
+                // TODO: fall down?
+                error!("Tool installation message listener error: {}", e);
+            }
+        });
+        Ok(handle)
+    }
+
     // TODO: add error handling
-    pub async fn listen(&self) -> Result<()> {
+    async fn listen(&self) -> Result<()> {
         info!("Run tool installation message listener");
         let client = self.nats_connection_manager
             .get_client()

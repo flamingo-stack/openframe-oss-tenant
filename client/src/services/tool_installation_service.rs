@@ -17,6 +17,7 @@ use tokio::fs;
 use std::os::unix::fs::PermissionsExt;
 use crate::platform::PermissionUtils;
 
+#[derive(Clone)]
 pub struct ToolInstallationService {
     tool_agent_file_client: ToolAgentFileClient,
     tool_api_client: ToolApiClient,

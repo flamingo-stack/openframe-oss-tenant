@@ -1,6 +1,7 @@
 use crate::models::ToolConnectionMessage;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 
+#[derive(Clone)]
 pub struct ToolConnectionMessagePublisher {
     nats_message_publisher: NatsMessagePublisher,
 }
