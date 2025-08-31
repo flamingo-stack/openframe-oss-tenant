@@ -69,8 +69,8 @@ impl ToolInstallationMessageListener {
             let message = message?;
 
             // TODO: remove
-            message.ack().await
-                .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+            // message.ack().await
+            //     .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
 
             let payload = String::from_utf8_lossy(&message.payload);
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
@@ -116,8 +116,8 @@ impl ToolInstallationMessageListener {
             deliver_subject,
             durable_name: Some(durable_name),
             // TODO: what's this param - inactivity threshold?
-            inactive_threshold: Duration::from_secs(60),
-            // ack_wait: Duration::from_secs(30),
+            // inactive_threshold: Duration::from_secs(60),
+            ack_wait: Duration::from_secs(30),
             ..Default::default()
         }
     }

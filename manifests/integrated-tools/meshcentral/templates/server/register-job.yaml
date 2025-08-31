@@ -132,7 +132,7 @@ spec:
                   ],
                   "assets": [
                     {
-                      "id": "core-module.js",
+                      "id": "CoreModule.js",
                       "source": "ARTIFACTORY"
                     },
                     {
