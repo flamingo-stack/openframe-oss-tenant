@@ -20,7 +20,7 @@ on:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
-      - '.github/workflows/**'
+      - '.github/**'
       - 'manifests/**'
       - 'scripts/**'
 
