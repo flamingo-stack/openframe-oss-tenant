@@ -1,4 +1,4 @@
-package com.openframe.data.model.kafka;
+package com.openframe.stream.model;
 
 import lombok.Data;
 
@@ -14,3 +14,4 @@ public class IntegratedToolEventKafkaMessage {
     private String summary;
     private Long eventTimestamp;
 }
+

@@ -11,7 +11,6 @@ import com.openframe.data.repository.event.EventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -25,7 +24,7 @@ import java.util.UUID;
 public class EventService {
     
     private final EventRepository eventRepository;
-    private final KafkaTemplate<String, Event> kafkaTemplate;
+    private final GenericKafkaProducer genericKafkaProducer;
 
     public EventQueryResult queryEvents(EventFilterOptions filterOptions,
                                      CursorPaginationCriteria paginationCriteria,
@@ -62,7 +61,7 @@ public class EventService {
         Event savedEvent = eventRepository.save(event);
         log.info("Event saved with ID: {}", savedEvent.getId());
 
-        kafkaTemplate.send("openframe.events", savedEvent);
+        genericKafkaProducer.sendMessage("openframe.events", savedEvent);
         log.debug("Event published to Kafka: {}", savedEvent.getId());
         
         return savedEvent;

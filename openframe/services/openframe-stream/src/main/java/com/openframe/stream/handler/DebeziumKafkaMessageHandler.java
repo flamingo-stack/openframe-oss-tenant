@@ -4,8 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.EventHandlerType;
-import com.openframe.data.model.kafka.IntegratedToolEventKafkaMessage;
+import com.openframe.kafka.model.IntegratedToolEventKafkaMessage;
 import com.openframe.data.model.enums.Destination;
+import com.openframe.kafka.producer.GenericKafkaProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -19,11 +20,11 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
     @Value("${kafka.producer.topic.it.event.name}")
     private String topic;
 
-    protected final KafkaTemplate<String, Object> kafkaTemplate;
+    protected final GenericKafkaProducer genericKafkaProducer;
 
-    public DebeziumKafkaMessageHandler(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
+    public DebeziumKafkaMessageHandler(GenericKafkaProducer genericKafkaProducer, ObjectMapper objectMapper) {
         super(objectMapper);
-        this.kafkaTemplate = kafkaTemplate;
+        this.genericKafkaProducer = genericKafkaProducer;
     }
 
     @Override
@@ -48,13 +49,7 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
     }
 
     protected void handleCreate(IntegratedToolEventKafkaMessage message) {
-        try {
-            kafkaTemplate.send(getTopic(), message);
-            log.info("Message sent to Kafka topic {}: {}", getTopic(), message);
-        } catch (Exception e) {
-            log.error("Error sending message to Kafka topic {}: {}", getTopic(), message, e);
-            throw new MessageDeliveryException("Failed to send message to Kafka");
-        }
+        genericKafkaProducer.sendMessage(topic, message);
     }
 
     protected void handleRead(IntegratedToolEventKafkaMessage message) {
