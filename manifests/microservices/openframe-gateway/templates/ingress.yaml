@@ -1,5 +1,5 @@
 {{- include "chart.validate" . -}}
-{{- if or (and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
+{{- if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -27,7 +27,7 @@ spec:
     {{- end }}
 {{- end }}
 
-{{- if and .Values.deployment.selfHosted.enabled .Values.deployment.selfHosted.ingress.ngrok.enabled }}
+{{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -37,7 +37,7 @@ metadata:
 spec:
   ingressClassName: ngrok
   rules:
-    - host: {{ required "deployment.selfHosted.ingress.ngrok.url is required for ngrok ingress" .Values.deployment.selfHosted.ingress.ngrok.url | quote }}
+    - host: {{ required "deployment.oss.ingress.ngrok.url is required for ngrok ingress" .Values.deployment.oss.ingress.ngrok.url | quote }}
       http:
         paths:
           - path: /

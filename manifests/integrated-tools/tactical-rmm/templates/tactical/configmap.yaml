@@ -25,7 +25,7 @@ data:
   API_HOST: "tactical-backend.integrated-tools.svc.cluster.local:8000"
   API_LOCALHOST_HOST: "tactical-nginx.integrated-tools.svc.cluster.local:8000"
   APP_HOST: "tactical-frontend.integrated-tools.svc.cluster.local:8080"
-  # https://github.com/Flamingo-CX/tacticalrmm/blob/develop/api/tacticalrmm/tacticalrmm/utils.py#L254-L265
+  # https://github.com/flamingo-stack/tacticalrmm/blob/develop/api/tacticalrmm/tacticalrmm/utils.py#L254-L265
   NATS_CONFIG: "/opt/tactical/nats-rmm.conf"
   NATS_API_CONFIG: "/opt/tactical/nats-api.conf"
   NATS_CONFIG_CHECK_INTERVAL: "5"

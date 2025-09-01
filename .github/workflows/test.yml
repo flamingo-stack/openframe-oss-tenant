@@ -31,8 +31,8 @@ concurrency:
 
 env:
   REGISTRY: "ghcr.io"
-  ORGANISATION: "flamingo-cx"
-  REPOSITORY: "openframe"
+  ORGANISATION: ${{ github.repository_owner }}
+  REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
 
 # =============================================================================
@@ -158,7 +158,7 @@ jobs:
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
           labels: |
-            org.opencontainers.image.vendor=FlamingoCX
+            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 
@@ -271,6 +271,16 @@ jobs:
         run: |
           make clippy
         continue-on-error: true
+
+ #     # Run tests only for native builds to save time
+ #     - name: Test client
+ #       working-directory: client
+ #       run: |
+ #         if command -v make >/dev/null 2>&1; then
+ #           make test
+ #         else
+ #           cargo test --release
+ #         fi
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
