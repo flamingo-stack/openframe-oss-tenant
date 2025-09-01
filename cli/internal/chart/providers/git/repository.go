@@ -31,12 +31,8 @@ func (r *Repository) CloneChartRepository(ctx context.Context, config *models.Ap
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
-	// Build authenticated clone URL
+	// Use the repository URL directly (public repository)
 	cloneURL := config.GitHubRepo
-	if username, token := config.GetGitCredentials(); username != "" && token != "" {
-		// Insert credentials into the URL
-		cloneURL = strings.Replace(config.GitHubRepo, "https://", fmt.Sprintf("https://%s:%s@", username, token), 1)
-	}
 
 	// Clone with depth 1 and optimizations for speed
 	cloneArgs := []string{

@@ -19,7 +19,6 @@ import (
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	utilTypes "github.com/flamingo/openframe/internal/chart/utils/types"
 	"github.com/flamingo/openframe/internal/cluster"
-	sharedConfig "github.com/flamingo/openframe/internal/shared/config"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/flamingo/openframe/internal/shared/files"
@@ -60,6 +59,17 @@ func NewChartService(dryRun, verbose bool) *ChartService {
 
 // Install performs the complete chart installation process
 func (cs *ChartService) Install(req utilTypes.InstallationRequest) error {
+	return cs.InstallWithContext(context.Background(), req)
+}
+
+func (cs *ChartService) InstallWithContext(ctx context.Context, req utilTypes.InstallationRequest) error {
+	// Check if context is already cancelled
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("chart installation cancelled: %w", ctx.Err())
+	default:
+	}
+	
 	// Create installation workflow with direct dependencies
 	fileCleanup := files.NewFileCleanup()
 	fileCleanup.SetCleanupOnSuccessOnly(true) // Only clean temporary files after successful ArgoCD sync
@@ -70,8 +80,8 @@ func (cs *ChartService) Install(req utilTypes.InstallationRequest) error {
 		fileCleanup:    fileCleanup,
 	}
 
-	// Execute workflow
-	return workflow.Execute(req)
+	// Execute workflow with context
+	return workflow.ExecuteWithContext(ctx, req)
 }
 
 // InstallationWorkflow orchestrates the installation process
@@ -83,13 +93,17 @@ type InstallationWorkflow struct {
 
 // Execute runs the installation workflow
 func (w *InstallationWorkflow) Execute(req utilTypes.InstallationRequest) error {
+	return w.ExecuteWithContext(context.Background(), req)
+}
+
+func (w *InstallationWorkflow) ExecuteWithContext(parentCtx context.Context, req utilTypes.InstallationRequest) error {
 	// Set up signal handling for graceful cleanup on interruption
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(sigChan) // Clean up signal handler
 
-	// Create a context that can be cancelled on signal
-	ctx, cancel := context.WithCancel(context.Background())
+	// Create a context that can be cancelled on signal OR parent context
+	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
 	// Track if we've been interrupted
@@ -142,34 +156,28 @@ func (w *InstallationWorkflow) Execute(req utilTypes.InstallationRequest) error 
 		return err
 	}
 
-	// Step 3: Collect GitHub credentials if needed (before confirmation)
-	err = w.collectGitHubCredentials(&req)
-	if err != nil {
-		return fmt.Errorf("GitHub credentials collection failed: %w", err)
-	}
-
-	// Step 4: Confirm installation on the selected cluster
+	// Step 3: Confirm installation on the selected cluster
 	if !w.confirmInstallationOnCluster(clusterName) {
 		pterm.Info.Println("Installation cancelled.")
-		return nil
+		return fmt.Errorf("installation cancelled by user")
 	}
 
-	// Step 5: Regenerate certificates after configuration and cluster selection
+	// Step 4: Regenerate certificates after configuration and cluster selection
 	if err := w.regenerateCertificates(); err != nil {
 		// Non-fatal - continue anyway as logged in the method
 	}
 
-	// Step 6: Build configuration
+	// Step 5: Build configuration
 	config, err := w.buildConfiguration(req, clusterName, chartConfig.TempHelmValuesPath)
 	if err != nil {
 		chartErr := errors.WrapAsChartError("configuration", "build", err).WithCluster(clusterName)
 		return sharedErrors.HandleGlobalError(chartErr, req.Verbose)
 	}
 
-	// Step 7: Execute installation with retry support
+	// Step 6: Execute installation with retry support
 	err = w.performInstallationWithRetry(ctx, config)
 
-	// Step 8: Clean up generated files based on installation result
+	// Step 7: Clean up generated files based on installation result
 	if err != nil {
 		// Installation failed - clean up temporary files immediately
 		if cleanupErr := w.fileCleanup.RestoreFiles(req.Verbose); cleanupErr != nil {
@@ -185,10 +193,10 @@ func (w *InstallationWorkflow) Execute(req utilTypes.InstallationRequest) error 
 		return fmt.Errorf("installation cancelled by user")
 	}
 
-	// Step 9: ArgoCD sync is already handled by installer.InstallCharts
+	// Step 8: ArgoCD sync is already handled by installer.InstallCharts
 	// The installer waits for all ArgoCD applications after installing app-of-apps
 
-	// Step 10: Installation successful - clean up temporary files
+	// Step 9: Installation successful - clean up temporary files
 	if cleanupErr := w.fileCleanup.RestoreFilesOnSuccess(req.Verbose); cleanupErr != nil {
 		pterm.Warning.Printf("Failed to clean up files after successful installation: %v\n", cleanupErr)
 	}
@@ -200,34 +208,6 @@ func (w *InstallationWorkflow) Execute(req utilTypes.InstallationRequest) error 
 func (w *InstallationWorkflow) selectCluster(args []string, verbose bool) (string, error) {
 	clusterSelector := NewClusterSelector(w.clusterService, w.chartService.operationsUI)
 	return clusterSelector.SelectCluster(args, verbose)
-}
-
-// collectGitHubCredentials prompts for GitHub credentials if needed before installation confirmation
-func (w *InstallationWorkflow) collectGitHubCredentials(req *utilTypes.InstallationRequest) error {
-	// Only collect credentials if GitHub repo is provided and credentials are not already complete
-	if req.GitHubRepo == "" {
-		return nil // No GitHub repo, no credentials needed
-	}
-
-	// Create credentials prompter (same as in config builder)
-	credentialsPrompter := sharedConfig.NewCredentialsPrompter()
-
-	// Check if credentials are required (same logic as in config builder)
-	if !credentialsPrompter.IsCredentialsRequired(req.GitHubUsername, req.GitHubToken) {
-		return nil // Both credentials already provided
-	}
-
-	// Use the existing shared credentials prompter to get credentials
-	credentials, err := credentialsPrompter.PromptForGitHubCredentials(req.GitHubRepo)
-	if err != nil {
-		return fmt.Errorf("failed to collect GitHub credentials: %w", err)
-	}
-
-	// Update the request with the collected credentials
-	req.GitHubUsername = credentials.Username
-	req.GitHubToken = credentials.Token
-
-	return nil
 }
 
 // confirmInstallationOnCluster prompts for user confirmation with specific cluster name
@@ -272,6 +252,7 @@ func (w *InstallationWorkflow) waitForArgoCDSync(ctx context.Context, config con
 	pathResolver := w.chartService.configService.GetPathResolver()
 	argoCDService := NewArgoCD(w.chartService.helmManager, pathResolver, w.chartService.executor)
 
+	
 	// Wait for applications to be synced with context for cancellation
 	if err := argoCDService.WaitForApplications(ctx, config); err != nil {
 		// Check if it was cancelled by user
@@ -291,13 +272,13 @@ func (w *InstallationWorkflow) buildConfiguration(req utilTypes.InstallationRequ
 	configBuilder := config.NewBuilder(w.chartService.operationsUI)
 	return configBuilder.BuildInstallConfigWithCustomHelmPath(
 		req.Force, req.DryRun, req.Verbose, clusterName,
-		req.GitHubRepo, req.GitHubBranch, req.GitHubUsername, req.GitHubToken, req.CertDir,
+		req.GitHubRepo, req.GitHubBranch, req.CertDir,
 		helmValuesPath,
 	)
 }
 
 // performInstallation executes the actual installation
-func (w *InstallationWorkflow) performInstallation(config config.ChartInstallConfig) error {
+func (w *InstallationWorkflow) performInstallation(ctx context.Context, config config.ChartInstallConfig) error {
 	// Create installer directly without factory
 	pathResolver := w.chartService.configService.GetPathResolver()
 	argoCDService := NewArgoCD(w.chartService.helmManager, pathResolver, w.chartService.executor)
@@ -308,7 +289,7 @@ func (w *InstallationWorkflow) performInstallation(config config.ChartInstallCon
 		appOfAppsService: appOfAppsService,
 	}
 
-	err := installer.InstallCharts(config)
+	err := installer.InstallChartsWithContext(ctx, config)
 	if err != nil {
 		// Check if this is a branch not found error
 		if _, ok := err.(*sharedErrors.BranchNotFoundError); ok {
@@ -326,7 +307,7 @@ func (w *InstallationWorkflow) performInstallationWithRetry(parentCtx context.Co
 	// No retry callback - let the spinner handle progress indication
 
 	// Combine parent context (for CTRL-C) with timeout
-	ctx, cancel := context.WithTimeout(parentCtx, 30*time.Minute)
+	ctx, cancel := context.WithTimeout(parentCtx, 60*time.Minute)
 	defer cancel()
 
 	return retryExecutor.Execute(ctx, func() error {
@@ -336,7 +317,7 @@ func (w *InstallationWorkflow) performInstallationWithRetry(parentCtx context.Co
 			return ctx.Err()
 		default:
 		}
-		return w.performInstallation(config)
+		return w.performInstallation(ctx, config)
 	})
 }
 
@@ -349,30 +330,52 @@ func InstallChartsWithPrerequisites(clusterName string, verbose bool) error {
 // InstallChartsWithDefaults installs charts with default GitHub configuration
 // This is the common logic used by both chart install command and bootstrap
 func InstallChartsWithDefaults(args []string, force, dryRun, verbose bool) error {
-	return InstallChartsWithConfig(utilTypes.InstallationRequest{
-		Args:           args,
-		Force:          force,
-		DryRun:         dryRun,
-		Verbose:        verbose,
-		GitHubRepo:     "https://github.com/Flamingo-CX/openframe", // Default repository
-		GitHubBranch:   "main",                                     // Default branch
-		GitHubUsername: "",                                         // Will be prompted if needed
-		GitHubToken:    "",                                         // Will be prompted if needed
-		CertDir:        "",                                         // Auto-detected
+	return InstallChartsWithDefaultsContext(context.Background(), args, force, dryRun, verbose)
+}
+
+// InstallChartsWithDefaultsContext installs charts with default GitHub configuration and context support
+func InstallChartsWithDefaultsContext(ctx context.Context, args []string, force, dryRun, verbose bool) error {
+	return InstallChartsWithConfigContext(ctx, utilTypes.InstallationRequest{
+		Args:         args,
+		Force:        force,
+		DryRun:       dryRun,
+		Verbose:      verbose,
+		GitHubRepo:   "https://github.com/Flamingo-CX/openframe", // Default repository
+		GitHubBranch: "main",                                     // Default branch
+		CertDir:      "",                                         // Auto-detected
 	})
 }
 
 // InstallChartsWithConfig installs charts with the given configuration
 // This is the common installation logic used by all flows
 func InstallChartsWithConfig(req utilTypes.InstallationRequest) error {
+	return InstallChartsWithConfigContext(context.Background(), req)
+}
+
+// InstallChartsWithConfigContext installs charts with the given configuration and context support
+func InstallChartsWithConfigContext(ctx context.Context, req utilTypes.InstallationRequest) error {
+	// Check if context is already cancelled
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("chart installation cancelled: %w", ctx.Err())
+	default:
+	}
+	
 	// Check prerequisites first
 	installer := prerequisites.NewInstaller()
 	if err := installer.CheckAndInstall(); err != nil {
 		return err
 	}
 	
-	// Create a chart service and perform the installation
+	// Check context again after prerequisites
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("chart installation cancelled: %w", ctx.Err())
+	default:
+	}
+	
+	// Create a chart service and perform the installation with context
 	chartService := NewChartService(req.DryRun, req.Verbose)
 	
-	return chartService.Install(req)
+	return chartService.InstallWithContext(ctx, req)
 }

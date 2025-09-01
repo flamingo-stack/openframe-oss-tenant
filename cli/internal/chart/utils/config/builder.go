@@ -5,24 +5,21 @@ import (
 
 	"github.com/flamingo/openframe/internal/chart/models"
 	chartUI "github.com/flamingo/openframe/internal/chart/ui"
-	"github.com/flamingo/openframe/internal/shared/config"
 	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 )
 
 // Builder handles construction of installation configurations
 type Builder struct {
-	configService       *Service
-	operationsUI        *chartUI.OperationsUI
-	credentialsPrompter *config.CredentialsPrompter
+	configService *Service
+	operationsUI  *chartUI.OperationsUI
 }
 
 // NewBuilder creates a new configuration builder
 func NewBuilder(operationsUI *chartUI.OperationsUI) *Builder {
 	return &Builder{
-		configService:       NewService(),
-		operationsUI:        operationsUI,
-		credentialsPrompter: config.NewCredentialsPrompter(),
+		configService: NewService(),
+		operationsUI:  operationsUI,
 	}
 }
 
@@ -65,7 +62,7 @@ func (b *Builder) getBranchFromHelmValuesPath(helmValuesPath string) string {
 // BuildInstallConfig constructs the installation configuration
 func (b *Builder) BuildInstallConfig(
 	force, dryRun, verbose bool,
-	clusterName, githubRepo, githubBranch, githubUsername, githubToken, certDir string,
+	clusterName, githubRepo, githubBranch, certDir string,
 ) (ChartInstallConfig, error) {
 	// Use config service for certificate directory
 	if certDir == "" {
@@ -80,18 +77,7 @@ func (b *Builder) BuildInstallConfig(
 		appOfAppsConfig.GitHubBranch = githubBranch
 		appOfAppsConfig.CertDir = certDir
 
-		// Use shared credentials prompter if not both provided via flags
-		if b.credentialsPrompter.IsCredentialsRequired(githubUsername, githubToken) {
-			credentials, err := b.credentialsPrompter.PromptForGitHubCredentials(githubRepo)
-			if err != nil {
-				return ChartInstallConfig{}, err
-			}
-			appOfAppsConfig.GitHubUsername = credentials.Username
-			appOfAppsConfig.GitHubToken = credentials.Token
-		} else {
-			appOfAppsConfig.GitHubUsername = githubUsername
-			appOfAppsConfig.GitHubToken = githubToken
-		}
+		// Repository is public, no credentials needed
 
 		// After credentials are provided, check for branch override from Helm values
 		helmBranch := b.getBranchFromHelmValues()
@@ -115,7 +101,7 @@ func (b *Builder) BuildInstallConfig(
 // BuildInstallConfigWithCustomHelmPath constructs the installation configuration using a custom helm values file
 func (b *Builder) BuildInstallConfigWithCustomHelmPath(
 	force, dryRun, verbose bool,
-	clusterName, githubRepo, githubBranch, githubUsername, githubToken, certDir, helmValuesPath string,
+	clusterName, githubRepo, githubBranch, certDir, helmValuesPath string,
 ) (ChartInstallConfig, error) {
 	// Use config service for certificate directory
 	if certDir == "" {
@@ -130,18 +116,7 @@ func (b *Builder) BuildInstallConfigWithCustomHelmPath(
 		appOfAppsConfig.GitHubBranch = githubBranch
 		appOfAppsConfig.CertDir = certDir
 
-		// Use shared credentials prompter if not both provided via flags
-		if b.credentialsPrompter.IsCredentialsRequired(githubUsername, githubToken) {
-			credentials, err := b.credentialsPrompter.PromptForGitHubCredentials(githubRepo)
-			if err != nil {
-				return ChartInstallConfig{}, err
-			}
-			appOfAppsConfig.GitHubUsername = credentials.Username
-			appOfAppsConfig.GitHubToken = credentials.Token
-		} else {
-			appOfAppsConfig.GitHubUsername = githubUsername
-			appOfAppsConfig.GitHubToken = githubToken
-		}
+		// Repository is public, no credentials needed
 
 		// After credentials are provided, check for branch override from custom Helm values path
 		helmBranch := b.getBranchFromHelmValuesPath(helmValuesPath)

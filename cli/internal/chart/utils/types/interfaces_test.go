@@ -95,8 +95,6 @@ func TestInstallationRequest_DefaultValues(t *testing.T) {
 	assert.False(t, req.Verbose)
 	assert.Empty(t, req.GitHubRepo)
 	assert.Empty(t, req.GitHubBranch)
-	assert.Empty(t, req.GitHubUsername)
-	assert.Empty(t, req.GitHubToken)
 	assert.Empty(t, req.CertDir)
 }
 
@@ -108,8 +106,6 @@ func TestInstallationRequest_WithValues(t *testing.T) {
 		Verbose:        true,
 		GitHubRepo:     "https://github.com/test/repo",
 		GitHubBranch:   "main",
-		GitHubUsername: "testuser",
-		GitHubToken:    "token123",
 		CertDir:        "/path/to/certs",
 	}
 
@@ -119,8 +115,6 @@ func TestInstallationRequest_WithValues(t *testing.T) {
 	assert.True(t, req.Verbose)
 	assert.Equal(t, "https://github.com/test/repo", req.GitHubRepo)
 	assert.Equal(t, "main", req.GitHubBranch)
-	assert.Equal(t, "testuser", req.GitHubUsername)
-	assert.Equal(t, "token123", req.GitHubToken)
 	assert.Equal(t, "/path/to/certs", req.CertDir)
 }
 
@@ -272,7 +266,7 @@ func TestStructFieldCounts(t *testing.T) {
 	_ = step.Duration
 	_ = step.Timestamp
 
-	// InstallationRequest should have 9 fields
+	// InstallationRequest should have 7 fields
 	req := InstallationRequest{}
 	_ = req.Args
 	_ = req.Force
@@ -280,8 +274,6 @@ func TestStructFieldCounts(t *testing.T) {
 	_ = req.Verbose
 	_ = req.GitHubRepo
 	_ = req.GitHubBranch
-	_ = req.GitHubUsername
-	_ = req.GitHubToken
 	_ = req.CertDir
 
 	// If test passes, all expected fields exist

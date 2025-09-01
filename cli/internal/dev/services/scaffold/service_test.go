@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/flamingo/openframe/internal/dev/models"
+	"github.com/flamingo/openframe/internal/dev/ui"
 	"github.com/flamingo/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -57,6 +58,7 @@ func TestService_GetClusterName(t *testing.T) {
 		name     string
 		args     []string
 		expected string
+		skipTest bool
 	}{
 		{
 			name:     "with cluster name provided",
@@ -64,9 +66,10 @@ func TestService_GetClusterName(t *testing.T) {
 			expected: "my-cluster",
 		},
 		{
-			name:     "no cluster name - use default",
+			name:     "no cluster name - requires interactive selection",
 			args:     []string{},
-			expected: "openframe-dev",
+			expected: "",
+			skipTest: true, // Skip this test as it requires interactive selection
 		},
 		{
 			name:     "multiple args - use first",
@@ -77,7 +80,13 @@ func TestService_GetClusterName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := service.getClusterName(tt.args)
+			if tt.skipTest {
+				t.Skip("Skipping test that requires interactive selection")
+				return
+			}
+			
+			result, err := service.getClusterName(tt.args)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -96,27 +105,33 @@ func TestService_BuildSkaffoldArgs(t *testing.T) {
 			flags: &models.ScaffoldFlags{
 				Namespace: "",
 			},
-			expected: []string{"dev", "--port-forward", "--verbosity", "info"},
+			expected: []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--port-forward", "--verbosity", "info"},
 		},
 		{
-			name: "with namespace",
+			name: "with namespace override",
 			flags: &models.ScaffoldFlags{
 				Namespace: "my-namespace",
 			},
-			expected: []string{"dev", "--port-forward", "--namespace", "my-namespace", "--verbosity", "info"},
+			expected: []string{"dev", "--cache-artifacts=false", "-n", "my-namespace", "--port-forward", "--verbosity", "info"},
 		},
 		{
 			name: "minimal flags",
 			flags: &models.ScaffoldFlags{
 				Namespace: "",
 			},
-			expected: []string{"dev", "--port-forward", "--verbosity", "info"},
+			expected: []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--port-forward", "--verbosity", "info"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := service.buildSkaffoldArgs(tt.flags)
+			// Create mock service selection
+			mockService := &ui.ServiceSelection{
+				ServiceName: "openframe-api",
+				FilePath:    "../openframe/services/openframe-api/skaffold.yaml",
+				Directory:   "../openframe/services/openframe-api",
+			}
+			result := service.buildSkaffoldArgs(mockService, "openframe-api", tt.flags)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -129,8 +144,15 @@ func TestService_BuildSkaffoldArgs_NonVerbose(t *testing.T) {
 		Namespace: "",
 	}
 	
-	result := service.buildSkaffoldArgs(flags)
-	expected := []string{"dev", "--port-forward"}
+	// Create mock service selection
+	mockService := &ui.ServiceSelection{
+		ServiceName: "openframe-api",
+		FilePath:    "../openframe/services/openframe-api/skaffold.yaml",
+		Directory:   "../openframe/services/openframe-api",
+	}
+	
+	result := service.buildSkaffoldArgs(mockService, "openframe-api", flags)
+	expected := []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--port-forward"}
 	
 	assert.Equal(t, expected, result)
 }

@@ -18,6 +18,9 @@ Comprehensive documentation for the OpenFrame CLI tool.
   - [cleanup](cluster/cleanup.md) - Clean up resources
 - [chart](chart/) - Manage Helm charts
   - [install](chart/install.md) - Install ArgoCD and apps
+- [dev](dev/) - Development tools for local workflows
+  - [intercept](dev/intercept.md) - Intercept traffic to local development
+  - [skaffold](dev/skaffold.md) - Live development with hot reloading
 - [bootstrap](bootstrap/) - One-command complete setup
 
 ### Guides
@@ -55,6 +58,9 @@ openframe
 │   └── cleanup     # Clean resources
 ├── chart           # Chart management
 │   └── install     # Install ArgoCD
+├── dev             # Development tools
+│   ├── intercept   # Traffic interception
+│   └── skaffold    # Live development
 └── bootstrap       # Complete setup
 ```
 
@@ -88,8 +94,11 @@ kubectl get pods --all-namespaces
 openframe cluster create dev
 openframe chart install dev
 
-# Work with your cluster
-kubectl apply -f my-app.yaml
+# Start live development
+openframe dev skaffold dev
+
+# In another terminal, intercept services for local debugging
+openframe dev intercept api-service --port 8080
 
 # Evening: Clean up
 openframe cluster cleanup dev

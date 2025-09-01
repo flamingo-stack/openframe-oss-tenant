@@ -107,6 +107,29 @@ func SelectFromList(label string, items []string) (int, string, error) {
 	return prompt.Run()
 }
 
+// SelectFromListWithSearch prompts the user to select from a list with search/filter capability
+func SelectFromListWithSearch(label string, items []string) (int, string, error) {
+	prompt := promptui.Select{
+		Label: label,
+		Items: items,
+		Size:  5, // Show max 5 items at once
+		Searcher: func(input string, index int) bool {
+			item := items[index]
+			name := strings.ToLower(item)
+			input = strings.ToLower(input)
+			return strings.Contains(name, input)
+		},
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}?",
+			Active:   "\U00002192 {{ . | cyan }}",
+			Inactive: "  {{ . | white }}",
+			Selected: "\U00002713 {{ . | green }}",
+		},
+	}
+
+	return prompt.Run()
+}
+
 // SelectFromListWithCustomTemplates provides more control over selection styling
 func SelectFromListWithCustomTemplates(label string, items []string, templates *promptui.SelectTemplates) (int, string, error) {
 	prompt := promptui.Select{

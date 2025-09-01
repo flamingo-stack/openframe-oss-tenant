@@ -11,9 +11,6 @@ type AppOfAppsConfig struct {
 	GitHubRepo   string // Repository URL (e.g., "https://github.com/Flamingo-CX/openframe")
 	GitHubBranch string // Branch to use (e.g., "main", "develop")
 	ChartPath    string // Path to chart in repository (e.g., "manifests/app-of-apps")
-	// GitHub authentication for private repositories
-	GitHubUsername string // GitHub username for private repo access (e.g., "read-contents-pat")
-	GitHubToken    string // GitHub Personal Access Token for private repo access
 	// Certificate configuration
 	CertDir string // Directory containing certificates for TLS configuration
 	// Values configuration
@@ -42,15 +39,3 @@ func (a *AppOfAppsConfig) GetGitURL() string {
 	return fmt.Sprintf("git+%s@%s?ref=%s", baseURL, a.ChartPath, a.GitHubBranch)
 }
 
-// GetGitCredentials returns the Git credentials for environment setup
-func (a *AppOfAppsConfig) GetGitCredentials() (username, token string) {
-	if a.GitHubToken != "" && a.GitHubUsername != "" {
-		return a.GitHubUsername, a.GitHubToken
-	}
-	return "", ""
-}
-
-// IsPrivateRepo returns true if authentication credentials are provided
-func (a *AppOfAppsConfig) IsPrivateRepo() bool {
-	return a.GitHubToken != "" && a.GitHubUsername != ""
-}

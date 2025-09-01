@@ -18,8 +18,11 @@ type Installer struct {
 
 // InstallCharts handles the complete chart installation process
 func (i *Installer) InstallCharts(config config.ChartInstallConfig) error {
-	ctx := context.Background()
+	return i.InstallChartsWithContext(context.Background(), config)
+}
 
+// InstallChartsWithContext handles the complete chart installation process with context support
+func (i *Installer) InstallChartsWithContext(ctx context.Context, config config.ChartInstallConfig) error {
 	// Install ArgoCD first
 	if err := i.argoCDService.Install(ctx, config); err != nil {
 		return errors.WrapAsChartError("installation", "ArgoCD", err).WithCluster(config.ClusterName)

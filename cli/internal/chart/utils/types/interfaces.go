@@ -60,7 +60,7 @@ type AppOfAppsService interface {
 // ConfigBuilder constructs installation configurations
 type ConfigBuilder interface {
 	BuildInstallConfig(force, dryRun, verbose bool, clusterName string,
-		githubRepo, githubBranch, githubUsername, githubToken, certDir string) (config.ChartInstallConfig, error)
+		githubRepo, githubBranch, certDir string) (config.ChartInstallConfig, error)
 }
 
 // PathResolver resolves configuration and certificate paths
@@ -135,13 +135,11 @@ type StepResult struct {
 
 // InstallationRequest contains all parameters for chart installation
 type InstallationRequest struct {
-	Args           []string
-	Force          bool
-	DryRun         bool
-	Verbose        bool
-	GitHubRepo     string
-	GitHubBranch   string
-	GitHubUsername string
-	GitHubToken    string
-	CertDir        string
+	Args         []string
+	Force        bool
+	DryRun       bool
+	Verbose      bool
+	GitHubRepo   string
+	GitHubBranch string
+	CertDir      string
 }

@@ -25,8 +25,7 @@ Examples:
   openframe chart install                                    # Install with defaults
   openframe chart install my-cluster                        # Install on specific cluster
   openframe chart install --github-branch develop          # Use develop branch
-  openframe chart install --cert-dir /path/to/certs        # Custom cert directory
-  openframe chart install --github-username myuser --github-token github_pat_xyz123  # Skip credential prompts`,
+  openframe chart install --cert-dir /path/to/certs        # Custom cert directory`,
 		RunE: runInstallCommand,
 		SilenceErrors: true,  // Errors are handled by our custom error handler
 		SilenceUsage: true,   // Don't show usage on errors
@@ -53,15 +52,13 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 
 	// Use common installation function
 	req := types.InstallationRequest{
-		Args:           args,
-		Force:          flags.Force,
-		DryRun:         flags.DryRun,
-		Verbose:        verbose,
-		GitHubRepo:     flags.GitHubRepo,
-		GitHubBranch:   flags.GitHubBranch,
-		GitHubUsername: flags.GitHubUsername,
-		GitHubToken:    flags.GitHubToken,
-		CertDir:        flags.CertDir,
+		Args:         args,
+		Force:        flags.Force,
+		DryRun:       flags.DryRun,
+		Verbose:      verbose,
+		GitHubRepo:   flags.GitHubRepo,
+		GitHubBranch: flags.GitHubBranch,
+		CertDir:      flags.CertDir,
 	}
 
 	err = services.InstallChartsWithConfig(req)
@@ -74,13 +71,11 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 
 // InstallFlags contains all flags needed for chart installation
 type InstallFlags struct {
-	Force          bool
-	DryRun         bool
-	GitHubRepo     string
-	GitHubBranch   string
-	GitHubUsername string
-	GitHubToken    string
-	CertDir        string
+	Force        bool
+	DryRun       bool
+	GitHubRepo   string
+	GitHubBranch string
+	CertDir      string
 }
 
 // extractInstallFlags extracts install flags from cobra command
@@ -101,14 +96,6 @@ func extractInstallFlags(cmd *cobra.Command) (*InstallFlags, error) {
 	}
 	
 	if flags.GitHubBranch, err = cmd.Flags().GetString("github-branch"); err != nil {
-		return nil, err
-	}
-	
-	if flags.GitHubUsername, err = cmd.Flags().GetString("github-username"); err != nil {
-		return nil, err
-	}
-	
-	if flags.GitHubToken, err = cmd.Flags().GetString("github-token"); err != nil {
 		return nil, err
 	}
 	
@@ -143,8 +130,6 @@ func addInstallFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("dry-run", false, "Show what would be installed without executing")
 	cmd.Flags().String("github-repo", "https://github.com/Flamingo-CX/openframe", "GitHub repository URL")
 	cmd.Flags().String("github-branch", "main", "GitHub repository branch")
-	cmd.Flags().String("github-username", "", "GitHub username (will prompt if not provided)")
-	cmd.Flags().String("github-token", "", "GitHub Personal Access Token (will prompt if not provided)")
 	cmd.Flags().String("cert-dir", "", "Certificate directory (auto-detected if not provided)")
 }
 

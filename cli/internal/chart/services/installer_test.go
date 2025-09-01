@@ -83,8 +83,7 @@ func TestInstaller_InstallCharts(t *testing.T) {
 			config: config.ChartInstallConfig{
 				ClusterName: "test-cluster",
 				AppOfApps: &models.AppOfAppsConfig{
-					GitHubRepo:  "owner/repo",
-					GitHubToken: "token",
+					GitHubRepo: "owner/repo",
 				},
 			},
 			setupMocks: func(argoCD *MockArgoCDService, appOfApps *MockAppOfAppsService) {
@@ -111,8 +110,7 @@ func TestInstaller_InstallCharts(t *testing.T) {
 			config: config.ChartInstallConfig{
 				ClusterName: "test-cluster",
 				AppOfApps: &models.AppOfAppsConfig{
-					GitHubRepo:  "owner/repo",
-					GitHubToken: "token",
+					GitHubRepo: "owner/repo",
 				},
 			},
 			setupMocks: func(argoCD *MockArgoCDService, appOfApps *MockAppOfAppsService) {
@@ -128,8 +126,7 @@ func TestInstaller_InstallCharts(t *testing.T) {
 			config: config.ChartInstallConfig{
 				ClusterName: "test-cluster",
 				AppOfApps: &models.AppOfAppsConfig{
-					GitHubRepo:  "owner/repo",
-					GitHubToken: "token",
+					GitHubRepo: "owner/repo",
 				},
 			},
 			setupMocks: func(argoCD *MockArgoCDService, appOfApps *MockAppOfAppsService) {
@@ -148,8 +145,7 @@ func TestInstaller_InstallCharts(t *testing.T) {
 			config: config.ChartInstallConfig{
 				ClusterName: "test-cluster",
 				AppOfApps: &models.AppOfAppsConfig{
-					GitHubRepo:  "owner/repo",
-					GitHubToken: "token",
+					GitHubRepo: "owner/repo",
 				},
 			},
 			setupMocks: func(argoCD *MockArgoCDService, appOfApps *MockAppOfAppsService) {
@@ -206,8 +202,7 @@ func TestInstaller_InstallCharts_RecoverableError(t *testing.T) {
 	config := config.ChartInstallConfig{
 		ClusterName: "test-cluster",
 		AppOfApps: &models.AppOfAppsConfig{
-			GitHubRepo:  "owner/repo",
-			GitHubToken: "token",
+			GitHubRepo: "owner/repo",
 		},
 	}
 

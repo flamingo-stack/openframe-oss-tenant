@@ -16,7 +16,6 @@ func TestNewBuilder(t *testing.T) {
 	assert.NotNil(t, builder)
 	assert.NotNil(t, builder.configService)
 	assert.NotNil(t, builder.operationsUI)
-	assert.NotNil(t, builder.credentialsPrompter)
 	assert.Equal(t, operationsUI, builder.operationsUI)
 }
 
@@ -26,7 +25,6 @@ func TestNewBuilder_WithNilOperationsUI(t *testing.T) {
 	assert.NotNil(t, builder)
 	assert.NotNil(t, builder.configService)
 	assert.Nil(t, builder.operationsUI)
-	assert.NotNil(t, builder.credentialsPrompter)
 }
 
 func TestBuilder_ImplementsConfigBuilderInterface(t *testing.T) {
@@ -40,7 +38,7 @@ func TestBuilder_ImplementsConfigBuilderInterface(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		false, false, false,
 		"test-cluster",
-		"", "", "", "", "",
+		"", "", "",
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
@@ -53,7 +51,7 @@ func TestBuilder_BuildInstallConfig_BasicConfiguration(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		false, false, false, // force, dryRun, verbose
 		"test-cluster",
-		"", "", "", "", "", // no GitHub config
+		"", "", "", // no GitHub config
 	)
 
 	assert.NoError(t, err)
@@ -73,7 +71,7 @@ func TestBuilder_BuildInstallConfig_WithFlags(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		true, true, true, // force, dryRun, verbose
 		"production-cluster",
-		"", "", "", "", "", // no GitHub config
+		"", "", "", // no GitHub config
 	)
 
 	assert.NoError(t, err)
@@ -91,8 +89,7 @@ func TestBuilder_BuildInstallConfig_WithGitHubRepo(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		false, false, false,
 		"test-cluster",
-		"https://github.com/test/repo", "main",
-		"testuser", "token123", "",
+		"https://github.com/test/repo", "main", "",
 	)
 
 	assert.NoError(t, err)
@@ -103,8 +100,6 @@ func TestBuilder_BuildInstallConfig_WithGitHubRepo(t *testing.T) {
 	// Verify app-of-apps configuration
 	assert.Equal(t, "https://github.com/test/repo", config.AppOfApps.GitHubRepo)
 	assert.Equal(t, "main", config.AppOfApps.GitHubBranch)
-	assert.Equal(t, "testuser", config.AppOfApps.GitHubUsername)
-	assert.Equal(t, "token123", config.AppOfApps.GitHubToken)
 
 	// Should have default values from NewAppOfAppsConfig
 	assert.Equal(t, "manifests/app-of-apps", config.AppOfApps.ChartPath)
@@ -119,8 +114,7 @@ func TestBuilder_BuildInstallConfig_WithCustomCertDir(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		false, false, false,
 		"test-cluster",
-		"https://github.com/test/repo", "main",
-		"testuser", "token123", "/custom/cert/dir",
+		"https://github.com/test/repo", "main", "/custom/cert/dir",
 	)
 
 	assert.NoError(t, err)
@@ -135,8 +129,7 @@ func TestBuilder_BuildInstallConfig_WithoutCertDir(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		false, false, false,
 		"test-cluster",
-		"https://github.com/test/repo", "main",
-		"testuser", "token123", "", // empty cert dir
+		"https://github.com/test/repo", "main", "", // empty cert dir
 	)
 
 	assert.NoError(t, err)
@@ -152,8 +145,7 @@ func TestBuilder_BuildInstallConfig_AllFlags(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		true, true, true, // all flags true
 		"full-config-cluster",
-		"https://github.com/full/config", "develop",
-		"fulluser", "fulltoken", "/full/cert/path",
+		"https://github.com/full/config", "develop", "/full/cert/path",
 	)
 
 	assert.NoError(t, err)
@@ -169,8 +161,6 @@ func TestBuilder_BuildInstallConfig_AllFlags(t *testing.T) {
 	assert.True(t, config.HasAppOfApps())
 	assert.Equal(t, "https://github.com/full/config", config.AppOfApps.GitHubRepo)
 	assert.Equal(t, "develop", config.AppOfApps.GitHubBranch)
-	assert.Equal(t, "fulluser", config.AppOfApps.GitHubUsername)
-	assert.Equal(t, "fulltoken", config.AppOfApps.GitHubToken)
 	assert.Equal(t, "/full/cert/path", config.AppOfApps.CertDir)
 }
 
@@ -181,7 +171,7 @@ func TestBuilder_BuildInstallConfig_EmptyClusterName(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		false, false, false,
 		"", // empty cluster name
-		"", "", "", "", "",
+		"", "", "",
 	)
 
 	assert.NoError(t, err)
@@ -193,20 +183,17 @@ func TestBuilder_BuildInstallConfig_CompleteGitHubCredentials(t *testing.T) {
 	operationsUI := chartUI.NewOperationsUI()
 	builder := NewBuilder(operationsUI)
 
-	// Test with both username and token provided (should not prompt)
+	// Test with complete GitHub configuration
 	config, err := builder.BuildInstallConfig(
 		false, false, false,
 		"test-cluster",
-		"https://github.com/test/repo", "main",
-		"completeuser", "completetoken", "", // both credentials provided
+		"https://github.com/test/repo", "main", "",
 	)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config.AppOfApps)
 	assert.Equal(t, "https://github.com/test/repo", config.AppOfApps.GitHubRepo)
 	assert.Equal(t, "main", config.AppOfApps.GitHubBranch)
-	assert.Equal(t, "completeuser", config.AppOfApps.GitHubUsername)
-	assert.Equal(t, "completetoken", config.AppOfApps.GitHubToken)
 }
 
 func TestBuilder_BuildInstallConfig_PublicRepoWithCredentials(t *testing.T) {
@@ -216,8 +203,7 @@ func TestBuilder_BuildInstallConfig_PublicRepoWithCredentials(t *testing.T) {
 	config, err := builder.BuildInstallConfig(
 		false, false, false,
 		"minimal-cluster",
-		"https://github.com/minimal/repo", "feature-branch",
-		"publicuser", "publictoken", "", // credentials provided for public repo
+		"https://github.com/minimal/repo", "feature-branch", "",
 	)
 
 	assert.NoError(t, err)
@@ -226,8 +212,6 @@ func TestBuilder_BuildInstallConfig_PublicRepoWithCredentials(t *testing.T) {
 	assert.True(t, config.HasAppOfApps())
 	assert.Equal(t, "https://github.com/minimal/repo", config.AppOfApps.GitHubRepo)
 	assert.Equal(t, "feature-branch", config.AppOfApps.GitHubBranch)
-	assert.Equal(t, "publicuser", config.AppOfApps.GitHubUsername)
-	assert.Equal(t, "publictoken", config.AppOfApps.GitHubToken)
 	assert.NotEmpty(t, config.AppOfApps.CertDir) // Should use default
 }
 
@@ -241,8 +225,7 @@ func TestBuilder_BuildInstallConfig_DifferentBranches(t *testing.T) {
 		config, err := builder.BuildInstallConfig(
 			false, false, false,
 			"branch-test-cluster",
-			"https://github.com/test/branches", branch,
-			"branchuser", "branchtoken", "",
+			"https://github.com/test/branches", branch, "",
 		)
 
 		assert.NoError(t, err)
@@ -258,7 +241,6 @@ func TestBuilder_ComponentsInitialized(t *testing.T) {
 
 	// All components should be properly initialized
 	require.NotNil(t, builder.configService)
-	require.NotNil(t, builder.credentialsPrompter)
 	require.Equal(t, operationsUI, builder.operationsUI)
 }
 
@@ -270,15 +252,13 @@ func TestBuilder_MultipleBuilds(t *testing.T) {
 	config1, err1 := builder.BuildInstallConfig(
 		true, false, true,
 		"cluster-1",
-		"https://github.com/test/repo1", "main",
-		"user1", "token1", "/path1",
+		"https://github.com/test/repo1", "main", "/path1",
 	)
 
 	config2, err2 := builder.BuildInstallConfig(
 		false, true, false,
 		"cluster-2",
-		"https://github.com/test/repo2", "develop",
-		"user2", "token2", "/path2",
+		"https://github.com/test/repo2", "develop", "/path2",
 	)
 
 	assert.NoError(t, err1)

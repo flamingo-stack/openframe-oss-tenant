@@ -3,12 +3,9 @@ package dev
 import (
 	"context"
 
-	clusterUI "github.com/flamingo/openframe/internal/cluster/ui"
-	clusterUtils "github.com/flamingo/openframe/internal/cluster/utils"
 	"github.com/flamingo/openframe/internal/dev/models"
 	scaffoldService "github.com/flamingo/openframe/internal/dev/services/scaffold"
 	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +41,7 @@ Examples:
 
 	// Add scaffold-specific flags
 	cmd.Flags().IntVar(&flags.Port, "port", 8080, "Local development port")
-	cmd.Flags().StringVar(&flags.Namespace, "namespace", "default", "Kubernetes namespace to deploy to")
+	cmd.Flags().StringVar(&flags.Namespace, "namespace", "", "Kubernetes namespace to deploy to")
 	cmd.Flags().StringVar(&flags.Image, "image", "", "Docker image to use for the service")
 	cmd.Flags().StringVar(&flags.SyncLocal, "sync-local", "", "Local directory to sync to the container")
 	cmd.Flags().StringVar(&flags.SyncRemote, "sync-remote", "", "Remote directory to sync files to")
@@ -60,68 +57,10 @@ func runScaffold(cmd *cobra.Command, args []string, flags *models.ScaffoldFlags)
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	ctx := context.Background()
 
-	// If cluster name provided as argument, use direct execution
-	if len(args) > 0 {
-		exec := executor.NewRealCommandExecutor(dryRun, verbose)
-		service := scaffoldService.NewService(exec, verbose)
-		return service.RunScaffoldWorkflow(ctx, args, flags)
-	}
-
-	// No cluster name provided - run interactive mode with cluster selection
-	return runInteractiveScaffold(ctx, verbose, dryRun, flags)
-}
-
-// runInteractiveScaffold runs the interactive scaffold flow with cluster selection
-func runInteractiveScaffold(ctx context.Context, verbose, dryRun bool, flags *models.ScaffoldFlags) error {
-	// Step 1: Select cluster using same pattern as intercept
-	clusterName, err := selectClusterForScaffold(verbose)
-	if err != nil || clusterName == "" {
-		return err
-	}
-
-	// Step 2: Create executor and service
+	// Create service and run scaffold workflow
 	exec := executor.NewRealCommandExecutor(dryRun, verbose)
 	service := scaffoldService.NewService(exec, verbose)
 
-	// Step 3: Run scaffold workflow with selected cluster
-	args := []string{clusterName}
 	return service.RunScaffoldWorkflow(ctx, args, flags)
 }
 
-// selectClusterForScaffold handles cluster selection for scaffold using same logic as intercept
-func selectClusterForScaffold(verbose bool) (string, error) {
-	// Create cluster service using the same pattern as intercept
-	clusterService := clusterUtils.GetCommandService()
-	
-	// Get list of clusters
-	clusters, err := clusterService.ListClusters()
-	if err != nil {
-		if verbose {
-			pterm.Error.Printf("Failed to list clusters: %v\n", err)
-		}
-		// Show the same error message as intercept
-		pterm.Error.Println("No clusters found. Create a cluster first with: openframe cluster create")
-		return "", nil // Return nil error like intercept does
-	}
-	
-	// Check if we have any clusters
-	if len(clusters) == 0 {
-		if verbose {
-			pterm.Info.Printf("Found 0 clusters\n")
-		}
-		// Show the same error message as intercept
-		pterm.Error.Println("No clusters found. Create a cluster first with: openframe cluster create")
-		return "", nil // Return nil error like intercept does
-	}
-	
-	if verbose {
-		pterm.Info.Printf("Found %d clusters\n", len(clusters))
-		for _, cluster := range clusters {
-			pterm.Info.Printf("  - %s (%s)\n", cluster.Name, cluster.Status)
-		}
-	}
-	
-	// Use cluster selector UI - same as intercept
-	selector := clusterUI.NewSelector("scaffold")
-	return selector.SelectCluster(clusters, []string{})
-}

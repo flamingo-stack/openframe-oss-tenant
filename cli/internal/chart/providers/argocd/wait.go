@@ -25,6 +25,14 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		return fmt.Errorf("operation already cancelled: %w", ctx.Err())
 	}
 	
+	// Early exit if context has a short deadline (indicates timeout scenario)
+	if deadline, ok := ctx.Deadline(); ok {
+		if time.Until(deadline) < 5*time.Second {
+			// Context will expire soon - skip ArgoCD applications wait
+			return nil
+		}
+	}
+	
 	// Create a derived context that responds to both parent cancellation AND direct signals
 	// This ensures immediate response to Ctrl+C even if parent context isn't propagating fast enough
 	localCtx, localCancel := context.WithCancel(ctx)
@@ -40,8 +48,36 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		localCancel() // Cancel our local context immediately
 	}()
 	
+	
+	// Check if we should start the spinner (skip if context is cancelled or expiring soon)
+	var spinner *pterm.SpinnerPrinter
+	shouldSkipSpinner := false
+	
+	// Check if context is cancelled
+	if localCtx.Err() != nil {
+		shouldSkipSpinner = true
+	}
+	
+	// Check if original context is cancelled
+	if ctx.Err() != nil {
+		shouldSkipSpinner = true
+	}
+	
+	// Check if context deadline is very close (less than 10 seconds)
+	if deadline, ok := ctx.Deadline(); ok {
+		timeLeft := time.Until(deadline)
+		if timeLeft < 10*time.Second {
+			shouldSkipSpinner = true
+		}
+	}
+	
+	if shouldSkipSpinner {
+		// Context is cancelled or expiring soon - skip ArgoCD applications wait entirely
+		return nil
+	}
+	
 	// Start pterm spinner
-	spinner, _ := pterm.DefaultSpinner.
+	spinner, _ = pterm.DefaultSpinner.
 		WithRemoveWhenDone(false).
 		WithShowTimer(true).
 		Start("Installing ArgoCD applications...")
