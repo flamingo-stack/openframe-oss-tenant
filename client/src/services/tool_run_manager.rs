@@ -52,7 +52,7 @@ impl ToolRunManager {
                         }
                     };
 
-                    let command_path = "/Users/kirillgontar/Library/Logs/OpenFrame/meshcentral-server/agent";
+                    let command_path = format!("/Users/kirillgontar/Library/Logs/OpenFrame/{}/agent", tool.tool_id);
                     
                     info!(
                         tool_id = %tool.tool_id, 

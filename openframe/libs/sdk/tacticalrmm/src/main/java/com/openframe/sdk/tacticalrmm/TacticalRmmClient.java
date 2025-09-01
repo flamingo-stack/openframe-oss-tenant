@@ -33,7 +33,7 @@ public class TacticalRmmClient {
         try {
             String requestBody = objectMapper.writeValueAsString(request);
 
-            HttpRequest httpRequest= HttpRequest.newBuilder()
+            HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(tacticalServerUrl + GET_INSTALLER_URL))
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .header("Content-Type", "application/json")

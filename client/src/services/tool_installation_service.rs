@@ -13,9 +13,9 @@ use crate::services::ToolInstallationCommandParamsProcessor;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
+use tokio::process::Command;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
-use crate::platform::PermissionUtils;
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
@@ -91,37 +91,41 @@ impl ToolInstallationService {
             .with_context(|| format!("Failed to chmod +x {}", file_path.display()))?;
 
         // Download and save assets
-        for asset in &tool_installation_message.assets {
-            let asset_bytes = match asset.source {
-                AssetSource::Artifactory => {
-                    info!("Downloading artifactory asset: {}", asset.id);
-                    self.tool_agent_file_client
-                        .get_tool_agent_file(asset.id.clone())
-                        .await
-                        .with_context(|| format!("Failed to download artifactory asset: {}", asset.id))?
-                },
-                AssetSource::ToolApi => {
-                    let path = asset.path.as_deref().unwrap_or("");
-                    info!("Downloading tool API asset: {} with path: {}", asset.id, path);
-                    self.tool_api_client
-                        .get_tool_asset(tool_id.clone(), asset.path.clone().unwrap_or_default())
-                        .await
-                        .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
-                }
-            };
+        if let Some(ref assets) = tool_installation_message.assets {
+            for asset in assets {
+                let asset_bytes = match asset.source {
+                    AssetSource::Artifactory => {
+                        info!("Downloading artifactory asset: {}", asset.id);
+                        self.tool_agent_file_client
+                            .get_tool_agent_file(asset.id.clone())
+                            .await
+                            .with_context(|| format!("Failed to download artifactory asset: {}", asset.id))?
+                    },
+                    AssetSource::ToolApi => {
+                        let path = asset.path.as_deref().unwrap_or("");
+                        info!("Downloading tool API asset: {} with path: {}", asset.id, path);
+                        self.tool_api_client
+                            .get_tool_asset(tool_id.clone(), asset.path.clone().unwrap_or_default())
+                            .await
+                            .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
+                    }
+                };
 
-            let asset_path = tool_folder_path.join(&asset.id);
-            
-            File::create(&asset_path).await?.write_all(&asset_bytes).await?;
-            
-            // Set file permissions to executable for assets as well
-            let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
-            asset_perms.set_mode(0o755);
-            fs::set_permissions(&asset_path, asset_perms)
-                .await
-                .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
-            
-            info!("Asset {} saved to: {}", asset.id, asset_path.display());
+                let asset_path = tool_folder_path.join(&asset.id);
+                
+                File::create(&asset_path).await?.write_all(&asset_bytes).await?;
+                
+                // Set file permissions to executable for assets as well
+                let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
+                asset_perms.set_mode(0o755);
+                fs::set_permissions(&asset_path, asset_perms)
+                    .await
+                    .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
+                
+                info!("Asset {} saved to: {}", asset.id, asset_path.display());
+            }
+        } else {
+            info!("No assets to download for tool: {}", tool_id);
         }
 
         // Run installation command if provided
@@ -129,13 +133,25 @@ impl ToolInstallationService {
             let installation_command_args = self.command_params_processor.process(tool_id, tool_installation_message.installation_command_args.unwrap())
                 .context("Failed to process installation command params")?;
             debug!("Processed args: {:?}", installation_command_args);
-            let installation_command_arg_refs: Vec<&str> = installation_command_args.iter()
-                .map(|s| s.as_str())
-                .collect();
 
-            let file_path_str = file_path.to_string_lossy();
-            PermissionUtils::run_as_admin(&file_path_str, &installation_command_arg_refs[..])
+            let mut cmd = Command::new(&file_path);
+            cmd.args(&installation_command_args);
+            
+            let output = cmd.output().await
                 .context("Failed to execute installation command for tool")?;
+            
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                return Err(anyhow::anyhow!(
+                    "Installation command failed with status: {}\nstdout: {}\nstderr: {}", 
+                    output.status, 
+                    stdout, 
+                    stderr
+                ));
+            }
+            
+            debug!("Installation command executed successfully");
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_id);
         }

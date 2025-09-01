@@ -269,7 +269,7 @@ impl Client {
         self.nats_connection_manager.connect().await?;
 
         // Start tool installation message listener in background
-        self.tool_installation_message_listener.start().await?;
+        // self.tool_installation_message_listener.start().await?;
 
         // Start tool run manager
         self.tool_run_manager.run().await?;

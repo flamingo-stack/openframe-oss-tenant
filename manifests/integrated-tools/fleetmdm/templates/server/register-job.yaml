@@ -139,7 +139,6 @@ spec:
                 "version": "1.0",
                 "status": "ENABLED",
                 "runCommandArgs": [
-                  "connect",
                   "--fleet-url", "${serverUrl}",
                   "--enroll-secret", "${registrationSecret}",
                   "--insecure",
