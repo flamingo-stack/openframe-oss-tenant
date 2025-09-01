@@ -4,7 +4,7 @@ metadata:
   name: tactical-nginx
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/tactical-nginx
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-nginx
       context: ../.
       sync: 
         manual:

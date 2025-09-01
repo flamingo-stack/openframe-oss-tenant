@@ -64,7 +64,7 @@ npm run dev                                 # Explore multi-platform-hub for pat
 - **Build Tool**: Next.js (pure client-side export - NO SERVER-SIDE FEATURES)
 - **Routing**: Next.js App Router (file-based routing - CLIENT-SIDE ONLY)
 - **CRITICAL**: NO API ROUTES - Pure static export only
-- **State Management**: Zustand
+- **State Management**: Zustand v5.0.8 with Immer middleware
 - **API Client**: Apollo Client (GraphQL)
 - **UI Components**: @flamingo/ui-kit
 - **Styling**: Tailwind CSS + UI-Kit design tokens
@@ -99,7 +99,12 @@ openframe-frontend/
 │   ├── globals.css                         # Global styles
 │   └── page.tsx                            # Root redirect
 ├── hooks/                                  # Custom hooks
-│   └── use-auth.ts                         # Authentication hook
+│   ├── use-auth.ts                         # Authentication hook
+│   └── use-devices.ts                      # Device management hook
+├── stores/                                 # Zustand state stores
+│   ├── auth-store.ts                       # Authentication state
+│   ├── devices-store.ts                    # Device management state
+│   └── index.ts                            # Central store exports
 ├── ui-kit/                                 # UI-Kit design system (existing)
 ├── multi-platform-hub/                    # Reference only (existing)
 ├── public/                                 # Static assets
@@ -464,26 +469,108 @@ function Dashboard() {
 }
 ```
 
-### State Management
-Use client-side state management for application state:
+### State Management with Zustand (Updated 2025-08-28)
 
+The application uses Zustand v5.0.8 for centralized state management with Immer middleware for immutable updates.
+
+#### Store Structure
+```
+stores/
+├── auth-store.ts     # Authentication state with persistence
+├── devices-store.ts  # Device management with filtering/sorting
+└── index.ts         # Central exports and selectors
+```
+
+#### Creating a Zustand Store
 ```typescript
 import { create } from 'zustand'
+import { devtools, persist } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
 
-interface AuthState {
-  user: User | null
-  token: string | null
-  login: (token: string, user: User) => void
-  logout: () => void
+interface StoreState {
+  // State properties
+  items: any[]
+  loading: boolean
+  
+  // Actions
+  setItems: (items: any[]) => void
+  setLoading: (loading: boolean) => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  login: (token, user) => set({ token, user }),
-  logout: () => set({ token: null, user: null })
-}))
+export const useStore = create<StoreState>()(
+  devtools(
+    persist(
+      immer((set) => ({
+        // State
+        items: [],
+        loading: false,
+        
+        // Actions using Immer for mutations
+        setItems: (items) =>
+          set((state) => {
+            state.items = items
+          }),
+        
+        setLoading: (loading) =>
+          set((state) => {
+            state.loading = loading
+          })
+      })),
+      {
+        name: 'store-key', // localStorage key
+        partialize: (state) => ({ items: state.items }) // Selective persistence
+      }
+    ),
+    { name: 'store-name' } // Redux DevTools name
+  )
+)
 ```
+
+#### Using Stores in Components
+```typescript
+import { useAuthStore, useDevicesStore } from '@/stores'
+
+function Component() {
+  // Direct usage
+  const { user, login, logout } = useAuthStore()
+  
+  // With selectors for optimized re-renders
+  const devices = useDevicesStore(selectFilteredDevices)
+  const isLoading = useDevicesStore(selectIsLoading)
+  
+  return <div>...</div>
+}
+```
+
+#### Integration with Custom Hooks (MANDATORY PATTERN)
+```typescript
+import { useToast } from '@flamingo/ui-kit/hooks'
+import { useDevicesStore } from '@/stores/devices-store'
+
+export function useDevices() {
+  const { toast } = useToast() // MANDATORY
+  const { setDevices, setLoading, setError } = useDevicesStore()
+  
+  const fetchDevices = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/devices')
+      const data = await response.json()
+      setDevices(data.devices)
+      toast({ title: 'Success', variant: 'success' })
+    } catch (error) {
+      setError(error.message)
+      toast({ title: 'Error', variant: 'destructive' })
+    }
+  }
+  
+  return { fetchDevices }
+}
+```
+
+#### Available Stores
+- **useAuthStore**: User authentication, tokens, session management
+- **useDevicesStore**: Device CRUD, filtering, sorting, selection
 
 ## Code Standards
 
@@ -506,7 +593,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 ### Project Organization
 - **app/_components/**: Business logic components organized by app (openframe-auth, openframe-dashboard)
 - **app/*/page.tsx**: Route components that import from _components
-- **hooks/**: Custom React hooks for business logic
+- **hooks/**: Custom React hooks for business logic (MUST use `use...` naming with `useToast`)
+- **stores/**: Zustand state management stores with Immer middleware
 - **lib/**: Utilities, configurations, and API services
 
 ## Testing Strategy
@@ -757,6 +845,8 @@ tail -f dev.log
 - **Component not found**: Check UI-Kit exports, never create custom UI
 - **Build errors**: Run type-check on both main project and UI-Kit
 - **Browser MCP connection**: Ensure Chrome extension is installed and MCP server is running
+- **Zustand store errors**: Ensure immer is installed, check Redux DevTools for state debugging
+- **State persistence issues**: Check localStorage permissions and clear if corrupted
 
 ### Diagnostic Commands
 ```bash

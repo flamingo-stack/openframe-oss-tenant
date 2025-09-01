@@ -35,5 +35,5 @@ registerJob:
   enabled: true
 
 image:
-  repo: ghcr.io/flamingo-cx/openframe/openframe-ui
+  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-ui
   tag: latest

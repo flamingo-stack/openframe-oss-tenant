@@ -4,9 +4,9 @@ servicemonitor:
   enabled: true
 
 image:
-  repo: ghcr.io/flamingo-cx/openframe/openframe-config
+  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-config
   tag: latest
 
 config:
-  repo: "openframe-config"
+  repo: "openframe-oss-tenant-cfg"
   branch: "main"

@@ -4,7 +4,7 @@ metadata:
   name: tactical-base
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/tactical-base
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base
       context: ../.
       sync: 
         manual:

@@ -20,7 +20,7 @@ deployment:
 global:
   repoDir: manifests
   appsDir: apps
-  repoURL: https://github.com/Flamingo-CX/openframe.git
+  repoURL: https://github.com/flamingo-stack/openframe-oss-tenant.git
 
   repoBranch: main
   autoSync: true
@@ -31,12 +31,7 @@ registry:
     username: ""
     password: ""
     email: ""
-  ghcr:
-    server: ghcr.io
-    username: CI
-    password: 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
-    email: CI@flamingo.cx
-    
+
 apps:
   # example-app:
   #   enabled: true

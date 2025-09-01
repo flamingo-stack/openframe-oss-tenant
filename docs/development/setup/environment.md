@@ -23,7 +23,7 @@ This guide will help you set up your development environment for OpenFrame's Jav
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Flamingo-CX/openframe.git
+git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
 cd openframe
 ```
 

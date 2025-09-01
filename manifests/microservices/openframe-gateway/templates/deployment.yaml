@@ -12,11 +12,8 @@ spec:
       labels:
         app: openframe-gateway
     spec:
-      {{- if or (ne .Values.registry.ghcr.password "") (ne .Values.registry.docker.password "") }}
+      {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
-        {{- if ne .Values.registry.ghcr.password "" }}
-        - name: github-pat-secret
-        {{- end }}
         {{- if ne .Values.registry.docker.password "" }}
         - name: docker-pat-secret
         {{- end }}

@@ -85,7 +85,6 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.imagePullSecrets[0].name
-          value: github-pat-secret
 
   # Health checks
   - it: should configure health checks

@@ -5,13 +5,13 @@ global:
 tactical:
   frontend:
     image:
-      repo: ghcr.io/flamingo-cx/openframe/tactical-frontend
+      repo: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-frontend
       tag: latest
   nginx:
     image:
-      repo: ghcr.io/flamingo-cx/openframe/tactical-nginx
+      repo: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-nginx
       tag: latest
   base:
     image:
-      repo: ghcr.io/flamingo-cx/openframe/tactical-base
+      repo: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base
       tag: latest

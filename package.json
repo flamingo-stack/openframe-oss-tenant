@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "npx": "^10.2.2"
-  },
-  "devDependencies": {
-    "@types/lodash-es": "^4.17.12"
-  }
-}
