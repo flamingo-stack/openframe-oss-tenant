@@ -5,8 +5,8 @@
  * import { useAuthStore, useDevicesStore, useSSOStore } from '@/stores'
  */
 
-export { useAuthStore } from '../app/components/openframe-auth/stores/auth-store'
-export type { AuthState } from '../app/components/openframe-auth/stores/auth-store'
+export { useAuthStore } from '../app/auth/stores/auth-store'
+export type { AuthState } from '../app/auth/stores/auth-store'
 
 export { useDevicesStore } from './devices-store'
 export type { DevicesState, Device, DeviceFilter } from './devices-store'
@@ -17,7 +17,7 @@ export {
   selectIsAuthenticated,
   selectIsLoading as selectAuthLoading,
   selectError as selectAuthError,
-} from '../app/components/openframe-auth/stores/auth-store'
+} from '../app/auth/stores/auth-store'
 
 export {
   selectDevices,
