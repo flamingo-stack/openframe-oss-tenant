@@ -5,7 +5,6 @@ import com.openframe.client.dto.agent.AgentRegistrationResponse;
 import com.openframe.client.service.agentregistration.AgentRegistrationService;
 import com.openframe.client.service.agentregistration.AgentRegistrationToolService;
 import com.openframe.client.service.agentregistration.MachineIdGenerator;
-import com.openframe.client.service.agentregistration.MachineNatsRegistrationService;
 import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.OAuthClient;
@@ -47,9 +46,6 @@ class AgentRegistrationServiceTest {
     private MachineIdGenerator machineIdGenerator;
 
     @Mock
-    private MachineNatsRegistrationService machineNatsRegistrationService;
-
-    @Mock
     private AgentRegistrationToolService agentRegistrationToolService;
 
     @Captor
@@ -66,7 +62,7 @@ class AgentRegistrationServiceTest {
 
     @BeforeEach
     void setUp() {
-        agentRegistrationService = new AgentRegistrationService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, agentSecretGenerator, passwordEncoder, machineIdGenerator, machineNatsRegistrationService, agentRegistrationToolService);
+        agentRegistrationService = new AgentRegistrationService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, agentSecretGenerator, passwordEncoder, machineIdGenerator, agentRegistrationToolService);
         request = createTestRequest();
     }
 

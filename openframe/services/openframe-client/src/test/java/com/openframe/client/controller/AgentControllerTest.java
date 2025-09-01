@@ -132,51 +132,6 @@ class AgentControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void userCanAddToolConnection() throws Exception {
-        when(toolConnectionService.addToolConnection(
-                eq(OPENFRAME_AGENT_ID),
-                eq(TOOL_TYPE),
-                eq(AGENT_TOOL_ID)))
-                .thenReturn(toolConnectionResponse);
-
-        mockMvc.perform(post("/api/agents/tool-connection")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(toolConnectionRequest)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.openframeAgentId").value(OPENFRAME_AGENT_ID))
-                .andExpect(jsonPath("$.toolType").value(TOOL_TYPE))
-                .andExpect(jsonPath("$.agentToolId").value(AGENT_TOOL_ID));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void userCanUpdateToolConnection() throws Exception {
-        when(toolConnectionService.updateToolConnection(
-                eq(OPENFRAME_AGENT_ID),
-                eq(TOOL_TYPE),
-                eq(AGENT_TOOL_ID)))
-                .thenReturn(toolConnectionResponse);
-
-        mockMvc.perform(put("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, TOOL_TYPE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(toolConnectionUpdateRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.openframeAgentId").value(OPENFRAME_AGENT_ID))
-                .andExpect(jsonPath("$.toolType").value(TOOL_TYPE))
-                .andExpect(jsonPath("$.agentToolId").value(AGENT_TOOL_ID));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void userCanDeleteToolConnection() throws Exception {
-        mockMvc.perform(delete("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, TOOL_TYPE))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
     void getToolConnectionsByMachineId_WithUserRole_ReturnsOk() throws Exception {
         when(toolConnectionService.getToolConnectionsByMachineId(OPENFRAME_AGENT_ID))
                 .thenReturn(Arrays.asList(toolConnectionResponse));
@@ -198,17 +153,6 @@ class AgentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
-    }
-
-    @Test
-    @WithMockUser
-    void addToolConnection_WithInvalidRequest_ReturnsBadRequest() throws Exception {
-        ToolConnectionRequest invalidRequest = new ToolConnectionRequest();
-
-        mockMvc.perform(post("/api/agents/tool-connection")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -336,38 +280,6 @@ class AgentControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void updateToolConnection_WhenNotFound_Returns404() throws Exception {
-        when(toolConnectionService.updateToolConnection(
-                eq(OPENFRAME_AGENT_ID),
-                eq(TOOL_TYPE),
-                eq(AGENT_TOOL_ID)))
-                .thenThrow(new ConnectionNotFoundException("Connection not found"));
-
-        mockMvc.perform(put("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, TOOL_TYPE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(toolConnectionUpdateRequest)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("not_found"))
-                .andExpect(jsonPath("$.message").value("Connection not found"));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void deleteToolConnection_WhenNotFound_Returns404() throws Exception {
-        doThrow(new ConnectionNotFoundException("Connection not found"))
-                .when(toolConnectionService)
-                .deleteToolConnection(OPENFRAME_AGENT_ID, TOOL_TYPE);
-
-        mockMvc.perform(delete("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, TOOL_TYPE))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("not_found"))
-                .andExpect(jsonPath("$.message").value("Connection not found"));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
     void getToolConnectionByMachineIdAndToolType_WithInvalidAgentId_ReturnsBadRequest() throws Exception {
         when(toolConnectionService.getToolConnectionByMachineIdAndToolType(eq("invalid-id"), any()))
                 .thenThrow(new InvalidAgentIdException("Invalid agent ID"));
@@ -401,23 +313,6 @@ class AgentControllerTest {
         mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
                         OPENFRAME_AGENT_ID, TOOL_TYPE))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void addToolConnection_WhenAlreadyExists_ReturnsConflict() throws Exception {
-        when(toolConnectionService.addToolConnection(
-                eq(OPENFRAME_AGENT_ID),
-                eq(TOOL_TYPE),
-                eq(AGENT_TOOL_ID)))
-                .thenThrow(new DuplicateConnectionException("Tool connection already exists for this machine and tool type"));
-
-        mockMvc.perform(post("/api/agents/tool-connection")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(toolConnectionRequest)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("conflict"))
-                .andExpect(jsonPath("$.message").value("Tool connection already exists for this machine and tool type"));
     }
 
     @Test

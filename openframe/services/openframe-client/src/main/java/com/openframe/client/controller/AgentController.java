@@ -15,7 +15,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/agents")
 @RequiredArgsConstructor
-// TODO: remove tool connection manipulation methods
 public class AgentController {
 
     private final AgentRegistrationService agentRegistrationService;
@@ -48,32 +47,4 @@ public class AgentController {
         return ResponseEntity.ok(toolConnectionService.getToolConnectionByMachineIdAndToolType(openframeAgentId, toolType));
     }
 
-    @PostMapping("/tool-connection")
-    public ResponseEntity<ToolConnectionResponse> addToolConnection(@Valid @RequestBody ToolConnectionRequest request) {
-        return new ResponseEntity<>(
-                toolConnectionService.addToolConnection(
-                        request.getOpenframeAgentId(),
-                        request.getToolType(),
-                        request.getAgentToolId()),
-                HttpStatus.CREATED);
-    }
-
-    @PutMapping("/tool-connections/{openframeAgentId}/{toolType}")
-    public ResponseEntity<ToolConnectionResponse> updateToolConnection(
-            @PathVariable String openframeAgentId,
-            @PathVariable String toolType,
-            @Valid @RequestBody ToolConnectionUpdateRequest request) {
-        return ResponseEntity.ok(toolConnectionService.updateToolConnection(
-                openframeAgentId,
-                toolType,
-                request.getAgentToolId()));
-    }
-
-    @DeleteMapping("/tool-connections/{openframeAgentId}/{toolType}")
-    public ResponseEntity<Void> deleteToolConnection(
-            @PathVariable String openframeAgentId,
-            @PathVariable String toolType) {
-        toolConnectionService.deleteToolConnection(openframeAgentId, toolType);
-        return ResponseEntity.noContent().build();
-    }
 }

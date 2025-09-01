@@ -2,7 +2,10 @@ package com.openframe.client.service;
 
 import com.openframe.client.dto.agent.AgentToolCollectionResponse;
 import com.openframe.client.dto.agent.ToolConnectionResponse;
-import com.openframe.client.exception.*;
+import com.openframe.client.exception.ConnectionNotFoundException;
+import com.openframe.client.exception.InvalidAgentIdException;
+import com.openframe.client.exception.InvalidToolTypeException;
+import com.openframe.client.exception.MachineNotFoundException;
 import com.openframe.core.model.ConnectionStatus;
 import com.openframe.core.model.ToolConnection;
 import com.openframe.core.model.ToolType;
@@ -15,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,41 +64,57 @@ public class ToolConnectionService {
     }
 
     @Transactional
-    public ToolConnectionResponse addToolConnection(String openframeAgentId, String agentToolType, String agentId) {
+    public void addToolConnection(String openframeAgentId, String agentToolType, String agentId) {
         validateAgentId(openframeAgentId);
         validateToolType(agentToolType);
         validateAgentToolId(agentId);
         validateMachineExists(openframeAgentId);
 
         ToolType toolType = getToolTypeFromString(agentToolType);
-        Optional<ToolConnection> existingConnection = toolConnectionRepository
-                .findByMachineIdAndToolType(openframeAgentId, toolType);
 
-        if (existingConnection.isPresent()) {
-            ToolConnection connection = existingConnection.get();
-            if (connection.getStatus() == ConnectionStatus.CONNECTED) {
-                throw new DuplicateConnectionException("Tool connection already exists for this machine and tool type");
-            } else {
-                connection.setStatus(ConnectionStatus.CONNECTED);
-                connection.setAgentToolId(agentId);
-                connection.setConnectedAt(Instant.now());
-                connection.setDisconnectedAt(null);
-                ToolConnection saved = toolConnectionRepository.save(connection);
-                return convertToResponse(saved);
-            }
+        toolConnectionRepository
+                .findByMachineIdAndToolType(openframeAgentId, toolType)
+                .ifPresentOrElse(
+                        toolConnection -> processExistingToolConnection(
+                                toolConnection,
+                                openframeAgentId,
+                                toolType,
+                                agentId
+                        ),
+                        () -> addNewToolConnection(openframeAgentId, toolType, agentId)
+                );
+    }
+
+    private void processExistingToolConnection(
+            ToolConnection toolConnection,
+            String openframeAgentId,
+            ToolType toolType,
+            String agentId
+    ) {
+        if (toolConnection.getStatus() == ConnectionStatus.DISCONNECTED) {
+            toolConnection.setStatus(ConnectionStatus.CONNECTED);
+            toolConnection.setAgentToolId(agentId);
+            toolConnection.setConnectedAt(Instant.now());
+            toolConnection.setDisconnectedAt(null);
+            toolConnectionRepository.save(toolConnection);
+
+            log.info("Updated existing tool connection with machineId {} tool {} agentToolId {}", openframeAgentId, toolType, agentId);
+        } else {
+            ConnectionStatus toolConnectionStatus = toolConnection.getStatus();
+            log.warn("Tools agent already connected with machineId {} tool {} agentToolId {} status {}", openframeAgentId, toolType, agentId, toolConnectionStatus);
         }
+    }
 
+    private void addNewToolConnection(String openframeAgentId, ToolType toolType, String agentId) {
         ToolConnection connection = new ToolConnection();
         connection.setMachineId(openframeAgentId);
         connection.setToolType(toolType);
         connection.setAgentToolId(agentId);
         connection.setStatus(ConnectionStatus.CONNECTED);
         connection.setConnectedAt(Instant.now());
-        ToolConnection saved = toolConnectionRepository.save(connection);
+        toolConnectionRepository.save(connection);
 
         log.info("Saved tool connection with machineId {} tool {} agentToolId {}", openframeAgentId, toolType, agentId);
-
-        return convertToResponse(saved);
     }
 
     @Transactional

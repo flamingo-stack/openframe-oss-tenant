@@ -34,7 +34,6 @@ public class AgentRegistrationService {
     private final AgentSecretGenerator agentSecretGenerator;
     private final PasswordEncoder passwordEncoder;
     private final MachineIdGenerator machineIdGenerator;
-    private final MachineNatsRegistrationService machineNatsRegistrationService;
     private final AgentRegistrationToolService agentRegistrationToolService;
 
     @Transactional
@@ -49,7 +48,6 @@ public class AgentRegistrationService {
         saveOAuthClient(machineId, clientId, clientSecret);
         saveMachine(machineId, request);
 
-//        machineNatsRegistrationService.register(machineId);
         agentRegistrationToolService.publishInstallationMessages(machineId);
 
         return new AgentRegistrationResponse(machineId, clientId, clientSecret);
