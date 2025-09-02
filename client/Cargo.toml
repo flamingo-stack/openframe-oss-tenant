@@ -55,7 +55,7 @@ hostname = "0.3"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
-winapi = { version = "0.3", features = ["winuser", "shellapi", "securitybaseapi", "errhandlingapi", "winerror"] }
+winapi = { version = "0.3", features = ["winuser", "shellapi", "securitybaseapi", "winerror", "shlobj", "sysinfoapi", "errhandlingapi", "handleapi", "processthreadsapi", "winnt"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

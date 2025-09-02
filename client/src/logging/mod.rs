@@ -27,11 +27,11 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use tracing::{Level, Subscriber};
+use tracing::Level;
 use tracing_subscriber::{
     layer::SubscriberExt,
-    prelude::*,
     EnvFilter, Layer, Registry,
+//    prelude::*,
 };
 
 #[derive(Debug, Serialize)]
@@ -302,7 +302,7 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
         if let Some(endpoint) = log_endpoint {
             if let Some(agent) = agent_id.clone() {
                 // Create a log shipper instance
-                let shipper = shipping::LogShipper::new(endpoint.clone(), agent.clone());
+                let _shipper = shipping::LogShipper::new(endpoint.clone(), agent.clone());
                 // No need to do anything else, shipper already starts itself with its background task
                 tracing::info!("Log shipping initialized to endpoint: {}", endpoint);
             }

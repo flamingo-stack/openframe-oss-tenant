@@ -541,7 +541,7 @@ impl DirectoryManager {
     fn validate_directory_permissions(
         &self,
         path: &Path,
-        expected_perms: &Permissions,
+        _expected_perms: &Permissions,
     ) -> Result<(), DirectoryError> {
         if !path.exists() {
             return Err(DirectoryError::ValidationFailed(

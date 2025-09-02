@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use plist::Dictionary;
+// use plist::Dictionary;
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
@@ -7,7 +7,8 @@ use service_manager::{
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::str::FromStr;
-use tracing::{debug, info, warn};
+// use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 #[derive(Debug, Clone)]
 pub struct ServiceConfig {
@@ -277,7 +278,7 @@ impl CrossPlatformServiceManager {
         }
     }
 
-    fn apply_platform_specific_config(&self, ctx: &mut ServiceInstallCtx) {
+    fn apply_platform_specific_config(&self, _ctx: &mut ServiceInstallCtx) {
         #[cfg(target_os = "macos")]
         {
             // For macOS, we need to create a proper plist using the plist crate
