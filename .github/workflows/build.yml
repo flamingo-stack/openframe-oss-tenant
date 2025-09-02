@@ -241,6 +241,9 @@ jobs:
     name: "Build Rust Client (${{ matrix.os }})"
     needs: [changes]
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
     strategy:
       fail-fast: false
