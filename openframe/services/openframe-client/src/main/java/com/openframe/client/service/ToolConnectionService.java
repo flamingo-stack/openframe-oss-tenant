@@ -65,11 +65,6 @@ public class ToolConnectionService {
 
     @Transactional
     public void addToolConnection(String openframeAgentId, String agentToolType, String agentId) {
-        validateAgentId(openframeAgentId);
-        validateToolType(agentToolType);
-        validateAgentToolId(agentId);
-        validateMachineExists(openframeAgentId);
-
         ToolType toolType = getToolTypeFromString(agentToolType);
 
         toolConnectionRepository

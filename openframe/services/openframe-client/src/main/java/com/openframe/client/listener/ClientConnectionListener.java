@@ -21,7 +21,7 @@ public class ClientConnectionListener {
     private final ObjectMapper objectMapper;
     private final MachineStatusService machineStatusService;
 
-    // TODO: nats died - heartbeat fallback
+    // TODO: nats is down - heartbeat fallback
     @Bean
     public Consumer<String> machineConnectedConsumer() {
         return message -> {
@@ -29,9 +29,10 @@ public class ClientConnectionListener {
                 ClientConnectionEvent event = objectMapper.readValue(message, ClientConnectionEvent.class);
 
                 String machineId = event.getClient().getName();
-                Instant timestamp = Instant.parse(event.getTimestamp());
-                machineStatusService.updateToOnline(machineId, timestamp);
+                Instant eventTimestamp = Instant.parse(event.getTimestamp());
+                machineStatusService.updateToOnline(machineId, eventTimestamp);
             } catch (Exception e) {
+                log.error("Failed to process tool connection event", e);
                 throw new NatsException("Failed to process client connected event", e);
             }
         };
@@ -44,8 +45,8 @@ public class ClientConnectionListener {
                 ClientConnectionEvent event = objectMapper.readValue(message, ClientConnectionEvent.class);
 
                 String machineId = event.getClient().getName();
-                Instant timestamp = Instant.parse(event.getTimestamp());
-                machineStatusService.updateToOffline(machineId, timestamp);
+                Instant eventTimestamp = Instant.parse(event.getTimestamp());
+                machineStatusService.updateToOffline(machineId, eventTimestamp);
             } catch (Exception e) {
                 throw new NatsException("Failed to process disconnected connect event", e);
             }
