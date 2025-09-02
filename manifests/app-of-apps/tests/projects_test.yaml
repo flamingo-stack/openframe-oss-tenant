@@ -8,9 +8,9 @@ tests:
 
   - it: should generate all required ArgoCD projects
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -50,9 +50,9 @@ tests:
 
   - it: should have correct project metadata and permissions
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       # Metadata validation
@@ -80,9 +80,9 @@ tests:
 
   - it: should have correct cluster resource whitelist
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -100,7 +100,7 @@ tests:
 
   - it: should generate same projects for SaaS deployment
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
@@ -133,9 +133,9 @@ tests:
 
   - it: should have correct project descriptions
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - equal:

@@ -3,9 +3,15 @@ registerJob:
 
 
 cassandra:
+  # bitnamilegacy
+  image:
+    repository: bitnamilegacy/cassandra
+    tag: 5.0.5-debian-12-r7
+
   global:
-    imagePullSecrets:
-      - name: docker-pat-secret
+    # bitnamilegacy
+    security:
+      allowInsecureImages: true
 
   # resourcesPreset: medium
   resources:
@@ -74,10 +80,15 @@ cassandra:
     ##   - hostname/IP
     ##   - hostname/IP
     ##
-    extraSeeds: [ ]
+    extraSeeds: []
     enableUDF: false
 
   metrics:
+    # bitnamilegacy
+    image:
+      repository: bitnamilegacy/cassandra-exporter
+      tag: 2.3.8-debian-12-r51
+
     enabled: true
     serviceMonitor:
       enabled: true

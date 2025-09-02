@@ -8,9 +8,9 @@ tests:
 
   - it: should have correct ArgoCD application metadata
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -32,9 +32,9 @@ tests:
 
   - it: should have correct project configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -43,14 +43,14 @@ tests:
 
   - it: should have correct source configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.source.repoURL
-          value: https://github.com/Flamingo-CX/openframe.git
+          value: https://github.com/flamingo-stack/openframe-oss-tenant.git
       - equal:
           path: spec.source.targetRevision
           value: main
@@ -62,9 +62,9 @@ tests:
 
   - it: should have correct destination configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -80,9 +80,9 @@ tests:
 
   - it: should have correct default sync policy
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -97,9 +97,9 @@ tests:
 
   - it: should have sync policy structure
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - exists:
@@ -113,9 +113,9 @@ tests:
 
   - it: should include required helm values structure
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
@@ -137,9 +137,9 @@ tests:
 
   - it: should generate exactly one ArgoCD application
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -151,9 +151,9 @@ tests:
 
   - it: should handle empty apps configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       apps: {}
     asserts:
