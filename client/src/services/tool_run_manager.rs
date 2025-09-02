@@ -41,6 +41,11 @@ impl ToolRunManager {
         Ok(())
     }
 
+    pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
+        info!(tool_id = %installed_tool.tool_id, "Running single tool");
+        self.run_tool(installed_tool).await
+    }
+
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
         // exchange args placeholders to real values
         let processed_args = self
