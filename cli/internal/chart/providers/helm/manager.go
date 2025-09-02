@@ -3,11 +3,11 @@ package helm
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"runtime"
+	"os"
 	"strings"
 
 	"github.com/flamingo/openframe/internal/chart/models"
+	"github.com/flamingo/openframe/internal/chart/providers/argocd"
 	"github.com/flamingo/openframe/internal/chart/utils/config"
 	"github.com/flamingo/openframe/internal/chart/utils/errors"
 	"github.com/flamingo/openframe/internal/shared/executor"
@@ -57,15 +57,6 @@ func (h *HelmManager) IsChartInstalled(ctx context.Context, releaseName, namespa
 	return false, nil
 }
 
-// getManifestsPath returns the path to the manifests directory
-func (h *HelmManager) getManifestsPath() string {
-	// Get the path relative to the source file location
-	_, filename, _, _ := runtime.Caller(0)
-	// Navigate from internal/chart/providers/helm to internal/chart/manifests
-	baseDir := filepath.Dir(filename)
-	return filepath.Join(baseDir, "..", "..", "manifests")
-}
-
 // InstallArgoCD installs ArgoCD using Helm with exact commands specified
 func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInstallConfig) error {
 	// Add ArgoCD Helm repository
@@ -80,9 +71,18 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
 	}
 
-	// Get the manifests path
-	manifestsPath := h.getManifestsPath()
-	valuesFile := filepath.Join(manifestsPath, "argocd-values.yaml")
+	// Create a temporary file with ArgoCD values
+	tmpFile, err := os.CreateTemp("", "argocd-values-*.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary values file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Write the ArgoCD values to the temporary file
+	if _, err := tmpFile.WriteString(argocd.GetArgoCDValues()); err != nil {
+		return fmt.Errorf("failed to write values to temporary file: %w", err)
+	}
+	tmpFile.Close()
 
 	// Install ArgoCD with upgrade --install
 	args := []string{
@@ -92,7 +92,7 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 		"--create-namespace",
 		"--wait",
 		"--timeout", "5m",
-		"-f", valuesFile,
+		"-f", tmpFile.Name(),
 	}
 
 	if config.DryRun {
@@ -138,15 +138,26 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
 	}
 
-	// Get the manifests path
-	manifestsPath := h.getManifestsPath()
-	valuesFile := filepath.Join(manifestsPath, "argocd-values.yaml")
+	// Create a temporary file with ArgoCD values
+	tmpFile, err := os.CreateTemp("", "argocd-values-*.yaml")
+	if err != nil {
+		spinner.Stop()
+		return fmt.Errorf("failed to create temporary values file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Write the ArgoCD values to the temporary file
+	if _, err := tmpFile.WriteString(argocd.GetArgoCDValues()); err != nil {
+		spinner.Stop()
+		return fmt.Errorf("failed to write values to temporary file: %w", err)
+	}
+	tmpFile.Close()
 
 	// Installation details are now silent - just show in verbose mode
 	if config.Verbose {
 		pterm.Info.Printf("   Version: 8.1.4\n")
 		pterm.Info.Printf("   Namespace: argocd\n")
-		pterm.Info.Printf("   Values file: %s\n", valuesFile)
+		pterm.Info.Printf("   Values file: %s\n", tmpFile.Name())
 	}
 
 	// Install ArgoCD with upgrade --install
@@ -157,7 +168,7 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		"--create-namespace",
 		"--wait",
 		"--timeout", "5m",
-		"-f", valuesFile,
+		"-f", tmpFile.Name(),
 	}
 
 	if config.DryRun {

@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
 // PathResolver handles path resolution for chart-related files and directories
@@ -37,29 +36,23 @@ func (p *PathResolver) GetCertificateDirectory() string {
 	return certDir
 }
 
-// GetManifestsDirectory returns the path to the manifests directory
+// GetManifestsDirectory returns the relative path to the manifests directory
 func (p *PathResolver) GetManifestsDirectory() string {
-	// Get the path relative to the source file location
-	_, filename, _, _ := runtime.Caller(0)
-	// Navigate from internal/chart/utils/config to internal/chart/manifests
-	baseDir := filepath.Dir(filename)
-	return filepath.Join(baseDir, "..", "..", "manifests")
+	// Return relative path from typical execution context
+	// This assumes execution from the project root or CLI directory
+	return "cli/internal/chart/manifests"
 }
 
 // GetHelmValuesFile returns the path to the helm values file
 func (p *PathResolver) GetHelmValuesFile() string {
-	// Get the current working directory (root of CLI project)
-	if wd, err := os.Getwd(); err == nil {
-		return filepath.Join(wd, "helm-values.yaml")
-	}
-	// Fallback to relative path if working directory can't be determined
-	return "helm-values.yaml"
+	// Return relative path to helm-values.yaml in CLI directory
+	// This file should be dynamically read at runtime
+	return "./helm-values.yaml"
 }
 
-// GetArgocdValuesFile returns the path to the ArgoCD values file
+// GetArgocdValuesFile returns the relative path to the ArgoCD values file
 func (p *PathResolver) GetArgocdValuesFile() string {
-	manifestsPath := p.GetManifestsDirectory()
-	return filepath.Join(manifestsPath, "argocd-values.yaml")
+	return filepath.Join(p.GetManifestsDirectory(), "argocd-values.yaml")
 }
 
 // GetCertificateFiles returns the paths to the certificate files
