@@ -4,11 +4,11 @@ templates:
 tests:
   - it: should transfer custom ngrok credentials via app-helper
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.credentials.apiKey: "custom-api-key"
-      deployment.selfHosted.ingress.ngrok.credentials.authtoken: "custom-auth-token"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.credentials.apiKey: "custom-api-key"
+      deployment.oss.ingress.ngrok.credentials.authtoken: "custom-auth-token"
       deployment.saas.enabled: false
     asserts:
       # Verify deployment values are propagated
@@ -53,9 +53,9 @@ tests:
 
   - it: should not add ngrok credentials when they are empty by default
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
       deployment.saas.enabled: false
     asserts:
       # Should NOT add ngrok-operator config when credentials are empty

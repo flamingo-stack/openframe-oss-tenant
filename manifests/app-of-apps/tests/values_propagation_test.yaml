@@ -8,9 +8,9 @@ tests:
 
   - it: should propagate self-hosted localhost values
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
@@ -18,7 +18,7 @@ tests:
           pattern: "deployment:"
       - matchRegex:
           path: spec.source.helm.values
-          pattern: "selfHosted:"
+          pattern: "oss:"
       - matchRegex:
           path: spec.source.helm.values
           pattern: "localhost:"
@@ -28,9 +28,9 @@ tests:
 
   - it: should propagate self-hosted ngrok values
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
@@ -45,7 +45,7 @@ tests:
 
   - it: should propagate SaaS deployment values
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
@@ -68,9 +68,9 @@ tests:
 
   - it: should propagate custom global repository values
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       global.repoURL: "https://custom-repo.com/openframe.git"
       global.repoBranch: "development"
@@ -89,9 +89,9 @@ tests:
 
   - it: should propagate global autoSync setting to helm values
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       global.autoSync: false
     asserts:
@@ -105,9 +105,9 @@ tests:
 
   - it: should propagate docker registry configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       registry.docker.username: "testuser"
       registry.docker.password: "testpass"
@@ -128,9 +128,9 @@ tests:
 
   - it: should propagate GHCR registry configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       registry.ghcr.username: "ghcruser"
       registry.ghcr.password: "ghcrtoken"
@@ -151,9 +151,9 @@ tests:
 
   - it: should propagate app-specific configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       apps.openframe-config.values.config.branch: "feature-branch"
       apps.openframe-config.values.config.environment: "staging"
@@ -174,11 +174,11 @@ tests:
 
   - it: should propagate ngrok credentials
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.credentials.apiKey: "test-api-key"
-      deployment.selfHosted.ingress.ngrok.credentials.authtoken: "test-auth-token"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.credentials.apiKey: "test-api-key"
+      deployment.oss.ingress.ngrok.credentials.authtoken: "test-auth-token"
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
@@ -197,9 +197,9 @@ tests:
 
   - it: should propagate registerJob configuration
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       registerJob.enabled: false
     asserts:

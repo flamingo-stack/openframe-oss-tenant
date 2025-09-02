@@ -5,8 +5,8 @@ tests:
   # Basic service rendering
   - it: should render service correctly
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -20,8 +20,8 @@ tests:
   # Service configuration
   - it: should configure service correctly
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - equal:
@@ -41,12 +41,12 @@ tests:
           value: http
 
   # Service works with different deployment types
-  - it: should render service for selfHosted ngrok
+  - it: should render service for oss ngrok
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -59,7 +59,7 @@ tests:
 
   - it: should render service for saas localhost
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
