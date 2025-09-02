@@ -58,12 +58,12 @@ public class TenantDiscoveryService {
                 .hasExistingAccounts(false)
                 .build();
     }
-    
+
     /**
-     * Check if tenant name is available for registration
+     * Check if tenant domain is available for registration
      */
-    public boolean isTenantNameAvailable(String tenantName) {
-        return tenantService.isTenantNameAvailable(tenantName);
+    public boolean isTenantDomainAvailable(String domain) {
+        return tenantService.isTenantDomainAvailable(domain);
     }
     
     /**

@@ -42,11 +42,7 @@ public class TenantService {
         if (nonValidDomain(domain)) {
             throw new IllegalArgumentException("Invalid domain format");
         }
-        
-        if (tenantRepository.existsByNameIgnoreCase(tenantName)) {
-            throw new IllegalArgumentException("Tenant name already exists");
-        }
-        
+
         if (tenantRepository.existsByDomain(domain)) {
             throw new IllegalArgumentException("Tenant domain already exists");
         }
@@ -88,13 +84,13 @@ public class TenantService {
     }
 
     /**
-     * Check if tenant name is available (case-insensitive)
+     * Check if tenant domain is available for registration
      */
-    public boolean isTenantNameAvailable(String tenantName) {
-        if (nonValidTenantName(tenantName)) {
+    public boolean isTenantDomainAvailable(String domain) {
+        if (nonValidDomain(domain)) {
             return false;
         }
-        return !tenantRepository.existsByNameIgnoreCase(tenantName);
+        return !tenantRepository.existsByDomain(domain);
     }
 
     /**

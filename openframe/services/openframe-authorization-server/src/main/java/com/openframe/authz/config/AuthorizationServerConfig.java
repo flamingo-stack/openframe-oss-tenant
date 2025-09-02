@@ -66,21 +66,6 @@ import static java.util.UUID.randomUUID;
 @Slf4j
 public class AuthorizationServerConfig {
 
-    @Value("${openframe.auth.gateway.client.id}")
-    private String gatewayClientId;
-
-    @Value("${openframe.auth.gateway.client.secret}")
-    private String gatewayClientSecret;
-
-    @Value("${openframe.auth.gateway.redirect-uri}")
-    private String gatewayRedirectUri;
-
-    @Value("${security.oauth2.token.access.expiration-seconds}")
-    private long accessTokenExpirationSeconds;
-
-    @Value("${security.oauth2.token.refresh.expiration-seconds}")
-    private long refreshTokenExpirationSeconds;
-
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
@@ -123,44 +108,6 @@ public class AuthorizationServerConfig {
         reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 15);
         return reg;
     }
-
-    @Bean
-    public RegisteredClient gatewayClient() {
-        return RegisteredClient.withId(randomUUID().toString())
-            .clientId(gatewayClientId)
-            .clientSecret(passwordEncoder().encode(gatewayClientSecret))
-            .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .redirectUri(gatewayRedirectUri)
-            .scope(OidcScopes.OPENID)
-            .scope(OidcScopes.PROFILE)
-            .scope(OidcScopes.EMAIL)
-            .scope("offline_access")
-            .clientSettings(ClientSettings.builder()
-                .requireProofKey(true)
-                .requireAuthorizationConsent(false)
-                .build())
-            .tokenSettings(TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofSeconds(accessTokenExpirationSeconds))
-                .refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenExpirationSeconds))
-                .reuseRefreshTokens(false)
-                .build())
-            .build();
-    }
-
-    @Bean
-    public ApplicationRunner registeredClientBootstrap(
-            RegisteredClientRepository repo,
-            RegisteredClient gatewayClient) {
-        return args -> {
-            if (repo.findByClientId(gatewayClient.getClientId()) == null) {
-                repo.save(gatewayClient);
-            }
-        };
-    }
-
 
     @Bean
     public JWKSource<SecurityContext> jwkSource(TenantKeyService tenantKeyService) {
