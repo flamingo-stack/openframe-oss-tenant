@@ -1,7 +1,6 @@
 package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.enums.MessageType;
 import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +18,6 @@ public class TrmmEventDeserializer extends IntegratedToolEventDeserializer {
     private static final String FIELD_ID = "id";
     private static final String FIELD_MESSAGE = "message";
     private static final String FIELD_ENTRY_TIME = "entry_time";
-
-    public TrmmEventDeserializer(ObjectMapper objectMapper) {
-        super(objectMapper);
-    }
 
     @Override
     public MessageType getType() {

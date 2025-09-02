@@ -21,9 +21,10 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     private static final String FIELD_ID = "_id";
     private static final String FIELD_OID = "$oid";
     private static final String FIELD_MSG = "msg";
+    private final ObjectMapper mapper;
 
     public MeshCentralEventDeserializer(ObjectMapper mapper) {
-        super(mapper);
+        this.mapper = mapper;
     }
 
     @Override

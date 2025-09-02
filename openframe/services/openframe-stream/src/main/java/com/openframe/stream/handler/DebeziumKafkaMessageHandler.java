@@ -37,9 +37,7 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
             message.setToolType(debeziumMessage.getIntegratedToolType().name());
             message.setEventType(debeziumMessage.getUnifiedEventType().name());
             message.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
-            message.setSummary(debeziumMessage.getMessage() == null || debeziumMessage.getMessage().isBlank()
-                    ? debeziumMessage.getUnifiedEventType().getSummary()
-                    : debeziumMessage.getMessage() );
+            message.setSummary(debeziumMessage.getMessage());
             message.setEventTimestamp(debeziumMessage.getEventTimestamp());
 
         } catch (Exception e) {
