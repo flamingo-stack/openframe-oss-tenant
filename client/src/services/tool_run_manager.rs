@@ -6,6 +6,7 @@ use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_installation_command_params_processor::ToolInstallationCommandParamsProcessor;
 
+#[derive(Clone)]
 pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
     params_processor: ToolInstallationCommandParamsProcessor,

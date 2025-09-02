@@ -1,6 +1,5 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::clients::tool_api_client::ToolApiClient;
-use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use tracing::{info, debug};
 use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
@@ -10,6 +9,7 @@ use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
 use crate::services::ToolInstallationCommandParamsProcessor;
+use crate::services::tool_run_manager::ToolRunManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
@@ -21,19 +21,19 @@ use std::os::unix::fs::PermissionsExt;
 pub struct ToolInstallationService {
     tool_agent_file_client: ToolAgentFileClient,
     tool_api_client: ToolApiClient,
-    tool_connection_message_publisher: ToolConnectionMessagePublisher,
     installed_tools_service: InstalledToolsService,
     directory_manager: DirectoryManager,
     command_params_processor: ToolInstallationCommandParamsProcessor,
+    tool_run_manager: ToolRunManager,
 }
 
 impl ToolInstallationService {
     pub fn new(
         tool_agent_file_client: ToolAgentFileClient,
         tool_api_client: ToolApiClient,
-        tool_connection_message_publisher: ToolConnectionMessagePublisher,
         installed_tools_service: InstalledToolsService,
         directory_manager: DirectoryManager,
+        tool_run_manager: ToolRunManager,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -46,13 +46,17 @@ impl ToolInstallationService {
         Self {
             tool_agent_file_client,
             tool_api_client,
-            tool_connection_message_publisher,
             installed_tools_service,
             directory_manager,
             command_params_processor,
+            tool_run_manager,
         }
     }
 
+    // TODO: too much operations that can fail. Clarify that this method is super idenpotent.
+    //  If some file already exists, skio it.
+    //  If tool is already installed(tactical-rmm), skip it.
+    // TODO: make long ack wait to avoid installation conflicts.
     pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
         let tool_id = &tool_installation_message.tool_id;
         info!("Installing tool {} with version {}", tool_id, tool_installation_message.version);
@@ -156,15 +160,6 @@ impl ToolInstallationService {
             info!("No installation command args provided for tool: {} - skip installation", tool_id);
         }
 
-        // Generate tool agent id
-        let tool_agent_id = format!("{}_agent_id", tool_id);
-
-        // Publish connection message (ignore errors for now)
-        // self
-        //     .tool_connection_message_publisher
-        //     .publish(tool_id.clone(), tool_agent_id)
-        //     .await?;
-
         // Persist installed tool information
         let installed_tool = InstalledTool {
             tool_id: tool_id.clone(),
@@ -173,8 +168,13 @@ impl ToolInstallationService {
             status: ToolStatus::Installed,
         };
 
-        self.installed_tools_service.save(installed_tool).await
+        self.installed_tools_service.save(installed_tool.clone()).await
             .context("Failed to save installed tool")?;
+
+        // Run the tool after successful installation
+        info!("Running tool {} after successful installation", tool_id);
+        self.tool_run_manager.run_new_tool(installed_tool).await
+            .context("Failed to run tool after installation")?;
 
         Ok(())
     }

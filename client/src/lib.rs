@@ -230,20 +230,20 @@ impl Client {
         // Initialize tool connection message publisher
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
+        // Initialize tool run manager
+        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), ToolInstallationCommandParamsProcessor::new(directory_manager.clone()));
+
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             tool_agent_file_client,
             tool_api_client,
-            tool_connection_message_publisher,
             installed_tools_service.clone(),
             directory_manager.clone(),
+            tool_run_manager.clone(),
         );
 
         // Initialize tool installation message listener
         let tool_installation_message_listener = ToolInstallationMessageListener::new(nats_connection_manager.clone(), tool_installation_service, config_service.clone());
-
-        // Initialize tool run manager
-        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), ToolInstallationCommandParamsProcessor::new(directory_manager.clone()));
 
         Ok(Self {
             config,
@@ -269,7 +269,7 @@ impl Client {
         self.nats_connection_manager.connect().await?;
 
         // Start tool installation message listener in background
-        // self.tool_installation_message_listener.start().await?;
+        self.tool_installation_message_listener.start().await?;
 
         // Start tool run manager
         self.tool_run_manager.run().await?;
