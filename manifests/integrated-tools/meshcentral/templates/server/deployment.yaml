@@ -22,33 +22,6 @@ spec:
         runAsUser: 0
       
       initContainers:
-      - name: wait-mongodb
-        image: mongo:8.0.9
-        envFrom:
-          - configMapRef:
-              name: meshcentral-mongodb
-          - secretRef:
-              name: meshcentral-mongodb
-        command: ["sh", "-c"]
-        args:
-          - |
-            echo "Waiting for MongoDB to be ready..."
-            sleep 30
-            for i in $(seq 1 300); do
-              if /usr/local/bin/readiness-command.sh; then
-                echo "MongoDB is ready after $i attempts"
-                exit 0
-              fi
-              echo "Attempt $i: MongoDB not ready yet, waiting..."
-              sleep 5
-            done
-            echo "MongoDB did not become ready in time" >&2
-            exit 1
-        volumeMounts:
-        - name: mongodb-readiness-command
-          mountPath: /usr/local/bin/readiness-command.sh
-          subPath: readiness-command.sh
-
       - name: init-clean-meshcentral
         image: busybox:1.36
         command:
@@ -97,12 +70,7 @@ spec:
         volumeMounts:
         - name: meshcentral-data
           mountPath: /opt/mesh
-
       volumes:
-        - name: mongodb-readiness-command
-          configMap:
-            name: meshcentral-mongodb-readiness
-            defaultMode: 0755
-        - name: meshcentral-data
-          persistentVolumeClaim:
-            claimName: meshcentral-server
+      - name: meshcentral-data
+        persistentVolumeClaim:
+          claimName: meshcentral-server

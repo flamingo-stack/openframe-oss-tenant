@@ -1,0 +1,114 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-init
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mongo-init
+        image: mongo:8.0.9
+        envFrom:
+          - secretRef:
+              name: meshcentral-mongodb
+          - configMapRef:
+              name: meshcentral-mongodb
+        env:
+        - name: MONGO_HOST
+          value: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017"
+        command:
+        - /bin/bash
+        - -ec
+        - |
+          apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
+          
+          echo "Waiting for MongoDB service to be ready..."
+          until mongosh --host meshcentral-mongodb.integrated-tools.svc.cluster.local:27017 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+            echo "Waiting for MongoDB to be accessible..."
+            sleep 5
+          done
+
+          echo "MongoDB service is accessible, waiting additional time for startup..."
+          sleep 10
+
+          echo "Checking replica set status..."
+          INIT_STATUS=$(mongosh --host "$MONGO_HOST" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
+          echo "Current replica set status: $INIT_STATUS"
+
+          if [ "$INIT_STATUS" != "1" ]; then
+            echo "Replica set needs initialization or repair..."
+            
+            # First try to reconfigure if already initialized but corrupted
+            RECONFIG_RESULT=$(mongosh --host "$MONGO_HOST" --eval '
+              try {
+                rs.reconfig({
+                  _id: "rs0",
+                  members: [
+                    { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+                  ]
+                }, {force: true});
+              } catch(e) {
+                if (e.message.includes("already initialized")) {
+                  print("Replica set corrupted, attempting force reconfigure...");
+                  rs.reconfig({
+                    _id: "rs0", 
+                    members: [
+                      { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+                    ]
+                  }, {force: true});
+                } else {
+                  print("Initializing new replica set...");
+                  rs.initiate({
+                    _id: "rs0",
+                    members: [
+                      { _id: 0, host: "meshcentral-mongodb.integrated-tools.svc.cluster.local:27017" }
+                    ]
+                  });
+                }
+              }
+            ' --quiet)
+            echo "Replica set setup result: $RECONFIG_RESULT"
+            
+            echo "Waiting for replica set to stabilize..."
+            sleep 10
+            
+            echo "Checking replica set status after initialization..."
+            for i in {1..30}; do
+              STATUS=$(mongosh --host "$MONGO_HOST" --eval "rs.status().ok" --quiet)
+              if [ "$STATUS" = "1" ]; then
+                echo "Replica set is ready!"
+                break
+              fi
+              echo "Retry $i: Waiting for replica set to be ready (current status: $STATUS)..."
+              sleep 5
+            done
+          else
+            echo "Replica set is already initialized"
+          fi
+
+          echo "Checking admin user..."
+          if ! mongosh --host "$MONGO_HOST" -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
+            echo "Creating admin user..."
+            mongosh --host "$MONGO_HOST" --eval "
+              db.getSiblingDB('admin').createUser({
+                user: '$MONGO_INITDB_ROOT_USERNAME',
+                pwd: '$MONGO_INITDB_ROOT_PASSWORD',
+                roles: [
+                  { role: 'root', db: 'admin' },
+                  { role: 'userAdminAnyDatabase', db: 'admin' },
+                  { role: 'dbAdminAnyDatabase', db: 'admin' },
+                  { role: 'readWriteAnyDatabase', db: 'admin' }
+                ]
+              })
+            "
+          else
+            echo "Admin user already exists"
+          fi
+
+          echo "Final replica set status:"
+          mongosh --host "$MONGO_HOST" --eval "rs.status()" --quiet
