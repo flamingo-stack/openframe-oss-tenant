@@ -1,0 +1,27 @@
+package argocd
+
+// GetArgoCDValues returns the ArgoCD Helm chart values as YAML string
+func GetArgoCDValues() string {
+	return `# global: 
+#   imagePullSecrets:
+#     - name: docker-pat-secret
+
+fullnameOverride: argocd
+
+configs:
+  cm:
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs
+`
+}
