@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use tracing::{info, warn, error};
 use std::process::Command;
 
-use crate::models::installed_tool::ToolStatus;
+use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_installation_command_params_processor::ToolInstallationCommandParamsProcessor;
 
@@ -34,68 +34,49 @@ impl ToolRunManager {
             return Ok(());
         }
 
-        for tool in tools.into_iter().filter(|t| t.status == ToolStatus::Installed) {
-            let processor = self.params_processor.clone();
-
-            tokio::spawn(async move {
-                let res: Result<()> = tokio::task::spawn_blocking(move || {
-                    if tool.run_command_args.is_empty() {
-                        warn!(tool_id = %tool.tool_id, "Tool has no run_command_args – skipping");
-                        return Ok(());
-                    }
-
-                    let processed_args = match processor.process(&tool.tool_id, tool.run_command_args.clone()) {
-                        Ok(a) => a,
-                        Err(e) => {
-                            error!(tool_id = %tool.tool_id, err = %e, stacktrace = ?e, "Failed to process command parameters – skipping tool");
-                            return Ok(());
-                        }
-                    };
-
-                    let command_path = format!("/Users/kirillgontar/Library/Logs/OpenFrame/{}/agent", tool.tool_id);
-                    
-                    info!(
-                        tool_id = %tool.tool_id, 
-                        command = %command_path, 
-                        args = ?processed_args, 
-                        "TOOL_LOG: Executing tool command"
-                    );
-
-                    let mut cmd = Command::new(command_path);
-                    cmd.args(&processed_args);
-
-                    match cmd.spawn() {
-                        Ok(mut child) => {
-                            info!(tool_id = %tool.tool_id, "TOOL_LOG: Tool process started successfully");
-                            // Optionally wait for the process or let it run in background
-                            tokio::spawn(async move {
-                                match child.wait() {
-                                    Ok(status) => {
-                                        if status.success() {
-                                            info!(tool_id = %tool.tool_id, "TOOL_LOG: Tool completed successfully");
-                                        } else {
-                                            error!(tool_id = %tool.tool_id, exit_code = ?status.code(), "TOOL_LOG: Tool exited with error");
-                                        }
-                                    }
-                                    Err(e) => {
-                                        error!(tool_id = %tool.tool_id, error = ?e, "Failed to wait for tool process");
-                                    }
-                                }
-                            });
-                        }
-                        Err(e) => {
-                            error!(error = ?e, "Failed to start tool process");
-                        }
-                    }
-                    Ok(())
-                }).await.unwrap_or_else(|e| Err(anyhow::anyhow!(e)));
-
-                if let Err(e) = res {
-                    error!(err = %e, stacktrace = ?e, "Background execution error for tool");
-                }
-            });
+        for tool in tools {
+            self.run_tool(tool).await?;
         }
  
+        Ok(())
+    }
+
+    async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
+        // exchange args placeholders to real values
+        let processed_args = self
+            .params_processor
+            .process(&tool.tool_id, tool.run_command_args.clone())
+            .context("Failed to process run command params for tool")?;
+        // TODO: rerun
+
+        let command_path = format!("/Users/kirillgontar/Library/Logs/OpenFrame/{}/agent", tool.tool_id);
+
+        info!("TOOL_LOG: Executing tool command - tool_id: {}, command: {}, args: {:?}", tool.tool_id, command_path, processed_args);
+
+        // spawn tool run process and wait async till the end
+        let mut child = Command::new(command_path)
+            .args(&processed_args)
+            .spawn()
+            .with_context(|| format!("Failed to start tool process: {}", tool.tool_id))?;
+
+        tokio::spawn(async move {
+            match child.wait() {
+                Ok(status) => {
+                    if status.success() {
+                        info!("Tool completed successfully");
+                        // TODO: rerun
+                    } else {
+                        error!("Tool failed with exit status: {}", status);
+                        // TODO: rerun
+                    }
+                }
+                Err(e) => {
+                    error!(error = ?e, "Failed to wait for tool process");
+                    // TODO: rerun
+                }
+            }
+        });
+
         Ok(())
     }
 }
