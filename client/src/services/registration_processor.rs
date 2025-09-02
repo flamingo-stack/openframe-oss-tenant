@@ -41,6 +41,7 @@ impl RegistrationProcessor {
                     return Ok(());
                 }
                 Err(e) => {
+                    // TODO: {:#} instead of full backtrace
                     error!(
                         error = ?e,
                         "Registration attempt failed. Retrying in 60 seconds…", 
