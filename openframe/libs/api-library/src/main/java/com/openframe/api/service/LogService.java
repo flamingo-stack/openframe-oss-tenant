@@ -173,19 +173,9 @@ public class LogService {
                 .ingestDay(logEvent.getKey().getIngestDay())
                 .severity(logEvent.getSeverity())
                 .message(logEvent.getMessage())
-                .details(convertDetailsToString(logEvent.getDetails()))
                 .userId(logEvent.getUserId())
                 .deviceId(logEvent.getDeviceId())
                 .summary(logEvent.getMessage())
                 .build();
-    }
-
-    private String convertDetailsToString(java.util.Map<String, String> details) {
-        if (details == null || details.isEmpty()) {
-            return null;
-        }
-        return details.entrySet().stream()
-            .map(entry -> "\"" + entry.getKey() + "\": \"" + entry.getValue() + "\"")
-            .collect(Collectors.joining(", ", "{", "}"));
     }
 }
