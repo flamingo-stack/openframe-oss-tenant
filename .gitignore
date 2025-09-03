@@ -14,7 +14,8 @@ buildNumber.properties
 
 # Helm
 **/charts/**
-scripts/my-values.yaml
+**/my-values.yaml
+**/helm-values-tmp.yaml
 # scripts/helm-values.yaml
 
 # DS_Store
@@ -30,6 +31,12 @@ openframe/.DS_Store
 **/loki-cache
 **/loki-chunks
 **/loki-index
+
+# Go CLI build artifacts
+cli/build/
+cli/coverage.out
+cli/coverage.html
+cli/releases/
 
 **/openframe-stream/logs
 **/jmx_exporter/jmx_prometheus_javaagent.jar
@@ -57,8 +64,9 @@ node_modules/
 /rmmagent
 client/Cargo.lock
 /.vscode/chrome-debug-profile
+**/.claude/
 **/ui-kit
 **/dist
 **/multi-platform-hub
+*.json
 .**.json
-

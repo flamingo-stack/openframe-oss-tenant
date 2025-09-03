@@ -20,10 +20,11 @@ on:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
-      - '.github/workflows/**'
+      - '.github/**'
       - 'manifests/**'
       - 'scripts/**'
       - 'client/**'
+      - 'cli/**'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
@@ -180,8 +181,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
+            type=ref,event=tag
+            type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
             type=sha,prefix={{branch}}-
-            type=raw,value=${{ needs.changes.outputs.commit_sha }}
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
@@ -238,7 +240,7 @@ jobs:
         with:
           matrix: ${{ needs.matrix.outputs.matrix }}
           changes: ${{ toJSON(needs.changes.outputs) }}
-          commit-sha: ${{ needs.changes.outputs.commit_sha }}
+          commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
           helm-values-file: ${{ env.HELM_VALUES_FILE }}
         
       - name: Override branch name
@@ -265,7 +267,7 @@ jobs:
 
   test_client:
     name: "Test Rust Client"
-    needs: [changes]
+    needs: [changes, matrix]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
     steps:
@@ -341,7 +343,7 @@ jobs:
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: ${{ needs.changes.outputs.commit_sha }}
+          delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
           exclude-tags: latest
 
   final-checks:
