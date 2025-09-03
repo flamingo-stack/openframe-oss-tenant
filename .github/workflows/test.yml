@@ -15,7 +15,7 @@ permissions:
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: [main, feature/cicd-improvements]
+    branches: [main]
     paths:
       - 'openframe/**'
       - 'integrated-tools/**'
@@ -34,6 +34,11 @@ env:
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
+  # Cache optimization
+  MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
 
 # =============================================================================
 # JOBS
@@ -43,14 +48,12 @@ jobs:
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
-    if: github.event_name == 'pull_request'
-#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
   matrix:
     name: Matrix
     uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'pull_request'
-#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
 
   build_java:
     name: "Build Java: ${{ matrix.name }}"
@@ -62,6 +65,10 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
+      - name: Skip if no changes
+        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
+        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
+
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -75,9 +82,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: |
-            ${{ matrix.path }}/pom.xml
-            **/pom.xml
+          cache-dependency-path: '**/pom.xml'  # Simplified pattern
           check-latest: true
 
       - name: Cache Maven packages
@@ -87,13 +92,23 @@ jobs:
           path: |
             ~/.m2/repository
             ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.name }}
           restore-keys: |
+            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
             ${{ runner.os }}-maven-
 
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: mvn clean install -am -Dcompress
+        run: |
+          mvn clean install \
+            -pl ${{ matrix.path }} \
+            -am \
+            -Dcompress \
+            -T 2C \
+            --batch-mode \
+            --no-transfer-progress \
+            -Dmaven.javadoc.skip=true \
+            -DskipTests=false
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -106,8 +121,9 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
+          compression-level: 6  # Balanced compression
 
-  build:
+  build_images:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
@@ -117,6 +133,10 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
+      - name: Skip if no changes
+        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
+        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
+
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -144,9 +164,14 @@ jobs:
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
+      # Configure Docker with optimizations
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+            image=moby/buildkit:buildx-stable-1
 
       - name: Generate metadata
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -155,12 +180,15 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
-            type=ref,event=tag
+            type=sha,prefix={{branch}}-
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
+            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
+            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Format build arguments
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -183,12 +211,17 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            ${{ env.BUILD_ARGS }}
+          build-args: ${{ steps.format_args.outputs.formatted_args }}
+          cache-from: |
+            type=gha,scope=${{ matrix.name }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
+          cache-to: |
+            type=gha,scope=${{ matrix.name }},mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
   test:
     name: Run Tests
-    needs: [build, changes, matrix]
+    needs: [build_images, changes, matrix]
     runs-on: Linux-x64
     timeout-minutes: 60
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
@@ -234,8 +267,7 @@ jobs:
     name: "Test Rust Client"
     needs: [changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && contains(needs.changes.outputs.client, 'true')
-#    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -243,22 +275,20 @@ jobs:
           fetch-depth: 2
 
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           override: true
           components: rustfmt, clippy
 
+      # Enhanced Rust caching
       - name: Cache Rust dependencies
-        uses: actions/cache@v4
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            client/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('client/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          workspaces: client
+          prefix-key: "v1-rust"
+          shared-key: ${{ matrix.target }}
+          cache-targets: true
+          cache-on-failure: true
 
       - name: Run lint
         working-directory: client
@@ -272,6 +302,7 @@ jobs:
           make clippy
         continue-on-error: true
 
+## Disabled as for now
  #     # Run tests only for native builds to save time
  #     - name: Test client
  #       working-directory: client

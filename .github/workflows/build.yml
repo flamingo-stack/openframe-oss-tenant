@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main, feature/cicd-improvements]
+    branches: [main]
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -241,23 +241,26 @@ jobs:
     name: "Build Rust Client (${{ matrix.os }})"
     needs: [changes]
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
     strategy:
       fail-fast: false
       matrix:
         include:
-#          - os: macos-latest
-#            target: x86_64-apple-darwin
-#            artifact_name: openframe-oss-client-macos-x64
-#            cross: false
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: openframe-oss-client-macos-x64
+            cross: false
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: openframe-oss-client-windows-x64
             cross: false
-#          - os: ubuntu-latest
-#            target: x86_64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-x64
-#            cross: false
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: openframe-oss-client-linux-x64
+            cross: false
 #          # Add ARM64 builds
 #          - os: ubuntu-latest
 #            target: aarch64-unknown-linux-gnu
@@ -320,6 +323,7 @@ jobs:
         env:
           CARGO_TARGET_DIR: target
 
+ # Muted as for now, test fails and needs fixing
  #     # Run tests only for native builds to save time
  #     - name: Test client
  #       if: "!matrix.cross"
