@@ -1,7 +1,7 @@
 package com.openframe.gateway.service;
 
-import com.openframe.core.model.ApiKey;
-import com.openframe.data.repository.mongo.ReactiveApiKeyRepository;
+import com.openframe.data.document.apikey.ApiKey;
+import com.openframe.data.reactive.repository.apikey.ReactiveApiKeyRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

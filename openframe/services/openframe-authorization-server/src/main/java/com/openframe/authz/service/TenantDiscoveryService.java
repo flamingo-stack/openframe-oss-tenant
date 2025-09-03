@@ -1,10 +1,11 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.document.SSOConfig;
-import com.openframe.authz.document.Tenant;
-import com.openframe.authz.document.User;
 import com.openframe.authz.dto.TenantDiscoveryResponse;
-import com.openframe.authz.repository.UserRepository;
+import com.openframe.data.document.auth.AuthUser;
+import com.openframe.data.document.auth.Tenant;
+import com.openframe.data.document.sso.SSOPerTenantConfig;
+import com.openframe.data.document.user.UserStatus;
+import com.openframe.data.repository.auth.AuthUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public class TenantDiscoveryService {
 
     private static final String DEFAULT_PROVIDER = "openframe-sso";
-    private final UserRepository userRepository;
+    private final AuthUserRepository userRepository;
     private final TenantService tenantService;
     private final SSOConfigService ssoConfigService;
     
@@ -34,9 +35,9 @@ public class TenantDiscoveryService {
     public TenantDiscoveryResponse discoverTenantsForEmail(String email) {
         log.debug("Discovering tenants for email: {}", email);
 
-        List<User> users = userRepository.findAllByEmailAndStatus(email, com.openframe.authz.document.UserStatus.ACTIVE);
+        List<AuthUser> users = userRepository.findAllByEmailAndStatus(email, UserStatus.ACTIVE);
 
-        for (User user : users) {
+        for (AuthUser user : users) {
             Tenant tenant = tenantService.findById(user.getTenantId()).orElse(null);
             if (tenant == null || !tenant.isActive()) {
                 continue;
@@ -57,22 +58,22 @@ public class TenantDiscoveryService {
                 .hasExistingAccounts(false)
                 .build();
     }
-    
+
     /**
-     * Check if tenant name is available for registration
+     * Check if tenant domain is available for registration
      */
-    public boolean isTenantNameAvailable(String tenantName) {
-        return tenantService.isTenantNameAvailable(tenantName);
+    public boolean isTenantDomainAvailable(String domain) {
+        return tenantService.isTenantDomainAvailable(domain);
     }
     
     /**
      * Get available authentication providers for a tenant/user combination
      */
-    private List<String> getAvailableAuthProviders(Tenant tenant, User user) {
+    private List<String> getAvailableAuthProviders(Tenant tenant, AuthUser user) {
 
         List<String> ssoProviders = ssoConfigService.getActiveSSOConfigsForTenant(tenant.getId())
                 .stream()
-                .map(SSOConfig::getProvider)
+                .map(SSOPerTenantConfig::getProvider)
                 .toList();
 
         List<String> providers = new ArrayList<>(ssoProviders);
@@ -83,6 +84,4 @@ public class TenantDiscoveryService {
                 .distinct()
                 .collect(Collectors.toList());
     }
-
-    // Removed mapUserToTenantInfo – response is now single-tenant summary
 }

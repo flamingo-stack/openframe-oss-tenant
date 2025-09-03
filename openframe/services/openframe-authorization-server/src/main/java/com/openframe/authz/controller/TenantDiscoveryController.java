@@ -54,30 +54,30 @@ public class TenantDiscoveryController {
     }
 
     /**
-     * Check if a tenant name is available for registration
+     * Check if a tenant domain is available for registration
      * Used in the new user registration flow
      */
     @GetMapping(value = "/availability", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TenantAvailabilityResponse> checkTenantAvailability(
-            @RequestParam @NotBlank String name) {
+            @RequestParam("domain") @NotBlank String domain) {
         
-        log.debug("Checking tenant availability for: {}", name);
+        log.debug("Checking tenant availability for domain: {}", domain);
         
         try {
-            boolean isAvailable = tenantDiscoveryService.isTenantNameAvailable(name);
+            boolean isAvailable = tenantDiscoveryService.isTenantDomainAvailable(domain);
             
             String message;
             String suggestedUrl = null;
             
             if (isAvailable) {
-                    message = "Organization name is available";
-                    suggestedUrl = String.format("https://%s.openframe.io", name.toLowerCase());
+                    message = "Domain is available";
+                    suggestedUrl = String.format("https://%s", domain.toLowerCase());
             } else {
-                message = "Organization name is already taken";
+                message = "Domain is already taken";
             }
             
             TenantAvailabilityResponse response = TenantAvailabilityResponse.builder()
-                    .tenantName(name)
+                    .tenantName(domain)
                     .isAvailable(isAvailable)
                     .suggestedUrl(suggestedUrl)
                     .message(message)
@@ -85,12 +85,12 @@ public class TenantDiscoveryController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error checking tenant availability for {}: {}", name, e.getMessage());
+            log.error("Error checking tenant availability for domain {}: {}", domain, e.getMessage());
             
             TenantAvailabilityResponse errorResponse = TenantAvailabilityResponse.builder()
-                    .tenantName(name)
+                    .tenantName(domain)
                     .isAvailable(false)
-                    .message("Unable to check availability. Please try again.")
+                    .message("Unable to check domain availability. Please try again.")
                     .build();
             
             return ResponseEntity.ok(errorResponse);

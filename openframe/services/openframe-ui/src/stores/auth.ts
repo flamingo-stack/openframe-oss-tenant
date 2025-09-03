@@ -33,6 +33,16 @@ export const useAuthStore = defineStore('auth', () => {
       const ok = !!me;
       isAuthenticated.value = ok;
       authStatusCache.value = ok;
+      // Persist tenantId from backend truth so logout/refresh always have it
+      try {
+        const anyMe = me as any;
+        const meTenantId = anyMe?.user?.tenantId || anyMe?.tenantId;
+        if (meTenantId && typeof meTenantId === 'string') {
+          currentTenantId.value = meTenantId;
+          authService.setCurrentTenantId(meTenantId);
+          sessionStorage.setItem('currentTenantId', meTenantId);
+        }
+      } catch {}
       console.log('✅ [AuthStore] Auth verified via /api/me:', ok);
       return ok;
     } catch (e: any) {
@@ -75,29 +85,44 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
+  async function logout() {
     console.log('🚪 [AuthStore] Logout initiated');
     // Resolve tenantId with fallbacks
     const stored = currentTenantId.value
       || authService.getCurrentTenantId()
-      || sessionStorage.getItem('auth:tenant_id');
+      || sessionStorage.getItem('currentTenantId');
 
     if (stored && stored.length > 0) {
-      authService.logout(stored);
+      const url = `/oauth/logout?tenantId=${encodeURIComponent(stored)}`;
+      console.log('🚪 [AuthStore] Calling Gateway logout (XHR):', url);
+      try {
+        // Perform logout request first
+        await (await import('@/apollo/apolloClient')).restClient.get(url, {
+          headers: { 'x-no-refresh': '1' }
+        });
+      } catch (e) {
+        console.warn('⚠️ [AuthStore] Logout request failed (continuing with client cleanup):', e);
+      } finally {
+        // Clear local state after server logout
+        isAuthenticated.value = false;
+        currentTenantId.value = null;
+        authService.setCurrentTenantId('');
+        sessionStorage.removeItem('currentTenantId');
+        try { clearTokens(); } catch {}
+        console.log('🧹 [AuthStore] Local state cleared');
+        // Redirect away from protected area
+        window.location.replace('/central-auth-demo');
+      }
     } else {
       console.warn('⚠️ [AuthStore] Missing tenantId for logout; attempting redirect without it');
-      // As a last resort, navigate to homepage; backend cannot logout without tenant
+      // As a last resort, clean locally and navigate home; backend cannot logout without tenant
+      isAuthenticated.value = false;
+      currentTenantId.value = null;
+      authService.setCurrentTenantId('');
+      sessionStorage.removeItem('currentTenantId');
+      try { clearTokens(); } catch {}
       window.location.href = '/';
     }
-
-    // Clear local state immediately
-    isAuthenticated.value = false;
-    currentTenantId.value = null;
-    authService.setCurrentTenantId('');
-    sessionStorage.removeItem('currentTenantId');
-    // Clear dev tokens so headers are not sent further
-    try { clearTokens(); } catch {}
-    console.log('🧹 [AuthStore] Local state cleared');
   }
 
   // Update auth status when cookies change

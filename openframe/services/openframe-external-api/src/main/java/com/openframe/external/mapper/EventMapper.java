@@ -1,13 +1,13 @@
 package com.openframe.external.mapper;
 
+import com.openframe.api.dto.event.EventFilterOptions;
 import com.openframe.api.dto.event.EventFilters;
 import com.openframe.api.dto.event.EventQueryResult;
-import com.openframe.core.model.Event;
-import com.openframe.api.dto.event.EventFilterOptions;
+import com.openframe.data.document.event.Event;
+import com.openframe.external.dto.event.EventFilterCriteria;
 import com.openframe.external.dto.event.EventFilterResponse;
 import com.openframe.external.dto.event.EventResponse;
 import com.openframe.external.dto.event.EventsResponse;
-import com.openframe.external.dto.event.EventFilterCriteria;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
