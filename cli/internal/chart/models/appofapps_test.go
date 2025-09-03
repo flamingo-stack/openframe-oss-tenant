@@ -10,7 +10,7 @@ func TestNewAppOfAppsConfig(t *testing.T) {
 	config := NewAppOfAppsConfig()
 
 	assert.NotNil(t, config)
-	assert.Equal(t, "https://github.com/Flamingo-CX/openframe", config.GitHubRepo)
+	assert.Equal(t, "https://github.com/flamingo-stack/openframe-oss-tenant", config.GitHubRepo)
 	assert.Equal(t, "main", config.GitHubBranch)
 	assert.Equal(t, "manifests/app-of-apps", config.ChartPath)
 	assert.Equal(t, "argocd", config.Namespace)
@@ -79,7 +79,7 @@ func TestAppOfAppsConfig_CompleteConfiguration(t *testing.T) {
 	gitURL := config.GetGitURL()
 	expected := "git+https://github.com/test/public-repo@helm/charts/app-of-apps?ref=feature/new-charts"
 	assert.Equal(t, expected, gitURL)
-	
+
 	assert.Equal(t, "https://github.com/test/public-repo", config.GitHubRepo)
 	assert.Equal(t, "feature/new-charts", config.GitHubBranch)
 	assert.Equal(t, "helm/charts/app-of-apps", config.ChartPath)

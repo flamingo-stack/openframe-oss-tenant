@@ -8,7 +8,7 @@ import (
 // AppOfAppsConfig holds configuration for app-of-apps installation
 type AppOfAppsConfig struct {
 	// GitHub repository configuration
-	GitHubRepo   string // Repository URL (e.g., "https://github.com/Flamingo-CX/openframe")
+	GitHubRepo   string // Repository URL (e.g., "https://github.com/flamingo-stack/openframe-oss-tenant")
 	GitHubBranch string // Branch to use (e.g., "main", "develop")
 	ChartPath    string // Path to chart in repository (e.g., "manifests/app-of-apps")
 	// Certificate configuration
@@ -23,7 +23,7 @@ type AppOfAppsConfig struct {
 // NewAppOfAppsConfig creates a new AppOfAppsConfig with defaults
 func NewAppOfAppsConfig() *AppOfAppsConfig {
 	return &AppOfAppsConfig{
-		GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+		GitHubRepo:   "https://github.com/flamingo-stack/openframe-oss-tenant",
 		GitHubBranch: "main",
 		ChartPath:    "manifests/app-of-apps",
 		Namespace:    "argocd",
@@ -38,4 +38,3 @@ func (a *AppOfAppsConfig) GetGitURL() string {
 	baseURL := strings.TrimSuffix(a.GitHubRepo, ".git")
 	return fmt.Sprintf("git+%s@%s?ref=%s", baseURL, a.ChartPath, a.GitHubBranch)
 }
-
