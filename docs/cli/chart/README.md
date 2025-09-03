@@ -132,7 +132,7 @@ The chart installation performs these steps:
 |---------|---------|-------------|
 | ArgoCD Version | 8.1.4 | ArgoCD Helm chart version |
 | Namespace | argocd | ArgoCD namespace |
-| GitHub Repo | https://github.com/Flamingo-CX/openframe | Repository URL |
+| GitHub Repo | https://github.com/flamingo-stack/openframe-oss-tenant | Repository URL |
 | GitHub Branch | main | Repository branch |
 | Cert Directory | Auto-detected | Certificate storage location |
 

@@ -41,7 +41,7 @@ deployment:
 global:
   repoDir: manifests  # Directory containing all Helm charts in the Git repository
   appsDir: apps       # Directory containing the apps chart (only defined in app-of-apps)
-  repoURL: https://github.com/Flamingo-CX/openframe.git  # Git repository URL for ArgoCD
+  repoURL: https://github.com/flamingo-stack/openframe-oss-tenant.git  # Git repository URL for ArgoCD
   repoBranch: main    # Git branch to deploy from (main branch for production)
   autoSync: true      # Enable automatic synchronization for all ArgoCD applications
 
@@ -52,11 +52,6 @@ registry:
     username: ""                         # Docker Hub username
     password: ""                          # Docker Hub access token
     email: ""                             # Docker Hub email
-  ghcr:
-    server: ghcr.io                       # GitHub Container Registry endpoint
-    username: CI                          # GitHub username for CI/CD
-    password: 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  # GitHub Personal Access Token
-    email: CI@flamingo.cx                 # GitHub email for CI/CD
 
 registerJob:
   enabled: true       # Enable registration job for integrated tools
@@ -243,7 +238,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-config
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-config
         tag: latest
       config:
         repo: openframe-config
@@ -260,7 +255,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-management
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-management
         tag: latest
     
   openframe-api: 
@@ -274,7 +269,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-api
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-api
         tag: latest
     
   openframe-gateway: 
@@ -294,7 +289,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
         tag: latest
     
   openframe-client: 
@@ -308,7 +303,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-client
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-client
         tag: latest
     
   openframe-stream: 
@@ -322,7 +317,7 @@ apps:
       servicemonitor:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-stream
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-stream
         tag: latest
     
   openframe-ui: 
@@ -340,7 +335,7 @@ apps:
       registerJob:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-cx/openframe/openframe-ui
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-ui
         tag: latest
 
   # =============================================================================

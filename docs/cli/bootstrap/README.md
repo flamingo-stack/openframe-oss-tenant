@@ -130,7 +130,7 @@ Bootstrap uses these defaults:
 
 ### Chart Configuration
 - **ArgoCD Version**: 8.1.4
-- **GitHub Repository**: https://github.com/Flamingo-CX/openframe
+- **GitHub Repository**: https://github.com/flamingo-stack/openframe-oss-tenant
 - **Branch**: main
 - **Namespace**: argocd
 
