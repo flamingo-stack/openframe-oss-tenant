@@ -23,6 +23,7 @@ on:
       - '.github/**'
       - 'manifests/**'
       - 'scripts/**'
+      - 'cli/**'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
