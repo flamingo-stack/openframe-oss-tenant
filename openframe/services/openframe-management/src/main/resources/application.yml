@@ -6,22 +6,3 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
-openframe:
-  gateway:
-    oauth:
-      client-id: openframe-gateway
-      client-secret: openframe-gateway-secret
-      redirect-uri: https://localhost/oauth/callback
-
-security:
-  oauth2:
-    token:
-      access:
-        expiration-seconds: 900
-      refresh:
-        expiration-seconds: 604800
-
-  management:
-    idp:
-      init:
-        enabled: true
