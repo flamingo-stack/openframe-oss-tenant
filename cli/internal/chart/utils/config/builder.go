@@ -118,6 +118,11 @@ func (b *Builder) BuildInstallConfigWithCustomHelmPath(
 
 		// Repository is public, no credentials needed
 
+		// Set the custom helm values file path if provided
+		if helmValuesPath != "" {
+			appOfAppsConfig.ValuesFile = helmValuesPath
+		}
+
 		// After credentials are provided, check for branch override from custom Helm values path
 		helmBranch := b.getBranchFromHelmValuesPath(helmValuesPath)
 		if helmBranch != "" {
