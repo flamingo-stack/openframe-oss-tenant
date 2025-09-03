@@ -34,6 +34,13 @@ deployment:
 registerJob:
   enabled: true
 
+registry:
+  docker:
+    server: https://index.docker.io/v1/
+    username: ""
+    password: ""
+    email: ""
+    
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-ui
   tag: latest

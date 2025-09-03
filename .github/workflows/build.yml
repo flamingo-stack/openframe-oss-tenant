@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main, feature/cicd-improvements, feature/build-windows-client]
+    branches: [main]
     paths:
       - 'manifests/**'
       - 'openframe/**'
