@@ -63,4 +63,3 @@ func runScaffold(cmd *cobra.Command, args []string, flags *models.ScaffoldFlags)
 
 	return service.RunScaffoldWorkflow(ctx, args, flags)
 }
-

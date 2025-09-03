@@ -218,12 +218,14 @@ func TestHelmManager_InstallArgoCD(t *testing.T) {
 				assert.Contains(t, installCmd, "--wait")
 				assert.Contains(t, installCmd, "--timeout")
 				assert.Contains(t, installCmd, "5m")
-				// Check that values file path contains argocd-values.yaml
+				// Check that values file path is a temporary file (now using embedded values)
 				hasValuesFile := false
 				for i, arg := range installCmd {
 					if arg == "-f" && i+1 < len(installCmd) {
 						hasValuesFile = true
-						assert.Contains(t, installCmd[i+1], "argocd-values.yaml")
+						// The file should be a temporary file with argocd-values prefix
+						assert.Contains(t, installCmd[i+1], "argocd-values-")
+						assert.Contains(t, installCmd[i+1], ".yaml")
 						break
 					}
 				}
