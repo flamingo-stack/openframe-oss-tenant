@@ -4,9 +4,9 @@ templates:
 tests:
   - it: self-hosted localhost should skip ngrok-operator and include others
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       # Count verification
@@ -29,9 +29,9 @@ tests:
 
   - it: self-hosted ngrok should skip ingress-nginx and include others
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
       deployment.saas.enabled: false
     asserts:
       # Count verification
@@ -54,7 +54,7 @@ tests:
 
   - it: SaaS should skip both ngrok-operator and auth-server
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
@@ -71,8 +71,8 @@ tests:
 
   - it: should skip explicitly disabled apps
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
       apps.mongodb.enabled: false
     asserts:
@@ -82,7 +82,7 @@ tests:
 
   - it: both deployment types enabled should use SaaS logic
     set:
-      deployment.selfHosted.enabled: true
+      deployment.oss.enabled: true
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:

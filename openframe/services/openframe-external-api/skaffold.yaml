@@ -4,7 +4,7 @@ metadata:
   name: openframe-external-api
 build:
   artifacts:
-    - image: ghcr.io/flamingo-cx/openframe/openframe-external-api
+    - image: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-external-api
       context: .
       sync: 
         manual:

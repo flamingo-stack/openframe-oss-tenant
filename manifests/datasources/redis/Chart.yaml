@@ -8,4 +8,4 @@ appVersion: "1.0"
 dependencies:
   - name: redis
     version: ">=21.2.10"
-    repository: https://charts.bitnami.com/bitnami
+    repository: https://charts.bitnami.com/bitnami  # should be migrated

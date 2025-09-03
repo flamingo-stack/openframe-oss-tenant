@@ -8,7 +8,7 @@ registerJob:
 
 # Deployment configuration
 deployment:
-  selfHosted:
+  oss:
     enabled: true    
     # Ingress configuration - enable only ONE of the following
     ingress:
@@ -41,7 +41,14 @@ deployment:
       gcp:
         enabled: false
 
+registry:
+  docker:
+    server: https://index.docker.io/v1/
+    username: ""
+    password: ""
+    email: ""
+    
 # Application configuration
 image:
-  repo: ghcr.io/flamingo-cx/openframe/openframe-gateway
+  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
   tag: latest

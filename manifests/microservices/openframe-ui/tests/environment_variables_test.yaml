@@ -2,13 +2,13 @@ suite: test environment variable configuration
 templates:
   - templates/deployment.yaml
 tests:
-  # SelfHosted ngrok environment variables
-  - it: should set ngrok URLs for selfHosted ngrok deployment
+  # oss ngrok environment variables
+  - it: should set ngrok URLs for oss ngrok deployment
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
       deployment.saas.enabled: false
     asserts:
       - contains:
@@ -27,12 +27,12 @@ tests:
             name: VITE_GATEWAY_URL
             value: "https://test.ngrok.io"
 
-  # SelfHosted localhost environment variables
-  - it: should set localhost URLs for selfHosted localhost deployment
+  # oss localhost environment variables
+  - it: should set localhost URLs for oss localhost deployment
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
-      deployment.selfHosted.ingress.ngrok.enabled: false
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
+      deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
       - contains:
@@ -54,7 +54,7 @@ tests:
   # SaaS localhost environment variables
   - it: should set localhost URLs for saas localhost deployment
     set:
-      deployment.selfHosted.enabled: false
+      deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
@@ -77,8 +77,8 @@ tests:
   # Environment variable count validation
   - it: should have exactly 6 environment variables for localhost
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -89,10 +89,10 @@ tests:
 
   - it: should have exactly 6 environment variables for ngrok
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "test.ngrok.io"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
       deployment.saas.enabled: false
     asserts:
       - hasDocuments:
@@ -104,10 +104,10 @@ tests:
   # Dynamic URL validation with different ngrok domains
   - it: should handle different ngrok domains correctly
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: false
-      deployment.selfHosted.ingress.ngrok.enabled: true
-      deployment.selfHosted.ingress.ngrok.url: "my-custom-domain.ngrok.app"
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: true
+      deployment.oss.ingress.ngrok.url: "my-custom-domain.ngrok.app"
       deployment.saas.enabled: false
     asserts:
       - contains:
@@ -124,8 +124,8 @@ tests:
   # Validation of all static environment variables
   - it: should include all required static environment variables
     set:
-      deployment.selfHosted.enabled: true
-      deployment.selfHosted.ingress.localhost.enabled: true
+      deployment.oss.enabled: true
+      deployment.oss.ingress.localhost.enabled: true
       deployment.saas.enabled: false
     asserts:
       - contains:

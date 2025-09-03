@@ -24,10 +24,11 @@ This pure client-side application provides a responsive, user-friendly interface
 ```bash
 cd openframe/services/openframe-frontend
 npm install                                 # Install dependencies
-npm run dev                                 # Start development server (foreground)
+npm run dev                                 # Start development server on port 4000 (foreground)
 nohup npm run dev > dev.log 2>&1 &         # Start development server (background)
 npm run build                               # Build for production
-npm run preview                             # Preview production build
+npm run start                               # Start production server on port 4000
+npm run lint                                # Run ESLint
 npm run type-check                          # TypeScript type checking
 ```
 
@@ -64,46 +65,89 @@ npm run dev                                 # Explore multi-platform-hub for pat
 - **Build Tool**: Next.js (pure client-side export - NO SERVER-SIDE FEATURES)
 - **Routing**: Next.js App Router (file-based routing - CLIENT-SIDE ONLY)
 - **CRITICAL**: NO API ROUTES - Pure static export only
-- **State Management**: Zustand
+- **State Management**: Zustand v5.0.8 with Immer middleware
 - **API Client**: Apollo Client (GraphQL)
 - **UI Components**: @flamingo/ui-kit
 - **Styling**: Tailwind CSS + UI-Kit design tokens
 - **Authentication**: JWT with HTTP-only cookies
 
-### Multi-Platform Project Structure
-
-Following the exact pattern from multi-platform-hub:
+### Actual Project Structure
 
 ```
 openframe-frontend/
-├── app/                                    # Next.js app directory
-│   ├── _components/                        # Component directories (multi-platform-hub pattern)
-│   │   ├── openframe-auth/                 # Auth app components
-│   │   │   ├── auth-page.tsx              # Main orchestrator
-│   │   │   ├── auth-benefits-section.tsx   # Shared benefits panel
-│   │   │   ├── auth-choice-section.tsx     # Create org + sign in
-│   │   │   ├── auth-signup-section.tsx     # Registration form
-│   │   │   └── auth-login-section.tsx      # SSO login
-│   │   └── openframe-dashboard/            # Dashboard app components
-│   │       ├── dashboard-page.tsx          # Main dashboard
-│   │       ├── devices-page.tsx            # Device management
-│   │       └── settings-page.tsx           # Settings
-│   ├── auth/                               # Auth routes
-│   │   ├── page.tsx                        # /auth
-│   │   ├── signup/page.tsx                 # /auth/signup
-│   │   └── login/page.tsx                  # /auth/login
-│   ├── dashboard/page.tsx                  # /dashboard
-│   ├── devices/page.tsx                    # /devices
-│   ├── settings/page.tsx                   # /settings
-│   ├── layout.tsx                          # Root layout
-│   ├── globals.css                         # Global styles
-│   └── page.tsx                            # Root redirect
-├── hooks/                                  # Custom hooks
-│   └── use-auth.ts                         # Authentication hook
-├── ui-kit/                                 # UI-Kit design system (existing)
-├── multi-platform-hub/                    # Reference only (existing)
+├── src/                                    # Source directory
+│   ├── app/                                # Next.js app directory
+│   │   ├── auth/                           # Auth module
+│   │   │   ├── components/                 # Auth components
+│   │   │   │   ├── auth-guard.tsx         # Authentication guard
+│   │   │   │   ├── benefits-section.tsx   # Shared benefits panel
+│   │   │   │   ├── choice-section.tsx     # Create org + sign in
+│   │   │   │   ├── signup-section.tsx     # Registration form
+│   │   │   │   ├── login-section.tsx      # SSO login
+│   │   │   │   └── dev-ticket-observer.tsx # Dev ticket observer
+│   │   │   ├── hooks/                      # Auth-specific hooks
+│   │   │   │   ├── use-auth.ts            # Authentication hook
+│   │   │   │   ├── use-token-storage.ts   # Token storage hook
+│   │   │   │   └── use-dev-ticket-exchange.ts # Dev ticket hook
+│   │   │   ├── pages/                      # Auth page components
+│   │   │   │   ├── auth-page.tsx          # Main auth page
+│   │   │   │   ├── signup-page.tsx        # Signup page
+│   │   │   │   └── login-page.tsx         # Login page
+│   │   │   ├── stores/                     # Auth stores
+│   │   │   │   ├── auth-store.ts          # Auth state store
+│   │   │   │   └── index.ts               # Store exports
+│   │   │   ├── layouts/                    # Auth layouts
+│   │   │   │   └── index.tsx              # Layout components
+│   │   │   ├── signup/                     # Signup route
+│   │   │   │   └── page.tsx               # /auth/signup
+│   │   │   ├── login/                      # Login route
+│   │   │   │   └── page.tsx               # /auth/login
+│   │   │   ├── layout.tsx                 # Auth layout
+│   │   │   └── page.tsx                   # /auth route
+│   │   ├── components/                     # Shared app components
+│   │   │   ├── openframe-dashboard/        # Dashboard components
+│   │   │   │   ├── dashboard-page.tsx     # Main dashboard
+│   │   │   │   ├── devices-page.tsx       # Device management
+│   │   │   │   └── settings-page.tsx      # Settings
+│   │   │   └── deployment-initializer.tsx  # Deployment initializer
+│   │   ├── dashboard/                      # Dashboard route
+│   │   │   ├── layout.tsx                 # Dashboard layout
+│   │   │   └── page.tsx                   # /dashboard
+│   │   ├── settings/                       # Settings route
+│   │   │   └── page.tsx                   # /settings
+│   │   ├── pages/                         # Page components
+│   │   │   ├── dashboard-page/            # Dashboard page
+│   │   │   │   └── index.tsx
+│   │   │   └── settings-page/             # Settings page
+│   │   │       └── index.tsx
+│   │   ├── hooks/                         # App-level hooks
+│   │   │   └── use-deployment.ts          # Deployment hook
+│   │   ├── home-page.tsx                  # Home page component
+│   │   ├── layout.tsx                     # Root layout
+│   │   └── page.tsx                       # Root page (redirect)
+│   ├── stores/                             # Global Zustand stores
+│   │   ├── devices-store.ts               # Device management state
+│   │   └── index.ts                       # Central store exports
+│   └── lib/                                # Utilities and config
+│       ├── platform-configs/              # Platform configurations
+│       │   ├── openframe.config.tsx       # OpenFrame config
+│       │   └── index.ts                   # Config exports
+│       ├── api-client.ts                  # API client setup
+│       ├── app-config.tsx                 # App configuration
+│       ├── deployment-detector.ts         # Deployment detection
+│       └── utils.ts                       # Utility functions
 ├── public/                                 # Static assets
-└── next.config.mjs                        # Next.js configuration
+│   ├── assets/                            # Asset files
+│   └── icons/                             # Icon files
+├── docs/                                   # Documentation
+├── ui-kit -> /path/to/ui-kit             # Symlink to UI-Kit
+├── next.config.mjs                        # Next.js configuration
+├── tailwind.config.js                     # Tailwind CSS config
+├── tailwind.config.ts                     # Tailwind TS config
+├── tsconfig.json                          # TypeScript config
+├── package.json                           # Package dependencies
+├── .env.example                           # Environment variables example
+└── .env.local                             # Local environment variables
 ```
 
 ## UI-Kit Integration (PRIMARY FOCUS)
@@ -207,36 +251,45 @@ function LoginPage() {
 }
 ```
 
-## Multi-Platform Architecture (Updated 2025-08-21)
+## Multi-Platform Architecture
 
 ### App Structure
-Following the exact multi-platform-hub pattern, the application provides two distinct apps:
+The application follows a modular architecture with distinct apps:
 
 #### OpenFrame-Auth App (`/auth/*`)
-- **Route**: `/auth`, `/auth/signup`, `/auth/login`  
-- **Components**: `app/_components/openframe-auth/`
+- **Routes**: `/auth`, `/auth/signup`, `/auth/login`  
+- **Components**: `src/app/auth/components/`, `src/app/auth/pages/`
+- **Stores**: `src/app/auth/stores/`
+- **Hooks**: `src/app/auth/hooks/`
 - **Purpose**: Authentication and organization setup
 
-#### OpenFrame-Dashboard App (`/dashboard`, `/devices`, `/settings`)
-- **Routes**: `/dashboard`, `/devices`, `/settings`
-- **Components**: `app/_components/openframe-dashboard/`
+#### OpenFrame-Dashboard App  
+- **Routes**: `/dashboard`, `/settings` (Note: `/devices` route not yet implemented)
+- **Components**: `src/app/components/openframe-dashboard/`
+- **Pages**: `src/app/pages/dashboard-page/`, `src/app/pages/settings-page/`
 - **Purpose**: Main application interface
 
 ### Component Organization
-Components are organized into the `app/_components/` directory following multi-platform-hub:
+Components are organized within each module following a feature-based structure:
 
 ```typescript
-// app/_components/openframe-auth/auth-page.tsx
+// src/app/auth/pages/auth-page.tsx
 'use client'
 import { useRouter, usePathname } from 'next/navigation'
 
-export function OpenFrameAuthPage() {
+export function AuthPage() {
   const router = useRouter()
   const pathname = usePathname()
   
   // Authentication logic with URL synchronization
 }
 ```
+
+**Component Structure**:
+- **Module-specific**: Each app module (auth, dashboard) has its own components
+- **Pages**: Page-level components in `pages/` subdirectories
+- **Components**: Reusable components in `components/` subdirectories
+- **Shared**: Global shared components in `src/app/components/`
 
 ### Navigation Pattern
 Next.js App Router with file-based routing:
@@ -258,8 +311,8 @@ function MyComponent() {
 - `/auth/signup` → Registration form  
 - `/auth/login` → SSO provider selection
 - `/dashboard` → Main dashboard
-- `/devices` → Device management
 - `/settings` → Application settings
+- **Note**: `/devices` route is planned but not yet implemented
 
 ### Authentication Component Structure
 All auth screens share the exact same layout with modular sections:
@@ -464,26 +517,111 @@ function Dashboard() {
 }
 ```
 
-### State Management
-Use client-side state management for application state:
+### State Management with Zustand (Updated 2025-08-28)
 
+The application uses Zustand v5.0.8 for centralized state management with Immer middleware for immutable updates.
+
+#### Store Structure
+```
+src/
+├── app/auth/stores/  # Auth-specific stores
+│   ├── auth-store.ts # Authentication state
+│   └── index.ts      # Auth store exports
+└── stores/           # Global stores
+    ├── devices-store.ts  # Device management with filtering/sorting
+    └── index.ts         # Central exports and selectors
+```
+
+#### Creating a Zustand Store
 ```typescript
 import { create } from 'zustand'
+import { devtools, persist } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
 
-interface AuthState {
-  user: User | null
-  token: string | null
-  login: (token: string, user: User) => void
-  logout: () => void
+interface StoreState {
+  // State properties
+  items: any[]
+  loading: boolean
+  
+  // Actions
+  setItems: (items: any[]) => void
+  setLoading: (loading: boolean) => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  login: (token, user) => set({ token, user }),
-  logout: () => set({ token: null, user: null })
-}))
+export const useStore = create<StoreState>()(
+  devtools(
+    persist(
+      immer((set) => ({
+        // State
+        items: [],
+        loading: false,
+        
+        // Actions using Immer for mutations
+        setItems: (items) =>
+          set((state) => {
+            state.items = items
+          }),
+        
+        setLoading: (loading) =>
+          set((state) => {
+            state.loading = loading
+          })
+      })),
+      {
+        name: 'store-key', // localStorage key
+        partialize: (state) => ({ items: state.items }) // Selective persistence
+      }
+    ),
+    { name: 'store-name' } // Redux DevTools name
+  )
+)
 ```
+
+#### Using Stores in Components
+```typescript
+import { useAuthStore, useDevicesStore } from '@/stores'
+
+function Component() {
+  // Direct usage
+  const { user, login, logout } = useAuthStore()
+  
+  // With selectors for optimized re-renders
+  const devices = useDevicesStore(selectFilteredDevices)
+  const isLoading = useDevicesStore(selectIsLoading)
+  
+  return <div>...</div>
+}
+```
+
+#### Integration with Custom Hooks (MANDATORY PATTERN)
+```typescript
+import { useToast } from '@flamingo/ui-kit/hooks'
+import { useDevicesStore } from '@/stores/devices-store'
+
+export function useDevices() {
+  const { toast } = useToast() // MANDATORY
+  const { setDevices, setLoading, setError } = useDevicesStore()
+  
+  const fetchDevices = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/devices')
+      const data = await response.json()
+      setDevices(data.devices)
+      toast({ title: 'Success', variant: 'success' })
+    } catch (error) {
+      setError(error.message)
+      toast({ title: 'Error', variant: 'destructive' })
+    }
+  }
+  
+  return { fetchDevices }
+}
+```
+
+#### Available Stores
+- **useAuthStore**: User authentication, tokens, session management
+- **useDevicesStore**: Device CRUD, filtering, sorting, selection
 
 ## Code Standards
 
@@ -504,10 +642,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 - **OpenFrame Theming**: Let UI-Kit handle platform-specific theming
 
 ### Project Organization
-- **app/_components/**: Business logic components organized by app (openframe-auth, openframe-dashboard)
-- **app/*/page.tsx**: Route components that import from _components
-- **hooks/**: Custom React hooks for business logic
-- **lib/**: Utilities, configurations, and API services
+- **src/app/auth/**: Complete auth module with components, hooks, stores, and pages
+- **src/app/components/**: Shared components across apps
+- **src/app/dashboard/**, **src/app/settings/**: Route-specific pages
+- **src/app/pages/**: Page-level components
+- **src/app/hooks/**: App-level hooks (e.g., use-deployment)
+- **src/stores/**: Global Zustand state management stores
+- **src/lib/**: Utilities, configurations, and API services
 
 ## Testing Strategy
 
@@ -547,7 +688,7 @@ npm run test:coverage                       # Coverage report
 1. **Use UI-Kit components** for all UI elements  
 2. **Reference multi-platform-hub** for learning patterns only
 3. **Build business logic** around UI-Kit components
-4. **Follow app/_components structure** for multi-platform organization
+4. **Follow modular structure** with feature-based organization
 5. **Dynamic loading states** - no form validation, use Button loading prop
 6. **State-driven interactions** - all user actions through event handlers
 7. **Test with OpenFrame theming** enabled  
@@ -757,6 +898,8 @@ tail -f dev.log
 - **Component not found**: Check UI-Kit exports, never create custom UI
 - **Build errors**: Run type-check on both main project and UI-Kit
 - **Browser MCP connection**: Ensure Chrome extension is installed and MCP server is running
+- **Zustand store errors**: Ensure immer is installed, check Redux DevTools for state debugging
+- **State persistence issues**: Check localStorage permissions and clear if corrupted
 
 ### Diagnostic Commands
 ```bash

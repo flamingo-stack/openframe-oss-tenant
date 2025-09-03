@@ -3,6 +3,13 @@ registerJob:
 servicemonitor:
   enabled: true
 
+registry:
+  docker:
+    server: https://index.docker.io/v1/
+    username: ""
+    password: ""
+    email: ""
+    
 image:
-  repo: ghcr.io/flamingo-cx/openframe/openframe-api
+  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-api
   tag: latest
