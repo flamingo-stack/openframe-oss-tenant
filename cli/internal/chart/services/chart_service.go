@@ -69,7 +69,7 @@ func (cs *ChartService) InstallWithContext(ctx context.Context, req utilTypes.In
 		return fmt.Errorf("chart installation cancelled: %w", ctx.Err())
 	default:
 	}
-	
+
 	// Create installation workflow with direct dependencies
 	fileCleanup := files.NewFileCleanup()
 	fileCleanup.SetCleanupOnSuccessOnly(true) // Only clean temporary files after successful ArgoCD sync
@@ -252,7 +252,6 @@ func (w *InstallationWorkflow) waitForArgoCDSync(ctx context.Context, config con
 	pathResolver := w.chartService.configService.GetPathResolver()
 	argoCDService := NewArgoCD(w.chartService.helmManager, pathResolver, w.chartService.executor)
 
-	
 	// Wait for applications to be synced with context for cancellation
 	if err := argoCDService.WaitForApplications(ctx, config); err != nil {
 		// Check if it was cancelled by user
@@ -340,9 +339,9 @@ func InstallChartsWithDefaultsContext(ctx context.Context, args []string, force,
 		Force:        force,
 		DryRun:       dryRun,
 		Verbose:      verbose,
-		GitHubRepo:   "https://github.com/Flamingo-CX/openframe", // Default repository
-		GitHubBranch: "main",                                     // Default branch
-		CertDir:      "",                                         // Auto-detected
+		GitHubRepo:   "https://github.com/flamingo-stack/openframe-oss-tenant", // Default repository
+		GitHubBranch: "main",                                                   // Default branch
+		CertDir:      "",                                                       // Auto-detected
 	})
 }
 
@@ -360,22 +359,22 @@ func InstallChartsWithConfigContext(ctx context.Context, req utilTypes.Installat
 		return fmt.Errorf("chart installation cancelled: %w", ctx.Err())
 	default:
 	}
-	
+
 	// Check prerequisites first
 	installer := prerequisites.NewInstaller()
 	if err := installer.CheckAndInstall(); err != nil {
 		return err
 	}
-	
+
 	// Check context again after prerequisites
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("chart installation cancelled: %w", ctx.Err())
 	default:
 	}
-	
+
 	// Create a chart service and perform the installation with context
 	chartService := NewChartService(req.DryRun, req.Verbose)
-	
+
 	return chartService.InstallWithContext(ctx, req)
 }
