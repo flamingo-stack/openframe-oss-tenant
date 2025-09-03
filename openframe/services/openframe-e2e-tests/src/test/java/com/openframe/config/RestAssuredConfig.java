@@ -5,14 +5,13 @@ import io.restassured.RestAssured;
 
 import java.time.Duration;
 
-import static com.playermanagement.config.TestConstants.*;
-
 /**
  * REST Assured configuration
  */
 public class RestAssuredConfig {
     
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+    private static final String DEFAULT_BASE_URL = "http://localhost:8100";
     
     public static void configure() {
         RestAssured.baseURI = getBaseUrl();
@@ -27,6 +26,6 @@ public class RestAssuredConfig {
     }
     
     private static String getBaseUrl() {
-        return System.getProperty(ENV_API_BASE_URL, DEFAULT_BASE_URL);
+        return System.getProperty("api.base.url", DEFAULT_BASE_URL);
     }
 } 

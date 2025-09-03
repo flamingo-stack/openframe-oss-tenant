@@ -105,6 +105,34 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- ========== Selenide Dependencies ========== -->
+        
+        <!-- Selenide for UI testing -->
+        <dependency>
+            <groupId>com.codeborne</groupId>
+            <artifactId>selenide</artifactId>
+            <version>7.2.1</version>
+            <scope>compile</scope>
+        </dependency>
+        
+        <!-- WebDriver Manager for automatic driver management -->
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>5.7.0</version>
+            <scope>compile</scope>
+        </dependency>
+        
+        <!-- ========== Test Data Generation ========== -->
+        
+        <!-- Faker for generating test data -->
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <version>2.1.0</version>
+            <scope>compile</scope>
+        </dependency>
+        
         <!-- ========== Utilities ========== -->
         
         <!-- Lombok -->
