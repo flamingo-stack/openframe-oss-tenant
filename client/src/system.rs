@@ -4,6 +4,10 @@ use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 
+// Add Windows-specific imports for uptime calculation
+#[cfg(target_os = "windows")]
+use winapi::um::sysinfoapi::GetTickCount64;
+
 #[derive(Debug, Serialize)]
 pub struct SystemMetrics {
     timestamp: u64,
@@ -48,6 +52,9 @@ impl SystemInfo {
             disk_used = (space.total - space.free) as u64 * 1024;
         }
 
+        // Fixed uptime calculation with platform-specific implementations
+        let uptime = get_system_uptime()?;
+
         Ok(SystemMetrics {
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             cpu_usage,
@@ -55,7 +62,49 @@ impl SystemInfo {
             memory_used,
             disk_total,
             disk_used,
-            uptime: sys_info::boottime()?.tv_sec as u64,
+            uptime,
         })
     }
+}
+
+/// Get system uptime with platform-specific implementations
+fn get_system_uptime() -> Result<u64> {
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows, use GetTickCount64 to get uptime in milliseconds
+        unsafe {
+            let uptime_ms = GetTickCount64();
+            Ok(uptime_ms / 1000) // Convert milliseconds to seconds
+        }
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    {
+        // On Unix systems, try to get boot time
+        match sys_info::boottime() {
+            Ok(boot_time) => Ok(boot_time.tv_sec as u64),
+            Err(_) => {
+                // Fallback: try to read from /proc/uptime or use current time as approximation
+                get_uptime_fallback()
+            }
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_uptime_fallback() -> Result<u64> {
+    use std::fs;
+    
+    // Try to read /proc/uptime on Linux
+    if let Ok(uptime_str) = fs::read_to_string("/proc/uptime") {
+        if let Some(uptime_part) = uptime_str.split_whitespace().next() {
+            if let Ok(uptime_f64) = uptime_part.parse::<f64>() {
+                return Ok(uptime_f64 as u64);
+            }
+        }
+    }
+    
+    // Fallback: return 0 or attempt to calculate based on current time
+    // This isn't ideal but prevents compilation errors
+    Ok(0)
 }

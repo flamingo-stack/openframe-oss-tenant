@@ -1,19 +1,26 @@
 use std::fs::{self};
 use std::io;
 #[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{PermissionsExt, MetadataExt};
 use std::path::Path;
 use std::process::Command;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 #[cfg(unix)]
 use libc;
+
+// Fixed Windows imports - removed IsUserAnAdmin and added proper winapi imports
 #[cfg(target_os = "windows")]
-use winapi::um::securitybaseapi::IsUserAnAdmin;
-#[cfg(target_os = "windows")]
-use winapi::um::shellapi::ShellExecuteW;
-#[cfg(target_os = "windows")]
-use winapi::um::winuser::SW_NORMAL;
+use winapi::{
+    um::{
+        handleapi::CloseHandle,
+        processthreadsapi::{GetCurrentProcess, OpenProcessToken},
+        securitybaseapi::GetTokenInformation,
+        shellapi::ShellExecuteW,
+        winnt::{TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY},
+        winuser::SW_NORMAL,
+    },
+};
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -87,26 +94,26 @@ impl Permissions {
             fs::set_permissions(path, perms).map_err(PermissionError::Io)
         }
 
-        #[cfg(not(unix))]
+        #[cfg(target_os = "windows")]
         {
-            // For non-Unix platforms like Windows, we can't directly set numeric modes
-            // so we'll just ensure the file exists and is writable if needed
-            if self.mode & 0o200 != 0 && path.exists() {
+            // For Windows, we can only control the readonly attribute
+            if path.exists() {
                 let metadata = fs::metadata(path)?;
                 let mut perms = metadata.permissions();
-                #[cfg(target_os = "windows")]
-                {
-                    use std::os::windows::fs::PermissionsExt;
-                    // FILE_ATTRIBUTE_READONLY = 0x1
-                    let readonly_bit = 0x1;
-                    let current_attrs = perms.mode();
-                    // Remove readonly bit if it's set
-                    if current_attrs & readonly_bit != 0 {
-                        perms.set_mode(current_attrs & !readonly_bit);
-                        fs::set_permissions(path, perms)?;
-                    }
+                
+                // If we need write permission, ensure readonly is not set
+                let needs_write = self.mode & 0o200 != 0;
+                if needs_write {
+                    perms.set_readonly(false);
+                    fs::set_permissions(path, perms)?;
                 }
             }
+            Ok(())
+        }
+
+        #[cfg(all(not(unix), not(target_os = "windows")))]
+        {
+            // Default implementation for other platforms
             Ok(())
         }
     }
@@ -120,19 +127,16 @@ impl Permissions {
             Ok((metadata.permissions().mode() & 0o777) == self.mode)
         }
 
-        #[cfg(not(unix))]
+        #[cfg(target_os = "windows")]
         {
-            // On Windows, we can check if the file is read-only if that's what we care about
-            #[cfg(target_os = "windows")]
-            {
-                use std::os::windows::fs::PermissionsExt;
-                let current_attrs = metadata.permissions().mode();
-                // Check if the readonly attribute is not set when we need write permission
-                let needs_write = self.mode & 0o200 != 0;
-                let is_readonly = current_attrs & 0x1 != 0;
-                return Ok(!needs_write || !is_readonly);
-            }
+            // On Windows, check readonly attribute
+            let needs_write = self.mode & 0o200 != 0;
+            let is_readonly = metadata.permissions().readonly();
+            Ok(!needs_write || !is_readonly)
+        }
 
+        #[cfg(all(not(unix), not(target_os = "windows")))]
+        {
             // Default implementation for other platforms
             Ok(true)
         }
@@ -149,25 +153,20 @@ impl Permissions {
             })
         }
 
-        #[cfg(not(unix))]
+        #[cfg(target_os = "windows")]
         {
-            // On non-Unix platforms, we'll return a default value based on readonly status
-            #[cfg(target_os = "windows")]
-            {
-                use std::os::windows::fs::PermissionsExt;
-                let current_attrs = metadata.permissions().mode();
-                let is_readonly = current_attrs & 0x1 != 0;
-                if is_readonly {
-                    Ok(Self { mode: 0o444 }) // read-only
-                } else {
-                    Ok(Self { mode: 0o644 }) // read-write
-                }
+            // On Windows, determine mode based on readonly status
+            let is_readonly = metadata.permissions().readonly();
+            if is_readonly {
+                Ok(Self { mode: 0o444 }) // read-only
+            } else {
+                Ok(Self { mode: 0o644 }) // read-write
             }
+        }
 
-            #[cfg(not(target_os = "windows"))]
-            {
-                Ok(Self { mode: 0o644 }) // Default read-write for non-Windows, non-Unix
-            }
+        #[cfg(all(not(unix), not(target_os = "windows")))]
+        {
+            Ok(Self { mode: 0o644 }) // Default read-write for other platforms
         }
     }
 }
@@ -191,8 +190,34 @@ impl PermissionUtils {
 
         #[cfg(target_os = "windows")]
         {
-            // On Windows, use the IsUserAnAdmin function
-            unsafe { IsUserAnAdmin() != 0 }
+            // Fixed Windows admin check using proper winapi functions
+            unsafe {
+                let mut token_handle = std::ptr::null_mut();
+                let current_process = GetCurrentProcess();
+                
+                if OpenProcessToken(current_process, TOKEN_QUERY, &mut token_handle) == 0 {
+                    return false;
+                }
+                
+                let mut elevation = TOKEN_ELEVATION { TokenIsElevated: 0 };
+                let mut return_length = 0u32;
+                
+                let result = GetTokenInformation(
+                    token_handle,
+                    TokenElevation,
+                    &mut elevation as *mut _ as *mut _,
+                    std::mem::size_of::<TOKEN_ELEVATION>() as u32,
+                    &mut return_length,
+                );
+                
+                CloseHandle(token_handle);
+                
+                if result == 0 {
+                    return false;
+                }
+                
+                elevation.TokenIsElevated != 0
+            }
         }
 
         #[cfg(all(not(unix), not(target_os = "windows")))]
@@ -213,38 +238,33 @@ impl PermissionUtils {
 
         #[cfg(target_os = "windows")]
         {
-            // On Windows, we can use ShellExecute with "runas" verb to trigger UAC
-            // We'll attempt to run a simple command to get admin rights
+            // Fixed Windows elevation using current executable
             use std::ffi::OsStr;
             use std::iter::once;
             use std::os::windows::ffi::OsStrExt;
 
-            let cmd = "cmd.exe";
-            let args = "/c echo Admin privileges obtained";
-
-            // Convert command to wide string
-            let wide_cmd: Vec<u16> = OsStr::new(cmd).encode_wide().chain(once(0)).collect();
-
-            // Convert args to a wide string
-            let wide_args: Vec<u16> = OsStr::new(args).encode_wide().chain(once(0)).collect();
-
-            // Create the runas verb as a wide string
+            // Get current executable path
+            let current_exe = std::env::current_exe()
+                .map_err(|e| PermissionError::Io(e))?;
+            
+            // Convert paths to wide strings - fix the Cow<str> issue
+            let wide_exe: Vec<u16> = current_exe.as_os_str().encode_wide().chain(once(0)).collect();
             let runas: Vec<u16> = OsStr::new("runas").encode_wide().chain(once(0)).collect();
 
             let result = unsafe {
                 ShellExecuteW(
                     std::ptr::null_mut(), // hwnd
                     runas.as_ptr(),       // lpOperation - "runas" verb for UAC elevation
-                    wide_cmd.as_ptr(),    // lpFile - the command
-                    wide_args.as_ptr(),   // lpParameters
+                    wide_exe.as_ptr(),    // lpFile - the current executable
+                    std::ptr::null(),     // lpParameters
                     std::ptr::null(),     // lpDirectory
                     SW_NORMAL,            // nShowCmd
                 )
             };
 
             // ShellExecute returns a value greater than 32 if successful
-            if result as usize <= 32 {
-                error!("Failed to obtain admin privileges, error code: {}", result);
+            if result as isize <= 32 {
+                error!("Failed to obtain admin privileges, error code: {}", result as isize);
                 return Err(PermissionError::CommandFailed(result as i32));
             }
 

@@ -14,28 +14,24 @@
 pub mod metrics;
 pub mod shipping;
 
-use crate::platform::{DirectoryError, DirectoryManager};
-use chrono::Utc;
+use crate::platform::DirectoryManager;
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use metrics::{MetricValue, MetricsLayer, MetricsStore};
+use metrics::MetricsStore;
 use serde::Serialize;
-use shipping::LogShipper;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use tracing::{error, info, warn, Event, Level, Metadata, Subscriber};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing::Level;
 use tracing_subscriber::{
-    fmt::{self},
     layer::SubscriberExt,
-    prelude::*,
     EnvFilter, Layer, Registry,
+//    prelude::*,
 };
 
 #[derive(Debug, Serialize)]
@@ -306,7 +302,7 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
         if let Some(endpoint) = log_endpoint {
             if let Some(agent) = agent_id.clone() {
                 // Create a log shipper instance
-                let shipper = shipping::LogShipper::new(endpoint.clone(), agent.clone());
+                let _shipper = shipping::LogShipper::new(endpoint.clone(), agent.clone());
                 // No need to do anything else, shipper already starts itself with its background task
                 tracing::info!("Log shipping initialized to endpoint: {}", endpoint);
             }

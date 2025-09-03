@@ -43,6 +43,8 @@ on:
         value: ${{ jobs.changes.outputs.tactical-nginx }}
       tactical-base: 
         value: ${{ jobs.changes.outputs.tactical-base }}
+      client: 
+        value: ${{ jobs.changes.outputs.client }}
       timestamp: 
         value: ${{ jobs.changes.outputs.timestamp }}
       timestamp_tag: 
@@ -77,6 +79,7 @@ jobs:
       tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
       tactical-base: ${{ steps.filter.outputs.tactical-base }}
+      client: ${{ steps.filter.outputs.client }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
       commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
@@ -165,3 +168,5 @@ jobs:
             tactical-base:
               - './integrated-tools/tactical-rmm/tactical-base/**'
               - './integrated-tools/tactical-rmm/shared/**'
+            client:
+              - './client/**'

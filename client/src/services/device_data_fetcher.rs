@@ -1,6 +1,4 @@
-use std::net::TcpStream;
-use std::panic;
-use tracing::{info, warn, debug};
+use tracing::{info, warn};
 
 #[derive(Clone)]
 pub struct DeviceDataFetcher;
