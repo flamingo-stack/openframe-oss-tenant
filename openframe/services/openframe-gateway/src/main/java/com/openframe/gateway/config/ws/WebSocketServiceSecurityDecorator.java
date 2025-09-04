@@ -22,6 +22,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @RequiredArgsConstructor
 @Slf4j
+// TODO: remove session wrapper after testing
 public class WebSocketServiceSecurityDecorator implements WebSocketService {
 
     private final WebSocketService defaultWebSocketService;
@@ -38,7 +39,7 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
                 Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
                 processSessionClosedEvent(session, disposable);
-                return defaultWebSocketHandler.handle(session);
+                return defaultWebSocketHandler.handle(new TemporaryWsSessionWrapper(session));
             });
         } else {
             return defaultWebSocketService.handleRequest(exchange, defaultWebSocketHandler);
