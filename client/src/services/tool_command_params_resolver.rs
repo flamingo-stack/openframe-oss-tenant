@@ -22,7 +22,7 @@ impl ToolCommandParamsResolver {
     pub fn process(&self, tool_id: &str, command_args: Vec<String>) -> Result<Vec<String>> {
         let mut processed_args = Vec::new();
         for arg in command_args {
-            let processed_arg = arg.replace(Self::SERVER_URL_PLACEHOLDER, "https://localhost");
+            let processed_arg = arg.replace(Self::SERVER_URL_PLACEHOLDER, "http://localhost:8100");
             let processed_arg = processed_arg.replace(Self::OPENFRAME_SECRET_PLACEHOLDER, "12345678901234567890123456789012");
             let processed_arg = processed_arg.replace(Self::OPENFRAME_TOKEN_PATH_PLACEHOLDER, "/Users/kirillgontar/Library/Logs/OpenFrame/shared_token.enc");
             let processed_arg = processed_arg.replace(Self::OPENFRAME_OSQUERY_PATH_PLACEHOLDER, "/Users/kirillgontar/Library/Logs/OpenFrame/fleetmdm-server/osquery");
