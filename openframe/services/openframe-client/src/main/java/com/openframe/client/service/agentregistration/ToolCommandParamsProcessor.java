@@ -11,7 +11,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ToolCommandParamsProcessor {
 
-    private static final String REGISTRATION_SECRET_PLACEHOLDER = "${registrationSecret}";
+    private static final String REGISTRATION_SECRET_PLACEHOLDER = "${server.registrationSecret}";
 
     private final List<ToolAgentRegistrationSecretRetriever> toolAgentRegistrationSecretRetrievers;
 

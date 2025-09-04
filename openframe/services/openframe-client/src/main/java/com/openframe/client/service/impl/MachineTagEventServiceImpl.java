@@ -127,8 +127,6 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
             // Build MachinePinotMessage with complete data
             MachinePinotMessage message = buildMachinePinotMessage(machineEntity, machineTags);
 
-            // TODO: amazing idea with key
-            //  Need to make data fetch at steam service?
             kafkaProducer.sendMessage(machineEventsTopic, machineEntity.getMachineId(), message);
         } catch (Exception e) {
             // TODO: need fail on error to make client(kafka, ui) retry?

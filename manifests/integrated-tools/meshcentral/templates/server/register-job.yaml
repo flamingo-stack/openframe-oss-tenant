@@ -121,7 +121,7 @@ spec:
               -H "Content-Type: application/json" \
               -d '{
                 "toolAgent": {
-                  "id": "meshcentral-server",
+                  "id": "meshcentral-agent",
                   "version": "1.0",
                   "status": "ENABLED",
                   "runCommandArgs": [
@@ -132,11 +132,13 @@ spec:
                   ],
                   "assets": [
                     {
-                      "id": "CoreModule.js",
+                      "id": "meshcentral-core-module",
+                      "localFilename": "CoreModule.js"
                       "source": "ARTIFACTORY"
                     },
                     {
                       "id": "msh-configuration",
+                      "localFilename": "agent.msh"
                       "source": "TOOL_API",
                       "path": "/openframe_public/meshagent.msh"
                     }

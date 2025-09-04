@@ -135,7 +135,7 @@ spec:
               -H "Content-Type: application/json" \
               -d '{
               "toolAgent": {
-                "id": "fleetmdm-server",
+                "id": "fleetmdm-agent",
                 "version": "1.0",
                 "status": "ENABLED",
                 "runCommandArgs": [
@@ -151,6 +151,7 @@ spec:
                 "assets": [
                   {
                     "id": "osquery",
+                    "localFilename": "osquery"
                     "source": "ARTIFACTORY"
                   }
                 ]

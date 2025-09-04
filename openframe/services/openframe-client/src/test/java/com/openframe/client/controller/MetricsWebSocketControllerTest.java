@@ -2,7 +2,6 @@ package com.openframe.client.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.openframe.client.controller.MetricsWebSocketController;
 import com.openframe.client.dto.metrics.MetricsMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

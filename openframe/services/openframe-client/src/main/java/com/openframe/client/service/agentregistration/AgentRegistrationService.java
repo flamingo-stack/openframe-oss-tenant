@@ -37,7 +37,7 @@ public class AgentRegistrationService {
     private final AgentRegistrationToolService agentRegistrationToolService;
 
     @Transactional
-    // TODO: works?
+    // TODO: two phase commit for the nats integration or other fallback
     public AgentRegistrationResponse register(String initialKey, AgentRegistrationRequest request) {
         secretValidator.validate(initialKey);
 

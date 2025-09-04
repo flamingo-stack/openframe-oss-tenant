@@ -61,10 +61,6 @@ impl ToolInstallationService {
         let tool_id = &tool_installation_message.tool_id;
         info!("Installing tool {} with version {}", tool_id, tool_installation_message.version);
 
-        // TODO: process different version race conditions
-        // TODO: mark as installing before installation
-        // TODO: idempotency of each operation
-
         let version_clone = tool_installation_message.version.clone();
         let run_args_clone = tool_installation_message.run_command_args.clone();
 
@@ -115,7 +111,7 @@ impl ToolInstallationService {
                     }
                 };
 
-                let asset_path = tool_folder_path.join(&asset.id);
+                let asset_path = tool_folder_path.join(&asset.local_filename);
                 
                 File::create(&asset_path).await?.write_all(&asset_bytes).await?;
                 

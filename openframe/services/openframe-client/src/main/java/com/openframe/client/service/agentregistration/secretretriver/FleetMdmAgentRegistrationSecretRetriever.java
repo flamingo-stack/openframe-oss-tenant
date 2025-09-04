@@ -22,7 +22,7 @@ public class FleetMdmAgentRegistrationSecretRetriever implements ToolAgentRegist
 
     @Override
     public String getToolId() {
-        return "fleetmdm-server";
+        return "fleetmdm-agent";
     }
 
     @Override

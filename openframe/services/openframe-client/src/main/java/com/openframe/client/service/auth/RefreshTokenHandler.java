@@ -29,8 +29,6 @@ public class RefreshTokenHandler {
 
         validateExpiration(jwt);
 
-        // TODO: need save to database?
-        //  Client can use previous token with old refresh_token value
         Long refreshCount = jwt.getClaim("refresh_count");
         validateRefreshCount(refreshCount);
 

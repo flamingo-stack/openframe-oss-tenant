@@ -13,8 +13,10 @@ pub struct ToolInstallationMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Asset {
     pub id: String,
+    pub local_filename: String,
     pub source: AssetSource,
     pub path: Option<String>,
 }

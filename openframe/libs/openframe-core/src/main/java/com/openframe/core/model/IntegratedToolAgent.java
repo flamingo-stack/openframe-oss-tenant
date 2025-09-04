@@ -10,7 +10,6 @@ import java.util.List;
 @Document(collection = "integrated_tool_agents")
 public class IntegratedToolAgent {
 
-    // TODO: agent id should not be equal to server id
     @Id
     private String id;
     private String version;

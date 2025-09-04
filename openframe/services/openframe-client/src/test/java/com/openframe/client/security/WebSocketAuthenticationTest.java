@@ -1,6 +1,5 @@
 package com.openframe.client.security;
 
-import com.openframe.client.config.WebSocketAuthInterceptor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

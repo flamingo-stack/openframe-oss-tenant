@@ -119,7 +119,7 @@ spec:
               -H "Content-Type: application/json" \
               -d '{
                 "toolAgent": {
-                  "id": "tactical-rmm",
+                  "id": "tacticalrmm-agent",
                   "version": "1.0",
                   "status": "ENABLED",
                   "installationCommandArgs": [

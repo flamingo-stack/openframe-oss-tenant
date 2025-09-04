@@ -1,8 +1,6 @@
 package com.openframe.client.service.agentregistration.secretretriver;
 
-import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.ToolType;
 import com.openframe.core.model.ToolUrl;
 import com.openframe.core.model.ToolUrlType;
 import com.openframe.data.service.IntegratedToolService;
@@ -10,10 +8,7 @@ import com.openframe.data.service.ToolUrlService;
 import com.openframe.sdk.tacticalrmm.TacticalRmmClient;
 import com.openframe.sdk.tacticalrmm.model.AgentRegistrationSecretRequest;
 import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
@@ -26,7 +21,7 @@ public class TacticalRmmAgentRegistrationSecretRetriever implements ToolAgentReg
     @Override
     public String getToolId() {
         // TODO: tool type enum
-        return "tactical-rmm";
+        return "tacticalrmm-agent";
     }
 
     @Override
