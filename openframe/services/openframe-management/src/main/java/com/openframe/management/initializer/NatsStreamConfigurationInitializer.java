@@ -32,15 +32,7 @@ public class NatsStreamConfigurationInitializer {
     @PostConstruct
     public void run() {
         CONFIGURATIONS
-                .forEach(this::save);
+                .forEach(natsStreamManagementService::save);
     }
 
-    private void save(StreamConfiguration configuration) {
-        try {
-            natsStreamManagementService.save(configuration);
-        } catch (Exception e) {
-            log.error("Error during nats stream configuration", e);
-        }
-
-    }
 }
