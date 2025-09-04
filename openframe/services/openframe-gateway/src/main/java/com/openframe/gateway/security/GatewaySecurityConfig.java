@@ -27,6 +27,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 
+import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.NATS_WS_ENDPOINT_PATH;
 import static com.openframe.gateway.security.SecurityConstants.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -93,14 +94,19 @@ public class GatewaySecurityConfig {
                                 // TODO: remove after migration artifacts to GitHub
                                 CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
+                        // Api service
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
                         // Agent tools
                                 .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
+                        // Agent nats
+                                .pathMatchers(NATS_WS_ENDPOINT_PATH).hasRole("AGENT")
+                        // Client service
                                 .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
                         // Api tools
                                 .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
                                 .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
+                        // UI
                                 .pathMatchers("/**").permitAll()
                 )
                 .build();

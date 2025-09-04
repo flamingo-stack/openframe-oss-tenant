@@ -17,9 +17,9 @@ import org.springframework.web.reactive.socket.server.WebSocketService;
 @Slf4j
 public class WebSocketGatewayConfig {
 
-    static final String TOOLS_AGENT_WS_ENDPOINT_PREFIX = "/ws/tools/agent";
-    static final String TOOLS_API_WS_ENDPOINT_PREFIX = "/ws/tools";
-    static final String NATS_WS_ENDPOINT_PREFIX = "/ws/nats";
+    public static final String TOOLS_AGENT_WS_ENDPOINT_PREFIX = "/ws/tools/agent";
+    public static final String TOOLS_API_WS_ENDPOINT_PREFIX = "/ws/tools";
+    public static final String NATS_WS_ENDPOINT_PATH = "/ws/nats";
 
     /*
            Currently if one device have valid open-frame machine JWT token, it can send WS request,
@@ -49,7 +49,7 @@ public class WebSocketGatewayConfig {
                         .uri("no://op"))
                 // TODO: config
                 .route("nats_websocket_route", r -> r
-                        .path(NATS_WS_ENDPOINT_PREFIX)
+                        .path(NATS_WS_ENDPOINT_PATH)
                         .uri("ws://localhost:8105"))
                 .build();
     }

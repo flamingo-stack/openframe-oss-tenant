@@ -20,7 +20,6 @@ import java.time.Instant;
 import java.util.Set;
 
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.*;
-import static com.openframe.gateway.security.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @RequiredArgsConstructor
@@ -36,6 +35,7 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
         String path = exchange.getRequest().getPath().value();
         
         if (isSecuredEndpoint(path)) {
+            log.info("Use secured web socket session for path {}", path);
             return defaultWebSocketService.handleRequest(exchange, session -> {
                 Jwt jwt = getRequestJwt(exchange);
                 Instant expiresAt = jwt.getExpiresAt();
@@ -44,7 +44,6 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 processSessionClosedEvent(session, disposable);
 
                 if (isNatsEndpoint(path)) {
-//                    NatsWebSocketSessionWrapper natsSession = new NatsWebSocketSessionWrapper(session, natsMessageValidator, jwtNatsMessageValidator, jwt);
                     NatsWebSocketSessionWrapper natsSession = new NatsWebSocketSessionWrapper(session);
                     return defaultWebSocketHandler.handle(natsSession);
                 }
@@ -52,20 +51,23 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 return defaultWebSocketHandler.handle(session);
             });
         } else {
-            log.debug("Use default session");
-            return defaultWebSocketService.handleRequest(exchange, session -> {
-                return defaultWebSocketHandler.handle(new NatsWebSocketSessionWrapper(session));
-            });
+            log.info("Use default web socket session for path {}", path);
+            return defaultWebSocketService.handleRequest(exchange, defaultWebSocketHandler);
         }
     }
 
+    /* TODO: avoid hardcoded paths.
+        Relay on spring security to verify that endpoint is available with token or no token.
+        Then if request have token, we should run session remove job etc.
+    */
     private boolean isSecuredEndpoint(String path) {
-        return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX/*, NATS_WS_ENDPOINT_PREFIX*/).stream()
+        return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX, NATS_WS_ENDPOINT_PATH)
+                .stream()
                 .anyMatch(path::startsWith);
     }
 
     private boolean isNatsEndpoint(String path) {
-        return path.equals(NATS_WS_ENDPOINT_PREFIX);
+        return path.equals(NATS_WS_ENDPOINT_PATH);
     }
 
     private Jwt getRequestJwt(ServerWebExchange exchange) {
@@ -86,10 +88,6 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
         String authorisationHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (isNotEmpty(authorisationHeader)) {
             return authorisationHeader;
-        }
-        String authorisationParam = request.getQueryParams().getFirst(AUTHORIZATION_QUERY_PARAM);
-        if (isNotEmpty(authorisationParam)) {
-            return authorisationParam;
         }
         throw new IllegalStateException("No authorization data found");
     }
