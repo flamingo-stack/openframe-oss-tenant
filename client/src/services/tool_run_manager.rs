@@ -1,10 +1,14 @@
 use anyhow::{Context, Result};
 use tracing::{info, warn, error};
 use std::process::Command;
+use tokio::time::sleep;
+use std::time::Duration;
 
 use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
+
+const RETRY_DELAY_SECONDS: u64 = 5;
 
 #[derive(Clone)]
 pub struct ToolRunManager {
@@ -19,7 +23,7 @@ impl ToolRunManager {
     ) -> Self {
         Self {
             installed_tools_service,
-            params_processor
+            params_processor,
         }
     }
 
@@ -48,37 +52,57 @@ impl ToolRunManager {
     }
 
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
-        // exchange args placeholders to real values
-        let processed_args = self
-            .params_processor
-            .process(&tool.tool_id, tool.run_command_args.clone())
-            .context("Failed to process run command params for tool")?;
-        // TODO: rerun
-
-        let command_path = format!("/Users/kirillgontar/Library/Logs/OpenFrame/{}/agent", tool.tool_id);
-
-        info!("TOOL_LOG: Executing tool command - tool_id: {}, command: {}, args: {:?}", tool.tool_id, command_path, processed_args);
-
-        // spawn tool run process and wait async till the end
-        let mut child = Command::new(command_path)
-            .args(&processed_args)
-            .spawn()
-            .with_context(|| format!("Failed to start tool process: {}", tool.tool_id))?;
-
+        let params_processor = self.params_processor.clone();
+        
         tokio::spawn(async move {
-            match child.wait() {
-                Ok(status) => {
-                    if status.success() {
-                        info!("Tool completed successfully");
-                        // TODO: rerun
-                    } else {
-                        error!("Tool failed with exit status: {}", status);
-                        // TODO: rerun
+            loop {
+                // exchange args placeholders to real values
+                let processed_args = match params_processor.process(&tool.tool_id, tool.run_command_args.clone()) {
+                    Ok(args) => args,
+                    Err(e) => {
+                        error!(tool_id = %tool.tool_id, error = %e, 
+                               "Failed to process run command params - giving up");
+                        break;
                     }
-                }
-                Err(e) => {
-                    error!("Failed to wait for tool process: {:#}", e);
-                    // TODO: rerun
+                };
+
+                let command_path = format!("/Users/kirillgontar/Library/Logs/OpenFrame/{}/agent", tool.tool_id);
+
+                info!("TOOL_LOG: Executing tool command - tool_id: {}, command: {}, args: {:?}", 
+                      tool.tool_id, command_path, processed_args);
+
+                // spawn tool run process and wait async till the end
+                let mut child = match Command::new(&command_path)
+                    .args(&processed_args)
+                    .spawn()
+                {
+                    Ok(child) => child,
+                    Err(e) => {
+                        error!(tool_id = %tool.tool_id, error = %e, 
+                               "Failed to start tool process - retrying in {} seconds", RETRY_DELAY_SECONDS);
+                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        continue;
+                    }
+                };
+
+                match child.wait() {
+                    Ok(status) => {
+                        if status.success() {
+                            warn!(tool_id = %tool.tool_id, 
+                                  "Tool completed successfully but should keep running - restarting in {} seconds", 
+                                  RETRY_DELAY_SECONDS);
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        } else {
+                            error!(tool_id = %tool.tool_id, exit_status = %status, 
+                                   "Tool failed with exit status - restarting in {} seconds", RETRY_DELAY_SECONDS);
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        }
+                    }
+                    Err(e) => {
+                        error!(tool_id = %tool.tool_id, error = %e, 
+                               "Failed to wait for tool process - restarting in {} seconds", RETRY_DELAY_SECONDS);
+                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                    }
                 }
             }
         });
