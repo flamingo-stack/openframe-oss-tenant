@@ -84,11 +84,10 @@ jobs:
             -pl ${{ matrix.path }} \
             -am \
             -Dcompress \
-            -T 2C \
+            --threads 2C \
             --batch-mode \
             --no-transfer-progress \
-            -Dmaven.javadoc.skip=true \
-            -DskipTests=false
+            -Dmaven.javadoc.skip=true
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -142,14 +141,9 @@ jobs:
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
-      # Configure Docker with optimizations
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
-            image=moby/buildkit:buildx-stable-1
 
       - name: Generate metadata
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -160,9 +154,7 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
-            type=sha,prefix={{branch}}-
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
-            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -190,7 +182,8 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ steps.format_args.outputs.formatted_args }}
+          build-args: |
+            ${{ env.BUILD_ARGS }}
           cache-from: |
             type=gha,scope=${{ matrix.name }}
             type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
