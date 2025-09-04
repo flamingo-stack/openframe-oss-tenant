@@ -39,7 +39,7 @@ impl ToolInstallationMessageListener {
         let handle = tokio::spawn(async move {
             if let Err(e) = listener.listen().await {
                 // TODO: fall down?
-                error!("Tool installation message listener error: {}", e);
+                error!("Tool installation message listener error: {:#}", e);
             }
         });
         Ok(handle)
@@ -78,8 +78,7 @@ impl ToolInstallationMessageListener {
                 }
                 Err(e) => {
                     // do not ack: let message be redelivered per consumer ack policy
-                    // TODO: don't share full stack trace
-                    error!(error = ?e, "Failed to process tool installation message for tool: {}", tool_id);
+                    error!("Failed to process tool installation message for tool {}: {:#}", tool_id, e);
                     info!("Leaving message unacked for potential redelivery: tool {}", tool_id);
                 }
             }

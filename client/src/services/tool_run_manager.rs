@@ -77,7 +77,7 @@ impl ToolRunManager {
                     }
                 }
                 Err(e) => {
-                    error!(error = ?e, "Failed to wait for tool process");
+                    error!("Failed to wait for tool process: {:#}", e);
                     // TODO: rerun
                 }
             }

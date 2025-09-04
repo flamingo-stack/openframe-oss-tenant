@@ -284,7 +284,7 @@ impl PermissionUtils {
                     Err(PermissionError::CommandFailed(status.code().unwrap_or(-1)))
                 }
                 Err(e) => {
-                    error!("Failed to execute osascript: {}", e);
+                    error!("Failed to execute osascript: {:#}", e);
                     Err(PermissionError::Io(e))
                 }
             }
@@ -329,7 +329,7 @@ impl PermissionUtils {
                             Err(PermissionError::CommandFailed(status.code().unwrap_or(-1)))
                         }
                         Err(e) => {
-                            error!("Failed to execute sudo: {}", e);
+                            error!("Failed to execute sudo: {:#}", e);
                             Err(PermissionError::Io(e))
                         }
                     }
@@ -449,7 +449,7 @@ impl PermissionUtils {
                     }
                 }
                 Err(e) => {
-                    error!("Failed to execute osascript: {}", e);
+                    error!("Failed to execute osascript: {:#}", e);
                     Err(PermissionError::Io(e))
                 }
             }
@@ -491,7 +491,7 @@ impl PermissionUtils {
                     }
                 }
                 Err(e) => {
-                    warn!("pkexec not available or failed: {}, trying sudo", e);
+                    warn!("pkexec not available or failed: {:#}, trying sudo", e);
                 }
             }
 
@@ -527,7 +527,7 @@ impl PermissionUtils {
                     }
                 }
                 Err(e) => {
-                    error!("Failed to execute sudo: {}", e);
+                    error!("Failed to execute sudo: {:#}", e);
                     Err(PermissionError::Io(e))
                 }
             }

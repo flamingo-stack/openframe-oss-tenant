@@ -250,7 +250,7 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             // This runs in a background thread so we just log any errors
             loop {
                 if let Err(e) = compress_old_logs(&dir_manager_clone) {
-                    log::error!("Error compressing old logs: {}", e);
+                    log::error!("Error compressing old logs: {:#}", e);
                 }
                 // Check for files to compress every hour
                 std::thread::sleep(std::time::Duration::from_secs(3600));
@@ -372,7 +372,7 @@ fn compress_old_logs(dir_manager: &DirectoryManager) -> io::Result<()> {
     let log_dir = match dir_manager.logs_dir().canonicalize() {
         Ok(dir) => dir,
         Err(e) => {
-            log::error!("Failed to get logs directory: {}", e);
+            log::error!("Failed to get logs directory: {:#}", e);
             return Ok(());
         }
     };
@@ -381,7 +381,7 @@ fn compress_old_logs(dir_manager: &DirectoryManager) -> io::Result<()> {
     let mut entries = match fs::read_dir(log_dir) {
         Ok(entries) => entries,
         Err(e) => {
-            log::error!("Failed to read logs directory: {}", e);
+            log::error!("Failed to read logs directory: {:#}", e);
             return Ok(());
         }
     };

@@ -140,7 +140,7 @@ impl Service {
 
         // Perform health check before starting
         if let Err(e) = dir_manager.perform_health_check() {
-            error!("Directory health check failed: {}", e);
+            error!("Directory health check failed: {:#}", e);
             return Err(e.into());
         }
 

@@ -41,11 +41,7 @@ impl RegistrationProcessor {
                     return Ok(());
                 }
                 Err(e) => {
-                    // TODO: {:#} instead of full backtrace
-                    error!(
-                        error = ?e,
-                        "Registration attempt failed. Retrying in 60 seconds…", 
-                    );
+                    error!("Registration attempt failed. Retrying in 60 seconds…: {:#}", e);
                     // TODO: Add exponential backoff
                     sleep(Duration::from_secs(60)).await;
                 }
