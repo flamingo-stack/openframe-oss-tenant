@@ -226,7 +226,8 @@ impl Client {
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
         // Initialize tool run manager
-        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), ToolCommandParamsResolver::new(directory_manager.clone()));
+        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone());
+        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), tool_command_params_resolver);
 
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(

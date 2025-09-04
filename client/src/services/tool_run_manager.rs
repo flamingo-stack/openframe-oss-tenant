@@ -66,7 +66,12 @@ impl ToolRunManager {
                     }
                 };
 
-                let command_path = format!("/Users/kirillgontar/Library/Logs/OpenFrame/{}/agent", tool.tool_id);
+                // Build executable path directly using directory manager
+                let command_path = params_processor.directory_manager.app_support_dir()
+                    .join(&tool.tool_id)
+                    .join("agent")
+                    .to_string_lossy()
+                    .to_string();
 
                 info!("TOOL_LOG: Executing tool command - tool_id: {}, command: {}, args: {:?}", 
                       tool.tool_id, command_path, processed_args);
