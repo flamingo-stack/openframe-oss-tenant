@@ -23,7 +23,6 @@ public class ToolConnectionListener {
     private final ObjectMapper objectMapper;
     private final ToolConnectionService toolConnectionService;
 
-    // TODO: configure retry number
     @Bean
     public Consumer<Message<String>> toolConnectionConsumer() {
         return message -> {

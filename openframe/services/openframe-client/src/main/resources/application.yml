@@ -38,17 +38,8 @@ nats:
     username: service
     password: service_pass
   connection:
-    timeout: 5s
-    max-reconnect: 10
-    reconnect-wait: 2s
-
-# TODO: nats connection retries and delays
-# TODO: DLQ
-
-#  nats:
-#    spring:
-#      server: nats://nats-0.nats.datasources.svc.cluster.local
-#    connection:
-#      timeout: 5s
-#      max-reconnect: 10
-#      reconnect-wait: 2s
+    connection-timeout: 30s
+    max-reconnect: -1
+    reconnect-wait: 5s
+    ping-interval: 30s
+    no-echo: true
