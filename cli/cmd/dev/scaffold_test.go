@@ -48,7 +48,7 @@ func TestScaffoldCmd_FlagBinding(t *testing.T) {
 	assert.Equal(t, "8080", portFlag.DefValue)
 
 	namespaceFlag := cmd.Flags().Lookup("namespace")
-	assert.Equal(t, "default", namespaceFlag.DefValue)
+	assert.Equal(t, "", namespaceFlag.DefValue)
 
 	skipBootstrapFlag := cmd.Flags().Lookup("skip-bootstrap")
 	assert.Equal(t, "false", skipBootstrapFlag.DefValue)
@@ -118,7 +118,7 @@ func TestScaffoldCmd_FlagDefaults(t *testing.T) {
 
 	namespace, err := cmd.Flags().GetString("namespace")
 	assert.NoError(t, err)
-	assert.Equal(t, "default", namespace)
+	assert.Equal(t, "", namespace)
 
 	image, err := cmd.Flags().GetString("image")
 	assert.NoError(t, err)

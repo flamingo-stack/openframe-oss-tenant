@@ -5,6 +5,7 @@ import com.openframe.security.pkce.PKCEUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,7 @@ import static org.springframework.util.StringUtils.hasText;
 @RestController
 @RequestMapping("/oauth")
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "openframe.gateway.oauth", name = "enable", havingValue = "true")
 @Slf4j
 public class AuthController {
 
