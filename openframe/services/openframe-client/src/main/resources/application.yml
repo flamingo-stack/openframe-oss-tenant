@@ -24,6 +24,9 @@ spring:
           destination: machine.*.toolconnection
           group: client-service-machine-tool-connection
           content-type: application/json
+      binders:
+        nats:
+          type: nats
       default-binder: nats
 
 nats:

@@ -9,10 +9,10 @@ spring:
 nats:
   spring:
     server: nats://localhost:4222
-    connection-name: openframe-management
-    connection-timeout: 5s
-    max-reconnect: 10
-    reconnect-wait: 2s
     username: service
     password: service_pass
-    # no max reconnects
+    connection-timeout: 30s
+    max-reconnect: 10
+    reconnect-wait: 5s
+    ping-interval: 30s
+    no-echo: true
