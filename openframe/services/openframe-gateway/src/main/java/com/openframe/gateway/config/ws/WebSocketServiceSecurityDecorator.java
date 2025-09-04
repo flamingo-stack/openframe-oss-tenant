@@ -1,7 +1,5 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.gateway.config.ws.nats.NatsMessageValidator;
-import com.openframe.gateway.config.ws.nats.NatsWebSocketSessionWrapper;
 import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,30 +26,21 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
 
     private final WebSocketService defaultWebSocketService;
     private final JwtService jwtService;
-    private final NatsMessageValidator natsMessageValidator;
 
     @Override
     public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler defaultWebSocketHandler) {
         String path = exchange.getRequest().getPath().value();
-        
+
         if (isSecuredEndpoint(path)) {
-            log.info("Use secured web socket session for path {}", path);
             return defaultWebSocketService.handleRequest(exchange, session -> {
                 Jwt jwt = getRequestJwt(exchange);
                 Instant expiresAt = jwt.getExpiresAt();
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
                 Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
                 processSessionClosedEvent(session, disposable);
-
-                if (isNatsEndpoint(path)) {
-                    NatsWebSocketSessionWrapper natsSession = new NatsWebSocketSessionWrapper(session);
-                    return defaultWebSocketHandler.handle(natsSession);
-                }
-
                 return defaultWebSocketHandler.handle(session);
             });
         } else {
-            log.info("Use default web socket session for path {}", path);
             return defaultWebSocketService.handleRequest(exchange, defaultWebSocketHandler);
         }
     }
