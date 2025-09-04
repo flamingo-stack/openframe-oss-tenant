@@ -35,11 +35,6 @@ env:
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
-  # Cache optimization
-  MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-  CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: 0
-  RUST_BACKTRACE: short
 
 # =============================================================================
 # JOBS
@@ -66,10 +61,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -85,18 +76,6 @@ jobs:
           cache: 'maven'
           cache-dependency-path: '**/pom.xml'  # Simplified pattern
           check-latest: true
-
-      - name: Cache Maven packages
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.name }}
-          restore-keys: |
-            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-            ${{ runner.os }}-maven-
 
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -122,7 +101,6 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-          compression-level: 6  # Balanced compression
 
   build_images:
     name: "Build image: ${{ matrix.name }}"
@@ -134,10 +112,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -145,7 +119,10 @@ jobs:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          contains(fromJSON(toJSON(matrix.type)), 'java') && 
+          matrix.artifact_name != '' && 
+          contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}

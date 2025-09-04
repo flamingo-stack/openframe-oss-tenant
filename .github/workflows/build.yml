@@ -20,19 +20,18 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g., v1.2.3). If omitted, uses current ref."
-        required: false
-        default: ""
+        description: "Tag to release (e.g., v1.2.3)"
+        required: true
+        type: string
 
 env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  # Cache optimization
-  MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-  CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: 0
-  RUST_BACKTRACE: short
+
+# =============================================================================
+# JOBS
+# =============================================================================
 
 jobs:
   # Keep original separate jobs structure for reusable workflows
@@ -57,15 +56,11 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1  # Reduced fetch depth since we only need current commit
+          fetch-depth: 1
 
       - name: Set up JDK 21 with Maven Central
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -74,20 +69,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: '**/pom.xml'  # Simplified pattern
-
-      # Enhanced Maven cache with multiple restore keys
-      - name: Cache Maven dependencies
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.name }}
-          restore-keys: |
-            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-            ${{ runner.os }}-maven-
+          cache-dependency-path: '**/pom.xml'
+          check-latest: true
 
       # Parallel Maven build with optimized flags
       - name: Build with Maven
@@ -114,7 +97,6 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-          compression-level: 6  # Balanced compression
 
   # Optimized Docker build with enhanced caching
   build_images:
@@ -127,10 +109,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
