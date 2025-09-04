@@ -16,6 +16,7 @@ impl ToolConnectionMessagePublisher {
         let topic = Self::build_topic_name(machine_id);
         let message = Self::build_message(tool_agent_id);
         self.nats_message_publisher.publish(&topic, message).await
+        // TODO: wait for ack and publish again if failed
     }
 
     fn build_topic_name(machine_id: String) -> String {

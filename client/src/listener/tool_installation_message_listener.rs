@@ -55,22 +55,14 @@ impl ToolInstallationMessageListener {
 
         let machine_id = self.config_service.get_machine_id().await?;   
 
-        // TODO: manage consumer here?
-        // TODO: async nats process multithreading by default?
         let consumer = self.create_consumer(&js, &machine_id).await?;
 
         info!("Start listening for tool installation messages");
-
-        // TODO: create generic subscriber
         let mut messages = consumer.messages().await?;
         while let Some(message) = messages.next().await {
             info!("Received tool installation message: {:?}", message);
 
             let message = message?;
-
-            // TODO: remove
-            // message.ack().await
-            //     .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
 
             let payload = String::from_utf8_lossy(&message.payload);
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
@@ -96,9 +88,9 @@ impl ToolInstallationMessageListener {
     }
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> Result<PushConsumer> {
+        // TODO: retry if failed to create
         let consumer_configuration = Self::build_consumer_configuration(machine_id);
         info!("Creating consumer for stream {}  ", Self::STREAM_NAME);
-        // TODO: server side
         let consumer = js.create_consumer_on_stream(consumer_configuration, Self::STREAM_NAME).await?;
         info!("Consumer created for stream: {}", Self::STREAM_NAME);
         Ok(consumer)

@@ -145,7 +145,6 @@ impl Client {
         let http_client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             // disable TLS verification for dev mode only
-            // TODO: need more smart way to handle this?
             .danger_accept_invalid_certs(std::env::var("OPENFRAME_DEV_MODE").is_ok())
             .build()
             .context("Failed to create HTTP client")?;

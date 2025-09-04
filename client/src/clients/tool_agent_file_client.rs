@@ -7,8 +7,6 @@ pub struct ToolAgentFileClient {
     base_url: String,
 }
 
-
-// TODO: make single client for all asset types?
 impl ToolAgentFileClient {
     pub fn new(http_client: Client, base_url: String) -> Self {
         Self { http_client, base_url }
