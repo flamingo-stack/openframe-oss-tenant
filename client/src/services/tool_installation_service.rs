@@ -8,7 +8,7 @@ use crate::services::InstalledToolsService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
-use crate::services::ToolInstallationCommandParamsProcessor;
+use crate::services::ToolCommandParamsResolver;
 use crate::services::tool_run_manager::ToolRunManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -23,7 +23,7 @@ pub struct ToolInstallationService {
     tool_api_client: ToolApiClient,
     installed_tools_service: InstalledToolsService,
     directory_manager: DirectoryManager,
-    command_params_processor: ToolInstallationCommandParamsProcessor,
+    command_params_processor: ToolCommandParamsResolver,
     tool_run_manager: ToolRunManager,
 }
 
@@ -41,7 +41,7 @@ impl ToolInstallationService {
             .with_context(|| "Failed to ensure secured directory exists")
             .unwrap();
 
-        let command_params_processor = ToolInstallationCommandParamsProcessor::new(directory_manager.clone());
+        let command_params_processor = ToolCommandParamsResolver::new(directory_manager.clone());
         
         Self {
             tool_agent_file_client,

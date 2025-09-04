@@ -4,18 +4,18 @@ use std::process::Command;
 
 use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
-use crate::services::tool_installation_command_params_processor::ToolInstallationCommandParamsProcessor;
+use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 
 #[derive(Clone)]
 pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
-    params_processor: ToolInstallationCommandParamsProcessor,
+    params_processor: ToolCommandParamsResolver,
 }
 
 impl ToolRunManager {
     pub fn new(
         installed_tools_service: InstalledToolsService,
-        params_processor: ToolInstallationCommandParamsProcessor
+        params_processor: ToolCommandParamsResolver
     ) -> Self {
         Self {
             installed_tools_service,

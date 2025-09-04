@@ -2,12 +2,12 @@ use anyhow::Result;
 use crate::platform::DirectoryManager;
 
 #[derive(Clone)]
-pub struct ToolInstallationCommandParamsProcessor {
+pub struct ToolCommandParamsResolver {
     directory_manager: DirectoryManager,
 }
 
 // TODO: rename to generic one 
-impl ToolInstallationCommandParamsProcessor {
+impl ToolCommandParamsResolver {
 
     const SERVER_URL_PLACEHOLDER: &'static str = "${client.serverUrl}";
     const OPENFRAME_SECRET_PLACEHOLDER: &'static str = "${client.openframeSecret}";

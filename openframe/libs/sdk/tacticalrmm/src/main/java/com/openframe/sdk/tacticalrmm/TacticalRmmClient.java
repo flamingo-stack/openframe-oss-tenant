@@ -20,7 +20,7 @@ public class TacticalRmmClient {
 
     public TacticalRmmClient() {
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3))
+                .connectTimeout(Duration.ofSeconds(5))
                 .build();
         this.objectMapper = new ObjectMapper();
     }

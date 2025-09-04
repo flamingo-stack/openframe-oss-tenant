@@ -33,7 +33,7 @@ pub mod updater;
 
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::{AgentAuthService, AgentRegistrationService, ToolInstallationCommandParamsProcessor, ToolRunManager};
+use crate::services::{AgentAuthService, AgentRegistrationService, ToolCommandParamsResolver, ToolRunManager};
 use crate::services::InstalledToolsService;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
@@ -215,14 +215,9 @@ impl Client {
             Self::GATEWAY_HTTP_URL.to_string()
         );
 
-        // Initialize tool installation command runner
-        // Command runner removed - not currently used
-
         // Initialize installed tools service
         let installed_tools_service = InstalledToolsService::new(directory_manager.clone())
             .context("Failed to initialize installed tools service")?;
-
-        // Tool installer removed - not currently used in tool installation service
 
         // Initialize NATS message publisher
         let nats_message_publisher = NatsMessagePublisher::new(nats_connection_manager.clone());
@@ -231,7 +226,7 @@ impl Client {
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
         // Initialize tool run manager
-        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), ToolInstallationCommandParamsProcessor::new(directory_manager.clone()));
+        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), ToolCommandParamsResolver::new(directory_manager.clone()));
 
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
