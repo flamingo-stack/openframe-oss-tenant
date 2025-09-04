@@ -8,11 +8,15 @@ import com.openframe.data.service.ToolUrlService;
 import com.openframe.sdk.tacticalrmm.TacticalRmmClient;
 import com.openframe.sdk.tacticalrmm.model.AgentRegistrationSecretRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class TacticalRmmAgentRegistrationSecretRetriever implements ToolAgentRegistrationSecretRetriever{
+
+    private static final String TOOL_ID = "tactical-rmm";
 
     private final IntegratedToolService integratedToolService;
     private final ToolUrlService toolUrlService;
@@ -20,27 +24,30 @@ public class TacticalRmmAgentRegistrationSecretRetriever implements ToolAgentReg
 
     @Override
     public String getToolId() {
-        return "tactical-rmm";
+        return TOOL_ID;
     }
 
     @Override
     public String getSecret() {
-        // TODO: normal exception
-        // TODO: tool type
-        IntegratedTool integratedTool = integratedToolService.getToolById(getToolId())
-                .orElseThrow();
+        // Get the integrated tool configuration
+        IntegratedTool integratedTool = integratedToolService.getToolById(TOOL_ID)
+                .orElseThrow(() -> new IllegalStateException("Found no tool with id " + TOOL_ID));
+
         ToolUrl toolUrl = toolUrlService.getUrlByToolType(integratedTool, ToolUrlType.API)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("Found no api url for tool with id" + TOOL_ID));
 
-        // TODO: improve
         String apiUrl = toolUrl.getUrl() + ":" + toolUrl.getPort();
-
         String apiKey = integratedTool.getCredentials().getApiKey().getKey();
 
+        // Get secret
         AgentRegistrationSecretRequest request = buildRequest(apiUrl);
-        return client.getInstallationSecret(apiUrl, apiKey, request);
+        String secret = client.getInstallationSecret(apiUrl, apiKey, request);
+
+        log.info("Successfully retrieved enroll secret from TacticalRmm");
+        return secret;
     }
 
+    // Default request for any OS
     private AgentRegistrationSecretRequest buildRequest(String apiUrl) {
         AgentRegistrationSecretRequest request = new AgentRegistrationSecretRequest();
         request.setInstallMethod("manual");

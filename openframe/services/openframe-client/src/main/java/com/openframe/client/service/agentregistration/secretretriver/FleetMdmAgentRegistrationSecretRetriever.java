@@ -17,37 +17,32 @@ import java.io.IOException;
 @Slf4j
 public class FleetMdmAgentRegistrationSecretRetriever implements ToolAgentRegistrationSecretRetriever {
 
+    private static final String TOOL_ID = "fleetmdm-server";
+
     private final IntegratedToolService integratedToolService;
     private final ToolUrlService toolUrlService;
 
     @Override
     public String getToolId() {
-        return "fleetmdm-agent";
+        return TOOL_ID;
     }
 
     @Override
     public String getSecret() {
         try {
             // Get the integrated tool configuration
-            IntegratedTool integratedTool = integratedToolService.getToolById(getToolId())
-                    .orElseThrow(() -> new RuntimeException("Fleet MDM tool not found"));
+            IntegratedTool integratedTool = integratedToolService.getToolById(TOOL_ID)
+                    .orElseThrow(() -> new IllegalStateException("Found no tool with id " + TOOL_ID));
             
             ToolUrl toolUrl = toolUrlService.getUrlByToolType(integratedTool, ToolUrlType.API)
-                    .orElseThrow(() -> new RuntimeException("Fleet MDM API URL not found"));
+                    .orElseThrow(() -> new IllegalStateException("Found no api url for tool with id" + TOOL_ID));
 
-            // Build the API URL
             String apiUrl = toolUrl.getUrl() + ":" + toolUrl.getPort();
-
-            // Get the API token
             String apiToken = integratedTool.getCredentials().getApiKey().getKey();
 
             // Create Fleet MDM client and get enroll secret
             FleetMdmClient client = new FleetMdmClient(apiUrl, apiToken);
             String enrollSecret = client.getEnrollSecret();
-            
-            if (enrollSecret == null) {
-                throw new RuntimeException("Failed to retrieve enroll secret from Fleet MDM");
-            }
             
             log.info("Successfully retrieved enroll secret from Fleet MDM");
             return enrollSecret;
