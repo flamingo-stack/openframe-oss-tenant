@@ -6,7 +6,6 @@ pub struct ToolCommandParamsResolver {
     directory_manager: DirectoryManager,
 }
 
-// TODO: rename to generic one 
 impl ToolCommandParamsResolver {
 
     const SERVER_URL_PLACEHOLDER: &'static str = "${client.serverUrl}";

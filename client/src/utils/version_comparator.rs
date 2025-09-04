@@ -1,6 +1,6 @@
 pub struct VersionComparator;
 
-// TODO: use
+// TODO: use during version update feature
 impl VersionComparator {
 
     pub fn compare(&self, v1: &str, v2: &str) -> std::cmp::Ordering {

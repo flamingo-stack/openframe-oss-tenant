@@ -89,10 +89,9 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/api/agents/register",
                                 CLIENTS_PREFIX + "/oauth/token",
                                 DASHBOARD_PREFIX + "/sso/providers",
-                                 managementContextPath + "/**",
-                                // TODO: remove
-                                CLIENTS_PREFIX + "/tool-agent/**",
-                                "/**"
+                                managementContextPath + "/**",
+                                // TODO: remove after migration artifacts to GitHub
+                                CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
                                 .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
                         // Agent tools
