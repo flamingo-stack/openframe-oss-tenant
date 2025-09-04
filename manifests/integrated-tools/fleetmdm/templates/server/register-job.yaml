@@ -139,14 +139,14 @@ spec:
                 "version": "1.0",
                 "status": "ENABLED",
                 "runCommandArgs": [
-                  "--fleet-url", "${serverUrl}",
-                  "--enroll-secret", "${registrationSecret}",
+                  "--fleet-url", "${client.serverUrl}",
+                  "--enroll-secret", "${server.registrationSecret}",
                   "--insecure",
                   "--disable-updates",
                   "--openframe-mode",
-                  "--openframe-secret", "${openframeSecret}",
-                  "--openframe-osquery-path", "${openframeOsqueryPath}",
-                  "--openframe-token-path", "${openframeTokenPath}"
+                  "--openframe-secret", "${client.openframeSecret}",
+                  "--openframe-osquery-path", "${client.openframeOsqueryPath}",
+                  "--openframe-token-path", "${client.openframeTokenPath}"
                 ],
                 "assets": [
                   {

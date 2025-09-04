@@ -124,8 +124,8 @@ spec:
                   "status": "ENABLED",
                   "installationCommandArgs": [
                     "-m", "install",
-                    "-api", "${serverUrl}",
-                    "-auth", "${registrationSecret}",
+                    "-api", "${client.serverUrl}",
+                    "-auth", "${server.registrationSecret}",
                     "-client-id", "1",
                     "-site-id", "1",
                     "-agent-type", "workstation",
@@ -133,15 +133,15 @@ spec:
                     "-logto", "stdout",
                     "--openframe-mode",
                     "-nomesh",
-                    "--openframe-secret", "${openframeSecret}",
-                    "--openframe-token-path", "${openframeTokenPath}"
+                    "--openframe-secret", "${client.openframeSecret}",
+                    "--openframe-token-path", "${client.openframeTokenPath}"
                   ],
                   "runCommandArgs": [
                     "-m", "svc",
                     "-log", "DEBUG",
                     "-logto", "stdout",
-                    "-openframe-secret", "${openframeSecret}",
-                    "--openframe-token-path", "${openframeTokenPath}"
+                    "-openframe-secret", "${client.openframeSecret}",
+                    "--openframe-token-path", "${client.openframeTokenPath}"
                   ]
                 }
               }' \

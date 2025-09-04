@@ -9,10 +9,10 @@ pub struct ToolInstallationCommandParamsProcessor {
 // TODO: rename to generic one 
 impl ToolInstallationCommandParamsProcessor {
 
-    const SERVER_URL_PLACEHOLDER: &'static str = "${serverUrl}";
-    const OPENFRAME_SECRET_PLACEHOLDER: &'static str = "${openframeSecret}";
-    const OPENFRAME_TOKEN_PATH_PLACEHOLDER: &'static str = "${openframeTokenPath}";
-    const OPENFRAME_OSQUERY_PATH_PLACEHOLDER: &'static str = "${openframeOsqueryPath}";
+    const SERVER_URL_PLACEHOLDER: &'static str = "${client.serverUrl}";
+    const OPENFRAME_SECRET_PLACEHOLDER: &'static str = "${client.openframeSecret}";
+    const OPENFRAME_TOKEN_PATH_PLACEHOLDER: &'static str = "${client.openframeTokenPath}";
+    const OPENFRAME_OSQUERY_PATH_PLACEHOLDER: &'static str = "${client.openframeOsqueryPath}";
     
     pub fn new(directory_manager: DirectoryManager) -> Self {
         Self { directory_manager }

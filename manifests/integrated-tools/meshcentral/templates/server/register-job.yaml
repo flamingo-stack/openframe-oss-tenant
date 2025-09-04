@@ -127,8 +127,8 @@ spec:
                   "runCommandArgs": [
                     "connect",
                     "--openframe-mode",
-                    "--openframe-secret", "${openframeSecret}",
-                    "--openframe-token-path", "${openframeTokenPath}"
+                    "--openframe-secret", "${client.openframeSecret}",
+                    "--openframe-token-path", "${client.openframeTokenPath}"
                   ],
                   "assets": [
                     {
