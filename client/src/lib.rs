@@ -211,7 +211,8 @@ impl Client {
         // Initialize tool API client
         let tool_api_client = ToolApiClient::new(
             http_client.clone(),
-            Self::GATEWAY_HTTP_URL.to_string()
+            Self::GATEWAY_HTTP_URL.to_string(),
+            config_service.clone()
         );
 
         // Initialize installed tools service
