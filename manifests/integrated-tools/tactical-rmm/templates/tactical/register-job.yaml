@@ -120,6 +120,7 @@ spec:
               -d '{
                 "toolAgent": {
                   "id": "tacticalrmm-agent",
+                  "toolId": "tactical-rmm"
                   "version": "1.0",
                   "status": "ENABLED",
                   "installationCommandArgs": [

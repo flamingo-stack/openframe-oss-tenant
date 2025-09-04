@@ -15,7 +15,7 @@ public class AgentRegistrationToolService {
 
     private final IntegratedToolAgentService integratedToolAgentService;
     private final ToolInstallationNatsPublisher toolInstallationNatsPublisher;
-    private final ToolCommandParamsProcessor toolCommandParamsProcessor;
+    private final ToolCommandParamsResolver toolCommandParamsResolver;
 
     public void publishInstallationMessages(String machineId) {
         List<IntegratedToolAgent> toolAgents = integratedToolAgentService.getAllEnabled();
@@ -27,17 +27,17 @@ public class AgentRegistrationToolService {
         try {
             // process params for installation command args
             List<String> installationCommandArgs = toolAgent.getInstallationCommandArgs();
-            toolAgent.setInstallationCommandArgs(toolCommandParamsProcessor.process(toolId, installationCommandArgs));
+            toolAgent.setInstallationCommandArgs(toolCommandParamsResolver.process(toolId, installationCommandArgs));
 
             // process params for run command args
             List<String> runCommandArgs = toolAgent.getRunCommandArgs();
-            toolAgent.setRunCommandArgs(toolCommandParamsProcessor.process(toolId, runCommandArgs));
+            toolAgent.setRunCommandArgs(toolCommandParamsResolver.process(toolId, runCommandArgs));
 
             toolInstallationNatsPublisher.publish(machineId, toolAgent);
             log.info("Published {} agent installation message for machine {}", toolId, machineId);
         } catch (Exception e) {
+            // TODO: add fallback mechanism
             log.error("Failed to publish {} agent installation message for machine {}", toolId, machineId);
-            throw e;
         }
     }
 

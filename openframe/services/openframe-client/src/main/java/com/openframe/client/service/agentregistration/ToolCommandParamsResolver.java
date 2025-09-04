@@ -9,7 +9,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class ToolCommandParamsProcessor {
+public class ToolCommandParamsResolver {
 
     private static final String REGISTRATION_SECRET_PLACEHOLDER = "${server.registrationSecret}";
 

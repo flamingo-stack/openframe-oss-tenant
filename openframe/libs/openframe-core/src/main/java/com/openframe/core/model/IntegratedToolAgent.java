@@ -12,6 +12,7 @@ public class IntegratedToolAgent {
 
     @Id
     private String id;
+    private String toolId;
     private String version;
     private List<String> installationCommandArgs;
     private List<String> runCommandArgs;

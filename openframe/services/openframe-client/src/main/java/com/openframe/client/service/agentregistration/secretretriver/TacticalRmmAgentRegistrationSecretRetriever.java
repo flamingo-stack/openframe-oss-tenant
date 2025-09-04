@@ -20,8 +20,7 @@ public class TacticalRmmAgentRegistrationSecretRetriever implements ToolAgentReg
 
     @Override
     public String getToolId() {
-        // TODO: tool type enum
-        return "tacticalrmm-agent";
+        return "tactical-rmm";
     }
 
     @Override
