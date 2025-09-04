@@ -24,12 +24,6 @@ spring:
           destination: machine.*.toolconnection
           group: client-service-machine-tool-connection
           content-type: application/json
-      binders:
-        nats:
-          type: nats
-          environment:
-            nats:
-              servers: nats://localhost:4222
       default-binder: nats
 
 nats:
@@ -37,7 +31,7 @@ nats:
     server: nats://localhost:4222
     username: service
     password: service_pass
-  connection:
+    connection:
     connection-timeout: 30s
     max-reconnect: -1
     reconnect-wait: 5s
