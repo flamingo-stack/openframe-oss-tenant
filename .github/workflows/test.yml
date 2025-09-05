@@ -55,7 +55,9 @@ jobs:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
@@ -109,7 +111,9 @@ jobs:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
@@ -200,7 +204,9 @@ jobs:
     needs: [build_images, changes, matrix]
     runs-on: Linux-x64
     timeout-minutes: 60
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
         with:
@@ -240,13 +246,16 @@ jobs:
           ./scripts/run.sh bootstrap
 
   test_client:
-    name: "Test Rust Client"
+    name: "Test Client"
     needs: [changes, matrix]
     runs-on: ${{ matrix.os }}
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft && 
+      contains(needs.changes.outputs.client, 'true')
     defaults:
       run:
         shell: bash
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -280,11 +289,11 @@ jobs:
           make lint
         continue-on-error: true
 
-     # make tests are disabled untill all tests are valid
-     - name: Test client
-       working-directory: client
-       run: |
-           make build
+      # make tests are disabled untill all tests are valid
+      - name: Test client
+        working-directory: client
+        run: |
+            make build
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
@@ -321,7 +330,9 @@ jobs:
     name: Final tests
     needs: [test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     steps:
       - name: Checkout
         uses: actions/checkout@v4
