@@ -5,9 +5,9 @@ import com.openframe.api.dto.SSOConfigRequest;
 import com.openframe.api.dto.SSOConfigResponse;
 import com.openframe.api.dto.SSOConfigStatusResponse;
 import com.openframe.api.dto.SSOProviderInfo;
-import com.openframe.core.model.SSOConfig;
 import com.openframe.core.service.EncryptionService;
-import com.openframe.data.repository.mongo.SSOConfigRepository;
+import com.openframe.data.document.sso.SSOConfig;
+import com.openframe.data.repository.sso.SSOConfigRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -84,6 +84,10 @@ public class SSOConfigService {
 
         SSOConfig savedConfig = ssoConfigRepository.save(config);
         log.info("Successfully created SSO configuration for provider '{}'", provider);
+
+        //publish Kafka SSOConfigMessage
+        //publisher.publish(ssoConfig.toMessage());
+        //publisher.publish(mapper.toMessage(ssoConfig));
 
         return SSOConfigResponse.builder()
                 .id(savedConfig.getId())

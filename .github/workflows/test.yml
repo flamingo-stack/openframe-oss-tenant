@@ -109,7 +109,8 @@ jobs:
             --batch-mode \
             --no-transfer-progress \
             -Dmaven.javadoc.skip=true \
-            -DskipTests=false
+            -DskipTests=false \
+            -s .mvn/settings.xml
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')

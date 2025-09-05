@@ -43,6 +43,8 @@
         <jjwt.version>0.11.5</jjwt.version>
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
+        <!-- Centralized OpenFrame OSS libs version -->
+        <openframe.libs.version>1.0.0</openframe.libs.version>
     </properties>
 
     <modules>
@@ -316,6 +318,13 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jsonwebtoken.version}</version>
+            </dependency>
+
+            <!-- External OpenFrame OSS artifacts -->
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-data-mongo</artifactId>
+                <version>${openframe.libs.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

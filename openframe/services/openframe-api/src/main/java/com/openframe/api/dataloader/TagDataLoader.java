@@ -2,7 +2,7 @@ package com.openframe.api.dataloader;
 
 import com.netflix.graphql.dgs.DgsDataLoader;
 import com.openframe.api.service.TagService;
-import com.openframe.core.model.Tag;
+import com.openframe.data.document.tool.Tag;
 import lombok.RequiredArgsConstructor;
 import org.dataloader.BatchLoader;
 
