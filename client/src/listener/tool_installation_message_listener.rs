@@ -37,7 +37,7 @@ impl ToolInstallationMessageListener {
     pub async fn start(&self) -> Result<tokio::task::JoinHandle<()>> {
         let listener = self.clone();
         let handle = tokio::spawn(async move {
-            // TODO: add reconnection loop after token fallback is implemented
+            // TODO: add reconnection and consumer creation loop after token fallback is implemented
             if let Err(e) = listener.listen().await {
                 error!("Tool installation message listener error: {:#}", e);
             }
