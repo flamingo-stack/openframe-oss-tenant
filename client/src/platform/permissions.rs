@@ -4,7 +4,7 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Command;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 #[cfg(unix)]
 use libc;
