@@ -1,6 +1,5 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.gateway.config.ws.nats.NatsMessageValidator;
 import com.openframe.security.jwt.JwtService;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -58,10 +57,9 @@ public class WebSocketGatewayConfig {
     @Primary
     public WebSocketService webSocketServiceDecorator(
             JwtService jwtService,
-            WebSocketService defaultWebSocketService,
-            NatsMessageValidator natsMessageValidator
+            WebSocketService defaultWebSocketService
     ) {
-        return new WebSocketServiceSecurityDecorator(defaultWebSocketService, jwtService, natsMessageValidator);
+        return new WebSocketServiceSecurityDecorator(defaultWebSocketService, jwtService);
     }
 
 

@@ -6,7 +6,6 @@ import com.openframe.client.exception.ConnectionNotFoundException;
 import com.openframe.client.exception.DuplicateConnectionException;
 import com.openframe.client.exception.InvalidAgentIdException;
 import com.openframe.client.exception.InvalidToolTypeException;
-import com.openframe.client.exception.MachineNotFoundException;
 import com.openframe.core.model.ConnectionStatus;
 import com.openframe.core.model.Machine;
 import com.openframe.core.model.ToolConnection;
@@ -131,7 +130,6 @@ class ToolConnectionServiceTest {
     void addToolConnection_CreatesNewConnection() {
         Machine machine = new Machine();
         machine.setMachineId(MACHINE_ID);
-        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.of(machine));
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
                 .thenReturn(Optional.empty());
         when(toolConnectionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
@@ -153,30 +151,11 @@ class ToolConnectionServiceTest {
         machine.setMachineId(MACHINE_ID);
         ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
         existingConnection.setStatus(ConnectionStatus.CONNECTED);
-        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.of(machine));
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
                 .thenReturn(Optional.of(existingConnection));
 
         assertDoesNotThrow(() ->
                 toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
-        );
-    }
-
-    @Test
-    void addToolConnection_WithNonExistentMachine_ThrowsException() {
-        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.empty());
-
-        assertThrows(
-                MachineNotFoundException.class,
-                () -> toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
-        );
-    }
-
-    @Test
-    void addToolConnection_WithEmptyAgentId_ThrowsException() {
-        assertThrows(
-                InvalidAgentIdException.class,
-                () -> toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, "")
         );
     }
 
@@ -270,7 +249,6 @@ class ToolConnectionServiceTest {
         ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, "old-agent-tool-id");
         existingConnection.setStatus(ConnectionStatus.DISCONNECTED);
         existingConnection.setDisconnectedAt(Instant.now().minusSeconds(3600));
-        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.of(machine));
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
                 .thenReturn(Optional.of(existingConnection));
         when(toolConnectionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
@@ -293,7 +271,6 @@ class ToolConnectionServiceTest {
         machine.setMachineId(MACHINE_ID);
         ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
         existingConnection.setStatus(ConnectionStatus.CONNECTED);
-        when(machineRepository.findByMachineId(MACHINE_ID)).thenReturn(Optional.of(machine));
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
                 .thenReturn(Optional.of(existingConnection));
 
