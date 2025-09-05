@@ -1,70 +1,31 @@
-# Makefile for Rust (project or workspace)
-# Usage:
-#   make build                             # release build
-#   make test                              # run tests (release by default)
-#   make build PROFILE=debug               # debug build
-#   make build TARGET=x86_64-unknown-linux-gnu
-#   make test PKG=my-crate TEST_ARGS="-- --nocapture"
-#   make clippy ALL_FEATURES=1
-
-# example of all knobs
-#	$(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)
+# Makefile for Rust project
 
 CARGO ?= cargo
 
-# ---- Knobs you can pass like: make build PROFILE=debug TARGET=... ----
-PROFILE             ?= release
-TARGET              ?= 
-FEATURES            ?= 
-ALL_FEATURES        ?= 0
-NO_DEFAULT_FEATURES ?= 0
-PKG                 ?= 
-TEST_ARGS           ?= 
-
-# ---- Derived flags (don’t edit) ----
+# Optional target for cross-compilation
+TARGET ?= 
 ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
 
-ifeq ($(PROFILE),release)
-  RELEASE_FLAG := --release
-endif
+.PHONY: lint build test fmt fmt-check clippy clean crossinstall crossbuild
 
-ifneq ($(FEATURES),)
-  FEATURES_FLAG := --features "$(FEATURES)"
-endif
+fmt:
+	$(CARGO) fmt --all
 
-ifeq ($(ALL_FEATURES),1)
-  ALLFEAT_FLAG := --all-features
-  FEATURES_FLAG :=
-  NODFLT_FLAG :=
-else ifeq ($(NO_DEFAULT_FEATURES),1)
-  NODFLT_FLAG := --no-default-features
-endif
-
-ifneq ($(PKG),)
-  PKG_FLAG := -p $(PKG)
-endif
-
-.PHONY: lint build test fmt clippy clean crossinstall crossbuild
-
-# name fmt more generic to make GH Action more reusable
-lint:
+fmt-check:
 	$(CARGO) fmt --all -- --check
+
+clippy:
 	$(CARGO) clippy --all-targets -- -D warnings
+
+lint: fmt-check clippy
 
 build:
 	$(CARGO) build --release --locked
 
-test:
+test: build
 	$(CARGO) test --release --locked
-
-# use phony lint instead
-fmt:
-	$(CARGO) fmt --all
-
-clippy:
-	$(CARGO) clippy --all-targets -- -D warnings
 
 clean:
 	$(CARGO) clean
