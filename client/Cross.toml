@@ -1,5 +1,4 @@
 # Cross compilation configuration
-# Using pre-built images that include OpenSSL
 
 [target.x86_64-unknown-linux-gnu]
 pre-build = [
@@ -10,4 +9,9 @@ pre-build = [
 # Windows doesn't need OpenSSL, uses Windows native TLS
 
 [target.x86_64-apple-darwin]
-# macOS uses Security Framework, not OpenSSL
+# Try using a Rust builder image that includes macOS SDK
+# image = "joseluisq/rust-linux-darwin-builder:1.75.0"
+# This image includes:
+# - Rust toolchain
+# - macOS SDK via osxcross
+# - Ability to cross-compile to Darwin/macOS

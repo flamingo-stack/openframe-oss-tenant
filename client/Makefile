@@ -30,9 +30,17 @@ test: build
 clean:
 	$(CARGO) clean
 
-# install cross tool
+# install build tools
 crossinstall:
 	$(CARGO) install cross --git https://github.com/cross-rs/cross
+	$(CARGO) install cargo-zigbuild
 
+# Smart cross-compilation that picks the right tool
 crossbuild:
-	cross build --release $(TARGET_FLAG)
+	@if echo "$(TARGET)" | grep -q "apple-darwin"; then \
+		echo "Building for macOS using zigbuild..."; \
+		cargo zigbuild --release $(TARGET_FLAG); \
+	else \
+		echo "Building using cross..."; \
+		cross build --release $(TARGET_FLAG); \
+	fi
