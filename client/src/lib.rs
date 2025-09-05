@@ -120,8 +120,8 @@ pub struct Client {
 }
 
 impl Client {
-    const GATEWAY_HTTP_URL: &'static str = "http://localhost:8100";
-    const GATEWAY_WS_URL: &'static str = "ws://localhost:8100";
+    const GATEWAY_HTTP_URL: &'static str = "http://localhost";
+    const GATEWAY_WS_URL: &'static str = "wss://localhost";
 
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));

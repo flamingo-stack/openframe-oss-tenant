@@ -31,7 +31,7 @@ impl ToolCommandParamsResolver {
             .into_iter()
             // Resolve standard placeholders
             .map(|arg| {
-                arg.replace(Self::SERVER_URL_PLACEHOLDER, "http://localhost:8100")
+                arg.replace(Self::SERVER_URL_PLACEHOLDER, "https://localhost")
                     .replace(Self::OPENFRAME_SECRET_PLACEHOLDER, "12345678901234567890123456789012")
                     .replace(Self::OPENFRAME_TOKEN_PATH_PLACEHOLDER, &token_path)
             })
