@@ -246,7 +246,7 @@ jobs:
           ./scripts/run.sh bootstrap
 
   test_client:
-    name: "Test Client"
+    name: "Test Client: ${{ matrix.os }}"
     needs: [changes, matrix]
     runs-on: ${{ matrix.os }}
     if: |
