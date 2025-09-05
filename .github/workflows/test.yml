@@ -246,9 +246,9 @@ jobs:
           ./scripts/run.sh bootstrap
 
   test_client:
-    name: "Test Client"
+    name: "Test Client - Cross Platform"
     needs: [changes, matrix]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft && 
@@ -256,19 +256,6 @@ jobs:
     defaults:
       run:
         shell: bash
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
-#          - os: ubuntu-latest
-#            target: x86_64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-x64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -279,21 +266,49 @@ jobs:
         uses: ./.github/steps/rust-setup
         with:
           toolchain: stable
-          targets: ${{ matrix.target }}
+          targets: x86_64-unknown-linux-gnu,x86_64-apple-darwin,x86_64-pc-windows-gnu
           components: clippy, rustfmt
-          shared-key: ${{ matrix.target }}
+          shared-key: cross-platform
+
+      - name: Install cross-compilation tool
+        working-directory: client
+        run: |
+          make crossinstall
 
       - name: Run lint
         working-directory: client
         run: |
           make lint
-        continue-on-error: true
 
-      # make tests are disabled untill all tests are valid
-      - name: Test client
+      - name: Build for Linux
         working-directory: client
         run: |
-            make build
+          TARGET=x86_64-unknown-linux-gnu make crossbuild
+
+      - name: Build for macOS
+        working-directory: client
+        run: |
+          TARGET=x86_64-apple-darwin make crossbuild
+
+      - name: Build for Windows
+        working-directory: client
+        run: |
+          TARGET=x86_64-pc-windows-gnu make crossbuild
+
+      # - name: Run tests
+      #   working-directory: client
+      #   run: |
+      #     make test
+
+      # - name: Upload artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: client-binaries
+      #     path: |
+      #       openframe-oss-client-linux-x64
+      #       openframe-oss-client-macos-x64
+      #       openframe-oss-client-windows-x64.exe
+      #     retention-days: 7
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
