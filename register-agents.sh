@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # OpenFrame Agent Registration Script
-# Registers Fleet MDM, MeshCentral, and Tactical RMM tools and their agents
+# Registers Fleet MDM, MeshCentral, and Tactical RMM agents only
 # Target: localhost:8095
 
 set -e
@@ -39,59 +39,6 @@ wait_for_api() {
     log_info "OpenFrame Management API is available!"
 }
 
-# Register Fleet MDM Server
-register_fleetmdm_server() {
-    log_info "Registering Fleet MDM Server..."
-    
-    curl --verbose --show-error --fail \
-        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tools/fleetmdm-server" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "tool": {
-                "id": "fleetmdm-server",
-                "toolType": "FLEET",
-                "name": "FleetMDM Server",
-                "description": "Fleet Device Management Platform",
-                "toolUrls": [
-                    {
-                        "url": "http://localhost",
-                        "port": "8070",
-                        "type": "API"
-                    },
-                    {
-                        "url": "http://localhost",
-                        "port": "8070",
-                        "type": "DASHBOARD"
-                    }
-                ],
-                "category": "Device Management",
-                "platformCategory": "Integrated Tool",
-                "enabled": true,
-                "credentials": {
-                    "username": "fleet-admin@example.com",
-                    "password": "fleet-admin-password",
-                    "apiKey": {
-                        "key": "fleet-api-key-placeholder",
-                        "type": "BEARER_TOKEN"
-                    }
-                },
-                "layer": "Integrated Tools",
-                "layerOrder": 4,
-                "layerColor": "#455A64",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/api/v1/*", "/metrics"]
-            }
-        }' \
-        --retry 3 \
-        --retry-delay 2 \
-        --retry-all-errors
-
-    log_info "Fleet MDM Server registration complete."
-}
 
 # Register Fleet MDM Agent
 register_fleetmdm_agent() {
@@ -132,60 +79,6 @@ register_fleetmdm_agent() {
     log_info "Fleet MDM Agent registration complete."
 }
 
-# Register MeshCentral Server
-register_meshcentral_server() {
-    log_info "Registering MeshCentral Server..."
-    
-    curl --verbose --show-error --fail \
-        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tools/meshcentral-server" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "tool": {
-                "id": "meshcentral-server",
-                "toolType": "MESHCENTRAL",
-                "name": "MeshCentral Server",
-                "description": "MeshCentral Remote Management Platform",
-                "toolUrls": [
-                    {
-                        "url": "http://localhost",
-                        "port": "80",
-                        "type": "API"
-                    },
-                    {
-                        "url": "http://localhost",
-                        "port": "8383",
-                        "type": "DASHBOARD"
-                    },
-                    {
-                        "url": "ws://localhost",
-                        "port": "8383",
-                        "type": "WS"
-                    }
-                ],
-                "category": "Device Management",
-                "platformCategory": "Integrated Tool",
-                "enabled": true,
-                "credentials": {
-                    "username": "mesh-admin",
-                    "password": "mesh-admin-password"
-                },
-                "layer": "Integrated Tools",
-                "layerOrder": 4,
-                "layerColor": "#455A64",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/metrics"]
-            }
-        }' \
-        --retry 3 \
-        --retry-delay 2 \
-        --retry-all-errors
-
-    log_info "MeshCentral Server registration complete."
-}
 
 # Register MeshCentral Agent
 register_meshcentral_agent() {
@@ -228,65 +121,6 @@ register_meshcentral_agent() {
     log_info "MeshCentral Agent registration complete."
 }
 
-# Register Tactical RMM Server
-register_tacticalrmm_server() {
-    log_info "Registering Tactical RMM Server..."
-    
-    curl --verbose --show-error --fail \
-        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tools/tactical-rmm" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "tool": {
-                "id": "tactical-rmm",
-                "toolType": "TACTICAL_RMM",
-                "name": "Tactical RMM",
-                "description": "Remote Monitoring and Management Platform",
-                "toolUrls": [
-                    {
-                        "url": "http://localhost",
-                        "port": "8000",
-                        "type": "API"
-                    },
-                    {
-                        "url": "http://localhost",
-                        "port": "8080",
-                        "type": "DASHBOARD"
-                    },
-                    {
-                        "url": "ws://localhost",
-                        "port": "8000",
-                        "type": "WS"
-                    }
-                ],
-                "category": "Device Management",
-                "platformCategory": "Integrated Tool",
-                "enabled": true,
-                "credentials": {
-                    "username": "trmm-admin",
-                    "password": "trmm-admin-password",
-                    "apiKey": {
-                        "key": "tactical-rmm-api-key-placeholder",
-                        "type": "HEADER",
-                        "keyName": "X-API-KEY"
-                    }
-                },
-                "layer": "Integrated Tools",
-                "layerOrder": 3,
-                "layerColor": "#455A64",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/metrics"]
-            }
-        }' \
-        --retry 3 \
-        --retry-delay 2 \
-        --retry-all-errors
-
-    log_info "Tactical RMM Server registration complete."
-}
 
 # Register Tactical RMM Agent
 register_tacticalrmm_agent() {
@@ -339,56 +173,52 @@ main() {
     # Wait for API to be available
     wait_for_api
     
-    # Register all servers and agents
-    log_info "=== Registering Fleet MDM ==="
-    register_fleetmdm_server
+    # Register all agents only
+    log_info "=== Registering Fleet MDM Agent ==="
     register_fleetmdm_agent
     
-    log_info "=== Registering MeshCentral ==="
-    register_meshcentral_server
+    log_info "=== Registering MeshCentral Agent ==="
     register_meshcentral_agent
     
-    log_info "=== Registering Tactical RMM ==="
-    register_tacticalrmm_server
+    log_info "=== Registering Tactical RMM Agent ==="
     register_tacticalrmm_agent
     
     log_info "All agent registrations completed successfully!"
     log_info ""
-    log_info "NOTE: This script uses placeholder credentials. Please update the following:"
-    log_info "  - Fleet MDM: API key and credentials"
-    log_info "  - MeshCentral: Admin username and password"
-    log_info "  - Tactical RMM: API key and credentials"
+    log_info "NOTE: This script registers agents only. Make sure the corresponding servers"
+    log_info "are already registered before running this script:"
+    log_info "  - Fleet MDM Server (fleetmdm-server)"
+    log_info "  - MeshCentral Server (meshcentral-server)"
+    log_info "  - Tactical RMM Server (tactical-rmm)"
     log_info ""
-    log_info "You can update these through the OpenFrame Management API or UI."
+    log_info "Agents use placeholder credentials. Please update them through the OpenFrame Management API or UI."
 }
 
 # Handle script arguments
 case "${1:-}" in
     --fleet)
         wait_for_api
-        register_fleetmdm_server
         register_fleetmdm_agent
         ;;
     --meshcentral)
         wait_for_api
-        register_meshcentral_server
         register_meshcentral_agent
         ;;
     --tactical)
         wait_for_api
-        register_tacticalrmm_server
         register_tacticalrmm_agent
         ;;
     --help|-h)
         echo "Usage: $0 [--fleet|--meshcentral|--tactical|--help]"
         echo ""
         echo "Options:"
-        echo "  --fleet       Register only Fleet MDM"
-        echo "  --meshcentral Register only MeshCentral"
-        echo "  --tactical    Register only Tactical RMM"
+        echo "  --fleet       Register only Fleet MDM Agent"
+        echo "  --meshcentral Register only MeshCentral Agent"
+        echo "  --tactical    Register only Tactical RMM Agent"
         echo "  --help        Show this help message"
         echo ""
-        echo "Without arguments, registers all tools and agents."
+        echo "Without arguments, registers all agents."
+        echo "NOTE: Make sure corresponding servers are already registered."
         exit 0
         ;;
     *)

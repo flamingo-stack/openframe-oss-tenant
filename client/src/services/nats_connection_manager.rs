@@ -36,6 +36,7 @@ impl NatsConnectionManager {
         let client = async_nats::ConnectOptions::new()
             .name(machine_id)
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
+            // TODO: count
             .max_reconnects(10000)
             .retry_on_initial_connect()
             .reconnect_delay_callback(|attempt| {
@@ -43,11 +44,8 @@ impl NatsConnectionManager {
                 std::time::Duration::from_secs(2)
             })
             .connect(&connection_url)
-
             .await
             .context("Failed to connect to NATS server")?;
-
-        info!("Connected to NATS server");
 
         *self.client.write().await = Some(Arc::new(client));
 
@@ -57,7 +55,8 @@ impl NatsConnectionManager {
     async fn build_nats_connection_url(&self) -> Result<String> {
         let token = self.config_service.get_access_token().await?;
         let host = &self.nats_server_url;
-        Ok(format!("{}/ws/nats?authorization={}", host, token))
+        // Ok(format!("{}/ws/nats?authorization={}", host, token))
+        Ok(format!("ws://localhost:8100/ws/nats?authorization={}", token))
     }
 
     pub async fn get_client(&self) -> Result<Arc<Client>> {
