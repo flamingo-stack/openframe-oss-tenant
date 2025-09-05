@@ -7,7 +7,7 @@ import { useDeployment } from '@app/hooks/use-deployment'
 interface AuthChoiceSectionProps {
   onCreateOrganization: (orgName: string, domain: string) => void
   onSignIn: (email: string) => Promise<void>
-  isLoading: boolean
+  isLoading?: boolean
 }
 
 /**

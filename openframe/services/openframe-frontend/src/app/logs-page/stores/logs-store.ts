@@ -16,6 +16,7 @@ export interface LogEntry {
   userId?: string
   deviceId?: string
   summary: string
+  message?: string
   timestamp: string
   details?: string
   metadata?: Record<string, any>
