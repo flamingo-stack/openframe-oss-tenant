@@ -68,7 +68,7 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress -s .mvn/settings.xml
+        run: mvn clean install -U -pl ${{ matrix.path }} -am -Dcompress -s .mvn/settings.xml
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
