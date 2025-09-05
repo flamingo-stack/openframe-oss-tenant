@@ -3,15 +3,14 @@ package com.openframe.client.service;
 import com.openframe.client.dto.agent.AgentToolCollectionResponse;
 import com.openframe.client.dto.agent.ToolConnectionResponse;
 import com.openframe.client.exception.ConnectionNotFoundException;
-import com.openframe.client.exception.DuplicateConnectionException;
 import com.openframe.client.exception.InvalidAgentIdException;
 import com.openframe.client.exception.InvalidToolTypeException;
-import com.openframe.core.model.ConnectionStatus;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.ToolConnection;
-import com.openframe.core.model.ToolType;
-import com.openframe.data.repository.mongo.MachineRepository;
-import com.openframe.data.repository.mongo.ToolConnectionRepository;
+import com.openframe.data.document.device.Machine;
+import com.openframe.data.document.tool.ConnectionStatus;
+import com.openframe.data.document.tool.ToolConnection;
+import com.openframe.data.document.tool.ToolType;
+import com.openframe.data.repository.device.MachineRepository;
+import com.openframe.data.repository.tool.ToolConnectionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +24,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -128,8 +131,6 @@ class ToolConnectionServiceTest {
 
     @Test
     void addToolConnection_CreatesNewConnection() {
-        Machine machine = new Machine();
-        machine.setMachineId(MACHINE_ID);
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
                 .thenReturn(Optional.empty());
         when(toolConnectionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
@@ -147,8 +148,6 @@ class ToolConnectionServiceTest {
 
     @Test
     void addToolConnection_WithExistingConnection_ThrowsException() {
-        Machine machine = new Machine();
-        machine.setMachineId(MACHINE_ID);
         ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
         existingConnection.setStatus(ConnectionStatus.CONNECTED);
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
@@ -244,8 +243,6 @@ class ToolConnectionServiceTest {
 
     @Test
     void addToolConnection_ReactivatesDisconnectedConnection() {
-        Machine machine = new Machine();
-        machine.setMachineId(MACHINE_ID);
         ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, "old-agent-tool-id");
         existingConnection.setStatus(ConnectionStatus.DISCONNECTED);
         existingConnection.setDisconnectedAt(Instant.now().minusSeconds(3600));
@@ -267,8 +264,6 @@ class ToolConnectionServiceTest {
 
     @Test
     void addToolConnection_WithAlreadyConnected_ThrowsException() {
-        Machine machine = new Machine();
-        machine.setMachineId(MACHINE_ID);
         ToolConnection existingConnection = createToolConnection(MACHINE_ID, ToolType.MESHCENTRAL, AGENT_TOOL_ID);
         existingConnection.setStatus(ConnectionStatus.CONNECTED);
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))

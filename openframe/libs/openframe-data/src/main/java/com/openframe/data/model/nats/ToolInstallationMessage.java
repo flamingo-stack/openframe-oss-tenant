@@ -14,6 +14,7 @@ public class ToolInstallationMessage {
     private String version;
     private List<String> installationCommandArgs;
     private List<String> runCommandArgs;
+    // TODO: avoid mongo models at event
     private List<ToolAgentAsset> assets;
 
 }

@@ -1,8 +1,8 @@
 package com.openframe.client.service.agentregistration.secretretriver;
 
-import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.ToolUrl;
-import com.openframe.core.model.ToolUrlType;
+import com.openframe.data.document.tool.IntegratedTool;
+import com.openframe.data.document.tool.ToolUrl;
+import com.openframe.data.document.tool.ToolUrlType;
 import com.openframe.data.service.IntegratedToolService;
 import com.openframe.data.service.ToolUrlService;
 import com.openframe.sdk.tacticalrmm.TacticalRmmClient;

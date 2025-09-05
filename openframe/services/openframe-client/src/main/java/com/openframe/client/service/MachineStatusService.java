@@ -1,9 +1,9 @@
 package com.openframe.client.service;
 
 import com.openframe.client.exception.MachineNotFoundException;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.data.repository.mongo.MachineRepository;
+import com.openframe.data.document.device.DeviceStatus;
+import com.openframe.data.document.device.Machine;
+import com.openframe.data.repository.device.MachineRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
