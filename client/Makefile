@@ -54,11 +54,9 @@ lint:
 	$(CARGO) fmt --all -- --check
 
 build:
-#  $(CARGO) build $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG)
 	$(CARGO) build --release --locked
 
 test:
-#  $(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)
 	$(CARGO) test --release --locked
 
 # use phony lint instead
@@ -66,7 +64,6 @@ fmt:
 	$(CARGO) fmt --all
 
 clippy:
-#	$(CARGO) clippy $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) -- -D warnings
 	$(CARGO) clippy --all-targets -- -D warnings
 
 clean:
@@ -74,7 +71,7 @@ clean:
 
 # install cross tool
 crossinstall:
-  $(CARGO) install cross --git https://github.com/cross-rs/cross
+	$(CARGO) install cross --git https://github.com/cross-rs/cross
 
 crossbuild:
-  cross build --release $(TARGET_FLAG)
+	cross build --release $(TARGET_FLAG)
