@@ -1,0 +1,137 @@
+registerJob:
+  enabled: true
+
+
+kafka:
+  # bitnamilegacy
+  image:
+    repository: bitnamilegacy/kafka
+    tag: 4.0.0-debian-12-r10
+
+  broker:
+    resourcesPreset: medium
+    replicaCount: 1
+    podAntiAffinityPreset: hard
+    resources:
+      # requests:
+      #   cpu: 2
+      #   memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 2048Mi
+
+  listeners:
+    client:
+      protocol: PLAINTEXT
+      port: 29094
+    interbroker:
+      protocol: PLAINTEXT
+      port: 29093
+    controller:
+      protocol: PLAINTEXT
+    external:
+      protocol: PLAINTEXT
+
+  advertisedListeners: "CLIENT://kafka-broker.datasources.svc.cluster.local:29094,INTERNAL://kafka-broker-headless.datasources.svc.cluster.local:29093"
+
+  securityProtocolMap: "CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT"
+
+  service:
+    ports:
+      client: 29094
+      interbroker: 29093
+
+  # externalAccess:
+  #   enabled: true
+  #   service:
+  #     type: LoadBalancer
+  #   ports:
+  #     external: 29092
+
+  controller:
+    resourcesPreset: medium
+    replicaCount: 1
+
+    resources:
+      # requests:
+      #   cpu: 2
+      #   memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 2048Mi
+
+  kraft:
+    enabled: true
+
+  # # Zookeeper mode - Controller nodes not supported
+  # controller:
+  #   replicaCount: 0
+
+  # kraft:
+  #   enabled: false
+
+  # zookeeper:
+  #   enabled: true
+  #   replicaCount: 1
+  #   podAntiAffinityPreset: hard  # make sure that no two broker/zookeeper pods are on the same node
+  #   auth:
+  #     client:
+  #       enabled: false
+
+  provisioning:
+    enabled: true
+    replicationFactor: 1
+    topics:
+      - name: pinot-events
+        partitions: 1
+        replicationFactor: 1
+      - name: devices-topic
+        partitions: 3
+        replicationFactor: 1
+      - name: integrated-tool.events.pinot
+        partitions: 1
+        replicationFactor: 1
+      - name: fleet.activities.events
+        partitions: 1
+        replicationFactor: 1
+      - name: fleet.host_activities.events
+        partitions: 1
+        replicationFactor: 1
+        ## https://kafka.apache.org/documentation/#topicconfigs
+        # config:
+        #   max.message.bytes: 64000
+        #   flush.messages: 1
+
+      # internal consumer-group state topic so that single-broker dev clusters work
+      - name: __consumer_offsets
+        partitions: 50        # should match offsets.topic.num.partitions default
+        replicationFactor: 1
+        config:
+          cleanup.policy: compact
+
+  metrics:
+    jmx:
+      # bitnamilegacy
+      image:
+        repository: bitnamilegacy/jmx-exporter
+        tag: 1.4.0-debian-12-r0
+        
+      enabled: true
+      kafkaJmxPort: 5555
+      extraRules: |-
+        - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
+          name: kafka_$1_$2_$3
+    serviceMonitor:
+        enabled: true
+    prometheusRule:
+      enabled: true
+      namespace: datasources
+
+  # Set default replication factor to 1
+  extraConfig: |
+    default.replication.factor=1
+    offsets.topic.replication.factor=1
+    transaction.state.log.replication.factor=1
+    transaction.state.log.min.isr=1
+    min.insync.replicas=1
+    offsets.topic.auto.create.enable=true
