@@ -277,26 +277,19 @@ jobs:
           components: clippy, rustfmt
           shared-key: cross-platform
 
-      - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@v2
+      - name: Cross compile
+        uses: houseabsolute/actions-rust-cross@v0
         with:
-          version: 0.11.0
-
-      - name: Install cross-compilation tool
-        working-directory: client
-        run: |
-          make crossinstall
+          command: build
+          target: ${{ matrix.target }}
+          args: --release --locked
+          working-directory: client
+        continue-on-error: true
 
       - name: Run lint
         working-directory: client
         run: |
           make lint
-        continue-on-error: true
-
-      - name: Build
-        working-directory: client
-        run: |
-          TARGET=${{ matrix.target }} make crossbuild
         continue-on-error: true
         
       # - name: Run tests
