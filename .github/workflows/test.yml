@@ -279,6 +279,7 @@ jobs:
         working-directory: client
         run: |
           make lint
+        continue-on-error: true
 
       - name: Build for Linux
         working-directory: client

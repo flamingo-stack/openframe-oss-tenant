@@ -101,6 +101,8 @@ jobs:
         id: filter
         with:
           filters: |
+            client:
+              - './client/**'
             openframe-core:
               - './pom.xml'
               - './openframe/libs/openframe-core/**'
@@ -182,5 +184,3 @@ jobs:
             tactical-base:
               - './integrated-tools/tactical-rmm/tactical-base/**'
               - './integrated-tools/tactical-rmm/shared/**'
-            client:
-              - './client/**'
