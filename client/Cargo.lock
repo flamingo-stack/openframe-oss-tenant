@@ -1624,6 +1624,7 @@ dependencies = [
  "libc",
  "log",
  "plist",
+ "regex",
  "reqwest",
  "semver",
  "serde",
