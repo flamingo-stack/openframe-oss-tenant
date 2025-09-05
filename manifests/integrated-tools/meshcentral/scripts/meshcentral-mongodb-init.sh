@@ -41,11 +41,12 @@ HOST_FQDN="$(hostname -f):${MONGODB_PORT}"
 if [ "$INIT_STATUS" != "1" ]; then
 echo "Replica set needs initialization or repair..."
 
-# Root auth flags (used after localhost exception disappears)
-AUTH_FLAGS="--username \"$MONGO_INITDB_ROOT_USERNAME\" --password \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"
+# # Root auth flags (used after localhost exception disappears)
+# AUTH_FLAGS="--username \"$MONGO_INITDB_ROOT_USERNAME\" --password \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"
 
-# Attempt rs commands with auth flags; if localhost exception still active, the credentials are ignored
-RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${MONGODB_PORT}" --eval "
+# # Attempt rs commands with auth flags; if localhost exception still active, the credentials are ignored
+# RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${MONGODB_PORT}" --eval "
+RECONFIG_RESULT=$(mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" --eval "
   const host = '$HOST_FQDN';
   function ensureRs() {
     try {
@@ -89,7 +90,8 @@ echo "Replica set is already initialized"
 fi
 
 echo "Ensuring admin user exists..."
-mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
+# mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
+mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" --eval "
   try {
     db.getSiblingDB('admin').createUser({
       user: '$MONGO_INITDB_ROOT_USERNAME',
