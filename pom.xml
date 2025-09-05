@@ -44,6 +44,8 @@
         <jjwt.version>0.11.5</jjwt.version>
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
+        <!-- Centralized OpenFrame OSS libs version -->
+        <openframe.libs.version>1.0.6</openframe.libs.version>
     </properties>
 
     <modules>
@@ -255,25 +257,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>org.apache.nifi</groupId>
-                <artifactId>nifi-utils</artifactId>
-                <version>${nifi.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-slf4j2-impl</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.slf4j</groupId>
-                        <artifactId>slf4j-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
 
             <dependency>
                 <groupId>io.grpc</groupId>
@@ -323,6 +306,13 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jsonwebtoken.version}</version>
+            </dependency>
+
+            <!-- External OpenFrame OSS artifacts -->
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-data-mongo</artifactId>
+                <version>${openframe.libs.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

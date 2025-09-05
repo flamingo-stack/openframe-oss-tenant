@@ -1,9 +1,9 @@
 package com.openframe.api.service;
 
-import com.openframe.core.model.MachineTag;
-import com.openframe.core.model.Tag;
-import com.openframe.data.repository.mongo.MachineTagRepository;
-import com.openframe.data.repository.mongo.TagRepository;
+import com.openframe.data.document.device.MachineTag;
+import com.openframe.data.document.tool.Tag;
+import com.openframe.data.repository.device.MachineTagRepository;
+import com.openframe.data.repository.tool.TagRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

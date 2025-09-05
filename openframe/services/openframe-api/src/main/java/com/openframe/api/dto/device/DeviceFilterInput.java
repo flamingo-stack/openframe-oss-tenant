@@ -1,12 +1,13 @@
 package com.openframe.api.dto.device;
 
-import java.util.List;
-import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.core.model.device.DeviceType;
+import com.openframe.data.document.device.DeviceStatus;
+import com.openframe.data.document.device.DeviceType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Builder

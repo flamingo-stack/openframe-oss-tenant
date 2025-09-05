@@ -40,6 +40,16 @@ spec:
             configMapKeyRef:
               name: meshcentral-mongodb
               key: MONGODB_PORT
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: meshcentral-mongodb
+              key: MONGO_INITDB_ROOT_USERNAME
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: meshcentral-mongodb
+              key: MONGO_INITDB_ROOT_PASSWORD
         command:
           - /bin/sh
           - -c
@@ -96,7 +106,7 @@ spec:
                     "name": "meshcentral-mongo-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
-                      "mongodb.connection.string": "mongodb://'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0",
+                      "mongodb.connection.string": "mongodb://'"${MONGO_INITDB_ROOT_USERNAME}"':'"${MONGO_INITDB_ROOT_PASSWORD}"'@'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0&authSource=admin",
                       "mongodb.name": "meshcentral",
                       "topic.prefix": "meshcentral",
                       "collection.include.list": "meshcentral.events",

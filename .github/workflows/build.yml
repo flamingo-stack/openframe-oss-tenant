@@ -64,20 +64,11 @@ jobs:
             **/pom.xml
           check-latest: true
 
-      - name: Cache Maven packages
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: mvn clean install -pl ${{ matrix.path }} -am -Dcompress
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: mvn clean install -U -pl ${{ matrix.path }} -am -Dcompress -s .mvn/settings.xml
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')

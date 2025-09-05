@@ -2,21 +2,21 @@ package com.openframe.api.datafetcher;
 
 import com.netflix.graphql.dgs.*;
 import com.openframe.api.dto.device.*;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.Tag;
 import com.openframe.api.dto.shared.CursorPaginationCriteria;
-import com.openframe.api.service.DeviceFilterService;
-import com.openframe.api.service.DeviceService;
 import com.openframe.api.dto.shared.CursorPaginationInput;
 import com.openframe.api.mapper.GraphQLDeviceMapper;
+import com.openframe.api.service.DeviceFilterService;
+import com.openframe.api.service.DeviceService;
+import com.openframe.data.document.device.Machine;
+import com.openframe.data.document.tool.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dataloader.DataLoader;
 import org.springframework.validation.annotation.Validated;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @DgsComponent

@@ -1,8 +1,8 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.document.User;
-import com.openframe.authz.document.UserStatus;
-import com.openframe.authz.repository.UserRepository;
+import com.openframe.data.document.auth.AuthUser;
+import com.openframe.data.document.user.UserStatus;
+import com.openframe.data.repository.auth.AuthUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,14 +21,14 @@ import static java.util.UUID.randomUUID;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepository userRepository;
+    private final AuthUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Optional<User> findActiveByEmail(String email) {
+    public Optional<AuthUser> findActiveByEmail(String email) {
         return userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE);
     }
 
-    public Optional<User> findActiveByEmailAndTenant(String email, String tenantId) {
+    public Optional<AuthUser> findActiveByEmailAndTenant(String email, String tenantId) {
         return userRepository.findByEmailAndTenantIdAndStatus(email, tenantId, UserStatus.ACTIVE);
     }
 
@@ -39,12 +39,12 @@ public class UserService {
     /**
      * Register a new user with tenant domain
      */
-    public User registerUser(String tenantId, String tenantDomain, String email, String firstName, String lastName, String password) {
+    public AuthUser registerUser(String tenantId, String tenantDomain, String email, String firstName, String lastName, String password, String role) {
         if (existsByEmailAndTenant(email, tenantId)) {
             throw new IllegalArgumentException("User with this email already exists in this tenant");
         }
 
-        User user = User.builder()
+        AuthUser user = AuthUser.builder()
                 .id(randomUUID().toString())
             .tenantId(tenantId)
             .tenantDomain(tenantDomain)
@@ -57,7 +57,7 @@ public class UserService {
             .loginProvider("LOCAL")
             .build();
 
-        user.getRoles().add("USER");
+        user.getRoles().add(role);
 
         return userRepository.save(user);
     }

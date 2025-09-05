@@ -2,7 +2,7 @@ package com.openframe.gateway.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.core.dto.ErrorResponse;
-import com.openframe.core.model.ApiKey;
+import com.openframe.data.document.apikey.ApiKey;
 import com.openframe.gateway.config.prop.RateLimitProperties;
 import com.openframe.gateway.model.RateLimitStatus;
 import com.openframe.gateway.service.ApiKeyValidationService;

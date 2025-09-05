@@ -1,6 +1,5 @@
 package com.openframe.core.service;
 
-import com.openframe.core.model.ToolUrl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
@@ -29,12 +28,12 @@ public class ProxyUrlResolver {
      * @param prefix      The prefix to strip from the path (e.g. "/tools" or "/tools/agent")
      * @return The resolved target URI for the tool
      */
-    public URI resolve(String toolId, ToolUrl toolUrl, URI originalUri, String prefix) {
+    public URI resolve(String toolId, String toolUrl, String toolPort, URI originalUri, String prefix) {
         log.debug("Resolving URL for tool: {}, original URI: {}, prefix: {}", toolId, originalUri, prefix);
 
         try {
-            URI integratedToolUri = new URI(toolUrl.getUrl());
-            log.debug("Tool base URL: {}, port from config: {}", toolUrl.getUrl(), toolUrl.getPort());
+            URI integratedToolUri = new URI(toolUrl);
+            log.debug("Tool base URL: {}, port from config: {}", toolUrl, toolPort);
 
             // Extract the path after prefix
             String fullPath = originalUri.getPath();
@@ -49,7 +48,7 @@ public class ProxyUrlResolver {
             URI targetUri = UriComponentsBuilder.newInstance()
                     .scheme(integratedToolUri.getScheme())
                     .host(isLocalProfile() ? "localhost" : integratedToolUri.getHost())
-                    .port(toolUrl.getPort())
+                    .port(toolPort)
                     .path(pathToProxy)
                     .query(originalUri.getQuery())
                     .build()

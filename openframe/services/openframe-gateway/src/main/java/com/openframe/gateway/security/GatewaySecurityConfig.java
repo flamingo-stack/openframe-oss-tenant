@@ -39,6 +39,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Slf4j
 public class GatewaySecurityConfig {
 
+    private static final String ADMIN = "ADMIN";
+    private static final String AGENT = "AGENT";
+
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter rolesConverter = new JwtGrantedAuthoritiesConverter();
@@ -95,19 +98,19 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
                         // Api service
-                                .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
+                            .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole(ADMIN)
                         // Agent tools
-                                .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
-                                .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
+                        .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole(AGENT)
+                        .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole(AGENT)
                         // Agent nats
-                                .pathMatchers(NATS_WS_ENDPOINT_PATH).hasRole("AGENT")
+                        .pathMatchers(NATS_WS_ENDPOINT_PATH).hasRole("AGENT")
                         // Client service
-                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
+                        .pathMatchers(CLIENTS_PREFIX + "/**").hasRole(AGENT)
                         // Api tools
-                                .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
-                                .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
+                        .pathMatchers(TOOLS_PREFIX + "/**").hasRole(ADMIN)
+                        .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole(ADMIN)
                         // UI
-                                .pathMatchers("/**").permitAll()
+                        .pathMatchers("/**").permitAll()
                 )
                 .build();
     }
@@ -116,10 +119,10 @@ public class GatewaySecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOriginPattern("http://localhost:*"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("https://localhost:*"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("http://localhost"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("https://localhost"); // Allow any localhost port for development
+        configuration.addAllowedOriginPattern("http://localhost:*");
+        configuration.addAllowedOriginPattern("https://localhost:*");
+        configuration.addAllowedOriginPattern("http://localhost");
+        configuration.addAllowedOriginPattern("https://localhost");
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         configuration.setMaxAge(3600L);
