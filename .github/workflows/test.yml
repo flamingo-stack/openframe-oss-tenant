@@ -81,6 +81,7 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         run: |
           mvn clean install \
+            -U
             -pl ${{ matrix.path }} \
             -am \
             -Dcompress \
@@ -282,11 +283,7 @@ jobs:
  #     - name: Test client
  #       working-directory: client
  #       run: |
- #         if command -v make >/dev/null 2>&1; then
  #           make test
- #         else
- #           cargo test --release
- #         fi
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
