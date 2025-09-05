@@ -80,7 +80,6 @@ public class TenantDiscoveryService {
 
         List<String> ssoProviders;
         if (localTenant) {
-            // In local-tenant mode, expose globally active SSO providers from repository
             ssoProviders = ssoConfigService.getActiveByProvider(GOOGLE)
                     .stream()
                     .map(SSOConfig::getProvider)
