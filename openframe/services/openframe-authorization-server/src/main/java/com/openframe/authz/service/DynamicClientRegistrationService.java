@@ -6,12 +6,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+
+import static com.openframe.authz.config.GoogleSSOProperties.GOOGLE;
+import static org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE;
+import static org.springframework.security.oauth2.core.ClientAuthenticationMethod.CLIENT_SECRET_BASIC;
 
 @Service
 @RequiredArgsConstructor
@@ -26,17 +28,17 @@ public class DynamicClientRegistrationService {
 
     public ClientRegistration loadGoogleClient(String tenantId) {
         SSOConfig cfg = localTenant
-                ? ssoConfigService.getActiveByProvider("google").stream().findFirst().orElseThrow(() -> new IllegalArgumentException("No active Google config for tenant " + tenantId))
-                : ssoConfigService.getSSOConfig(tenantId, "google").orElseThrow(() -> new IllegalArgumentException("No active Google config for tenant " + tenantId));
+                ? ssoConfigService.getActiveByProvider(GOOGLE).stream().findFirst().orElseThrow(() -> new IllegalArgumentException("No active Google config for tenant " + tenantId))
+                : ssoConfigService.getSSOConfig(tenantId, GOOGLE).orElseThrow(() -> new IllegalArgumentException("No active Google config for tenant " + tenantId));
 
 
-        return ClientRegistration.withRegistrationId("google")
+        return ClientRegistration.withRegistrationId(GOOGLE)
                 .clientId(cfg.getClientId())
                 .clientSecret(ssoConfigService.getDecryptedClientSecret(cfg))
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .clientAuthenticationMethod(CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AUTHORIZATION_CODE)
                 .redirectUri(googleProps.getLoginRedirectUri())
-                .scope(Arrays.stream(defaultString(googleProps.getScopes()).split(","))
+                .scope(Arrays.stream(googleProps.getScopes().split(","))
                         .map(String::trim)
                         .filter(s -> !s.isBlank())
                         .toArray(String[]::new))
@@ -47,10 +49,6 @@ public class DynamicClientRegistrationService {
                 .jwkSetUri(googleProps.getJwkSetUri())
                 .clientName("Google (" + tenantId + ")")
                 .build();
-    }
-
-    private static String defaultString(String value) {
-        return (value == null || value.isBlank()) ? "openid,profile,email" : value;
     }
 }
 

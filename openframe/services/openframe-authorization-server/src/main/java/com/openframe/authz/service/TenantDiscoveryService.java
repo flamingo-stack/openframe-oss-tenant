@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.openframe.authz.config.GoogleSSOProperties.GOOGLE;
+
 /**
  * Service for tenant discovery based on user email
  * Helps users find which tenants they have access to
@@ -79,7 +81,7 @@ public class TenantDiscoveryService {
         List<String> ssoProviders;
         if (localTenant) {
             // In local-tenant mode, expose globally active SSO providers from repository
-            ssoProviders = ssoConfigService.getActiveByProvider("google")
+            ssoProviders = ssoConfigService.getActiveByProvider(GOOGLE)
                     .stream()
                     .map(SSOConfig::getProvider)
                     .map(String::toLowerCase)

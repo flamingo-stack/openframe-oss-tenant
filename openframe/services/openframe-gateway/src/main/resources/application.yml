@@ -6,12 +6,3 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
-logging:
-  level:
-    root: INFO
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
-    org.springframework.http.client: DEBUG
-    reactor.netty.http.client: DEBUG
-    org.springframework.web.reactive.function.client: TRACE
-    com.openframe.gateway: DEBUG

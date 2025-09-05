@@ -27,6 +27,9 @@ import java.util.Set;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    public static final String EMAIL = "email";
+    public static final String SUB = "sub";
+
     @Bean
     @Order(2)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
@@ -65,7 +68,7 @@ public class SecurityConfig {
 
             Set<GrantedAuthority> authorities = new HashSet<>(user.getAuthorities());
 
-            String nameKey = (user.getEmail() != null && !user.getEmail().isBlank()) ? "email" : "sub";
+            String nameKey = (user.getEmail() != null && !user.getEmail().isBlank()) ? EMAIL : SUB;
 
             OidcUserInfo userInfo = user.getUserInfo() != null
                     ? user.getUserInfo()

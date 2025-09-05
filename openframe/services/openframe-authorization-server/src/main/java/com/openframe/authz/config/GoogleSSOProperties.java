@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "openframe.sso.google")
 public class GoogleSSOProperties {
 
+    public static final String GOOGLE = "google";
+
     private String registrationRedirectUri;
     private String loginRedirectUri;
 
