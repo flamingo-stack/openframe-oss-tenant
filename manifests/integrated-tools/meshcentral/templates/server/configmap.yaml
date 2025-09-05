@@ -3,7 +3,6 @@ kind: ConfigMap
 metadata:
   name: meshcentral-server
 data:
-  MONGO_INITDB_DATABASE: "meshcentral"
   MESH_DEVICE_GROUP: "OpenFrame"
   MESH_PORT: "8383"
   MESH_HOST: "0.0.0.0"
