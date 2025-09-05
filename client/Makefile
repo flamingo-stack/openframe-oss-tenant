@@ -44,7 +44,7 @@ ifneq ($(PKG),)
 endif
 
 .DEFAULT_GOAL := all
-.PHONY: all lint build test fmt clippy clean
+.PHONY: all lint build test fmt clippy clean crossinstall crossbuild
 
 all: build test
 
@@ -72,3 +72,9 @@ clippy:
 clean:
 	$(CARGO) clean
 
+# install cross tool
+crossinstall:
+  $(CARGO) install cross --git https://github.com/cross-rs/cross
+
+crossbuild:
+  cross build --release $(TARGET_FLAG)
