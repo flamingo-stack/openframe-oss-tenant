@@ -97,8 +97,8 @@ func (i *IngressConfigurator) getCurrentNgrokSettings(values map[string]interfac
 	current := &types.NgrokConfig{}
 
 	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
-		if sso, ok := deployment["sso"].(map[string]interface{}); ok {
-			if ingress, ok := sso["ingress"].(map[string]interface{}); ok {
+		if oss, ok := deployment["oss"].(map[string]interface{}); ok {
+			if ingress, ok := oss["ingress"].(map[string]interface{}); ok {
 				if ngrok, ok := ingress["ngrok"].(map[string]interface{}); ok {
 					// Extract URL/Domain
 					if url, ok := ngrok["url"].(string); ok {
@@ -231,16 +231,16 @@ func (i *IngressConfigurator) applyLocalhostConfig(values map[string]interface{}
 		values["deployment"] = deployment
 	}
 
-	sso, ok := deployment["sso"].(map[string]interface{})
+	oss, ok := deployment["oss"].(map[string]interface{})
 	if !ok {
-		sso = make(map[string]interface{})
-		deployment["sso"] = sso
+		oss = make(map[string]interface{})
+		deployment["oss"] = oss
 	}
 
-	ingress, ok := sso["ingress"].(map[string]interface{})
+	ingress, ok := oss["ingress"].(map[string]interface{})
 	if !ok {
 		ingress = make(map[string]interface{})
-		sso["ingress"] = ingress
+		oss["ingress"] = ingress
 	}
 
 	// Configure localhost ingress
@@ -269,16 +269,16 @@ func (i *IngressConfigurator) applyNgrokConfig(values map[string]interface{}, ng
 		values["deployment"] = deployment
 	}
 
-	sso, ok := deployment["sso"].(map[string]interface{})
+	oss, ok := deployment["oss"].(map[string]interface{})
 	if !ok {
-		sso = make(map[string]interface{})
-		deployment["sso"] = sso
+		oss = make(map[string]interface{})
+		deployment["oss"] = oss
 	}
 
-	ingress, ok := sso["ingress"].(map[string]interface{})
+	ingress, ok := oss["ingress"].(map[string]interface{})
 	if !ok {
 		ingress = make(map[string]interface{})
-		sso["ingress"] = ingress
+		oss["ingress"] = ingress
 	}
 
 	// Configure ngrok ingress
