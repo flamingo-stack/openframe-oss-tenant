@@ -20,8 +20,6 @@ apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificate
 echo "Waiting for MongoDB service to be ready..."
 # use localhost while mongod is still starting with attempt limit
 ATTEMPTS=0
-# until mongosh "${MONGODB_URL}/admin?authSource=admin" \
-#     --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
 until mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "db.adminCommand('ping')" >/dev/null 2>&1 \
     || mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
 ATTEMPTS=$((ATTEMPTS+1))
@@ -36,8 +34,6 @@ echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
 echo "Checking replica set status..."
-# INIT_STATUS=$(mongosh "${MONGODB_URL}/admin?authSource=admin" \
-#     --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
 INIT_STATUS=$(mongosh --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" \
     --authenticationDatabase admin --host "${DB_HOST}:${MONGODB_PORT}" \
     --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
