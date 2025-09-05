@@ -1,0 +1,13 @@
+# Cross compilation configuration
+# Using pre-built images that include OpenSSL
+
+[target.x86_64-unknown-linux-gnu]
+pre-build = [
+    "apt-get update && apt-get install -y pkg-config libssl-dev",
+]
+
+[target.x86_64-pc-windows-gnu]
+# Windows doesn't need OpenSSL, uses Windows native TLS
+
+[target.x86_64-apple-darwin]
+# macOS uses Security Framework, not OpenSSL
