@@ -83,8 +83,9 @@ jobs:
             --batch-mode \
             --no-transfer-progress \
             -Dmaven.javadoc.skip=true \
-            -DskipTests=false \
             -s .mvn/settings.xml
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
