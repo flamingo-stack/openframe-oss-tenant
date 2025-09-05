@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# Export all environment variables
-set -a
-[ -f /etc/environment ] && source /etc/environment
-set +a
+set -euo pipefail
+# (optional) export envs if you rely on /etc/environment
+set -a; [ -f /etc/environment ] && source /etc/environment || true; set +a
 
 # Ensure mandatory root credentials are set (host/port will be overridden to localhost)
 : "${MONGO_INITDB_ROOT_USERNAME:?Required}"
@@ -20,7 +19,9 @@ apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificate
 echo "Waiting for MongoDB service to be ready..."
 # use localhost while mongod is still starting with attempt limit
 ATTEMPTS=0
-until mongosh --host ${DB_HOST}:${MONGODB_PORT} --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+# until mongosh --host ${DB_HOST}:${MONGODB_PORT} --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+until mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
+    --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
 ATTEMPTS=$((ATTEMPTS+1))
 if [ $ATTEMPTS -ge 60 ]; then
   echo "MongoDB has not been available for more than 5 minutes — exiting"; exit 1
@@ -33,7 +34,6 @@ echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
 echo "Checking replica set status..."
-# INIT_STATUS=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
 INIT_STATUS=$(mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
     --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
 echo "Current replica set status: $INIT_STATUS"
@@ -43,11 +43,6 @@ HOST_FQDN="$(hostname -f):${MONGODB_PORT}"
 if [ "$INIT_STATUS" != "1" ]; then
 echo "Replica set needs initialization or repair..."
 
-# # Root auth flags (used after localhost exception disappears)
-# AUTH_FLAGS="--username \"$MONGO_INITDB_ROOT_USERNAME\" --password \"$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin"
-
-# # Attempt rs commands with auth flags; if localhost exception still active, the credentials are ignored
-# RECONFIG_RESULT=$(mongosh $AUTH_FLAGS --host "${DB_HOST}:${MONGODB_PORT}" --eval "
 RECONFIG_RESULT=$(mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" --eval "
   const host = '$HOST_FQDN';
   function ensureRs() {
@@ -79,7 +74,6 @@ sleep 10
 
 echo "Checking for PRIMARY state after initialization..."
 for i in {1..60}; do
-    # IS_PRIMARY=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "try { db.hello().isWritablePrimary ? 1 : 0 } catch(e) { 0 }" --quiet)
     IS_PRIMARY=$(mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
         --eval "try { db.hello().isWritablePrimary ? 1 : 0 } catch(e) { 0 }" --quiet)
     if [ "$IS_PRIMARY" = "1" ]; then
@@ -89,12 +83,14 @@ for i in {1..60}; do
     echo "Retry $i: Waiting for PRIMARY (current: $IS_PRIMARY)..."
     sleep 5
 done
+if [ "$IS_PRIMARY" != "1" ]; then
+  echo "ERROR: PRIMARY not ready after timeout"; exit 1
+fi
 else
 echo "Replica set is already initialized"
 fi
 
 echo "Ensuring admin user exists..."
-# mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
 mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" --eval "
   try {
     db.getSiblingDB('admin').createUser({
@@ -118,6 +114,5 @@ mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_
 " --quiet
 
 echo "Final replica set status:"
-# mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "rs.status()" --quiet
 mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
     --eval "rs.status()" --quiet
