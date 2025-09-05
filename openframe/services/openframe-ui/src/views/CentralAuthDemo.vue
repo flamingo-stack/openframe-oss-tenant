@@ -381,7 +381,10 @@ async function handleGoogleSSO(tenant: TenantDiscoveryResponse.TenantInfo) {
     console.log('🔗 [CentralAuth] Attempting Google SSO for tenant:', tenant.tenantName)
     
     // Use Gateway's login endpoint for Google SSO
-    const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tenant.tenantId)}`;
+    // Support both camelCase and snake_case tenant id from backend
+    // @ts-expect-error backend may return snake_case
+    const tid: string = (tenant.tenantId ?? (tenant as any).tenant_id) as string
+    const loginUrl = `${import.meta.env.VITE_GATEWAY_URL}/oauth/login?tenantId=${encodeURIComponent(tid)}&provider=google`;
     window.location.href = loginUrl;
     
   } catch (error: any) {

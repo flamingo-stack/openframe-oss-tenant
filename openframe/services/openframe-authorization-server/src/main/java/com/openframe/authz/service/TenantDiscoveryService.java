@@ -3,11 +3,13 @@ package com.openframe.authz.service;
 import com.openframe.authz.dto.TenantDiscoveryResponse;
 import com.openframe.data.document.auth.AuthUser;
 import com.openframe.data.document.auth.Tenant;
+import com.openframe.data.document.sso.SSOConfig;
 import com.openframe.data.document.sso.SSOPerTenantConfig;
 import com.openframe.data.document.user.UserStatus;
 import com.openframe.data.repository.auth.AuthUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -27,6 +29,9 @@ public class TenantDiscoveryService {
     private final AuthUserRepository userRepository;
     private final TenantService tenantService;
     private final SSOConfigService ssoConfigService;
+
+    @Value("${openframe.tenancy.local-tenant:false}")
+    private boolean localTenant;
     
     /**
      * Discover tenants for a given email
@@ -43,7 +48,7 @@ public class TenantDiscoveryService {
                 continue;
             }
 
-            List<String> authProviders = getAvailableAuthProviders(tenant, user);
+            List<String> authProviders = getAvailableAuthProviders(tenant);
 
             return TenantDiscoveryResponse.builder()
                     .email(email)
@@ -69,12 +74,23 @@ public class TenantDiscoveryService {
     /**
      * Get available authentication providers for a tenant/user combination
      */
-    private List<String> getAvailableAuthProviders(Tenant tenant, AuthUser user) {
+    private List<String> getAvailableAuthProviders(Tenant tenant) {
 
-        List<String> ssoProviders = ssoConfigService.getActiveSSOConfigsForTenant(tenant.getId())
-                .stream()
-                .map(SSOPerTenantConfig::getProvider)
-                .toList();
+        List<String> ssoProviders;
+        if (localTenant) {
+            // In local-tenant mode, expose globally active SSO providers from repository
+            ssoProviders = ssoConfigService.getActiveByProvider("google")
+                    .stream()
+                    .map(SSOConfig::getProvider)
+                    .map(String::toLowerCase)
+                    .toList();
+        } else {
+            ssoProviders = ssoConfigService.getActiveForTenant(tenant.getId())
+                    .stream()
+                    .map(SSOPerTenantConfig::getProvider)
+                    .map(String::toLowerCase)
+                    .toList();
+        }
 
         List<String> providers = new ArrayList<>(ssoProviders);
         providers.add(DEFAULT_PROVIDER);

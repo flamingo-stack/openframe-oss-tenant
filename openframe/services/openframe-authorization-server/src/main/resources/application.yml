@@ -9,3 +9,33 @@ spring:
   data:
     mongodb:
       enabled: true
+openframe:
+  tenancy:
+    local-tenant: true
+  sso:
+    google:
+      registration-redirect-uri: "https://localhost/sas/register/login/oauth2/code/google"
+      login-redirect-uri: "https://localhost/sas/login/oauth2/code/google"
+      authorization-url: https://accounts.google.com/o/oauth2/v2/auth
+      token-url: https://oauth2.googleapis.com/token
+      user-info-url: https://openidconnect.googleapis.com/v1/userinfo
+      issuer-uri: https://accounts.google.com
+      jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+      scopes: openid,profile,email
+  gateway:
+    public-url: https://localhost
+logging:
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security.oauth2: TRACE
+    org.springframework.security.oauth2.server.authorization: TRACE
+    org.springframework.security.oauth2.server.authorization.web.OAuth2TokenEndpointFilter: TRACE
+    org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationFilter: TRACE
+    org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationProvider: TRACE
+    org.springframework.security.oauth2.server.authorization.OAuth2TokenGenerator: TRACE
+    org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationProvider: TRACE
+    org.springframework.security.oauth2.client: DEBUG
+    org.springframework.web.filter: DEBUG
+    com.openframe.authz: DEBUG
