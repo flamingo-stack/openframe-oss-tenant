@@ -8,6 +8,7 @@ import com.openframe.api.dto.shared.CursorPaginationCriteria;
 import com.openframe.data.document.event.Event;
 import com.openframe.data.document.event.filter.EventQueryFilter;
 import com.openframe.data.repository.event.EventRepository;
+import com.openframe.kafka.producer.KafkaProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.query.Query;
@@ -24,7 +25,7 @@ import java.util.UUID;
 public class EventService {
     
     private final EventRepository eventRepository;
-    private final GenericKafkaProducer genericKafkaProducer;
+    private final KafkaProducer kafkaProducer;
 
     public EventQueryResult queryEvents(EventFilterOptions filterOptions,
                                      CursorPaginationCriteria paginationCriteria,
@@ -61,7 +62,7 @@ public class EventService {
         Event savedEvent = eventRepository.save(event);
         log.info("Event saved with ID: {}", savedEvent.getId());
 
-        genericKafkaProducer.sendMessage("openframe.events", savedEvent);
+        kafkaProducer.sendMessage("openframe.events", savedEvent);
         log.debug("Event published to Kafka: {}", savedEvent.getId());
         
         return savedEvent;

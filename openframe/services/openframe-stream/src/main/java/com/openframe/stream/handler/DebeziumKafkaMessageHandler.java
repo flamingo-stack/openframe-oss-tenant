@@ -4,13 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.EventHandlerType;
-import com.openframe.kafka.model.IntegratedToolEventKafkaMessage;
 import com.openframe.data.model.enums.Destination;
-import com.openframe.kafka.producer.GenericKafkaProducer;
+import com.openframe.kafka.producer.KafkaProducer;
+import com.openframe.stream.model.IntegratedToolEventKafkaMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -20,11 +18,11 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
     @Value("${kafka.producer.topic.it.event.name}")
     private String topic;
 
-    protected final GenericKafkaProducer genericKafkaProducer;
+    protected final KafkaProducer kafkaProducer;
 
-    public DebeziumKafkaMessageHandler(GenericKafkaProducer genericKafkaProducer, ObjectMapper objectMapper) {
+    public DebeziumKafkaMessageHandler(KafkaProducer kafkaProducer, ObjectMapper objectMapper) {
         super(objectMapper);
-        this.genericKafkaProducer = genericKafkaProducer;
+        this.kafkaProducer = kafkaProducer;
     }
 
     @Override
@@ -49,7 +47,7 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
     }
 
     protected void handleCreate(IntegratedToolEventKafkaMessage message) {
-        genericKafkaProducer.sendMessage(topic, message);
+        kafkaProducer.sendMessage(topic, message);
     }
 
     protected void handleRead(IntegratedToolEventKafkaMessage message) {

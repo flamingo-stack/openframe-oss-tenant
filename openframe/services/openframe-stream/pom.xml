@@ -99,7 +99,7 @@
         <dependency>
             <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-data-kafka</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.6</version>
         </dependency>
 
 
