@@ -12,6 +12,7 @@ MONGODB_PORT="${MONGODB_PORT:-27017}"
 # Always talk to the mongod instance via the loop-back interface so that the
 # "localhost exception" is active until authentication is configured.
 DB_HOST="127.0.0.1"
+MONGODB_URL="mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}"
 
 
 apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
@@ -19,8 +20,7 @@ apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificate
 echo "Waiting for MongoDB service to be ready..."
 # use localhost while mongod is still starting with attempt limit
 ATTEMPTS=0
-# until mongosh --host ${DB_HOST}:${MONGODB_PORT} --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
-until mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
+until mongosh "${MONGODB_URL}/admin?authSource=admin" \
     --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
 ATTEMPTS=$((ATTEMPTS+1))
 if [ $ATTEMPTS -ge 60 ]; then
@@ -34,7 +34,7 @@ echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
 echo "Checking replica set status..."
-INIT_STATUS=$(mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
+INIT_STATUS=$(mongosh "${MONGODB_URL}/admin?authSource=admin" \
     --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
 echo "Current replica set status: $INIT_STATUS"
 
@@ -43,7 +43,7 @@ HOST_FQDN="$(hostname -f):${MONGODB_PORT}"
 if [ "$INIT_STATUS" != "1" ]; then
 echo "Replica set needs initialization or repair..."
 
-RECONFIG_RESULT=$(mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" --eval "
+RECONFIG_RESULT=$(mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
   const host = '$HOST_FQDN';
   function ensureRs() {
     try {
@@ -74,7 +74,7 @@ sleep 10
 
 echo "Checking for PRIMARY state after initialization..."
 for i in {1..60}; do
-    IS_PRIMARY=$(mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
+    IS_PRIMARY=$(mongosh "${MONGODB_URL}/admin?authSource=admin" \
         --eval "try { db.hello().isWritablePrimary ? 1 : 0 } catch(e) { 0 }" --quiet)
     if [ "$IS_PRIMARY" = "1" ]; then
     echo "Replica set PRIMARY is ready!"
@@ -91,7 +91,7 @@ echo "Replica set is already initialized"
 fi
 
 echo "Ensuring admin user exists..."
-mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" --eval "
+mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
   try {
     db.getSiblingDB('admin').createUser({
       user: '$MONGO_INITDB_ROOT_USERNAME',
@@ -114,5 +114,5 @@ mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_
 " --quiet
 
 echo "Final replica set status:"
-mongosh "mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}/admin?authSource=admin" \
+mongosh "${MONGODB_URL}/admin?authSource=admin" \
     --eval "rs.status()" --quiet
