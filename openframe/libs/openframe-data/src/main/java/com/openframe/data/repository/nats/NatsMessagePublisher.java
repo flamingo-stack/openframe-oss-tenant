@@ -21,8 +21,6 @@ public class NatsMessagePublisher {
         try {
             Message<T> message = MessageBuilder
                     .withPayload(payload)
-//                    .setHeader("nats_subject", subject)
-//                    .setHeader("scst_targetDestination", subject)
                     .build();
             
             boolean result = streamBridge.send(subject, message);

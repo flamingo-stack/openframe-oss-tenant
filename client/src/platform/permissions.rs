@@ -351,6 +351,11 @@ impl PermissionUtils {
 
     /// Try to run a command with elevated privileges
     pub fn run_as_admin(command: &str, args: &[&str]) -> Result<(), PermissionError> {
+        // If we've already ensured admin privileges, we can just run the command directly
+        if ADMIN_PRIVILEGES_GRANTED.load(Ordering::Relaxed) {
+            return Self::run_command(command, args);
+        }
+
         // If already admin, no need to elevate
         if Self::is_admin() {
             return Self::run_command(command, args);

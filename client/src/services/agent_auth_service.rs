@@ -26,7 +26,6 @@ impl AgentAuthService {
         }
     }
 
-    // TODO: log failure reason(backend response)
     pub async fn authenticate_initial(&self) -> Result<AgentTokenResponse> {
         let (client_id, client_secret) = self.config_service.get_client_credentials().await?;
         let token_response = self.auth_client.authenticate_with_secret(client_id, client_secret).await?;
@@ -36,7 +35,6 @@ impl AgentAuthService {
         Ok(token_response)
     }
 
-    // TODO: log failure reason(backend response)
     pub async fn reauthenticate(&self) -> Result<AgentTokenResponse> {
         // Try refresh token authentication first
         if let Ok(token_response) = self.try_refresh_token_authentication().await {

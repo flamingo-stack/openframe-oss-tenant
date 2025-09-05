@@ -45,13 +45,11 @@ public class TacticalRmmClient {
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                throw new TacticalRmmApiException("Failed to fetch ",
-                    response.statusCode(), response.body());
+                throw new TacticalRmmApiException("Failed to fetch agent registration secret", response.statusCode(), response.body());
             }
 
             String body = response.body();
-            String parsed = RegistrationSecretParser.parse(body);
-            return parsed != null ? parsed : body;
+            return RegistrationSecretParser.parse(body);
         } catch (Exception e) {
             throw new TacticalRmmException("Failed to process get agent registration secret request", e);
         }

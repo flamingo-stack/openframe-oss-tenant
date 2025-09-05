@@ -46,17 +46,9 @@ public class FleetMdmAgentRegistrationSecretRetriever implements ToolAgentRegist
             
             log.info("Successfully retrieved enroll secret from Fleet MDM");
             return enrollSecret;
-            
-        } catch (IOException e) {
-            log.error("IO error while retrieving Fleet MDM enroll secret", e);
-            throw new RuntimeException("Failed to retrieve Fleet MDM enroll secret due to IO error", e);
-        } catch (InterruptedException e) {
-            log.error("Request interrupted while retrieving Fleet MDM enroll secret", e);
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Failed to retrieve Fleet MDM enroll secret due to interruption", e);
         } catch (Exception e) {
             log.error("Unexpected error while retrieving Fleet MDM enroll secret", e);
-            throw new RuntimeException("Failed to retrieve Fleet MDM enroll secret", e);
+            throw new IllegalStateException("Failed to retrieve Fleet MDM enroll secret", e);
         }
     }
 }

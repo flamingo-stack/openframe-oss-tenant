@@ -1,5 +1,7 @@
 package com.openframe.sdk.tacticalrmm;
 
+import java.util.regex.Pattern;
+
 public class RegistrationSecretParser {
 
     /**
@@ -21,7 +23,7 @@ public class RegistrationSecretParser {
 
         // Case-insensitive search for --auth followed by a value (optionally quoted)
         // Captures non-space token excluding surrounding quotes if present
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+        Pattern pattern = java.util.regex.Pattern.compile(
                 "(?i)--auth\\s+([\"']?)([^\"'\s]+)\\1");
         java.util.regex.Matcher matcher = pattern.matcher(command);
         if (matcher.find()) {
@@ -29,7 +31,7 @@ public class RegistrationSecretParser {
         }
 
         // Fallback: simpler pattern without quotes, last token after --auth
-        pattern = java.util.regex.Pattern.compile("(?i)--auth\\s+([^\\s]+)");
+        pattern = Pattern.compile("(?i)--auth\\s+([^\\s]+)");
         matcher = pattern.matcher(command);
         if (matcher.find()) {
             String value = matcher.group(1);

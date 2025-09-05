@@ -28,7 +28,6 @@ impl EncryptionService {
         let ciphertext = key.encrypt(nonce, data.as_bytes())
             .map_err(|e| anyhow::anyhow!("Failed to encrypt data: {}", e))?;
 
-        // ВАЖНО: объединить nonce + ciphertext перед base64
         let mut combined = nonce_bytes.to_vec();
         combined.extend_from_slice(&ciphertext);
 

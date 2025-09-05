@@ -15,7 +15,6 @@ public class ToolCommandParamsResolver {
 
     private final List<ToolAgentRegistrationSecretRetriever> toolAgentRegistrationSecretRetrievers;
 
-    // TODO: separate server and agent params
     public List<String> process(String toolId, List<String> commandArgs) {
         if (commandArgs == null) {
             return null;

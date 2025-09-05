@@ -2,7 +2,11 @@ package com.openframe.sdk.fleetmdm;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.sdk.fleetmdm.exception.FleetMdmApiException;
+import com.openframe.sdk.fleetmdm.exception.FleetMdmException;
 import com.openframe.sdk.fleetmdm.model.Host;
+import javassist.bytecode.stackmap.TypeData;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -75,29 +79,31 @@ public class FleetMdmClient {
      * @return The enroll secret string or null if not found
      */
     public String getEnrollSecret() throws IOException, InterruptedException {
-        HttpRequest request = addHeaders(HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + GET_ENROLL_SECRET_URL)))
-                .GET()
-                .build();
+        try {
+            HttpRequest request = addHeaders(HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + GET_ENROLL_SECRET_URL)))
+                    .GET()
+                    .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        
-        if (response.statusCode() == 401) {
-            throw new RuntimeException("Authentication failed. Please check your API token. Response: " + response.body());
-        } else if (response.statusCode() == 404) {
-            return null; // Enroll secret not found
-        } else if (response.statusCode() != 200) {
-            throw new RuntimeException("Failed to fetch enroll secret. Status: " + response.statusCode() + ", Response: " + response.body());
-        }
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        JsonNode responseNode = MAPPER.readTree(response.body());
-        JsonNode secretsArray = responseNode.path("spec").path("secrets");
-        
-        if (secretsArray.isArray() && secretsArray.size() > 0) {
-            return secretsArray.get(0).path("secret").asText();
+            if (response.statusCode() != 200) {
+                throw new FleetMdmApiException("Failed to fetch enroll secret", response.statusCode(), response.body());
+            }
+
+            JsonNode responseNode = MAPPER.readTree(response.body());
+            JsonNode secretsArray = responseNode
+                    .path("spec")
+                    .path("secrets");
+
+            if (secretsArray.isArray() && !secretsArray.isEmpty()) {
+                return secretsArray.get(0).path("secret").asText();
+            }
+
+            throw new FleetMdmException("Failed to parse enroll secret: " + response.body());
+        } catch (Exception e) {
+            throw new FleetMdmException("Failed to process get enroll secret request", e);
         }
-        
-        return null; // No secrets found
     }
 
     private HttpRequest.Builder addHeaders(HttpRequest.Builder builder) {
