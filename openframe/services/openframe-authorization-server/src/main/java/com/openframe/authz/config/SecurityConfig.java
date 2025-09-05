@@ -19,8 +19,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import java.util.HashSet;
 import java.util.Set;
 
-// (no static Customizer import needed here)
-
 /**
  * Security Configuration for Default Requests
  * This handles all non-Authorization Server requests
