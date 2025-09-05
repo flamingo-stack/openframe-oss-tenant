@@ -53,22 +53,19 @@ impl ToolInstallationService {
         }
     }
 
-    // TODO: too much operations that can fail. Clarify that this method is super idenpotent.
-    //  If some file already exists, skio it.
-    //  If tool is already installed(tactical-rmm), skip it.
-    // TODO: make long ack wait to avoid installation conflicts.
     pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
         let tool_id = &tool_installation_message.tool_id;
         info!("Installing tool {} with version {}", tool_id, tool_installation_message.version);
 
+        // Check if tool is already installed
+        if let Some(installed_tool) = self.installed_tools_service.get_by_tool_id(tool_id).await? {
+            info!("Tool {} is already installed with version {}, skipping installation", 
+                  tool_id, installed_tool.version);
+            return Ok(());
+        }
+
         let version_clone = tool_installation_message.version.clone();
         let run_args_clone = tool_installation_message.run_command_args.clone();
-
-        // Download and save main tool agent file
-        let tool_agent_file_bytes = self
-            .tool_agent_file_client
-            .get_tool_agent_file(tool_id.clone())
-            .await?;
 
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
@@ -81,18 +78,44 @@ impl ToolInstallationService {
 
         let file_path = tool_folder_path.join("agent");
         
-        File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
+        // Check if agent file already exists
+        if file_path.exists() {
+            info!("Agent file for tool {} already exists at {}, skipping download", 
+                  tool_id, file_path.display());
+        } else {
+            // Download and save main tool agent file
+            let tool_agent_file_bytes = self
+                .tool_agent_file_client
+                .get_tool_agent_file(tool_id.clone())
+                .await?;
 
-        // Set file permissions to executable
-        let mut perms = fs::metadata(&file_path).await?.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(&file_path, perms)
-            .await
-            .with_context(|| format!("Failed to chmod +x {}", file_path.display()))?;
+            File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
+
+            // Set file permissions to executable
+            #[cfg(target_family = "unix")]
+            {
+                let mut perms = fs::metadata(&file_path).await?.permissions();
+                perms.set_mode(0o755);
+                fs::set_permissions(&file_path, perms)
+                    .await
+                    .with_context(|| format!("Failed to chmod +x {}", file_path.display()))?;
+            }
+            
+            info!("Agent file for tool {} downloaded and saved to {}", tool_id, file_path.display());
+        }
 
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
             for asset in assets {
+                let asset_path = tool_folder_path.join(&asset.local_filename);
+                
+                // Check if asset file already exists
+                if asset_path.exists() {
+                    info!("Asset {} for tool {} already exists at {}, skipping download", 
+                          asset.id, tool_id, asset_path.display());
+                    continue;
+                }
+
                 let asset_bytes = match asset.source {
                     AssetSource::Artifactory => {
                         info!("Downloading artifactory asset: {}", asset.id);
@@ -111,17 +134,18 @@ impl ToolInstallationService {
                             .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
                     }
                 };
-
-                let asset_path = tool_folder_path.join(&asset.local_filename);
                 
                 File::create(&asset_path).await?.write_all(&asset_bytes).await?;
                 
                 // Set file permissions to executable for assets as well
-                let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
-                asset_perms.set_mode(0o755);
-                fs::set_permissions(&asset_path, asset_perms)
-                    .await
-                    .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
+                #[cfg(target_family = "unix")]
+                {
+                    let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
+                    asset_perms.set_mode(0o755);
+                    fs::set_permissions(&asset_path, asset_perms)
+                        .await
+                        .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
+                }
                 
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
             }
