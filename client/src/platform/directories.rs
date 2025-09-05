@@ -18,7 +18,7 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tracing::info;
+use tracing::{error, info, warn};
 
 use super::permissions::{PermissionError, Permissions};
 
@@ -778,9 +778,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Test directory creation
         assert!(manager.ensure_directories().is_ok());
@@ -793,9 +792,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -818,9 +816,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -850,7 +847,7 @@ mod tests {
         let non_existent = PathBuf::from("/non_existent_dir_for_test");
 
         let manager =
-            DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone(), non_existent.clone());
+            DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone());
 
         // This should fail on validate because we can't create the directory
         if cfg!(unix) && unsafe { libc::geteuid() } != 0 {
@@ -894,9 +891,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Test health check
         assert!(manager.perform_health_check().is_ok());
@@ -927,9 +923,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -985,7 +980,7 @@ mod tests {
         let app_dir = temp_dir.path().join("app");
         let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir, app_dir, secured_dir.clone());
+        let manager = DirectoryManager::with_all_custom_dirs(logs_dir, app_dir, secured_dir.clone());
 
         // Test secured directory creation
         assert!(manager.ensure_directories().is_ok());

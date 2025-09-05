@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use tracing;
 
 use crate::models::AgentConfiguration;
 use crate::platform::directories::DirectoryManager;

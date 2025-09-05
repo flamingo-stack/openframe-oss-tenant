@@ -14,21 +14,25 @@
 pub mod metrics;
 pub mod shipping;
 
-use crate::platform::DirectoryManager;
+use crate::platform::{DirectoryError, DirectoryManager};
+use chrono::Utc;
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use metrics::MetricsStore;
+use metrics::{MetricValue, MetricsLayer, MetricsStore};
 use serde::Serialize;
+use shipping::LogShipper;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use tracing::{Level, Subscriber};
+use tracing::{error, info, warn, Event, Level, Metadata, Subscriber};
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
+    fmt::{self},
     layer::SubscriberExt,
     prelude::*,
     EnvFilter, Layer, Registry,

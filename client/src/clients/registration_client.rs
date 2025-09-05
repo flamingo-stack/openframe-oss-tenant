@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use reqwest::{Client, header::{HeaderMap, HeaderValue}};
+use tracing::{info, error, debug};
 
 use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse};
 

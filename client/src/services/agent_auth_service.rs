@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
-use tracing::info;
+use anyhow::{Context, Result, bail};
+use tracing::{info, debug};
 
 use crate::clients::AuthClient;
 use crate::services::agent_configuration_service::AgentConfigurationService;
