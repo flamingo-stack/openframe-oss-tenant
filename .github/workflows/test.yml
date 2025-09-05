@@ -35,11 +35,6 @@ env:
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "scripts/helm-values.yaml"
-  # Cache optimization
-  MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-  CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: 0
-  RUST_BACKTRACE: short
 
 # =============================================================================
 # JOBS
@@ -66,10 +61,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -86,18 +77,6 @@ jobs:
           cache-dependency-path: '**/pom.xml'  # Simplified pattern
           check-latest: true
 
-      - name: Cache Maven packages
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.name }}
-          restore-keys: |
-            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-            ${{ runner.os }}-maven-
-
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
         run: |
@@ -105,8 +84,7 @@ jobs:
             -pl ${{ matrix.path }} \
             -am \
             -Dcompress \
-            -T 2C \
-            --batch-mode \
+            --threads 2C \
             --no-transfer-progress \
             -Dmaven.javadoc.skip=true \
             -DskipTests=false \
@@ -123,7 +101,6 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-          compression-level: 6  # Balanced compression
 
   build_images:
     name: "Build image: ${{ matrix.name }}"
@@ -135,10 +112,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -146,7 +119,10 @@ jobs:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          contains(fromJSON(toJSON(matrix.type)), 'java') && 
+          matrix.artifact_name != '' && 
+          contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -166,14 +142,9 @@ jobs:
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
-      # Configure Docker with optimizations
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
-            image=moby/buildkit:buildx-stable-1
 
       - name: Generate metadata
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -184,9 +155,7 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
-            type=sha,prefix={{branch}}-
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
-            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -214,7 +183,8 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ steps.format_args.outputs.formatted_args }}
+          build-args: |
+            ${{ env.BUILD_ARGS }}
           cache-from: |
             type=gha,scope=${{ matrix.name }}
             type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
