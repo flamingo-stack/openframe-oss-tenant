@@ -1,6 +1,5 @@
 package com.openframe.data.model.nats;
 
-import com.openframe.core.model.ToolAgentAsset;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +13,19 @@ public class ToolInstallationMessage {
     private String version;
     private List<String> installationCommandArgs;
     private List<String> runCommandArgs;
-    // TODO: avoid mongo models at event
-    private List<ToolAgentAsset> assets;
+    private List<Asset> assets;
+
+    @Getter
+    @Setter
+    public static class Asset {
+        private String id;
+        private String localFilename;
+        private AssetSource source;
+        private String path;
+    }
+
+    public enum AssetSource {
+        ARTIFACTORY, TOOL_API
+    }
 
 }
