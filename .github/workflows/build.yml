@@ -233,11 +233,6 @@ jobs:
 #            target: x86_64-unknown-linux-gnu
 #            artifact_name: openframe-oss-client-linux-x64
 #            cross: false
-#          # Add ARM64 builds
-#          - os: ubuntu-latest
-#            target: aarch64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-arm64
-#            cross: true
 
     steps:
       - name: Checkout
@@ -245,60 +240,18 @@ jobs:
         with:
           fetch-depth: 1
 
-      # Use official rust-toolchain action for better caching
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Prepare Rust tools
+        uses: ./.github/steps/rust-setup
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
           components: clippy, rustfmt
-
-      # Enhanced Rust caching
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: client
-          prefix-key: "v1-rust"
           shared-key: ${{ matrix.target }}
-          cache-targets: true
-          cache-on-failure: true
 
-      # Install cross-compilation tools if needed
-      - name: Install cross-compilation tools
-        if: matrix.cross
-        run: |
-          make crossinstall
-        
-      - name: Run lint
-        working-directory: client
-        run: |
-          make lint
-        continue-on-error: true
-
-      - name: Run clippy
-        working-directory: client
-        run: |
-          make clippy
-        continue-on-error: true
-
-      # Optimized build with cross-compilation support
       - name: Build client
         working-directory: client
         run: |
-          if [ "${{ matrix.cross }}" == "true" ]; then
-            make crossbuild TARGET=${{ matrix.target }}
-          else
             make build
-          fi
-        env:
-          CARGO_TARGET_DIR: target
-
- # Muted as for now, test fails and needs fixing
- #     # Run tests only for native builds to save time
- #     - name: Test client
- #       if: "!matrix.cross"
- #       working-directory: client
- #       run: |
- #           make test
 
       # More specific artifact collection
       - name: Upload client artifact

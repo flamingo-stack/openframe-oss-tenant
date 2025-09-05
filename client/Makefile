@@ -7,6 +7,9 @@
 #   make test PKG=my-crate TEST_ARGS="-- --nocapture"
 #   make clippy ALL_FEATURES=1
 
+# example of all knobs
+#	$(CARGO) test $(RELEASE_FLAG) $(TARGET_FLAG) $(PKG_FLAG) $(FEATURES_FLAG) $(NODFLT_FLAG) $(ALLFEAT_FLAG) $(TEST_ARGS)
+
 CARGO ?= cargo
 
 # ---- Knobs you can pass like: make build PROFILE=debug TARGET=... ----
@@ -43,15 +46,12 @@ ifneq ($(PKG),)
   PKG_FLAG := -p $(PKG)
 endif
 
-.DEFAULT_GOAL := all
-.PHONY: all lint build test fmt clippy clean crossinstall crossbuild
+.PHONY: lint build test fmt clippy clean crossinstall crossbuild
 
-all: build test
-
-# add preinstall later
 # name fmt more generic to make GH Action more reusable
 lint:
 	$(CARGO) fmt --all -- --check
+	$(CARGO) clippy --all-targets -- -D warnings
 
 build:
 	$(CARGO) build --release --locked
