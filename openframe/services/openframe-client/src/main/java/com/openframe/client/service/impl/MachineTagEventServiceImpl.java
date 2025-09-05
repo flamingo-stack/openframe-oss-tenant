@@ -7,8 +7,8 @@ import com.openframe.data.document.device.MachineTag;
 import com.openframe.data.document.tool.Tag;
 import com.openframe.data.repository.device.MachineRepository;
 import com.openframe.data.repository.device.MachineTagRepository;
-import com.openframe.data.repository.kafka.GenericKafkaProducer;
 import com.openframe.data.repository.tool.TagRepository;
+import com.openframe.kafka.producer.KafkaProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +31,7 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
     private final MachineRepository machineRepository;
     private final MachineTagRepository machineTagRepository;
     private final TagRepository tagRepository;
-    private final GenericKafkaProducer kafkaProducer;
+    private final KafkaProducer kafkaProducer;
 
     @Value("${kafka.producer.topic.machine.name}")
     private String machineEventsTopic;

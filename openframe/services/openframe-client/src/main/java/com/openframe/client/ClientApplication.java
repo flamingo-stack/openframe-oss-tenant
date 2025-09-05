@@ -8,7 +8,6 @@ import org.springframework.context.annotation.FilterType;
 import com.openframe.data.health.CassandraHealthIndicator;
 
 @SpringBootApplication
-@EnableKafka
 @ComponentScan(
     basePackages = {"com.openframe.client", "com.openframe.data", "com.openframe.core", "com.openframe.security"},
     excludeFilters = {
