@@ -417,7 +417,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with ngrok enabled
 	valuesWithNgrok := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"sso": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"ingress": map[string]interface{}{
 					"ngrok": map[string]interface{}{
 						"enabled": true,
@@ -436,7 +436,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with localhost enabled
 	valuesWithLocalhost := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"sso": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"ingress": map[string]interface{}{
 					"localhost": map[string]interface{}{
 						"enabled": true,
@@ -460,7 +460,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with deployment but no ingress section - should return default
 	noIngressValues := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"sso": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"enabled": true,
 			},
 		},

@@ -177,8 +177,8 @@ func (h *HelmValuesModifier) GetCurrentDockerSettings(values map[string]interfac
 // GetCurrentIngressSettings extracts current ingress settings from Helm values
 func (h *HelmValuesModifier) GetCurrentIngressSettings(values map[string]interface{}) string {
 	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
-		if sso, ok := deployment["sso"].(map[string]interface{}); ok {
-			if ingress, ok := sso["ingress"].(map[string]interface{}); ok {
+		if oss, ok := deployment["oss"].(map[string]interface{}); ok {
+			if ingress, ok := oss["ingress"].(map[string]interface{}); ok {
 				// Check if ngrok is enabled
 				if ngrok, ok := ingress["ngrok"].(map[string]interface{}); ok {
 					if enabled, ok := ngrok["enabled"].(bool); ok && enabled {

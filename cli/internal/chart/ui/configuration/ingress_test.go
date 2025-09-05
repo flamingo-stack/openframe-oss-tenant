@@ -29,8 +29,8 @@ func TestIngressConfigurator_Configure_LocalhostIngress(t *testing.T) {
 
 	// Verify localhost ingress is configured
 	deployment := existingValues["deployment"].(map[string]interface{})
-	sso := deployment["sso"].(map[string]interface{})
-	ingress := sso["ingress"].(map[string]interface{})
+	oss := deployment["oss"].(map[string]interface{})
+	ingress := oss["ingress"].(map[string]interface{})
 	localhost := ingress["localhost"].(map[string]interface{})
 	assert.True(t, localhost["enabled"].(bool))
 }
@@ -56,8 +56,8 @@ func TestIngressConfigurator_Configure_NgrokIngress(t *testing.T) {
 
 	// Verify ngrok ingress is configured
 	deployment := existingValues["deployment"].(map[string]interface{})
-	sso := deployment["sso"].(map[string]interface{})
-	ingress := sso["ingress"].(map[string]interface{})
+	oss := deployment["oss"].(map[string]interface{})
+	ingress := oss["ingress"].(map[string]interface{})
 	ngrok := ingress["ngrok"].(map[string]interface{})
 	assert.True(t, ngrok["enabled"].(bool))
 	assert.Equal(t, "example.ngrok-free.app", ngrok["url"])
@@ -89,8 +89,8 @@ func TestIngressConfigurator_Configure_NgrokWithAllowedIPs(t *testing.T) {
 
 	// Verify ngrok ingress with allowed IPs
 	deployment := existingValues["deployment"].(map[string]interface{})
-	sso := deployment["sso"].(map[string]interface{})
-	ingress := sso["ingress"].(map[string]interface{})
+	oss := deployment["oss"].(map[string]interface{})
+	ingress := oss["ingress"].(map[string]interface{})
 	ngrok := ingress["ngrok"].(map[string]interface{})
 	assert.True(t, ngrok["enabled"].(bool))
 	assert.Equal(t, "example.ngrok-free.app", ngrok["url"])
@@ -119,7 +119,7 @@ func TestIngressConfigurator_Configure_GetCurrentIngressSettings(t *testing.T) {
 			name: "localhost enabled",
 			values: map[string]interface{}{
 				"deployment": map[string]interface{}{
-					"sso": map[string]interface{}{
+					"oss": map[string]interface{}{
 						"ingress": map[string]interface{}{
 							"localhost": map[string]interface{}{
 								"enabled": true,
@@ -134,7 +134,7 @@ func TestIngressConfigurator_Configure_GetCurrentIngressSettings(t *testing.T) {
 			name: "ngrok enabled",
 			values: map[string]interface{}{
 				"deployment": map[string]interface{}{
-					"sso": map[string]interface{}{
+					"oss": map[string]interface{}{
 						"ingress": map[string]interface{}{
 							"ngrok": map[string]interface{}{
 								"enabled": true,
@@ -149,7 +149,7 @@ func TestIngressConfigurator_Configure_GetCurrentIngressSettings(t *testing.T) {
 			name: "both disabled",
 			values: map[string]interface{}{
 				"deployment": map[string]interface{}{
-					"sso": map[string]interface{}{
+					"oss": map[string]interface{}{
 						"ingress": map[string]interface{}{
 							"localhost": map[string]interface{}{
 								"enabled": false,
@@ -172,7 +172,7 @@ func TestIngressConfigurator_Configure_GetCurrentIngressSettings(t *testing.T) {
 			name: "no ingress section",
 			values: map[string]interface{}{
 				"deployment": map[string]interface{}{
-					"sso": map[string]interface{}{
+					"oss": map[string]interface{}{
 						"enabled": true,
 					},
 				},
@@ -269,7 +269,7 @@ func TestIngressConfigurator_Configure_SwitchIngressTypes(t *testing.T) {
 	// Test switching from localhost to ngrok
 	existingValues := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"sso": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"ingress": map[string]interface{}{
 					"localhost": map[string]interface{}{
 						"enabled": true,
@@ -293,8 +293,8 @@ func TestIngressConfigurator_Configure_SwitchIngressTypes(t *testing.T) {
 
 	// Verify localhost is disabled and ngrok is enabled
 	deployment := existingValues["deployment"].(map[string]interface{})
-	sso := deployment["sso"].(map[string]interface{})
-	ingress := sso["ingress"].(map[string]interface{})
+	oss := deployment["oss"].(map[string]interface{})
+	ingress := oss["ingress"].(map[string]interface{})
 
 	ngrok := ingress["ngrok"].(map[string]interface{})
 	assert.True(t, ngrok["enabled"].(bool))
@@ -374,8 +374,8 @@ func TestIngressConfigurator_Configure_IPAllowlistScenarios(t *testing.T) {
 			assert.NoError(t, err)
 
 			deployment := existingValues["deployment"].(map[string]interface{})
-			sso := deployment["sso"].(map[string]interface{})
-			ingress := sso["ingress"].(map[string]interface{})
+			oss := deployment["oss"].(map[string]interface{})
+			ingress := oss["ingress"].(map[string]interface{})
 			ngrok := ingress["ngrok"].(map[string]interface{})
 
 			if tc.shouldHaveIPs {
