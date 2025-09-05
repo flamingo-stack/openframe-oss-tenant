@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.openframe.authz.keys.TenantKeyService;
+import com.openframe.authz.security.ProviderAwareAuthenticationEntryPoint;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
 import com.openframe.data.document.auth.AuthUser;
@@ -78,7 +79,7 @@ public class AuthorizationServerConfig {
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpoints))
                 .cors(AbstractHttpConfigurer::disable)
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
-                        new com.openframe.authz.security.ProviderAwareAuthenticationEntryPoint(),
+                        new ProviderAwareAuthenticationEntryPoint(),
                         new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()))
                 .build();
