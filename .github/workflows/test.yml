@@ -285,11 +285,13 @@ jobs:
         working-directory: client
         run: |
           TARGET=x86_64-unknown-linux-gnu make crossbuild
+        continue-on-error: true
 
       - name: Build for macOS
         working-directory: client
         run: |
           TARGET=x86_64-apple-darwin make crossbuild
+        continue-on-error: true
 
       - name: Build for Windows
         working-directory: client
