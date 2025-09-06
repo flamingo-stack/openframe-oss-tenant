@@ -19,7 +19,7 @@ impl AgentRegistrationService {
 
     // TODO: temporary save to file during installation
     // For development purposes should be manually set based on server key
-    const INITIAL_KEY: &str = "BijLrOdmGhyGXq78vW-fBK-2fapCzi7N";
+    const INITIAL_KEY: &str = "hSTWUb9pjbKXzPzlNqoudpYvoKwOT2s2";
 
     pub fn new(
         registration_client: RegistrationClient,

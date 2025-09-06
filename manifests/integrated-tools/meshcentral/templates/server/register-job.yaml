@@ -127,7 +127,7 @@ spec:
 
             echo "Registering MeshCentral Agent..."
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/meshcentral-server" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/meshcentral-agent" \
               -H "Content-Type: application/json" \
               -d '{
                 "toolAgent": {

@@ -47,7 +47,7 @@ impl ToolRunManager {
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        info!(tool_id = %installed_tool.tool_id, "Running single tool");
+        info!(tool_id = %installed_tool.tool_agent_id, "Running single tool");
         self.run_tool(installed_tool).await
     }
 
@@ -57,10 +57,10 @@ impl ToolRunManager {
         tokio::spawn(async move {
             loop {
                 // exchange args placeholders to real values
-                let processed_args = match params_processor.process(&tool.tool_id, tool.run_command_args.clone()) {
+                let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
                     Ok(args) => args,
                     Err(e) => {
-                        error!(tool_id = %tool.tool_id, error = %e, 
+                        error!(tool_id = %tool.tool_agent_id, error = %e,
                                "Failed to process run command params - giving up");
                         break;
                     }
@@ -68,13 +68,13 @@ impl ToolRunManager {
 
                 // Build executable path directly using directory manager
                 let command_path = params_processor.directory_manager.app_support_dir()
-                    .join(&tool.tool_id)
+                    .join(&tool.tool_agent_id)
                     .join("agent")
                     .to_string_lossy()
                     .to_string();
 
                 info!("TOOL_LOG: Executing tool command - tool_id: {}, command: {}, args: {:?}", 
-                      tool.tool_id, command_path, processed_args);
+                      tool.tool_agent_id, command_path, processed_args);
 
                 // spawn tool run process and wait async till the end
                 let mut child = match Command::new(&command_path)
@@ -83,7 +83,7 @@ impl ToolRunManager {
                 {
                     Ok(child) => child,
                     Err(e) => {
-                        error!(tool_id = %tool.tool_id, error = %e, 
+                        error!(tool_id = %tool.tool_agent_id, error = %e,
                                "Failed to start tool process - retrying in {} seconds", RETRY_DELAY_SECONDS);
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
@@ -93,18 +93,18 @@ impl ToolRunManager {
                 match child.wait() {
                     Ok(status) => {
                         if status.success() {
-                            warn!(tool_id = %tool.tool_id, 
+                            warn!(tool_id = %tool.tool_agent_id,
                                   "Tool completed successfully but should keep running - restarting in {} seconds", 
                                   RETRY_DELAY_SECONDS);
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         } else {
-                            error!(tool_id = %tool.tool_id, exit_status = %status, 
+                            error!(tool_id = %tool.tool_agent_id, exit_status = %status,
                                    "Tool failed with exit status - restarting in {} seconds", RETRY_DELAY_SECONDS);
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         }
                     }
                     Err(e) => {
-                        error!(tool_id = %tool.tool_id, error = %e, 
+                        error!(tool_id = %tool.tool_agent_id, error = %e,
                                "Failed to wait for tool process - restarting in {} seconds", RETRY_DELAY_SECONDS);
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                     }

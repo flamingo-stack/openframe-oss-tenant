@@ -33,7 +33,8 @@ public class ToolInstallationNatsPublisher {
 
     private ToolInstallationMessage buildMessage(IntegratedToolAgent toolAgent) {
         ToolInstallationMessage message = new ToolInstallationMessage();
-        message.setToolId(toolAgent.getId());
+        message.setToolAgentId(toolAgent.getId());
+        message.setToolId(toolAgent.getToolId());
         message.setVersion(toolAgent.getVersion());
         message.setInstallationCommandArgs(toolAgent.getInstallationCommandArgs());
         message.setRunCommandArgs(toolAgent.getRunCommandArgs());

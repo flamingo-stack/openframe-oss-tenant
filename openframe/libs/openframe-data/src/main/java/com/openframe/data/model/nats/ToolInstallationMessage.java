@@ -9,6 +9,7 @@ import java.util.List;
 @Setter
 public class ToolInstallationMessage {
 
+    private String toolAgentId;
     private String toolId;
     private String version;
     private List<String> installationCommandArgs;

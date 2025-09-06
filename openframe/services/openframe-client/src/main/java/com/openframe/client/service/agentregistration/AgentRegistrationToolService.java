@@ -23,7 +23,7 @@ public class AgentRegistrationToolService {
     }
 
     private void publish(String machineId, IntegratedToolAgent toolAgent) {
-        String toolId = toolAgent.getId();
+        String toolId = toolAgent.getToolId();
         try {
             // process params for installation command args
             List<String> installationCommandArgs = toolAgent.getInstallationCommandArgs();
@@ -38,6 +38,8 @@ public class AgentRegistrationToolService {
         } catch (Exception e) {
             // TODO: add fallback mechanism
             log.error("Failed to publish {} agent installation message for machine {}", toolId, machineId);
+            // TODO: remove
+            throw e;
         }
     }
 

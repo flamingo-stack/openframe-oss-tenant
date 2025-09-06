@@ -30,6 +30,12 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
+    // allow to run only as root user
+    if (unsafe { libc::geteuid() } != 0) {
+        eprintln!("Please run the installation with administrator/root privileges");
+        process::exit(1);
+    }
+
     // Initialize logging first
     if let Err(e) = openframe::logging::init(None, None) {
         eprintln!("Failed to initialize logging: {}", e);

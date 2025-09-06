@@ -39,7 +39,7 @@ public class TacticalRmmClient {
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .header("X-API-KEY", apiKey)
-                    .timeout(Duration.ofSeconds(3))
+                    .timeout(Duration.ofSeconds(30))
                     .build();
 
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());

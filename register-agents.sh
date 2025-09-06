@@ -45,7 +45,7 @@ register_fleetmdm_agent() {
     log_info "Registering Fleet MDM Agent..."
     
     curl --verbose --show-error --fail \
-        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tool-agents/fleetmdm-server" \
+        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tool-agents/fleetmdm-agent" \
         -H "Content-Type: application/json" \
         -d '{
             "toolAgent": {
@@ -85,7 +85,7 @@ register_meshcentral_agent() {
     log_info "Registering MeshCentral Agent..."
     
     curl --verbose --show-error --fail \
-        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tool-agents/meshcentral-server" \
+        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tool-agents/meshcentral-agent" \
         -H "Content-Type: application/json" \
         -d '{
             "toolAgent": {
@@ -127,7 +127,7 @@ register_tacticalrmm_agent() {
     log_info "Registering Tactical RMM Agent..."
     
     curl --verbose --show-error --fail \
-        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tool-agents/tactical-rmm" \
+        -X POST "${OPENFRAME_MANAGEMENT_URL}/v1/tool-agents/tacticalrmm-agent" \
         -H "Content-Type: application/json" \
         -d '{
             "toolAgent": {
@@ -147,7 +147,8 @@ register_tacticalrmm_agent() {
                     "--openframe-mode",
                     "-nomesh",
                     "--openframe-secret", "${client.openframeSecret}",
-                    "--openframe-token-path", "${client.openframeTokenPath}"
+                    "--openframe-token-path", "${client.openframeTokenPath}",
+                    "—-insecure"
                 ],
                 "runCommandArgs": [
                     "-m", "svc",

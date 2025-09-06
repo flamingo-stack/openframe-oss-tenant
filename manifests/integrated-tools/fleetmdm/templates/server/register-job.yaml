@@ -131,7 +131,7 @@ spec:
 
             echo "Registering FleetMDM Agent..."
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/fleetmdm-server" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/fleetmdm-agent" \
               -H "Content-Type: application/json" \
               -d '{
               "toolAgent": {

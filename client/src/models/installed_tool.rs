@@ -17,7 +17,7 @@ impl Default for ToolStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledTool {
-    pub tool_id: String,
+    pub tool_agent_id: String,
 
     pub version: String,
 
@@ -29,7 +29,7 @@ pub struct InstalledTool {
 impl Default for InstalledTool {
     fn default() -> Self {
         Self {
-            tool_id: String::new(),
+            tool_agent_id: String::new(),
             version: String::new(),
             run_command_args: Vec::new(),
             status: ToolStatus::default(),

@@ -20,13 +20,13 @@ impl ToolApiClient {
     }
 
     pub async fn get_tool_asset(&self, tool_id: String, asset_path: String) -> Result<bytes::Bytes> {
-        let url = format!("{}/tools/agent/{}/{}", self.base_url, tool_id, asset_path);
+        let url = format!("{}/tools/agent/{}{}", self.base_url, tool_id, asset_path);
         
         // Get access token from configuration service
         let access_token = self.config_service.get_access_token()
             .await
             .context("Failed to get access token from configuration service")?;
-        
+
         let response = self.http_client
             .get(url)
             .header("Authorization", format!("Bearer {}", access_token))

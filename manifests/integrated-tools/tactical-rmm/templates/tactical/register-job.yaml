@@ -115,7 +115,7 @@ spec:
             
             echo "Registering Tactical RMM Agent..."
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/tactical-rmm" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/tacticalrmm-agent" \
               -H "Content-Type: application/json" \
               -d '{
                 "toolAgent": {
@@ -135,7 +135,8 @@ spec:
                     "--openframe-mode",
                     "-nomesh",
                     "--openframe-secret", "${client.openframeSecret}",
-                    "--openframe-token-path", "${client.openframeTokenPath}"
+                    "--openframe-token-path", "${client.openframeTokenPath}",
+                    "-—insecure"
                   ],
                   "runCommandArgs": [
                     "-m", "svc",

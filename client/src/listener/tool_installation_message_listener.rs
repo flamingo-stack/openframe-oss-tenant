@@ -65,20 +65,20 @@ impl ToolInstallationMessageListener {
 
             let payload = String::from_utf8_lossy(&message.payload);
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
-            let tool_id = tool_installation_message.tool_id.clone();
+            let tool_agent_id = tool_installation_message.tool_agent_id.clone();
 
             match self.tool_installation_service.install(tool_installation_message).await {
                 Ok(_) => {
                     // ack
-                    info!("Acknowledging installation message for tool: {}", tool_id);
+                    info!("Acknowledging installation message for tool: {}", tool_agent_id);
                     message.ack().await
                         .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-                    info!("Installation message acknowledged for tool: {}", tool_id);
+                    info!("Installation message acknowledged for tool: {}", tool_agent_id);
                 }
                 Err(e) => {
                     // do not ack: let message be redelivered per consumer ack policy
-                    error!("Failed to process tool installation message for tool {}: {:#}", tool_id, e);
-                    info!("Leaving message unacked for potential redelivery: tool {}", tool_id);
+                    error!("Failed to process tool installation message for tool {}: {:#}", tool_agent_id, e);
+                    info!("Leaving message unacked for potential redelivery: tool {}", tool_agent_id);
                 }
             }
         }
@@ -105,7 +105,7 @@ impl ToolInstallationMessageListener {
             filter_subject,
             deliver_subject,
             durable_name: Some(durable_name),
-            ack_wait: Duration::from_secs(60),
+            ack_wait: Duration::from_secs(15),
             ..Default::default()
         }
     }

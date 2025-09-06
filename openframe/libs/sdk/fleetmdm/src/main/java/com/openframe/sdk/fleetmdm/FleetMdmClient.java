@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 
 /**
  * Main client for working with Fleet MDM REST API
@@ -59,6 +60,7 @@ public class FleetMdmClient {
         HttpRequest request = addHeaders(HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + GET_HOST_URL + id)))
                 .GET()
+                .timeout(Duration.ofSeconds(30))
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

@@ -21,7 +21,7 @@ impl InstalledToolsService {
     pub async fn save(&self, tool: InstalledTool) -> Result<()> {
         let mut tools = self.get_all().await?;
 
-        if let Some(existing) = tools.iter_mut().find(|t| t.tool_id == tool.tool_id) {
+        if let Some(existing) = tools.iter_mut().find(|t| t.tool_agent_id == tool.tool_agent_id) {
             *existing = tool;
         } else {
             tools.push(tool);
@@ -30,9 +30,9 @@ impl InstalledToolsService {
         self.persist(&tools).await
     }
 
-    pub async fn get_by_tool_id(&self, tool_id: &str) -> Result<Option<InstalledTool>> {
+    pub async fn get_by_tool_agent_id(&self, tool_id: &str) -> Result<Option<InstalledTool>> {
         let tools = self.get_all().await?;
-        Ok(tools.into_iter().find(|t| t.tool_id == tool_id))
+        Ok(tools.into_iter().find(|t| t.tool_agent_id == tool_id))
     }
 
     pub async fn get_all(&self) -> Result<Vec<InstalledTool>> {

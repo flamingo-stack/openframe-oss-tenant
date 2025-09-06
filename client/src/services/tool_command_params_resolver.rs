@@ -5,7 +5,7 @@ use crate::platform::DirectoryManager;
 
 /// Regex for matching assets path placeholders like ${client.assetsPath.osquery}
 static ASSETS_PATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\$\{client\.assetsPath\.([^}]+)\}").unwrap()
+    Regex::new(r"\$\{client\.assetPath\.([^}]+)\}").unwrap()
 });
 
 #[derive(Clone)]
@@ -24,7 +24,7 @@ impl ToolCommandParamsResolver {
         }
     }
 
-    pub fn process(&self, tool_id: &str, command_args: Vec<String>) -> Result<Vec<String>> {
+    pub fn process(&self, tool_agent_id: &str, command_args: Vec<String>) -> Result<Vec<String>> {
         let token_path = self.build_token_path();
 
         Ok(command_args
@@ -36,7 +36,7 @@ impl ToolCommandParamsResolver {
                     .replace(Self::OPENFRAME_TOKEN_PATH_PLACEHOLDER, &token_path)
             })
             // Resolve dynamic asset path placeholders
-            .map(|arg| self.process_assets_placeholders(&arg, tool_id))
+            .map(|arg| self.process_assets_placeholders(&arg, tool_agent_id))
             .collect())
     }
 
@@ -48,11 +48,11 @@ impl ToolCommandParamsResolver {
             .to_string()
     }
 
-    fn process_assets_placeholders(&self, arg: &str, tool_id: &str) -> String {
+    fn process_assets_placeholders(&self, arg: &str, tool_agent_id: &str) -> String {
         ASSETS_PATH_REGEX.replace_all(arg, |caps: &regex::Captures| {
             self.directory_manager
                 .app_support_dir()
-                .join(tool_id)
+                .join(tool_agent_id)
                 .join(&caps[1])
                 .to_string_lossy()
                 .into_owned()

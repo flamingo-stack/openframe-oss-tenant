@@ -120,7 +120,7 @@ pub struct Client {
 }
 
 impl Client {
-    const GATEWAY_HTTP_URL: &'static str = "http://localhost";
+    const GATEWAY_HTTP_URL: &'static str = "https://localhost";
     const GATEWAY_WS_URL: &'static str = "wss://localhost";
 
     pub fn new() -> Result<Self> {
@@ -146,6 +146,7 @@ impl Client {
             .timeout(std::time::Duration::from_secs(30))
             // disable TLS verification for dev mode only
             .danger_accept_invalid_certs(std::env::var("OPENFRAME_DEV_MODE").is_ok())
+            .no_proxy()
             .build()
             .context("Failed to create HTTP client")?;
 

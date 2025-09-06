@@ -54,13 +54,13 @@ impl ToolInstallationService {
     }
 
     pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
-        let tool_id = &tool_installation_message.tool_id;
-        info!("Installing tool {} with version {}", tool_id, tool_installation_message.version);
+        let tool_agent_id = &tool_installation_message.tool_agent_id;
+        info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
         // Check if tool is already installed
-        if let Some(installed_tool) = self.installed_tools_service.get_by_tool_id(tool_id).await? {
+        if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             info!("Tool {} is already installed with version {}, skipping installation", 
-                  tool_id, installed_tool.version);
+                  tool_agent_id, installed_tool.version);
             return Ok(());
         }
 
@@ -69,7 +69,7 @@ impl ToolInstallationService {
 
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
-        let tool_folder_path = base_folder_path.join(tool_id);
+        let tool_folder_path = base_folder_path.join(tool_agent_id);
         
         // Ensure tool-specific directory exists
         fs::create_dir_all(&tool_folder_path)
@@ -81,12 +81,12 @@ impl ToolInstallationService {
         // Check if agent file already exists
         if file_path.exists() {
             info!("Agent file for tool {} already exists at {}, skipping download", 
-                  tool_id, file_path.display());
+                  tool_agent_id, file_path.display());
         } else {
             // Download and save main tool agent file
             let tool_agent_file_bytes = self
                 .tool_agent_file_client
-                .get_tool_agent_file(tool_id.clone())
+                .get_tool_agent_file(tool_agent_id.clone())
                 .await?;
 
             File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
@@ -101,7 +101,7 @@ impl ToolInstallationService {
                     .with_context(|| format!("Failed to chmod +x {}", file_path.display()))?;
             }
             
-            info!("Agent file for tool {} downloaded and saved to {}", tool_id, file_path.display());
+            info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
         }
 
         // Download and save assets
@@ -112,7 +112,7 @@ impl ToolInstallationService {
                 // Check if asset file already exists
                 if asset_path.exists() {
                     info!("Asset {} for tool {} already exists at {}, skipping download", 
-                          asset.id, tool_id, asset_path.display());
+                          asset.id, tool_agent_id, asset_path.display());
                     continue;
                 }
 
@@ -128,8 +128,9 @@ impl ToolInstallationService {
                         // TODO: fail if path is not provided
                         let path = asset.path.as_deref().unwrap_or("");
                         info!("Downloading tool API asset: {} with path: {}", asset.id, path);
+                        let tool_id = tool_installation_message.tool_id.clone();
                         self.tool_api_client
-                            .get_tool_asset(tool_id.clone(), asset.path.clone().unwrap_or_default())
+                            .get_tool_asset(tool_id, asset.path.clone().unwrap_or_default())
                             .await
                             .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
                     }
@@ -150,14 +151,14 @@ impl ToolInstallationService {
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
             }
         } else {
-            info!("No assets to download for tool: {}", tool_id);
+            info!("No assets to download for tool: {}", tool_agent_id);
         }
 
         // Run installation command if provided
         if tool_installation_message.installation_command_args.is_some() {
-            let installation_command_args = self.command_params_processor.process(tool_id, tool_installation_message.installation_command_args.unwrap())
+            let installation_command_args = self.command_params_processor.process(tool_agent_id, tool_installation_message.installation_command_args.unwrap())
                 .context("Failed to process installation command params")?;
-            debug!("Processed args: {:?}", installation_command_args);
+            info!("Processed args: {:?}", installation_command_args);
 
             let mut cmd = Command::new(&file_path);
             cmd.args(&installation_command_args);
@@ -178,12 +179,12 @@ impl ToolInstallationService {
             
             debug!("Installation command executed successfully");
         } else {
-            info!("No installation command args provided for tool: {} - skip installation", tool_id);
+            info!("No installation command args provided for tool: {} - skip installation", tool_agent_id);
         }
 
         // Persist installed tool information
         let installed_tool = InstalledTool {
-            tool_id: tool_id.clone(),
+            tool_agent_id: tool_agent_id.clone(),
             version: version_clone,
             run_command_args: run_args_clone,
             status: ToolStatus::Installed,
@@ -193,7 +194,7 @@ impl ToolInstallationService {
             .context("Failed to save installed tool")?;
 
         // Run the tool after successful installation
-        info!("Running tool {} after successful installation", tool_id);
+        info!("Running tool {} after successful installation", tool_agent_id);
         self.tool_run_manager.run_new_tool(installed_tool).await
             .context("Failed to run tool after installation")?;
 
