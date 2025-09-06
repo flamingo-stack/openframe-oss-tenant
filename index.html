@@ -45,9 +45,9 @@
     async function connectToNats() {
         try {
             nc = await connect({
-                servers: "ws://localhost:8100/ws/nats",
-                user: "service",
-                pass: "service_pass"
+                servers: "ws://nats.datasources.svc.cluster.local:8080",
+                user: "admin",
+                pass: "admin_password"
             });
             console.log("Connected to NATS!");
             addToLog("Connected to NATS server");
