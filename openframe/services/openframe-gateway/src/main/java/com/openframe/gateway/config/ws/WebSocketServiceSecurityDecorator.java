@@ -41,7 +41,7 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 processSessionClosedEvent(session, disposable);
 
                 // TODO: remove
-                if (path.contains("nats")) {
+                if (path.equals(NATS_WS_ENDPOINT_PATH)) {
                     return defaultWebSocketHandler.handle(new TemporaryWsSessionWrapper(session));
                 }
 
