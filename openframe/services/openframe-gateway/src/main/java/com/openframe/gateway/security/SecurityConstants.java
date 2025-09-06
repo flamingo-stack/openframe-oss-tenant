@@ -15,6 +15,11 @@ public final class SecurityConstants {
     public static final String AUTHORIZATION_QUERY_PARAM = "authorization";
 
     /**
+     * Authorization header
+     */
+    public static final String AUTHORIZATION_HEADER = "Authorization";
+
+    /**
      * Development-only headers for propagating tokens back to localhost clients
      */
     public static final String ACCESS_TOKEN = "access_token";

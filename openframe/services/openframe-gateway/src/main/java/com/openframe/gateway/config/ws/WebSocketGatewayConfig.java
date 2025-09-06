@@ -1,6 +1,7 @@
 package com.openframe.gateway.config.ws;
 
 import com.openframe.security.jwt.JwtService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -16,25 +17,16 @@ import org.springframework.web.reactive.socket.server.WebSocketService;
 @Slf4j
 public class WebSocketGatewayConfig {
 
-    static final String TOOLS_AGENT_WS_ENDPOINT_PREFIX = "/ws/tools/agent";
-    static final String TOOLS_API_WS_ENDPOINT_PREFIX = "/ws/tools";
+    public static final String TOOLS_AGENT_WS_ENDPOINT_PREFIX = "/ws/tools/agent";
+    public static final String TOOLS_API_WS_ENDPOINT_PREFIX = "/ws/tools";
+    public static final String NATS_WS_ENDPOINT_PATH = "/ws/nats";
 
-    /*
-           Currently if one device have valid open-frame machine JWT token, it can send WS request,
-           make subscriptions for other device.
-           TODO: implement device access validation after tool connection feature is implemented.
-
-           Tactical ws request payload format:
-           1. {
-                "agentId": "*",
-              }
-           2. SUB {agentId}.{topic}
-     */
     @Bean
     public RouteLocator customRouteLocator(
             RouteLocatorBuilder builder,
             ToolApiWebSocketProxyUrlFilter toolApiWebSocketProxyUrlFilter,
-            ToolAgentWebSocketProxyUrlFilter toolAgentWebSocketProxyUrlFilter
+            ToolAgentWebSocketProxyUrlFilter toolAgentWebSocketProxyUrlFilter,
+            @Value("${nats-ws-url}") String natsWsUrl
     ) {
         return builder.routes()
                 .route("agent_gateway_websocket_route", r -> r
@@ -45,6 +37,9 @@ public class WebSocketGatewayConfig {
                         .path(TOOLS_API_WS_ENDPOINT_PREFIX + "{toolId}/**")
                         .filters(f -> f.filter(toolApiWebSocketProxyUrlFilter))
                         .uri("no://op"))
+                .route("nats_websocket_route", r -> r
+                        .path(NATS_WS_ENDPOINT_PATH)
+                        .uri(natsWsUrl))
                 .build();
     }
 
