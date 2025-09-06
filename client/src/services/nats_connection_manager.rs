@@ -14,7 +14,6 @@ pub struct NatsConnectionManager {
 
 impl NatsConnectionManager {
 
-    // TODO: no password or password from parameters.
     const NATS_DEVICE_USER: &'static str = "machine";
     const NATS_DEVICE_PASSWORD: &'static str = "";
     
