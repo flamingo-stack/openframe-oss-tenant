@@ -31,7 +31,7 @@ enum Commands {
 
 fn main() -> Result<()> {
     // allow to run only as root user
-    if (unsafe { libc::geteuid() } != 0) {
+    if unsafe { libc::geteuid() } != 0 {
         eprintln!("Please run application with administrator/root privileges");
         process::exit(1);
     }
