@@ -39,12 +39,6 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
                 Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
                 processSessionClosedEvent(session, disposable);
-
-                // TODO: remove
-                if (path.equals(NATS_WS_ENDPOINT_PATH)) {
-                    return defaultWebSocketHandler.handle(new TemporaryWsSessionWrapper(session));
-                }
-
                 return defaultWebSocketHandler.handle(session);
             });
         } else {
@@ -60,10 +54,6 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
         return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX, NATS_WS_ENDPOINT_PATH)
                 .stream()
                 .anyMatch(path::startsWith);
-    }
-
-    private boolean isNatsEndpoint(String path) {
-        return path.equals(NATS_WS_ENDPOINT_PATH);
     }
 
     private Jwt getRequestJwt(ServerWebExchange exchange) {

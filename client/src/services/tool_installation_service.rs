@@ -156,9 +156,10 @@ impl ToolInstallationService {
 
         // Run installation command if provided
         if tool_installation_message.installation_command_args.is_some() {
+            info!("Start run tool installation command for tool {}", tool_agent_id);
             let installation_command_args = self.command_params_processor.process(tool_agent_id, tool_installation_message.installation_command_args.unwrap())
                 .context("Failed to process installation command params")?;
-            info!("Processed args: {:?}", installation_command_args);
+            debug!("Processed args: {:?}", installation_command_args);
 
             let mut cmd = Command::new(&file_path);
             cmd.args(&installation_command_args);
@@ -177,7 +178,7 @@ impl ToolInstallationService {
                 ));
             }
             
-            debug!("Installation command executed successfully");
+            info!("Installation command executed successfully for tool {}", tool_agent_id);
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_agent_id);
         }

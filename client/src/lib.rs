@@ -41,14 +41,12 @@ use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::shared_token_service::SharedTokenService;
 use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
-// ToolInstaller import removed - not currently used
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
-// ToolInstallationCommandRunner import removed - not currently used
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {

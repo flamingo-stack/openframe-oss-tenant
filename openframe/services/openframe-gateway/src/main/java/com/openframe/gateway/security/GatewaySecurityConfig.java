@@ -98,7 +98,7 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
                         // Api service
-                            .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole(ADMIN)
+                        .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole(ADMIN)
                         // Agent tools
                         .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole(AGENT)
                         .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole(AGENT)

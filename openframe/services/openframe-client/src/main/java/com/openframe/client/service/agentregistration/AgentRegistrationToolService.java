@@ -38,8 +38,6 @@ public class AgentRegistrationToolService {
         } catch (Exception e) {
             // TODO: add fallback mechanism
             log.error("Failed to publish {} agent installation message for machine {}", toolId, machineId);
-            // TODO: remove
-            throw e;
         }
     }
 

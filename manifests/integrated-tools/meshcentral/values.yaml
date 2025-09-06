@@ -8,5 +8,5 @@ registry:
 
 server:
   image: 
-    repo: meshcentral-local
+    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral
     tag: latest

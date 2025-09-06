@@ -1,9 +1,8 @@
 use anyhow::{Context, Result};
-use tracing::{info, warn, error};
+use tracing::{info, warn, error, debug};
 use std::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
-
 use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
@@ -28,6 +27,8 @@ impl ToolRunManager {
     }
 
     pub async fn run(&self) -> Result<()> {
+        info!("Starting tool run manager");
+
         let tools = self
             .installed_tools_service
             .get_all()
@@ -40,6 +41,7 @@ impl ToolRunManager {
         }
 
         for tool in tools {
+            info!("Running tool {}", tool.tool_agent_id);
             self.run_tool(tool).await?;
         }
  
@@ -60,11 +62,12 @@ impl ToolRunManager {
                 let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
                     Ok(args) => args,
                     Err(e) => {
-                        error!(tool_id = %tool.tool_agent_id, error = %e,
-                               "Failed to process run command params - giving up");
-                        break;
+                        error!("Failed to resolve tool {} run command args: {:#}", tool.tool_agent_id, e);
+                        continue;
                     }
                 };
+
+                debug!("Run tool {} with args: {:?}", tool.tool_agent_id, processed_args);
 
                 // Build executable path directly using directory manager
                 let command_path = params_processor.directory_manager.app_support_dir()
@@ -72,9 +75,6 @@ impl ToolRunManager {
                     .join("agent")
                     .to_string_lossy()
                     .to_string();
-
-                info!("TOOL_LOG: Executing tool command - tool_id: {}, command: {}, args: {:?}", 
-                      tool.tool_agent_id, command_path, processed_args);
 
                 // spawn tool run process and wait async till the end
                 let mut child = match Command::new(&command_path)
@@ -105,7 +105,7 @@ impl ToolRunManager {
                     }
                     Err(e) => {
                         error!(tool_id = %tool.tool_agent_id, error = %e,
-                               "Failed to wait for tool process - restarting in {} seconds", RETRY_DELAY_SECONDS);
+                               "Failed to wait for tool process - restarting in {} seconds: {:#}", RETRY_DELAY_SECONDS, e);
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                     }
                 }

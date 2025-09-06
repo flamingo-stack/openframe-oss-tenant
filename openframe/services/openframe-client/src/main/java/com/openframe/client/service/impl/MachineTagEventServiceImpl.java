@@ -36,7 +36,6 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
     @Value("${kafka.producer.topic.machine.name}")
     private String machineEventsTopic;
 
-    // TODO: steal need after we used @Around aspect?
     // Thread-safe map to store original tag states for comparison
     private final ConcurrentHashMap<String, Tag> originalTagStates = new ConcurrentHashMap<>();
 
@@ -129,7 +128,6 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
 
             kafkaProducer.sendMessage(machineEventsTopic, machineEntity.getMachineId(), message);
         } catch (Exception e) {
-            // TODO: need fail on error to make client(kafka, ui) retry?
             log.error("Error sending machine event to Kafka for machine {}: {}",
                     machineEntity.getMachineId(), e.getMessage(), e);
         }
