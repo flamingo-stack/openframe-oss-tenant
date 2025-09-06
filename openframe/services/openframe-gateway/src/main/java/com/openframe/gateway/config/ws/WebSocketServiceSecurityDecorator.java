@@ -39,7 +39,13 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
                 Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
                 processSessionClosedEvent(session, disposable);
-                return defaultWebSocketHandler.handle(new TemporaryWsSessionWrapper(session));
+
+                // TODO: remove
+                if (path.contains("nats")) {
+                    return defaultWebSocketHandler.handle(new TemporaryWsSessionWrapper(session));
+                }
+
+                return defaultWebSocketHandler.handle(session);
             });
         } else {
             return defaultWebSocketService.handleRequest(exchange, defaultWebSocketHandler);
