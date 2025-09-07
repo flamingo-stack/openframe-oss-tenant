@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
+public class FleetEventBrokerDeserializer extends IntegratedToolEventBrokerDeserializer {
     // Field name constants
     private static final String FIELD_AGENT_ID = "agentId";
     private static final String FIELD_ACTIVITY_TYPE = "activity_type";

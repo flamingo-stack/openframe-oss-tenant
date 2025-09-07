@@ -1,7 +1,7 @@
 package com.openframe.stream.listener;
 
-import com.openframe.data.model.debezium.CommonDebeziumMessage;
 import com.openframe.data.model.enums.MessageType;
+import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
 import com.openframe.stream.processor.GenericJsonMessageProcessor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;

@@ -1,8 +1,8 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
-import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.EventHandlerType;
 import com.openframe.data.model.enums.Destination;
 import com.openframe.kafka.model.IntegratedToolEvent;

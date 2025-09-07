@@ -1,10 +1,10 @@
 package com.openframe.stream.processor;
 
-import com.openframe.data.model.debezium.CommonDebeziumMessage;
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
-import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.EventHandlerType;
-import com.openframe.stream.deserializer.KafkaMessageDeserializer;
+import com.openframe.stream.deserializer.MessageBrokerDeserializer;
 import com.openframe.data.model.enums.DataEnrichmentServiceType;
 import com.openframe.data.model.enums.Destination;
 import com.openframe.data.model.enums.MessageType;
@@ -22,9 +22,9 @@ public class GenericJsonMessageProcessor {
 
     private final Map<EventHandlerType, Map<Destination, MessageHandler>> handlers;
     private final Map<DataEnrichmentServiceType, DataEnrichmentService> dataEnrichmentServices;
-    private final Map<MessageType, KafkaMessageDeserializer> deserializers;
+    private final Map<MessageType, MessageBrokerDeserializer> deserializers;
 
-    public GenericJsonMessageProcessor(List<MessageHandler> handlers, List<DataEnrichmentService> dataEnrichmentServices, List<KafkaMessageDeserializer> deserializers) {
+    public GenericJsonMessageProcessor(List<MessageHandler> handlers, List<DataEnrichmentService> dataEnrichmentServices, List<MessageBrokerDeserializer> deserializers) {
         this.handlers = handlers.stream()
                 .collect(Collectors.groupingBy(
                         MessageHandler::getType,
@@ -36,7 +36,7 @@ public class GenericJsonMessageProcessor {
         this.dataEnrichmentServices = dataEnrichmentServices.stream()
                 .collect(Collectors.toMap(DataEnrichmentService::getType, Function.identity()));
         this.deserializers = deserializers.stream()
-                .collect(Collectors.toMap(KafkaMessageDeserializer::getType, Function.identity()));
+                .collect(Collectors.toMap(MessageBrokerDeserializer::getType, Function.identity()));
     }
 
     public void process(CommonDebeziumMessage message, MessageType type) {
@@ -52,7 +52,7 @@ public class GenericJsonMessageProcessor {
     }
 
     private DeserializedDebeziumMessage deserialize(CommonDebeziumMessage message, MessageType type) {
-        KafkaMessageDeserializer deserializer = deserializers.get(type);
+        MessageBrokerDeserializer deserializer = deserializers.get(type);
         if (deserializer == null) {
             throw new IllegalArgumentException("The message type '%s' is not supported".formatted(type));
         }

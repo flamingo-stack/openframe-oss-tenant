@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-public class MeshCentralEventDeserializer extends IntegratedToolEventDeserializer {
+public class MeshCentralEventBrokerDeserializer extends IntegratedToolEventBrokerDeserializer {
 
     private static final String FIELD_NODEID = "nodeid";
     private static final String FIELD_ETYPE = "etype";
@@ -23,7 +23,7 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     private static final String FIELD_MSG = "msg";
     private final ObjectMapper mapper;
 
-    public MeshCentralEventDeserializer(ObjectMapper mapper) {
+    public MeshCentralEventBrokerDeserializer(ObjectMapper mapper) {
         this.mapper = mapper;
     }
 

@@ -1,4 +1,4 @@
-package com.openframe.data.model.debezium;
+package com.openframe.stream.model.fleet.debezium;
 
 import lombok.Data;
 

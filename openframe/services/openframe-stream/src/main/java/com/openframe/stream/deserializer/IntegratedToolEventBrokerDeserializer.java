@@ -2,9 +2,9 @@ package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.data.mapper.EventTypeMapper;
-import com.openframe.data.model.debezium.CommonDebeziumMessage;
-import com.openframe.data.model.debezium.DebeziumMessage;
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
+import com.openframe.kafka.model.debezium.DebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.enums.IntegratedToolType;
 import com.openframe.data.model.enums.MessageType;
 import com.openframe.data.model.enums.UnifiedEventType;
@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
-public abstract class IntegratedToolEventDeserializer implements KafkaMessageDeserializer {
+public abstract class IntegratedToolEventBrokerDeserializer implements MessageBrokerDeserializer {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
     private static final String UNKNOWN = "unknown";
