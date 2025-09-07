@@ -39,7 +39,7 @@ impl NatsConnectionManager {
         let mut connect_options = async_nats::ConnectOptions::new()
             .name(machine_id)
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
-            .max_reconnects(1)
+            .max_reconnects(1000)
             .retry_on_initial_connect()
             .reconnect_delay_callback(|attempt| {
                 println!("\n\nFallback: reconnecting to NATS server, attempt: {}\n\n", attempt);
