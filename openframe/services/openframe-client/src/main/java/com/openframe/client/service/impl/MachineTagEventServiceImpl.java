@@ -8,7 +8,7 @@ import com.openframe.data.document.tool.Tag;
 import com.openframe.data.repository.device.MachineRepository;
 import com.openframe.data.repository.device.MachineTagRepository;
 import com.openframe.data.repository.tool.TagRepository;
-import com.openframe.kafka.producer.KafkaProducer;
+import com.openframe.kafka.producer.OssTenantMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +31,7 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
     private final MachineRepository machineRepository;
     private final MachineTagRepository machineTagRepository;
     private final TagRepository tagRepository;
-    private final KafkaProducer kafkaProducer;
+    private final OssTenantMessageProducer ossTenantMessageProducer;
 
     @Value("${kafka.producer.topic.machine.name}")
     private String machineEventsTopic;
@@ -123,7 +123,7 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
             // Build MachinePinotMessage with complete data
             MachinePinotMessage message = buildMachinePinotMessage(machineEntity, machineTags);
 
-            kafkaProducer.sendMessage(machineEventsTopic, machineEntity.getMachineId(), message);
+            ossTenantMessageProducer.sendMessage(machineEventsTopic, message, machineEntity.getMachineId());
         } catch (Exception e) {
             log.error("Error sending machine event to Kafka for machine {}: {}",
                     machineEntity.getMachineId(), e.getMessage(), e);
@@ -145,7 +145,7 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
         MachinePinotMessage message = buildMachinePinotMessage(machine, machineTags);
 
         // Send to Kafka asynchronously
-        kafkaProducer.sendMessage(machineEventsTopic, machine.getMachineId(), message);
+        ossTenantMessageProducer.sendMessage(machineEventsTopic, message, machine.getMachineId());
     }
 
     private void sendTagEventToKafka(Tag tagEntity) {
@@ -163,7 +163,7 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
                         List<Tag> machineTags = fetchMachineTags(machineId);
                         MachinePinotMessage message = buildMachinePinotMessage(machine, machineTags);
 
-                        kafkaProducer.sendMessage(machineEventsTopic, machineId, message);
+                        ossTenantMessageProducer.sendMessage(machineEventsTopic, message, machineId);
                         log.debug("Sent update for machine {} due to tag name change", machineId);
                     }
                 } catch (Exception e) {

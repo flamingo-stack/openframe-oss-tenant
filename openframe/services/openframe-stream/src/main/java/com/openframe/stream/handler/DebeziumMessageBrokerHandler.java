@@ -5,29 +5,29 @@ import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.EventHandlerType;
 import com.openframe.data.model.enums.Destination;
-import com.openframe.kafka.producer.KafkaProducer;
-import com.openframe.stream.model.IntegratedToolEventKafkaMessage;
+import com.openframe.kafka.model.IntegratedToolEvent;
+import com.openframe.kafka.producer.OssTenantMessageProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<IntegratedToolEventKafkaMessage, DeserializedDebeziumMessage> {
+public class DebeziumMessageBrokerHandler extends DebeziumMessageHandler<IntegratedToolEvent, DeserializedDebeziumMessage> {
 
     @Value("${kafka.producer.topic.it.event.name}")
     private String topic;
 
-    protected final KafkaProducer kafkaProducer;
+    protected final OssTenantMessageProducer messageProducer;
 
-    public DebeziumKafkaMessageHandler(KafkaProducer kafkaProducer, ObjectMapper objectMapper) {
+    public DebeziumMessageBrokerHandler(OssTenantMessageProducer ossTenantMessageProducer, ObjectMapper objectMapper) {
         super(objectMapper);
-        this.kafkaProducer = kafkaProducer;
+        this.messageProducer = ossTenantMessageProducer;
     }
 
     @Override
-    protected IntegratedToolEventKafkaMessage transform(DeserializedDebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
-        IntegratedToolEventKafkaMessage message = new IntegratedToolEventKafkaMessage();
+    protected IntegratedToolEvent transform(DeserializedDebeziumMessage debeziumMessage, IntegratedToolEnrichedData enrichedData) {
+        IntegratedToolEvent message = new IntegratedToolEvent();
         try {
             message.setToolEventId(debeziumMessage.getToolEventId());
             message.setUserId(enrichedData.getUserId());
@@ -46,19 +46,19 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
         return message;
     }
 
-    protected void handleCreate(IntegratedToolEventKafkaMessage message) {
-        kafkaProducer.sendMessage(topic, message);
+    protected void handleCreate(IntegratedToolEvent message) {
+        messageProducer.sendMessage(topic, message, buildMessageBrokerKey(message));
     }
 
-    protected void handleRead(IntegratedToolEventKafkaMessage message) {
+    protected void handleRead(IntegratedToolEvent message) {
         handleCreate(message);
     }
 
-    protected void handleUpdate(IntegratedToolEventKafkaMessage message) {
+    protected void handleUpdate(IntegratedToolEvent message) {
         handleCreate(message);
     }
 
-    protected void handleDelete(IntegratedToolEventKafkaMessage data) {
+    protected void handleDelete(IntegratedToolEvent data) {
     }
 
     @Override
@@ -73,6 +73,16 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
 
     protected String getTopic() {
         return topic;
+    }
+
+    private String buildMessageBrokerKey(IntegratedToolEvent message) {
+        if (message.getDeviceId() != null) {
+            return "%s-%s".formatted(message.getDeviceId(), message.getToolType());
+        }  else if (message.getUserId() != null) {
+            return "%s-%s".formatted(message.getUserId(), message.getToolType());
+        } else {
+            return message.getToolType();
+        }
     }
 
 }
