@@ -1,6 +1,7 @@
 pub mod agent_auth_service;
 pub mod agent_configuration_service;
 pub mod agent_registration_service;
+pub mod dev_tls_config_provider;
 pub mod encryption_service;
 pub mod shared_token_service;
 pub mod tool_installation_service;
@@ -17,6 +18,7 @@ pub mod tool_run_manager;
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
 pub use agent_registration_service::AgentRegistrationService;
+pub use dev_tls_config_provider::DevTlsConfigProvider;
 pub use encryption_service::EncryptionService;
 pub use shared_token_service::SharedTokenService;
 pub use tool_installation_service::ToolInstallationService;
