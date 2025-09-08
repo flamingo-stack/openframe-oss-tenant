@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -176,7 +177,7 @@ public class AuthController {
             codeChallenge,
             PKCEUtils.urlEncode(redirectUri),
             state);
-        if (provider != null && !provider.isBlank()) {
+        if (StringUtils.hasText(provider)) {
             base = base + "&provider=" + provider;
         }
         return base;
