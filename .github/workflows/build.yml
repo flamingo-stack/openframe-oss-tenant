@@ -76,7 +76,7 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         run: |
           mvn clean install \
-            -U
+            -U \
             -pl ${{ matrix.path }} \
             -am \
             -Dcompress \
