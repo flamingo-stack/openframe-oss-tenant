@@ -20,6 +20,10 @@
 
 
     <dependencies>
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-mongo</artifactId>
+        </dependency>
 
         <!-- OpenFrame Dependencies -->
         <dependency>

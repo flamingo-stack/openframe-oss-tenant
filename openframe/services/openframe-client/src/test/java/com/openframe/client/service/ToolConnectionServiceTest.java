@@ -3,12 +3,12 @@ package com.openframe.client.service;
 import com.openframe.client.dto.agent.AgentToolCollectionResponse;
 import com.openframe.client.dto.agent.ToolConnectionResponse;
 import com.openframe.client.exception.*;
-import com.openframe.core.model.ConnectionStatus;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.ToolConnection;
-import com.openframe.core.model.ToolType;
-import com.openframe.data.repository.mongo.MachineRepository;
-import com.openframe.data.repository.mongo.ToolConnectionRepository;
+import com.openframe.data.document.device.Machine;
+import com.openframe.data.document.tool.ConnectionStatus;
+import com.openframe.data.document.tool.ToolConnection;
+import com.openframe.data.document.tool.ToolType;
+import com.openframe.data.repository.device.MachineRepository;
+import com.openframe.data.repository.tool.ToolConnectionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +24,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ToolConnectionServiceTest {

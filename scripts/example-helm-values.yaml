@@ -220,12 +220,6 @@ apps:
     project: default  # Use default ArgoCD project
     namespace: microservices  # Kubernetes namespace for microservices
     syncWave: "2"     # Deploy in sync wave 2 (after datasources)
-    values:
-      ghcrRegistry:
-        server: ghcr.io
-        username: CI
-        password: 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
-        email: CI@flamingo.cx
     
   openframe-config:
     enabled: true     # Configuration management service

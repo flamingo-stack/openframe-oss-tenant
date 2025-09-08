@@ -1,8 +1,8 @@
 package com.openframe.gateway.service;
 
-import com.openframe.core.model.ToolUrl;
-import com.openframe.core.model.ToolUrlType;
-import com.openframe.data.repository.mongo.ReactiveIntegratedToolRepository;
+import com.openframe.data.document.tool.ToolUrl;
+import com.openframe.data.document.tool.ToolUrlType;
+import com.openframe.data.reactive.repository.tool.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import '@flamingo/ui-kit/styles'
 import { azeretMono, dmSans } from '@flamingo/ui-kit/fonts'
+import { Toaster } from '@flamingo/ui-kit/components/ui'
 import { DevTicketObserver } from './auth/components/dev-ticket-observer'
 import { DeploymentInitializer } from './components/deployment-initializer'
 
@@ -30,6 +31,7 @@ export default function RootLayout({
         <div className="relative flex min-h-screen flex-col">
           {children}
         </div>
+        <Toaster />
       </body>
     </html>
   )

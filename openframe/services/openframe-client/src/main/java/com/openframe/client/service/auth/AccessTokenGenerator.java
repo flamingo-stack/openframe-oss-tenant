@@ -1,6 +1,6 @@
 package com.openframe.client.service.auth;
 
-import com.openframe.core.model.OAuthClient;
+import com.openframe.data.document.oauth.OAuthClient;
 import com.openframe.security.jwt.JwtService;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;

@@ -4,23 +4,17 @@ import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsMutation;
 import com.netflix.graphql.dgs.DgsQuery;
 import com.netflix.graphql.dgs.InputArgument;
-import com.openframe.api.dto.event.CreateEventInput;
-import com.openframe.api.dto.event.EventConnection;
-import com.openframe.api.dto.event.EventFilterInput;
-import com.openframe.api.dto.event.EventFilterOptions;
-import com.openframe.api.dto.event.EventFilters;
-import com.openframe.api.dto.event.EventQueryResult;
+import com.openframe.api.dto.event.*;
 import com.openframe.api.dto.shared.CursorPaginationCriteria;
 import com.openframe.api.dto.shared.CursorPaginationInput;
 import com.openframe.api.mapper.GraphQLEventMapper;
 import com.openframe.api.service.EventService;
-import com.openframe.core.model.Event;
+import com.openframe.data.document.event.Event;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 
 import java.time.Instant;
 

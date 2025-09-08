@@ -67,7 +67,7 @@ func TestInstallCommandWithDryRun(t *testing.T) {
 
 	// Test that dry-run flag is properly parsed and accessible
 	cmd.Flags().Set("dry-run", "true")
-	
+
 	dryRun, err := cmd.Flags().GetBool("dry-run")
 	assert.NoError(t, err, "Should be able to get dry-run flag")
 	assert.True(t, dryRun, "Dry-run flag should be true when set")
@@ -93,7 +93,7 @@ func TestInstallCommandFlagHandling(t *testing.T) {
 			expectedArgs: InstallFlags{
 				Force:        false,
 				DryRun:       false,
-				GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+				GitHubRepo:   "https://github.com/flamingo-stack/openframe-oss-tenant",
 				GitHubBranch: "main",
 				CertDir:      "",
 			},
@@ -108,7 +108,7 @@ func TestInstallCommandFlagHandling(t *testing.T) {
 			expectedArgs: InstallFlags{
 				Force:        true,
 				DryRun:       true,
-				GitHubRepo:   "https://github.com/Flamingo-CX/openframe",
+				GitHubRepo:   "https://github.com/flamingo-stack/openframe-oss-tenant",
 				GitHubBranch: "develop",
 				CertDir:      "",
 			},
@@ -177,15 +177,15 @@ func (m *MockExecutor) ExecuteWithOptions(ctx context.Context, options executor.
 func TestRunInstallCommand(t *testing.T) {
 	// This test validates that the runInstallCommand function exists and has proper structure
 	// Actual execution tests are handled in integration tests to avoid UI interaction issues
-	
+
 	cmd := getInstallCmd()
 	assert.NotNil(t, cmd.RunE, "runInstallCommand should be assigned to RunE")
-	
+
 	// Test flag extraction functionality
 	cmd.Flags().Set("dry-run", "true")
 	cmd.Flags().Set("force", "true")
 	cmd.Flags().Set("github-branch", "develop")
-	
+
 	flags, err := extractInstallFlags(cmd)
 	assert.NoError(t, err, "Should extract flags without error")
 	assert.True(t, flags.DryRun, "Should extract dry-run flag correctly")

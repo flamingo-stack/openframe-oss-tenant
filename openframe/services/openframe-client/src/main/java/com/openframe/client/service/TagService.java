@@ -1,16 +1,15 @@
 package com.openframe.client.service;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import com.openframe.data.repository.mongo.MachineTagRepository;
-import com.openframe.data.repository.mongo.TagRepository;
+import com.openframe.data.document.device.MachineTag;
+import com.openframe.data.document.tool.Tag;
+import com.openframe.data.repository.device.MachineTagRepository;
+import com.openframe.data.repository.tool.TagRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.openframe.core.model.Tag;
-import com.openframe.core.model.MachineTag;
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TagService {

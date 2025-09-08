@@ -1,14 +1,14 @@
 package com.openframe.api;
 
-import java.lang.reflect.Field;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.api.dto.oauth.AuthorizationResponse;
 import com.openframe.api.dto.oauth.TokenResponse;
-import com.openframe.core.model.OAuthClient;
-import com.openframe.core.model.OAuthToken;
+import com.openframe.data.document.oauth.OAuthClient;
+import com.openframe.data.document.oauth.OAuthToken;
+
+import java.lang.reflect.Field;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public final class TestUtils {
     private static final ObjectMapper objectMapper = new ObjectMapper();

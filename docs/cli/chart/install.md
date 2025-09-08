@@ -31,7 +31,7 @@ The installation includes:
 |------|-------|-------------|---------|
 | `--force` | `-f` | Force installation even if charts exist | `false` |
 | `--dry-run` | - | Preview installation without executing | `false` |
-| `--github-repo` | - | GitHub repository URL | `https://github.com/Flamingo-CX/openframe` |
+| `--github-repo` | - | GitHub repository URL | `https://github.com/flamingo-stack/openframe-oss-tenant` |
 | `--github-branch` | - | Repository branch to use | `main` |
 | `--github-username` | - | GitHub username | (prompts if needed) |
 | `--github-token` | - | GitHub Personal Access Token | (prompts if needed) |
@@ -85,7 +85,7 @@ Personal Access Token: **********************
 
 ```
 ✓ Deploying app-of-apps...
-  • Repository: https://github.com/Flamingo-CX/openframe
+  • Repository: https://github.com/flamingo-stack/openframe-oss-tenant
   • Branch: main
   • Path: /manifests
   • Creating root application
@@ -188,7 +188,7 @@ Would perform the following actions:
   1. Generate certificates in: /Users/username/.../certs
   2. Install ArgoCD v8.1.4 in namespace: argocd
   3. Configure GitHub repository:
-     - URL: https://github.com/Flamingo-CX/openframe
+     - URL: https://github.com/flamingo-stack/openframe-oss-tenant
      - Branch: main
   4. Deploy app-of-apps from: /manifests
   5. Create ArgoCD applications for:

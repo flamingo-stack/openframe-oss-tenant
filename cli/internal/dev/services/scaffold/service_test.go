@@ -105,21 +105,21 @@ func TestService_BuildSkaffoldArgs(t *testing.T) {
 			flags: &models.ScaffoldFlags{
 				Namespace: "",
 			},
-			expected: []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--port-forward", "--verbosity", "info"},
+			expected: []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--verbosity", "info"},
 		},
 		{
 			name: "with namespace override",
 			flags: &models.ScaffoldFlags{
 				Namespace: "my-namespace",
 			},
-			expected: []string{"dev", "--cache-artifacts=false", "-n", "my-namespace", "--port-forward", "--verbosity", "info"},
+			expected: []string{"dev", "--cache-artifacts=false", "-n", "my-namespace", "--verbosity", "info"},
 		},
 		{
 			name: "minimal flags",
 			flags: &models.ScaffoldFlags{
 				Namespace: "",
 			},
-			expected: []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--port-forward", "--verbosity", "info"},
+			expected: []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--verbosity", "info"},
 		},
 	}
 
@@ -152,7 +152,7 @@ func TestService_BuildSkaffoldArgs_NonVerbose(t *testing.T) {
 	}
 	
 	result := service.buildSkaffoldArgs(mockService, "openframe-api", flags)
-	expected := []string{"dev", "--cache-artifacts=false", "-n", "openframe-api", "--port-forward"}
+	expected := []string{"dev", "--cache-artifacts=false", "-n", "openframe-api"}
 	
 	assert.Equal(t, expected, result)
 }

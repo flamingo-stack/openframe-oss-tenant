@@ -1,15 +1,13 @@
 package com.openframe.api.config;
 
+import com.openframe.data.document.oauth.OAuthClient;
+import com.openframe.data.repository.oauth.OAuthClientRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-
-import com.openframe.core.model.OAuthClient;
-import com.openframe.data.repository.mongo.OAuthClientRepository;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration

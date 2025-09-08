@@ -2,11 +2,11 @@ package com.openframe.external.controller;
 
 import com.openframe.api.service.EventService;
 import com.openframe.core.dto.ErrorResponse;
-import com.openframe.core.model.Event;
+import com.openframe.data.document.event.Event;
+import com.openframe.external.dto.event.EventFilterCriteria;
 import com.openframe.external.dto.event.EventFilterResponse;
 import com.openframe.external.dto.event.EventResponse;
 import com.openframe.external.dto.event.EventsResponse;
-import com.openframe.external.dto.event.EventFilterCriteria;
 import com.openframe.external.dto.shared.PaginationCriteria;
 import com.openframe.external.exception.EventNotFoundException;
 import com.openframe.external.mapper.EventMapper;
@@ -26,7 +26,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.OK;
 
 @RestController
 @RequestMapping("/api/v1/events")

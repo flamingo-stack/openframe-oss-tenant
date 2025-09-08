@@ -91,6 +91,24 @@ func TestHelmValuesModifier_LoadExistingValues_InvalidYAML(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse helm values YAML")
 }
 
+func TestHelmValuesModifier_LoadExistingValues_EmptyFile(t *testing.T) {
+	modifier := NewHelmValuesModifier()
+
+	// Create a temporary test file that is empty
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "empty-values.yaml")
+
+	// Create empty file
+	err := os.WriteFile(testFile, []byte(""), 0644)
+	require.NoError(t, err)
+
+	// Test loading empty file - should return empty map, not nil
+	values, err := modifier.LoadExistingValues(testFile)
+	assert.NoError(t, err)
+	assert.NotNil(t, values)
+	assert.Equal(t, 0, len(values))
+}
+
 func TestHelmValuesModifier_GetCurrentBranch(t *testing.T) {
 	modifier := NewHelmValuesModifier()
 
@@ -399,7 +417,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with ngrok enabled
 	valuesWithNgrok := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"selfHosted": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"ingress": map[string]interface{}{
 					"ngrok": map[string]interface{}{
 						"enabled": true,
@@ -418,7 +436,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with localhost enabled
 	valuesWithLocalhost := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"selfHosted": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"ingress": map[string]interface{}{
 					"localhost": map[string]interface{}{
 						"enabled": true,
@@ -442,7 +460,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with deployment but no ingress section - should return default
 	noIngressValues := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"selfHosted": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"enabled": true,
 			},
 		},

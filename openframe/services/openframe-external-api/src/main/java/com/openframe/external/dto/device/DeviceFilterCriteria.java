@@ -1,7 +1,7 @@
 package com.openframe.external.dto.device;
 
-import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.core.model.device.DeviceType;
+import com.openframe.data.document.device.DeviceStatus;
+import com.openframe.data.document.device.DeviceType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

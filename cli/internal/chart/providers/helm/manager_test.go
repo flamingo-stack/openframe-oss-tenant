@@ -223,7 +223,7 @@ func TestHelmManager_InstallArgoCD(t *testing.T) {
 				for i, arg := range installCmd {
 					if arg == "-f" && i+1 < len(installCmd) {
 						hasValuesFile = true
-						assert.Contains(t, installCmd[i+1], "argocd-values.yaml")
+						assert.Contains(t, installCmd[i+1], "argocd-values")
 						break
 					}
 				}

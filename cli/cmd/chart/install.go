@@ -26,9 +26,9 @@ Examples:
   openframe chart install my-cluster                        # Install on specific cluster
   openframe chart install --github-branch develop          # Use develop branch
   openframe chart install --cert-dir /path/to/certs        # Custom cert directory`,
-		RunE: runInstallCommand,
-		SilenceErrors: true,  // Errors are handled by our custom error handler
-		SilenceUsage: true,   // Don't show usage on errors
+		RunE:          runInstallCommand,
+		SilenceErrors: true, // Errors are handled by our custom error handler
+		SilenceUsage:  true, // Don't show usage on errors
 	}
 
 	// Add flags directly
@@ -40,7 +40,7 @@ Examples:
 // runInstallCommand handles the install command execution
 func runInstallCommand(cmd *cobra.Command, args []string) error {
 	// Logo is already shown in PersistentPreRunE
-	
+
 	// Extract flags directly
 	flags, err := extractInstallFlags(cmd)
 	if err != nil {
@@ -82,27 +82,27 @@ type InstallFlags struct {
 func extractInstallFlags(cmd *cobra.Command) (*InstallFlags, error) {
 	flags := &InstallFlags{}
 	var err error
-	
+
 	if flags.Force, err = cmd.Flags().GetBool("force"); err != nil {
 		return nil, err
 	}
-	
+
 	if flags.DryRun, err = cmd.Flags().GetBool("dry-run"); err != nil {
 		return nil, err
 	}
-	
+
 	if flags.GitHubRepo, err = cmd.Flags().GetString("github-repo"); err != nil {
 		return nil, err
 	}
-	
+
 	if flags.GitHubBranch, err = cmd.Flags().GetString("github-branch"); err != nil {
 		return nil, err
 	}
-	
+
 	if flags.CertDir, err = cmd.Flags().GetString("cert-dir"); err != nil {
 		return nil, err
 	}
-	
+
 	return flags, nil
 }
 
@@ -114,12 +114,12 @@ func getVerboseFlag(cmd *cobra.Command) bool {
 			return verbose
 		}
 	}
-	
+
 	// Try current command
 	if verbose, err := cmd.Flags().GetBool("verbose"); err == nil {
 		return verbose
 	}
-	
+
 	// Default to false
 	return false
 }
@@ -128,8 +128,7 @@ func getVerboseFlag(cmd *cobra.Command) bool {
 func addInstallFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolP("force", "f", false, "Force installation even if charts already exist")
 	cmd.Flags().Bool("dry-run", false, "Show what would be installed without executing")
-	cmd.Flags().String("github-repo", "https://github.com/Flamingo-CX/openframe", "GitHub repository URL")
+	cmd.Flags().String("github-repo", "https://github.com/flamingo-stack/openframe-oss-tenant", "GitHub repository URL")
 	cmd.Flags().String("github-branch", "main", "GitHub repository branch")
 	cmd.Flags().String("cert-dir", "", "Certificate directory (auto-detected if not provided)")
 }
-

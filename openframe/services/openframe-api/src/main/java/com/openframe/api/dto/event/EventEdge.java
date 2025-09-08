@@ -1,6 +1,6 @@
 package com.openframe.api.dto.event;
 
-import com.openframe.core.model.Event;
+import com.openframe.data.document.event.Event;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
