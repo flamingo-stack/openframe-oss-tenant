@@ -1,13 +1,12 @@
 package com.openframe.support.helpers;
 
-import com.openframe.support.data.TestDataGenerator;
+import com.openframe.data.TestDataGenerator;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 

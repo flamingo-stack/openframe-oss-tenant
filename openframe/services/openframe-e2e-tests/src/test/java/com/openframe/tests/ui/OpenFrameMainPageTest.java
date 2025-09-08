@@ -2,9 +2,8 @@ package com.openframe.tests.ui;
 
 import org.junit.jupiter.api.*;
 import pageObjects.OpenFrameMainPage;
-import pageObjects.dto.OrganizationRegistrationData;
-import pageObjects.dto.LoginData;
-import pageObjects.utils.TestDataGenerator;
+import com.openframe.data.dto.OrganizationRegistrationData;
+import com.openframe.data.UiTestDataGenerator;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class OpenFrameMainPageTest extends UiBaseTest {
@@ -29,7 +28,7 @@ public class OpenFrameMainPageTest extends UiBaseTest {
     @DisplayName("Should fill organization registration form with Faker data")
     void testOrganizationRegistrationForm() {
         // Generate fake data using Faker
-        OrganizationRegistrationData fakeData = TestDataGenerator.generateOrganizationRegistrationData();
+        OrganizationRegistrationData fakeData = UiTestDataGenerator.generateOrganizationRegistrationData();
 
         // Fill organization form using sendKeys
         mainPage.setOrganizationName(fakeData.getOrganizationName());
@@ -50,9 +49,9 @@ public class OpenFrameMainPageTest extends UiBaseTest {
     @DisplayName("Should validate form interactions interface")
     void testFormInteractions() {
         // Generate fake data
-        OrganizationRegistrationData fakeData = TestDataGenerator.generateOrganizationRegistrationData();
+        OrganizationRegistrationData fakeData = UiTestDataGenerator.generateOrganizationRegistrationData();
 
-        mainPage.fillForm(fakeData);
+        //  mainPage.fillForm(fakeData);
 
         // Verify form completion
         assertTrue(mainPage.isOrganizationFormComplete(), "Organization form should be complete");

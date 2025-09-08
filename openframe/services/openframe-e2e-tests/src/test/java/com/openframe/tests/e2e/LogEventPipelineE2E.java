@@ -1,6 +1,6 @@
 package com.openframe.tests.e2e;
 
-import com.openframe.tests.BasePipelineE2ETest;
+import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.ApiHelpers;
 import com.openframe.support.infrastructure.DebeziumMessageFactory;
 import com.openframe.support.infrastructure.KafkaTestInfrastructure;
@@ -24,7 +24,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Log Event Pipeline End-to-End Tests
- * 
  * Verifies complete log event flow from integrated tools through the pipeline:
  * Tool Database → Debezium CDC → Kafka → Stream Service → Cassandra/Pinot → GraphQL API
  *
@@ -48,17 +46,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class LogEventPipelineE2E extends BasePipelineE2ETest {
     
     private KafkaTestInfrastructure kafka;
-    private String testRunId;
     private static final Duration GRAPHQL_TIMEOUT = Duration.ofSeconds(30);
     
     @BeforeEach
-    @Override
-    protected void setupPipelineTest(TestInfo testInfo) {
-        super.setupPipelineTest(testInfo);
-        testRunId = "test-" + UUID.randomUUID().toString().substring(0, 8);
-        kafka = new KafkaTestInfrastructure(testRunId);
+    protected void setupTest(TestInfo testInfo) {
+        super.setupTest(testInfo);
+        kafka = new KafkaTestInfrastructure(testId);
     }
-    
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("toolTestDataProvider")
     @Story("Tool Integration Pipeline")
@@ -67,7 +62,7 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
     void logEventFlowsThroughPipeline(ToolTestData testData) throws Exception {
         long startTime = System.currentTimeMillis();
         
-        log.info("[{}] Starting {} log event pipeline test", testRunId, testData.getToolName());
+        log.info("[{}] Starting {} log event pipeline test", testId, testData.getToolName());
         
         try {
             executePhase(TestPhase.ARRANGE, "Setup Kafka consumers", () -> {
@@ -76,13 +71,13 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
             });
             
             String message = executePhase(TestPhase.ACT, "Publish log event", () -> {
-                log.info("[{}] Publishing {} log event", testRunId, testData.getToolName());
-                return testData.createMessage(testRunId);
+                log.info("[{}] Publishing {} log event", testId, testData.getToolName());
+                return testData.createMessage(testId);
             });
             
             CompletableFuture<Boolean> publishResult = kafka.publishMessage(
                 testData.getSourceTopic(), 
-                testData.getEntityId(testRunId), 
+                testData.getEntityId(testId),
                 message
             );
             
@@ -92,16 +87,16 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
             ConsumerRecord<String, String> record = executePhase(
                 TestPhase.ASSERT, 
                 "Verify message in Pinot topic",
-                () -> verifyMessageInPinotTopic(testRunId)
+                () -> verifyMessageInPinotTopic(testId)
             );
             
             assertThat(record).isNotNull();
-            assertThat(record.value()).contains(testRunId);
+            assertThat(record.value()).contains(testId);
             
             Map<String, Object> logEntry = executePhase(
                 TestPhase.ASSERT,
                 "Verify log in GraphQL",
-                () -> waitForLogInGraphQL(testData.getToolType(), testRunId, GRAPHQL_TIMEOUT)
+                () -> waitForLogInGraphQL(testData.getToolType(), testId)
             );
             
             assertThat(logEntry)
@@ -115,14 +110,14 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
                 .as("Tool type should match")
                 .isEqualTo(testData.getToolType());
             
-            log.info("[{}] Successfully verified log in GraphQL: {}", 
-                testRunId, logEntry.get("toolEventId"));
+            log.info("[{}] Successfully verified log in GraphQL: {}",
+                    testId, logEntry.get("toolEventId"));
             
             logPipelineMetrics(testData.getToolName() + " Pipeline", startTime);
             
         } catch (Exception e) {
-            log.error("[{}] {} log event pipeline test failed: {}", 
-                testRunId, testData.getToolName(), e.getMessage());
+            log.error("[{}] {} log event pipeline test failed: {}",
+                    testId, testData.getToolName(), e.getMessage());
             Allure.addAttachment("Error Details", e.toString());
             throw e;
         }
@@ -134,33 +129,33 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
                 "Tactical RMM",
                 "TACTICAL",
                 KafkaTestInfrastructure.TOPIC_TACTICAL_RMM_EVENTS,
-                testRunId -> "tactical-" + testRunId,
-                testRunId -> {
-                    String agentId = "tactical-" + testRunId;
+                testId -> "tactical-" + testId,
+                testId -> {
+                    String agentId = "tactical-" + testId;
                     return DebeziumMessageFactory.createTacticalRmmEvent(
-                        agentId, "test-script.ps1", testRunId);
+                        agentId, "test-script.ps1", testId);
                 }
             ),
             new ToolTestData(
                 "Fleet MDM",
                 "FLEET",
                 KafkaTestInfrastructure.TOPIC_FLEET_MDM_EVENTS,
-                testRunId -> "fleet-" + testRunId,
-                testRunId -> {
-                    String hostId = "fleet-" + testRunId;
+                testId -> "fleet-" + testId,
+                testId -> {
+                    String hostId = "fleet-" + testId;
                     return DebeziumMessageFactory.createFleetMdmEvent(
-                        hostId, "POLICY_APPLIED", testRunId);
+                        hostId, "POLICY_APPLIED", testId);
                 }
             ),
             new ToolTestData(
                 "MeshCentral",
                 "MESHCENTRAL",
                 KafkaTestInfrastructure.TOPIC_MESHCENTRAL_EVENTS,
-                testRunId -> "mesh-" + testRunId,
-                testRunId -> {
-                    String machineId = "mesh-" + testRunId;
+                testId -> "mesh-" + testId,
+                testId -> {
+                    String machineId = "mesh-" + testId;
                     return DebeziumMessageFactory.createMeshCentralEvent(
-                        machineId, "DEVICE_CONNECT", testRunId);
+                        machineId, "DEVICE_CONNECT", testId);
                 }
             )
         );
@@ -168,7 +163,7 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
     
     @Step("Setup Kafka consumers for {sourceTopic}")
     private void setupKafkaConsumers(String sourceTopic) {
-        log.info("[{}] Setting up test consumers", testRunId);
+        log.info("[{}] Setting up test consumers", testId);
         
         CountDownLatch consumersReady = new CountDownLatch(2);
         
@@ -185,7 +180,7 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
         try {
             boolean ready = consumersReady.await(2, TimeUnit.SECONDS);
             if (!ready) {
-                log.warn("[{}] Consumers may not be fully initialized", testRunId);
+                log.warn("[{}] Consumers may not be fully initialized", testId);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -197,12 +192,12 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
     }
     
     @Step("Verify message appears in Pinot topic")
-    private ConsumerRecord<String, String> verifyMessageInPinotTopic(String testRunId) throws Exception {
-        log.info("[{}] Verifying message in Pinot topic", testRunId);
+    private ConsumerRecord<String, String> verifyMessageInPinotTopic(String testId) throws Exception {
+        log.info("[{}] Verifying message in Pinot topic", testId);
         
         ConsumerRecord<String, String> record = kafka.waitForMessage(
             KafkaTestInfrastructure.TOPIC_PINOT_EVENTS,
-            record1 -> record1.value() != null && record1.value().contains(testRunId),
+            record1 -> record1.value() != null && record1.value().contains(testId),
             PIPELINE_TIMEOUT
         );
         
@@ -213,8 +208,8 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
     }
     
     @Step("Verify log event is queryable via GraphQL API for {toolType}")
-    private Map<String, Object> waitForLogInGraphQL(String toolType, String searchTerm, Duration timeout) {
-        Instant deadline = Instant.now().plus(timeout);
+    private Map<String, Object> waitForLogInGraphQL(String toolType, String searchTerm) {
+        Instant deadline = Instant.now().plus(LogEventPipelineE2E.GRAPHQL_TIMEOUT);
         Duration retryInterval = Duration.ofMillis(500);
         int attempts = 0;
         
@@ -222,7 +217,7 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
             attempts++;
             Optional<Map<String, Object>> result = tryGetLogFromGraphQL(toolType, searchTerm);
             if (result.isPresent()) {
-                log.info("[{}] Found log in GraphQL after {} attempts", testRunId, attempts);
+                log.info("[{}] Found log in GraphQL after {} attempts", testId, attempts);
                 Allure.addAttachment("GraphQL Attempts", String.valueOf(attempts));
                 return result.get();
             }
@@ -233,13 +228,13 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
                 Thread.currentThread().interrupt();
                 throw new AssertionError(String.format(
                     "[%s] Interrupted while waiting for log in GraphQL (toolType: %s, searchTerm: %s)",
-                    testRunId, toolType, searchTerm), e);
+                    testId, toolType, searchTerm), e);
             }
         }
         
         throw new AssertionError(String.format(
             "[%s] Log not found in GraphQL after %d ms (toolType: %s, searchTerm: %s, attempts: %d)",
-            testRunId, timeout.toMillis(), toolType, searchTerm, attempts));
+            testId, LogEventPipelineE2E.GRAPHQL_TIMEOUT.toMillis(), toolType, searchTerm, attempts));
     }
     
     private Optional<Map<String, Object>> tryGetLogFromGraphQL(String toolType, String searchTerm) {
@@ -276,7 +271,7 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
             Response response = ApiHelpers.graphqlQuery(query);
             
             if (response.getStatusCode() != 200) {
-                log.debug("[{}] GraphQL query returned status: {}", testRunId, response.getStatusCode());
+                log.debug("[{}] GraphQL query returned status: {}", testId, response.getStatusCode());
                 return Optional.empty();
             }
             
@@ -288,7 +283,7 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
                     String summary = (String) node.get("summary");
                     
                     if (summary != null && summary.contains(searchTerm)) {
-                        log.debug("[{}] Found log in GraphQL/Pinot: {}", testRunId, node.get("toolEventId"));
+                        log.debug("[{}] Found log in GraphQL/Pinot: {}", testId, node.get("toolEventId"));
                         verifyLogDetailsInCassandra(node);
                         return Optional.of(node);
                     }
@@ -296,11 +291,11 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
             }
             
             log.debug("[{}] Log not yet available in GraphQL for toolType: {} and searchTerm: {}", 
-                     testRunId, toolType, searchTerm);
+                     testId, toolType, searchTerm);
             return Optional.empty();
             
         } catch (Exception e) {
-            log.warn("[{}] Error querying GraphQL: {}", testRunId, e.getMessage());
+            log.warn("[{}] Error querying GraphQL: {}", testId, e.getMessage());
             return Optional.empty();
         }
     }
@@ -335,34 +330,30 @@ public class LogEventPipelineE2E extends BasePipelineE2ETest {
                 Map<String, Object> details = response.jsonPath().getMap("data.logDetails");
                 if (details != null) {
                     log.info("[{}] Successfully verified log details in Cassandra for: {}", 
-                             testRunId, logEntry.get("toolEventId"));
+                             testId, logEntry.get("toolEventId"));
                     Allure.addAttachment("Cassandra Details", details.toString());
                 }
             }
         } catch (Exception e) {
-            log.debug("[{}] Could not verify Cassandra details: {}", testRunId, e.getMessage());
+            log.debug("[{}] Could not verify Cassandra details: {}", testId, e.getMessage());
         }
-    }
-    
-    protected String getTestPrefix() {
-        return "log";
     }
     
     @Getter
     @AllArgsConstructor
     private static class ToolTestData {
-        private final String toolName;
-        private final String toolType;
+        String toolName;
+        String toolType;
         private final String sourceTopic;
         private final java.util.function.Function<String, String> entityIdGenerator;
         private final java.util.function.Function<String, String> messageGenerator;
         
-        public String getEntityId(String testRunId) {
-            return entityIdGenerator.apply(testRunId);
+        public String getEntityId(String testId) {
+            return entityIdGenerator.apply(testId);
         }
         
-        public String createMessage(String testRunId) {
-            return messageGenerator.apply(testRunId);
+        public String createMessage(String testId) {
+            return messageGenerator.apply(testId);
         }
         
         @Override

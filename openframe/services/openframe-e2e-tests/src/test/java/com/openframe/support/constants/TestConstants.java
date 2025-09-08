@@ -1,4 +1,6 @@
-package com.openframe.config;
+package com.openframe.support.constants;
+
+import java.time.Duration;
 
 public final class TestConstants {
     private TestConstants() {
@@ -6,8 +8,10 @@ public final class TestConstants {
     }
     
     // ========== API Configuration ==========
-    public static final String DEFAULT_BASE_URL = "http://localhost:8082";
+    public static final String DEFAULT_BASE_URL = "https://localhost";
     public static final String CONTENT_TYPE_JSON = "application/json";
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
+
     
     // ========== HTTP Status Codes ==========
     public static final int HTTP_OK = 200;

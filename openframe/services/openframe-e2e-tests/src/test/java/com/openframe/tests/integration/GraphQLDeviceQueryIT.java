@@ -1,7 +1,8 @@
 package com.openframe.tests.integration;
 
+import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.ApiHelpers;
-import com.openframe.tests.BasePipelineE2ETest;
+import com.openframe.tests.e2e.BasePipelineE2ETest;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,16 +31,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("graphql")
 @Tag("device")
 public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
-    
-    private String testRunId;
+
     private String machineId;
     private Map<String, Object> deviceData;
     
     @BeforeEach
-    @Override
     protected void setupPipelineTest(TestInfo testInfo) {
-        super.setupPipelineTest(testInfo);
-        testRunId = "test-" + UUID.randomUUID().toString().substring(0, 8);
+        super.setupTest(testInfo);
     }
     
     @AfterEach
@@ -48,7 +45,7 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
         if (machineId != null) {
             executePhase(TestPhase.CLEANUP, "Delete test device", () -> {
                 ApiHelpers.deleteDevice(machineId);
-                log.info("[{}] Cleaned up device: {}", testRunId, machineId);
+                log.info("[{}] Cleaned up device: {}", testId, machineId);
             });
         }
     }
@@ -60,7 +57,7 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
     void deviceRegistrationStoresAndIndexesCorrectly() {
         long startTime = System.currentTimeMillis();
         
-        log.info("[{}] Starting device registration test", testRunId);
+        log.info("[{}] Starting device registration test", testId);
         
         try {
             executePhase(TestPhase.ARRANGE, "Prepare device registration data", () -> {
@@ -133,7 +130,7 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
             logPipelineMetrics("Device Registration", startTime);
             
         } catch (Exception e) {
-            log.error("[{}] Device registration test failed: {}", testRunId, e.getMessage());
+            log.error("[{}] Device registration test failed: {}", testId, e.getMessage());
             Allure.addAttachment("Error Details", e.toString());
             throw e;
         }
@@ -149,7 +146,7 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
         
         machineId = executePhase(TestPhase.ARRANGE, "Register device for stability test", () -> {
             String managementKey = ApiHelpers.getActiveManagementKey();
-            Map<String, Object> data = ApiHelpers.createAgentData("stability-test-" + testRunId);
+            Map<String, Object> data = ApiHelpers.createAgentData("stability-test-" + testId);
             return ApiHelpers.registerAgent(managementKey, data);
         });
         
@@ -289,7 +286,7 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
                 return details;
             });
         } else {
-            log.warn("[{}] No devices available in system for testing", testRunId);
+            log.warn("[{}] No devices available in system for testing", testId);
             Allure.addAttachment("Warning", "No devices available - pipeline may be empty");
         }
         
@@ -303,7 +300,7 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
     void graphQLQueryValidatesRequiredFields() {
         long startTime = System.currentTimeMillis();
         
-        log.info("[{}] Starting GraphQL validation test", testRunId);
+        log.info("[{}] Starting GraphQL validation test", testId);
         
         try {
             executePhase(TestPhase.ACT, "Send invalid GraphQL query", () -> {
@@ -324,13 +321,13 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
                         .isNotEmpty();
                 }
                 
-                log.info("[{}] GraphQL correctly validated schema", testRunId);
+                log.info("[{}] GraphQL correctly validated schema", testId);
             });
             
             logPipelineMetrics("GraphQL Validation", startTime);
             
         } catch (Exception e) {
-            log.error("[{}] GraphQL validation test failed: {}", testRunId, e.getMessage());
+            log.error("[{}] GraphQL validation test failed: {}", testId, e.getMessage());
             Allure.addAttachment("Error Details", e.toString());
             throw e;
         }
@@ -590,8 +587,8 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
         });
         
         assertImmediate("Search returns relevant results", () -> {
-            log.info("[{}] Search for '{}' returned {} results", 
-                testRunId, searchTerm, searchResults.size());
+            log.info("[{}] Search for '{}' returned {} results",
+                    testId, searchTerm, searchResults.size());
             
             if (!searchResults.isEmpty()) {
                 for (Map<String, Object> result : searchResults) {

@@ -1,4 +1,4 @@
-package com.openframe.core;
+package com.openframe.config;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,4 +41,5 @@ public class ThreadSafeTestContext {
     public static final String CURRENT_USER = "current_user";
     public static final String PLAYER_ID = "player_id";
     public static final String RESPONSE_STATUS = "response_status";
+    public static final String MONGO_CONNECTION = "mongo_connection";
 } 

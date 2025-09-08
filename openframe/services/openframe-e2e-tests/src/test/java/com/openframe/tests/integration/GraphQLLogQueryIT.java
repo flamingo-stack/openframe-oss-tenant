@@ -1,7 +1,8 @@
 package com.openframe.tests.integration;
 
+import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.ApiHelpers;
-import com.openframe.tests.BasePipelineE2ETest;
+import com.openframe.tests.e2e.BasePipelineE2ETest;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ public class GraphQLLogQueryIT extends BasePipelineE2ETest {
     
     @BeforeEach
     void setup(TestInfo testInfo) {
-        super.setupPipelineTest(testInfo);
+        super.setupTest(testInfo);
     }
     
     @Test

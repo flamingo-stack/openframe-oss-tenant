@@ -1,4 +1,4 @@
-package com.openframe.support.data;
+package com.openframe.data;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;

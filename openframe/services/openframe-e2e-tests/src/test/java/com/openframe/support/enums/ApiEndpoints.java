@@ -1,11 +1,8 @@
-package com.openframe.config;
+package com.openframe.support.enums;
 
 public enum ApiEndpoints {
-    GET_ALL_PLAYERS("/player/get/all"),
-    CREATE_PLAYER("/player/create/{editor}"),
-    GET_PLAYER_BY_ID("/player/{playerId}"),
-    UPDATE_PLAYER("/player/update/{editor}/{id}"),
-    DELETE_PLAYER("/player/delete/{editor}");
+    REGISTRATION_ENDPOINT("/sas/oauth/register"),
+    TENANT_DISCOVER_ENDPOINT("/sas/tenant/discover");
 
     private final String path;
     
@@ -24,7 +21,7 @@ public enum ApiEndpoints {
     public String getPathWithParams(Object... pathParams) {
         String resultPath = path;
         for (Object param : pathParams) {
-            resultPath = resultPath.replaceFirst("\\{[^}]+\\}", String.valueOf(param));
+            resultPath = resultPath.replaceFirst("\\{[^}]+}", String.valueOf(param));
         }
         return resultPath;
     }

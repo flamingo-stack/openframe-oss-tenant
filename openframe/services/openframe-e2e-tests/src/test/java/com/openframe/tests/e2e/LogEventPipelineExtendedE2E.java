@@ -1,6 +1,6 @@
 package com.openframe.tests.e2e;
 
-import com.openframe.tests.BasePipelineE2ETest;
+import com.openframe.support.enums.TestPhase;
 import com.openframe.support.infrastructure.DebeziumMessageFactory;
 import com.openframe.support.infrastructure.KafkaTestInfrastructure;
 import io.qameta.allure.*;
@@ -33,8 +33,8 @@ public class LogEventPipelineExtendedE2E extends BasePipelineE2ETest {
     
     @BeforeEach
     @Override
-    protected void setupPipelineTest(TestInfo testInfo) {
-        super.setupPipelineTest(testInfo);
+    protected void setupTest(TestInfo testInfo) {
+        super.setupTest(testInfo);
 
         testRunId = "test-ext-" + UUID.randomUUID().toString().substring(0, 8);
         kafka = new KafkaTestInfrastructure(testRunId);
@@ -163,7 +163,7 @@ public class LogEventPipelineExtendedE2E extends BasePipelineE2ETest {
     @Severity(SeverityLevel.NORMAL)
     @Description("Verify pipeline handles malformed messages gracefully")
     @Tag("resilience")
-    void shouldHandleMalformedMessages() throws Exception {
+    void shouldHandleMalformedMessages() {
         log.info("[{}] Testing malformed message handling", testRunId);
         
         // ARRANGE
@@ -246,7 +246,7 @@ public class LogEventPipelineExtendedE2E extends BasePipelineE2ETest {
     @Severity(SeverityLevel.BLOCKER)
     @Description("Verify correct field transformations through pipeline")
     @Tag("data-integrity")
-    void shouldCorrectlyTransformFields() throws Exception {
+    void shouldCorrectlyTransformFields() {
         log.info("[{}] Testing field transformation integrity", testRunId);
 
         String agentId = "tactical-transform-" + testRunId;
@@ -412,7 +412,7 @@ public class LogEventPipelineExtendedE2E extends BasePipelineE2ETest {
                 Map<String, Boolean> results = new ConcurrentHashMap<>();
                 CountDownLatch foundAll = new CountDownLatch(3);
                 
-                CompletableFuture<Void> checker = CompletableFuture.runAsync(() -> {
+                CompletableFuture.runAsync(() -> {
                     long deadline = System.currentTimeMillis() + PIPELINE_TIMEOUT.toMillis();
                     
                     while (System.currentTimeMillis() < deadline && foundAll.getCount() > 0) {
@@ -473,7 +473,7 @@ public class LogEventPipelineExtendedE2E extends BasePipelineE2ETest {
     @Description("Verify pipeline handles large messages correctly")
     @Tag("boundary")
     @EnabledIfSystemProperty(named = "test.boundary", matches = "true")
-    void shouldHandleLargeMessages() throws Exception {
+    void shouldHandleLargeMessages() {
         log.info("[{}] Testing large message handling", testRunId);
 
         StringBuilder largeContent = new StringBuilder();
@@ -509,7 +509,7 @@ public class LogEventPipelineExtendedE2E extends BasePipelineE2ETest {
                 """,
                 Math.abs(UUID.randomUUID().hashCode()),
                 testRunId,
-                largeContent.toString(),
+                    largeContent,
                 "2024-01-15T10:30:00Z",
                 System.currentTimeMillis()
             );
@@ -544,9 +544,5 @@ public class LogEventPipelineExtendedE2E extends BasePipelineE2ETest {
         log.info("[{}] Successfully processed large message of {} bytes", testRunId, messageSize);
         
         Allure.addAttachment("Message Size", messageSize + " bytes");
-    }
-
-    protected String getTestPrefix() {
-        return "log-extended";
     }
 }

@@ -2,25 +2,30 @@ package com.openframe.config;
 
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.RestAssured;
+import io.restassured.config.SSLConfig;
+import io.restassured.config.HttpClientConfig;
+import lombok.extern.slf4j.Slf4j;
 
-import java.time.Duration;
+import static com.openframe.support.constants.TestConstants.*;
 
 /**
  * REST Assured configuration
  */
+@Slf4j
 public class RestAssuredConfig {
-    
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-    private static final String DEFAULT_BASE_URL = "http://localhost:8100";
-    
+
     public static void configure() {
-        RestAssured.baseURI = getBaseUrl();
+        String baseUrl = getBaseUrl();
+        log.info("Configuring REST Assured with base URL: {}", baseUrl);
+        
+        RestAssured.baseURI = baseUrl;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         
         RestAssured.filters(new AllureRestAssured());
-        
+
         RestAssured.config = RestAssured.config()
-                .httpClient(RestAssured.config().getHttpClientConfig()
+                .sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation())
+                .httpClient(HttpClientConfig.httpClientConfig()
                         .setParam("http.connection.timeout", (int) DEFAULT_TIMEOUT.toMillis())
                         .setParam("http.socket.timeout", (int) DEFAULT_TIMEOUT.toMillis()));
     }
@@ -28,4 +33,4 @@ public class RestAssuredConfig {
     private static String getBaseUrl() {
         return System.getProperty("api.base.url", DEFAULT_BASE_URL);
     }
-} 
+}

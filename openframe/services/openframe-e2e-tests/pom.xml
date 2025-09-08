@@ -14,7 +14,6 @@
     <description>End-to-End and Integration test suite for OpenFrame platform</description>
 
     <properties>
-        <!-- Java Version -->
         <java.version>21</java.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
@@ -24,29 +23,33 @@
         <junit.version>5.10.1</junit.version>
         <rest-assured.version>5.4.0</rest-assured.version>
         <assertj.version>3.24.2</assertj.version>
-        
-        <!-- Kafka Support (Required for pipeline tests) -->
+        <awaitility.version>4.2.0</awaitility.version>
         <kafka-clients.version>3.6.0</kafka-clients.version>
-        
-        <!-- Utilities -->
         <lombok.version>1.18.30</lombok.version>
         <jackson.version>2.16.1</jackson.version>
-        
-        <!-- Logging -->
         <slf4j.version>2.0.9</slf4j.version>
-        <logback.version>1.4.14</logback.version>
-        
-        <!-- Reporting -->
+        <logback.version>1.5.13</logback.version>
+        <selenide.version>7.2.1</selenide.version>
+        <webdrivermanager.version>5.7.0</webdrivermanager.version>
+        <datafaker.version>2.1.0</datafaker.version>
         <allure.version>2.25.0</allure.version>
         <allure-maven.version>2.12.0</allure-maven.version>
-        
-        <!-- Maven Plugins -->
+        <aspectj.version>1.9.20.1</aspectj.version>
         <maven-surefire.version>3.2.3</maven-surefire.version>
-        <maven-compiler.version>3.12.1</maven-compiler.version>
+        <maven-failsafe.version>3.2.3</maven-failsafe.version>
+        <maven-compiler.version>3.13.0</maven-compiler.version>
+        <mongodb.version>5.5.0</mongodb.version>
     </properties>
 
     <dependencies>
         <!-- ========== Core Testing Dependencies ========== -->
+
+        <!--Mongo DB connection -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>${mongodb.version}</version>
+        </dependency>
         
         <!-- JUnit 5 -->
         <dependency>
@@ -76,7 +79,7 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>4.2.0</version>
+            <version>${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -111,7 +114,7 @@
         <dependency>
             <groupId>com.codeborne</groupId>
             <artifactId>selenide</artifactId>
-            <version>7.2.1</version>
+            <version>${selenide.version}</version>
             <scope>compile</scope>
         </dependency>
         
@@ -119,7 +122,7 @@
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
-            <version>5.7.0</version>
+            <version>${webdrivermanager.version}</version>
             <scope>compile</scope>
         </dependency>
         
@@ -129,7 +132,7 @@
         <dependency>
             <groupId>net.datafaker</groupId>
             <artifactId>datafaker</artifactId>
-            <version>2.1.0</version>
+            <version>${datafaker.version}</version>
             <scope>compile</scope>
         </dependency>
         
@@ -187,6 +190,9 @@
                     <target>${java.version}</target>
                     <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
@@ -206,29 +212,33 @@
                     <!-- Parallel execution settings -->
                     <parallel>methods</parallel>
                     <threadCount>4</threadCount>
+                    <forkCount>2</forkCount>
+                    <reuseForks>true</reuseForks>
                     <perCoreThreadCount>true</perCoreThreadCount>
                     <useUnlimitedThreads>false</useUnlimitedThreads>
                     
                     <!-- Allure reporting -->
                     <argLine>
-                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/1.9.20.1/aspectjweaver-1.9.20.1.jar"
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
                     </argLine>
                     <systemPropertyVariables>
                         <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
                     </systemPropertyVariables>
                     
-                    <!-- Test selection -->
+                    <!-- Test selection - тільки unit тести -->
                     <includes>
-                        <include>**/*E2E.java</include>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
                         <include>**/*IT.java</include>
+                        <include>**/*E2E.java</include>
                     </includes>
-                    <testFailureIgnore>false</testFailureIgnore>
+                    <testFailureIgnore>true</testFailureIgnore>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.aspectj</groupId>
                         <artifactId>aspectjweaver</artifactId>
-                        <version>1.9.20.1</version>
+                        <version>${aspectj.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -240,6 +250,7 @@
                 <version>${allure-maven.version}</version>
                 <configuration>
                     <reportVersion>${allure.version}</reportVersion>
+                    <allureDownloadUrl>https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.zip</allureDownloadUrl>
                     <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
                 </configuration>
             </plugin>

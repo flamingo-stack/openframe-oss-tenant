@@ -1,4 +1,4 @@
-package pageObjects.dto;
+package com.openframe.data.dto;
 
 /**
  * Data Transfer Object for login data

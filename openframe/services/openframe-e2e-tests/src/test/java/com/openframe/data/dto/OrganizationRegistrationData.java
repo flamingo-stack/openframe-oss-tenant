@@ -1,9 +1,5 @@
-package pageObjects.dto;
+package com.openframe.data.dto;
 
-/**
- * Data Transfer Object for organization registration
- * Following SRP: Single responsibility for holding registration data
- */
 public class OrganizationRegistrationData {
     private String organizationName;
     private String firstName;

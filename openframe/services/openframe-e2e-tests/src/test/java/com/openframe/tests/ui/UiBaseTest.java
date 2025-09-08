@@ -14,8 +14,8 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class UiBaseTest {
     
-    protected static final String LOCAL_HTML_PATH = "C:/Users/User/Downloads/Archive/OpenFrame.html";
-    protected static final String LOCAL_HTML_URL = "file:///" + LOCAL_HTML_PATH.replace("\\", "/");
+
+    protected static final String LOCAL_HTML_URL = "https://localhost/ous";
     
     @BeforeAll
     static void setUp() {
@@ -40,7 +40,7 @@ public abstract class UiBaseTest {
             System.out.println("✅ UI test environment setup completed successfully!");
             
         } catch (Exception e) {
-            System.err.println("❌ Failed to setup UI test environment: " + e.getMessage());
+            System.err.println(" Failed to setup UI test environment: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("UI test environment setup failed", e);
         }

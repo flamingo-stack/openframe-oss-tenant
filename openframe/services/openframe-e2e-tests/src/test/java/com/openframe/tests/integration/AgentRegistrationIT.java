@@ -1,6 +1,7 @@
 package com.openframe.tests.integration;
 
-import com.openframe.tests.BasePipelineE2ETest;
+import com.openframe.support.enums.TestPhase;
+import com.openframe.tests.e2e.BasePipelineE2ETest;
 import com.openframe.support.helpers.ApiHelpers;
 import io.qameta.allure.*;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,15 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Execution(ExecutionMode.CONCURRENT)
 public class AgentRegistrationIT extends BasePipelineE2ETest {
-    
-    private String testRunId;
     private String machineId;
     
     @BeforeEach
-    @Override
-    protected void setupPipelineTest(TestInfo testInfo) {
-        super.setupPipelineTest(testInfo);
-        testRunId = "test-" + UUID.randomUUID().toString().substring(0, 8);
+    protected void setupTest(TestInfo testInfo) {
+        super.setupTest(testInfo);
     }
     
     @AfterEach
@@ -41,7 +37,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
         if (machineId != null) {
             executePhase(TestPhase.CLEANUP, "Delete test device", () -> {
                 ApiHelpers.deleteDevice(machineId);
-                log.info("[{}] Cleaned up agent: {}", testRunId, machineId);
+                log.info("[{}] Cleaned up agent: {}", testId, machineId);
             });
         }
     }
@@ -53,12 +49,12 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
     void agentRegistrationFailsWithInvalidKey() {
         long startTime = System.currentTimeMillis();
         
-        log.info("[{}] Starting invalid key rejection test", testRunId);
+        log.info("[{}] Starting invalid key rejection test", testId);
         
         try {
             executePhase(TestPhase.ACT, "Attempt registration with invalid key", () -> {
-                Map<String, Object> agentData = ApiHelpers.createAgentData("test-host-" + testRunId);
-                String invalidKey = "invalid-key-" + testRunId;
+                Map<String, Object> agentData = ApiHelpers.createAgentData("test-host-" + testId);
+                String invalidKey = "invalid-key-" + testId;
                 
                 try {
                     ApiHelpers.registerAgent(invalidKey, agentData);
@@ -73,7 +69,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
             logPipelineMetrics("Invalid Key Rejection", startTime);
             
         } catch (Exception e) {
-            log.error("[{}] Invalid key rejection test failed: {}", testRunId, e.getMessage());
+            log.error("[{}] Invalid key rejection test failed: {}", testId, e.getMessage());
             Allure.addAttachment("Error Details", e.toString());
             throw e;
         }
@@ -86,12 +82,12 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
     void registeredAgentCanObtainOAuthToken() {
         long startTime = System.currentTimeMillis();
         
-        log.info("[{}] Starting OAuth token test", testRunId);
+        log.info("[{}] Starting OAuth token test", testId);
         
         try {
             Map<String, String> agentCredentials = executePhase(TestPhase.ARRANGE, "Register agent and get credentials", () -> {
                 String managementKey = ApiHelpers.getActiveManagementKey();
-                Map<String, Object> agentData = ApiHelpers.createAgentData("test-host-" + testRunId);
+                Map<String, Object> agentData = ApiHelpers.createAgentData("test-host-" + testId);
                 Map<String, String> credentials = ApiHelpers.registerAgentWithCredentials(managementKey, agentData);
                 machineId = credentials.get("machineId");
                 return credentials;
@@ -101,7 +97,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
                 String clientId = agentCredentials.get("clientId");
                 String clientSecret = agentCredentials.get("clientSecret");
                 
-                log.info("[{}] Using clientId: {} to get OAuth token", testRunId, clientId);
+                log.info("[{}] Using clientId: {} to get OAuth token", testId, clientId);
                 
                 String accessToken = ApiHelpers.getAgentOAuthToken(clientId, clientSecret);
                 
@@ -114,13 +110,13 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
                     .as("Token should be in JWT format")
                     .hasSize(3);
                 
-                log.info("[{}] OAuth token obtained for agent: {}", testRunId, machineId);
+                log.info("[{}] OAuth token obtained for agent: {}", testId, machineId);
             });
             
             logPipelineMetrics("OAuth Token Acquisition", startTime);
             
         } catch (Exception e) {
-            log.error("[{}] OAuth token test failed: {}", testRunId, e.getMessage());
+            log.error("[{}] OAuth token test failed: {}", testId, e.getMessage());
             Allure.addAttachment("Error Details", e.toString());
             throw e;
         }
@@ -133,7 +129,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
     void multipleAgentsCanRegisterConcurrently() {
         long startTime = System.currentTimeMillis();
         
-        log.info("[{}] Starting concurrent registrations test", testRunId);
+        log.info("[{}] Starting concurrent registrations test", testId);
         
         try {
             executePhase(TestPhase.ACT, "Register multiple agents concurrently", () -> {
@@ -141,7 +137,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
                 
                 List<CompletableFuture<String>> futures = IntStream.range(0, 5)
                     .mapToObj(i -> CompletableFuture.supplyAsync(() -> {
-                        String host = "concurrent-host-" + i + "-" + testRunId;
+                        String host = "concurrent-host-" + i + "-" + testId;
                         Map<String, Object> data = ApiHelpers.createAgentData(host);
                         return ApiHelpers.registerAgent(managementKey, data);
                     }))
@@ -165,7 +161,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
             logPipelineMetrics("Concurrent Registrations", startTime);
             
         } catch (Exception e) {
-            log.error("[{}] Concurrent registrations test failed: {}", testRunId, e.getMessage());
+            log.error("[{}] Concurrent registrations test failed: {}", testId, e.getMessage());
             Allure.addAttachment("Error Details", e.toString());
             throw e;
         }

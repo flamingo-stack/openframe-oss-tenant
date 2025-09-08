@@ -1,8 +1,8 @@
-package pageObjects.utils;
+package com.openframe.data;
 
 import net.datafaker.Faker;
-import pageObjects.dto.OrganizationRegistrationData;
-import pageObjects.dto.LoginData;
+import com.openframe.data.dto.OrganizationRegistrationData;
+import com.openframe.data.dto.LoginData;
 
 import java.util.Locale;
 
@@ -10,7 +10,7 @@ import java.util.Locale;
  * Utility class for generating test data using Faker
  * Following SRP: Single responsibility for test data generation
  */
-public class TestDataGenerator {
+public class UiTestDataGenerator {
     
     private static final Faker faker = new Faker(new Locale("en"));
     

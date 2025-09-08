@@ -1,8 +1,5 @@
 package pageObjects;
 
-import pageObjects.dto.OrganizationRegistrationData;
-import pageObjects.dto.LoginData;
-
 public class OpenFrameMainPage extends BasePageObject{
     
     // XPath locators for organization creation form
@@ -177,29 +174,21 @@ public class OpenFrameMainPage extends BasePageObject{
     
     // ========== FormInteractions Interface Implementation ==========
 
-    public void fillForm(Object data) {
-        if (data instanceof OrganizationRegistrationData) {
-            OrganizationRegistrationData regData = (OrganizationRegistrationData) data;
-            completeOrganizationRegistration(
-                regData.getOrganizationName(),
-                regData.getFirstName(),
-                regData.getLastName(),
-                regData.getEmail(),
-                regData.getPassword()
-            );
-        } else if (data instanceof LoginData) {
-            LoginData loginData = (LoginData) data;
-            completeLogin(loginData.getEmail());
-        }
-    }
-
-    public void submitForm() {
-        if (isCreateOrganizationButtonEnabled()) {
-            clickCreateOrganization();
-        } else if (isContinueButtonEnabled()) {
-            clickContinue();
-        }
-    }
+//    public void fillForm(Object data) {
+//        if (data instanceof OrganizationRegistrationData) {
+//            OrganizationRegistrationData regData = (OrganizationRegistrationData) data;
+//            completeOrganizationRegistration(
+//                regData.getOrganizationName(),
+//                regData.getFirstName(),
+//                regData.getLastName(),
+//                regData.getEmail(),
+//                regData.getPassword()
+//            );
+//        } else if (data instanceof LoginData) {
+//            LoginData loginData = (LoginData) data;
+//            completeLogin(loginData.getEmail());
+//        }
+//    }
 
     public boolean isFormComplete() {
         return isOrganizationFormComplete() && isLoginFormComplete();
