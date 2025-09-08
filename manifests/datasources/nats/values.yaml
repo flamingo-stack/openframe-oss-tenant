@@ -5,8 +5,8 @@ servicemonitor:
 
 credentials:
   admin_user: "admin"            
-  admin_pass: "secretpassword"  
-  device_user: "deviceuser"     
-  device_pass: "devicepassword"
+  admin_pass: "admin_password"
+  device_user: "machine"
   service_user: "service"
+  service_pass: "service_pass"
 
