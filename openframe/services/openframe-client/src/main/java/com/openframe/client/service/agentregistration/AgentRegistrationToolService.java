@@ -1,6 +1,6 @@
 package com.openframe.client.service.agentregistration;
 
-import com.openframe.core.model.IntegratedToolAgent;
+import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import com.openframe.data.service.IntegratedToolAgentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

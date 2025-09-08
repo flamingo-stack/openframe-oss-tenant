@@ -1,8 +1,8 @@
 package com.openframe.client.service.agentregistration;
 
-import com.openframe.core.model.IntegratedToolAgent;
-import com.openframe.core.model.ToolAgentAsset;
-import com.openframe.core.model.ToolAgentAssetSource;
+import com.openframe.data.document.toolagent.IntegratedToolAgent;
+import com.openframe.data.document.toolagent.ToolAgentAsset;
+import com.openframe.data.document.toolagent.ToolAgentAssetSource;
 import com.openframe.data.model.nats.ToolInstallationMessage;
 import com.openframe.data.repository.nats.NatsMessagePublisher;
 import lombok.RequiredArgsConstructor;
