@@ -202,12 +202,7 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: |
-            latest,
-            test-*,
-            ${{ needs.changes.outputs.commit_sha }},
-            ${{ needs.changes.outputs.timestamp_tag }}
-          keep-last: 10
+          exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
 
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
