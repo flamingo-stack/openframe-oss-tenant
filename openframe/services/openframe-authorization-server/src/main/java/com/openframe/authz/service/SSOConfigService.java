@@ -25,8 +25,7 @@ public class SSOConfigService {
      * Get ACTIVE SSO configuration by tenant and provider.
      */
     public Optional<SSOPerTenantConfig> getSSOConfig(String tenantId, String provider) {
-        return ssoPerTenantConfigRepository.findFirstByTenantIdAndProviderAndEnabledTrue(tenantId, provider)
-                .filter(SSOPerTenantConfig::isActive);
+        return ssoPerTenantConfigRepository.findFirstByTenantIdAndProviderAndEnabledTrue(tenantId, provider);
     }
 
     /**
@@ -34,20 +33,14 @@ public class SSOConfigService {
      * Active = enabled + non-empty clientId/clientSecret.
      */
     public List<SSOPerTenantConfig> getActiveForTenant(String tenantId) {
-        return ssoPerTenantConfigRepository.findByTenantIdAndEnabledTrue(tenantId)
-                .stream()
-                .filter(SSOPerTenantConfig::isActive)
-                .toList();
+        return ssoPerTenantConfigRepository.findByTenantIdAndEnabledTrue(tenantId);
     }
 
     /**
      * Get ACTIVE SSO configurations by provider (for local-tenant/global usage).
      */
-    public List<SSOConfig> getActiveByProvider(String provider) {
-        return ssoConfigRepository.findByProvider(provider)
-                .stream()
-                .filter(SSOConfig::isActive)
-                .toList();
+    public Optional<SSOConfig> getActiveByProvider(String provider) {
+        return ssoConfigRepository.findByProvider(provider);
     }
 
     /**

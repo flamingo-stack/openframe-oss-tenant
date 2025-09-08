@@ -28,7 +28,7 @@ public class DynamicClientRegistrationService {
 
     public ClientRegistration loadGoogleClient(String tenantId) {
         SSOConfig cfg = localTenant
-                ? ssoConfigService.getActiveByProvider(GOOGLE).stream().findFirst().orElseThrow(() -> new IllegalArgumentException("No active Google config for tenant " + tenantId))
+                ? ssoConfigService.getActiveByProvider(GOOGLE).orElseThrow(() -> new IllegalArgumentException("No active Google config for tenant " + tenantId))
                 : ssoConfigService.getSSOConfig(tenantId, GOOGLE).orElseThrow(() -> new IllegalArgumentException("No active Google config for tenant " + tenantId));
 
 
