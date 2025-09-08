@@ -22,6 +22,7 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
+  tenantId: string | null  // Store tenant ID in memory
   
   // Actions
   login: (user: User) => void
@@ -30,6 +31,7 @@ export interface AuthState {
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
+  setTenantId: (tenantId: string | null) => void
 }
 
 const initialState = {
@@ -37,6 +39,7 @@ const initialState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  tenantId: null,
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -59,6 +62,7 @@ export const useAuthStore = create<AuthState>()(
             state.user = null
             state.isAuthenticated = false
             state.error = null
+            state.tenantId = null  // Clear tenant ID on logout
           }),
         
         updateUser: (userUpdate) =>
@@ -82,6 +86,11 @@ export const useAuthStore = create<AuthState>()(
         clearError: () =>
           set((state) => {
             state.error = null
+          }),
+        
+        setTenantId: (tenantId) =>
+          set((state) => {
+            state.tenantId = tenantId
           }),
       })),
       {

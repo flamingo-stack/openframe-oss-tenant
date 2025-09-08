@@ -22,6 +22,8 @@ interface ApiResponse<T = any> {
 class ApiClient {
   private baseUrl: string
   private isDevTicketEnabled: boolean
+  private isRefreshing: boolean = false
+  private refreshPromise: Promise<boolean> | null = null
 
   constructor() {
     // Get base URL from environment or default
@@ -70,11 +72,125 @@ class ApiClient {
   }
 
   /**
+   * Refresh the access token using the refresh token
+   */
+  private async refreshAccessToken(): Promise<boolean> {
+    // If already refreshing, wait for the existing promise
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise
+    }
+
+    this.isRefreshing = true
+    
+    // Create the refresh promise
+    this.refreshPromise = (async () => {
+      try {
+        // Get tenant ID from auth store
+        const { useAuthStore } = await import('../app/auth/stores/auth-store')
+        const tenantId = useAuthStore.getState().tenantId
+        
+        if (!tenantId) {
+          console.error('❌ [API Client] No tenant ID found for token refresh')
+          return false
+        }
+
+        const baseUrl = this.baseUrl.replace('/api', '')
+        const refreshUrl = `${baseUrl}/oauth/refresh?tenantId=${encodeURIComponent(tenantId)}`
+        
+        console.log('🔄 [API Client] Attempting token refresh...')
+        
+        const response = await fetch(refreshUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          credentials: 'include', // Include cookies for refresh
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          
+          // Store new tokens if DevTicket is enabled
+          if (this.isDevTicketEnabled && data.access_token) {
+            localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token)
+            if (data.refresh_token) {
+              localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
+            }
+            console.log('✅ [API Client] Token refreshed successfully')
+          }
+          
+          return true
+        } else {
+          console.error('❌ [API Client] Token refresh failed with status:', response.status)
+          return false
+        }
+      } catch (error) {
+        console.error('❌ [API Client] Token refresh error:', error)
+        return false
+      } finally {
+        this.isRefreshing = false
+        this.refreshPromise = null
+      }
+    })()
+
+    return this.refreshPromise
+  }
+
+  /**
+   * Force logout the user
+   */
+  private forceLogout(): void {
+    // Check if already on auth page to prevent redirect loops
+    const currentPath = window.location.pathname
+    const isAuthPage = currentPath.startsWith('/auth')
+    
+    if (isAuthPage) {
+      console.log('🔐 [API Client] Already on auth page, skipping force logout redirect')
+      // Still clear tokens but don't redirect
+      if (this.isDevTicketEnabled) {
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        localStorage.removeItem(REFRESH_TOKEN_KEY)
+      }
+      
+      // Clear auth store
+      if (typeof window !== 'undefined') {
+        import('../app/auth/stores/auth-store').then(({ useAuthStore }) => {
+          const { logout } = useAuthStore.getState()
+          logout()
+        })
+      }
+      return
+    }
+    
+    console.log('🔐 [API Client] Forcing logout due to authentication failure')
+    
+    // Clear tokens
+    if (this.isDevTicketEnabled) {
+      localStorage.removeItem(ACCESS_TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+    }
+    
+    // Clear auth store
+    if (typeof window !== 'undefined') {
+      // Import auth store dynamically to avoid circular dependencies
+      import('../app/auth/stores/auth-store').then(({ useAuthStore }) => {
+        const { logout } = useAuthStore.getState()
+        logout()
+        
+        // Redirect to auth page
+        window.location.href = '/auth'
+      })
+    }
+  }
+
+  /**
    * Make an authenticated API request
    */
   async request<T = any>(
     path: string,
-    options: ApiRequestOptions = {}
+    options: ApiRequestOptions = {},
+    isRetry: boolean = false
   ): Promise<ApiResponse<T>> {
     const { skipAuth = false, headers = {}, ...fetchOptions } = options
     
@@ -94,13 +210,52 @@ class ApiClient {
     const url = this.buildUrl(path)
     
     try {
-      console.log(`🔄 [API Client] ${options.method || 'GET'} ${url}`)
+      console.log(`🔄 [API Client] ${options.method || 'GET'} ${url}${isRetry ? ' (retry)' : ''}`)
       
       const response = await fetch(url, {
         ...fetchOptions,
         headers: requestHeaders,
         credentials: 'include', // Always include cookies for cookie-based auth
       })
+      
+      // Handle 401 Unauthorized - attempt token refresh ONLY ONCE
+      if (response.status === 401 && !skipAuth && !isRetry) {
+        // Check if on auth page - skip refresh/logout to prevent loops
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+        const isAuthPage = currentPath.startsWith('/auth')
+        
+        if (isAuthPage) {
+          console.log('⚠️ [API Client] 401 on auth page - skipping refresh/logout')
+          // Just return the 401 without forcing logout
+          return {
+            data: undefined,
+            error: 'Unauthorized',
+            status: 401,
+            ok: false,
+          }
+        }
+        
+        console.log('⚠️ [API Client] 401 Unauthorized - attempting token refresh...')
+        
+        // Try to refresh the token
+        const refreshSuccess = await this.refreshAccessToken()
+        
+        if (refreshSuccess) {
+          console.log('🔄 [API Client] Retrying request after token refresh...')
+          // Retry the original request with new token
+          return this.request<T>(path, options, true)
+        } else {
+          console.error('❌ [API Client] Token refresh failed - forcing logout')
+          // Force logout on refresh failure
+          this.forceLogout()
+          
+          return {
+            error: 'Authentication failed - please login again',
+            status: 401,
+            ok: false,
+          }
+        }
+      }
       
       // Parse response
       let data: T | undefined

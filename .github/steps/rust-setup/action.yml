@@ -1,0 +1,40 @@
+name: Prepare Rust tools
+description: Set up Rust toolchain and Cargo cache
+inputs:
+  toolchain:
+    description: Rust toolchain (e.g. stable, 1.79.0, nightly)
+    required: false
+    default: stable
+  targets:
+    description: Comma-separated targets to add (e.g. x86_64-unknown-linux-gnu,x86_64-pc-windows-msvc)
+    required: false
+    default: ""
+  components:
+    description: Comma-separated components (e.g. clippy, rustfmt)
+    required: false
+    default: ""
+  shared-key:
+    description: Shared key to cache
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    # Toolchain install + targets/components
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        targets: ${{ inputs.targets }}
+        components: ${{ inputs.components }}
+
+    # Enhanced Rust caching
+    - name: Cache Rust dependencies
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: client
+        prefix-key: "v1-rust"
+        shared-key: ${{ inputs.shared-key }}
+        cache-targets: true
+        cache-on-failure: true

@@ -1,7 +1,7 @@
 use std::fs::{self};
 use std::io;
 #[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
 use std::process::Command;
 use tracing::{error, info, warn};

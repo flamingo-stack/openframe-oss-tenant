@@ -16,26 +16,36 @@ on:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
+      - 'client/**'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g., v1.2.3)"
+        required: true
+        type: string
 
 env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
 
-jobs:
+# =============================================================================
+# JOBS
+# =============================================================================
 
+jobs:
+  # Keep original separate jobs structure for reusable workflows
   changes:
-    name: Changes
+    name: Detect Changes
     uses: ./.github/workflows/changes.yml
     if: github.event_name == 'push'
 
-
   matrix:
-    name: Matrix
+    name: Generate Matrix
     uses: ./.github/workflows/matrix.yml
     if: github.event_name == 'push'
 
-
+  # Optimized Java build with better caching and parallel execution
   build_java:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
@@ -50,25 +60,33 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
 
-      - name: Set up Maven Central Repository with JDK 21
+      - name: Set up JDK 21 with Maven Central
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: |
-            ${{ matrix.path }}/pom.xml
-            **/pom.xml
+          cache-dependency-path: '**/pom.xml'
           check-latest: true
 
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
+        run: |
+          mvn clean install \
+            -U
+            -pl ${{ matrix.path }} \
+            -am \
+            -Dcompress \
+            --threads 2C \
+            --batch-mode \
+            --no-transfer-progress \
+            -Dmaven.javadoc.skip=true \
+            -s .mvn/settings.xml
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: mvn clean install -U -pl ${{ matrix.path }} -am -Dcompress -s .mvn/settings.xml
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -82,9 +100,8 @@ jobs:
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
 
-
-  build:
-    name: "Build image: ${{ matrix.name }}"
+  build_images:
+    name: "Build: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
@@ -97,10 +114,13 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
 
       - name: Download Java artifacts
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          contains(fromJSON(toJSON(matrix.type)), 'java') && 
+          matrix.artifact_name != '' && 
+          contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -113,13 +133,13 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+          
       - name: Set up QEMU
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-
+      
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
@@ -132,13 +152,15 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
+            type=sha,prefix={{branch}}-
             type=raw,value=${{ needs.changes.outputs.commit_sha }}
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Format build arguments
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -163,13 +185,80 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
+          cache-from: |
+            type=gha,scope=${{ matrix.name }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
+          cache-to: |
+            type=gha,scope=${{ matrix.name }},mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
-      - name: Delete old versions
-        if: contains(needs.changes.outputs[matrix.name], 'true') && steps.docker_build.outcome == 'success'
+      - name: Cleanup old container versions
+        if: |
+          contains(needs.changes.outputs[matrix.name], 'true') && 
+          steps.docker_build.outcome == 'success'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+          exclude-tags: |
+            latest
+            test-*
+            ${{ needs.changes.outputs.commit_sha }}
+            ${{ needs.changes.outputs.timestamp_tag }}
+          keep-last: 10
+
+  build_client:
+    name: "Build Rust Client (${{ matrix.os }})"
+    needs: [changes]
+    runs-on: ${{ matrix.os }}
+    if: |
+      github.event_name == 'push' && 
+      contains(needs.changes.outputs.client, 'true')
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: openframe-oss-client-macos-x64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: openframe-oss-client-linux-x64
+#          - os: windows-latest
+#            target: x86_64-pc-windows-msvc
+#            artifact_name: openframe-oss-client-windows-x64
+         
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Prepare Rust tools
+        uses: ./.github/steps/rust-setup
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+          components: clippy, rustfmt
+          shared-key: ${{ matrix.target }}
+
+      - name: Build client
+        working-directory: client
+        run: |
+            make build
+
+      - name: Upload client artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+            client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
