@@ -63,6 +63,7 @@ impl ToolRunManager {
                     Ok(args) => args,
                     Err(e) => {
                         error!("Failed to resolve tool {} run command args: {:#}", tool.tool_agent_id, e);
+                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
                     }
                 };

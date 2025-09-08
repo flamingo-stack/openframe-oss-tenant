@@ -125,8 +125,8 @@ impl ToolInstallationService {
                             .with_context(|| format!("Failed to download artifactory asset: {}", asset.id))?
                     },
                     AssetSource::ToolApi => {
-                        // TODO: fail if path is not provided
-                        let path = asset.path.as_deref().unwrap_or("");
+                        let path = asset.path.as_deref()
+                            .with_context(|| format!("No uri path for tool {} asset {}", tool_agent_id, asset.id))?;
                         info!("Downloading tool API asset: {} with path: {}", asset.id, path);
                         let tool_id = tool_installation_message.tool_id.clone();
                         self.tool_api_client

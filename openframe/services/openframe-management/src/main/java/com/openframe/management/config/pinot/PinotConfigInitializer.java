@@ -27,8 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Slf4j
-//@Configuration
-// TODO: make work again
+@Configuration
 public class PinotConfigInitializer {
 
     private final ResourceLoader resourceLoader;
