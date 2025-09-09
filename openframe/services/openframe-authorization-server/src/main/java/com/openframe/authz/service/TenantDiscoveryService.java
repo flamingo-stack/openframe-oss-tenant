@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.openframe.authz.config.GoogleSSOProperties.GOOGLE;
+import static com.openframe.core.util.SlugUtil.toSlug;
 
 /**
  * Service for tenant discovery based on user email
@@ -82,16 +83,6 @@ public class TenantDiscoveryService {
                 .distinct()
                 .limit(3)
                 .toList();
-    }
-
-    private String toSlug(String input) {
-        String s = input == null ? "" : input.toLowerCase();
-        s = s.replaceAll("[^a-z0-9]+", "-");
-        s = s.replaceAll("^-+|-+$", "");
-        if (s.length() < 3) {
-            s = (s + "-org").replaceAll("-+", "-");
-        }
-        return s;
     }
 
     /**
