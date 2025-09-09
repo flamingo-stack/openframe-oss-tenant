@@ -383,26 +383,35 @@ func (d *DockerInstaller) installWindows() error {
 }
 
 func (d *DockerInstaller) installChocolatey() error {
-	// PowerShell command to install Chocolatey
-	installScript := `[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))`
+	installScript := `
+function Install-Chocolatey {
+    try {
+        Write-Host "Installing Chocolatey..." -ForegroundColor Yellow
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "Failed to install Chocolatey" -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        return $false
+    }
+}
 
-	// Run PowerShell as Administrator to install Chocolatey
+$result = Install-Chocolatey
+if (-not $result) {
+    exit 1
+}
+`
+
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		// Try alternative installation method
-		fmt.Println("Trying alternative Chocolatey installation method...")
-
-		// Download and run install script
-		alternativeCmd := exec.Command("cmd", "/c", "@\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command \"[System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))\" && SET \"PATH=%PATH%;%ALLUSERSPROFILE%\\chocolatey\\bin\"")
-		alternativeCmd.Stdout = os.Stdout
-		alternativeCmd.Stderr = os.Stderr
-
-		if err := alternativeCmd.Run(); err != nil {
-			return fmt.Errorf("failed to install Chocolatey: %w", err)
-		}
+		return fmt.Errorf("failed to install Chocolatey: %w", err)
 	}
 
 	// Update PATH for current session
@@ -422,7 +431,6 @@ func (d *DockerInstaller) installChocolatey() error {
 		}
 	}
 
-	fmt.Println("Chocolatey installed successfully.")
 	return nil
 }
 
