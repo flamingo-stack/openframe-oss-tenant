@@ -4,6 +4,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Data
 @Component
 @ConfigurationProperties(prefix = "openframe.sso.google")
@@ -20,10 +22,7 @@ public class GoogleSSOProperties {
     private String issuerUri;
     private String jwkSetUri;
 
-    /**
-     * Comma-separated scopes list, e.g. "openid,profile,email".
-     */
-    private String scopes;
+    private List<String> scopes;
 }
 
 

@@ -9,8 +9,6 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-
 import static com.openframe.authz.config.GoogleSSOProperties.GOOGLE;
 import static org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE;
 import static org.springframework.security.oauth2.core.ClientAuthenticationMethod.CLIENT_SECRET_BASIC;
@@ -38,10 +36,7 @@ public class DynamicClientRegistrationService {
                 .clientAuthenticationMethod(CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AUTHORIZATION_CODE)
                 .redirectUri(googleProps.getLoginRedirectUri())
-                .scope(Arrays.stream(googleProps.getScopes().split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isBlank())
-                        .toArray(String[]::new))
+                .scope(googleProps.getScopes())
                 .authorizationUri(googleProps.getAuthorizationUrl())
                 .tokenUri(googleProps.getTokenUrl())
                 .userInfoUri(googleProps.getUserInfoUrl())
