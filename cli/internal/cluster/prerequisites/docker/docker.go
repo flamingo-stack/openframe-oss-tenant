@@ -67,7 +67,7 @@ func (d *DockerInstaller) Install() error {
 	case "linux":
 		return d.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic Docker installation on Windows not supported. Please install Docker Desktop from https://docker.com/products/docker-desktop")
+		return d.installWindows()
 	default:
 		return fmt.Errorf("automatic Docker installation not supported on %s", runtime.GOOS)
 	}
@@ -316,6 +316,87 @@ func startDockerLinux() error {
 	}
 	
 	return fmt.Errorf("unable to start Docker daemon: no supported init system found")
+}
+
+func (d *DockerInstaller) installWindows() error {
+	// Check if Docker is already installed (in PATH or as Docker Desktop)
+	if commandExists("docker") {
+		// Docker is already installed and in PATH
+		return nil
+	}
+	
+	// Check if Docker Desktop exists but not in PATH
+	dockerPaths := []string{
+		"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
+		"C:\\Program Files (x86)\\Docker\\Docker\\Docker Desktop.exe",
+	}
+	
+	for _, path := range dockerPaths {
+		if _, err := os.Stat(path); err == nil {
+			// Docker Desktop is installed but not in PATH
+			// Try to start it to get PATH updated
+			fmt.Println("Docker Desktop found. Starting it to update PATH...")
+			cmd := exec.Command("cmd", "/c", "start", "", path)
+			cmd.Run() // Ignore error, just try to start
+			
+			fmt.Println("Docker Desktop is installed but 'docker' command is not in PATH.")
+			fmt.Println("Please restart your terminal after Docker Desktop starts and run this command again.")
+			return nil // Consider it installed even if not in PATH
+		}
+	}
+	
+	// Docker is not installed, try to install it
+	if commandExists("winget") {
+		fmt.Println("Installing Docker Desktop via winget...")
+		cmd := exec.Command("winget", "install", "--id", "Docker.DockerDesktop", "--accept-package-agreements", "--accept-source-agreements")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		
+		if err := cmd.Run(); err != nil {
+			// If winget fails, try chocolatey
+			if commandExists("choco") {
+				return d.installWindowsChocolatey()
+			}
+			return fmt.Errorf("failed to install Docker Desktop: %w", err)
+		}
+		
+		fmt.Println("Docker Desktop installed successfully.")
+		fmt.Println("Starting Docker Desktop...")
+		if err := startDockerWindows(); err != nil {
+			fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
+			fmt.Println("Please start Docker Desktop manually from the Start Menu")
+		}
+		return nil
+	}
+	
+	if commandExists("choco") {
+		return d.installWindowsChocolatey()
+	}
+	
+	// No package managers available
+	return fmt.Errorf("automatic Docker installation requires winget or Chocolatey. Please either:\n" +
+		"1. Install Docker Desktop manually from https://docker.com/products/docker-desktop\n" +
+		"2. Install Chocolatey from https://chocolatey.org/install and run this command again")
+}
+
+func (d *DockerInstaller) installWindowsChocolatey() error {
+	fmt.Println("Installing Docker Desktop via Chocolatey...")
+	cmd := exec.Command("choco", "install", "docker-desktop", "-y")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Docker Desktop via Chocolatey: %w", err)
+	}
+	
+	fmt.Println("Docker Desktop installed successfully.")
+	fmt.Println("Starting Docker Desktop...")
+	if err := startDockerWindows(); err != nil {
+		fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
+		fmt.Println("Please start Docker Desktop manually from the Start Menu")
+	}
+	
+	return nil
 }
 
 func startDockerWindows() error {

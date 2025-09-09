@@ -140,7 +140,7 @@ func (i *Installer) CheckAndInstall() error {
 	// Separate into truly missing tools vs Docker not running
 	var missingTools []string
 	var dockerNotRunning bool
-	
+
 	for _, tool := range missing {
 		switch strings.ToLower(tool) {
 		case "docker":
