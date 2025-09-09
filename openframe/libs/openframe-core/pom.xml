@@ -69,6 +69,13 @@
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
+        <!-- Slugify utility available to all modules via core -->
+        <dependency>
+            <groupId>com.github.slugify</groupId>
+            <artifactId>slugify</artifactId>
+            <version>3.0.7</version>
+        </dependency>
+
     </dependencies>
 
     <build>

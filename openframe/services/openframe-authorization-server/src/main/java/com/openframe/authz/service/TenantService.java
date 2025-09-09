@@ -4,14 +4,18 @@ import com.openframe.data.document.auth.Tenant;
 import com.openframe.data.document.auth.TenantPlan;
 import com.openframe.data.document.auth.TenantStatus;
 import com.openframe.data.repository.auth.TenantRepository;
+import com.openframe.data.repository.auth.TenantRepository.DomainView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing tenants in multi-tenant architecture
@@ -91,6 +95,19 @@ public class TenantService {
             return false;
         }
         return !tenantRepository.existsByDomain(domain);
+    }
+
+    /**
+     * Find which domains from the provided collection already exist (single DB roundtrip).
+     */
+    public Set<String> findExistingDomains(List<String> domains) {
+        if (domains == null || domains.isEmpty()) {
+            return Set.of();
+        }
+        return tenantRepository.findByDomainIn(domains)
+                .stream()
+                .map(DomainView::getDomain)
+                .collect(Collectors.toSet());
     }
 
     /**

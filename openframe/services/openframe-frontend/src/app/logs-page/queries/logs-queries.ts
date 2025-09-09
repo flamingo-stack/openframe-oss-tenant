@@ -33,8 +33,14 @@ export const GET_LOGS_QUERY = `
 `
 
 export const GET_LOG_DETAILS_QUERY = `
-  query GetLogDetails($id: String!) {
-    log(id: $id) {
+  query GetLogDetails($logId: ID!, $ingestDay: String!, $toolType: String!, $eventType: String!, $timestamp: Instant!) {
+    logDetails(
+      toolEventId: $logId
+      ingestDay: $ingestDay
+      toolType: $toolType
+      eventType: $eventType
+      timestamp: $timestamp
+    ) {
       toolEventId
       eventType
       ingestDay
@@ -42,10 +48,9 @@ export const GET_LOG_DETAILS_QUERY = `
       severity
       userId
       deviceId
-      summary
+      message
       timestamp
       details
-      metadata
       __typename
     }
   }
