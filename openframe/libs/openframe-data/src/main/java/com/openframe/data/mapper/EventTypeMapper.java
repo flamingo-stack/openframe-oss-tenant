@@ -87,14 +87,58 @@ public class EventTypeMapper {
         registerMapping(IntegratedToolType.MESHCENTRAL, "servertimelinestats", UnifiedEventType.SYSTEM_MONITORING);
         registerMapping(IntegratedToolType.MESHCENTRAL, "wssessioncount", UnifiedEventType.SESSION_COUNT_UPDATED);
 
-        // Tactical RMM mappings
+        // Tactical RMM mappings (based on logs_auditlogs structure)
+        // Authentication Events
         registerMapping(IntegratedToolType.TACTICAL, "user.login", UnifiedEventType.LOGIN);
-        registerMapping(IntegratedToolType.TACTICAL, "user.logout", UnifiedEventType.LOGOUT);
-        registerMapping(IntegratedToolType.TACTICAL, "agent.created", UnifiedEventType.DEVICE_REGISTERED);
-        registerMapping(IntegratedToolType.TACTICAL, "agent.updated", UnifiedEventType.DEVICE_UPDATED);
-        registerMapping(IntegratedToolType.TACTICAL, "script.executed", UnifiedEventType.SCRIPT_EXECUTED);
-        registerMapping(IntegratedToolType.TACTICAL, "check.created", UnifiedEventType.MONITORING_CHECK_CREATED);
-        registerMapping(IntegratedToolType.TACTICAL, "alert.triggered", UnifiedEventType.ALERT_TRIGGERED);
+        registerMapping(IntegratedToolType.TACTICAL, "user.failed_login", UnifiedEventType.LOGIN_FAILED);
+
+        // Device Management Events  
+        registerMapping(IntegratedToolType.TACTICAL, "agent.add", UnifiedEventType.DEVICE_REGISTERED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.modify", UnifiedEventType.DEVICE_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.delete", UnifiedEventType.DEVICE_DELETED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.agent_install", UnifiedEventType.DEVICE_REGISTERED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.remote_session", UnifiedEventType.REMOTE_SESSION_START);
+
+        // User Management Events
+        registerMapping(IntegratedToolType.TACTICAL, "user.add", UnifiedEventType.USER_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "user.modify", UnifiedEventType.USER_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "user.delete", UnifiedEventType.USER_DELETED);
+        registerMapping(IntegratedToolType.TACTICAL, "role.add", UnifiedEventType.USER_ROLE_CHANGED);
+        registerMapping(IntegratedToolType.TACTICAL, "role.modify", UnifiedEventType.USER_ROLE_CHANGED);
+
+        // Script & Automation Events
+        registerMapping(IntegratedToolType.TACTICAL, "scxript.add", UnifiedEventType.SCRIPT_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "script.modify", UnifiedEventType.SCRIPT_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.execute_script", UnifiedEventType.SCRIPT_EXECUTED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.execute_command", UnifiedEventType.SCRIPT_EXECUTED);
+        registerMapping(IntegratedToolType.TACTICAL, "automatedtask.add", UnifiedEventType.SCRIPT_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "automatedtask.modify", UnifiedEventType.SCRIPT_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "automatedtask.task_run", UnifiedEventType.SCRIPT_EXECUTED);
+
+        // Policy & Compliance Events
+        registerMapping(IntegratedToolType.TACTICAL, "policy.add", UnifiedEventType.POLICY_APPLIED);
+        registerMapping(IntegratedToolType.TACTICAL, "policy.modify", UnifiedEventType.POLICY_APPLIED);
+        registerMapping(IntegratedToolType.TACTICAL, "winupdatepolicy.add", UnifiedEventType.POLICY_APPLIED);
+        registerMapping(IntegratedToolType.TACTICAL, "winupdatepolicy.modify", UnifiedEventType.POLICY_APPLIED);
+
+        // Monitoring Events
+        registerMapping(IntegratedToolType.TACTICAL, "check.add", UnifiedEventType.MONITORING_CHECK_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "check.modify", UnifiedEventType.MONITORING_CHECK_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "check.check_run", UnifiedEventType.COMPLIANCE_CHECK);
+        registerMapping(IntegratedToolType.TACTICAL, "alerttemplate.add", UnifiedEventType.ALERT_TRIGGERED);
+        registerMapping(IntegratedToolType.TACTICAL, "alerttemplate.modify", UnifiedEventType.ALERT_RESOLVED);
+
+        // System Events
+        registerMapping(IntegratedToolType.TACTICAL, "coresettings.modify", UnifiedEventType.SYSTEM_STATUS);
+        registerMapping(IntegratedToolType.TACTICAL, "bulk.bulk_action", UnifiedEventType.SYSTEM_STATUS);
+
+        // Group Events (clients/sites)
+        registerMapping(IntegratedToolType.TACTICAL, "client.add", UnifiedEventType.GROUP_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "client.modify", UnifiedEventType.GROUP_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "client.delete", UnifiedEventType.GROUP_DELETED);
+        registerMapping(IntegratedToolType.TACTICAL, "site.add", UnifiedEventType.GROUP_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "site.modify", UnifiedEventType.GROUP_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "site.delete", UnifiedEventType.GROUP_DELETED);
 
         // Fleet MDM mappings (activity_type column values)
         registerMapping(IntegratedToolType.FLEET, "user_logged_in", UnifiedEventType.LOGIN);
