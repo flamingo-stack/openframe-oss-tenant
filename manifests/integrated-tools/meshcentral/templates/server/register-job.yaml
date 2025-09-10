@@ -144,12 +144,12 @@ spec:
                   "assets": [
                     {
                       "id": "meshcentral-core-module",
-                      "localFilename": "CoreModule.js"
+                      "localFilename": "CoreModule.js",
                       "source": "ARTIFACTORY"
                     },
                     {
                       "id": "msh-configuration",
-                      "localFilename": "agent.msh"
+                      "localFilename": "agent.msh",
                       "source": "TOOL_API",
                       "path": "/openframe_public/meshagent.msh"
                     }
