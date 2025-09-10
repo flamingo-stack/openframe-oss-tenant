@@ -67,11 +67,6 @@ impl AgentConfigurationService {
         Ok(config.refresh_token.clone())
     }
 
-    pub fn is_local_mode(&self) -> Result<bool> {
-        let config = self.get()?;
-        Ok(config.is_local_mode.clone())
-    }
-
     fn get(&self) -> Result<AgentConfiguration> {
         if !self.config_file_path.exists() {
             return Ok(AgentConfiguration::default());

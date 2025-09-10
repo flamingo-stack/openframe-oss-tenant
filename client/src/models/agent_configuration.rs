@@ -7,7 +7,6 @@ pub struct AgentConfiguration {
     pub client_secret: String,
     pub access_token: String,
     pub refresh_token: String,
-    pub is_local_mode: bool,
 }
 
 impl Default for AgentConfiguration {
@@ -18,7 +17,6 @@ impl Default for AgentConfiguration {
             client_secret: String::new(),
             access_token: String::new(),
             refresh_token: String::new(),
-            is_local_mode: false,
         }
     }
 }
