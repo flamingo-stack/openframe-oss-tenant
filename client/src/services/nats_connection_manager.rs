@@ -20,7 +20,7 @@ impl NatsConnectionManager {
     const NATS_DEVICE_USER: &'static str = "machine";
     const NATS_DEVICE_PASSWORD: &'static str = "";
     
-    pub fn new(nats_server_url: &str, config_service: AgentConfigurationService) -> Self {
+    pub fn new(nats_server_url: String, config_service: AgentConfigurationService) -> Self {
         Self {
             client: Arc::new(RwLock::new(None)),
             nats_server_url: nats_server_url.to_string(),

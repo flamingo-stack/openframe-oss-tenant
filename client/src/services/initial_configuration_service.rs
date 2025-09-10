@@ -39,11 +39,7 @@ impl InitialConfigurationService {
 
     fn get(&self) -> Result<InitialConfiguration> {
         if !self.config_file_path.exists() {
-            return Ok(InitialConfiguration {
-                server_host: String::new(),
-                initial_key: String::new(),
-                local_mode: false,
-            });
+            return Err(anyhow::anyhow!("Initial configuration file does not exist"));
         }
 
         let json_content = fs::read_to_string(&self.config_file_path)
@@ -53,5 +49,21 @@ impl InitialConfigurationService {
             .context("Failed to deserialize initial configuration from JSON")?;
 
         Ok(config)
+    }
+
+    pub fn clear_initial_key(&self) -> Result<()> {
+        let mut config = self.get()?;
+        config.initial_key = String::new();
+        self.save(&config)
+            .context("Failed to save initial configuration to file")?;
+        Ok(())
+    }
+
+    pub fn save(&self, config: &InitialConfiguration) -> Result<()> {
+        let config_json = serde_json::to_string_pretty(config)
+            .context("Failed to serialize initial configuration to JSON")?;
+        fs::write(&self.config_file_path, config_json)
+            .with_context(|| format!("Failed to write initial configuration file: {:?}", self.config_file_path))?;
+        Ok(())
     }
 }
