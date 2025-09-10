@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RegistrationService {
+public class TenantRegistrationService {
 
     private final UserService userService;
     private final TenantService tenantService;
@@ -33,16 +33,15 @@ public class RegistrationService {
 
         AuthUser user = userService.registerUser(
                 tenant.getId(),
-                tenant.getDomain(),
                 request.getEmail(),
                 request.getFirstName(),
                 request.getLastName(),
-                request.getPassword(),
-                "OWNER"
+                request.getPassword()
         );
 
         tenant.setOwnerId(user.getId());
 
         return tenantService.save(tenant);
+        // TODO: publish to Kafka (future)
     }
 }
