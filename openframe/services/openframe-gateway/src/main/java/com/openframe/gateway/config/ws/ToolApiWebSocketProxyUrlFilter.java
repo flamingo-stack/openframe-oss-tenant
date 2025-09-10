@@ -1,7 +1,7 @@
 package com.openframe.gateway.config.ws;
 
 import com.openframe.core.service.ProxyUrlResolver;
-import com.openframe.data.repository.mongo.ReactiveIntegratedToolRepository;
+import com.openframe.data.reactive.repository.tool.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import org.springframework.stereotype.Component;
 

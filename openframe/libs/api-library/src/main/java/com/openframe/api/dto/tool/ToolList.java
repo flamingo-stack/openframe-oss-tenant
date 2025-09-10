@@ -1,6 +1,6 @@
 package com.openframe.api.dto.tool;
 
-import com.openframe.core.model.IntegratedTool;
+import com.openframe.data.document.tool.IntegratedTool;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

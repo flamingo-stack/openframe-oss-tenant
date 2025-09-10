@@ -1,16 +1,21 @@
 package com.openframe.data.repository.pinot;
 
-import com.openframe.core.model.LogProjection;
+import com.openframe.data.document.event.LogProjection;
 import com.openframe.data.repository.pinot.exception.PinotQueryException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pinot.client.*;
+import org.apache.pinot.client.Connection;
+import org.apache.pinot.client.ResultSet;
+import org.apache.pinot.client.ResultSetGroup;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -29,8 +34,8 @@ public class PinotClientLogRepository implements PinotLogRepository {
     }
 
     @Override
-    public List<LogProjection> findLogs(LocalDate startDate, LocalDate endDate, List<String> toolTypes, List<String> eventTypes, 
-                                  List<String> severities, String cursor, int limit) {
+    public List<LogProjection> findLogs(LocalDate startDate, LocalDate endDate, List<String> toolTypes, List<String> eventTypes,
+                                        List<String> severities, String cursor, int limit) {
         PinotQueryBuilder queryBuilder = new PinotQueryBuilder(logsTable)
             .select("toolEventId", "ingestDay", "toolType", "eventType", "severity", "userId", "deviceId", "summary", "eventTimestamp")
             .whereDateRange("eventTimestamp", startDate, endDate)

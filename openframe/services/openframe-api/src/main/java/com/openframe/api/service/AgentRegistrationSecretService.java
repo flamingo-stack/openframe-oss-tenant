@@ -1,19 +1,17 @@
 package com.openframe.api.service;
 
-import java.time.Instant;
-import java.util.List;
-
 import com.openframe.api.dto.AgentRegistrationSecretResponse;
 import com.openframe.api.exception.AgentRegistrationSecretNotFoundException;
 import com.openframe.core.service.AgentRegistrationSecretGenerator;
-import org.springframework.stereotype.Service;
-
 import com.openframe.core.service.EncryptionService;
-import com.openframe.data.model.mongo.AgentRegistrationSecret;
-import com.openframe.data.repository.mongo.AgentRegistrationSecretRepository;
-
+import com.openframe.data.document.agent.AgentRegistrationSecret;
+import com.openframe.data.repository.agent.AgentRegistrationSecretRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
 
 @Slf4j
 @Service

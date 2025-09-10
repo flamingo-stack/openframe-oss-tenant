@@ -3,12 +3,12 @@ package com.openframe.api.service;
 import com.openframe.api.dto.tool.ToolFilterOptions;
 import com.openframe.api.dto.tool.ToolFilters;
 import com.openframe.api.dto.tool.ToolList;
-import com.openframe.core.model.IntegratedTool;
-import com.openframe.core.model.tool.filter.ToolQueryFilter;
-import com.openframe.data.repository.mongo.IntegratedToolRepository;
-import org.springframework.stereotype.Service;
+import com.openframe.data.document.tool.IntegratedTool;
+import com.openframe.data.document.tool.filter.ToolQueryFilter;
+import com.openframe.data.repository.tool.IntegratedToolRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 

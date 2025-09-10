@@ -1,6 +1,6 @@
 package com.openframe.api.dto.device;
 
-import com.openframe.core.model.Machine;
+import com.openframe.data.document.device.Machine;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

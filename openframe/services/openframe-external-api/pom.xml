@@ -18,6 +18,10 @@
     <description>External API service for programmatic access with API keys</description>
 
     <dependencies>
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-mongo</artifactId>
+        </dependency>
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

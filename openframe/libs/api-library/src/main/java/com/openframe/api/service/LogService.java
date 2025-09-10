@@ -1,13 +1,9 @@
 package com.openframe.api.service;
 
-import com.openframe.api.dto.audit.LogDetails;
-import com.openframe.api.dto.audit.LogEvent;
-import com.openframe.api.dto.audit.LogFilters;
-import com.openframe.api.dto.audit.LogFilterOptions;
-import com.openframe.api.dto.audit.LogQueryResult;
-import com.openframe.api.dto.shared.CursorPaginationCriteria;
+import com.openframe.api.dto.audit.*;
 import com.openframe.api.dto.shared.CursorPageInfo;
-import com.openframe.core.model.LogProjection;
+import com.openframe.api.dto.shared.CursorPaginationCriteria;
+import com.openframe.data.document.event.LogProjection;
 import com.openframe.data.model.cassandra.UnifiedLogEvent;
 import com.openframe.data.repository.cassandra.UnifiedLogEventRepository;
 import com.openframe.data.repository.pinot.PinotLogRepository;
@@ -17,10 +13,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
 
 @Service
 @Slf4j

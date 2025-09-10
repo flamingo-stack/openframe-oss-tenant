@@ -1,8 +1,9 @@
 package com.openframe.authz.keys;
 
 import com.nimbusds.jose.jwk.RSAKey;
-import com.openframe.authz.repository.TenantKeyRepository;
 import com.openframe.core.service.EncryptionService;
+import com.openframe.data.document.auth.TenantKey;
+import com.openframe.data.repository.auth.TenantKeyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class TenantKeyService {
             log.warn("Multiple active signing keys detected for tenantId='{}' (count={}) - this may cause kid mismatches", tenantId, activeCount);
         }
 
-        TenantKeyDocument doc = tenantKeyRepository.findFirstByTenantIdAndActiveTrue(tenantId).orElse(null);
+        TenantKey doc = tenantKeyRepository.findFirstByTenantIdAndActiveTrue(tenantId).orElse(null);
         if (doc == null) {
             log.info("No active signing key found for tenantId='{}'. Generating a new key...", tenantId);
             doc = createAndStore(tenantId);
@@ -42,10 +43,10 @@ public class TenantKeyService {
         return new RSAKey.Builder(pub).privateKey(priv).keyID(doc.getKeyId()).build();
     }
 
-    private TenantKeyDocument createAndStore(String tenantId) {
+    private TenantKey createAndStore(String tenantId) {
         AuthenticationKeyPair pair = keyPairGenerator.generate();
         String enc = encryptionService.encryptClientSecret(pair.privatePem());
-        TenantKeyDocument doc = new TenantKeyDocument();
+        TenantKey doc = new TenantKey();
         doc.setId(randomUUID().toString());
         doc.setTenantId(tenantId);
         doc.setKeyId("kid-" + randomUUID());

@@ -1,17 +1,21 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.document.Tenant;
-import com.openframe.authz.document.TenantPlan;
-import com.openframe.authz.document.TenantStatus;
-import com.openframe.authz.repository.TenantRepository;
+import com.openframe.data.document.auth.Tenant;
+import com.openframe.data.document.auth.TenantPlan;
+import com.openframe.data.document.auth.TenantStatus;
+import com.openframe.data.repository.auth.TenantRepository;
+import com.openframe.data.repository.auth.TenantRepository.DomainView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing tenants in multi-tenant architecture
@@ -42,11 +46,7 @@ public class TenantService {
         if (nonValidDomain(domain)) {
             throw new IllegalArgumentException("Invalid domain format");
         }
-        
-        if (tenantRepository.existsByNameIgnoreCase(tenantName)) {
-            throw new IllegalArgumentException("Tenant name already exists");
-        }
-        
+
         if (tenantRepository.existsByDomain(domain)) {
             throw new IllegalArgumentException("Tenant domain already exists");
         }
@@ -88,13 +88,26 @@ public class TenantService {
     }
 
     /**
-     * Check if tenant name is available (case-insensitive)
+     * Check if tenant domain is available for registration
      */
-    public boolean isTenantNameAvailable(String tenantName) {
-        if (nonValidTenantName(tenantName)) {
+    public boolean isTenantDomainAvailable(String domain) {
+        if (nonValidDomain(domain)) {
             return false;
         }
-        return !tenantRepository.existsByNameIgnoreCase(tenantName);
+        return !tenantRepository.existsByDomain(domain);
+    }
+
+    /**
+     * Find which domains from the provided collection already exist (single DB roundtrip).
+     */
+    public Set<String> findExistingDomains(List<String> domains) {
+        if (domains == null || domains.isEmpty()) {
+            return Set.of();
+        }
+        return tenantRepository.findByDomainIn(domains)
+                .stream()
+                .map(DomainView::getDomain)
+                .collect(Collectors.toSet());
     }
 
     /**

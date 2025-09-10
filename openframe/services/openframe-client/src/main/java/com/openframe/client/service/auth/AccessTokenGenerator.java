@@ -1,6 +1,6 @@
 package com.openframe.client.service.auth;
 
-import com.openframe.core.model.OAuthClient;
+import com.openframe.data.document.oauth.OAuthClient;
 import com.openframe.security.jwt.JwtService;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,8 +37,8 @@ public class AccessTokenGenerator {
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(expirationSeconds))
                 .subject(client.getClientId())
+                .claim("machine_id", client.getMachineId())
                 .claim("grant_type", grantType)
-                .claim("scopes", client.getScopes())
                 .claim("roles", client.getRoles())
                 .build();
     }

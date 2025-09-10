@@ -3,11 +3,13 @@
 import { AuthLoginSection } from '@app/auth/components/login-section'
 import { AuthLayout } from '@app/auth/layouts'
 import { useAuth } from '@app/auth/hooks/use-auth'
+import { useAuthStore } from '@app/auth/stores/auth-store'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { isAuthenticated } = useAuthStore()
   const { 
     email, 
     tenantInfo, 
@@ -19,6 +21,14 @@ export default function LoginPage() {
     loginWithSSO,
     discoverTenants 
   } = useAuth()
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('🔄 [Login Page] User already authenticated, redirecting to dashboard')
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, router])
 
   // Auto-discover tenants if email exists but discovery hasn't been attempted yet
   useEffect(() => {

@@ -1,8 +1,12 @@
 package com.openframe.external.service;
 
-import com.openframe.core.model.*;
 import com.openframe.core.service.ProxyUrlResolver;
-import com.openframe.data.repository.mongo.IntegratedToolRepository;
+import com.openframe.data.document.apikey.APIKeyType;
+import com.openframe.data.document.tool.IntegratedTool;
+import com.openframe.data.document.tool.ToolCredentials;
+import com.openframe.data.document.tool.ToolUrl;
+import com.openframe.data.document.tool.ToolUrlType;
+import com.openframe.data.repository.tool.IntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +85,7 @@ public class RestProxyService {
             ToolUrl toolUrl = optionalToolUrl.get();
             log.info("Tool URL: {}", toolUrl.getUrl());
 
-            URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUri, "/tools");
+            URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl.getUrl(), toolUrl.getPort(), originalUri, "/tools");
             log.info("Target URI resolved to: {}", targetUri);
 
             String method = request.getMethod();

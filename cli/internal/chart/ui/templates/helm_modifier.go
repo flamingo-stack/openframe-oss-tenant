@@ -35,6 +35,11 @@ func (h *HelmValuesModifier) LoadExistingValues(helmValuesPath string) (map[stri
 		return nil, fmt.Errorf("failed to parse helm values YAML: %w", err)
 	}
 
+	// Handle empty file case - yaml.Unmarshal returns nil for empty content
+	if values == nil {
+		values = make(map[string]interface{})
+	}
+
 	return values, nil
 }
 
@@ -115,7 +120,6 @@ func (h *HelmValuesModifier) ApplyConfiguration(values map[string]interface{}, c
 		docker["email"] = config.DockerRegistry.Email
 	}
 
-
 	return nil
 }
 
@@ -173,8 +177,8 @@ func (h *HelmValuesModifier) GetCurrentDockerSettings(values map[string]interfac
 // GetCurrentIngressSettings extracts current ingress settings from Helm values
 func (h *HelmValuesModifier) GetCurrentIngressSettings(values map[string]interface{}) string {
 	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
-		if selfHosted, ok := deployment["selfHosted"].(map[string]interface{}); ok {
-			if ingress, ok := selfHosted["ingress"].(map[string]interface{}); ok {
+		if oss, ok := deployment["oss"].(map[string]interface{}); ok {
+			if ingress, ok := oss["ingress"].(map[string]interface{}); ok {
 				// Check if ngrok is enabled
 				if ngrok, ok := ingress["ngrok"].(map[string]interface{}); ok {
 					if enabled, ok := ngrok["enabled"].(bool); ok && enabled {

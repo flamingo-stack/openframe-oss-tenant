@@ -27,6 +27,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 
+import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.NATS_WS_ENDPOINT_PATH;
 import static com.openframe.gateway.security.SecurityConstants.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -37,6 +38,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @RequiredArgsConstructor
 @Slf4j
 public class GatewaySecurityConfig {
+
+    private static final String ADMIN = "ADMIN";
+    private static final String AGENT = "AGENT";
 
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
@@ -61,9 +65,6 @@ public class GatewaySecurityConfig {
         return jwtAuthenticationConverter;
     }
 
-    /* TODO:
-      - Consider extracting permitted paths configuration to a separate component for reusability
-     */
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(
             ServerHttpSecurity http,
@@ -92,17 +93,24 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/api/agents/register",
                                 CLIENTS_PREFIX + "/oauth/token",
                                 DASHBOARD_PREFIX + "/sso/providers",
-                                managementContextPath + "/**"
+                                managementContextPath + "/**",
+                                // TODO: remove after migration artifacts to GitHub
+                                CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
-                                .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
+                        // Api service
+                        .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole(ADMIN)
                         // Agent tools
-                                .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
-                                .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
-                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
+                        .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole(AGENT)
+                        .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole(AGENT)
+                        // Agent nats
+                        .pathMatchers(NATS_WS_ENDPOINT_PATH).hasRole("AGENT")
+                        // Client service
+                        .pathMatchers(CLIENTS_PREFIX + "/**").hasRole(AGENT)
                         // Api tools
-                                .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
-                                .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
-                                .pathMatchers("/**").permitAll()
+                        .pathMatchers(TOOLS_PREFIX + "/**").hasRole(ADMIN)
+                        .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole(ADMIN)
+                        // UI
+                        .pathMatchers("/**").permitAll()
                 )
                 .build();
     }
@@ -111,10 +119,10 @@ public class GatewaySecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOriginPattern("http://localhost:*"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("https://localhost:*"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("http://localhost"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("https://localhost"); // Allow any localhost port for development
+        configuration.addAllowedOriginPattern("http://localhost:*");
+        configuration.addAllowedOriginPattern("https://localhost:*");
+        configuration.addAllowedOriginPattern("http://localhost");
+        configuration.addAllowedOriginPattern("https://localhost");
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         configuration.setMaxAge(3600L);

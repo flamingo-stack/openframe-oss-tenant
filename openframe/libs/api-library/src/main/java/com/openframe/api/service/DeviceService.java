@@ -1,16 +1,16 @@
 package com.openframe.api.service;
 
-import com.openframe.api.dto.shared.CursorPageInfo;
-import com.openframe.api.dto.shared.CursorPaginationCriteria;
 import com.openframe.api.dto.device.DeviceFilterOptions;
 import com.openframe.api.dto.device.DeviceQueryResult;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.MachineTag;
-import com.openframe.core.model.Tag;
-import com.openframe.core.model.device.filter.MachineQueryFilter;
-import com.openframe.data.repository.mongo.MachineRepository;
-import com.openframe.data.repository.mongo.MachineTagRepository;
-import com.openframe.data.repository.mongo.TagRepository;
+import com.openframe.api.dto.shared.CursorPageInfo;
+import com.openframe.api.dto.shared.CursorPaginationCriteria;
+import com.openframe.data.document.device.Machine;
+import com.openframe.data.document.device.MachineTag;
+import com.openframe.data.document.device.filter.MachineQueryFilter;
+import com.openframe.data.document.tool.Tag;
+import com.openframe.data.repository.device.MachineRepository;
+import com.openframe.data.repository.device.MachineTagRepository;
+import com.openframe.data.repository.tool.TagRepository;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;

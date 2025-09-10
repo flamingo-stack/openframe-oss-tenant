@@ -223,8 +223,8 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 		"--wait",
 		"--timeout", appConfig.Timeout,
 		"-f", appConfig.ValuesFile,
-		"--set-file", fmt.Sprintf("deployment.selfHosted.ingress.localhost.tls.cert=%s", certFile),
-		"--set-file", fmt.Sprintf("deployment.selfHosted.ingress.localhost.tls.key=%s", keyFile),
+		"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFile),
+		"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFile),
 	}
 
 	if config.DryRun {

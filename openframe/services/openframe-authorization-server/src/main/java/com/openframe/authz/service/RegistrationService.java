@@ -1,8 +1,8 @@
 package com.openframe.authz.service;
 
-import com.openframe.authz.document.Tenant;
-import com.openframe.authz.document.User;
-import com.openframe.authz.dto.UserRegistrationRequest;
+import com.openframe.authz.dto.TenantRegistrationRequest;
+import com.openframe.data.document.auth.AuthUser;
+import com.openframe.data.document.auth.Tenant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,7 @@ public class RegistrationService {
     private final UserService userService;
     private final TenantService tenantService;
 
-    public Tenant registerTenant(UserRegistrationRequest request) {
+    public Tenant registerTenant(TenantRegistrationRequest request) {
         String tenantDomain = request.getTenantDomain();
 
         if (tenantService.existByDomain(tenantDomain)) {
@@ -31,13 +31,14 @@ public class RegistrationService {
 
         Tenant tenant = tenantService.createTenant(request.getTenantName(), tenantDomain);
 
-        User user = userService.registerUser(
+        AuthUser user = userService.registerUser(
                 tenant.getId(),
                 tenant.getDomain(),
                 request.getEmail(),
                 request.getFirstName(),
                 request.getLastName(),
-                request.getPassword()
+                request.getPassword(),
+                "OWNER"
         );
 
         tenant.setOwnerId(user.getId());

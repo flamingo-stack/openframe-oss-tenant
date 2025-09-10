@@ -1,19 +1,9 @@
 package com.openframe.external.mapper;
 
-import com.openframe.api.dto.device.DeviceFilters;
-import com.openframe.api.dto.device.DeviceQueryResult;
-import com.openframe.api.dto.device.DeviceFilterOptions;
-import com.openframe.api.dto.device.DeviceFilterOption;
-import com.openframe.api.dto.device.TagFilterOption;
-import com.openframe.core.model.Machine;
-import com.openframe.core.model.Tag;
-import com.openframe.external.dto.device.DeviceFilterResponse;
-import com.openframe.external.dto.device.DeviceResponse;
-import com.openframe.external.dto.device.DevicesResponse;
-import com.openframe.external.dto.device.TagResponse;
-import com.openframe.external.dto.device.DeviceFilterItem;
-import com.openframe.external.dto.device.TagFilterItem;
-import com.openframe.external.dto.device.DeviceFilterCriteria;
+import com.openframe.api.dto.device.*;
+import com.openframe.data.document.device.Machine;
+import com.openframe.data.document.tool.Tag;
+import com.openframe.external.dto.device.*;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

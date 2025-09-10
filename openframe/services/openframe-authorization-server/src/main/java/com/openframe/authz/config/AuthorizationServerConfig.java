@@ -4,12 +4,12 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.openframe.authz.document.User;
 import com.openframe.authz.keys.TenantKeyService;
+import com.openframe.authz.security.ProviderAwareAuthenticationEntryPoint;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
+import com.openframe.data.document.auth.AuthUser;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,36 +22,31 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
-import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
-import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import static com.openframe.authz.tenant.TenantContext.getTenantId;
-import static java.util.UUID.randomUUID;
 
 /**
  * OAuth2 Authorization Server Configuration
@@ -60,21 +55,6 @@ import static java.util.UUID.randomUUID;
 @EnableWebSecurity
 @Slf4j
 public class AuthorizationServerConfig {
-
-    @Value("${openframe.auth.gateway.client.id}")
-    private String gatewayClientId;
-
-    @Value("${openframe.auth.gateway.client.secret}")
-    private String gatewayClientSecret;
-
-    @Value("${openframe.auth.gateway.redirect-uri}")
-    private String gatewayRedirectUri;
-
-    @Value("${security.oauth2.token.access.expiration-seconds}")
-    private long accessTokenExpirationSeconds;
-
-    @Value("${security.oauth2.token.refresh.expiration-seconds}")
-    private long refreshTokenExpirationSeconds;
 
     @Bean
     @Order(1)
@@ -97,9 +77,9 @@ public class AuthorizationServerConfig {
                 .securityMatcher(endpoints)
                 .authorizeHttpRequests(a -> a.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpoints))
-                .cors(cors -> cors.disable())
+                .cors(AbstractHttpConfigurer::disable)
                 .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
-                        new LoginUrlAuthenticationEntryPoint("/login"),
+                        new ProviderAwareAuthenticationEntryPoint(),
                         new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()))
                 .build();
@@ -117,37 +97,6 @@ public class AuthorizationServerConfig {
         var reg = new FilterRegistrationBean<>(new TenantForwardedPrefixFilter());
         reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 15);
         return reg;
-    }
-
-    @Bean
-    public RegisteredClient gatewayClient() {
-        return RegisteredClient.withId(randomUUID().toString())
-            .clientId(gatewayClientId)
-            .clientSecret(passwordEncoder().encode(gatewayClientSecret))
-            .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .redirectUri(gatewayRedirectUri)
-            .scope(OidcScopes.OPENID)
-            .scope(OidcScopes.PROFILE)
-            .scope(OidcScopes.EMAIL)
-            .scope("offline_access")
-            .clientSettings(ClientSettings.builder()
-                .requireProofKey(true)
-                .requireAuthorizationConsent(false)
-                .build())
-            .tokenSettings(TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofSeconds(accessTokenExpirationSeconds))
-                .refreshTokenTimeToLive(Duration.ofSeconds(refreshTokenExpirationSeconds))
-                .reuseRefreshTokens(false)
-                .build())
-            .build();
-    }
-
-    @Bean
-    public RegisteredClientRepository registeredClientRepository(RegisteredClient gatewayClient) {
-        return new org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository(gatewayClient);
     }
 
     @Bean
@@ -181,26 +130,26 @@ public class AuthorizationServerConfig {
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer(UserService userService) {
         return context -> {
-            var authentication = context.getPrincipal();
-            var authorities = authentication.getAuthorities();
-            var roles = authorities.stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .filter(a -> a != null && a.startsWith("ROLE_"))
-                    .map(a -> a.substring(5))
-                    .toList();
-
-
+            Authentication authentication = context.getPrincipal();
             String tenantId = getTenantId();
-            User user = userService
-                    .findActiveByEmailAndTenant(authentication.getName(), tenantId)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + authentication.getName()));
+
+            String username = authentication != null ? authentication.getName() : null;
+
+            AuthUser user = userService
+                    .findActiveByEmailAndTenant(username, tenantId)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
             if ("access_token".equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> {
                     claims.put("tenant_id", tenantId);
                     claims.put("tenant_domain", user.getTenantDomain());
                     claims.put("userId", user.getId());
-                    claims.put("roles", roles);
+
+                    Set<String> effective = new LinkedHashSet<>(user.getRoles());
+                    if (effective.contains("OWNER")) {
+                        effective.add("ADMIN");
+                    }
+                    claims.put("roles", new ArrayList<>(effective));
                 });
             }
         };
@@ -213,10 +162,10 @@ public class AuthorizationServerConfig {
     public UserDetailsService userDetailsService(UserService userService) {
         return username -> {
             String tenantId = getTenantId();
-            User user = userService.findActiveByEmailAndTenant(username, tenantId)
+            AuthUser user = userService.findActiveByEmailAndTenant(username, tenantId)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-            return org.springframework.security.core.userdetails.User.builder()
+            return User.builder()
                 .username(user.getEmail())
                 .password(user.getPasswordHash() != null ? user.getPasswordHash() : "{noop}")
                 .authorities(user.getRoles().stream()
