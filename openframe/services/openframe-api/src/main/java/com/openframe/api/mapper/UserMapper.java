@@ -13,8 +13,8 @@ public class UserMapper {
                 .email(entity.getEmail())
                 .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
-                .roles(entity.getRoles() != null ? entity.getRoles().stream().map(Enum::name).toList() : null)
-                .status(entity.getStatus() != null ? entity.getStatus().name() : null)
+                .roles(entity.getRoles().stream().map(Enum::name).toList())
+                .status(entity.getStatus().name())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
