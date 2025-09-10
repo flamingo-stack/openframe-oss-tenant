@@ -12,12 +12,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
@@ -61,6 +63,7 @@ public class AuthController {
     @GetMapping("/login")
     public Mono<ResponseEntity<Void>> login(@RequestParam String tenantId,
                                             @RequestParam(value = "redirectTo", required = false) String redirectTo,
+                                            @RequestParam(value = "provider", required = false) String provider,
                                             WebSession session,
                                             ServerHttpRequest request) {
         log.info("🔑 [AuthController] /auth/login called with tenantId: {}", tenantId);
@@ -79,7 +82,7 @@ public class AuthController {
             session.getAttributes().put("oauth:redirect_to:" + state, effectiveRedirect);
         }
 
-        String authorizeUrl = buildAuthorizeUrl(tenantId, codeChallenge, state);
+        String authorizeUrl = buildAuthorizeUrl(tenantId, codeChallenge, state, provider);
         log.debug("Redirecting to authorization endpoint for tenant: {}", tenantId);
 
         return Mono.just(ResponseEntity.status(302)
@@ -103,7 +106,27 @@ public class AuthController {
         boolean includeDevTicket = isLocalHost(request);
 
         return exchangeCodeForTokens(sessionData, code)
-                .map(tokens -> createSuccessResponse(tokens, sessionData.tenantId(), sessionData.redirectTo(), includeDevTicket));
+                .map(tokens -> createSuccessResponse(tokens, sessionData.tenantId(), sessionData.redirectTo(), includeDevTicket))
+                .switchIfEmpty(Mono.fromSupplier(() -> {
+                    log.error("Token exchange returned empty body");
+                    HttpHeaders headers = new HttpHeaders();
+                    String target = resolveErrorRedirect(sessionData.redirectTo(), request, "error=oauth_failed&message=empty_token_response");
+                    headers.add(HttpHeaders.LOCATION, target);
+                    return new ResponseEntity<>(headers, FOUND);
+                }))
+                .onErrorResume(e -> {
+                    log.error("Token exchange failed", e);
+                    String msg;
+                    try {
+                        msg = URLEncoder.encode(e.getMessage() != null ? e.getMessage() : "token_exchange_failed", StandardCharsets.UTF_8);
+                    } catch (Exception ex) {
+                        msg = "token_exchange_failed";
+                    }
+                    HttpHeaders headers = new HttpHeaders();
+                    String target = resolveErrorRedirect(sessionData.redirectTo(), request, "error=oauth_failed&message=" + msg);
+                    headers.add(HttpHeaders.LOCATION, target);
+                    return Mono.just(new ResponseEntity<>(headers, FOUND));
+                });
     }
 
     @PostMapping("/refresh")
@@ -145,8 +168,8 @@ public class AuthController {
         return session.invalidate().then(Mono.just(new ResponseEntity<>(headers, NO_CONTENT)));
     }
 
-    private String buildAuthorizeUrl(String tenantId, String codeChallenge, String state) {
-        return String.format(
+    private String buildAuthorizeUrl(String tenantId, String codeChallenge, String state, String provider) {
+        String base = String.format(
             "%s/%s/oauth2/authorize?response_type=code&client_id=%s&code_challenge=%s&code_challenge_method=S256&redirect_uri=%s&scope=openid%%20profile%%20email%%20offline_access&state=%s",
             authUrl,
             tenantId,
@@ -154,6 +177,10 @@ public class AuthController {
             codeChallenge,
             PKCEUtils.urlEncode(redirectUri),
             state);
+        if (StringUtils.hasText(provider)) {
+            base = base + "&provider=" + provider;
+        }
+        return base;
     }
 
     private OAuthSessionData validateAndExtractSessionData(WebSession session, String state) {
@@ -189,12 +216,18 @@ public class AuthController {
             .post()
             .uri(String.format("%s/%s/oauth2/token", authServerUrl, sessionData.tenantId()))
                 .header(AUTHORIZATION, basicAuth(clientId, clientSecret))
+                .header(HttpHeaders.ACCEPT, "application/json")
             .body(BodyInserters.fromFormData(form))
             .retrieve()
-                .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> {
-                    log.error("Token exchange failed: status={}", resp.statusCode());
-                    return resp.bodyToMono(String.class).then(Mono.error(new IllegalStateException("Token exchange failed")));
-                })
+                .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp ->
+                        resp.bodyToMono(String.class).defaultIfEmpty("")
+                                .flatMap(body -> {
+                                    String wwwAuth = resp.headers().asHttpHeaders().getFirst(HttpHeaders.WWW_AUTHENTICATE);
+                                    log.error("Token exchange failed: status={}, www-authenticate={}, body={}",
+                                            resp.statusCode(), wwwAuth, body);
+                                    return Mono.error(new IllegalStateException("token_exchange_failed:" + body));
+                                })
+                )
             .bodyToMono(TokenResponse.class);
     }
 
@@ -207,12 +240,18 @@ public class AuthController {
             .post()
             .uri(String.format("%s/%s/oauth2/token", authServerUrl, tenantId))
                 .header(AUTHORIZATION, basicAuth(clientId, clientSecret))
+                .header(HttpHeaders.ACCEPT, "application/json")
             .body(BodyInserters.fromFormData(form))
             .retrieve()
-                .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp -> {
-                    log.error("Token refresh failed: status={}", resp.statusCode());
-                    return resp.bodyToMono(String.class).then(Mono.error(new IllegalStateException("Token refresh failed")));
-                })
+                .onStatus(s -> s.is4xxClientError() || s.is5xxServerError(), resp ->
+                        resp.bodyToMono(String.class).defaultIfEmpty("")
+                                .flatMap(body -> {
+                                    String wwwAuth = resp.headers().asHttpHeaders().getFirst(HttpHeaders.WWW_AUTHENTICATE);
+                                    log.error("Token refresh failed: status={}, www-authenticate={}, body={}",
+                                            resp.statusCode(), wwwAuth, body);
+                                    return Mono.error(new IllegalStateException("token_refresh_failed:" + body));
+                                })
+                )
             .bodyToMono(TokenResponse.class);
     }
 
@@ -307,6 +346,17 @@ public class AuthController {
             }
         }
         return effectiveRedirect;
+    }
+
+    private String resolveErrorRedirect(String originalRedirectTo, ServerHttpRequest request, String errorQuery) {
+        String target = isAbsoluteUrl(originalRedirectTo) ? originalRedirectTo : resolveRedirectTarget(null, request);
+        if (!hasText(target)) {
+            target = "/";
+        }
+        if (target.contains("?")) {
+            return target + "&" + errorQuery;
+        }
+        return target + "?" + errorQuery;
     }
 
     private boolean isLocalHost(ServerHttpRequest request) {

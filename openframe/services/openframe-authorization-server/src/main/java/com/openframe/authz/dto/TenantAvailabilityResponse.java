@@ -1,28 +1,22 @@
 package com.openframe.authz.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
- * Response DTO for tenant name availability check
+ * Response DTO for tenant domain availability check
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TenantAvailabilityResponse {
-    
-    @JsonProperty("tenant_name")
-    private String tenantName;
-    
-    @JsonProperty("is_available")
     private boolean isAvailable;
-    
-    @JsonProperty("suggested_url")
-    private String suggestedUrl;
-    
-    private String message;
+    private List<String> suggestedUrl;
 }

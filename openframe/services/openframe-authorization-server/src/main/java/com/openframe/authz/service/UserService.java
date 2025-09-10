@@ -32,6 +32,10 @@ public class UserService {
         return userRepository.findByEmailAndTenantIdAndStatus(email, tenantId, UserStatus.ACTIVE);
     }
 
+    public Optional<AuthUser> findActiveByEmail(String email, String tenantId) {
+        return userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE);
+    }
+
     public boolean existsByEmailAndTenant(String email, String tenantId) {
         return userRepository.existsByEmailAndTenantId(email, tenantId);
     }

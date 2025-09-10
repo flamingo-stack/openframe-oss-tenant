@@ -6,6 +6,4 @@ spring:
     activate:
       on-profile: k8s
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
-  data:
-    mongodb:
-      enabled: true
+
