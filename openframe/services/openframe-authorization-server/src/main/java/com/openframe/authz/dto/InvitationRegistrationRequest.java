@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class InvitationRegistrationRequest {
+
     @NotBlank
     private String invitationId;
 

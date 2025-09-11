@@ -37,13 +37,18 @@ public class InvitationMapper {
     }
 
     public InvitationResponse toResponse(Invitation entity) {
+        InvitationStatus status = InvitationStatus.valueOf(entity.getStatus().name());
+        if (status == InvitationStatus.PENDING && entity.getExpiresAt().isBefore(Instant.now())) {
+            status = InvitationStatus.EXPIRED;
+        }
+
         return InvitationResponse.builder()
                 .id(entity.getId())
                 .email(entity.getEmail())
                 .roles(entity.getRoles().stream().map(r -> Role.valueOf(r.name())).toList())
                 .createdAt(entity.getCreatedAt())
                 .expiresAt(entity.getExpiresAt())
-                .status(InvitationStatus.valueOf(entity.getStatus().name()))
+                .status(status)
                 .build();
     }
 }
