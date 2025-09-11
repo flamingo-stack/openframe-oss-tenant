@@ -1,9 +1,9 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/flamingo-logo-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/assets/flamingo-logo-light.png">
-  <img alt="Flamingo OpenFrame" src="docs/assets/flamingo-logo-light.png" width="400">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-openframe-full-dark-bg.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-openframe-full-yellow.jpg">
+  <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-yellow.jpg" width="400">
 </picture>
 
 # OpenFrame OSS Tenant
