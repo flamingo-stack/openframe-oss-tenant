@@ -289,10 +289,17 @@ This project is licensed under the [The Flamingo AI Unified License v1.0](LICENS
 ---
 
 <div align="center">
-
-Built with 💛 by the [**Flamingo**](https://www.flamingo.run/about) team
-
-[Website](https://www.flamingo.run) • [Knowledge Base](https://www.flamingo.run/knowledge-base) • [LinkedIn](https://www.linkedin.com/showcase/openframemsp/about/) • [Community](https://www.openmsp.ai/)
-
-
+  <table border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
+      </td>
+      <td align="center">
+        <a href="https://www.flamingo.run">Website</a> • 
+        <a href="https://www.flamingo.run/knowledge-base">Knowledge Base</a> • 
+        <a href="https://www.linkedin.com/showcase/openframemsp/about/">LinkedIn</a> • 
+        <a href="https://www.openmsp.ai/">Community</a>
+      </td>
+    </tr>
+  </table>
 </div>
