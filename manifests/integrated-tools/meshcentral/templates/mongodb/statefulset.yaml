@@ -93,11 +93,12 @@ spec:
             - name: mongo-data
               mountPath: /data/db
             - name: init-script
-              mountPath: /docker-entrypoint-initdb.d
-              readOnly: true
-            - name: init-script
               mountPath: /usr/local/bin/mongo-init.sh
               subPath: mongo-init.sh
+              readOnly: true
+            - name: init-script
+              mountPath: /usr/local/bin/mongodb-entrypoint.sh
+              subPath: mongodb-entrypoint.sh
               readOnly: true
             - name: readiness-command
               mountPath: /usr/local/bin/readiness-command.sh

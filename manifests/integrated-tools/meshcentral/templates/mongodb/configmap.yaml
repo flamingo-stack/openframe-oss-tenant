@@ -16,6 +16,8 @@ metadata:
 data:
   mongo-init.sh: |-
 {{ .Files.Get "scripts/meshcentral-mongodb-init.sh" | indent 4 }}
+  mongodb-entrypoint.sh: |-
+{{ .Files.Get "scripts/mongodb-entrypoint.sh" | indent 4 }}
 
 ---
 
