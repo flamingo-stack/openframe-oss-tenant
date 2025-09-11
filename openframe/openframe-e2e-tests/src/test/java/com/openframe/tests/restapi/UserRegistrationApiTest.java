@@ -23,9 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Slf4j
 public class UserRegistrationApiTest extends ApiBaseTest {
 
-    private static String createdUserId;
-    private static String createdTenantId;
-
     @Test
     @Order(1)
     @DisplayName("Should successfully register user with valid data")
@@ -107,14 +104,6 @@ public class UserRegistrationApiTest extends ApiBaseTest {
             softAssertions.assertThat(userInDb.get("roles"))
                     .isNotNull();
         });
-
-        Document userInDb = DBQuery.findUserByTenantName(userData.getTenantName());
-        createdUserId = userInDb.getString("_id");
-        createdTenantId = userInDb.getString("tenantId");
-        
-        // Register created data for automatic cleanup
-        registerUserForCleanup(createdUserId);
-        registerTenantForCleanup(createdTenantId);
 
         log.info("User registration successful for: {} with ID: {}",
                 userData.getEmail(), registrationResponse.getId());

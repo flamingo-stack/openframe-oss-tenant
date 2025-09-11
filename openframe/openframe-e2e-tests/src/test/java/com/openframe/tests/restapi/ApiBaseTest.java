@@ -3,6 +3,7 @@ package com.openframe.tests.restapi;
 import com.openframe.config.RestAssuredConfig;
 import com.openframe.config.MongoDBConnection;
 import com.openframe.config.ThreadSafeTestContext;
+import com.openframe.data.DBQuery;
 import com.openframe.tests.BaseTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
