@@ -21,13 +21,6 @@ wait_for_argocd_apps() {
     done
 
     [ "$(wc -l < "$printed")" -eq "$(kubectl -n argocd get applications -o name | wc -l)" ] && break
-    
-    # Debug meshcentral if unhealthy
-    kubectl -n integrated-tools get pods | grep meshcentral || true
-    kubectl -n integrated-tools logs -l app=meshcentral-server --tail=10 2>/dev/null || true
-    echo "MongoDB logs:"
-    kubectl -n integrated-tools logs -l app=meshcentral-mongodb --tail=10 2>/dev/null || true
-    
     sleep 5
   done
 
