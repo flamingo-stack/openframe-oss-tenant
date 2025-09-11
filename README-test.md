@@ -75,7 +75,7 @@ flowchart TB
 
 Get OpenFrame running locally in under 5 minutes! Choose your platform:
 
-###Windows
+### Windows
 ```powershell
 # Interactive mode
 .\scripts\run-windows.ps1
@@ -84,7 +84,7 @@ Get OpenFrame running locally in under 5 minutes! Choose your platform:
 .\scripts\run-windows.ps1 -Silent
 ```
 
-###macOS
+### MacOS
 ```bash
 # Interactive mode
 ./scripts/run-mac.sh
@@ -93,7 +93,7 @@ Get OpenFrame running locally in under 5 minutes! Choose your platform:
 ./scripts/run-mac.sh --silent
 ```
 
-###Linux
+### Linux
 ```bash
 # Interactive mode
 ./scripts/run-linux.sh
