@@ -4,12 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DatabaseConstants {
-    
-    // Single database configuration
+
     private static final String DEFAULT_MONGODB_URI = "mongodb://openframe:password123456789@mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe?authSource=admin&connectTimeoutMS=10000&socketTimeoutMS=10000&serverSelectionTimeoutMS=10000";
     private static final String DEFAULT_DATABASE_NAME = "openframe";
-    
-    // Configuration properties
+
     public static final String MONGODB_URI = getMongoDbUri();
     public static final String DATABASE_NAME = getDatabaseName();
     

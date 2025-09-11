@@ -10,10 +10,6 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 
-/**
- * Lightweight API helpers following industry best practices.
- * Simple static methods for common operations without over-abstraction.
- */
 @Slf4j
 public class ApiHelpers {
     
@@ -28,10 +24,7 @@ public class ApiHelpers {
             .header("X-Test-Id", testId)
             .contentType("application/json");
     }
-    
-    /**
-     * Get active management key from API service
-     */
+
     public static String getActiveManagementKey() {
         Response response = baseSpec()
             .when()
@@ -42,10 +35,7 @@ public class ApiHelpers {
         log.debug("Retrieved management key: {}...", key.substring(0, Math.min(10, key.length())));
         return key;
     }
-    
-    /**
-     * Generate new management key
-     */
+
     public static String generateManagementKey() {
         Response response = baseSpec()
             .when()
@@ -54,10 +44,7 @@ public class ApiHelpers {
         response.then().statusCode(200);
         return response.jsonPath().getString("key");
     }
-    
-    /**
-     * Register agent with management key
-     */
+
     public static String registerAgent(String managementKey, Map<String, Object> agentData) {
         Response response = baseSpec()
             .header("X-Initial-Key", managementKey)
@@ -70,10 +57,7 @@ public class ApiHelpers {
         log.debug("Agent registered with machineId: {}", machineId);
         return machineId;
     }
-    
-    /**
-     * Register agent and return full response with OAuth credentials
-     */
+
     public static Map<String, String> registerAgentWithCredentials(String managementKey, Map<String, Object> agentData) {
         Response response = baseSpec()
             .header("X-Initial-Key", managementKey)
@@ -92,10 +76,7 @@ public class ApiHelpers {
             result.get("machineId"), result.get("clientId"));
         return result;
     }
-    
-    /**
-     * Get OAuth token for agent
-     */
+
     public static String getAgentOAuthToken(String clientId, String clientSecret) {
         log.debug("Attempting OAuth token request with clientId: {}", clientId);
         
@@ -124,10 +105,7 @@ public class ApiHelpers {
         
         return accessToken;
     }
-    
-    /**
-     * Execute GraphQL query
-     */
+
     public static Response graphqlQuery(String query) {
         Map<String, String> payload = Map.of("query", query);
         
@@ -136,10 +114,7 @@ public class ApiHelpers {
             .when()
             .post(API_SERVICE_URL + "/graphql");
     }
-    
-    /**
-     * Query device by machine ID
-     */
+
     public static Map<String, Object> queryDevice(String machineId) {
         String query = String.format(
             "{ device(machineId: \"%s\") { machineId hostname status agentVersion lastSeen } }",
@@ -151,10 +126,7 @@ public class ApiHelpers {
         
         return response.jsonPath().getMap("data.device");
     }
-    
-    /**
-     * Query devices with pagination
-     */
+
     public static Map<String, Object> queryDevices(int limit, String cursor) {
         String query;
         if (cursor != null) {
@@ -178,9 +150,6 @@ public class ApiHelpers {
         return response.jsonPath().getMap("data.devices");
     }
 
-    /**
-     * Delete device - backward compatible version
-     */
     public static boolean deleteDevice(String machineId) {
         Response response = baseSpec()
             .when()

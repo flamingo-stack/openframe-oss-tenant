@@ -7,43 +7,27 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/**
- * Advanced test data builder for various scenarios
- */
 public class TestDataBuilder {
     
     private static final Faker faker = new Faker();
-    
-    /**
-     * Create multiple user registration data
-     */
+
     public static List<UserRegistrationBuilder> createUsers(int count) {
         return IntStream.range(0, count)
                 .mapToObj(i -> UserRegistrationBuilder.random())
                 .collect(Collectors.toList());
     }
-    
-    /**
-     * Create users for specific tenant
-     */
+
     public static List<UserRegistrationBuilder> createUsersForTenant(String tenantName, int count) {
         return IntStream.range(0, count)
                 .mapToObj(i -> UserRegistrationBuilder.forTenant(tenantName))
                 .collect(Collectors.toList());
     }
-    
-    /**
-     * Create builder instance - now using UserRegistrationBuilder directly
-     * @deprecated Use UserRegistrationBuilder.builder() instead
-     */
+
     @Deprecated
     public static UserRegistrationBuilder.UserRegistrationBuilderBuilder builder() {
         return UserRegistrationBuilder.builder();
     }
-    
-    /**
-     * Create data for edge cases using UserRegistrationBuilder
-     */
+
     public static class EdgeCaseBuilder {
         
         public static UserRegistrationBuilder veryLongEmail() {
@@ -88,10 +72,7 @@ public class TestDataBuilder {
                     .build();
         }
     }
-    
-    /**
-     * Create API request data
-     */
+
     public static Map<String, Object> createApiRequest(String endpoint, Object data) {
         return Map.of(
             "endpoint", endpoint,

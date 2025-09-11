@@ -167,28 +167,6 @@ public class OpenFrameMainPage extends BasePageObject{
         setPassword(password);
         setConfirmPassword(password);
     }
-    
-    public void completeLogin(String email) {
-        setLoginEmail(email);
-    }
-    
-    // ========== FormInteractions Interface Implementation ==========
-
-//    public void fillForm(Object data) {
-//        if (data instanceof OrganizationRegistrationData) {
-//            OrganizationRegistrationData regData = (OrganizationRegistrationData) data;
-//            completeOrganizationRegistration(
-//                regData.getOrganizationName(),
-//                regData.getFirstName(),
-//                regData.getLastName(),
-//                regData.getEmail(),
-//                regData.getPassword()
-//            );
-//        } else if (data instanceof LoginData) {
-//            LoginData loginData = (LoginData) data;
-//            completeLogin(loginData.getEmail());
-//        }
-//    }
 
     public boolean isFormComplete() {
         return isOrganizationFormComplete() && isLoginFormComplete();

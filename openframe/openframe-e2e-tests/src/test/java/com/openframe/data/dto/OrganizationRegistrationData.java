@@ -17,9 +17,7 @@ public class OrganizationRegistrationData {
     private String password;
     private String confirmPassword;
     
-    /**
-     * Constructor with all fields (auto-confirms password)
-     */
+
     public OrganizationRegistrationData(String organizationName, String firstName, 
                                       String lastName, String email, String password) {
         this.organizationName = organizationName;
@@ -27,13 +25,9 @@ public class OrganizationRegistrationData {
         this.lastName = lastName;
         this.email = email;
         this.password = password;
-        this.confirmPassword = password; // Auto-confirm password
+        this.confirmPassword = password;
     }
-    
-    /**
-     * Validate registration data
-     * @return true if data is valid
-     */
+
     public boolean isValid() {
         return organizationName != null && !organizationName.trim().isEmpty() &&
                firstName != null && !firstName.trim().isEmpty() &&
