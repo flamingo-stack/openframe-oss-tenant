@@ -1,0 +1,83 @@
+
+apps:
+  namespace-integrated-tools:
+    enabled: true
+  authentik: 
+    enabled: false 
+  fleetmdm: 
+    enabled: false
+  meshcentral: 
+    enabled: true 
+  tactical-rmm: 
+    enabled: false
+
+ namespace-platform:
+    enabled: false
+  ngrok-operator:
+    enabled: false
+  cert-manager:
+    enabled: false
+  ingress-nginx:
+    enabled: false
+  promtail:
+    enabled: false
+  loki:
+    enabled: false
+  prometheus:
+    enabled: false
+  grafana:
+    enabled: false
+
+  namespace-datasources:
+    enabled: false
+  mongodb:
+    enabled: false
+  debezium-connect:
+    enabled: false
+  pinot: 
+    enabled: false
+  zookeeper:
+    enabled: false
+  cassandra:
+    enabled: false
+  kafka:
+    enabled: false
+  nats:
+    enabled: false
+  mongodb-exporter:
+    enabled: false
+  redis:
+    enabled: false
+  redis-exporter:
+    enabled: false
+
+  namespace-microservices:
+    enabled: false
+  openframe-config:
+    enabled: false
+  openframe-management:
+    enabled: false
+  openframe-external-api: 
+    enabled: false
+  openframe-api: 
+    enabled: false
+  openframe-authorization-server:
+    enabled: false
+  openframe-gateway: 
+    enabled: false
+  openframe-client: 
+    enabled: false
+  openframe-stream: 
+    enabled: false
+  openframe-ui: 
+    enabled: false
+
+  namespace-client-tools:
+    enabled: false
+  mongo-express:
+    enabled: false
+  kafka-ui:
+    enabled: false
+  telepresence:
+    enabled: false
+
