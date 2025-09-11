@@ -57,7 +57,7 @@ spec:
       containers:
         - name: mongodb
           image: mongo:8.0.9
-          args: ["--bind_ip_all","--replSet","rs0","--keyFile","/etc/mongo-keyfile/keyfile","--auth"]
+          command: ["/usr/local/bin/mongodb-entrypoint.sh"]
           ports:
             - name: mongodb
               containerPort: 27017
@@ -74,10 +74,6 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 6
             successThreshold: 1
-          lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/bash","-lc","(/usr/local/bin/mongo-init.sh 2>&1 | tee /var/log/mongo-init.log) &"]
           livenessProbe:
             tcpSocket:
               port: 27017
