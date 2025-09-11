@@ -33,7 +33,7 @@ spec:
         args:
           - |
             echo "Waiting for MongoDB replica set to be ready..."
-            "
+            
             # Use the readiness script with retry logic
             for i in $(seq 1 120); do
               if /usr/local/bin/readiness-command.sh; then
