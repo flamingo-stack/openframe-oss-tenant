@@ -1,8 +1,11 @@
 <div align="center">
   <picture>
+    <!-- Dark theme -->
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-openframe-full-dark-bg.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-openframe-full-yellow.jpg">
-    <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-yellow.jpg" width="400">
+    <!-- Light theme -->
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-openframe-full-light-bg.png">
+    <!-- Default / fallback -->
+    <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-light-bg.png" width="400">
   </picture>
 
   <p><b>A distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. We simplify IT and security operations through a single, cohesive platform.</b></p>
