@@ -280,7 +280,7 @@ Found a security issue? Please email security@flamingo.run instead of opening a 
 
 ## 📄 License
 
-This project is licensed under the [Apache License 2.0](LICENSE.md).
+This project is licensed under the [The Flamingo AI Unified License v1.0](LICENSE.md).
 
 ## 🙏 Acknowledgments
 
