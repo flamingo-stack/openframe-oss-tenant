@@ -14,81 +14,151 @@ MONGODB_PORT="${MONGODB_PORT:-27017}"
 DB_HOST="127.0.0.1"
 MONGODB_URL="mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@${DB_HOST}:${MONGODB_PORT}"
 
-
-apt-get update && apt-get install -y curl gpg apt-transport-https ca-certificates
-          
 echo "Waiting for MongoDB service to be ready..."
-# use localhost while mongod is still starting with attempt limit
+# Wait for MongoDB to be accessible
 ATTEMPTS=0
-until mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "db.adminCommand('ping')" >/dev/null 2>&1 \
-    || mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
-ATTEMPTS=$((ATTEMPTS+1))
-if [ $ATTEMPTS -ge 60 ]; then
-  echo "MongoDB has not been available for more than 5 minutes — exiting"; exit 1
-fi
-echo "Waiting for MongoDB to be accessible (localhost)..."
-sleep 5
+until mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+  ATTEMPTS=$((ATTEMPTS+1))
+  if [ $ATTEMPTS -ge 60 ]; then
+    echo "MongoDB has not been available for more than 5 minutes — exiting"; exit 1
+  fi
+  echo "Waiting for MongoDB to be accessible (localhost)..."
+  sleep 5
 done
 
 echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
-echo "Checking replica set status..."
-INIT_STATUS=$(mongosh --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" \
-    --authenticationDatabase admin --host "${DB_HOST}:${MONGODB_PORT}" \
-    --eval "try { rs.status().ok } catch(e) { 0 }" --quiet)
-echo "Current replica set status: $INIT_STATUS"
-
+# Get the fully qualified domain name for this pod
 HOST_FQDN="$(hostname -f):${MONGODB_PORT}"
 
-if [ "$INIT_STATUS" != "1" ]; then
-echo "Replica set needs initialization or repair..."
-
-RECONFIG_RESULT=$(mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
-  const host = '$HOST_FQDN';
-  function ensureRs() {
-    try {
-      const st = rs.status();
-      if (st.ok === 1) { print('RS already OK'); return; }
-    } catch(e) { /* not initialized or not accessible yet */ }
-
-    try {
-      rs.initiate({ _id: 'rs0', members: [ { _id: 0, host: host } ] });
-      print('RS initiated to ' + host);
-      return;
-    } catch(e) {
-      const msg = String(e.message || e);
-      if (msg.includes('already initialized')) {
-        print('RS already initialized, forcing reconfig to ' + host);
-        rs.reconfig({ _id: 'rs0', members: [ { _id: 0, host: host } ] }, { force: true });
-      } else {
-        throw e;
-      }
+echo "Checking replica set configuration..."
+# Check if replica set is already configured (will fail if not initialized)
+RS_CONFIG=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
+  try {
+    const config = rs.conf();
+    if (config) {
+      print('CONFIGURED');
+    } else {
+      print('NOT_CONFIGURED');
+    }
+  } catch(e) {
+    if (e.codeName === 94 || e.message.includes('no replset config')) {
+      print('NOT_CONFIGURED');
+    } else if (e.codeName === 13 || e.message.includes('not authorized')) {
+      // Try with auth
+      print('NEED_AUTH');
+    } else {
+      print('ERROR: ' + e.message);
     }
   }
-  ensureRs();
-" --quiet)
-echo "Replica set setup result: $RECONFIG_RESULT"
+" --quiet 2>/dev/null || echo "NOT_CONFIGURED")
 
-echo "Waiting for replica set to stabilize..."
-sleep 10
+echo "Replica set configuration status: $RS_CONFIG"
 
-echo "Checking for PRIMARY state after initialization..."
-for i in {1..60}; do
-    IS_PRIMARY=$(mongosh "${MONGODB_URL}/admin?authSource=admin" \
-        --eval "try { db.hello().isWritablePrimary ? 1 : 0 } catch(e) { 0 }" --quiet)
-    if [ "$IS_PRIMARY" = "1" ]; then
-    echo "Replica set PRIMARY is ready!"
-    break
-    fi
-    echo "Retry $i: Waiting for PRIMARY (current: $IS_PRIMARY)..."
-    sleep 5
-done
-if [ "$IS_PRIMARY" != "1" ]; then
-  echo "ERROR: PRIMARY not ready after timeout"; exit 1
+# If we need auth, check with credentials
+if [ "$RS_CONFIG" = "NEED_AUTH" ]; then
+  RS_CONFIG=$(mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
+    try {
+      const config = rs.conf();
+      if (config) {
+        print('CONFIGURED');
+      } else {
+        print('NOT_CONFIGURED');
+      }
+    } catch(e) {
+      if (e.codeName === 94 || e.message.includes('no replset config')) {
+        print('NOT_CONFIGURED');
+      } else {
+        print('ERROR: ' + e.message);
+      }
+    }
+  " --quiet 2>/dev/null || echo "NOT_CONFIGURED")
 fi
+
+if [ "$RS_CONFIG" = "NOT_CONFIGURED" ]; then
+  echo "Initializing replica set..."
+  
+  # First attempt without auth (using localhost exception for initial setup)
+  INIT_RESULT=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
+    try {
+      const result = rs.initiate({
+        _id: 'rs0',
+        members: [{ _id: 0, host: '${HOST_FQDN}' }]
+      });
+      if (result.ok === 1) {
+        print('SUCCESS');
+      } else {
+        print('FAILED: ' + tojson(result));
+      }
+    } catch(e) {
+      // If auth is required, we'll try with credentials
+      if (e.codeName === 13 || e.message.includes('not authorized')) {
+        print('NEED_AUTH');
+      } else {
+        print('ERROR: ' + e.message);
+      }
+    }
+  " --quiet 2>/dev/null || echo "NEED_AUTH")
+  
+  # If auth is needed, try with credentials
+  if [ "$INIT_RESULT" = "NEED_AUTH" ]; then
+    echo "Retrying with authentication..."
+    INIT_RESULT=$(mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
+      try {
+        const result = rs.initiate({
+          _id: 'rs0',
+          members: [{ _id: 0, host: '${HOST_FQDN}' }]
+        });
+        if (result.ok === 1) {
+          print('SUCCESS');
+        } else {
+          print('FAILED: ' + tojson(result));
+        }
+      } catch(e) {
+        print('ERROR: ' + e.message);
+      }
+    " --quiet)
+  fi
+  
+  if [ "$INIT_RESULT" = "SUCCESS" ]; then
+    echo "Replica set initialized successfully"
+  else
+    echo "Replica set initialization result: $INIT_RESULT"
+  fi
+  
+  echo "Waiting for replica set to stabilize..."
+  sleep 15
+  
+  echo "Checking for PRIMARY state after initialization..."
+  for i in {1..60}; do
+    IS_PRIMARY=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
+      try { 
+        const hello = db.hello();
+        if (hello.isWritablePrimary) {
+          print('1');
+        } else {
+          print('0');
+        }
+      } catch(e) { 
+        print('0');
+      }
+    " --quiet 2>/dev/null || echo "0")
+    
+    if [ "$IS_PRIMARY" = "1" ]; then
+      echo "Replica set PRIMARY is ready!"
+      break
+    fi
+    echo "Retry $i: Waiting for PRIMARY..."
+    sleep 5
+  done
+  
+  if [ "$IS_PRIMARY" != "1" ]; then
+    echo "ERROR: PRIMARY not ready after timeout"
+    exit 1
+  fi
 else
-echo "Replica set is already initialized"
+  echo "Replica set is already configured"
 fi
 
 echo "Ensuring admin user exists..."

@@ -29,19 +29,21 @@ spec:
               name: meshcentral-mongodb
           - secretRef:
               name: meshcentral-mongodb
-        command: ["sh", "-c"]
+        command: ["/bin/bash", "-c"]
         args:
           - |
-            echo "Waiting for MongoDB to be ready..."
-            sleep 30
-            for i in $(seq 1 300); do
+            echo "Waiting for MongoDB replica set to be ready..."
+            "
+            # Use the readiness script with retry logic
+            for i in $(seq 1 120); do
               if /usr/local/bin/readiness-command.sh; then
                 echo "MongoDB is ready after $i attempts"
                 exit 0
               fi
-              echo "Attempt $i: MongoDB not ready yet, waiting..."
+              echo "Attempt $i: MongoDB not ready yet, waiting 5 seconds..."
               sleep 5
             done
+            
             echo "MongoDB did not become ready in time" >&2
             exit 1
         volumeMounts:

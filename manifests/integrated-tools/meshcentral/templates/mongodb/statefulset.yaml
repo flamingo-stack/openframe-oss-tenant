@@ -69,10 +69,11 @@ spec:
           readinessProbe:
             exec:
               command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
-            initialDelaySeconds: 30
+            initialDelaySeconds: 45
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
+            successThreshold: 1
           lifecycle:
             postStart:
               exec:
