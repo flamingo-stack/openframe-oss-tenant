@@ -151,8 +151,8 @@ spec:
                 ],
                 "assets": [
                   {
-                    "id": "osquery",
-                    "localFilename": "osquery",
+                    "id": "osqueryd",
+                    "localFilename": "osqueryd",
                     "source": "ARTIFACTORY"
                   }
                 ]
