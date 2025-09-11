@@ -106,3 +106,4 @@ spec:
         - name: meshcentral-data
           persistentVolumeClaim:
             claimName: meshcentral-server
+
