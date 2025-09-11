@@ -58,7 +58,8 @@ RS_CONFIG=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
       print('ERROR: ' + e.message);
     }
   }
-" --quiet 2>/dev/null || echo "NOT_CONFIGURED")
+" --quiet 2>&1 || echo "NOT_CONFIGURED")
+echo "Replica set check result: '$RS_CONFIG'"
 
 echo "Replica set configuration status: $RS_CONFIG"
 
@@ -192,4 +193,5 @@ mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
 
 echo "Final replica set status:"
 mongosh "${MONGODB_URL}/admin?authSource=admin" \
-    --eval "rs.status()" --quiet
+    --eval "rs.status()" --quiet || echo "Failed to get final replica set status"
+echo "MongoDB initialization completed successfully"

@@ -24,9 +24,9 @@ wait_for_argocd_apps() {
     
     # Debug meshcentral if unhealthy
     kubectl -n integrated-tools get pods | grep meshcentral || true
-    kubectl -n integrated-tools logs -l app=meshcentral-server --tail=5 2>/dev/null || true
+    kubectl -n integrated-tools logs -l app=meshcentral-server --tail=10 2>/dev/null || true
     echo "MongoDB logs:"
-    kubectl -n integrated-tools logs -l app=meshcentral-mongodb --tail=3 2>/dev/null || true
+    kubectl -n integrated-tools logs -l app=meshcentral-mongodb --tail=10 2>/dev/null || true
     
     sleep 5
   done
