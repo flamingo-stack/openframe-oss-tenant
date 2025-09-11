@@ -6,24 +6,22 @@
   <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-yellow.jpg" width="400">
 </picture>
 
-# OpenFrame OSS Tenant
 
+**A distributed platform that builds a unified layer for data, APIs, automation, and AI on top of trusted open-source projects.**
 
-**A distributed platform that creates a unified layer for data, APIs, automation, and AI**
+[![License](https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20UNIFIED%20LICENSE%20V1.0-%23FFC109?style=for-the-badge&labelColor=white)](LICENSE.md)
+[![Release](https://img.shields.io/github/v/release/flamingo-stack/openframe-oss-tenant?style=for-the-badge&color=%23FFC109&labelColor=white)](https://github.com/flamingo-stack/openframe-oss-tenant/releases)
+[![Docs](https://img.shields.io/badge/DOCS-flamingo.run-%23FFC109?style=for-the-badge&labelColor=white)](https://www.flamingo.run/knowledge-base)
+[![Community](https://img.shields.io/badge/COMMUNITY-openmsp.ai-%23FFC109?style=for-the-badge&labelColor=white)](https://www.openmsp.ai/)
 
-[![License](https://img.shields.io/badge/License-The%20Flamingo%20AI%20Unified%20License%20v1.0-blue?style=for-the-badge&color=%23FFC109)](LICENSE.md)
-[![GitHub release](https://img.shields.io/github/release/flamingo-stack/openframe-oss-tenant.svg?style=for-the-badge&color=%23FFC109)](https://github.com/flamingo-stack/openframe-oss-tenant/releases)
-[![Documentation](https://img.shields.io/badge/docs-flamingo.run-blue?style=for-the-badge&color=%23FFC109)](https://www.flamingo.run/knowledge-base)
-[![Community](https://img.shields.io/badge/community-openmsp.ai-pink?style=for-the-badge&color=%23FFC109)](https://www.openmsp.ai/)
-
-[🚀 Quick Start](#-quick-start) · [📖 Documentation](https://www.flamingo.run/knowledge-base) · [🤝 Community](https://www.openmsp.ai/) · [🛡️ Security](#-security)
+[Quick Start](#quick-start) · [Documentation](https://www.flamingo.run/knowledge-base) · [Community](https://www.openmsp.ai/) · [Security](#security)
 
 </div>
 
 ---
 
 
-## ✨ Highlights
+## Highlights
 
 - **Unified Dashboard** - Single interface for managing all services and workflows
 - **Smart Automation** - Automated deployment and monitoring capabilities  
@@ -33,7 +31,7 @@
 - **Scalable Architecture** - Built on proven microservices principles
 
 
-## 🏗️ Architecture
+## Architecture
 
 OpenFrame uses a modern microservices architecture with four key layers:
 
@@ -42,25 +40,25 @@ flowchart TB
     Client[Client Applications] --> LB[Load Balancer]
     LB --> Gateway[API Gateway]
     
-    subgraph "🌐 Gateway Layer"
+    subgraph "Gateway Layer"
         Gateway --> GraphQL[GraphQL Engine]
         Gateway --> Auth[Auth Service]
     end
     
-    subgraph "⚙️ Processing Layer"
+    subgraph "Processing Layer"
         Stream[Stream Processing] --> Kafka[Apache Kafka]
         Kafka --> |Analytics| Pinot[Apache Pinot]
         Kafka --> |Storage| Cassandra[Cassandra]
     end
     
-    subgraph "💾 Data Layer"
+    subgraph "Data Layer"
         GraphQL --> MongoDB[(MongoDB)]
         GraphQL --> Cassandra
         GraphQL --> Pinot
         GraphQL --> Redis[(Redis Cache)]
     end
     
-    subgraph "☁️ Infrastructure Layer"
+    subgraph "Infrastructure Layer"
         K8s[Kubernetes] --> Istio[Service Mesh]
         Prometheus[Monitoring] --> Grafana[Visualization]
     end
@@ -71,7 +69,7 @@ flowchart TB
     style K8s fill:#FFC109,stroke:#1A1A1A,color:#212121
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 Get OpenFrame running locally in under 5 minutes! Choose your platform:
 
@@ -102,7 +100,7 @@ Get OpenFrame running locally in under 5 minutes! Choose your platform:
 ./scripts/run-linux.sh --silent
 ```
 
-### 🔑 Authentication Setup
+### Authentication Setup
 
 Create a GitHub Personal Access Token (Classic) with these permissions:
 - `repo` - Full control of private repositories
@@ -112,7 +110,7 @@ Create a GitHub Personal Access Token (Classic) with these permissions:
 [Create token →](https://github.com/settings/tokens)
 
 
-### 🌐 Access Your Instance
+### Access Your Instance
 
 Once started, OpenFrame will be available at:
 - **UI Dashboard:** http://localhost:8080
@@ -120,9 +118,9 @@ Once started, OpenFrame will be available at:
 - **Config Server:** http://localhost:8888
 
 
-## ☸️ Deployment Options
+## Deployment Options
 
-###Docker Compose (Development)
+### Docker Compose (Development)
 ```bash
 # Build and start all services
 docker-compose up -d
@@ -131,7 +129,7 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-###Kubernetes (Production)
+### Kubernetes (Production)
 ```bash
 # Deploy to Kubernetes cluster
 kubectl apply -f k8s/
@@ -140,7 +138,7 @@ kubectl apply -f k8s/
 kubectl get pods -n openframe
 ```
 
-## 🖼️ Screenshots
+## Screenshots
 
 <div align="center">
 
@@ -150,7 +148,7 @@ kubectl get pods -n openframe
 
 </div>
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
@@ -164,7 +162,7 @@ kubectl get pods -n openframe
 | **Orchestration** | Kubernetes + Istio | Container management |
 | **Monitoring** | Prometheus + Grafana + Loki | Observability stack |
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Core microservices architecture
 - [x] GraphQL API with authentication  
@@ -176,7 +174,7 @@ kubectl get pods -n openframe
 - [ ] **Edge computing capabilities** *(Q4 2025)*
 - [ ] **Mobile companion app** *(2026)*
 
-## 🏃‍♂️ Development Setup
+## Development Setup
 
 ### Prerequisites
 - **Java:** OpenJDK 21.0.1+
@@ -217,7 +215,7 @@ cd client
 cargo test
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We love contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
@@ -228,18 +226,18 @@ We love contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for 
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📚 Documentation
+## Documentation
 
 | Guide | Description |
 |-------|-------------|
-| [🚀 Getting Started](docs/getting-started/introduction.md) | Quick start guide and basic concepts |
-| [🏗️ Architecture](docs/development/architecture/overview.md) | System design and components |
-| [🔧 Development Setup](docs/development/setup/environment.md) | Local development environment |
-| [📡 API Reference](docs/api/README.md) | GraphQL schema and endpoints |
-| [🚢 Deployment](docs/deployment/README.md) | Production deployment guide |
-| [🔧 Operations](docs/operations/README.md) | Monitoring and maintenance |
+| [Getting Started](docs/getting-started/introduction.md) | Quick start guide and basic concepts |
+| [Architecture](docs/development/architecture/overview.md) | System design and components |
+| [Development Setup](docs/development/setup/environment.md) | Local development environment |
+| [API Reference](docs/api/README.md) | GraphQL schema and endpoints |
+| [Deployment](docs/deployment/README.md) | Production deployment guide |
+| [Operations](docs/operations/README.md) | Monitoring and maintenance |
 
-## ❓ FAQ
+## FAQ
 
 <details>
 <summary><strong>How does OpenFrame compare to other platforms?</strong></summary>
@@ -265,7 +263,7 @@ Yes! OpenFrame is designed to integrate with existing systems through its flexib
 Yes, enterprise support is available through [Flamingo](https://www.flamingo.run). Contact us for details.
 </details>
 
-## 🔒 Security
+## Security
 
 OpenFrame takes security seriously. We implement:
 
@@ -278,11 +276,11 @@ OpenFrame takes security seriously. We implement:
 
 Found a security issue? Please email security@flamingo.run instead of opening a public issue.
 
-## 📄 License
+## License
 
-This project is licensed under the [Apache License 2.0](LICENSE.md).
+This project is licensed under the [The Flamingo AI Unified License v1.0](LICENSE.md).
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Thanks to all our [contributors](https://github.com/flamingo-stack/openframe-oss-tenant/graphs/contributors)
 - Built with amazing open-source projects: Spring Boot, Vue.js, Apache Kafka, and many more
@@ -292,13 +290,9 @@ This project is licensed under the [Apache License 2.0](LICENSE.md).
 
 <div align="center">
 
-Built with 💛 by the [**Flamingo**](https://www.flamingo.run) team
+Built with 💛 by the [**Flamingo**](https://www.flamingo.run/about) team
 
-[🌐 Website](https://www.flamingo.run) • [📚 Knowledge Base](https://www.flamingo.run/knowledge-base) • [💼 LinkedIn](https://www.linkedin.com/showcase/openframemsp/about/) • [🤝 Community](https://www.openmsp.ai/)
+[Website](https://www.flamingo.run) • [Knowledge Base](https://www.flamingo.run/knowledge-base) • [LinkedIn](https://www.linkedin.com/showcase/openframemsp/about/) • [Community](https://www.openmsp.ai/)
 
-**Made in 🏖️ Miami Beach, FL**
-
-🦩
 
 </div>
-
