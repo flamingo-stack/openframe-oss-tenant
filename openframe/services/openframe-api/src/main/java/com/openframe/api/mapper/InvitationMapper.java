@@ -13,8 +13,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import static com.openframe.data.document.user.InvitationStatus.PENDING;
 import static com.openframe.data.document.user.UserRole.ADMIN;
-import static com.openframe.data.repository.user.InvitationStatus.PENDING;
 import static java.util.UUID.randomUUID;
 
 @Component

@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 
-import static com.openframe.data.repository.user.InvitationStatus.ACCEPTED;
-import static com.openframe.data.repository.user.InvitationStatus.PENDING;
+import static com.openframe.data.document.user.InvitationStatus.ACCEPTED;
+import static com.openframe.data.document.user.InvitationStatus.PENDING;
 import static java.lang.Boolean.TRUE;
 
 @Slf4j
