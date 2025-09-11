@@ -39,7 +39,7 @@ echo "Pod name: $POD_NAME"
 echo "Using FQDN: $HOST_FQDN"
 
 echo "Checking replica set configuration..."
-# Check if replica set is already configured (will fail if not initialized)
+# During initialization, MongoDB is running WITHOUT auth, so no credentials needed
 RS_CONFIG=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
   try {
     const config = rs.conf();
@@ -51,9 +51,6 @@ RS_CONFIG=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
   } catch(e) {
     if (e.codeName === 94 || e.message.includes('no replset config')) {
       print('NOT_CONFIGURED');
-    } else if (e.codeName === 13 || e.message.includes('not authorized')) {
-      // Try with auth
-      print('NEED_AUTH');
     } else {
       print('ERROR: ' + e.message);
     }
@@ -63,30 +60,10 @@ echo "Replica set check result: '$RS_CONFIG'"
 
 echo "Replica set configuration status: $RS_CONFIG"
 
-# If we need auth, check with credentials
-if [ "$RS_CONFIG" = "NEED_AUTH" ]; then
-  RS_CONFIG=$(mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
-    try {
-      const config = rs.conf();
-      if (config) {
-        print('CONFIGURED');
-      } else {
-        print('NOT_CONFIGURED');
-      }
-    } catch(e) {
-      if (e.codeName === 94 || e.message.includes('no replset config')) {
-        print('NOT_CONFIGURED');
-      } else {
-        print('ERROR: ' + e.message);
-      }
-    }
-  " --quiet 2>/dev/null || echo "NOT_CONFIGURED")
-fi
-
 if [ "$RS_CONFIG" = "NOT_CONFIGURED" ]; then
   echo "Initializing replica set..."
   
-  # First attempt without auth (using localhost exception for initial setup)
+  # MongoDB is running without auth during initialization
   INIT_RESULT=$(mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
     try {
       const result = rs.initiate({
@@ -99,34 +76,9 @@ if [ "$RS_CONFIG" = "NOT_CONFIGURED" ]; then
         print('FAILED: ' + JSON.stringify(result));
       }
     } catch(e) {
-      // If auth is required, we'll try with credentials
-      if (e.codeName === 13 || e.message.includes('not authorized')) {
-        print('NEED_AUTH');
-      } else {
-        print('ERROR: ' + e.message);
-      }
+      print('ERROR: ' + e.message);
     }
-  " --quiet 2>/dev/null || echo "NEED_AUTH")
-  
-  # If auth is needed, try with credentials
-  if [ "$INIT_RESULT" = "NEED_AUTH" ]; then
-    echo "Retrying with authentication..."
-    INIT_RESULT=$(mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
-      try {
-        const result = rs.initiate({
-          _id: 'rs0',
-          members: [{ _id: 0, host: '${HOST_FQDN}' }]
-        });
-        if (result.ok === 1) {
-          print('SUCCESS');
-        } else {
-          print('FAILED: ' + JSON.stringify(result));
-        }
-      } catch(e) {
-        print('ERROR: ' + e.message);
-      }
-    " --quiet)
-  fi
+  " --quiet 2>&1)
   
   if [ "$INIT_RESULT" = "SUCCESS" ]; then
     echo "Replica set initialized successfully"
@@ -168,8 +120,9 @@ else
   echo "Replica set is already configured"
 fi
 
-echo "Ensuring admin user exists..."
-mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
+echo "Creating admin user..."
+# MongoDB is running without auth, so connect without credentials
+mongosh --host "${DB_HOST}:${MONGODB_PORT}" --eval "
   try {
     db.getSiblingDB('admin').createUser({
       user: '$MONGO_INITDB_ROOT_USERNAME',
@@ -192,6 +145,6 @@ mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
 " --quiet
 
 echo "Final replica set status:"
-mongosh "${MONGODB_URL}/admin?authSource=admin" \
-    --eval "rs.status()" --quiet || echo "Failed to get final replica set status"
+mongosh --host "${DB_HOST}:${MONGODB_PORT}" \
+    --eval "rs.status().members[0].stateStr" --quiet || echo "Failed to get final replica set status"
 echo "MongoDB initialization completed successfully"
