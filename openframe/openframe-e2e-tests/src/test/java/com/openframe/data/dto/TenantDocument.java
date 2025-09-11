@@ -6,10 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bson.Document;
 
-/**
- * DTO for Tenant document from MongoDB
- * Provides type-safe access to tenant fields
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,9 +19,6 @@ public class TenantDocument {
     private Boolean active;
     private String ownerId;
 
-    /**
-     * Create TenantDocument from MongoDB Document
-     */
     public static TenantDocument fromDocument(Document doc) {
         if (doc == null) return null;
         
@@ -40,9 +33,6 @@ public class TenantDocument {
                 .build();
     }
 
-    /**
-     * Convert back to MongoDB Document
-     */
     public Document toDocument() {
         Document doc = new Document();
         if (id != null) doc.append("_id", id);

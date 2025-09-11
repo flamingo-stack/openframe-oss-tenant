@@ -139,13 +139,5 @@ public abstract class BasePageObject implements PageObject {
     protected void waitForElementByXPath(String xpath) {
         $x(xpath).shouldBe(visible, DEFAULT_TIMEOUT);
     }
-    
-    /**
-     * Wait for element to disappear by XPath
-     * @param xpath XPath locator
-     */
-    protected void waitForElementToDisappearByXPath(String xpath) {
-        $x(xpath).shouldNotBe(visible, DEFAULT_TIMEOUT);
-    }
 }
 

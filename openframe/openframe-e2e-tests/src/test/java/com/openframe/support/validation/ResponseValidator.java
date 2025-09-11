@@ -7,9 +7,6 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 import java.util.function.Predicate;
 
-/**
- * Flexible response validator with support for JSON, XML and detailed error messages
- */
 @Slf4j
 public class ResponseValidator {
     
@@ -62,36 +59,12 @@ public class ResponseValidator {
     }
     
     /**
-     * Check JSON array is not empty
-     */
-    public ResponseValidator jsonArrayNotEmpty(String jsonPath) {
-        List<?> array = response.jsonPath().getList(jsonPath);
-        if (array == null || array.isEmpty()) {
-            addError("Expected JSON array at '%s' to be not empty but was %s", 
-                    jsonPath, array == null ? "null" : "empty");
-        }
-        return this;
-    }
-    
-    /**
      * Check response contains text
      */
     public ResponseValidator containsText(String expectedText) {
         String responseBody = response.getBody().asString();
         if (!responseBody.contains(expectedText)) {
             addError("Expected response to contain text '%s' but it didn't", expectedText);
-        }
-        return this;
-    }
-    
-    /**
-     * Check response header value
-     */
-    public ResponseValidator headerEquals(String headerName, String expectedValue) {
-        String actualValue = response.getHeader(headerName);
-        if (!expectedValue.equals(actualValue)) {
-            addError("Expected header '%s' to be '%s' but was '%s'", 
-                    headerName, expectedValue, actualValue);
         }
         return this;
     }

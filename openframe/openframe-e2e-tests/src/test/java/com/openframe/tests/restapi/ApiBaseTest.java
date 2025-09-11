@@ -31,6 +31,7 @@ public abstract class ApiBaseTest extends BaseTest {
     @AfterAll
     protected void cleanupAfterAllTests(TestInfo testInfo) {
         log.info("🧹 Cleaning up database after all tests...");
+        DBQuery.clearAllData();
         if (mongoConnection != null) {
             mongoConnection.close();
             log.info("MongoDB connection closed for test: {}", testInfo.getDisplayName());

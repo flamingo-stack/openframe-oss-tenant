@@ -45,9 +45,6 @@ public class DBQuery {
         return users.find(new Document("email", email)).first();
     }
 
-    /**
-     * Find user by email and return as DTO
-     */
     public static UserDocument findUserByEmailAsDto(String email) {
         Document doc = findUserByEmail(email);
         return UserDocument.fromDocument(doc);
@@ -98,9 +95,6 @@ public class DBQuery {
         return users.find(new Document("tenantId", tenantId)).first();
     }
 
-    /**
-     * Find user by tenant name and return as DTO
-     */
     public static UserDocument findUserByTenantNameAsDto(String tenantName) {
         Document doc = findUserByTenantName(tenantName);
         return UserDocument.fromDocument(doc);
@@ -122,9 +116,6 @@ public class DBQuery {
         return null;
     }
 
-    /**
-     * Get both user ID and tenant ID in one query (optimized)
-     */
     public static UserIds getIdsByTenantName(String tenantName) {
         UserDocument user = findUserByTenantNameAsDto(tenantName);
         if (user != null) {
@@ -133,10 +124,7 @@ public class DBQuery {
         return null;
     }
 
-    /**
-         * Helper class for returning multiple IDs
-         */
-        public record UserIds(String userId, String tenantId) {
+    public record UserIds(String userId, String tenantId) {
     }
 
     public static boolean deleteTenant(String tenantId) {
@@ -145,28 +133,50 @@ public class DBQuery {
         return tenants.deleteOne(new Document("_id", tenantId)).getDeletedCount() > 0;
     }
 
-    /**
-     * Find tenant by name and return as DTO
-     */
     public static TenantDocument findTenantByNameAsDto(String tenantName) {
         MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
         Document doc = tenants.find(new Document("name", tenantName)).first();
         return TenantDocument.fromDocument(doc);
     }
 
-    /**
-     * Find tenant by ID and return as DTO
-     */
     public static TenantDocument findTenantByIdAsDto(String tenantId) {
         MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
         Document doc = tenants.find(new Document("_id", tenantId)).first();
         return TenantDocument.fromDocument(doc);
     }
 
-    public static void printAllUsers() {
+    /**
+     * Clear all users from database
+     */
+    public static void clearAllUsers() {
         MongoCollection<Document> users = getDatabase().getCollection("users");
-        for (Document user : users.find()) {
-            System.out.println("User document: " + user.toJson());
-        }
+        long deletedCount = users.deleteMany(new Document()).getDeletedCount();
+        System.out.println("Cleared " + deletedCount + " users from database");
+    }
+
+    /**
+     * Clear all tenants from database
+     */
+    public static void clearAllTenants() {
+        MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
+        long deletedCount = tenants.deleteMany(new Document()).getDeletedCount();
+        System.out.println("Cleared " + deletedCount + " tenants from database");
+    }
+
+    /**
+     * Clear all users and tenants from database
+     */
+    public static void clearAllData() {
+        clearAllUsers();
+        clearAllTenants();
+        System.out.println("Database cleared - all users and tenants removed");
+    }
+
+    /**
+     * Get tenant count
+     */
+    public static long getTenantCount() {
+        MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
+        return tenants.countDocuments();
     }
 }

@@ -29,9 +29,6 @@ public class UserDocument {
     private Boolean emailVerified;
     private List<String> roles;
 
-    /**
-     * Create UserDocument from MongoDB Document
-     */
     public static UserDocument fromDocument(Document doc) {
         if (doc == null) return null;
         
@@ -50,9 +47,6 @@ public class UserDocument {
                 .build();
     }
 
-    /**
-     * Convert back to MongoDB Document
-     */
     public Document toDocument() {
         Document doc = new Document();
         if (id != null) doc.append("_id", id);
