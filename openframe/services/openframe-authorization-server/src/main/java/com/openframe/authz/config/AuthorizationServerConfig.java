@@ -9,6 +9,7 @@ import com.openframe.authz.security.ProviderAwareAuthenticationEntryPoint;
 import com.openframe.authz.service.UserService;
 import com.openframe.authz.tenant.TenantForwardedPrefixFilter;
 import com.openframe.data.document.auth.AuthUser;
+import com.openframe.data.document.user.UserRole;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -42,7 +43,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -142,18 +142,19 @@ public class AuthorizationServerConfig {
             if ("access_token".equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> {
                     claims.put("tenant_id", tenantId);
-                    claims.put("tenant_domain", user.getTenantDomain());
+                    // Resolve tenant domain dynamically from TenantService if needed
                     claims.put("userId", user.getId());
 
-                    Set<String> effective = new LinkedHashSet<>(user.getRoles());
-                    if (effective.contains("OWNER")) {
-                        effective.add("ADMIN");
+                    Set<UserRole> effective = new LinkedHashSet<>(user.getRoles());
+                    if (effective.contains(UserRole.OWNER)) {
+                        effective.add(UserRole.ADMIN);
                     }
-                    claims.put("roles", new ArrayList<>(effective));
+                    claims.put("roles", effective.stream().map(UserRole::name).toList());
                 });
             }
         };
     }
+
 
     /**
      * UserDetailsService for Spring Security authentication
@@ -169,7 +170,7 @@ public class AuthorizationServerConfig {
                 .username(user.getEmail())
                 .password(user.getPasswordHash() != null ? user.getPasswordHash() : "{noop}")
                 .authorities(user.getRoles().stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
                     .toList())
                 .accountExpired(false)
                 .accountLocked(false)

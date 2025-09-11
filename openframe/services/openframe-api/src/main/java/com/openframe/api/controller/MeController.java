@@ -32,8 +32,7 @@ public class MeController {
                         "email", principal.getEmail(),
                         "displayName", principal.getDisplayName(),
                         "roles", principal.getRoles(),
-                        "tenantId", principal.getTenantId(),
-                        "tenantDomain", principal.getTenantDomain()
+                        "tenantId", principal.getTenantId()
                 )
         ));
     }
