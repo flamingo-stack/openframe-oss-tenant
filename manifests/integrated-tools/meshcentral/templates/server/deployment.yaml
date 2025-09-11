@@ -90,6 +90,15 @@ spec:
               name: meshcentral-server
           - secretRef:
               name: meshcentral-mongodb
+        readinessProbe:
+          httpGet:
+            path: /health.ashx
+            port: 8383
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
         livenessProbe:
           httpGet:
             path: /health.ashx
