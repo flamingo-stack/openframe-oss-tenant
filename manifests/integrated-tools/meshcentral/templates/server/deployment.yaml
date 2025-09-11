@@ -36,16 +36,21 @@ spec:
             
             # Use the readiness script with retry logic  
             # Increased attempts for GitHub runners (slower environment)
-            for i in $(seq 1 180); do
+            MAX_ATTEMPTS=240  # 20 minutes total (240 * 5 seconds)
+            for i in $(seq 1 $MAX_ATTEMPTS); do
               if /usr/local/bin/readiness-command.sh; then
                 echo "MongoDB is ready after $i attempts"
                 exit 0
               fi
-              echo "Attempt $i: MongoDB not ready yet, waiting 5 seconds..."
+              
+              # Less verbose logging
+              if [ $((i % 12)) -eq 0 ]; then
+                echo "Attempt $i/$MAX_ATTEMPTS: MongoDB not ready yet, continuing..."
+              fi
               sleep 5
             done
             
-            echo "MongoDB did not become ready in time" >&2
+            echo "MongoDB did not become ready after $MAX_ATTEMPTS attempts" >&2
             exit 1
         volumeMounts:
         - name: mongodb-readiness-command
