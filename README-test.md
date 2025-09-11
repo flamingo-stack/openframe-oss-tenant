@@ -7,7 +7,7 @@
 </picture>
 
 
-**A distributed platform that builds a unified layer for data, APIs, automation, and AI on top of trusted open-source projects.**
+**A distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. We simplify IT and security operations through a single, cohesive platform.**
 
 [![License](https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20UNIFIED%20LICENSE%20V1.0-%23FFC109?style=for-the-badge&labelColor=white)](LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/flamingo-stack/openframe-oss-tenant?style=for-the-badge&color=%23FFC109&labelColor=white)](https://github.com/flamingo-stack/openframe-oss-tenant/releases)
