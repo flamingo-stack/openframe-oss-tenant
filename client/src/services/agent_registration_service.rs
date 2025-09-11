@@ -1,43 +1,44 @@
+use std::env;
 use anyhow::{Context, Result};
 use reqwest::Client;
 use tracing::{info, error, debug, warn};
 
 use crate::clients::RegistrationClient;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse, AgentConfiguration};
+use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse, AgentConfiguration, InitialConfiguration};
 use crate::services::device_data_fetcher::DeviceDataFetcher;
-use crate::platform::directories::DirectoryManager;
+use crate::services::InitialConfigurationService;
 
 #[derive(Clone)]
 pub struct AgentRegistrationService {
     registration_client: RegistrationClient,
     device_data_fetcher: DeviceDataFetcher,
     config_service: AgentConfigurationService,
+    initial_configuration_service: InitialConfigurationService,
 }
 
 impl AgentRegistrationService {
-
-    // TODO: temporary save to file during installation
-    // For development purposes should be manually set based on server key
-    const INITIAL_KEY: &str = "hSTWUb9pjbKXzPzlNqoudpYvoKwOT2s2";
 
     pub fn new(
         registration_client: RegistrationClient,
         device_data_fetcher: DeviceDataFetcher,
         config_service: AgentConfigurationService,
+        initial_configuration_service: InitialConfigurationService
     ) -> Self {
         Self {
             registration_client,
             device_data_fetcher,
             config_service,
+            initial_configuration_service,
         }
     }
 
     pub async fn register_agent(&self) -> Result<AgentRegistrationResponse> {
+        let initial_key = self.initial_configuration_service.get_initial_key()?;
         let registration_request = self.build_registration_request()?;
         
         let response = self.registration_client
-            .register(Self::INITIAL_KEY, registration_request)
+            .register(&initial_key, registration_request)
             .await
             .context("Failed to register agent")?;
 
@@ -47,6 +48,12 @@ impl AgentRegistrationService {
             response.client_secret.clone()
         ).await
         .context("Failed to save registration data")?;
+
+        // TODO: make job for retry perspective
+        if env::var("OPENFRAME_DEV_MODE").is_err() {
+            self.initial_configuration_service.clear_initial_key()
+                .context("Failed to clear initial key")?;   
+        }
 
         Ok(response)
     }

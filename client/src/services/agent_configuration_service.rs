@@ -23,27 +23,8 @@ impl AgentConfigurationService {
         })
     }
 
-    pub async fn save_initial_data(&self, url: String, secret: String) -> Result<()> {
-        let mut config = self.get().await?;
-        config.server_url = url;
-        config.initial_secret = secret;
-        
-        self.save(&config).await?;
-        
-        Ok(())
-    }
-
-    pub async fn clear_initial_secret(&self) -> Result<()> {
-        let mut config = self.get().await?;
-        config.initial_secret = String::new();
-        
-        self.save(&config).await?;
-        
-        Ok(())
-    }
-
     pub async fn save_registration_data(&self, machine_id: String, client_id: String, client_secret: String) -> Result<()> {
-        let mut config = self.get().await?;
+        let mut config = self.get()?;
         config.machine_id = machine_id;
         config.client_id = client_id;
         config.client_secret = client_secret;
@@ -54,7 +35,7 @@ impl AgentConfigurationService {
     }
 
     pub async fn update_tokens(&self, access_token: String, refresh_token: String) -> Result<()> {
-        let mut config = self.get().await?;
+        let mut config = self.get()?;
         config.access_token = access_token;
         config.refresh_token = refresh_token;
         
@@ -63,18 +44,13 @@ impl AgentConfigurationService {
         Ok(())
     }
 
-    pub async fn get_server_url(&self) -> Result<String> {
-        let config = self.get().await?;
-        Ok(config.server_url.clone())
-    }
-
     pub async fn get_machine_id(&self) -> Result<String> {
-        let config = self.get().await?;
+        let config = self.get()?;
         Ok(config.machine_id.clone())
     }
 
     pub async fn get_client_credentials(&self) -> Result<(String, String)> {
-        let config = self.get().await?;
+        let config = self.get()?;
         Ok((
             config.client_id.clone(),
             config.client_secret.clone(),
@@ -82,16 +58,16 @@ impl AgentConfigurationService {
     }
 
     pub async fn get_access_token(&self) -> Result<String> {
-        let config = self.get().await?;
-        return Ok(config.access_token.clone());
+        let config = self.get()?;
+        Ok(config.access_token.clone())
     }
 
     pub async fn get_refresh_token(&self) -> Result<String> {
-        let config = self.get().await?;
-        return Ok(config.refresh_token.clone());
+        let config = self.get()?;
+        Ok(config.refresh_token.clone())
     }
 
-    async fn get(&self) -> Result<AgentConfiguration> {
+    fn get(&self) -> Result<AgentConfiguration> {
         if !self.config_file_path.exists() {
             return Ok(AgentConfiguration::default());
         }

@@ -136,7 +136,7 @@ spec:
               -d '{
               "toolAgent": {
                 "id": "fleetmdm-agent",
-                "toolId": "fleetmdm-server"
+                "toolId": "fleetmdm-server",
                 "version": "1.0",
                 "status": "ENABLED",
                 "runCommandArgs": [
@@ -152,7 +152,7 @@ spec:
                 "assets": [
                   {
                     "id": "osquery",
-                    "localFilename": "osquery"
+                    "localFilename": "osquery",
                     "source": "ARTIFACTORY"
                   }
                 ]
