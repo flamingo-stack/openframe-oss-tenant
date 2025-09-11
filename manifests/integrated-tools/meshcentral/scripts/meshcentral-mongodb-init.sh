@@ -96,7 +96,7 @@ if [ "$RS_CONFIG" = "NOT_CONFIGURED" ]; then
       if (result.ok === 1) {
         print('SUCCESS');
       } else {
-        print('FAILED: ' + tojson(result));
+        print('FAILED: ' + JSON.stringify(result));
       }
     } catch(e) {
       // If auth is required, we'll try with credentials
@@ -120,7 +120,7 @@ if [ "$RS_CONFIG" = "NOT_CONFIGURED" ]; then
         if (result.ok === 1) {
           print('SUCCESS');
         } else {
-          print('FAILED: ' + tojson(result));
+          print('FAILED: ' + JSON.stringify(result));
         }
       } catch(e) {
         print('ERROR: ' + e.message);
@@ -186,7 +186,7 @@ mongosh "${MONGODB_URL}/admin?authSource=admin" --eval "
     if (e.codeName === 'DuplicateKey' || e.code === 11000) {
       print('Admin user already exists');
     } else {
-      print('Create admin user error: ' + tojson(e));
+      print('Create admin user error: ' + JSON.stringify(e));
     }
   }
 " --quiet
