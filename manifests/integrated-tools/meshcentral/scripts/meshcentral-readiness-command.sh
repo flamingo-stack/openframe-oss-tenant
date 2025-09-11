@@ -72,12 +72,15 @@ check_readiness() {
 # Main execution
 main() {
     # Try with authentication first
-    if check_readiness; then
+    check_readiness
+    local exit_code=$?
+    
+    if [[ $exit_code -eq 0 ]]; then
         exit 0
     fi
     
     # If auth failed (exit code 2), try without auth (localhost exception)
-    if [[ $? -eq 2 ]]; then
+    if [[ $exit_code -eq 2 ]]; then
         # Retry without credentials for initial setup scenario
         MONGO_USER="" MONGO_PASS="" check_readiness
         exit $?
