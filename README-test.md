@@ -1,35 +1,53 @@
 <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-openframe-full-dark-bg.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-openframe-full-yellow.jpg">
+    <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-yellow.jpg" width="400">
+  </picture>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-openframe-full-dark-bg.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-openframe-full-yellow.jpg">
-  <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-yellow.jpg" width="400">
-</picture>
+  <p><b>A distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. We simplify IT and security operations through a single, cohesive platform.</b></p>
 
-
-**A distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. We simplify IT and security operations through a single, cohesive platform.**
-
-[![License](https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20UNIFIED%20LICENSE%20V1.0-%23FFC109?style=for-the-badge&labelColor=white)](LICENSE.md)
-[![Release](https://img.shields.io/github/v/release/flamingo-stack/openframe-oss-tenant?style=for-the-badge&color=%23FFC109&labelColor=white)](https://github.com/flamingo-stack/openframe-oss-tenant/releases)
-[![Docs](https://img.shields.io/badge/DOCS-flamingo.run-%23FFC109?style=for-the-badge&labelColor=white)](https://www.flamingo.run/knowledge-base)
-[![Community](https://img.shields.io/badge/COMMUNITY-openmsp.ai-%23FFC109?style=for-the-badge&labelColor=white)](https://www.openmsp.ai/)
-
-[Quick Start](#quick-start) · [Documentation](https://www.flamingo.run/knowledge-base) · [Community](https://www.openmsp.ai/) · [Security](#security)
-
+  <p>
+    <a href="LICENSE.md">
+      <img alt="License"
+           src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white">
+    </a>
+    <a href="https://github.com/flamingo-stack/openframe-oss-tenant/releases">
+      <img alt="Release"
+           src="https://img.shields.io/github/v/release/flamingo-stack/openframe-oss-tenant?style=for-the-badge&color=%23FFC109&labelColor=white">
+    </a>
+    <a href="https://www.flamingo.run/knowledge-base">
+      <img alt="Docs"
+           src="https://img.shields.io/badge/DOCS-flamingo.run-%23FFC109?style=for-the-badge&labelColor=white">
+    </a>
+    <a href="https://www.openmsp.ai/">
+      <img alt="Community"
+           src="https://img.shields.io/badge/COMMUNITY-openmsp.ai-%23FFC109?style=for-the-badge&labelColor=white">
+    </a>
+  </p>
 </div>
 
 ---
 
+## Quick Links
+
+- [Quick Start](#quick-start)  
+- [Documentation](https://www.flamingo.run/knowledge-base)  
+- [Community](https://www.openmsp.ai/)  
+- [Security](#security)  
+
+---
 
 ## Highlights
 
-- **Unified Dashboard** - Single interface for managing all services and workflows
+- **Unified Dashboard** - Single interface for managing all services and workflows  
 - **Smart Automation** - Automated deployment and monitoring capabilities  
-- **AI-Powered Insights** - Real-time anomaly detection and intelligent assistants
-- **Enterprise Security** - Integrated security controls across all services
-- **High Performance** - Handles 100,000+ events/second with sub-500ms latency
-- **Scalable Architecture** - Built on proven microservices principles
+- **AI-Powered Insights** - Real-time anomaly detection and intelligent assistants  
+- **Enterprise Security** - Integrated security controls across all services  
+- **High Performance** - Handles 100,000+ events/second with sub-500ms latency  
+- **Scalable Architecture** - Built on proven microservices principles  
 
+---
 
 ## Architecture
 
