@@ -30,7 +30,13 @@ echo "MongoDB service is accessible, waiting additional time for startup..."
 sleep 10
 
 # Get the fully qualified domain name for this pod
-HOST_FQDN="$(hostname -f):${MONGODB_PORT}"
+# Use explicit Kubernetes StatefulSet naming convention for reliability
+POD_NAME=$(hostname)
+SERVICE_NAME="meshcentral-mongodb"
+NAMESPACE="integrated-tools"
+HOST_FQDN="${POD_NAME}.${SERVICE_NAME}.${NAMESPACE}.svc.cluster.local:${MONGODB_PORT}"
+echo "Pod name: $POD_NAME"
+echo "Using FQDN: $HOST_FQDN"
 
 echo "Checking replica set configuration..."
 # Check if replica set is already configured (will fail if not initialized)
