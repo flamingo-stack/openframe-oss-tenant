@@ -21,9 +21,9 @@ use std::os::unix::fs::PermissionsExt;
 pub struct ToolInstallationService {
     tool_agent_file_client: ToolAgentFileClient,
     tool_api_client: ToolApiClient,
+    command_params_resolver: ToolCommandParamsResolver,
     installed_tools_service: InstalledToolsService,
     directory_manager: DirectoryManager,
-    command_params_processor: ToolCommandParamsResolver,
     tool_run_manager: ToolRunManager,
 }
 
@@ -31,6 +31,7 @@ impl ToolInstallationService {
     pub fn new(
         tool_agent_file_client: ToolAgentFileClient,
         tool_api_client: ToolApiClient,
+        command_params_resolver: ToolCommandParamsResolver,
         installed_tools_service: InstalledToolsService,
         directory_manager: DirectoryManager,
         tool_run_manager: ToolRunManager,
@@ -41,14 +42,12 @@ impl ToolInstallationService {
             .with_context(|| "Failed to ensure secured directory exists")
             .unwrap();
 
-        let command_params_processor = ToolCommandParamsResolver::new(directory_manager.clone());
-        
         Self {
             tool_agent_file_client,
             tool_api_client,
+            command_params_resolver,
             installed_tools_service,
             directory_manager,
-            command_params_processor,
             tool_run_manager,
         }
     }
@@ -157,7 +156,7 @@ impl ToolInstallationService {
         // Run installation command if provided
         if tool_installation_message.installation_command_args.is_some() {
             info!("Start run tool installation command for tool {}", tool_agent_id);
-            let installation_command_args = self.command_params_processor.process(tool_agent_id, tool_installation_message.installation_command_args.unwrap())
+            let installation_command_args = self.command_params_resolver.process(tool_agent_id, tool_installation_message.installation_command_args.unwrap())
                 .context("Failed to process installation command params")?;
             debug!("Processed args: {:?}", installation_command_args);
 

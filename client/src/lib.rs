@@ -33,7 +33,7 @@ pub mod updater;
 
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::{AgentAuthService, AgentRegistrationService, ToolCommandParamsResolver, ToolRunManager};
+use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolRunManager};
 use crate::services::InstalledToolsService;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
@@ -118,8 +118,6 @@ pub struct Client {
 }
 
 impl Client {
-    const GATEWAY_HTTP_URL: &'static str = "https://localhost";
-    const GATEWAY_WS_URL: &'static str = "wss://localhost";
 
     pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
@@ -135,6 +133,10 @@ impl Client {
         // Perform initial health check
         directory_manager.perform_health_check()?;
 
+        // Initialize initial configuration service
+        let initial_configuration_service = InitialConfigurationService::new(directory_manager.clone())
+            .context("Failed to initialize initial configuration service")?;
+
         // Initialize configuration service
         let config_service = AgentConfigurationService::new(directory_manager.clone())
             .context("Failed to initialize device configuration service")?;
@@ -143,14 +145,17 @@ impl Client {
         let http_client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             // disable TLS verification for dev mode only
-            .danger_accept_invalid_certs(std::env::var("OPENFRAME_DEV_MODE").is_ok())
+            .danger_accept_invalid_certs(initial_configuration_service.is_local_mode()?)
             .no_proxy()
             .build()
             .context("Failed to create HTTP client")?;
 
+        // Initialize http url
+        let http_url = format!("https://{}", initial_configuration_service.get_server_url()?);
+
         // Initialize registration client
         let registration_client = RegistrationClient::new(
-            Self::GATEWAY_HTTP_URL.to_string(),
+            http_url.clone(),
             http_client.clone()
         ).context("Failed to create registration client")?;
         
@@ -161,7 +166,8 @@ impl Client {
         let registration_service = AgentRegistrationService::new(
             registration_client,
             device_data_fetcher,
-            config_service.clone()
+            config_service.clone(),
+            initial_configuration_service.clone(),
         );
         
         // Initialize registration processor
@@ -172,7 +178,7 @@ impl Client {
 
         // Initialize authentication client
         let auth_client = AuthClient::new(
-            Self::GATEWAY_HTTP_URL.to_string(),
+            http_url.clone(),
             http_client.clone()
         );
         
@@ -199,18 +205,19 @@ impl Client {
         );
 
         // Initialize NATS connection manager
-        let nats_connection_manager = NatsConnectionManager::new(Self::GATEWAY_WS_URL, config_service.clone());
+        let ws_url = format!("wss://{}", initial_configuration_service.get_server_url()?);
+        let nats_connection_manager = NatsConnectionManager::new(ws_url, config_service.clone(), initial_configuration_service.clone());
         
         // Initialize tool agent file client
         let tool_agent_file_client = ToolAgentFileClient::new(
             http_client.clone(),
-            Self::GATEWAY_HTTP_URL.to_string()
+            http_url.clone(),
         );
 
         // Initialize tool API client
         let tool_api_client = ToolApiClient::new(
             http_client.clone(),
-            Self::GATEWAY_HTTP_URL.to_string(),
+            http_url.clone(),
             config_service.clone()
         );
 
@@ -224,14 +231,17 @@ impl Client {
         // Initialize tool connection message publisher
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
+        // Initialize tool command params resolver
+        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone(), initial_configuration_service.clone());
+
         // Initialize tool run manager
-        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone());
-        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), tool_command_params_resolver);
+        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), tool_command_params_resolver.clone());
 
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             tool_agent_file_client,
             tool_api_client,
+            tool_command_params_resolver.clone(),
             installed_tools_service.clone(),
             directory_manager.clone(),
             tool_run_manager.clone(),
@@ -254,7 +264,7 @@ impl Client {
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 
-        // Proccess initial registration and authentication 
+        // Process initial registration and authentication
         // if it haven't been done yet
         // Processors retry it till success
         self.registration_processor.process().await?;
