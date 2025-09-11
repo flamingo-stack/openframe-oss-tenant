@@ -65,4 +65,9 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    public void deactivateUser(AuthUser user) {
+            user.setStatus(UserStatus.DELETED);
+            userRepository.save(user);
+    }
 }

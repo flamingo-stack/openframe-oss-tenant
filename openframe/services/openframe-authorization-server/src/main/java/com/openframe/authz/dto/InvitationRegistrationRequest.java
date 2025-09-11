@@ -14,6 +14,8 @@ public class InvitationRegistrationRequest {
 
     private String firstName;
     private String lastName;
+
+    private Boolean switchTenant;
 }
 
 

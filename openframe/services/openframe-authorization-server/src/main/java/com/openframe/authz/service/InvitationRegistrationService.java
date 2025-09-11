@@ -14,6 +14,7 @@ import java.time.Instant;
 
 import static com.openframe.data.repository.user.InvitationStatus.ACCEPTED;
 import static com.openframe.data.repository.user.InvitationStatus.PENDING;
+import static java.lang.Boolean.TRUE;
 
 @Slf4j
 @Service
@@ -38,9 +39,13 @@ public class InvitationRegistrationService {
             throw new IllegalStateException("Invitation expired");
         }
 
-        boolean existsInAnotherTenant = userService.findActiveByEmail(invitation.getEmail()).isPresent();
-        if (existsInAnotherTenant) {
-            throw new IllegalStateException("User already active in another tenant");
+        var existing = userService.findActiveByEmail(invitation.getEmail());
+        if (existing.isPresent()) {
+            if (TRUE.equals(request.getSwitchTenant())) {
+                userService.deactivateUser(existing.get());
+            } else {
+                throw new IllegalStateException("User already active in another tenant");
+            }
         }
 
         String tenantId = invitation.getTenantId();
