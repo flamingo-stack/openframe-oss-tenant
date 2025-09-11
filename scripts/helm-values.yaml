@@ -11,7 +11,7 @@ apps:
   tactical-rmm: 
     enabled: false
 
- namespace-platform:
+  namespace-platform:
     enabled: false
   ngrok-operator:
     enabled: false
