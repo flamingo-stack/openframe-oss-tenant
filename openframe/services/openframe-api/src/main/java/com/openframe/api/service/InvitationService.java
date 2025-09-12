@@ -26,8 +26,14 @@ public class InvitationService {
     private final InvitationRepository invitationRepository;
     private final InvitationMapper invitationMapper;
     private final EmailService emailService;
+    private final UserService userService;
 
     public InvitationResponse createInvitation(CreateInvitationRequest request) {
+        userService.getUserByEmail(request.getEmail())
+                .ifPresent(u -> {
+                    throw new IllegalStateException("User with email " + u.getEmail() + "already exists in tenant");
+                });
+
         Invitation saved = invitationRepository.save(invitationMapper.toEntity(request));
 
         emailService.sendInvitationEmail(saved.getEmail(), saved.getId());
