@@ -142,7 +142,6 @@ public class AuthorizationServerConfig {
             if ("access_token".equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> {
                     claims.put("tenant_id", tenantId);
-                    // Resolve tenant domain dynamically from TenantService if needed
                     claims.put("userId", user.getId());
 
                     Set<UserRole> effective = new LinkedHashSet<>(user.getRoles());

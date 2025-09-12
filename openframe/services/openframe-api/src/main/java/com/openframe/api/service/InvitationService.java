@@ -8,6 +8,7 @@ import com.openframe.api.mapper.InvitationMapper;
 import com.openframe.data.document.user.Invitation;
 import com.openframe.data.document.user.InvitationStatus;
 import com.openframe.data.repository.user.InvitationRepository;
+import com.openframe.notification.mail.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,10 +25,12 @@ public class InvitationService {
 
     private final InvitationRepository invitationRepository;
     private final InvitationMapper invitationMapper;
+    private final EmailService emailService;
 
     public InvitationResponse createInvitation(CreateInvitationRequest request) {
-        Invitation entity = invitationMapper.toEntity(request);
-        Invitation saved = invitationRepository.save(entity);
+        Invitation saved = invitationRepository.save(invitationMapper.toEntity(request));
+
+        emailService.sendInvitationEmail(saved.getEmail(), saved.getId());
 
         // TODO: publish to Kafka (future): invitation-created event
         log.info("Created invitation id={} email={} expiresAt={} ", saved.getId(), saved.getEmail(), saved.getExpiresAt());
