@@ -3,7 +3,6 @@ package com.openframe.api.service;
 import com.openframe.api.dto.invitation.CreateInvitationRequest;
 import com.openframe.api.dto.invitation.InvitationPageResponse;
 import com.openframe.api.dto.invitation.InvitationResponse;
-import com.openframe.api.dto.invitation.UpdateInvitationStatusRequest;
 import com.openframe.api.mapper.InvitationMapper;
 import com.openframe.data.document.user.Invitation;
 import com.openframe.data.document.user.InvitationStatus;
@@ -15,8 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import static com.openframe.api.dto.invitation.InvitationStatus.REVOKED;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +28,7 @@ public class InvitationService {
     public InvitationResponse createInvitation(CreateInvitationRequest request) {
         userService.getUserByEmail(request.getEmail())
                 .ifPresent(u -> {
-                    throw new IllegalStateException("User with email " + u.getEmail() + "already exists in tenant");
+                    throw new IllegalStateException("User with email " + u.getEmail() + " already exists in tenant");
                 });
 
         Invitation saved = invitationRepository.save(invitationMapper.toEntity(request));
@@ -57,23 +54,17 @@ public class InvitationService {
                 .build();
     }
 
-    public InvitationResponse updateInvitationStatus(String id, UpdateInvitationStatusRequest request) {
+    public void revokeInvitation(String id) {
         Invitation invitation = invitationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invitation not found"));
 
-        if (!InvitationStatus.PENDING.equals(invitation.getStatus())
-                || !REVOKED.equals(request.getStatus())) {
-            if (InvitationStatus.REVOKED.equals(invitation.getStatus())
-                    && REVOKED.equals(request.getStatus())) {
-                return invitationMapper.toResponse(invitation);
-            }
-            throw new IllegalStateException("Invalid status transition");
+        if (!InvitationStatus.PENDING.equals(invitation.getStatus())) {
+            throw new IllegalStateException("Only pending invitations can be revoked");
         }
 
         invitation.setStatus(InvitationStatus.REVOKED);
-        Invitation saved = invitationRepository.save(invitation);
+        invitationRepository.save(invitation);
         // TODO: publish to Kafka (future)
-        return invitationMapper.toResponse(saved);
     }
 }
 

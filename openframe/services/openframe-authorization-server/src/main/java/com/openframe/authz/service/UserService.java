@@ -34,10 +34,6 @@ public class UserService {
         return userRepository.findByEmailAndTenantIdAndStatus(email, tenantId, UserStatus.ACTIVE);
     }
 
-    public Optional<AuthUser> findActiveByEmail(String email, String tenantId) {
-        return userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE);
-    }
-
     public boolean existsByEmailAndTenant(String email, String tenantId) {
         return userRepository.existsByEmailAndTenantId(email, tenantId);
     }
@@ -69,5 +65,14 @@ public class UserService {
     public void deactivateUser(AuthUser user) {
             user.setStatus(UserStatus.DELETED);
             userRepository.save(user);
+    }
+
+    public void updatePassword(String userId, String rawPassword) {
+        userRepository.findById(userId).ifPresentOrElse(user -> {
+            user.setPasswordHash(passwordEncoder.encode(rawPassword));
+            userRepository.save(user);
+        }, () -> {
+            throw new IllegalArgumentException("User not found: " + userId);
+        });
     }
 }
