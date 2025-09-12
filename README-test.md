@@ -161,11 +161,14 @@ kubectl get pods -n openframe
 
 ## Screenshots
 
-<div align="center">
+### Dashboard Overview
+<img src="docs/assets/1.%20dashboard.png" alt="Dashboard Overview" width="100%">
 
-| Dashboard Overview | Real-time Analytics | Agent Management |
-|:--:|:--:|:--:|
-| ![Dashboard](docs/assets/screenshots/dashboard.png) | ![Analytics](docs/assets/screenshots/analytics.png) | ![Agents](docs/assets/screenshots/agents.png) |
+### Devices
+<img src="docs/assets/2.%20deviecs.png" alt="Devices" width="100%">
+
+### Policies & Compliance
+<img src="docs/assets/5.%20policies.png" alt="Policies & Compliance" width="100%">
 
 </div>
 
