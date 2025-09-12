@@ -120,7 +120,7 @@ spec:
               -d '{
                 "toolAgent": {
                   "id": "tacticalrmm-agent",
-                  "toolId": "tactical-rmm"
+                  "toolId": "tactical-rmm",
                   "version": "1.0",
                   "status": "ENABLED",
                   "installationCommandArgs": [
@@ -136,7 +136,7 @@ spec:
                     "-nomesh",
                     "--openframe-secret", "${client.openframeSecret}",
                     "--openframe-token-path", "${client.openframeTokenPath}",
-                    "-—insecure"
+                    "--insecure"
                   ],
                   "runCommandArgs": [
                     "-m", "svc",

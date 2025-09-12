@@ -8,8 +8,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
+import static com.openframe.data.document.user.UserRole.OWNER;
 import static java.util.UUID.randomUUID;
 
 /**
@@ -41,28 +43,31 @@ public class UserService {
     }
 
     /**
-     * Register a new user with tenant domain
+     * Register a new user
      */
-    public AuthUser registerUser(String tenantId, String tenantDomain, String email, String firstName, String lastName, String password, String role) {
+    public AuthUser registerUser(String tenantId, String email, String firstName, String lastName, String password) {
         if (existsByEmailAndTenant(email, tenantId)) {
             throw new IllegalArgumentException("User with this email already exists in this tenant");
         }
 
         AuthUser user = AuthUser.builder()
                 .id(randomUUID().toString())
-            .tenantId(tenantId)
-            .tenantDomain(tenantDomain)
-            .email(email)
-            .firstName(firstName)
-            .lastName(lastName)
-            .passwordHash(passwordEncoder.encode(password))
-            .status(UserStatus.ACTIVE)
-            .emailVerified(false)
-            .loginProvider("LOCAL")
-            .build();
-
-        user.getRoles().add(role);
+                .tenantId(tenantId)
+                .email(email)
+                .firstName(firstName)
+                .lastName(lastName)
+                .passwordHash(passwordEncoder.encode(password))
+                .status(UserStatus.ACTIVE)
+                .emailVerified(false)
+                .roles(List.of(OWNER))
+                .loginProvider("LOCAL")
+                .build();
 
         return userRepository.save(user);
+    }
+
+    public void deactivateUser(AuthUser user) {
+            user.setStatus(UserStatus.DELETED);
+            userRepository.save(user);
     }
 }

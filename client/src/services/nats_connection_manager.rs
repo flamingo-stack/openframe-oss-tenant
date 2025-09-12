@@ -6,6 +6,7 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::dev_tls_config_provider::DevTlsConfigProvider;
 use std::sync::Arc;
 use std::env;
+use crate::services::InitialConfigurationService;
 
 #[derive(Clone)]
 pub struct NatsConnectionManager {
@@ -13,6 +14,7 @@ pub struct NatsConnectionManager {
     nats_server_url: String,
     config_service: AgentConfigurationService,
     tls_config_provider: DevTlsConfigProvider,
+    initial_configuration_service: InitialConfigurationService,
 }
 
 impl NatsConnectionManager {
@@ -20,12 +22,17 @@ impl NatsConnectionManager {
     const NATS_DEVICE_USER: &'static str = "machine";
     const NATS_DEVICE_PASSWORD: &'static str = "";
     
-    pub fn new(nats_server_url: &str, config_service: AgentConfigurationService) -> Self {
+    pub fn new(
+        nats_server_url: String,
+        config_service: AgentConfigurationService,
+        initial_configuration_service: InitialConfigurationService,
+    ) -> Self {
         Self {
             client: Arc::new(RwLock::new(None)),
             nats_server_url: nats_server_url.to_string(),
             config_service,
             tls_config_provider: DevTlsConfigProvider::new(),
+            initial_configuration_service,
         }
     }
 
@@ -47,7 +54,7 @@ impl NatsConnectionManager {
             });
 
         // Only add TLS config in development mode
-        if env::var("OPENFRAME_DEV_MODE").is_ok() {
+        if self.initial_configuration_service.is_local_mode()? {
             let tls_config = self.tls_config_provider.create_tls_config()
                 .context("Failed to create development TLS configuration")?;
             connect_options = connect_options.tls_client_config(tls_config);

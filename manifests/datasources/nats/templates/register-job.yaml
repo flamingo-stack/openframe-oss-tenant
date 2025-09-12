@@ -5,7 +5,7 @@ metadata:
   name: nats
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
 spec:
   backoffLimit: 3
   template:

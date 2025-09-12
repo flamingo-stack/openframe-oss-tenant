@@ -57,10 +57,17 @@ spec:
       containers:
         - name: mongodb
           image: mongo:8.0.9
-          args: ["--bind_ip_all","--replSet","rs0","--keyFile","/etc/mongo-keyfile/keyfile","--auth"]
+          command: ["/usr/local/bin/mongodb-entrypoint.sh"]
           ports:
             - name: mongodb
               containerPort: 27017
+          env:
+            - name: SERVICE_NAME
+              value: "meshcentral-mongodb"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           envFrom:
             - secretRef:
                 name: meshcentral-mongodb
@@ -70,13 +77,10 @@ spec:
             exec:
               command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
             initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-          lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/bash","-lc","/usr/local/bin/mongo-init.sh > /var/log/mongo-init.log 2>&1 &"]
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 24
+            successThreshold: 1
           livenessProbe:
             tcpSocket:
               port: 27017
@@ -84,20 +88,29 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
 
           volumeMounts:
             - name: mongo-data
               mountPath: /data/db
             - name: init-script
-              mountPath: /docker-entrypoint-initdb.d
-              readOnly: true
-            - name: init-script
               mountPath: /usr/local/bin/mongo-init.sh
               subPath: mongo-init.sh
+              readOnly: true
+            - name: init-script
+              mountPath: /usr/local/bin/mongodb-entrypoint.sh
+              subPath: mongodb-entrypoint.sh
               readOnly: true
             - name: readiness-command
               mountPath: /usr/local/bin/readiness-command.sh
               subPath: readiness-command.sh
+              readOnly: true
             - name: mongo-keyfile-work
               mountPath: /etc/mongo-keyfile
               readOnly: true

@@ -163,7 +163,7 @@ fn main() -> Result<()> {
         None => {
             info!("No command specified, running as service (legacy mode)");
             // Run as service by default for backward compatibility
-            if let Err(e) = rt.block_on(Service::run_as_service()) {
+            if let Err(e) = rt.block_on(Service::run()) {
                 error!("Service failed: {:#}", e);
                 process::exit(1);
             }
