@@ -59,7 +59,8 @@ public class InvitationRegistrationService {
                 invitation.getEmail(),
                 request.getFirstName(),
                 request.getLastName(),
-                request.getPassword()
+                request.getPassword(),
+                invitation.getRoles()
         );
 
         invitation.setStatus(ACCEPTED);

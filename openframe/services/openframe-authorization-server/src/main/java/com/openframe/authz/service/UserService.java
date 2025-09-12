@@ -1,6 +1,7 @@
 package com.openframe.authz.service;
 
 import com.openframe.data.document.auth.AuthUser;
+import com.openframe.data.document.user.UserRole;
 import com.openframe.data.document.user.UserStatus;
 import com.openframe.data.repository.auth.AuthUserRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-import static com.openframe.data.document.user.UserRole.OWNER;
 import static java.util.UUID.randomUUID;
 
 /**
@@ -45,7 +45,7 @@ public class UserService {
     /**
      * Register a new user
      */
-    public AuthUser registerUser(String tenantId, String email, String firstName, String lastName, String password) {
+    public AuthUser registerUser(String tenantId, String email, String firstName, String lastName, String password, List<UserRole> roles) {
         if (existsByEmailAndTenant(email, tenantId)) {
             throw new IllegalArgumentException("User with this email already exists in this tenant");
         }
@@ -59,7 +59,7 @@ public class UserService {
                 .passwordHash(passwordEncoder.encode(password))
                 .status(UserStatus.ACTIVE)
                 .emailVerified(false)
-                .roles(List.of(OWNER))
+                .roles(roles)
                 .loginProvider("LOCAL")
                 .build();
 
