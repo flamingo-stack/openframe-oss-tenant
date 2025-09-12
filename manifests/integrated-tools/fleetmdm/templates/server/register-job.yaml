@@ -146,13 +146,13 @@ spec:
                   "--disable-updates",
                   "--openframe-mode",
                   "--openframe-secret", "${client.openframeSecret}",
-                  "--openframe-osquery-path", "${client.assetPath.osquery}",
+                  "--openframe-osquery-path", "${client.assetPath.osqueryd}",
                   "--openframe-token-path", "${client.openframeTokenPath}"
                 ],
                 "assets": [
                   {
-                    "id": "osquery",
-                    "localFilename": "osquery",
+                    "id": "osqueryd",
+                    "localFilename": "osqueryd",
                     "source": "ARTIFACTORY"
                   }
                 ]
