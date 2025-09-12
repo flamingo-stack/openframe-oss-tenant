@@ -57,6 +57,13 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("VALIDATION_ERROR", errors);
     }
 
+    @ExceptionHandler(UserActiveInAnotherTenantException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleUserActiveInAnotherTenant(UserActiveInAnotherTenantException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return new ErrorResponse("USER_IS_ACTIVE_IN_ANOTHER_TENANT", ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleException(Exception ex) {
