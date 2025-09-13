@@ -8,6 +8,7 @@ import com.openframe.data.document.user.Invitation;
 import com.openframe.data.document.user.InvitationStatus;
 import com.openframe.data.repository.user.InvitationRepository;
 import com.openframe.notification.mail.service.EmailService;
+import com.openframe.kafka.producer.SaasMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ public class InvitationService {
     private final InvitationMapper invitationMapper;
     private final EmailService emailService;
     private final UserService userService;
+    private final SaasMessageProducer saasMessageProducer;
 
     public InvitationResponse createInvitation(CreateInvitationRequest request) {
         userService.getUserByEmail(request.getEmail())
@@ -36,6 +38,7 @@ public class InvitationService {
         emailService.sendInvitationEmail(saved.getEmail(), saved.getId());
 
         // TODO: publish to Kafka (future): invitation-created event
+        saasMessageProducer.sendMessage("saas-topic", saved, null);
         log.info("Created invitation id={} email={} expiresAt={} ", saved.getId(), saved.getEmail(), saved.getExpiresAt());
 
         return invitationMapper.toResponse(saved);

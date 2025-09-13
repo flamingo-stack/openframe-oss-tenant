@@ -1,2 +1,8 @@
 global:
   repoBranch: feature/kafka-congif
+
+apps:
+  openframe-config:
+    values:
+      config:
+        branch: feature/kafka-config
