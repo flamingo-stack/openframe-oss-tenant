@@ -105,35 +105,6 @@
 
     </dependencies>
 
-    <profiles>
-        <!-- Default profile: OSS libraries only -->
-        <profile>
-            <id>oss</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <profile.description>OSS profile with open source libraries</profile.description>
-            </properties>
-            <!-- OSS dependencies are already included above -->
-        </profile>
-        
-        <!-- SAAS profile: includes private SAAS libraries -->
-        <profile>
-            <id>saas</id>
-            <properties>
-                <profile.description>SAAS profile with private libraries</profile.description>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>com.openframe.saas</groupId>
-                    <artifactId>openframe-saas-kafka</artifactId>
-                    <version>${openframe.saas.libs.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
-
     <build>
         <plugins>
             <plugin>

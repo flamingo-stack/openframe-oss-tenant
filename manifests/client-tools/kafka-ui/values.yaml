@@ -23,9 +23,5 @@ kafka-ui:
     value: "bitnami"
   - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
     value: "kafka-broker-headless.datasources:9092"
-  - name: KAFKA_CLUSTERS_1_NAME
-    value: "saas-cluster"
-  - name: KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS
-    value: "saas-kafka.datasources.svc.cluster.local:29094"
   # - name: KAFKA_CLUSTERS_0_ZOOKEEPER
   #   value: kafka-zookeeper-headless:2181
