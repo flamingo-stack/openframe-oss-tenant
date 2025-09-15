@@ -1,4 +1,4 @@
-package com.openframe.data.dto;
+package com.openframe.data.dto.response;
 
 import lombok.Data;
 

@@ -18,15 +18,19 @@ public class UserRegistrationBuilder {
     private String tenantName;
     private String tenantDomain;
 
+    private static String tenantDomainName = "localhost";
+    private static String correctPassword = "Password123!";
+    private static String regexTemplate = "[^a-zA-Z0-9]";
+
     public static UserRegistrationBuilder random() {
         Faker faker = new Faker();
         return UserRegistrationBuilder.builder()
                 .email(faker.internet().emailAddress())
                 .firstName(faker.name().firstName())
                 .lastName(faker.name().lastName())
-                .password("Password123!")
-                .tenantName(faker.company().name().replaceAll("[^a-zA-Z0-9]", ""))
-                .tenantDomain("localhost")
+                .password(correctPassword)
+                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
+                .tenantDomain(tenantDomainName)
                 .build();
     }
 
@@ -36,9 +40,9 @@ public class UserRegistrationBuilder {
                 .email(email)
                 .firstName(faker.name().firstName())
                 .lastName(faker.name().lastName())
-                .password("Password123!")
-                .tenantName(faker.company().name().replaceAll("[^a-zA-Z0-9]", ""))
-                .tenantDomain("localhost")
+                .password(correctPassword)
+                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
+                .tenantDomain(tenantDomainName)
                 .build();
     }
 
@@ -48,9 +52,9 @@ public class UserRegistrationBuilder {
                 .email(faker.internet().emailAddress())
                 .firstName(faker.name().firstName())
                 .lastName(faker.name().lastName())
-                .password("Password123!")
+                .password(correctPassword)
                 .tenantName(tenantName)
-                .tenantDomain("localhost")
+                .tenantDomain(tenantDomainName)
                 .build();
     }
 
@@ -61,8 +65,8 @@ public class UserRegistrationBuilder {
                 .firstName(faker.name().firstName())
                 .lastName(faker.name().lastName())
                 .password("StrongPass123!@#")
-                .tenantName(faker.company().name().replaceAll("[^a-zA-Z0-9]", ""))
-                .tenantDomain("localhost")
+                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
+                .tenantDomain(tenantDomainName)
                 .build();
     }
 
@@ -73,8 +77,8 @@ public class UserRegistrationBuilder {
                 .firstName(faker.name().firstName())
                 .lastName(faker.name().lastName())
                 .password("123")
-                .tenantName(faker.company().name().replaceAll("[^a-zA-Z0-9]", ""))
-                .tenantDomain("localhost")
+                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
+                .tenantDomain(tenantDomainName)
                 .build();
     }
 
@@ -84,21 +88,9 @@ public class UserRegistrationBuilder {
                 .email(faker.internet().emailAddress())
                 .firstName("José María")
                 .lastName("O'Connor-Smith")
-                .password("Password123!")
-                .tenantName(faker.company().name().replaceAll("[^a-zA-Z0-9]", ""))
-                .tenantDomain("localhost")
-                .build();
-    }
-
-    public static UserRegistrationBuilder withUnicodeCharacters() {
-        Faker faker = new Faker();
-        return UserRegistrationBuilder.builder()
-                .email(faker.internet().emailAddress())
-                .firstName("Александр")
-                .lastName("Петров")
-                .password("Password123!")
-                .tenantName(faker.company().name().replaceAll("[^a-zA-Z0-9]", ""))
-                .tenantDomain("localhost")
+                .password(correctPassword)
+                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
+                .tenantDomain(tenantDomainName)
                 .build();
     }
 }

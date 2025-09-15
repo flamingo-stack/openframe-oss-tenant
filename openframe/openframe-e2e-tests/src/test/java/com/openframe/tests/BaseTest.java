@@ -68,9 +68,9 @@ public abstract class BaseTest {
         });
     }
     
-    protected void sleep() {
+    protected void sleep(long milliseconds) {
         try {
-            Thread.sleep((long) 1000);
+            Thread.sleep(milliseconds);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
