@@ -8,9 +8,11 @@ import com.openframe.data.document.user.Invitation;
 import com.openframe.data.document.user.InvitationStatus;
 import com.openframe.data.repository.user.InvitationRepository;
 import com.openframe.notification.mail.service.EmailService;
+import com.openframe.kafka.model.UserEvent;
 import com.openframe.kafka.producer.SaasMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +22,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class InvitationService {
+
+    @Value("${openframe.saas.kafka.topics.outbound.user-events}")
+    private String topicOutboundUserEvents;
+    @Value("${openframe.cluster-id:default-cluster-id}")
+    private String clusterId;
 
     private final InvitationRepository invitationRepository;
     private final InvitationMapper invitationMapper;
@@ -38,7 +45,7 @@ public class InvitationService {
         emailService.sendInvitationEmail(saved.getEmail(), saved.getId());
 
         // TODO: publish to Kafka (future): invitation-created event
-        saasMessageProducer.sendMessage("saas-topic", saved, null);
+        saasMessageProducer.sendFromTenantMessage(topicOutboundUserEvents, new UserEvent(), clusterId, saved.getId());
         log.info("Created invitation id={} email={} expiresAt={} ", saved.getId(), saved.getEmail(), saved.getExpiresAt());
 
         return invitationMapper.toResponse(saved);

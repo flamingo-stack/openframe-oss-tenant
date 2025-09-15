@@ -1,6 +1,5 @@
 package com.openframe.client.service.impl;
 
-import com.openframe.client.dto.MachinePinotMessage;
 import com.openframe.client.service.MachineTagEventService;
 import com.openframe.data.document.device.Machine;
 import com.openframe.data.document.device.MachineTag;
@@ -8,6 +7,7 @@ import com.openframe.data.document.tool.Tag;
 import com.openframe.data.repository.device.MachineRepository;
 import com.openframe.data.repository.device.MachineTagRepository;
 import com.openframe.data.repository.tool.TagRepository;
+import com.openframe.kafka.model.MachinePinotMessage;
 import com.openframe.kafka.producer.OssTenantMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class MachineTagEventServiceImpl implements MachineTagEventService {
     private final TagRepository tagRepository;
     private final OssTenantMessageProducer ossTenantMessageProducer;
 
-    @Value("${kafka.producer.topic.machine.name}")
+    @Value("${openframe.oss-tenant.kafka.topics.outbound.devices-topic}")
     private String machineEventsTopic;
 
     @Override

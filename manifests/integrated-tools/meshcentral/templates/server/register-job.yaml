@@ -110,13 +110,16 @@ spec:
                       "mongodb.name": "meshcentral",
                       "topic.prefix": "meshcentral",
                       "collection.include.list": "meshcentral.events",
-                      "transforms": "route,addHeaders",
+                      "transforms": "route,addHeaderMessageType,addHeaderJSONType",
                       "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
                       "transforms.route.regex": ".*",
-                      "transforms.route.replacement": "meshcentral.mongodb.events",
-                      "transforms.addHeaders.type": "org.apache.kafka.connect.transforms.InsertHeader",
-                      "transforms.addHeaders.header": "message-type",
-                      "transforms.addHeaders.value.literal": "MESHCENTRAL_EVENT"
+                      "transforms.route.replacement": "meshcentral.mongodb.events"
+                      "transforms.addHeaderMessageType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderMessageType.header": "message-type",
+                      "transforms.addHeaderMessageType.value.literal": "MESHCENTRAL_EVENT",
+                      "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderJSONType.header": "__TypeId__",
+                      "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage"
                     }
                   }
                 }

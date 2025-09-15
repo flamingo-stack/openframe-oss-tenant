@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DebeziumMessageBrokerHandler extends DebeziumMessageHandler<IntegratedToolEvent, DeserializedDebeziumMessage> {
 
-    @Value("${kafka.producer.topic.it.event.name}")
+    @Value("${openframe.oss-tenant.kafka.topics.outbound.integrated-tool-events}")
     private String topic;
 
     protected final OssTenantMessageProducer messageProducer;
