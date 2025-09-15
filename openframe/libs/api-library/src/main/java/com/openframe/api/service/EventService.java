@@ -8,6 +8,7 @@ import com.openframe.api.dto.shared.CursorPaginationCriteria;
 import com.openframe.data.document.event.Event;
 import com.openframe.data.document.event.filter.EventQueryFilter;
 import com.openframe.data.repository.event.EventRepository;
+import com.openframe.kafka.model.OpenframeEvent;
 import com.openframe.kafka.producer.OssTenantMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +63,10 @@ public class EventService {
         Event savedEvent = eventRepository.save(event);
         log.info("Event saved with ID: {}", savedEvent.getId());
 
-        kafkaProducer.sendMessage("openframe.events", savedEvent, null);
+        OpenframeEvent openframeEvent = new OpenframeEvent(savedEvent.getId(), savedEvent.getType(), savedEvent.getPayload(),
+                savedEvent.getTimestamp(), savedEvent.getUserId());
+
+        kafkaProducer.sendMessage("openframe.events", openframeEvent, null);
         log.debug("Event published to Kafka: {}", savedEvent.getId());
         
         return savedEvent;
