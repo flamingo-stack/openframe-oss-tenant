@@ -282,7 +282,7 @@ impl Client {
         self.tool_installation_message_listener.start().await?;
 
         // Start tool run manager
-//         self.tool_run_manager.run().await?;
+        self.tool_run_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;
