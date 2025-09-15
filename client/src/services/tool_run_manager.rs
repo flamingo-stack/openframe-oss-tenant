@@ -43,6 +43,7 @@ impl ToolRunManager {
 
         for tool in tools {
             info!("Running tool {}", tool.tool_agent_id);
+            self.run_tool(tool).await?;
         }
  
         Ok(())
@@ -50,9 +51,8 @@ impl ToolRunManager {
 
     // TODO: make method idempotent
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        info!(tool_id = %installed_tool.tool_agent_id, "Running new single tool");
-        Ok(())
-        // self.run_tool(installed_tool).await
+        info!("Running new single tool {}", installed_tool.tool_agent_id);
+        self.run_tool(installed_tool).await
     }
 
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
