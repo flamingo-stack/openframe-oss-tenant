@@ -206,7 +206,12 @@ impl Client {
 
         // Initialize NATS connection manager
         let ws_url = format!("wss://{}", initial_configuration_service.get_server_url()?);
-        let nats_connection_manager = NatsConnectionManager::new(ws_url, config_service.clone(), initial_configuration_service.clone());
+        let nats_connection_manager = NatsConnectionManager::new(
+            ws_url,
+            config_service.clone(),
+            initial_configuration_service.clone(),
+            auth_service.clone(),
+        );
         
         // Initialize tool agent file client
         let tool_agent_file_client = ToolAgentFileClient::new(
@@ -274,10 +279,10 @@ impl Client {
         self.nats_connection_manager.connect().await?;
 
         // Start tool installation message listener in background
-        self.tool_installation_message_listener.start().await?;
+//         self.tool_installation_message_listener.start().await?;
 
         // Start tool run manager
-        self.tool_run_manager.run().await?;
+//         self.tool_run_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;
