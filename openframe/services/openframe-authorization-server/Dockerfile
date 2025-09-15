@@ -8,7 +8,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # Add debugging tools
-RUN apk add --no-cache libstdc++ iputils bind-tools netcat-openbsd curl
+RUN apk add --no-cache postfix libstdc++ iputils bind-tools netcat-openbsd curl
 
 EXPOSE 8097
 
@@ -22,6 +22,6 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 RUN chown -R appuser:appgroup /app
 
 # Switch to the new user
-USER appuser
+# USER appuser
 
-ENTRYPOINT ["/bin/sh", "-c", "export CONTAINER_IP=$(hostname -i) && java -jar app.jar"]
+ENTRYPOINT ["/bin/sh", "-c", "postfix start && export CONTAINER_IP=$(hostname -i) && java -jar app.jar"]

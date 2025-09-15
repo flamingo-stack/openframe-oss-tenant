@@ -24,6 +24,10 @@
             <artifactId>openframe-data-mongo</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-notification-mail</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.openframe</groupId>
             <artifactId>openframe-data</artifactId>
         </dependency>
@@ -81,7 +85,6 @@
             <artifactId>google-api-client</artifactId>
             <version>2.2.0</version>
         </dependency>
-
     </dependencies>
 
     <build>

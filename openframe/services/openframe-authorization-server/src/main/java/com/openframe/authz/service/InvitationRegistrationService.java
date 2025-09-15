@@ -1,6 +1,7 @@
 package com.openframe.authz.service;
 
 import com.openframe.authz.dto.InvitationRegistrationRequest;
+import com.openframe.authz.exception.UserActiveInAnotherTenantException;
 import com.openframe.data.document.auth.AuthInvitation;
 import com.openframe.data.document.auth.AuthUser;
 import com.openframe.data.repository.auth.AuthInvitationRepository;
@@ -44,7 +45,7 @@ public class InvitationRegistrationService {
             if (TRUE.equals(request.getSwitchTenant())) {
                 userService.deactivateUser(existing.get());
             } else {
-                throw new IllegalStateException("User already active in another tenant");
+                throw new UserActiveInAnotherTenantException(invitation.getEmail());
             }
         }
 
@@ -58,7 +59,8 @@ public class InvitationRegistrationService {
                 invitation.getEmail(),
                 request.getFirstName(),
                 request.getLastName(),
-                request.getPassword()
+                request.getPassword(),
+                invitation.getRoles()
         );
 
         invitation.setStatus(ACCEPTED);

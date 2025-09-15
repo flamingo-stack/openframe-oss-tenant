@@ -40,15 +40,16 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
-                    "/oauth/**",           // OAuth endpoints
-                    "/oauth2/**",          // Social OAuth endpoints
-                    "/login",              // Login page
-                    "/favicon.ico",        // Favicon
-                    "/tenant/**",          // Tenant discovery endpoints
-                    "/sso/**",             // SSO providers
-                    "/management/v1/**",   // Health check
-                    "/.well-known/**",     // OpenID configuration
-                    "/error"               // Error handling
+                        "/oauth/**",
+                        "/invitations/**",
+                        "/password-reset/**",
+                        "/oauth2/**",
+                        "/login",
+                        "/favicon.ico",
+                        "/tenant/**",
+                        "/management/v1/**",
+                        "/.well-known/**",
+                        "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

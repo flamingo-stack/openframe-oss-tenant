@@ -1,19 +1,12 @@
 package com.openframe.api.dto.invitation;
 
-import lombok.Builder;
-import lombok.Data;
+import com.openframe.core.dto.PageResponse;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
-import java.util.List;
-
-@Data
-@Builder
-public class InvitationPageResponse {
-    private List<InvitationResponse> items;
-    private int page;
-    private int size;
-    private long totalElements;
-    private int totalPages;
-    private boolean hasNext;
+@EqualsAndHashCode(callSuper = true)
+@SuperBuilder
+public class InvitationPageResponse extends PageResponse<InvitationResponse> {
 }
 
 

@@ -1,138 +1,135 @@
 package com.openframe.api.exception;
 
 import com.openframe.core.dto.ErrorResponse;
-import com.openframe.core.exception.EncryptionException;
 import com.openframe.core.exception.ApiKeyNotFoundException;
+import com.openframe.core.exception.EncryptionException;
+import com.openframe.data.exception.UserNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
+import static org.springframework.http.HttpStatus.*;
+
 @Slf4j
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+    @ResponseStatus(UNAUTHORIZED)
+    public ErrorResponse handleAccessDeniedException(AccessDeniedException ex) {
         log.error("Access denied error: ", ex);
-        return ResponseEntity
-            .status(HttpStatus.UNAUTHORIZED)
-            .body(new ErrorResponse("unauthorized", ex.getMessage()));
+        return new ErrorResponse("unauthorized", ex.getMessage());
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
-    public ResponseEntity<ErrorResponse> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
+    @ResponseStatus(BAD_REQUEST)
+    public ErrorResponse handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
         log.error("Missing required header: ", ex);
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(new ErrorResponse("bad_request", "Required header '" + ex.getHeaderName() + "' is missing"));
-    }
-
-    @ExceptionHandler(SocialAuthException.class)
-    public ResponseEntity<ErrorResponse> handleSocialAuthException(SocialAuthException ex) {
-        log.error("Social authentication error: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
+        return new ErrorResponse("bad_request", "Required header '" + ex.getHeaderName() + "' is missing");
     }
 
     @ExceptionHandler(EncryptionException.class)
-    public ResponseEntity<ErrorResponse> handleEncryptionException(EncryptionException ex) {
+    @ResponseStatus(INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleEncryptionException(EncryptionException ex) {
         log.error("Encryption/decryption error: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse(ex.getErrorCode(), "Configuration security error"));
+        return new ErrorResponse(ex.getErrorCode(), "Configuration security error");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+    @ResponseStatus(BAD_REQUEST)
+    public ErrorResponse handleIllegalArgumentException(IllegalArgumentException ex) {
         log.error("Invalid request: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("bad_request", ex.getMessage()));
+        return new ErrorResponse("bad_request", ex.getMessage());
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(NOT_FOUND)
+    public ErrorResponse handleUserNotFound(UserNotFoundException ex) {
+        log.warn("User not found: {}", ex.getMessage());
+        return new ErrorResponse("USER_NOT_FOUND", ex.getMessage());
+    }
+
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleIllegalState(IllegalStateException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return new ErrorResponse("CONFLICT", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+    @ResponseStatus(BAD_REQUEST)
+    public ErrorResponse handleValidationException(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
         log.error("Validation error: {}", errorMessage);
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(new ErrorResponse("bad_request", errorMessage));
+        return new ErrorResponse("bad_request", errorMessage);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
+    @ResponseStatus(UNAUTHORIZED)
+    public ErrorResponse handleBadCredentialsException(BadCredentialsException ex) {
         log.error("Authentication failed: ", ex);
-        return ResponseEntity
-            .status(HttpStatus.UNAUTHORIZED)
-            .body(new ErrorResponse("unauthorized", ex.getMessage()));
+        return new ErrorResponse("unauthorized", ex.getMessage());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+    @ResponseStatus(METHOD_NOT_ALLOWED)
+    public ErrorResponse handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         log.error("Method not supported: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(new ErrorResponse("method_not_allowed", ex.getMessage()));
+        return new ErrorResponse("method_not_allowed", ex.getMessage());
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+    @ResponseStatus(UNSUPPORTED_MEDIA_TYPE)
+    public ErrorResponse handleHttpMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
         log.error("Media type not supported: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .body(new ErrorResponse("unsupported_media_type", ex.getMessage()));
+        return new ErrorResponse("unsupported_media_type", ex.getMessage());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex) {
+    @ResponseStatus(BAD_REQUEST)
+    public ErrorResponse handleConstraintViolationException(ConstraintViolationException ex) {
         String errorMessage = ex.getConstraintViolations().stream()
                 .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
                 .collect(Collectors.joining(", "));
 
         log.error("Validation error: {}", errorMessage);
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("bad_request", errorMessage));
+        return new ErrorResponse("bad_request", errorMessage);
     }
 
     @ExceptionHandler(ApiKeyNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleApiKeyNotFoundException(ApiKeyNotFoundException ex) {
+    @ResponseStatus(NOT_FOUND)
+    public ErrorResponse handleApiKeyNotFoundException(ApiKeyNotFoundException ex) {
         log.warn("API key not found: {}", ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse("API_KEY_NOT_FOUND", ex.getMessage()));
+        return new ErrorResponse("API_KEY_NOT_FOUND", ex.getMessage());
     }
 
     @ExceptionHandler({AgentRegistrationSecretNotFoundException.class})
-    public ResponseEntity<ErrorResponse> handleAgentRegistrationSecretNotFoundException(AgentRegistrationSecretNotFoundException ex) {
+    @ResponseStatus(NOT_FOUND)
+    public ErrorResponse handleAgentRegistrationSecretNotFoundException(AgentRegistrationSecretNotFoundException ex) {
         log.error("Agent registration secret entity not found: ", ex);
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
+        return new ErrorResponse(ex.getErrorCode(), ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+    @ResponseStatus(INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleException(Exception ex) {
         log.error("Unexpected error: ", ex);
-        return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(new ErrorResponse("error", ex.getMessage()));
+        return new ErrorResponse("error", ex.getMessage());
     }
 } 
