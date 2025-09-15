@@ -26,6 +26,7 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
 
     private final WebSocketService defaultWebSocketService;
     private final JwtService jwtService;
+    private static final long CLOCK_SKEW_SECONDS = 60; // align with Spring Security default skew
 
     @Override
     public Mono<Void> handleRequest(ServerWebExchange exchange, WebSocketHandler defaultWebSocketHandler) {
@@ -36,7 +37,11 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
                 Jwt jwt = getRequestJwt(exchange);
                 Instant expiresAt = jwt.getExpiresAt();
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
-                Disposable disposable = scheduleSessionRemoveJob(session, secondsUntilExpiration);
+
+                // Account for clock skew (same tolerance as Spring Security JwtTimestampValidator)
+                long effectiveSeconds = secondsUntilExpiration + CLOCK_SKEW_SECONDS;
+
+                Disposable disposable = scheduleSessionRemoveJob(session, effectiveSeconds);
                 processSessionClosedEvent(session, disposable);
                 return defaultWebSocketHandler.handle(session);
             });
