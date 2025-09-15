@@ -52,8 +52,6 @@ interface DetailedLogData {
   __typename?: string
 }
 
-
-// Info field component
 const InfoField = ({ label, value }: { label: string; value: string | React.ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888]">
@@ -70,12 +68,10 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
   const [detailedLogData, setDetailedLogData] = useState<DetailedLogData | null>(null)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
 
-  // Fetch detailed log data when modal opens
   useEffect(() => {
     if (isOpen && log && log.originalLogEntry) {
       const logEntry = log.originalLogEntry
-      
-      // Validate required fields before making API call
+
       if (!logEntry.toolEventId || !logEntry.ingestDay || !logEntry.toolType || !logEntry.eventType || !logEntry.timestamp) {
         console.error('Missing required fields for fetchLogDetails:', {
           toolEventId: logEntry.toolEventId,
@@ -106,7 +102,6 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
     }
   }, [isOpen, log, fetchLogDetails])
 
-  // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -116,7 +111,6 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden'
     }
 
@@ -126,7 +120,6 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
     }
   }, [isOpen, onClose])
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
@@ -135,7 +128,6 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
     }
 
     if (isOpen) {
-      // Small delay to prevent immediate close on open click
       setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside)
       }, 100)
@@ -148,7 +140,6 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
 
   if (!isOpen || !log) return null
 
-  // Parse raw data for display - use detailed data if available
   const rawDataDisplay = detailedLogData?.details 
     ? (typeof detailedLogData.details === 'object' 
         ? JSON.stringify(detailedLogData.details, null, 2)
@@ -157,7 +148,6 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
     ? JSON.stringify(log.rawData, null, 2)
     : '{}'
 
-  // Use detailed data when available, otherwise fall back to basic log data
   const displayData = detailedLogData || {
     toolEventId: log.logId,
     message: log.description.title,
@@ -179,7 +169,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
         )}
       />
 
-      {/* Modal Panel - slides in from right */}
+      {/* Modal Panel */}
       <div
         ref={modalRef}
         className={cn(
@@ -257,16 +247,28 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
             </pre>
           </div>
 
-          {/* Device Card Section - Fixed at bottom */}
+          {/* Device Card Section */}
           <div className="p-4 bg-[#212121]">
             <DeviceCard
-              deviceName={log.device.name || "Anthony's Device"}
-              organization={log.device.organization || "Northbridge Legal Group"}
-              status={{ label: 'ACTIVE', variant: 'active' }}
-              lastSeen={log.timestamp}
-              operatingSystem="windows"
-              tags={['REMOTE', 'WINDOWS', 'TEST-DEVICE']}
-              onMoreClick={() => console.log('Device more clicked')}
+              device={{
+                name: log.device.name || "Unknown Device",
+                organization: log.device.organization || "Unknown Organization",
+                status: 'active',
+                lastSeen: log.timestamp,
+                operatingSystem: 'windows',
+                tags: ['REMOTE', 'WINDOWS', 'TEST-DEVICE']
+              }}
+              actions={{
+                moreButton: {
+                  visible: true,
+                  onClick: () => console.log('Device more clicked')
+                },
+                detailsButton: {
+                  visible: true,
+                  label: 'Details',
+                  onClick: () => console.log('Device details clicked')
+                }
+              }}
             />
           </div>
         </div>

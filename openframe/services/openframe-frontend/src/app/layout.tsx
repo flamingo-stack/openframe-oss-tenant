@@ -5,6 +5,7 @@ import { azeretMono, dmSans } from '@flamingo/ui-kit/fonts'
 import { Toaster } from '@flamingo/ui-kit/components/ui'
 import { DevTicketObserver } from './auth/components/dev-ticket-observer'
 import { DeploymentInitializer } from './components/deployment-initializer'
+import { RouteGuard } from '../components/route-guard'
 
 export const metadata: Metadata = {
   title: 'OpenFrame',
@@ -28,9 +29,11 @@ export default function RootLayout({
       >
         <DeploymentInitializer />
         <DevTicketObserver />
-        <div className="relative flex min-h-screen flex-col">
-          {children}
-        </div>
+        <RouteGuard>
+          <div className="relative flex min-h-screen flex-col">
+            {children}
+          </div>
+        </RouteGuard>
         <Toaster />
       </body>
     </html>

@@ -158,7 +158,7 @@ const fetchDevices = async () => {
     const response = await restClient.get<RMMDevice[]>(`${API_URL}/agents/`);
 
     // Store original RMM devices for reference
-    devices.value = Array.isArray(response) ? response : [];
+    devices.value = Array.isArray(JSON.parse(response)) ? JSON.parse(response) : [];
 
   } catch (error) {
     console.error('Failed to fetch devices:', error);

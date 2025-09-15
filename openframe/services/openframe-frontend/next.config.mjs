@@ -9,6 +9,8 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_APP_TYPE: 'openframe',
+    // App mode configuration - defaults to full-app if not set
+    NEXT_PUBLIC_APP_MODE: process.env.NEXT_PUBLIC_APP_MODE || 'full-app',
   },
   // Disable server-side features
   poweredByHeader: false,

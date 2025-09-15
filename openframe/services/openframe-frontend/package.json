@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p ${PORT:-4000}",
+    "dev:auth": "NEXT_PUBLIC_APP_MODE=auth-only next dev -p ${PORT:-4000}",
+    "dev:full": "NEXT_PUBLIC_APP_MODE=full-app next dev -p ${PORT:-4000}",
     "build": "next build",
+    "build:auth": "NEXT_PUBLIC_APP_MODE=auth-only next build",
+    "build:full": "NEXT_PUBLIC_APP_MODE=full-app next build",
     "start": "next start -p ${PORT:-4000}",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

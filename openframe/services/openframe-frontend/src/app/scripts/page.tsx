@@ -1,13 +1,13 @@
 'use client'
 
 import { AppLayout } from '../components/app-layout'
-import { DevicesView } from './components/devices-view'
+import { ScriptsTable } from './components/scripts-table'
 
-export default function Devices() {
+export default function Scripts() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <DevicesView />
+        <ScriptsTable/>
       </div>
     </AppLayout>
   )
