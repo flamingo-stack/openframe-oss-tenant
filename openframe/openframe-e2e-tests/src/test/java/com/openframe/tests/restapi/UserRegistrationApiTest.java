@@ -60,8 +60,6 @@ public class UserRegistrationApiTest extends ApiBaseTest {
             softAssertions.assertThat(registrationResponse.getOwnerId())
                     .isNotNull();
 
-            sleep();
-
             long totalUsers = DBQuery.getUserCount();
             log.info("Total users in database after sleep: {}", totalUsers);
 

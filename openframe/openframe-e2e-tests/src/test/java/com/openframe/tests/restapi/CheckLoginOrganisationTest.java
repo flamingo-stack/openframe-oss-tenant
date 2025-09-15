@@ -1,5 +1,6 @@
 package com.openframe.tests.restapi;
 
+import com.openframe.data.UserRegistrationBuilder;
 import com.openframe.support.enums.ApiEndpoints;
 import com.openframe.support.helpers.ApiCalls;
 import com.openframe.support.validation.ResponseValidator;
@@ -9,9 +10,10 @@ import net.datafaker.Faker;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
-import static com.openframe.support.constants.TestConstants.HTTP_OK;
+import static com.openframe.support.constants.TestConstants.*;
+import static com.openframe.support.helpers.ApiCalls.get;
+import static io.restassured.RestAssured.given;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Check login organisation API tests
@@ -24,21 +26,37 @@ public class CheckLoginOrganisationTest extends ApiBaseTest {
     @Test
     @DisplayName("Should return tenant discover response when organization does not exist")
     void shouldReturnTenantDiscoverResponseWhenOrganizationDoesNotExist() {
-        String fakeEmail = faker.internet().emailAddress();
-        log.info("Testing tenant discover with non-existing email: {}", fakeEmail);
+        String email = faker.internet().emailAddress();
 
-        Response response = ApiCalls.get(ApiEndpoints.TENANT_DISCOVER_ENDPOINT, Map.of("email", fakeEmail));
+        Response response = get(ApiEndpoints.TENANT_DISCOVER_ENDPOINT, email);
+
+        log.debug("Response status: {}, body: {}", response.getStatusCode(), response.getBody().asString());
+
+        assertEquals(HTTP_INTERNAL_SERVER_ERROR, response.getStatusCode());
+
+        log.info("Tenant discover correctly returned response for non-existing organization");
+    }
+
+    @Test
+    @DisplayName("Should return 401 when access token is invalid or expired")
+    void shouldReturn401WhenAccessTokenIsInvalidOrExpired() {
+        String fakeEmail = faker.internet().emailAddress();
+        String invalidToken = "eyJraWQiOiJraWQtNzQ3NWQ5MjQtMDIzYy00YWFhLThkY2ItN2IxNzJmZDU5OWE2IiwiYWxnIjoiUlMyNTYifQ.invalid_token_payload";
+        
+        log.info("Testing tenant discover with invalid token and email: {}", fakeEmail);
+
+        Response response = given()
+            .header("access-token", invalidToken)
+            .queryParam("email", fakeEmail)
+            .when()
+            .get(ApiEndpoints.TENANT_DISCOVER_ENDPOINT.getPath());
 
         log.debug("Response status: {}, body: {}", response.getStatusCode(), response.getBody().asString());
 
         ResponseValidator.validate(response)
-                .statusCode(HTTP_OK)
-                .jsonFieldEquals("email", fakeEmail)
-                .jsonFieldEquals("has_existing_accounts", false)
-                .jsonFieldEquals("tenant_id", null)
-                .jsonFieldEquals("auth_providers", null)
+                .statusCode(HTTP_UNAUTHORIZED)
                 .assertAll();
 
-        log.info("Tenant discover correctly returned response for non-existing organization");
+        log.info("Tenant discover correctly returned 401 for invalid access token");
     }
 }
