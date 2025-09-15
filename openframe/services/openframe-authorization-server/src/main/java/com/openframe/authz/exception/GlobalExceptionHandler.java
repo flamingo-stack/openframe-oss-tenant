@@ -36,6 +36,13 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("BAD_REQUEST", ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleIllegalState(IllegalStateException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return new ErrorResponse("CONFLICT", ex.getMessage());
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMissingParam(MissingServletRequestParameterException ex) {
@@ -55,6 +62,13 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining("; "));
         log.warn("Validation error: {}", ex.getMessage());
         return new ErrorResponse("VALIDATION_ERROR", errors);
+    }
+
+    @ExceptionHandler(UserActiveInAnotherTenantException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleUserActiveInAnotherTenant(UserActiveInAnotherTenantException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return new ErrorResponse("USER_IS_ACTIVE_IN_ANOTHER_TENANT", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
