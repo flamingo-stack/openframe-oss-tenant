@@ -19,6 +19,7 @@ public class PasswordResetDtos {
         @NotBlank
         private String token;
 
+        @NotBlank(message = "Password is required")
         @Size(min = 8, message = "Password must be at least 8 characters")
         @Pattern(
                 regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-={}\\[\\]|:;\"'<>,.?/]).+$",
