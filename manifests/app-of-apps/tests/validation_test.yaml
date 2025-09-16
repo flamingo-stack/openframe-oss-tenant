@@ -32,11 +32,25 @@ tests:
           path: metadata.name
           value: argocd-apps
 
-  - it: should validate SaaS deployment
+  - it: should validate SaaS deployment with localhost
     set:
       deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
+      deployment.saas.ingress.gcp.enabled: false
+    asserts:
+      - isKind:
+          of: Application
+      - equal:
+          path: metadata.name
+          value: argocd-apps
+
+  - it: should validate SaaS deployment with GCP
+    set:
+      deployment.oss.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: false
+      deployment.saas.ingress.gcp.enabled: true
     asserts:
       - isKind:
           of: Application
@@ -92,11 +106,22 @@ tests:
   # SAAS INGRESS VALIDATION ERRORS
   # ========================================
 
-  - it: should fail when SaaS localhost ingress disabled
+  - it: should fail when SaaS has both ingresses
+    set:
+      deployment.oss.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+      deployment.saas.ingress.gcp.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: Exactly one ingress must be enabled for SaaS deployment. Currently localhost=true, gcp=true"
+
+  - it: should fail when SaaS has no ingresses
     set:
       deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: false
+      deployment.saas.ingress.gcp.enabled: false
     asserts:
       - failedTemplate:
-          errorMessage: "ERROR: localhost ingress must be enabled for SaaS deployment"
+          errorMessage: "ERROR: Exactly one ingress must be enabled for SaaS deployment. Currently localhost=false, gcp=false"

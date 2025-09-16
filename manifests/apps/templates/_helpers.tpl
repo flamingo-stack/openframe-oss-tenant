@@ -28,14 +28,13 @@ Rules:
 {{- $saas := $vals.deployment.saas.enabled | default false }}
 {{- $ossLocalhost := $vals.deployment.oss.ingress.localhost.enabled | default false }}
 {{- $ossNgrok := $vals.deployment.oss.ingress.ngrok.enabled | default false }}
-{{- $saasLocalhost := $vals.deployment.saas.ingress.localhost.enabled | default false }}
 
 {{/* Apply skipping logic */}}
 {{- if and $oss $ossLocalhost (eq $name "ngrok-operator") }}
   true
 {{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
   true
-{{- else if and $saas $saasLocalhost (or (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
+{{- else if and $saas (or (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
   true
 {{- else }}
   false
@@ -43,6 +42,7 @@ Rules:
 
 {{- end }}
 {{- end }}
+
 
 {{/*
 app.values - Returns final values for an application, using helper if available
@@ -57,7 +57,7 @@ To add a new helper:
 {{- $vals := index . 2 -}}
 
 {{/* Apps with helpers - update this list when adding new helper files */}}
-{{- $availableHelpers := list "ngrok-operator" "grafana" "kafka-ui" "prometheus" "loki" "promtail" "cert-manager" "cassandra" "redis" "kafka" "mongodb-exporter" "redis-exporter" -}}
+{{- $availableHelpers := list "ngrok-operator" "grafana" "kafka-ui" "prometheus" "loki" "promtail" "cassandra" "redis" "kafka" "mongodb-exporter" "redis-exporter" -}}
 
 {{- if has $name $availableHelpers -}}
   {{- $helper := printf "app-helpers.%s" $name -}}
