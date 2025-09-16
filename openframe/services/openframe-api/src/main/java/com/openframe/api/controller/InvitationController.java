@@ -3,7 +3,6 @@ package com.openframe.api.controller;
 import com.openframe.api.dto.invitation.CreateInvitationRequest;
 import com.openframe.api.dto.invitation.InvitationPageResponse;
 import com.openframe.api.dto.invitation.InvitationResponse;
-import com.openframe.api.dto.invitation.UpdateInvitationStatusRequest;
 import com.openframe.api.service.InvitationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,14 +31,9 @@ public class InvitationController {
         return invitationService.listInvitations(page, size);
     }
 
-    @PatchMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public InvitationResponse updateInvitationStatus(
-            @PathVariable String id,
-            @Valid @RequestBody UpdateInvitationStatusRequest request
-    ) {
-        return invitationService.updateInvitationStatus(id, request);
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeInvitation(@PathVariable String id) {
+        invitationService.revokeInvitation(id);
     }
 }
-
-

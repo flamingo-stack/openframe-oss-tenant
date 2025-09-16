@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.*;
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
-@RequestMapping(path = "/oauth/invitations", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = "/invitations", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 public class InvitationRegistrationController {
 
     private final InvitationRegistrationService invitationRegistrationService;
 
-    @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/accept", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(OK)
     public AuthUser register(@Valid @RequestBody InvitationRegistrationRequest request) {
         return invitationRegistrationService.registerByInvitation(request);

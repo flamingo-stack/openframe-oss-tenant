@@ -21,6 +21,12 @@ public class UserController {
     ) {
         return userService.listUsers(page, size);
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable String id) {
+        userService.softDeleteUser(id);
+    }
 }
 
 

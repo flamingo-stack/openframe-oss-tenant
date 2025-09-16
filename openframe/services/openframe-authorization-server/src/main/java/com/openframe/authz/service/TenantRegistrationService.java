@@ -7,6 +7,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
+import static com.openframe.data.document.user.UserRole.OWNER;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,7 +40,8 @@ public class TenantRegistrationService {
                 request.getEmail(),
                 request.getFirstName(),
                 request.getLastName(),
-                request.getPassword()
+                request.getPassword(),
+                List.of(OWNER)
         );
 
         tenant.setOwnerId(user.getId());
