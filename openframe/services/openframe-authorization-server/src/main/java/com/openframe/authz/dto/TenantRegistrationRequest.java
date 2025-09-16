@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
+import com.openframe.authz.validation.TenantDomain;
 
 /**
  * User registration request DTO for multi-tenant registration
@@ -41,5 +42,6 @@ public class TenantRegistrationRequest extends CoreUserRequest {
      * Tenant domain
      */
     @NotBlank(message = "Tenant domain is required")
+    @TenantDomain
     private String tenantDomain;
 }
