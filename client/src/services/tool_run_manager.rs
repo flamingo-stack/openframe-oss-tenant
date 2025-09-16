@@ -3,6 +3,9 @@ use tracing::{info, warn, error, debug};
 use std::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
+use std::collections::HashSet;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use sysinfo::{System, Signal};
 use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
@@ -14,6 +17,7 @@ const RETRY_DELAY_SECONDS: u64 = 5;
 pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
     params_processor: ToolCommandParamsResolver,
+    running_tools: Arc<RwLock<HashSet<String>>>,
 }
 
 impl ToolRunManager {
@@ -24,6 +28,7 @@ impl ToolRunManager {
         Self {
             installed_tools_service,
             params_processor,
+            running_tools: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
@@ -42,17 +47,35 @@ impl ToolRunManager {
         }
 
         for tool in tools {
-            info!("Running tool {}", tool.tool_agent_id);
-            self.run_tool(tool).await?;
+            if self.try_mark_running(&tool.tool_agent_id).await {
+                info!("Running tool {}", tool.tool_agent_id);
+                self.run_tool(tool).await?;
+            } else {
+                warn!("Tool {} is already running - skipping", tool.tool_agent_id);
+            }
         }
  
         Ok(())
     }
 
-    // TODO: make method idempotent
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
+        if !self.try_mark_running(&installed_tool.tool_agent_id).await {
+            warn!("Tool {} is already running - skipping", installed_tool.tool_agent_id);
+            return Ok(());
+        }
+
         info!("Running new single tool {}", installed_tool.tool_agent_id);
         self.run_tool(installed_tool).await
+    }
+
+    async fn try_mark_running(&self, tool_id: &str) -> bool {
+        let mut set = self.running_tools.write().await;
+        if set.contains(tool_id) {
+            false
+        } else {
+            set.insert(tool_id.to_string());
+            true
+        }
     }
 
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
