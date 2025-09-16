@@ -1,3 +1,8 @@
+{{- define "app.allowlist" -}}
+{{/* Defines the complete list of valid applications that can be deployed. */}}
+cassandra debezium-connect grafana ingress-nginx kafka kafka-ui loki mongo-express mongodb mongodb-exporter namespace-client-tools namespace-datasources namespace-integrated-tools namespace-microservices namespace-platform nats ngrok-operator openframe-api openframe-authorization-server openframe-client openframe-config openframe-external-api openframe-gateway openframe-management openframe-stream openframe-ui pinot prometheus promtail redis redis-exporter telepresence zookeeper authentik fleetmdm meshcentral tactical-rmm
+{{- end -}}
+
 {{/*
 app.skip
 
@@ -7,10 +12,11 @@ Usage:
   include "app.skip" (list $name $app $.Values)
 
 Rules:
-1. If `enabled: false` → skip
-2. If deployment.oss.enabled and ingress.localhost.enabled → skip "ngrok-operator"
-3. If deployment.oss.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
-4. If deployment.saas.enabled and ingress.localhost.enabled → skip "openframe-authorization-server" and "ngrok-operator"
+1. If not in allowlist → skip
+2. If `enabled: false` → skip
+3. If deployment.oss.enabled and ingress.localhost.enabled → skip "ngrok-operator"
+4. If deployment.oss.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
+5. If deployment.saas.enabled and ingress.localhost.enabled → skip "openframe-authorization-server" and "ngrok-operator"
 */}}
 
 {{- define "app.skip" -}}
@@ -18,8 +24,14 @@ Rules:
 {{- $app := index . 1 -}}
 {{- $vals := index . 2 -}}
 
+{{/* Get the allowlist */}}
+{{- $allowlist := include "app.allowlist" . | trim | splitList " " -}}
+
+{{/* Skip if not in allowlist */}}
+{{- if not (has $name $allowlist) }}
+  true
 {{/* Skip if explicitly disabled */}}
-{{- if and (hasKey $app "enabled") (eq $app.enabled false) }}
+{{- else if and (hasKey $app "enabled") (eq $app.enabled false) }}
   true
 {{- else }}
 
@@ -57,7 +69,7 @@ To add a new helper:
 {{- $vals := index . 2 -}}
 
 {{/* Apps with helpers - update this list when adding new helper files */}}
-{{- $availableHelpers := list "ngrok-operator" "grafana" "kafka-ui" "prometheus" "loki" "promtail" "cassandra" "redis" "kafka" "mongodb-exporter" "redis-exporter" -}}
+{{- $availableHelpers := list "cassandra" "grafana" "kafka" "kafka-ui" "loki" "mongodb-exporter" "ngrok-operator" "prometheus" "promtail" "redis" "redis-exporter" -}}
 
 {{- if has $name $availableHelpers -}}
   {{- $helper := printf "app-helpers.%s" $name -}}
