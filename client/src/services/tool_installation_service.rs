@@ -10,6 +10,7 @@ use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::tool_run_manager::ToolRunManager;
+use crate::services::tool_connection_processing_manager::ToolConnectionProcessingManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
@@ -25,6 +26,7 @@ pub struct ToolInstallationService {
     installed_tools_service: InstalledToolsService,
     directory_manager: DirectoryManager,
     tool_run_manager: ToolRunManager,
+    tool_connection_processing_manager: ToolConnectionProcessingManager,
 }
 
 impl ToolInstallationService {
@@ -35,6 +37,7 @@ impl ToolInstallationService {
         installed_tools_service: InstalledToolsService,
         directory_manager: DirectoryManager,
         tool_run_manager: ToolRunManager,
+        tool_connection_processing_manager: ToolConnectionProcessingManager,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -49,6 +52,7 @@ impl ToolInstallationService {
             installed_tools_service,
             directory_manager,
             tool_run_manager,
+            tool_connection_processing_manager,
         }
     }
 
@@ -187,6 +191,7 @@ impl ToolInstallationService {
             tool_agent_id: tool_agent_id.clone(),
             version: version_clone,
             run_command_args: run_args_clone,
+            tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args,
             status: ToolStatus::Installed,
         };
 
@@ -197,6 +202,12 @@ impl ToolInstallationService {
         info!("Running tool {} after successful installation", tool_agent_id);
         self.tool_run_manager.run_new_tool(installed_tool).await
             .context("Failed to run tool after installation")?;
+
+        // Start tool connection processing for newly installed tool
+        info!("Processing connection for tool {} after installation", tool_agent_id);
+        self.tool_connection_processing_manager.run_new_tool(installed_tool)
+            .await
+            .context("Failed to process tool connection after installation")?;
 
         Ok(())
     }

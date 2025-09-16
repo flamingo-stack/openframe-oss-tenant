@@ -18,11 +18,9 @@ impl Default for ToolStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledTool {
     pub tool_agent_id: String,
-
     pub version: String,
-
     pub run_command_args: Vec<String>,
-
+    pub tool_agent_id_command_args: Vec<String>,
     pub status: ToolStatus,
 }
 
@@ -33,6 +31,7 @@ impl Default for InstalledTool {
             version: String::new(),
             run_command_args: Vec::new(),
             status: ToolStatus::default(),
+            tool_agent_id_command_args: Vec::new(),       
         }
     }
 }
