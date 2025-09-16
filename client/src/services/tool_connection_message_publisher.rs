@@ -12,9 +12,9 @@ impl ToolConnectionMessagePublisher {
         Self { nats_message_publisher }
     }
 
-    pub async fn publish(&self, machine_id: String, tool_agent_id: String) -> anyhow::Result<()> {
+    pub async fn publish(&self, machine_id: String, tool_id: String, agent_tool_id: String) -> anyhow::Result<()> {
         let topic = Self::build_topic_name(machine_id);
-        let message = Self::build_message(tool_agent_id);
+        let message = Self::build_message(tool_id, agent_tool_id);
         self.nats_message_publisher.publish(&topic, message).await
         // TODO: wait for ack and publish again if failed
     }
@@ -23,9 +23,10 @@ impl ToolConnectionMessagePublisher {
         format!("machine.{}.tool-connection", machine_id)
     }
 
-    fn build_message(tool_agent_id: String) -> ToolConnectionMessage {
+    fn build_message(tool_id: String, agent_tool_id: String) -> ToolConnectionMessage {
         ToolConnectionMessage {
-            tool_agent_id,
+            tool_id,
+            agent_tool_id,
         }
     }
 }

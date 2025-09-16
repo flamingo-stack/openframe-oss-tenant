@@ -157,6 +157,9 @@ impl ToolInstallationService {
             info!("No assets to download for tool: {}", tool_agent_id);
         }
 
+        // TODO: there's risk that tool have been installed but data haven't been sent 
+        //  there should be mechanism of pre check if tool have been installed(some command)
+        //  Also, logic should prevent race conditions if installation stucked 
         // Run installation command if provided
         if tool_installation_message.installation_command_args.is_some() {
             info!("Start run tool installation command for tool {}", tool_agent_id);
@@ -189,6 +192,7 @@ impl ToolInstallationService {
         // Persist installed tool information
         let installed_tool = InstalledTool {
             tool_agent_id: tool_agent_id.clone(),
+            tool_id: tool_installation_message.tool_id.clone(),
             version: version_clone,
             run_command_args: run_args_clone,
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args,

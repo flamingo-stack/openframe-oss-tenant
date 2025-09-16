@@ -55,11 +55,11 @@ impl ToolConnectionProcessingManager {
         }
 
         for tool in tools {
-            if self.try_mark_running(&tool.tool_agent_id).await {
-                info!("Processing tool connection for {}", tool.tool_agent_id);
+            if self.try_mark_running(&tool.tool_id).await {
+                info!("Processing tool connection for {}", tool.tool_id);
                 self.process_tool(tool).await?;
             } else {
-                warn!("Connection processing for tool {} is already running - skipping", tool.tool_agent_id);
+                warn!("Connection processing for tool {} is already running - skipping", tool.tool_id);
             }
         }
 
@@ -67,17 +67,17 @@ impl ToolConnectionProcessingManager {
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        if !self.try_mark_running(&installed_tool.tool_agent_id).await {
+        if !self.try_mark_running(&installed_tool.tool_id).await {
             warn!(
                 "Connection processing for tool {} is already running - skipping",
-                installed_tool.tool_agent_id
+                installed_tool.tool_id
             );
             return Ok(());
         }
 
         info!(
             "Processing tool connection for newly installed tool {}",
-            installed_tool.tool_agent_id
+            installed_tool.tool_id
         );
         self.process_tool(installed_tool).await
     }
@@ -99,16 +99,16 @@ impl ToolConnectionProcessingManager {
 
         tokio::spawn(async move {
             loop {
-                // Resolve placeholders for tool_agent_id_command_args
+                // Resolve placeholders for tool_agent_id_command_args (gets agent_tool_id from command output)
                 let processed_args = match params_processor.process(
-                    &tool.tool_agent_id,
+                    &tool.tool_id,
                     tool.tool_agent_id_command_args.clone(),
                 ) {
                     Ok(args) => args,
                     Err(e) => {
                         error!(
-                            "Failed to resolve tool {} tool_agent_id_command args: {:#}",
-                            tool.tool_agent_id,
+                            "Failed to resolve tool {} agent_tool_id_command args: {:#}",
+                            tool.tool_id,
                             e
                         );
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
@@ -117,8 +117,8 @@ impl ToolConnectionProcessingManager {
                 };
 
                 debug!(
-                    "Run tool {} agentId command with args: {:?}",
-                    tool.tool_agent_id,
+                    "Run tool {} agentId command (to get agent_tool_id) with args: {:?}",
+                    tool.tool_id,
                     processed_args
                 );
 
@@ -136,7 +136,7 @@ impl ToolConnectionProcessingManager {
                     Ok(out) => out,
                     Err(e) => {
                         error!(
-                            tool_id = %tool.tool_agent_id,
+                            tool_id = %tool.tool_id,
                             error = %e,
                             "Failed to execute agentId command - retrying in {} seconds",
                             RETRY_DELAY_SECONDS
@@ -148,23 +148,25 @@ impl ToolConnectionProcessingManager {
 
                 if output.status.success() {
                     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                    debug!(tool_id = %tool.tool_agent_id, result = %stdout, "agentId command completed successfully");
+                    debug!(tool_id = %tool.tool_id, result = %stdout, "agentId command completed successfully");
 
-                    // Treat any non-empty stdout as a normal result
+                    // Parse agent_tool_id from command output
                     if !stdout.is_empty() {
+                        let agent_tool_id = stdout; // Use the command output as agent_tool_id
+                        
                         match config_service.get_machine_id().await {
                             Ok(machine_id) => {
                                 if let Err(e) = tool_connection_publisher
-                                    .publish(machine_id, tool.tool_agent_id.clone())
+                                    .publish(machine_id, tool.tool_id.clone(), agent_tool_id.clone())
                                     .await
                                 {
-                                    error!(tool_id = %tool.tool_agent_id, error = %e, "Failed to publish tool connection message");
+                                    error!(tool_id = %tool.tool_id, error = %e, "Failed to publish tool connection message");
                                     // Retry publishing on next cycle
                                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                                     continue;
                                 }
 
-                                info!(tool_id = %tool.tool_agent_id, "Tool connection message published successfully");
+                                info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully");
                                 // Stop processing after successful publish
                                 sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                                 continue;
@@ -177,7 +179,7 @@ impl ToolConnectionProcessingManager {
                         }
                     } else {
                         warn!(
-                            tool_id = %tool.tool_agent_id,
+                            tool_id = %tool.tool_id,
                             "agentId command returned empty output - retrying in {} seconds",
                             RETRY_DELAY_SECONDS
                         );
@@ -188,7 +190,7 @@ impl ToolConnectionProcessingManager {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     let stdout = String::from_utf8_lossy(&output.stdout);
                     error!(
-                        tool_id = %tool.tool_agent_id,
+                        tool_id = %tool.tool_id,
                         exit_status = %output.status,
                         "agentId command failed - stdout: {} stderr: {}. Retrying in {} seconds",
                         stdout,
