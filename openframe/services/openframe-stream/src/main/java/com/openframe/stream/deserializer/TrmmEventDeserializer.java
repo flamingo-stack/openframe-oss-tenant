@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-public class TrmmEventBrokerDeserializer extends IntegratedToolEventBrokerDeserializer {
+public class TrmmEventDeserializer extends IntegratedToolEventDeserializer {
     // Field name constants
     private static final String FIELD_AGENT_ID = "agentid";
     private static final String FIELD_OBJECT_TYPE = "object_type";

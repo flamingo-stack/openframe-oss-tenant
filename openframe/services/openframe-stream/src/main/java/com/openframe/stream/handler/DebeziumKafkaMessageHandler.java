@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class DebeziumMessageBrokerHandler extends DebeziumMessageHandler<IntegratedToolEvent, DeserializedDebeziumMessage> {
+public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<IntegratedToolEvent, DeserializedDebeziumMessage> {
 
     @Value("${openframe.oss-tenant.kafka.topics.outbound.integrated-tool-events}")
     private String topic;
 
     protected final OssTenantMessageProducer messageProducer;
 
-    public DebeziumMessageBrokerHandler(OssTenantMessageProducer ossTenantMessageProducer, ObjectMapper objectMapper) {
+    public DebeziumKafkaMessageHandler(OssTenantMessageProducer ossTenantMessageProducer, ObjectMapper objectMapper) {
         super(objectMapper);
         this.messageProducer = ossTenantMessageProducer;
     }

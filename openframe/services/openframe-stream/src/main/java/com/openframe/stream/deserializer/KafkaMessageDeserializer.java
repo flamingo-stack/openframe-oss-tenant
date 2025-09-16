@@ -4,7 +4,7 @@ import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
 import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.enums.MessageType;
 
-public interface MessageBrokerDeserializer {
+public interface KafkaMessageDeserializer {
 
     MessageType getType();
 

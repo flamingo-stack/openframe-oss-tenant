@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
-public abstract class IntegratedToolEventBrokerDeserializer implements MessageBrokerDeserializer {
+public abstract class IntegratedToolEventDeserializer implements KafkaMessageDeserializer {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
     private static final String UNKNOWN = "unknown";
