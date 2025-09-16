@@ -31,6 +31,7 @@ deployment:
       URL: https://github.com/flamingo-stack/openframe-saas-tenant.git
       branch: main
       autoSync: true
+      password: ""  # GitHub PAT for private repo access
   
 registry:
   docker:

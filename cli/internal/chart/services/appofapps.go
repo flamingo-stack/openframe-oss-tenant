@@ -46,7 +46,7 @@ func (a *AppOfApps) Install(ctx context.Context, config config.ChartInstallConfi
 	}
 
 	// Always show which branch is being used for cloning with dots to indicate work is happening
-	pterm.Info.Printf("Using branch '%s'...\n", appConfig.GitHubBranch)
+	pterm.Info.Printf("Using OSS branch '%s'...\n", appConfig.GitHubBranch)
 	
 	// Clone the repository to a temporary directory
 	cloneResult, err := a.gitRepo.CloneChartRepository(ctx, appConfig)

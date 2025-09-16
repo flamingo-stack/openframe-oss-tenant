@@ -28,14 +28,21 @@ type HelmValues struct {
 	Global struct {
 		RepoBranch string `yaml:"repoBranch"`
 	} `yaml:"global"`
+	Deployment struct {
+		OSS struct {
+			Repository struct {
+				Branch string `yaml:"branch"`
+			} `yaml:"repository"`
+		} `yaml:"oss"`
+	} `yaml:"deployment"`
 }
 
-// getBranchFromHelmValues reads the Helm values file and extracts global.repoBranch
+// getBranchFromHelmValues reads the Helm values file and extracts branch from deployment structure or legacy global structure
 func (b *Builder) getBranchFromHelmValues() string {
 	return b.getBranchFromHelmValuesPath("")
 }
 
-// getBranchFromHelmValuesPath reads a specific Helm values file and extracts global.repoBranch
+// getBranchFromHelmValuesPath reads a specific Helm values file and extracts branch from deployment structure or legacy global structure
 func (b *Builder) getBranchFromHelmValuesPath(helmValuesPath string) string {
 	if helmValuesPath == "" {
 		pathResolver := NewPathResolver()
@@ -56,6 +63,12 @@ func (b *Builder) getBranchFromHelmValuesPath(helmValuesPath string) string {
 		return ""
 	}
 
+	// First check for deployment-specific OSS branch (new structure)
+	if values.Deployment.OSS.Repository.Branch != "" {
+		return values.Deployment.OSS.Repository.Branch
+	}
+
+	// Fall back to legacy global.repoBranch (backward compatibility)
 	return values.Global.RepoBranch
 }
 
@@ -83,7 +96,7 @@ func (b *Builder) BuildInstallConfig(
 		helmBranch := b.getBranchFromHelmValues()
 		if helmBranch != "" {
 			if verbose {
-				pterm.Info.Printf("📥 Using branch '%s' from Helm values (global.repoBranch)\n", helmBranch)
+				pterm.Info.Printf("📥 Using branch '%s' from Helm values\n", helmBranch)
 			}
 			appOfAppsConfig.GitHubBranch = helmBranch
 		} else if verbose {
@@ -127,7 +140,7 @@ func (b *Builder) BuildInstallConfigWithCustomHelmPath(
 		helmBranch := b.getBranchFromHelmValuesPath(helmValuesPath)
 		if helmBranch != "" {
 			if verbose {
-				pterm.Info.Printf("📥 Using branch '%s' from Helm values (global.repoBranch)\n", helmBranch)
+				pterm.Info.Printf("📥 Using branch '%s' from Helm values\n", helmBranch)
 			}
 			appOfAppsConfig.GitHubBranch = helmBranch
 		} else if verbose {
