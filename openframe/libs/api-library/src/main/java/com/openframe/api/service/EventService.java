@@ -26,7 +26,6 @@ import java.util.UUID;
 public class EventService {
     
     private final EventRepository eventRepository;
-    private final OssTenantMessageProducer kafkaProducer;
 
     public EventQueryResult queryEvents(EventFilterOptions filterOptions,
                                      CursorPaginationCriteria paginationCriteria,
@@ -62,11 +61,6 @@ public class EventService {
 
         Event savedEvent = eventRepository.save(event);
         log.info("Event saved with ID: {}", savedEvent.getId());
-
-        OpenframeEvent openframeEvent = new OpenframeEvent(savedEvent.getId(), savedEvent.getType(), savedEvent.getPayload(),
-                savedEvent.getTimestamp(), savedEvent.getUserId());
-
-        kafkaProducer.sendMessage("openframe.events", openframeEvent, null);
         log.debug("Event published to Kafka: {}", savedEvent.getId());
         
         return savedEvent;
