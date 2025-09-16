@@ -3,44 +3,38 @@ package com.openframe.authz.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 /**
  * User registration request DTO for multi-tenant registration
  */
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TenantRegistrationRequest {
+public class TenantRegistrationRequest extends CoreUserRequest {
     
     @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    private String email;
-    
-    @NotBlank(message = "First name is required")
-    private String firstName;
-    
-    @NotBlank(message = "Last name is required")  
-    private String lastName;
-    
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-={}\\[\\]|:;\"'<>,.?/]).+$",
-        message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
+    @Email(
+            regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$",
+            message = "Invalid email format"
     )
-    private String password;
+    private String email;
     
     /**
      * Organization/tenant name for registration
      * This will be used to create a new tenant if it doesn't exist
      */
     @NotBlank(message = "Organization name is required")
+    @Pattern(
+            regexp = "^[\\p{L}\\p{M}0-9&.,'’\"()\\- ]{2,100}$",
+            message = "Invalid organization name"
+    )
     private String tenantName;
     
     /**
