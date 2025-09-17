@@ -37,47 +37,108 @@ public class EventTypeMapper {
     }
 
     private static void initializeDefaultMappings() {
-        // MeshCentral mappings - Updated to match actual event types from deserializer
-        registerMapping(IntegratedToolType.MESHCENTRAL, "servertimelinestats", UnifiedEventType.SYSTEM_MONITORING); // Direct action mapping
+        // Core MeshCentral mappings
+        registerMapping(IntegratedToolType.MESHCENTRAL, "server.started", UnifiedEventType.SYSTEM_START); // Direct action mapping
 
-        // Legacy mappings (keeping for backward compatibility)
+        // MeshCentral etype.action mappings discovered in codebase
+        // user.*
         registerMapping(IntegratedToolType.MESHCENTRAL, "user.login", UnifiedEventType.LOGIN);
         registerMapping(IntegratedToolType.MESHCENTRAL, "user.logout", UnifiedEventType.LOGOUT);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "server.started", UnifiedEventType.SYSTEM_START); // Direct action mapping
-        registerMapping(IntegratedToolType.MESHCENTRAL, "device.connect", UnifiedEventType.DEVICE_ONLINE);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "device.disconnect", UnifiedEventType.DEVICE_OFFLINE);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "file.transfer", UnifiedEventType.FILE_TRANSFER);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "remote.session.start", UnifiedEventType.REMOTE_SESSION_START);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "remote.session.end", UnifiedEventType.REMOTE_SESSION_END);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "mesh.createmesh", UnifiedEventType.DEVICE_REGISTERED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.passchange", UnifiedEventType.PASSWORD_CHANGED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.accountcreate", UnifiedEventType.USER_CREATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.accountremove", UnifiedEventType.USER_DELETED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.accountchange", UnifiedEventType.USER_UPDATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.loginTokenChanged", UnifiedEventType.USER_LOGIN_TOKEN_CHANGED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.loginTokenAdded", UnifiedEventType.USER_LOGIN_TOKEN_ADDED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.uicustomevent", UnifiedEventType.USER_UI_CUSTOM_EVENT);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "user.endsession", UnifiedEventType.USER_SESSION_ENDED);
 
-        // Additional MeshCentral event type mappings based on actual event data
-        registerMapping(IntegratedToolType.MESHCENTRAL, "userconnect", UnifiedEventType.LOGIN);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "userdisconnect", UnifiedEventType.LOGOUT);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "agentconnect", UnifiedEventType.DEVICE_ONLINE);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "agentdisconnect", UnifiedEventType.DEVICE_OFFLINE);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "agentinstall", UnifiedEventType.DEVICE_REGISTERED);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "agentupdate", UnifiedEventType.DEVICE_UPDATED);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "filesend", UnifiedEventType.FILE_TRANSFER);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "filereceive", UnifiedEventType.FILE_TRANSFER);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "kvmconnect", UnifiedEventType.REMOTE_SESSION_START);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "kvmdisconnect", UnifiedEventType.REMOTE_SESSION_END);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "terminalconnect", UnifiedEventType.REMOTE_SESSION_START);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "terminaldisconnect", UnifiedEventType.REMOTE_SESSION_END);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "filesconnect", UnifiedEventType.REMOTE_SESSION_START);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "filesdisconnect", UnifiedEventType.REMOTE_SESSION_END);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "heartbeat", UnifiedEventType.DEVICE_HEARTBEAT);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "status", UnifiedEventType.SYSTEM_STATUS);
-        registerMapping(IntegratedToolType.MESHCENTRAL, "serverstatus", UnifiedEventType.SYSTEM_STATUS);
+        // mesh.*
+        registerMapping(IntegratedToolType.MESHCENTRAL, "mesh.deletemesh", UnifiedEventType.GROUP_DELETED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "mesh.meshchange", UnifiedEventType.GROUP_UPDATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "mesh.createmesh", UnifiedEventType.GROUP_CREATED);
 
-        // Tactical RMM mappings
+        // node.*
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.addnode", UnifiedEventType.DEVICE_REGISTERED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.changenode", UnifiedEventType.DEVICE_UPDATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.removenode", UnifiedEventType.DEVICE_DELETED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.devicesessions", UnifiedEventType.DEVICE_SESSIONS_UPDATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.sysinfohash", UnifiedEventType.DEVICE_SYSINFO_UPDATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.amtactivate", UnifiedEventType.DEVICE_OOB_ACTIVATION_REQUESTED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.diagnostic", UnifiedEventType.DEVICE_DIAGNOSTIC);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.agentlog", UnifiedEventType.FILE_OPERATION);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.batchupload", UnifiedEventType.FILE_BATCH_UPLOAD);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "node.sessioncompression", UnifiedEventType.REMOTE_SESSION_STATS_UPDATED);
+
+        // relay.*
+        registerMapping(IntegratedToolType.MESHCENTRAL, "relay.relaylog", UnifiedEventType.REMOTE_SESSION_EVENT);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "relay.recording", UnifiedEventType.REMOTE_RECORDING_COMPLETED);
+
+        // ugrp.* (user groups)
+        registerMapping(IntegratedToolType.MESHCENTRAL, "ugrp.usergroupchange", UnifiedEventType.USER_GROUP_CHANGED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "ugrp.createusergroup", UnifiedEventType.USER_GROUP_CREATED);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "ugrp.deleteusergroup", UnifiedEventType.USER_GROUP_DELETED);
+
+        // server.*
+        registerMapping(IntegratedToolType.MESHCENTRAL, "server.stopped", UnifiedEventType.SYSTEM_SHUTDOWN);
+
+        // events without etype
+        registerMapping(IntegratedToolType.MESHCENTRAL, "scanamtdevice", UnifiedEventType.DEVICE_DISCOVERY);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "servertimelinestats", UnifiedEventType.SYSTEM_MONITORING);
+        registerMapping(IntegratedToolType.MESHCENTRAL, "wssessioncount", UnifiedEventType.SESSION_COUNT_UPDATED);
+
+        // Tactical RMM mappings (based on logs_auditlogs structure)
+        // Authentication Events
         registerMapping(IntegratedToolType.TACTICAL, "user.login", UnifiedEventType.LOGIN);
-        registerMapping(IntegratedToolType.TACTICAL, "user.logout", UnifiedEventType.LOGOUT);
-        registerMapping(IntegratedToolType.TACTICAL, "agent.created", UnifiedEventType.DEVICE_REGISTERED);
-        registerMapping(IntegratedToolType.TACTICAL, "agent.updated", UnifiedEventType.DEVICE_UPDATED);
-        registerMapping(IntegratedToolType.TACTICAL, "script.executed", UnifiedEventType.SCRIPT_EXECUTED);
-        registerMapping(IntegratedToolType.TACTICAL, "check.created", UnifiedEventType.MONITORING_CHECK_CREATED);
-        registerMapping(IntegratedToolType.TACTICAL, "alert.triggered", UnifiedEventType.ALERT_TRIGGERED);
+        registerMapping(IntegratedToolType.TACTICAL, "user.failed_login", UnifiedEventType.LOGIN_FAILED);
+
+        // Device Management Events  
+        registerMapping(IntegratedToolType.TACTICAL, "agent.add", UnifiedEventType.DEVICE_REGISTERED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.modify", UnifiedEventType.DEVICE_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.delete", UnifiedEventType.DEVICE_DELETED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.agent_install", UnifiedEventType.DEVICE_REGISTERED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.remote_session", UnifiedEventType.REMOTE_SESSION_START);
+
+        // User Management Events
+        registerMapping(IntegratedToolType.TACTICAL, "user.add", UnifiedEventType.USER_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "user.modify", UnifiedEventType.USER_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "user.delete", UnifiedEventType.USER_DELETED);
+        registerMapping(IntegratedToolType.TACTICAL, "role.add", UnifiedEventType.USER_ROLE_CHANGED);
+        registerMapping(IntegratedToolType.TACTICAL, "role.modify", UnifiedEventType.USER_ROLE_CHANGED);
+
+        // Script & Automation Events
+        registerMapping(IntegratedToolType.TACTICAL, "scxript.add", UnifiedEventType.SCRIPT_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "script.modify", UnifiedEventType.SCRIPT_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.execute_script", UnifiedEventType.SCRIPT_EXECUTED);
+        registerMapping(IntegratedToolType.TACTICAL, "agent.execute_command", UnifiedEventType.SCRIPT_EXECUTED);
+        registerMapping(IntegratedToolType.TACTICAL, "automatedtask.add", UnifiedEventType.SCRIPT_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "automatedtask.modify", UnifiedEventType.SCRIPT_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "automatedtask.task_run", UnifiedEventType.SCRIPT_EXECUTED);
+
+        // Policy & Compliance Events
+        registerMapping(IntegratedToolType.TACTICAL, "policy.add", UnifiedEventType.POLICY_APPLIED);
+        registerMapping(IntegratedToolType.TACTICAL, "policy.modify", UnifiedEventType.POLICY_APPLIED);
+        registerMapping(IntegratedToolType.TACTICAL, "winupdatepolicy.add", UnifiedEventType.POLICY_APPLIED);
+        registerMapping(IntegratedToolType.TACTICAL, "winupdatepolicy.modify", UnifiedEventType.POLICY_APPLIED);
+
+        // Monitoring Events
+        registerMapping(IntegratedToolType.TACTICAL, "check.add", UnifiedEventType.MONITORING_CHECK_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "check.modify", UnifiedEventType.MONITORING_CHECK_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "check.check_run", UnifiedEventType.COMPLIANCE_CHECK);
+        registerMapping(IntegratedToolType.TACTICAL, "alerttemplate.add", UnifiedEventType.ALERT_TRIGGERED);
+        registerMapping(IntegratedToolType.TACTICAL, "alerttemplate.modify", UnifiedEventType.ALERT_RESOLVED);
+
+        // System Events
+        registerMapping(IntegratedToolType.TACTICAL, "coresettings.modify", UnifiedEventType.SYSTEM_STATUS);
+        registerMapping(IntegratedToolType.TACTICAL, "bulk.bulk_action", UnifiedEventType.SYSTEM_STATUS);
+
+        // Group Events (clients/sites)
+        registerMapping(IntegratedToolType.TACTICAL, "client.add", UnifiedEventType.GROUP_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "client.modify", UnifiedEventType.GROUP_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "client.delete", UnifiedEventType.GROUP_DELETED);
+        registerMapping(IntegratedToolType.TACTICAL, "site.add", UnifiedEventType.GROUP_CREATED);
+        registerMapping(IntegratedToolType.TACTICAL, "site.modify", UnifiedEventType.GROUP_UPDATED);
+        registerMapping(IntegratedToolType.TACTICAL, "site.delete", UnifiedEventType.GROUP_DELETED);
 
         // Fleet MDM mappings (activity_type column values)
         registerMapping(IntegratedToolType.FLEET, "user_logged_in", UnifiedEventType.LOGIN);
