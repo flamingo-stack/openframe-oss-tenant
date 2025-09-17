@@ -1,7 +1,7 @@
 package com.openframe.stream.service;
 
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
-import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.DataEnrichmentServiceType;
 import com.openframe.data.service.MachineIdCacheService;
 import lombok.extern.slf4j.Slf4j;

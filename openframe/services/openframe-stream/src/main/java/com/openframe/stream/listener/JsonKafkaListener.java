@@ -1,7 +1,8 @@
 package com.openframe.stream.listener;
 
-import com.openframe.data.model.debezium.CommonDebeziumMessage;
 import com.openframe.data.model.enums.MessageType;
+import com.openframe.kafka.enumeration.KafkaHeader;
+import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
 import com.openframe.stream.processor.GenericJsonMessageProcessor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
@@ -13,22 +14,19 @@ public class JsonKafkaListener {
 
     private final GenericJsonMessageProcessor messageProcessor;
 
-    public static final String MESSAGE_TYPE_HEADER = "message-type";
-
     public JsonKafkaListener(GenericJsonMessageProcessor messageProcessor) {
         this.messageProcessor = messageProcessor;
     }
 
     @KafkaListener(
             topics = {
-                    "${kafka.consumer.topic.event.meshcentral.name}",
-                    "${kafka.consumer.topic.event.tactical-rmm.name}",
-                    "${kafka.consumer.topic.event.fleet-mdm.name}"
+                    "${openframe.oss-tenant.kafka.topics.inbound.meshcentral-events}",
+                    "${openframe.oss-tenant.kafka.topics.inbound.tactical-rmm-events}",
+                    "${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-events}"
             },
-            groupId = "${spring.kafka.consumer.group-id}",
-            containerFactory = "debeziumKafkaListenerContainerFactory"
+            groupId = "${spring.kafka.consumer.group-id}"
     )
-    public void listenIntegratedToolsEvents(@Payload CommonDebeziumMessage debeziumMessage, @Header(MESSAGE_TYPE_HEADER) MessageType messageType) {
+    public void listenIntegratedToolsEvents(@Payload CommonDebeziumMessage debeziumMessage, @Header(KafkaHeader.MESSAGE_TYPE_HEADER) MessageType messageType) {
         messageProcessor.process(debeziumMessage, messageType);
     }
 }

@@ -72,12 +72,6 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Kafka -->
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
-
         <!-- Spring Cloud Stream -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -101,6 +95,13 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-streams</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-kafka</artifactId>
+            <version>${openframe.libs.version}</version>
+        </dependency>
+
 
     </dependencies>
 

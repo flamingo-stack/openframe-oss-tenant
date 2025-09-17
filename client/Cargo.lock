@@ -168,11 +168,11 @@ checksum = "7d902e3d592a523def97af8f317b08ce16b7ab854c1985a0c671e6f15cebc236"
 [[package]]
 name = "async-nats"
 version = "0.42.0"
-source = "git+https://github.com/nats-io/nats.rs.git?branch=main#4c8a7260ad11af11ae99387dcb964f6aef64b9ae"
+source = "git+https://github.com/flamingo-stack/nats.rs.git?branch=feature%2Fopenframe-auth-callback#92350af08fcb35c59f8f9cd812232c9d81a47008"
 dependencies = [
  "base64 0.22.1",
  "bytes",
- "futures",
+ "futures-util",
  "memchr",
  "nkeys",
  "nuid",
