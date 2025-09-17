@@ -338,15 +338,15 @@ func (i *IngressConfigurator) applyGCPConfig(values map[string]interface{}) erro
 		return fmt.Errorf("values map is nil")
 	}
 
-	// Collect domainPrefix for GCP configuration
-	domainPrefixInput := pterm.DefaultInteractiveTextInput.WithMultiLine(false).WithDefaultValue("openframe-tenant")
-	domainPrefix, err := domainPrefixInput.Show("Enter domain prefix for GCP deployment")
+	// Collect tenantID for GCP configuration
+	tenantIDInput := pterm.DefaultInteractiveTextInput.WithMultiLine(false).WithDefaultValue("openframe-tenant")
+	tenantID, err := tenantIDInput.Show("Enter domain prefix for GCP deployment")
 	if err != nil {
 		return fmt.Errorf("domain prefix input failed: %w", err)
 	}
-	domainPrefix = strings.TrimSpace(domainPrefix)
-	if domainPrefix == "" {
-		domainPrefix = "openframe-tenant"
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		tenantID = "openframe-tenant"
 	}
 
 	deployment, ok := values["deployment"].(map[string]interface{})
@@ -369,8 +369,8 @@ func (i *IngressConfigurator) applyGCPConfig(values map[string]interface{}) erro
 
 	// Configure GCP ingress
 	ingress["gcp"] = map[string]interface{}{
-		"enabled":      true,
-		"domainPrefix": domainPrefix,
+		"enabled":  true,
+		"tenantID": tenantID,
 	}
 
 	// Disable localhost and ngrok
@@ -381,7 +381,7 @@ func (i *IngressConfigurator) applyGCPConfig(values map[string]interface{}) erro
 		ngrokSection["enabled"] = false
 	}
 
-	pterm.Success.Printf("✓ Configured GCP ingress with domain prefix: %s\n", domainPrefix)
+	pterm.Success.Printf("✓ Configured GCP ingress with domain prefix: %s\n", tenantID)
 
 	return nil
 }

@@ -33,7 +33,9 @@ deployment:
         enabled: false   # Enable localhost ingress with nginx for SaaS
       gcp:
         enabled: true 
-        domainPrefix: "cluster-1001" 
+        publicDomain: "flamingo.cx"
+        privateDomain: "internal.flamingo.cx"
+        tenantID: "cluster-1001" 
 
 registry:
   docker:

@@ -63,7 +63,7 @@ spec:
       httpHealthCheck:
         port: 80
         requestPath: /
-        host: "{{ .Values.deployment.saas.ingress.gcp.domainPrefix }}"
+        host: "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
   targetRef:
     group: ""
     kind: Service
@@ -80,7 +80,7 @@ spec:
     - name: internal-gateway
       namespace: saas-tools
   hostnames:
-    - "{{ .Values.deployment.saas.ingress.gcp.domainPrefix }}"
+    - "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
   rules:
     - matches:
         - path:
