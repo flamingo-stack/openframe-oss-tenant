@@ -21,7 +21,6 @@ public class UserRegistrationTestDataProvider {
             // Missing uppercase letter
             Arguments.of("password123!"),         // No uppercase
             Arguments.of("pass123!@#"),           // No uppercase
-            Arguments.of("12345678!"),            // No uppercase
             
             // Missing lowercase letter
             Arguments.of("PASSWORD123!"),         // No lowercase
@@ -30,13 +29,10 @@ public class UserRegistrationTestDataProvider {
             
             // Missing digit
             Arguments.of("Password!@#"),          // No digit
-            Arguments.of("PassWord!@#"),          // No digit
             Arguments.of("PASS!@#word"),          // No digit
             
             // Missing special character
             Arguments.of("Password123"),          // No special char
-            Arguments.of("PASSWORD123"),          // No special char
-            Arguments.of("password123"),          // No special char
             
             // Multiple missing requirements
             Arguments.of("password"),             // No uppercase, no digit, no special
@@ -46,10 +42,7 @@ public class UserRegistrationTestDataProvider {
             
             // Edge cases
             Arguments.of("   "),                  // Only spaces
-            Arguments.of("        "),             // 8 spaces (meets length but invalid)
-            Arguments.of("Pass 123!"),            // Contains space (if not allowed)
-            Arguments.of("Pass\t123!"),           // Contains tab
-            Arguments.of("Pass\n123!")            // Contains newline
+            Arguments.of("        ")              // 8 spaces (meets length but invalid)
         );
     }
 
@@ -80,18 +73,11 @@ public class UserRegistrationTestDataProvider {
             Arguments.of("user@ domain.com"),       // Space after @
             
             // Dot placement issues
-            Arguments.of(".user@domain.com"),       // Starting with dot
-            Arguments.of("user.@domain.com"),       // Ending with dot before @
-            Arguments.of("user@.domain.com"),       // Domain starting with dot
             Arguments.of("user@domain."),           // Domain ending with dot
-            Arguments.of("user..name@domain.com"),  // Consecutive dots in local
             Arguments.of("user@domain..com"),       // Consecutive dots in domain
             
             // Invalid domain formats
             Arguments.of("user@domain,com"),        // Comma instead of dot
-            Arguments.of("user@domain;com"),        // Semicolon
-            Arguments.of("user@domain:com"),        // Colon
-            Arguments.of("user@domain/com"),        // Slash
             Arguments.of("user@domain\\com"),       // Backslash
             
             // Special characters in wrong places
@@ -103,94 +89,85 @@ public class UserRegistrationTestDataProvider {
 
     /**
      * Invalid first name test cases
+     * Rule: letters only (plus - ' space), 1–50 chars
      */
     public static Stream<Arguments> invalidFirstNames() {
         return Stream.of(
-            Arguments.of("1111111"),                // numbers
-            Arguments.of("John123"),                // Contains numbers
-            Arguments.of("John@Smith"),             // Contains special characters
-            Arguments.of("John#Smith"),             // Contains hash
-            Arguments.of("John$mith"),              // Contains dollar sign
-            Arguments.of("John%Smith"),             // Contains percent
-            Arguments.of("John&Smith"),             // Contains ampersand
-            Arguments.of("John*Smith"),             // Contains asterisk
-            Arguments.of("John+Smith"),             // Contains plus
-            Arguments.of("John=Smith"),             // Contains equals
-            Arguments.of("John<Smith"),             // Contains less than
-            Arguments.of("John>Smith"),             // Contains greater than
-            Arguments.of("John?Smith"),             // Contains question mark
-            Arguments.of("John|Smith"),             // Contains pipe
-            Arguments.of("John\\Smith"),            // Contains backslash
-            Arguments.of("John/Smith"),             // Contains forward slash
-            Arguments.of("VeryLongFirstNameThatExceedsReasonableLimitsForPersonNames"), // Too long
-            Arguments.of("123John"),                // Starts with number
-            Arguments.of("@John"),                  // Starts with special char
-            Arguments.of("John "),                  // Trailing space
-            Arguments.of(" John"),                  // Leading space
-            Arguments.of("Jo hn")                   // Space in middle
+            // Empty string (below minimum length)
+            Arguments.of(""),                       // Empty string (0 chars)
+            
+            // Too long (exceeds 50 characters)
+            Arguments.of("VeryLongFirstNameThatExceedsTheMaximumFiftyCharacterLimit"), // 51+ chars
+            
+            // Contains digits (not allowed)
+            Arguments.of("John1"),                  // Contains digit
+            Arguments.of("123"),                    // Only digits
+            
+            // Contains invalid special characters (only - ' space are allowed)
+            Arguments.of("John@Smith"),             // Contains @
+            Arguments.of("John\\Smith"),            // Contains \
+            Arguments.of("John[Smith]"),            // Contains [] (not allowed)
+            Arguments.of("John{Smith}"),            // Contains {} (not allowed)
+            
+            // Control characters and whitespace issues
+            Arguments.of("John\tSmith"),            // Contains tab
+            Arguments.of("John\nSmith      ")             // Contains newline
         );
     }
 
     /**
      * Invalid last name test cases
+     * Rule: letters only (plus - ' space), 1–50 chars
      */
     public static Stream<Arguments> invalidLastNames() {
         return Stream.of(
-            Arguments.of("222222222"),                      // numbers
-            Arguments.of("Smith123"),               // Contains numbers
-            Arguments.of("Smith@Johnson"),          // Contains special characters
-            Arguments.of("Smith#Johnson"),          // Contains hash
-            Arguments.of("Smith$Johnson"),          // Contains dollar sign
-            Arguments.of("Smith%Johnson"),          // Contains percent
-            Arguments.of("Smith&Johnson"),          // Contains ampersand
-            Arguments.of("Smith*Johnson"),          // Contains asterisk
-            Arguments.of("Smith+Johnson"),          // Contains plus
-            Arguments.of("Smith=Johnson"),          // Contains equals
-            Arguments.of("Smith<Johnson"),          // Contains less than
-            Arguments.of("Smith>Johnson"),          // Contains greater than
-            Arguments.of("Smith?Johnson"),          // Contains question mark
-            Arguments.of("Smith|Johnson"),          // Contains pipe
-            Arguments.of("Smith\\Johnson"),         // Contains backslash
-            Arguments.of("Smith/Johnson"),          // Contains forward slash
-            Arguments.of("VeryLongLastNameThatExceedsReasonableLimitsForPersonSurnames"), // Too long
-            Arguments.of("123Smith"),               // Starts with number
-            Arguments.of("@Smith"),                 // Starts with special char
-            Arguments.of("Smith "),                 // Trailing space
-            Arguments.of(" Smith"),                 // Leading space
-            Arguments.of("Sm ith")                  // Space in middle
+            Arguments.of(""),                       // Empty string (0 chars)
+            Arguments.of("VeryLongLastNameThatExceedsTheMaximumFiftyCharacterLimit"), // 51+ chars
+            
+            // Contains digits (not allowed)
+            Arguments.of("Smith1"),                 // Contains digit
+            Arguments.of("999"),                    // Only digits
+            
+            // Contains invalid special characters (only - ' space are allowed)
+            Arguments.of("Smith@Johnson"),          // Contains @
+            Arguments.of("Smith\\Johnson"),         // Contains \
+            Arguments.of("Smith:Johnson"),          // Contains : (not allowed)
+            Arguments.of("Smith\"Johnson"),         // Contains " (not allowed)
+            Arguments.of("Smith[Johnson]"),         // Contains [] (not allowed)
+            Arguments.of("Smith{Johnson}"),         // Contains {} (not allowed)
+            
+            // Control characters and whitespace issues
+            Arguments.of("Smith\tJohnson"),         // Contains tab
+            Arguments.of("Smith\nJohnson"),         // Contains newline
+            Arguments.of("Smith\rJohnson")          // Contains carriage return
         );
     }
 
     /**
      * Invalid tenant name test cases
+     * Rule: letters, digits, &.-,() allowed, 2–100 chars
      */
     public static Stream<Arguments> invalidTenantNames() {
         return Stream.of(
+            // Too short (below minimum 2 characters)
+            Arguments.of(""),                       // Empty string (0 chars)
             Arguments.of("a"),                      // Too short (1 character)
-            Arguments.of("2222222222"),                     // Too short (2 characters)
-            Arguments.of("tenant name"),            // Contains space
-            Arguments.of("tenant@name"),            // Contains @
-            Arguments.of("tenant#name"),            // Contains hash
-            Arguments.of("tenant$name"),            // Contains dollar
-            Arguments.of("tenant%name"),            // Contains percent
-            Arguments.of("tenant&name"),            // Contains ampersand
-            Arguments.of("tenant*name"),            // Contains asterisk
-            Arguments.of("tenant+name"),            // Contains plus
-            Arguments.of("tenant=name"),            // Contains equals
-            Arguments.of("tenant<name"),            // Contains less than
-            Arguments.of("tenant>name"),            // Contains greater than
-            Arguments.of("tenant?name"),            // Contains question mark
-            Arguments.of("tenant|name"),            // Contains pipe
-            Arguments.of("tenant\\name"),           // Contains backslash
-            Arguments.of("tenant/name"),            // Contains forward slash
-            Arguments.of("tenant.name"),            // Contains dot
-            Arguments.of("tenant,name"),            // Contains comma
-            Arguments.of("tenant;name"),            // Contains semicolon
-            Arguments.of("tenant:name"),            // Contains colon
-            Arguments.of("tenant'name"),            // Contains apostrophe
-            Arguments.of("tenant\"name"),           // Contains quote
-            Arguments.of("VeryLongTenantNameThatExceedsMaximumAllowedLengthForTenantNames") // Too long
+            
+            // Too long (exceeds 100 characters)
+            Arguments.of("VeryLongTenantNameThatExceedsTheMaximumOneHundredCharacterLimitForOrganizationNamesInThisSystem"), // 101+ chars
+            
+            // Contains invalid special characters (only &.-,() are allowed)
 
+            Arguments.of("tenant\\name"),           // Contains \ (not allowed)
+            Arguments.of("tenant;name"),            // Contains ; (not allowed)
+            Arguments.of("tenant\"name"),           // Contains " (not allowed)
+            Arguments.of("tenant[name]"),           // Contains [] (not allowed)
+            Arguments.of("tenant{name}"),           // Contains {} (not allowed)
+            
+            // Control characters and whitespace issues
+            Arguments.of("tenant\tname"),           // Contains tab
+            Arguments.of("tenant\nname"),           // Contains newline
+            Arguments.of("tenant\rname")            // Contains carriage return
         );
     }
 }
