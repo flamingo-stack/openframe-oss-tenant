@@ -98,6 +98,36 @@ class TacticalApiClient {
     return this.get(`/scripts/${scriptId}/`)
   }
 
+  async createScript(scriptData: {
+    name: string
+    shell: string
+    default_timeout: number
+    args: string[]
+    script_body: string
+    run_as_user: boolean
+    env_vars: string[]
+    description: string
+    supported_platforms: string[]
+    category: string
+  }): Promise<ApiResponse<any>> {
+    return this.post('/scripts/', scriptData)
+  }
+
+  async updateScript(scriptId: string, scriptData: {
+    name: string
+    shell: string
+    default_timeout: number
+    args: string[]
+    script_body: string
+    run_as_user: boolean
+    env_vars: string[]
+    description: string
+    supported_platforms: string[]
+    category: string
+  }): Promise<ApiResponse<any>> {
+    return this.put(`/scripts/${scriptId}/`, scriptData)
+  }
+
   async getAgentLogs(agentId: string, params?: {
     limit?: number
     offset?: number

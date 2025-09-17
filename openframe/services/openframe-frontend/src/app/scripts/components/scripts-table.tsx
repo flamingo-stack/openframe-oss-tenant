@@ -10,9 +10,10 @@ import {
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
-import { MoreHorizontal } from "lucide-react"
+import { MoreHorizontal, Plus } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useScripts } from "../hooks/use-scripts"
+// import { EditScriptModal } from "./edit-script-modal"
 
 interface UIScriptEntry {
   id: number
@@ -34,6 +35,7 @@ export function ScriptsTable() {
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
   const [selectedScript, setSelectedScript] = useState<UIScriptEntry | null>(null)
+  // const [isNewScriptModalOpen, setIsNewScriptModalOpen] = useState(false)
   const prevFilterKeyRef = React.useRef<string | null>(null)
   
   const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
@@ -132,16 +134,16 @@ export function ScriptsTable() {
     {
       label: '',
       icon: <MoreHorizontal className="h-6 w-6 text-[#fafafa]" />,
-      onClick: (log) => {
-        console.log('More clicked for log:', log.id)
+      onClick: (script) => {
+        console.log('More clicked for script:', script.id)
       },
       variant: 'outline',
       className: 'bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] h-12 w-12'
     },
     {
-      label: 'Run',
+      label: 'Details',
       onClick: (script) => {
-       // TODO: run script
+        router.push(`/scripts/details?id=${script.id}`)
       },
       variant: 'outline',
       className: "bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
@@ -187,6 +189,14 @@ export function ScriptsTable() {
   const handleRefresh = useCallback(() => {
     refreshScripts()
   }, [refreshScripts])
+
+  const handleNewScript = () => {
+    router.push('/scripts/edit')
+  }
+
+  // const handleSaveScript = () => {
+  //   refreshScripts() // Refresh the scripts list after saving
+  // }
   
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
@@ -221,13 +231,22 @@ export function ScriptsTable() {
         <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-[#fafafa]">
           Scripts
         </h1>
-        <Button
-          onClick={handleRefresh}
-          leftIcon={<RefreshIcon size={20} />}
-          className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-        >
-          Refresh
-        </Button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleNewScript}
+            className="flex items-center gap-2 bg-[#ffc008] text-[#212121] hover:bg-[#ffd951] font-['DM_Sans'] font-bold px-4 py-2.5 rounded-[6px] text-[16px] transition-colors"
+          >
+            <Plus size={20} />
+            New Script
+          </button>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] transition-colors"
+          >
+            <RefreshIcon size={20} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -253,6 +272,15 @@ export function ScriptsTable() {
         mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
       />
+
+      {/* New Script Modal - Now handled by routing */}
+      {/* <EditScriptModal
+        isOpen={isNewScriptModalOpen}
+        onClose={() => setIsNewScriptModalOpen(false)}
+        onSave={handleSaveScript}
+        scriptData={null}
+        isEditMode={false}
+      /> */}
     </div>
   )
 }

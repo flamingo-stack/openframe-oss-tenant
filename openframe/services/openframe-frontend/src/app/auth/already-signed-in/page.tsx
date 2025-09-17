@@ -42,21 +42,19 @@ export default function AlreadySignedInPage() {
           </div>
 
           <div className="flex flex-col space-y-3">
-            <Button
+            <button
               onClick={handleLogout}
-              variant="outline"
-              className="w-full"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 transition-colors"
             >
               Sign Out
-            </Button>
+            </button>
             
-            <Button
+            <button
               onClick={() => router.push('/auth')}
-              variant="ghost"
-              className="w-full"
+              className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
             >
               Back to Auth
-            </Button>
+            </button>
           </div>
         </div>
       </div>
