@@ -1,51 +1,42 @@
 package com.openframe.authz.dto;
 
-import jakarta.validation.constraints.Email;
+import com.openframe.authz.validation.TenantDomain;
+import com.openframe.core.validation.ValidEmail;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 /**
  * User registration request DTO for multi-tenant registration
  */
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TenantRegistrationRequest {
-    
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
+public class TenantRegistrationRequest extends CoreUserRequest {
+
+    @ValidEmail
     private String email;
-    
-    @NotBlank(message = "First name is required")
-    private String firstName;
-    
-    @NotBlank(message = "Last name is required")  
-    private String lastName;
-    
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-={}\\[\\]|:;\"'<>,.?/]).+$",
-        message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
-    )
-    private String password;
     
     /**
      * Organization/tenant name for registration
      * This will be used to create a new tenant if it doesn't exist
      */
     @NotBlank(message = "Organization name is required")
+    @Pattern(
+            regexp = "^[\\p{L}\\p{M}0-9&.,'’\"()\\- ]{2,100}$",
+            message = "Invalid organization name"
+    )
     private String tenantName;
     
     /**
      * Tenant domain
      */
-    @NotBlank(message = "Tenant domain is required")
+    @TenantDomain
     private String tenantDomain;
 }

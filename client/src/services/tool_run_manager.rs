@@ -3,6 +3,10 @@ use tracing::{info, warn, error, debug};
 use std::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
+use std::collections::HashSet;
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use sysinfo::{System, Signal};
 use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
@@ -13,6 +17,7 @@ const RETRY_DELAY_SECONDS: u64 = 5;
 pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
     params_processor: ToolCommandParamsResolver,
+    running_tools: Arc<RwLock<HashSet<String>>>,
 }
 
 impl ToolRunManager {
@@ -23,6 +28,7 @@ impl ToolRunManager {
         Self {
             installed_tools_service,
             params_processor,
+            running_tools: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
@@ -41,21 +47,41 @@ impl ToolRunManager {
         }
 
         for tool in tools {
-            info!("Running tool {}", tool.tool_agent_id);
-            self.run_tool(tool).await?;
+            if self.try_mark_running(&tool.tool_agent_id).await {
+                info!("Running tool {}", tool.tool_agent_id);
+                self.run_tool(tool).await?;
+            } else {
+                warn!("Tool {} is already running - skipping", tool.tool_agent_id);
+            }
         }
  
         Ok(())
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        info!(tool_id = %installed_tool.tool_agent_id, "Running single tool");
+        if !self.try_mark_running(&installed_tool.tool_agent_id).await {
+            warn!("Tool {} is already running - skipping", installed_tool.tool_agent_id);
+            return Ok(());
+        }
+
+        info!("Running new single tool {}", installed_tool.tool_agent_id);
         self.run_tool(installed_tool).await
     }
 
+    async fn try_mark_running(&self, tool_id: &str) -> bool {
+        let mut set = self.running_tools.write().await;
+        if set.contains(tool_id) {
+            false
+        } else {
+            set.insert(tool_id.to_string());
+            true
+        }
+    }
+
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
+        self.stop_previous_tool_process(&tool.tool_agent_id).await?;
+
         let params_processor = self.params_processor.clone();
-        
         tokio::spawn(async move {
             loop {
                 // exchange args placeholders to real values
@@ -112,6 +138,40 @@ impl ToolRunManager {
                 }
             }
         });
+
+        Ok(())
+    }
+
+    // TODO: make logic more smart and clean
+    async fn stop_previous_tool_process(&self, tool_id: &str) -> Result<()> {
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        // Match processes whose command contains "/{tool_id}/agent"
+        let pattern = format!("/{}/agent", tool_id).to_lowercase();
+
+        for (pid, process) in sys.processes() {
+            let cmd_items = process.cmd();
+            let cmdline = cmd_items.join(" ").to_lowercase();
+
+            if cmdline.contains(&pattern) {
+                info!("Found previous tool process for {} with pid {}", tool_id, pid);
+
+                if process.kill() {
+                    info!("Previous tool process terminated for {} with pid {}", tool_id, pid);
+                    continue;
+                } else {
+                    warn!("Failed to terminate previous tool process for {} with pid {}", tool_id, pid);
+                    if let Some(killed) = process.kill_with(Signal::Kill) {
+                        if killed {
+                            info!("Previous tool process terminated with kill signal for {} with pid {}", tool_id, pid);
+                        } else {
+                            error!("Failed to terminate previous tool process with kill signal for {} with pid {}", tool_id, pid);
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(())
     }

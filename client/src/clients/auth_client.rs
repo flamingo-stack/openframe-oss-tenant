@@ -60,7 +60,7 @@ impl AuthClient {
         &self,
         refresh_token: String,
     ) -> Result<AgentTokenResponse> {
-        let url = format!("{}/oauth/token", self.base_url);
+        let url = format!("{}/clients/oauth/token", self.base_url);
         
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", HeaderValue::from_static("application/x-www-form-urlencoded"));
