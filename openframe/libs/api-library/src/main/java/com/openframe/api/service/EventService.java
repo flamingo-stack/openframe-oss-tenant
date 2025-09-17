@@ -8,8 +8,6 @@ import com.openframe.api.dto.shared.CursorPaginationCriteria;
 import com.openframe.data.document.event.Event;
 import com.openframe.data.document.event.filter.EventQueryFilter;
 import com.openframe.data.repository.event.EventRepository;
-import com.openframe.kafka.model.OpenframeEvent;
-import com.openframe.kafka.producer.OssTenantMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.query.Query;
