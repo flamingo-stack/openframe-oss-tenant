@@ -81,8 +81,8 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/metrics"],
-                  "debeziumConnector": {
-                    "name": "tactical-rmm-psql-connector",
+                  "debeziumConnector": [{
+                    "name": "tactical-rmm-audit-log-psql-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
                       "tasks.max": "1",
@@ -91,25 +91,60 @@ spec:
                       "database.user": "'"${POSTGRES_USER}"'",
                       "database.password": "'"${POSTGRES_PASSWORD}"'",
                       "database.dbname": "'"${POSTGRES_DB}"'",
-                      "topic.prefix": "trmm_clients_users",
+                      "topic.prefix": "trmm_audit_logs",
                       "table.include.list": "public.logs_auditlog",
                       "plugin.name": "pgoutput",
+                      "slot.name": "dbz_slot_trmm_audit_logs",
+                      "publication.name": "dbz_pub_trmm_audit_logs",
+                      "publication.autocreate.mode": "filtered",
                       "topic.creation.default.replication.factor": 1,
                       "topic.creation.default.partitions": 10,
                       "topic.creation.default.cleanup.policy": "compact",
                       "topic.creation.default.compression.type": "lz4",
                       "transforms": "route,addHeaderMessageType,addHeaderJSONType",
                       "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
-                      "transforms.route.topic.regex": "trmm_clients_users\\.(.*)",
+                      "transforms.route.topic.regex": "trmm_audit_logs\\.(.*)",
                       "transforms.route.topic.replacement": "tactical-rmm.postgres.events",
                       "transforms.addHeaderMessageType.type": "org.apache.kafka.connect.transforms.InsertHeader",
                       "transforms.addHeaderMessageType.header": "message-type",
-                      "transforms.addHeaderMessageType.value.literal": "TACTICAL_RMM_EVENT",
+                      "transforms.addHeaderMessageType.value.literal": "TACTICAL_RMM_AUDIT_EVENT",
                       "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
                       "transforms.addHeaderJSONType.header": "__TypeId__",
                       "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage"
                     }
-                  }
+                  },
+                  {
+                    "name": "tactical-rmm-agent-history-psql-connector",
+                    "config": {
+                      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+                      "tasks.max": "1",
+                      "database.hostname": "'"${POSTGRES_HOST}"'",
+                      "database.port": "'"${POSTGRES_PORT}"'",
+                      "database.user": "'"${POSTGRES_USER}"'",
+                      "database.password": "'"${POSTGRES_PASSWORD}"'",
+                      "database.dbname": "'"${POSTGRES_DB}"'",
+                      "topic.prefix": "trmm_agent_history",
+                      "table.include.list": "public.agents_agenthistory",
+                      "plugin.name": "pgoutput",
+                      "slot.name": "dbz_slot_trmm_agent_history",
+                      "publication.name": "dbz_pub_trmm_agent_history",
+                      "publication.autocreate.mode": "filtered",
+                      "topic.creation.default.replication.factor": 1,
+                      "topic.creation.default.partitions": 10,
+                      "topic.creation.default.cleanup.policy": "compact",
+                      "topic.creation.default.compression.type": "lz4",
+                      "transforms": "route,addHeaderMessageType,addHeaderJSONType",
+                      "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
+                      "transforms.route.topic.regex": "trmm_agent_history\\.(.*)",
+                      "transforms.route.topic.replacement": "tactical-rmm.postgres.events",
+                      "transforms.addHeaderMessageType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderMessageType.header": "message-type",
+                      "transforms.addHeaderMessageType.value.literal": "TACTICAL_RMM_AGENT_HISTORY_EVENT",
+                      "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderJSONType.header": "__TypeId__",
+                      "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage"
+                    }
+                  }]
                 }
               }' \
               --retry-delay 2 \

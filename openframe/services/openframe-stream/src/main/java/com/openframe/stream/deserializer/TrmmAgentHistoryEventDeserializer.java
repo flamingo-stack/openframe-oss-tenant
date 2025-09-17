@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-public class TrmmEventDeserializer extends IntegratedToolEventDeserializer {
+public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeserializer {
     // Field name constants
     private static final String FIELD_AGENT_ID = "agentid";
     private static final String FIELD_OBJECT_TYPE = "object_type";
@@ -20,13 +20,13 @@ public class TrmmEventDeserializer extends IntegratedToolEventDeserializer {
     private static final String FIELD_MESSAGE = "message";
     private static final String FIELD_ENTRY_TIME = "entry_time";
 
-    public TrmmEventDeserializer(ObjectMapper objectMapper) {
-        super(objectMapper);
+    protected TrmmAgentHistoryEventDeserializer(ObjectMapper mapper) {
+        super(mapper);
     }
 
     @Override
     public MessageType getType() {
-        return MessageType.TACTICAL_RMM_EVENT;
+        return MessageType.TACTICAL_RMM_AGENT_HISTORY_EVENT;
     }
 
     @Override
