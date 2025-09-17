@@ -1,6 +1,6 @@
 package com.openframe.authz.dto;
 
-import jakarta.validation.constraints.Email;
+import com.openframe.core.validation.ValidEmail;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -10,8 +10,7 @@ public class PasswordResetDtos {
 
     @Data
     public static class ResetRequest {
-        @NotBlank
-        @Email
+        @ValidEmail
         private String email;
     }
 
@@ -19,6 +18,7 @@ public class PasswordResetDtos {
     public static class ResetConfirm {
         @NotBlank
         private String token;
+
         @NotBlank(message = "Password is required")
         @Size(min = 8, message = "Password must be at least 8 characters")
         @Pattern(

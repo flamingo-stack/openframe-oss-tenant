@@ -7,7 +7,6 @@ import com.openframe.data.repository.auth.TenantRepository;
 import com.openframe.data.repository.auth.TenantRepository.DomainView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,9 +29,6 @@ public class TenantService {
     
     private static final Pattern TENANT_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,50}$");
 
-    @Value("${openframe.domain.validation.regex}")
-    private String domainValidationRegex;
-
     /**
      * Create a new tenant
      */
@@ -43,9 +39,6 @@ public class TenantService {
             throw new IllegalArgumentException("Invalid tenant name. Must be 3-50 characters, alphanumeric, hyphens, and underscores only.");
         }
 
-        if (nonValidDomain(domain)) {
-            throw new IllegalArgumentException("Invalid domain format");
-        }
 
         if (tenantRepository.existsByDomain(domain)) {
             throw new IllegalArgumentException("Tenant domain already exists");
@@ -91,9 +84,6 @@ public class TenantService {
      * Check if tenant domain is available for registration
      */
     public boolean isTenantDomainAvailable(String domain) {
-        if (nonValidDomain(domain)) {
-            return false;
-        }
         return !tenantRepository.existsByDomain(domain);
     }
 
@@ -119,17 +109,7 @@ public class TenantService {
         }
         return !TENANT_NAME_PATTERN.matcher(tenantName.trim()).matches();
     }
-    
-    /**
-     * Validate domain format
-     */
-    private boolean nonValidDomain(String domain) {
-        if (domain == null || domain.trim().isEmpty()) {
-            return true;
-        }
-        return !domain.trim().matches(domainValidationRegex);
-    }
-    
+
     /**
      * Save tenant
      */
