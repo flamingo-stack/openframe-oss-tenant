@@ -58,7 +58,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/actuator/health","/actuator/prometheus"],
-                  "debeziumConnector": []
+                  "debeziumConnector": null
                 }
               }' \
               --retry-delay 2 \

@@ -6,7 +6,7 @@ import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
 import org.springframework.data.cassandra.core.mapping.*;
 
 import java.time.Instant;
- 
+import java.util.Map;
 
 /**
  * Unified, NIST-compliant log event for integrated tools (Fleet, Meshcentral, Tactical-RMM, etc.).
@@ -37,6 +37,10 @@ public class UnifiedLogEvent {
     /** Tool-specific or event-specific details as long text (JSON or plain text). */
     @Column("debezium_message")
     private String debeziumMessage;
+
+    /** Tool-specific or event-specific details (flexible, key-value pairs). */
+    @Column("details")
+    private Map<String, String> details;
 
     @PrimaryKeyClass
     @Data
