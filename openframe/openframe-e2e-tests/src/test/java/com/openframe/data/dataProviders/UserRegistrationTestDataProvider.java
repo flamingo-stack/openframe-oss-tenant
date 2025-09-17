@@ -10,14 +10,6 @@ import java.util.stream.Stream;
  */
 public class UserRegistrationTestDataProvider {
 
-    /**
-     * Invalid password test cases based on exact validation rules:
-     * - Minimum 8 characters
-     * - At least 1 uppercase letter
-     * - At least 1 lowercase letter  
-     * - At least 1 digit
-     * - At least 1 special character
-     */
     public static Stream<Arguments> invalidPasswords() {
         return Stream.of(
             // Too short (< 8 characters)

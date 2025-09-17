@@ -13,6 +13,7 @@ import org.junit.jupiter.api.*;
 import org.junitpioneer.jupiter.RetryingTest;
 
 import static com.openframe.support.constants.TestConstants.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -112,28 +113,23 @@ public class UserRegistrationApiTest extends ApiBaseTest {
 
     @Test
     @Order(3)
-    @DisplayName("Should fail registration with invalid password")
-    void shouldFailRegistrationWithInvalidPassword() {
-        UserRegistrationBuilder userData = UserRegistrationBuilder.random();
-        userData.setPassword("pass1");
+    @DisplayName("Should fail registration with duplicate email")
+    void shouldFailRegistrationWithDuplicateEmail() {
 
-        log.info("Testing registration with invalid password: {}", userData.getPassword());
+        UserRegistrationBuilder firstUser = UserRegistrationBuilder.random();
+        Response firstResponse = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, firstUser);
+        assertEquals(HTTP_OK, firstResponse.getStatusCode());
 
-        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData);
-
-        log.debug("Response status: {}, body: {}", response.getStatusCode(), response.getBody().asString());
+        UserRegistrationBuilder duplicateUser = UserRegistrationBuilder.random();
+        duplicateUser.setEmail(firstUser.getEmail());
+        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, duplicateUser);
 
         assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
 
         ErrorResponse errorResponse = response.as(ErrorResponse.class);
-        
-        assertSoftly(softAssertions -> {
-            softAssertions.assertThat(errorResponse.getCode())
-                    .isEqualTo("BAD_REQUEST");
-            softAssertions.assertThat(errorResponse.getMessage())
-                    .isNotNull();
-        });
+        assertThat(errorResponse.getCode()).isIn("VALIDATION_ERROR", "BAD_REQUEST");
+        assertThat(errorResponse.getMessage()).isNotNull();
 
-        log.info("Registration correctly failed with invalid password validation");
+        log.info("Registration correctly failed for duplicate email: {}", firstUser.getEmail());
     }
 }

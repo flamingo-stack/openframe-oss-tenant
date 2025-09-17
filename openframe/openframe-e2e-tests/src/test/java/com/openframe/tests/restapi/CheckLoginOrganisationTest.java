@@ -2,7 +2,6 @@ package com.openframe.tests.restapi;
 
 import com.openframe.support.enums.ApiEndpoints;
 import com.openframe.support.helpers.ApiCalls;
-import com.openframe.support.validation.ResponseValidator;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;

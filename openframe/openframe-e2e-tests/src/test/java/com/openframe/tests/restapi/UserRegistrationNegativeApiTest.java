@@ -33,7 +33,7 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
         assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
         assertThat(errorResponse.getMessage()).contains("password");
         
-        log.info("✅ Password validation working correctly for: '{}'", password);
+        log.info("Password validation working correctly for: '{}'", password);
     }
     
     @ParameterizedTest
@@ -106,26 +106,5 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
         assertThat(errorResponse.getMessage()).contains("tenantName");
         
         log.info("TenantName validation working correctly for: '{}'", tenantName);
-    }
-
-    @Test
-    @DisplayName("Should fail registration with duplicate email")
-    void shouldFailRegistrationWithDuplicateEmail() {
-
-        UserRegistrationBuilder firstUser = UserRegistrationBuilder.random();
-        Response firstResponse = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, firstUser);
-        assertEquals(HTTP_OK, firstResponse.getStatusCode());
-
-        UserRegistrationBuilder duplicateUser = UserRegistrationBuilder.random();
-        duplicateUser.setEmail(firstUser.getEmail());
-        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, duplicateUser);
-
-        assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
-
-        ErrorResponse errorResponse = response.as(ErrorResponse.class);
-        assertThat(errorResponse.getCode()).isIn("VALIDATION_ERROR", "BAD_REQUEST");
-        assertThat(errorResponse.getMessage()).isNotNull();
-
-        log.info("Registration correctly failed for duplicate email: {}", firstUser.getEmail());
     }
 }
