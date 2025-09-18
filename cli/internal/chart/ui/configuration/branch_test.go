@@ -19,75 +19,91 @@ func TestNewBranchConfigurator(t *testing.T) {
 func TestBranchConfigurator_Configure_KeepExisting(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewBranchConfigurator(modifier) // Test constructor
-	
-	// Create configuration with existing values
+
+	// Create configuration with existing values using new deployment structure
 	existingValues := map[string]interface{}{
-		"global": map[string]interface{}{
-			"repoBranch": "main",
-			"repoURL":    "https://github.com/test/repo.git",
+		"deployment": map[string]interface{}{
+			"oss": map[string]interface{}{
+				"repository": map[string]interface{}{
+					"branch": "main",
+				},
+			},
 		},
 	}
-	
+
 	// This test would require user interaction, so we'll test the underlying logic
 	// by directly calling the modifier methods
-	currentBranch := modifier.GetCurrentBranch(existingValues)
+	currentBranch := modifier.GetCurrentOSSBranch(existingValues)
 	assert.Equal(t, "main", currentBranch)
 }
 
 func TestBranchConfigurator_Configure_CustomBranch(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewBranchConfigurator(modifier) // Test constructor
-	
-	// Test the modifier can handle custom branch changes
+
+	// Test the modifier can handle custom branch changes using new deployment structure
 	existingValues := map[string]interface{}{
-		"global": map[string]interface{}{
-			"repoBranch": "main",
-			"repoURL":    "https://github.com/test/repo.git",
+		"deployment": map[string]interface{}{
+			"oss": map[string]interface{}{
+				"repository": map[string]interface{}{
+					"branch": "main",
+				},
+			},
 		},
 	}
-	
-	// Simulate custom branch selection
+
+	// Simulate custom branch selection for OSS deployment
 	newBranch := "develop"
+	deploymentMode := types.DeploymentModeOSS
 	config := &types.ChartConfiguration{
 		Branch:           &newBranch,
+		DeploymentMode:   &deploymentMode,
 		ModifiedSections: []string{"branch"},
 		ExistingValues:   existingValues,
 	}
-	
+
 	// Apply configuration
 	err := modifier.ApplyConfiguration(existingValues, config)
 	assert.NoError(t, err)
-	
-	// Verify branch was updated
-	global := existingValues["global"].(map[string]interface{})
-	assert.Equal(t, "develop", global["repoBranch"])
+
+	// Verify branch was updated in deployment structure
+	deployment := existingValues["deployment"].(map[string]interface{})
+	oss := deployment["oss"].(map[string]interface{})
+	repository := oss["repository"].(map[string]interface{})
+	assert.Equal(t, "develop", repository["branch"])
 }
 
 func TestBranchConfigurator_Configure_WithEmptyValues(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewBranchConfigurator(modifier) // Test constructor
-	
-	// Test with empty values (no global section)
+
+	// Test with empty values (no deployment section)
 	existingValues := map[string]interface{}{}
-	
-	currentBranch := modifier.GetCurrentBranch(existingValues)
+
+	currentBranch := modifier.GetCurrentOSSBranch(existingValues)
 	assert.Equal(t, "main", currentBranch) // Should return default
-	
-	// Test applying custom branch to empty values
+
+	// Test applying custom branch to empty values for OSS deployment
 	newBranch := "feature-branch"
+	deploymentMode := types.DeploymentModeOSS
 	config := &types.ChartConfiguration{
 		Branch:           &newBranch,
+		DeploymentMode:   &deploymentMode,
 		ModifiedSections: []string{"branch"},
 		ExistingValues:   existingValues,
 	}
-	
+
 	err := modifier.ApplyConfiguration(existingValues, config)
 	assert.NoError(t, err)
-	
-	// Verify global section was created
-	global, ok := existingValues["global"].(map[string]interface{})
+
+	// Verify deployment structure was created
+	deployment, ok := existingValues["deployment"].(map[string]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, "feature-branch", global["repoBranch"])
+	oss, ok := deployment["oss"].(map[string]interface{})
+	assert.True(t, ok)
+	repository, ok := oss["repository"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, "feature-branch", repository["branch"])
 }
 
 func TestBranchConfigurator_Configure_BranchValidation(t *testing.T) {
@@ -112,23 +128,31 @@ func TestBranchConfigurator_Configure_BranchValidation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			existingValues := map[string]interface{}{
-				"global": map[string]interface{}{
-					"repoBranch": "main",
+				"deployment": map[string]interface{}{
+					"oss": map[string]interface{}{
+						"repository": map[string]interface{}{
+							"branch": "main",
+						},
+					},
 				},
 			}
-			
+
 			if tc.valid {
+				deploymentMode := types.DeploymentModeOSS
 				config := &types.ChartConfiguration{
 					Branch:           &tc.branch,
+					DeploymentMode:   &deploymentMode,
 					ModifiedSections: []string{"branch"},
 					ExistingValues:   existingValues,
 				}
-				
+
 				err := modifier.ApplyConfiguration(existingValues, config)
 				assert.NoError(t, err)
-				
-				global := existingValues["global"].(map[string]interface{})
-				assert.Equal(t, tc.branch, global["repoBranch"])
+
+				deployment := existingValues["deployment"].(map[string]interface{})
+				oss := deployment["oss"].(map[string]interface{})
+				repository := oss["repository"].(map[string]interface{})
+				assert.Equal(t, tc.branch, repository["branch"])
 			}
 		})
 	}
@@ -137,30 +161,57 @@ func TestBranchConfigurator_Configure_BranchValidation(t *testing.T) {
 func TestBranchConfigurator_Configure_NoChanges(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewBranchConfigurator(modifier) // Test constructor
-	
+
 	// Test when user keeps the same branch (no changes)
 	existingValues := map[string]interface{}{
-		"global": map[string]interface{}{
-			"repoBranch": "main",
-			"repoURL":    "https://github.com/test/repo.git",
+		"deployment": map[string]interface{}{
+			"oss": map[string]interface{}{
+				"repository": map[string]interface{}{
+					"branch": "main",
+				},
+			},
 		},
 	}
-	
+
 	// Create copy for comparison
 	originalValues := make(map[string]interface{})
 	for k, v := range existingValues {
-		originalValues[k] = v
+		if subMap, ok := v.(map[string]interface{}); ok {
+			originalSubMap := make(map[string]interface{})
+			for subK, subV := range subMap {
+				if subSubMap, ok := subV.(map[string]interface{}); ok {
+					originalSubSubMap := make(map[string]interface{})
+					for subSubK, subSubV := range subSubMap {
+						if subSubSubMap, ok := subSubV.(map[string]interface{}); ok {
+							originalSubSubSubMap := make(map[string]interface{})
+							for subSubSubK, subSubSubV := range subSubSubMap {
+								originalSubSubSubMap[subSubSubK] = subSubSubV
+							}
+							originalSubSubMap[subSubK] = originalSubSubSubMap
+						} else {
+							originalSubSubMap[subSubK] = subSubV
+						}
+					}
+					originalSubMap[subK] = originalSubSubMap
+				} else {
+					originalSubMap[subK] = subV
+				}
+			}
+			originalValues[k] = originalSubMap
+		} else {
+			originalValues[k] = v
+		}
 	}
-	
+
 	config := &types.ChartConfiguration{
 		Branch:           nil, // No branch change
 		ModifiedSections: []string{},
 		ExistingValues:   existingValues,
 	}
-	
+
 	err := modifier.ApplyConfiguration(existingValues, config)
 	assert.NoError(t, err)
-	
+
 	// Values should remain unchanged
 	assert.Equal(t, originalValues, existingValues)
 }

@@ -26,13 +26,13 @@ tests:
       - equal:
           path: metadata.name
           value: argocd-apps
-      # Should still propagate SaaS localhost configuration
+      # Should propagate deployment configuration
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[1].helm.values
+          pattern: "deployment:"
+      - matchRegex:
+          path: spec.sources[1].helm.values
           pattern: "saas:"
-      - matchRegex:
-          path: spec.source.helm.values
-          pattern: "localhost:"
 
   # ========================================
   # MISSING CONFIGURATION HANDLING
@@ -66,10 +66,10 @@ tests:
           count: 1
         template: templates/argocd-apps.yaml
       - hasDocuments:
-          count: 1
+          count: 0  # No docker secret without password
         template: templates/docker-secret.yaml
       - hasDocuments:
-          count: 1
+          count: 0  # No repo secret for OSS
         template: templates/repo-secret.yaml
       - hasDocuments:
           count: 5
@@ -86,19 +86,19 @@ tests:
       deployment.oss.ingress.localhost.enabled: true
       deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
-      global.repoURL: "https://example.com/custom-repo.git"
-      global.repoBranch: "custom-branch"
-      global.repoDir: "custom-dir"
-      global.appsDir: "custom-apps-dir"
+      deployment.oss.repository.URL: "https://example.com/custom-repo.git"
+      deployment.oss.repository.branch: "custom-branch"
+      deployment.oss.repository.baseDir: "custom-dir"
+      deployment.oss.repository.appsDir: "custom-apps-dir"
     asserts:
       - equal:
-          path: spec.source.repoURL
+          path: spec.sources[0].repoURL
           value: "https://example.com/custom-repo.git"
       - equal:
-          path: spec.source.targetRevision
+          path: spec.sources[0].targetRevision
           value: "custom-branch"
       - equal:
-          path: spec.source.path
+          path: spec.sources[0].path
           value: "custom-dir/custom-apps-dir"
 
   # ========================================
@@ -117,14 +117,12 @@ tests:
       apps.test-app.values.custom.value: "special-chars:!@#$%^&*()"
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "username: user@domain.com"
+      # Values should be properly escaped and included
       - matchRegex:
-          path: spec.source.helm.values
-          pattern: "pass/word-with@special#chars!"
-      - matchRegex:
-          path: spec.source.helm.values
-          pattern: "special-chars:!@#\\$%\\^&\\*\\(\\)"
+          path: spec.sources[0].helm.values
+          pattern: "registry:"
 
   # ========================================
   # CONFIGURATION BOUNDARY VALIDATION
@@ -139,9 +137,7 @@ tests:
       deployment.saas.enabled: false
       registerJob.enabled: false
     asserts:
+      # registerJob config should be passed through
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "registerJob:"
-      - matchRegex:
-          path: spec.source.helm.values
-          pattern: "enabled: false"

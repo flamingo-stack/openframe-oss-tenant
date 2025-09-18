@@ -182,7 +182,7 @@ services:
       - openframe-config
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CLOUD_CONFIG_URI=http://openframe-config:8888
+      - SPRING_CLOUD_CONFIG_URI=http://openframe-config.microservices.svc.cluster.local:8888
     ports:
       - "8100:8100"
     networks:
@@ -198,7 +198,7 @@ services:
       - kafka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CLOUD_CONFIG_URI=http://openframe-config:8888
+      - SPRING_CLOUD_CONFIG_URI=http://openframe-config.microservices.svc.cluster.local:8888
     networks:
       - openframe-network
 

@@ -5,31 +5,26 @@ deployment:
     # Ingress configuration - enable only ONE of the following
     ingress:
       localhost:
-        enabled: true
-        # TLS configuration (optional)
-        tls:
-          # Certificate and key content (use --set-file)
-          # cert: |
-          #   -----BEGIN CERTIFICATE-----
-          #   ...
-          # key: |
-          #   -----BEGIN PRIVATE KEY-----
-          #   ...
+        enabled: true   # Enable localhost ingress with nginx
       ngrok:
-        enabled: false
-        # URL is required when ngrok is enabled
-        url: your-ngrok-domain.ngrok.io
+        enabled: false  # Enable ngrok ingress for external access
         credentials:
           apiKey: ""
           authtoken: ""
+    repository:
+      baseDir: manifests
+      appsDir: apps
+      URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
+      branch: main
+      autoSync: true
   saas:
     enabled: false
     # Ingress configuration for SaaS deployment
     ingress:
       localhost:
-        enabled: true
+        enabled: true   # Enable localhost ingress with nginx for SaaS
       gcp:
-        enabled: false
+        enabled: false 
   
 registerJob:
   enabled: true
