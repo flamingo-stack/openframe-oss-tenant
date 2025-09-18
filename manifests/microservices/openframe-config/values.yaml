@@ -3,6 +3,19 @@ registerJob:
 servicemonitor:
   enabled: true
 
+deployment:
+  oss:
+    enabled: true    
+    config:
+      repoName: openframe-oss-tenant-cfg
+      branch: main
+  saas:
+    enabled: false
+    config:
+      repoName: openframe-saas-tenant-cfg
+      branch: main
+      password: ""  # GitHub Token for private config repo access
+
 registry:
   docker:
     server: https://index.docker.io/v1/
