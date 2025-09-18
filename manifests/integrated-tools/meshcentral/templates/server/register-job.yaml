@@ -113,7 +113,7 @@ spec:
                       "transforms": "route,addHeaderMessageType,addHeaderJSONType",
                       "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
                       "transforms.route.regex": ".*",
-                      "transforms.route.replacement": "meshcentral.mongodb.events"
+                      "transforms.route.replacement": "meshcentral.mongodb.events",
                       "transforms.addHeaderMessageType.type": "org.apache.kafka.connect.transforms.InsertHeader",
                       "transforms.addHeaderMessageType.header": "message-type",
                       "transforms.addHeaderMessageType.value.literal": "MESHCENTRAL_EVENT",
