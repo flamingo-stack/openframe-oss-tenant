@@ -13,10 +13,6 @@ const nextConfig = {
   // Disable server-side features
   poweredByHeader: false,
   reactStrictMode: true,
-  // TypeScript configuration
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   // Disable SSR completely
   experimental: {
     esmExternals: true,
