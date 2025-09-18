@@ -9,9 +9,9 @@ tests:
       deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
     asserts:
-      # Count verification
+      # Count verification - ngrok-operator skipped, so 36 apps
       - hasDocuments:
-          count: 35
+          count: 36
       # Verify ingress-nginx is included
       - equal:
           path: metadata.name
@@ -34,9 +34,9 @@ tests:
       deployment.oss.ingress.ngrok.enabled: true
       deployment.saas.enabled: false
     asserts:
-      # Count verification
+      # Count verification - ingress-nginx skipped, so 36 apps
       - hasDocuments:
-          count: 35
+          count: 36
       # Verify ngrok-operator is included
       - equal:
           path: metadata.name
@@ -58,9 +58,9 @@ tests:
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
-      # Count verification - 2 apps skipped
+      # Count verification - ngrok-operator and auth-server skipped, so 35 apps
       - hasDocuments:
-          count: 34
+          count: 35
       # Verify ingress-nginx is included
       - equal:
           path: metadata.name
@@ -76,9 +76,9 @@ tests:
       deployment.saas.enabled: false
       apps.mongodb.enabled: false
     asserts:
-      # One additional app (mongodb) should be skipped
+      # One additional app (mongodb) should be skipped, plus ngrok-operator, so 35 apps
       - hasDocuments:
-          count: 34
+          count: 35
 
   - it: both deployment types enabled should use SaaS logic
     set:
@@ -86,9 +86,9 @@ tests:
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
     asserts:
-      # Should follow SaaS logic - skip both ngrok-operator and auth-server
+      # Should follow SaaS logic - skip both ngrok-operator and auth-server, so 35 apps
       - hasDocuments:
-          count: 34
+          count: 35
       # Verify ingress-nginx is included for SaaS
       - equal:
           path: metadata.name

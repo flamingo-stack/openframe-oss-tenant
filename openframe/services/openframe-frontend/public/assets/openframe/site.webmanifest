@@ -1,7 +1,7 @@
 {
   "name": "OpenFrame",
   "short_name": "OpenFrame", 
-  "description": "Open-source application framework and development platform",
+  "description": "Distributed platform for data, APIs, automation, and AI for IT operations",
   "icons": [
     {
       "src": "/assets/openframe/apple-touch-icon.png",

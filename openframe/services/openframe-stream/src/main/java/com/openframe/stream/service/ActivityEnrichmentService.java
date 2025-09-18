@@ -11,8 +11,6 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.processor.ProcessorContext;
-import org.apache.kafka.streams.kstream.ValueTransformerWithKey;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
 import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext;
@@ -24,7 +22,7 @@ import org.springframework.context.annotation.Bean;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-import static com.openframe.stream.listener.JsonKafkaListener.MESSAGE_TYPE_HEADER;
+import static com.openframe.kafka.enumeration.KafkaHeader.MESSAGE_TYPE_HEADER;
 
 @Service
 @RequiredArgsConstructor
@@ -35,13 +33,13 @@ public class ActivityEnrichmentService {
     private final Serde<HostActivityMessage> hostActivityMessageSerde;
     private final HostAgentCacheService hostAgentCacheService;
 
-    @Value("${kafka.consumer.topic.stream.fleet-mdm.activities}")
+    @Value("${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-activities}")
     private String activitiesTopic;
 
-    @Value("${kafka.consumer.topic.stream.fleet-mdm.host-activities}")
+    @Value("${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-host-activities}")
     private String hostActivitiesTopic;
 
-    @Value("${kafka.consumer.topic.event.fleet-mdm.name}")
+    @Value("${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-events}")
     private String enrichedActivitiesTopic;
 
     private static final Duration JOIN_WINDOW_DURATION = Duration.ofSeconds(5);

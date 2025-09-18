@@ -105,7 +105,7 @@ spec:
         - name: SPRING_PROFILES_ACTIVE
           value: "k8s"
         - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://openframe-config:8888"
+          value: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
       resources:
         requests:
           memory: "512Mi"

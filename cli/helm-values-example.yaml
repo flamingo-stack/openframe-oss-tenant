@@ -13,45 +13,51 @@
 
 deployment:
   oss:
-    enabled: true
+    enabled: true    
     # Ingress configuration - enable only ONE of the following
     ingress:
       localhost:
         enabled: true   # Enable localhost ingress with nginx
-        # TLS configuration (optional)
-        # tls:
-        #   cert: |
-        #   key: |
       ngrok:
         enabled: false  # Enable ngrok ingress for external access
-        # URL is required when ngrok is enabled
-        url: reindeer-suitable-genuinely.ngrok-free.app
         credentials:
-            apiKey: ""
-            authtoken: ""
-        allowedIPs:
-          - 0.0.0.0/0
+          apiKey: ""
+          authtoken: ""
+    repository:
+      baseDir: manifests
+      appsDir: apps
+      URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
+      branch: main
+      autoSync: true
   saas:
-    disabled: false
+    enabled: false
     # Ingress configuration for SaaS deployment
     ingress:
       localhost:
         enabled: true   # Enable localhost ingress with nginx for SaaS
-
-global:
-  repoDir: manifests  # Directory containing all Helm charts in the Git repository
-  appsDir: apps       # Directory containing the apps chart (only defined in app-of-apps)
-  repoURL: https://github.com/flamingo-stack/openframe-oss-tenant.git  # Git repository URL for ArgoCD
-  repoBranch: main    # Git branch to deploy from (main branch for production)
-  autoSync: true      # Enable automatic synchronization for all ArgoCD applications
-
-# Registry credentials for pulling Docker images
+      gcp:
+        enabled: false 
+        publicDomain: "flamingo.cx"
+        privateDomain: "internal.flamingo.cx"
+        tenantID: "cluster-1001" 
+    repository:
+      baseDir: manifests
+      appsDir: apps
+      URL: https://github.com/flamingo-stack/openframe-saas-tenant.git
+      branch: main
+      autoSync: true
+  
 registry:
   docker:
-    server: https://index.docker.io/v1/  # Docker Hub registry endpoint
-    username: ""                         # Docker Hub username
-    password: ""                          # Docker Hub access token
-    email: ""                             # Docker Hub email
+    server: https://index.docker.io/v1/
+    username: ""
+    password: ""
+    email: ""
+  ghcr:
+    server: ghcr.io
+    username: ""
+    password: ""
+    email: ""
 
 registerJob:
   enabled: true       # Enable registration job for integrated tools
@@ -76,15 +82,6 @@ apps:
     
   ngrok-operator:
     enabled: true     # Ngrok operator for local development ingress
-    project: platform # Use platform ArgoCD project
-    namespace: platform  # Deploy to platform namespace
-    syncWave: "0"     # Deploy in sync wave 0
-    values:
-      registerJob:
-        enabled: true
-    
-  cert-manager:
-    enabled: true     # Certificate management for TLS
     project: platform # Use platform ArgoCD project
     namespace: platform  # Deploy to platform namespace
     syncWave: "0"     # Deploy in sync wave 0

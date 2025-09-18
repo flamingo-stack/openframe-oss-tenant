@@ -41,6 +41,9 @@ func TestConfigurationWizard_ConfigureHelmValues_DryRun(t *testing.T) {
 	tempFile, err := modifier.CreateTemporaryValuesFile(values)
 	assert.NoError(t, err)
 	assert.Equal(t, "helm-values-tmp.yaml", tempFile)
+
+	// Clean up temporary file
+	defer os.Remove(tempFile)
 }
 
 func TestConfigurationWizard_ConfigureHelmValues_WithExistingFile(t *testing.T) {
@@ -151,9 +154,10 @@ func TestConfigurationWizard_Integration_LoadAndApply(t *testing.T) {
 	tmpDir := t.TempDir()
 	helmValuesPath := filepath.Join(tmpDir, "helm-values.yaml")
 	
-	originalYAML := `global:
-  repoBranch: main
-  repoURL: https://github.com/test/repo.git
+	originalYAML := `deployment:
+  oss:
+    repository:
+      branch: main
 registry:
   docker:
     username: default
@@ -171,10 +175,12 @@ registry:
 	values, err := modifier.LoadExistingValues(helmValuesPath)
 	assert.NoError(t, err)
 	
-	// Create configuration with changes
+	// Create configuration with changes for OSS deployment
 	newBranch := "develop"
+	deploymentMode := types.DeploymentModeOSS
 	config := &types.ChartConfiguration{
-		Branch: &newBranch,
+		Branch:         &newBranch,
+		DeploymentMode: &deploymentMode,
 		DockerRegistry: &types.DockerRegistryConfig{
 			Username: "newuser",
 			Password: "newpass",
@@ -199,10 +205,13 @@ registry:
 	// Load the updated values and verify changes
 	updatedValues, err := modifier.LoadExistingValues(tempHelmValuesPath)
 	assert.NoError(t, err)
-	
-	global := updatedValues["global"].(map[string]interface{})
-	assert.Equal(t, "develop", global["repoBranch"])
-	
+
+	// Verify deployment structure changes
+	deployment := updatedValues["deployment"].(map[string]interface{})
+	oss := deployment["oss"].(map[string]interface{})
+	repository := oss["repository"].(map[string]interface{})
+	assert.Equal(t, "develop", repository["branch"])
+
 	registry := updatedValues["registry"].(map[string]interface{})
 	docker := registry["docker"].(map[string]interface{})
 	assert.Equal(t, "newuser", docker["username"])

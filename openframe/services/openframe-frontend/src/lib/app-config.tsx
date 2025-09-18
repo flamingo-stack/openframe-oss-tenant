@@ -246,7 +246,7 @@ export function generateStructuredData(config: AppConfig) {
     description: config.description,
     slogan: config.slogan,
     foundingDate: '2022-06-01',
-    industry: 'Software Development',
+    industry: 'Information Technology',
     logo: {
       '@type': 'ImageObject',
       url: `${baseUrl}${config.logo.startsWith('/') ? '' : '/'}${config.logo}`,

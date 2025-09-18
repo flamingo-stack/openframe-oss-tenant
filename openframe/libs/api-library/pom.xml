@@ -53,6 +53,12 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-kafka</artifactId>
+            <version>${openframe.libs.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

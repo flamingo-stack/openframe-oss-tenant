@@ -41,10 +41,12 @@ cargo run                                   # Run the client locally
 
 ### Docker Operations
 ```bash
-# Individual service stacks:
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
-docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
-docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+# Note: Docker Compose files are located in integrated-tools/ directory
+# Individual service stacks can be found in their respective subdirectories:
+# - integrated-tools/tactical-rmm/
+# - integrated-tools/fleetmdm/
+# - integrated-tools/meshcentral/
+# - integrated-tools/authentik/
 ```
 
 ## Architecture Overview
@@ -124,8 +126,10 @@ OpenFrame is a distributed microservices platform with the following core archit
 │   │   ├── openframe-stream/           # Kafka stream processing
 │   │   ├── openframe-config/           # Configuration server
 │   │   ├── openframe-client/           # Agent management service
-│   │   ├── openframe-external-api/               # External API integrations
-│   │   └── openframe-ui/               # Vue.js frontend
+│   │   ├── openframe-external-api/     # External API integrations
+│   │   ├── openframe-authorization-server/ # Authorization server
+│   │   ├── openframe-ui/               # Vue.js frontend (primary)
+│   │   └── openframe-frontend/         # Alternative frontend (React/Next.js)
 │   └── libs/                           # Shared libraries
 │       ├── openframe-core/             # Core models and utilities
 │       ├── openframe-data/             # Data access layer
@@ -272,7 +276,7 @@ Data Sources → OpenFrame Stream Service → Kafka → [Cassandra/Pinot/MongoDB
 ```
 
 ### DO NOT Reference
-- Apache NiFi (removed from project)
+- Apache NiFi (removed from project - NOTE: Some NiFi dependencies may still exist in pom.xml but should not be used)
 - Authorization header JWT (now uses cookies)
 - Nested `docs/docs/` structure (flattened)
 
