@@ -7,6 +7,7 @@ import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -22,7 +23,7 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
     private static final String FIELD_TIME = "time";
 
     protected TrmmAgentHistoryEventDeserializer(ObjectMapper mapper) {
-        super(mapper);
+        super(mapper, List.of(), List.of());
     }
 
     @Override
@@ -38,7 +39,13 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
     @Override
     protected Optional<String> getSourceEventType(JsonNode after) {
         // For agent history events, we use the type field (e.g., "cmd_run")
-        return parseStringField(after, FIELD_TYPE);
+        return parseStringField(after, FIELD_TYPE).map(it -> {
+            if (parseStringField(after, FIELD_RESULTS).isEmpty()) {
+                return "%s.%s".formatted(it, "started");
+            } else {
+                return "%s.%s".formatted(it, "finished");
+            }
+        });
     }
 
     @Override

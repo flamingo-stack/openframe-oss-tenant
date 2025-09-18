@@ -25,10 +25,14 @@ public enum UnifiedEventType {
     USER_ROLE_CHANGED(Severity.INFO, "User roles changed"),
 
     // Script and automation events
+    SCRIPT_EXECUTION_STARTED(Severity.INFO, "Script execution started"),
     SCRIPT_EXECUTED(Severity.INFO, "Script executed"),
     SCRIPT_FAILED(Severity.ERROR, "Script execution failed"),
     SCRIPT_CREATED(Severity.INFO, "Script created"),
     SCRIPT_UPDATED(Severity.INFO, "Script updated"),
+
+    COMMAND_RUN_STARTED(Severity.INFO, "Command run started"),
+    COMMAND_RUN_FINISHED(Severity.INFO, "Command run finished"),
 
     // Policy and compliance events
     POLICY_APPLIED(Severity.INFO, "Policy applied"),

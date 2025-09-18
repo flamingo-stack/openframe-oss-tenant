@@ -73,6 +73,11 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
         return Destination.KAFKA;
     }
 
+    @Override
+    protected boolean isValidMessage(DeserializedDebeziumMessage message) {
+        return message.getIsVisible();
+    }
+
     protected String getTopic() {
         return topic;
     }

@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import com.openframe.stream.util.TimestampParser;
+
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -20,7 +22,7 @@ public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
     private static final String FIELD_CREATED_AT = "created_at";
 
     public FleetEventDeserializer(ObjectMapper mapper) {
-        super(mapper);
+        super(mapper, List.of(), List.of());
     }
 
     @Override

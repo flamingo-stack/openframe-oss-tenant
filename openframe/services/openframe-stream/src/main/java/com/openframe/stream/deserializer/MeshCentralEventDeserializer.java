@@ -3,12 +3,15 @@ package com.openframe.stream.deserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.enums.MessageType;
+import com.openframe.stream.mapper.constants.SourceEventTypes;
 import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -23,7 +26,9 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
     private static final String FIELD_MSG = "msg";
 
     public MeshCentralEventDeserializer(ObjectMapper mapper) {
-        super(mapper);
+        super(mapper,
+                List.of(SourceEventTypes.MeshCentral.SERVER_TIMELINE_STATS),
+                List.of());
     }
 
     @Override

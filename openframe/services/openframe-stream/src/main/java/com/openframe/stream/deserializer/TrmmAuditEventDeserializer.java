@@ -7,6 +7,7 @@ import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -21,7 +22,7 @@ public class TrmmAuditEventDeserializer extends IntegratedToolEventDeserializer 
     private static final String FIELD_ENTRY_TIME = "entry_time";
 
     public TrmmAuditEventDeserializer(ObjectMapper objectMapper) {
-        super(objectMapper);
+        super(objectMapper, List.of(), List.of());
     }
 
     @Override
