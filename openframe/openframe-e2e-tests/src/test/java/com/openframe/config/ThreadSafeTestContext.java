@@ -40,4 +40,4 @@ public class ThreadSafeTestContext {
     public static final String PLAYER_ID = "player_id";
     public static final String RESPONSE_STATUS = "response_status";
     public static final String MONGO_CONNECTION = "mongo_connection";
-} 
+}
