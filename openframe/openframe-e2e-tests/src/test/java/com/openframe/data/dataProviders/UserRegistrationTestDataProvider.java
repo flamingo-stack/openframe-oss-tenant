@@ -41,7 +41,7 @@ public class UserRegistrationTestDataProvider {
             Arguments.of("!@#$%^&*"),             // No uppercase, no lowercase, no digit
             
             // Edge cases
-            Arguments.of("   "),                  // Only spaces
+            Arguments.of(" "),                  // Only spaces
             Arguments.of("        ")              // 8 spaces (meets length but invalid)
         );
     }
@@ -111,7 +111,7 @@ public class UserRegistrationTestDataProvider {
             
             // Control characters and whitespace issues
             Arguments.of("John\tSmith"),            // Contains tab
-            Arguments.of("John\nSmith      ")             // Contains newline
+            Arguments.of("John\nSmith      ")       // Contains newline
         );
     }
 
