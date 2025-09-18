@@ -23,7 +23,7 @@ spring:
         fail-on-composite-error: false
         composite:
           - type: git
-            uri: https://github.com/flamingo-stack/${CONFIG_GIT_REPO:openframe-oss-tenant-cfg}
+            uri: https://github.com/flamingo-stack/${CONFIG_GIT_REPO_0:openframe-oss-tenant-cfg}
             default-label: ${CONFIG_GIT_BRANCH_0:main}
             clone-on-start: true
             order: 0
