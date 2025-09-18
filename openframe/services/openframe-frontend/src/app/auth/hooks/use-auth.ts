@@ -6,7 +6,7 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { useLocalStorage } from '@flamingo/ui-kit/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
-import { apiClient } from 'lib/api-client'
+import { apiClient } from '@lib/api-client'
 
 interface TenantInfo {
   tenantId?: string
