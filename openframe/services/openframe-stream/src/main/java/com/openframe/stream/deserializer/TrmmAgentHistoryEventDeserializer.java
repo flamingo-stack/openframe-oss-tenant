@@ -12,13 +12,14 @@ import java.util.Optional;
 @Component
 @Slf4j
 public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeserializer {
-    // Field name constants
-    private static final String FIELD_AGENT_ID = "agentid";
-    private static final String FIELD_OBJECT_TYPE = "object_type";
-    private static final String FIELD_ACTION = "action";
+    // Field name constants for agents_agenthistory table
+    private static final String FIELD_AGENT_ID = "agent_id";
+    private static final String FIELD_TYPE = "type";
+    private static final String FIELD_COMMAND = "command";
+    private static final String FIELD_RESULTS = "results";
+    private static final String FIELD_USERNAME = "username";
     private static final String FIELD_ID = "id";
-    private static final String FIELD_MESSAGE = "message";
-    private static final String FIELD_ENTRY_TIME = "entry_time";
+    private static final String FIELD_TIME = "time";
 
     protected TrmmAgentHistoryEventDeserializer(ObjectMapper mapper) {
         super(mapper);
@@ -36,13 +37,8 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
 
     @Override
     protected Optional<String> getSourceEventType(JsonNode after) {
-        Optional<String> objectType = parseStringField(after, FIELD_OBJECT_TYPE);
-        Optional<String> action = parseStringField(after, FIELD_ACTION);
-        
-        if (objectType.isPresent() && action.isPresent()) {
-            return Optional.of("%s.%s".formatted(objectType.get(), action.get()));
-        }
-        return objectType.or(() -> action);
+        // For agent history events, we use the type field (e.g., "cmd_run")
+        return parseStringField(after, FIELD_TYPE);
     }
 
     @Override
@@ -52,12 +48,36 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
 
     @Override
     protected Optional<String> getMessage(JsonNode after) {
-        return parseStringField(after, FIELD_MESSAGE);
+        // Create a meaningful message from command and results
+        Optional<String> command = parseStringField(after, FIELD_COMMAND);
+        Optional<String> results = parseStringField(after, FIELD_RESULTS);
+        Optional<String> username = parseStringField(after, FIELD_USERNAME);
+        
+        if (command.isPresent()) {
+            StringBuilder messageBuilder = new StringBuilder();
+            
+            if (username.isPresent()) {
+                messageBuilder.append("User ").append(username.get()).append(" executed: ");
+            } else {
+                messageBuilder.append("Command executed: ");
+            }
+            
+            messageBuilder.append(command.get());
+            
+            if (results.isPresent() && !results.get().trim().isEmpty()) {
+                messageBuilder.append(" | Result: ").append(results.get());
+            }
+            
+            return Optional.of(messageBuilder.toString());
+        }
+        
+        // Fallback to results if no command is available
+        return results;
     }
 
     @Override
     protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
-        return parseStringField(afterField, FIELD_ENTRY_TIME)
+        return parseStringField(afterField, FIELD_TIME)
                 .flatMap(TimestampParser::parseIso8601);
     }
 }

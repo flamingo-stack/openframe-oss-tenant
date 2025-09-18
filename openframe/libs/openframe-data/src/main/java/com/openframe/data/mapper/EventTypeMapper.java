@@ -111,6 +111,7 @@ public class EventTypeMapper {
         registerMapping(IntegratedToolType.TACTICAL, "script.modify", UnifiedEventType.SCRIPT_UPDATED);
         registerMapping(IntegratedToolType.TACTICAL, "agent.execute_script", UnifiedEventType.SCRIPT_EXECUTED);
         registerMapping(IntegratedToolType.TACTICAL, "agent.execute_command", UnifiedEventType.SCRIPT_EXECUTED);
+        registerMapping(IntegratedToolType.TACTICAL, "cmd_run", UnifiedEventType.SCRIPT_EXECUTED);
         registerMapping(IntegratedToolType.TACTICAL, "automatedtask.add", UnifiedEventType.SCRIPT_CREATED);
         registerMapping(IntegratedToolType.TACTICAL, "automatedtask.modify", UnifiedEventType.SCRIPT_UPDATED);
         registerMapping(IntegratedToolType.TACTICAL, "automatedtask.task_run", UnifiedEventType.SCRIPT_EXECUTED);
