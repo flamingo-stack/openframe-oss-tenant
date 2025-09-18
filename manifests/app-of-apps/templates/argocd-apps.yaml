@@ -9,13 +9,21 @@ metadata:
 spec:
   project: default
 
-  source:
-    repoURL: {{ .Values.global.repoURL }}
-    targetRevision: {{ .Values.global.repoBranch }}
-    path: "{{ .Values.global.repoDir }}/{{ .Values.global.appsDir }}"
-    helm:
-      values: |
-{{ omit .Values "argo-cd" | toYaml | indent 8 }}
+  sources:
+    - repoURL: {{ .Values.deployment.oss.repository.URL }}
+      targetRevision: {{ .Values.deployment.oss.repository.branch }}
+      path: "{{ .Values.deployment.oss.repository.baseDir }}/{{ .Values.deployment.oss.repository.appsDir }}"
+      helm:
+        values: |
+          {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
+    {{- if .Values.deployment.saas.enabled }}
+    - repoURL: {{ .Values.deployment.saas.repository.URL }}
+      targetRevision: {{ .Values.deployment.saas.repository.branch }}
+      path: "{{ .Values.deployment.saas.repository.baseDir }}/{{ .Values.deployment.saas.repository.appsDir }}"
+      helm:
+        values: |
+          {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
+    {{- end }}
 
   destination:
     name: in-cluster

@@ -1,7 +1,8 @@
-package com.openframe.data.model.debezium;
+package com.openframe.stream.model.fleet.debezium;
 
 import com.openframe.data.model.enums.IntegratedToolType;
 import com.openframe.data.model.enums.UnifiedEventType;
+import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;

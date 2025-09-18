@@ -28,6 +28,11 @@
             <artifactId>openframe-data</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-kafka</artifactId>
+            <version>${openframe.libs.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.openframe</groupId>
             <artifactId>openframe-jwt</artifactId>
         </dependency>

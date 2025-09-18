@@ -15,9 +15,9 @@ spec:
   project: {{ $app.project | default "default" }}
 
   sources:
-    - repoURL: {{ $.Values.global.repoURL }}
-      targetRevision: {{ $.Values.global.repoBranch }}
-      path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.global.repoDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.global.repoDir $app.namespace $name }}{{ end }}"
+    - repoURL: {{ $.Values.deployment.oss.repository.URL }}
+      targetRevision: {{ $.Values.deployment.oss.repository.branch }}
+      path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.deployment.oss.repository.baseDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.deployment.oss.repository.baseDir $app.namespace $name }}{{ end }}"
       helm:
         values: |
           deployment:
@@ -33,7 +33,7 @@ spec:
     name: in-cluster
     namespace: {{ $app.namespace }}
 
-  {{- $autoSync := (hasKey $.Values.global "autoSync") | ternary $.Values.global.autoSync true }}
+  {{- $autoSync := (hasKey $.Values.deployment.oss.repository "autoSync") | ternary $.Values.deployment.oss.repository.autoSync true }}
   syncPolicy:
     retry:
       limit: -1

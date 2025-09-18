@@ -29,9 +29,20 @@ func (i *IngressConfigurator) Configure(config *types.ChartConfiguration) error 
 
 	pterm.Info.Printf("Ingress Configuration (current: %s)", currentIngress)
 
-	options := []string{
-		"Use localhost for Local only visibility",
-		"Use ngrok for External visibility",
+	// Choose options based on deployment mode
+	var options []string
+	isSaaS := config.DeploymentMode != nil && *config.DeploymentMode == types.DeploymentModeSaaS
+
+	if isSaaS {
+		options = []string{
+			"Use localhost for Local only visibility",
+			"Use gcp for Cloud deployment",
+		}
+	} else {
+		options = []string{
+			"Use localhost for Local only visibility",
+			"Use ngrok for External visibility",
+		}
 	}
 
 	_, choice, err := sharedUI.SelectFromList("Ingress type", options)
@@ -48,7 +59,15 @@ func (i *IngressConfigurator) Configure(config *types.ChartConfiguration) error 
 		if err := i.applyLocalhostConfig(config.ExistingValues); err != nil {
 			return fmt.Errorf("failed to apply localhost configuration: %w", err)
 		}
+	} else if strings.Contains(choice, "gcp") {
+		ingressConfig.Type = types.IngressTypeGCP
+
+		// Apply GCP configuration to helm values
+		if err := i.applyGCPConfig(config.ExistingValues); err != nil {
+			return fmt.Errorf("failed to apply GCP configuration: %w", err)
+		}
 	} else {
+		// ngrok option (OSS deployment)
 		ingressConfig.Type = types.IngressTypeNgrok
 
 		// Configure Ngrok settings
@@ -248,9 +267,12 @@ func (i *IngressConfigurator) applyLocalhostConfig(values map[string]interface{}
 		"enabled": true,
 	}
 
-	// Disable ngrok if it exists
+	// Disable ngrok and gcp if they exist
 	if ngrokSection, ok := ingress["ngrok"].(map[string]interface{}); ok {
 		ngrokSection["enabled"] = false
+	}
+	if gcpSection, ok := ingress["gcp"].(map[string]interface{}); ok {
+		gcpSection["enabled"] = false
 	}
 
 	return nil
@@ -298,10 +320,68 @@ func (i *IngressConfigurator) applyNgrokConfig(values map[string]interface{}, ng
 
 	ingress["ngrok"] = ngrokSection
 
-	// Disable localhost if it exists
-	if localhostSection, ok := ingress["localhost"].(map[string]interface{}); ok {
-		localhostSection["enabled"] = false
+	// Disable localhost and gcp
+	ingress["localhost"] = map[string]interface{}{
+		"enabled": false,
 	}
+	if gcpSection, ok := ingress["gcp"].(map[string]interface{}); ok {
+		gcpSection["enabled"] = false
+	}
+
+	return nil
+}
+
+// applyGCPConfig applies GCP ingress configuration to helm values
+func (i *IngressConfigurator) applyGCPConfig(values map[string]interface{}) error {
+	// Ensure values map is not nil
+	if values == nil {
+		return fmt.Errorf("values map is nil")
+	}
+
+	// Collect tenantID for GCP configuration
+	tenantIDInput := pterm.DefaultInteractiveTextInput.WithMultiLine(false).WithDefaultValue("openframe-tenant")
+	tenantID, err := tenantIDInput.Show("Enter domain prefix for GCP deployment")
+	if err != nil {
+		return fmt.Errorf("domain prefix input failed: %w", err)
+	}
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		tenantID = "openframe-tenant"
+	}
+
+	deployment, ok := values["deployment"].(map[string]interface{})
+	if !ok {
+		deployment = make(map[string]interface{})
+		values["deployment"] = deployment
+	}
+
+	saas, ok := deployment["saas"].(map[string]interface{})
+	if !ok {
+		saas = make(map[string]interface{})
+		deployment["saas"] = saas
+	}
+
+	ingress, ok := saas["ingress"].(map[string]interface{})
+	if !ok {
+		ingress = make(map[string]interface{})
+		saas["ingress"] = ingress
+	}
+
+	// Configure GCP ingress
+	ingress["gcp"] = map[string]interface{}{
+		"enabled":  true,
+		"tenantID": tenantID,
+	}
+
+	// Disable localhost and ngrok
+	ingress["localhost"] = map[string]interface{}{
+		"enabled": false,
+	}
+	if ngrokSection, ok := ingress["ngrok"].(map[string]interface{}); ok {
+		ngrokSection["enabled"] = false
+	}
+
+	pterm.Success.Printf("✓ Configured GCP ingress with domain prefix: %s\n", tenantID)
 
 	return nil
 }
