@@ -14,16 +14,16 @@ tests:
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "deployment:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "oss:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "localhost:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "enabled: true"
 
   - it: should propagate self-hosted ngrok values
@@ -34,13 +34,13 @@ tests:
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "deployment:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "ngrok:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "enabled: true"
 
   - it: should propagate SaaS deployment values
@@ -48,18 +48,19 @@ tests:
       deployment.oss.enabled: false
       deployment.saas.enabled: true
       deployment.saas.ingress.localhost.enabled: true
+      deployment.saas.ingress.gcp.enabled: false
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "deployment:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "saas:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "localhost:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "enabled: true"
 
   # ========================================
@@ -72,32 +73,36 @@ tests:
       deployment.oss.ingress.localhost.enabled: true
       deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
-      global.repoURL: "https://custom-repo.com/openframe.git"
-      global.repoBranch: "development"
-      global.repoDir: "custom-manifests"
-      global.appsDir: "custom-apps"
+      deployment.oss.repository.URL: "https://custom-repo.com/openframe.git"
+      deployment.oss.repository.branch: "development"
+      deployment.oss.repository.baseDir: "custom-manifests"
+      deployment.oss.repository.appsDir: "custom-apps"
     asserts:
       - equal:
-          path: spec.source.repoURL
+          path: spec.sources[0].repoURL
           value: "https://custom-repo.com/openframe.git"
       - equal:
-          path: spec.source.targetRevision
+          path: spec.sources[0].targetRevision
           value: "development"
       - equal:
-          path: spec.source.path
+          path: spec.sources[0].path
           value: "custom-manifests/custom-apps"
 
-  - it: should propagate global autoSync setting to helm values
+  - it: should have hardcoded sync policy regardless of autoSync setting
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
       deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
-      global.autoSync: false
+      deployment.oss.repository.autoSync: false
     asserts:
-      - matchRegex:
-          path: spec.source.helm.values
-          pattern: "autoSync: false"
+      # Sync policy is hardcoded in argocd-apps template
+      - equal:
+          path: spec.syncPolicy.automated.prune
+          value: true
+      - equal:
+          path: spec.syncPolicy.automated.selfHeal
+          value: true
 
   # ========================================
   # REGISTRY VALUES PROPAGATION
@@ -114,16 +119,16 @@ tests:
       registry.docker.email: "test@example.com"
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "registry:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "username: testuser"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "password: testpass"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "email: test@example.com"
 
   - it: should propagate GHCR registry configuration
@@ -136,13 +141,13 @@ tests:
       registry.ghcr.password: "ghcrtoken"
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "ghcr:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "username: ghcruser"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "password: ghcrtoken"
 
   # ========================================
@@ -159,13 +164,13 @@ tests:
       apps.openframe-config.values.config.environment: "staging"
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "openframe-config:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "branch: feature-branch"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "environment: staging"
 
   # ========================================
@@ -182,13 +187,13 @@ tests:
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "credentials:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "apiKey: test-api-key"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "authtoken: test-auth-token"
 
   # ========================================
@@ -204,8 +209,8 @@ tests:
       registerJob.enabled: false
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "registerJob:"
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "enabled: false"

@@ -1,9 +1,0 @@
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: cluster-issuer
-  labels:
-    app.kubernetes.io/instance: cert-manager
-spec:
-  ca:
-    secretName: platform-certificate

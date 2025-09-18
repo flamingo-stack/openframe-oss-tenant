@@ -41,7 +41,7 @@ tests:
           path: spec.project
           value: default
 
-  - it: should have correct source configuration
+  - it: should have correct OSS source configuration
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
@@ -49,16 +49,16 @@ tests:
       deployment.saas.enabled: false
     asserts:
       - equal:
-          path: spec.source.repoURL
+          path: spec.sources[0].repoURL
           value: https://github.com/flamingo-stack/openframe-oss-tenant.git
       - equal:
-          path: spec.source.targetRevision
+          path: spec.sources[0].targetRevision
           value: main
       - equal:
-          path: spec.source.path
+          path: spec.sources[0].path
           value: "manifests/apps"
       - exists:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
 
   - it: should have correct destination configuration
     set:
@@ -107,6 +107,23 @@ tests:
       - exists:
           path: spec.syncPolicy.retry
 
+  - it: should have both sources when SaaS enabled
+    set:
+      deployment.oss.enabled: false
+      deployment.saas.enabled: true
+      deployment.saas.ingress.localhost.enabled: true
+      deployment.saas.ingress.gcp.enabled: false
+    asserts:
+      - equal:
+          path: spec.sources[0].repoURL
+          value: https://github.com/flamingo-stack/openframe-oss-tenant.git
+      - equal:
+          path: spec.sources[1].repoURL
+          value: https://github.com/flamingo-stack/openframe-saas-tenant.git
+      - lengthEqual:
+          path: spec.sources
+          count: 2
+
   # ========================================
   # HELM VALUES STRUCTURE TESTS
   # ========================================
@@ -119,17 +136,14 @@ tests:
       deployment.saas.enabled: false
     asserts:
       - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "deployment:"
       - matchRegex:
-          path: spec.source.helm.values
-          pattern: "global:"
-      - matchRegex:
-          path: spec.source.helm.values
+          path: spec.sources[0].helm.values
           pattern: "registry:"
       - matchRegex:
-          path: spec.source.helm.values
-          pattern: "registerJob:"
+          path: spec.sources[0].helm.values
+          pattern: "apps:"
 
   # ========================================
   # DOCUMENT COUNT TESTS

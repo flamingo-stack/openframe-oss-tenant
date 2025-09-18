@@ -74,30 +74,22 @@ func (h *HelmValuesModifier) CreateTemporaryValuesFile(values map[string]interfa
 
 // ApplyConfiguration applies configuration changes to Helm values
 func (h *HelmValuesModifier) ApplyConfiguration(values map[string]interface{}, config *types.ChartConfiguration) error {
-	// Update branch if it was modified
-	if config.Branch != nil {
-		// Update global.repoBranch
-		if global, ok := values["global"].(map[string]interface{}); ok {
-			global["repoBranch"] = *config.Branch
-		} else {
-			// Create global section if it doesn't exist with only the modified branch
-			values["global"] = map[string]interface{}{
-				"repoBranch": *config.Branch,
-			}
+	// Update deployment mode if it was modified
+	if config.DeploymentMode != nil {
+		if err := h.applyDeploymentMode(values, *config.DeploymentMode); err != nil {
+			return fmt.Errorf("failed to apply deployment mode: %w", err)
 		}
+	}
 
-		// Update apps section branch if it exists
-		if apps, ok := values["apps"].(map[string]interface{}); ok {
-			for _, appConfig := range apps {
-				if appConfigMap, ok := appConfig.(map[string]interface{}); ok {
-					if appValues, ok := appConfigMap["values"].(map[string]interface{}); ok {
-						if appConfigSection, ok := appValues["config"].(map[string]interface{}); ok {
-							appConfigSection["branch"] = *config.Branch
-						}
-					}
-				}
+	// Update branch if it was modified - handle deployment-specific branches
+	if config.Branch != nil {
+		// For OSS deployment, update deployment.oss.repository.branch
+		if config.DeploymentMode != nil && *config.DeploymentMode == types.DeploymentModeOSS {
+			if err := h.updateOSSBranch(values, *config.Branch); err != nil {
+				return fmt.Errorf("failed to update OSS branch: %w", err)
 			}
 		}
+		// For SaaS deployment, branch is handled in applySaaSConfig
 	}
 
 	// Update Docker registry if it was modified
@@ -108,17 +100,150 @@ func (h *HelmValuesModifier) ApplyConfiguration(values map[string]interface{}, c
 			values["registry"] = registry
 		}
 
-		// Update docker registry section
-		docker, ok := registry["docker"].(map[string]interface{})
-		if !ok {
-			docker = make(map[string]interface{})
-			registry["docker"] = docker
-		}
+		// For SaaS mode, update GHCR registry; for OSS, update docker registry
+		if config.DeploymentMode != nil && *config.DeploymentMode == types.DeploymentModeSaaS {
+			// Update GHCR registry section for SaaS
+			ghcr, ok := registry["ghcr"].(map[string]interface{})
+			if !ok {
+				ghcr = make(map[string]interface{})
+				registry["ghcr"] = ghcr
+			}
 
-		docker["username"] = config.DockerRegistry.Username
-		docker["password"] = config.DockerRegistry.Password
-		docker["email"] = config.DockerRegistry.Email
+			ghcr["username"] = config.DockerRegistry.Username
+			ghcr["password"] = config.DockerRegistry.Password
+			ghcr["email"] = config.DockerRegistry.Email
+		} else {
+			// Update docker registry section for OSS
+			docker, ok := registry["docker"].(map[string]interface{})
+			if !ok {
+				docker = make(map[string]interface{})
+				registry["docker"] = docker
+			}
+
+			docker["username"] = config.DockerRegistry.Username
+			docker["password"] = config.DockerRegistry.Password
+			docker["email"] = config.DockerRegistry.Email
+		}
 	}
+
+	// Update SaaS-specific configuration if it was modified
+	if config.SaaSConfig != nil {
+		if err := h.applySaaSConfig(values, *config.SaaSConfig); err != nil {
+			return fmt.Errorf("failed to apply SaaS configuration: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// applyDeploymentMode applies deployment mode configuration to Helm values
+func (h *HelmValuesModifier) applyDeploymentMode(values map[string]interface{}, mode types.DeploymentMode) error {
+	// Ensure deployment section exists
+	deployment, ok := values["deployment"].(map[string]interface{})
+	if !ok {
+		deployment = make(map[string]interface{})
+		values["deployment"] = deployment
+	}
+
+	// Configure deployment mode
+	switch mode {
+	case types.DeploymentModeOSS:
+		// Enable OSS, disable SaaS
+		h.ensureDeploymentSection(deployment, "oss", true)
+		h.ensureDeploymentSection(deployment, "saas", false)
+	case types.DeploymentModeSaaS:
+		// Enable SaaS, disable OSS
+		h.ensureDeploymentSection(deployment, "oss", false)
+		h.ensureDeploymentSection(deployment, "saas", true)
+	default:
+		return fmt.Errorf("unknown deployment mode: %s", mode)
+	}
+
+	return nil
+}
+
+// ensureDeploymentSection ensures a deployment section exists with the specified enabled state
+func (h *HelmValuesModifier) ensureDeploymentSection(deployment map[string]interface{}, sectionName string, enabled bool) {
+	section, ok := deployment[sectionName].(map[string]interface{})
+	if !ok {
+		section = make(map[string]interface{})
+		deployment[sectionName] = section
+	}
+	section["enabled"] = enabled
+}
+
+// applySaaSConfig applies SaaS-specific configuration to Helm values
+func (h *HelmValuesModifier) applySaaSConfig(values map[string]interface{}, saasConfig types.SaaSConfig) error {
+	// Ensure deployment section exists
+	deployment, ok := values["deployment"].(map[string]interface{})
+	if !ok {
+		deployment = make(map[string]interface{})
+		values["deployment"] = deployment
+	}
+
+	// Configure SaaS repository settings
+	saas, ok := deployment["saas"].(map[string]interface{})
+	if !ok {
+		saas = make(map[string]interface{})
+		deployment["saas"] = saas
+	}
+
+	// Ensure SaaS repository section exists
+	saasRepository, ok := saas["repository"].(map[string]interface{})
+	if !ok {
+		saasRepository = make(map[string]interface{})
+		saas["repository"] = saasRepository
+	}
+
+	// Set SaaS repository password and branch
+	saasRepository["password"] = saasConfig.RepositoryPassword
+	saasRepository["branch"] = saasConfig.SaaSBranch
+
+	// Configure OSS repository settings
+	oss, ok := deployment["oss"].(map[string]interface{})
+	if !ok {
+		oss = make(map[string]interface{})
+		deployment["oss"] = oss
+	}
+
+	// Ensure OSS repository section exists
+	ossRepository, ok := oss["repository"].(map[string]interface{})
+	if !ok {
+		ossRepository = make(map[string]interface{})
+		oss["repository"] = ossRepository
+	}
+
+	// Set OSS repository branch
+	ossRepository["branch"] = saasConfig.OSSBranch
+
+	return nil
+}
+
+// updateOSSBranch updates the OSS repository branch
+func (h *HelmValuesModifier) updateOSSBranch(values map[string]interface{}, branch string) error {
+	// Ensure deployment section exists
+	deployment, ok := values["deployment"].(map[string]interface{})
+	if !ok {
+		deployment = make(map[string]interface{})
+		values["deployment"] = deployment
+	}
+
+	// Ensure OSS section exists
+	oss, ok := deployment["oss"].(map[string]interface{})
+	if !ok {
+		oss = make(map[string]interface{})
+		deployment["oss"] = oss
+	}
+
+	// Ensure repository section exists
+	repository, ok := oss["repository"].(map[string]interface{})
+	if !ok {
+		repository = make(map[string]interface{})
+		oss["repository"] = repository
+	}
+
+	// Set the branch
+	repository["branch"] = branch
 
 	return nil
 }
@@ -139,11 +264,30 @@ func (h *HelmValuesModifier) WriteValues(values map[string]interface{}, helmValu
 	return nil
 }
 
-// GetCurrentBranch extracts the current branch from Helm values
+// GetCurrentBranch extracts the current branch from Helm values (legacy method)
 func (h *HelmValuesModifier) GetCurrentBranch(values map[string]interface{}) string {
+	// First check for deployment-specific branch
+	if branch := h.GetCurrentOSSBranch(values); branch != "main" {
+		return branch
+	}
+	// Fall back to legacy global setting
 	if global, ok := values["global"].(map[string]interface{}); ok {
 		if branch, ok := global["repoBranch"].(string); ok {
 			return branch
+		}
+	}
+	return "main" // default fallback
+}
+
+// GetCurrentOSSBranch extracts the current OSS repository branch from Helm values
+func (h *HelmValuesModifier) GetCurrentOSSBranch(values map[string]interface{}) string {
+	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
+		if oss, ok := deployment["oss"].(map[string]interface{}); ok {
+			if repository, ok := oss["repository"].(map[string]interface{}); ok {
+				if branch, ok := repository["branch"].(string); ok {
+					return branch
+				}
+			}
 		}
 	}
 	return "main" // default fallback
@@ -197,4 +341,25 @@ func (h *HelmValuesModifier) GetCurrentIngressSettings(values map[string]interfa
 	}
 
 	return "localhost" // default fallback
+}
+
+// GetCurrentDeploymentMode extracts the current deployment mode from Helm values
+func (h *HelmValuesModifier) GetCurrentDeploymentMode(values map[string]interface{}) types.DeploymentMode {
+	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
+		// Check if SaaS is enabled
+		if saas, ok := deployment["saas"].(map[string]interface{}); ok {
+			if enabled, ok := saas["enabled"].(bool); ok && enabled {
+				return types.DeploymentModeSaaS
+			}
+		}
+
+		// Check if OSS is enabled (or default to OSS)
+		if oss, ok := deployment["oss"].(map[string]interface{}); ok {
+			if enabled, ok := oss["enabled"].(bool); ok && enabled {
+				return types.DeploymentModeOSS
+			}
+		}
+	}
+
+	return types.DeploymentModeOSS // default fallback
 }

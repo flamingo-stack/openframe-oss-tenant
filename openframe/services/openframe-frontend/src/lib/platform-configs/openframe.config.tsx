@@ -7,7 +7,7 @@ import { getBaseUrl } from '../utils'
 export const openframeConfig: AppConfig = {
   name: 'OpenFrame',
   legalName: 'Flamingo AI, Inc.',
-  description: 'Open-source application framework and development platform. Build scalable applications with modern tools and patterns.',
+  description: 'Distributed platform creating a unified layer for data, APIs, automation, and AI. Simplifies IT and security operations.',
   get url() { return getBaseUrl() },
   get logo() { return `${getBaseUrl()}/assets/openframe/apple-touch-icon.png` },
   slogan: 'Open Source Application Framework',
@@ -21,8 +21,8 @@ export const openframeConfig: AppConfig = {
   seo: {
     title: 'OpenFrame - Open Source Framework',
     titleTemplate: '%s | OpenFrame',
-    description: 'Modern open-source application framework for building scalable web applications. Developer-friendly tools and patterns.',
-    keywords: ['open source', 'framework', 'web development', 'application development', 'developer tools'],
+    description: 'Distributed platform creating a unified layer for data, APIs, automation, and AI. Simplifies IT and security operations.',
+    keywords: ['open source', 'framework', 'IT operations', 'automation', 'security', 'MSP tools'],
     get ogImage() { return `${getBaseUrl()}/assets/openframe/og-image.png` },
     get twitterImage() { return `${getBaseUrl()}/assets/openframe/twitter-image.png` }
   },
