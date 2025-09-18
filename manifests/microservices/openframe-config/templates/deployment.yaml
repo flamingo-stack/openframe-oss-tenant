@@ -25,9 +25,9 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s" 
-            - name: CONFIG_GIT_REPO
+            - name: CONFIG_GIT_REPO_0
               value: "{{ .Values.config.repo }}"
-            - name: CONFIG_GIT_BRANCH
+            - name: CONFIG_GIT_BRANCH_0
               value: "{{ .Values.config.branch }}"
           livenessProbe:
             httpGet:
