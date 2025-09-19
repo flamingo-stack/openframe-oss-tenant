@@ -32,6 +32,7 @@ public abstract class BasePageObject implements PageObject {
         if (baseUrl != null) {
             open(baseUrl);
         } else {
+
             throw new IllegalStateException("Use navigateToLocalFile() for local HTML files");
         }
     }
