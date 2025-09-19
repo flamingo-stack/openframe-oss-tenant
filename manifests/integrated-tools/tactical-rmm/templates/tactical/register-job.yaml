@@ -82,7 +82,7 @@ spec:
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/metrics"],
                   "debeziumConnector": {
-                    "name": "tactical-rmm-psql-connector",
+                    "name": "tactical-rmm-psql-connector-1",
                     "config": {
                       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
                       "tasks.max": "1",
