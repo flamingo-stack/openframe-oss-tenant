@@ -5,7 +5,9 @@ import {
   SettingsIcon, 
   LogOutIcon,
   LogsIcon,
-  ScriptIcon
+  ScriptIcon,
+  MingoIcon,
+  PoliciesIcon
 } from '@flamingo/ui-kit/components/icons'
 import { isAuthOnlyMode } from './app-mode'
 
@@ -40,11 +42,25 @@ export const getNavigationItems = (
       isActive: pathname === '/scripts/'
     },
     {
+      id: 'policies-and-queries',
+      label: 'Policies & Queries',
+      icon: <PoliciesIcon className="w-5 h-5" />,
+      path: '/policies-and-queries',
+      isActive: pathname === '/policies-and-queries/'
+    },
+    {
       id: 'logs',
       label: 'Logs',
       icon: <LogsIcon className="w-5 h-5" />,
       path: '/logs-page',
       isActive: pathname === '/logs-page/'
+    },
+    {
+      id: 'mingo',
+      label: 'Mingo AI',
+      icon: <MingoIcon className="w-5 h-5" />,
+      path: '/mingo',
+      isActive: pathname === '/mingo/'
     },
     // Secondary section items
     {
