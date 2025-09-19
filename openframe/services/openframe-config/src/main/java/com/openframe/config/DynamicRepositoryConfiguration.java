@@ -43,19 +43,19 @@ public class DynamicRepositoryConfiguration {
     private String repo1Branch;
 
     /** GitHub actor for primary repository authentication. */
-    @Value("${GITHUB_ACTOR_0:${GITHUB_ACTOR:}}")
+    @Value("${GITHUB_ACTOR_0:}")
     private String githubActor0;
 
     /** GitHub token for primary repository authentication. */
-    @Value("${GITHUB_TOKEN_0:${GITHUB_TOKEN:}}")
+    @Value("${GITHUB_TOKEN_0:}")
     private String githubToken0;
 
     /** GitHub actor for secondary repository authentication. */
-    @Value("${GITHUB_ACTOR_1:${GITHUB_ACTOR:}}")
+    @Value("${GITHUB_ACTOR_1:}")
     private String githubActor1;
 
     /** GitHub token for secondary repository authentication. */
-    @Value("${GITHUB_TOKEN_1:${GITHUB_TOKEN:}}")
+    @Value("${GITHUB_TOKEN_1:}")
     private String githubToken1;
 
     /** Base GitHub organization URL. */
