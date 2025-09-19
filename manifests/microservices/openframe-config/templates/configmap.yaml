@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: openframe-config-env
+  name: openframe-config
   labels:
     app: openframe-config
 data:
