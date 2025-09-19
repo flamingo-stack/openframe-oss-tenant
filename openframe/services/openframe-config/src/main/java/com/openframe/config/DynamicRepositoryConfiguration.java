@@ -77,43 +77,43 @@ public class DynamicRepositoryConfiguration {
 
         final List<EnvironmentRepository> repositories = new ArrayList<>();
 
-        // Add first repository if valid
-        if (isValidRepoName(repo0Name)) {
-            final MultipleJGitEnvironmentProperties props0 =
-                createRepoProperties(
-                    githubBaseUrl + repo0Name,
-                    repo0Branch, 0, githubActor0, githubToken0
-                );
-            final JGitEnvironmentRepository repo0 =
-                new JGitEnvironmentRepository(
-                    environment, props0, observationRegistry
-                );
-            repositories.add(repo0);
-            log.info("Added primary repository: {} with branch: {}",
-                    repo0Name, repo0Branch);
-        } else {
-            log.warn("Primary repository not configured properly"
-                    + " (CONFIG_GIT_REPO_0): {}", repo0Name);
-        }
-
-        // Add second repository if valid
+        // Add second repository first (higher priority)
         if (isValidRepoName(repo1Name)) {
             final MultipleJGitEnvironmentProperties props1 =
                 createRepoProperties(
                     githubBaseUrl + repo1Name,
-                    repo1Branch, 1, githubActor1, githubToken1
+                    repo1Branch, 0, githubActor1, githubToken1
                 );
             final JGitEnvironmentRepository repo1 =
                 new JGitEnvironmentRepository(
                     environment, props1, observationRegistry
                 );
             repositories.add(repo1);
-            log.info("Added secondary repository: {} with branch: {}",
+            log.info("Added secondary repository (high priority): {} with branch: {}",
                     repo1Name, repo1Branch);
         } else {
             log.info("Secondary repository not configured"
                     + " (CONFIG_GIT_REPO_1 is empty or invalid): '{}'",
                     repo1Name);
+        }
+
+        // Add first repository second (lower priority)
+        if (isValidRepoName(repo0Name)) {
+            final MultipleJGitEnvironmentProperties props0 =
+                createRepoProperties(
+                    githubBaseUrl + repo0Name,
+                    repo0Branch, 1, githubActor0, githubToken0
+                );
+            final JGitEnvironmentRepository repo0 =
+                new JGitEnvironmentRepository(
+                    environment, props0, observationRegistry
+                );
+            repositories.add(repo0);
+            log.info("Added primary repository (low priority): {} with branch: {}",
+                    repo0Name, repo0Branch);
+        } else {
+            log.warn("Primary repository not configured properly"
+                    + " (CONFIG_GIT_REPO_0): {}", repo0Name);
         }
 
         final CompositeEnvironmentRepository composite =
