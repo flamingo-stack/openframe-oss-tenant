@@ -19,6 +19,12 @@ spring:
 openframe:
   config:
     dynamic-repos: true
+    git-repo-base-url: ${GITHUB_BASE_URL:https://github.com/flamingo-stack/}
+    git-repo-0: ${CONFIG_GIT_REPO_0:openframe-oss-tenant-cfg}
+    git-branch-0: ${CONFIG_GIT_BRANCH_0:main}
+    git-repo-1: ${CONFIG_GIT_REPO_1:}
+    git-branch-1: ${CONFIG_GIT_BRANCH_1:main}
+    password: ${GITHUB_PASSWORD:}
 
 
 # Management server configuration

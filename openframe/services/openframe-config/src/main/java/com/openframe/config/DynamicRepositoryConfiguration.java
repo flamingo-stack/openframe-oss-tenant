@@ -26,40 +26,34 @@ import java.util.List;
 @Slf4j
 public class DynamicRepositoryConfiguration {
 
-    /** Primary repository name from environment variable. */
-    @Value("${CONFIG_GIT_REPO_0:openframe-oss-tenant-cfg}")
+    /**
+     * Primary repository name.
+     */
+    @Value("${openframe.config.git-repo-0}")
     private String repo0Name;
 
-    /** Primary repository branch from environment variable. */
-    @Value("${CONFIG_GIT_BRANCH_0:main}")
+    /**
+     * Primary repository branch.
+     */
+    @Value("${openframe.config.git-branch-0}")
     private String repo0Branch;
 
     /** Secondary repository name from environment variable. */
-    @Value("${CONFIG_GIT_REPO_1:}")
+    @Value("${openframe.config.git-repo-1}")
     private String repo1Name;
 
     /** Secondary repository branch from environment variable. */
-    @Value("${CONFIG_GIT_BRANCH_1:main}")
+    @Value("${openframe.config.git-branch-1}")
     private String repo1Branch;
 
-    /** GitHub actor for primary repository authentication. */
-    @Value("${GITHUB_ACTOR_0:}")
-    private String githubActor0;
-
-    /** GitHub token for primary repository authentication. */
-    @Value("${GITHUB_TOKEN_0:}")
-    private String githubToken0;
-
-    /** GitHub actor for secondary repository authentication. */
-    @Value("${GITHUB_ACTOR_1:}")
-    private String githubActor1;
-
-    /** GitHub token for secondary repository authentication. */
-    @Value("${GITHUB_TOKEN_1:}")
-    private String githubToken1;
+    /**
+     * GitHub token.
+     */
+    @Value("${openframe.config.password}")
+    private String password;
 
     /** Base GitHub organization URL. */
-    @Value("${GITHUB_BASE_URL:https://github.com/flamingo-stack/}")
+    @Value("${openframe.config.git-repo-base-url}")
     private String githubBaseUrl;
 
     /**
@@ -78,11 +72,12 @@ public class DynamicRepositoryConfiguration {
         final List<EnvironmentRepository> repositories = new ArrayList<>();
 
         // Add second repository first (higher priority)
+        String username = "username";
         if (isValidRepoName(repo1Name)) {
             final MultipleJGitEnvironmentProperties props1 =
                 createRepoProperties(
-                    githubBaseUrl + repo1Name,
-                    repo1Branch, 0, githubActor1, githubToken1
+                        githubBaseUrl + repo1Name,
+                        repo1Branch, 0, username, password
                 );
             final JGitEnvironmentRepository repo1 =
                 new JGitEnvironmentRepository(
@@ -101,8 +96,8 @@ public class DynamicRepositoryConfiguration {
         if (isValidRepoName(repo0Name)) {
             final MultipleJGitEnvironmentProperties props0 =
                 createRepoProperties(
-                    githubBaseUrl + repo0Name,
-                    repo0Branch, 1, githubActor0, githubToken0
+                        githubBaseUrl + repo0Name,
+                        repo0Branch, 1, username, password
                 );
             final JGitEnvironmentRepository repo0 =
                 new JGitEnvironmentRepository(
@@ -158,12 +153,11 @@ public class DynamicRepositoryConfiguration {
         props.setCloneOnStart(true);
         props.setOrder(order);
 
-        if (githubActor != null && !githubActor.isEmpty()) {
+        if (githubToken != null && !githubToken.isEmpty()) {
             props.setUsername(githubActor);
             log.debug("Set GitHub username for repository order {}: {}",
                     order, githubActor);
-        }
-        if (githubToken != null && !githubToken.isEmpty()) {
+
             props.setPassword(githubToken);
             log.debug("Set GitHub token for repository order {}", order);
         }
