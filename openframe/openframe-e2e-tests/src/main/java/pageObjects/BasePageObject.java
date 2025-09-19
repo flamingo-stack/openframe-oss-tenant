@@ -36,15 +36,6 @@ public abstract class BasePageObject implements PageObject {
         }
     }
     
-    /**
-     * Navigate to local HTML file
-     * @param filePath absolute path to HTML file
-     */
-    public void navigateToLocalFile(String filePath) {
-        String localUrl = "file:///" + filePath.replace("\\", "/");
-        open(localUrl);
-    }
-    
     @Override
     public boolean isPageLoaded() {
         return $x("//body").exists();

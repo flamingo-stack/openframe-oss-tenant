@@ -1,21 +1,16 @@
 package com.openframe.tests.ui;
 
+import lombok.Setter;
 import org.junit.jupiter.api.*;
 import pageObjects.OpenFrameMainPage;
 import com.openframe.data.dto.OrganizationRegistrationData;
 import com.openframe.data.UiTestDataGenerator;
 import static org.junit.jupiter.api.Assertions.*;
 
+
 @Disabled("Temporarily disabled - UI tests require specific environment setup")
 public class OpenFrameMainPageTest extends UiBaseTest {
     private OpenFrameMainPage mainPage;
-    
-    @BeforeEach
-    void setUpTest() {
-        mainPage = new OpenFrameMainPage();
-        // Navigate to page before each test
-        mainPage.navigateToLocalFile("C:/Users/User/Downloads/Archive/OpenFrame.html");
-    }
     
     @Test
     @DisplayName("Should fill organization registration form with Faker data")
@@ -53,5 +48,6 @@ public class OpenFrameMainPageTest extends UiBaseTest {
         assertTrue(mainPage.isCreateOrganizationButtonEnabled(), "Create organization button should be enabled");
 
     }
+
 }
 

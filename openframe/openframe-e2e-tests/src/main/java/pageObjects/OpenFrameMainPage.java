@@ -112,10 +112,6 @@ public class OpenFrameMainPage extends BasePageObject{
         return !getLoginEmail().isEmpty();
     }
     
-    public boolean doPasswordsMatch() {
-        return getPassword().equals(getConfirmPassword());
-    }
-    
     // ========== Getter Methods for Form Fields ==========
     
     public String getFirstName() {
@@ -150,10 +146,6 @@ public class OpenFrameMainPage extends BasePageObject{
     
     public String getPageTitle() {
         return getTextByXPath(BRAND_TITLE);
-    }
-    
-    public String getPageSubtitle() {
-        return getTextByXPath(AUTH_SUBTITLE);
     }
     
     // ========== High-Level Action Methods ==========

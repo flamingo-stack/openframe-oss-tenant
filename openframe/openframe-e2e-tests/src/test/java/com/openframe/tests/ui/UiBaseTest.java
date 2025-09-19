@@ -35,7 +35,7 @@ public abstract class UiBaseTest {
             Configuration.screenshots = true;
             Configuration.savePageSource = true;
             
-            System.out.println("✅ UI test environment setup completed successfully!");
+            System.out.println("UI test environment setup completed successfully!");
             
         } catch (Exception e) {
             System.err.println(" Failed to setup UI test environment: " + e.getMessage());
@@ -51,13 +51,13 @@ public abstract class UiBaseTest {
         try {
             if (WebDriverRunner.hasWebDriverStarted()) {
                 WebDriverRunner.closeWebDriver();
-                System.out.println("✅ WebDriver closed successfully");
+                System.out.println(" WebDriver closed successfully");
             }
             
-            System.out.println("✅ UI test environment cleanup completed!");
+            System.out.println("UI test environment cleanup completed!");
             
         } catch (Exception e) {
-            System.err.println("⚠️ Warning during cleanup: " + e.getMessage());
+            System.err.println("Warning during cleanup: " + e.getMessage());
         }
     }
     
