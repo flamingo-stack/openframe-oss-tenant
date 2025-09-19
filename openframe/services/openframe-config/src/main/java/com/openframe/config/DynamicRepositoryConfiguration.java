@@ -50,6 +50,10 @@ public class DynamicRepositoryConfiguration {
     @Value("${GITHUB_TOKEN:}")
     private String githubToken;
 
+    /** Base GitHub organization URL. */
+    @Value("${GITHUB_BASE_URL:https://github.com/flamingo-stack/}")
+    private String githubBaseUrl;
+
     /**
      * Creates a composite environment repository with dynamic configuration.
      *
@@ -69,7 +73,7 @@ public class DynamicRepositoryConfiguration {
         if (isValidRepoName(repo0Name)) {
             final MultipleJGitEnvironmentProperties props0 =
                 createRepoProperties(
-                    "https://github.com/flamingo-stack/" + repo0Name,
+                    githubBaseUrl + repo0Name,
                     repo0Branch, 0
                 );
             final JGitEnvironmentRepository repo0 =
@@ -88,7 +92,7 @@ public class DynamicRepositoryConfiguration {
         if (isValidRepoName(repo1Name)) {
             final MultipleJGitEnvironmentProperties props1 =
                 createRepoProperties(
-                    "https://github.com/flamingo-stack/" + repo1Name,
+                    githubBaseUrl + repo1Name,
                     repo1Branch, 1
                 );
             final JGitEnvironmentRepository repo1 =
