@@ -17,6 +17,7 @@ Rules:
 3. If deployment.oss.enabled and ingress.localhost.enabled → skip "ngrok-operator"
 4. If deployment.oss.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
 5. If deployment.saas.enabled and ingress.localhost.enabled → skip "openframe-ui" "openframe-authorization-server" and "ngrok-operator"
+6. If deployment.saas.enabled and ingress.gcp.enabled → skip "ingress-nginx"
 */}}
 
 {{- define "app.skip" -}}
@@ -37,16 +38,20 @@ Rules:
 
 {{/* Extract deployment and ingress configuration */}}
 {{- $oss := $vals.deployment.oss.enabled | default false }}
-{{- $saas := $vals.deployment.saas.enabled | default false }}
 {{- $ossLocalhost := $vals.deployment.oss.ingress.localhost.enabled | default false }}
 {{- $ossNgrok := $vals.deployment.oss.ingress.ngrok.enabled | default false }}
+{{- $saas := $vals.deployment.saas.enabled | default false }}
+{{- $saasLocalhost := $vals.deployment.saas.ingress.localhost.enabled | default false }}
+{{- $saasGcp := $vals.deployment.saas.ingress.gcp.enabled | default false }}
 
 {{/* Apply skipping logic */}}
 {{- if and $oss $ossLocalhost (eq $name "ngrok-operator") }}
   true
 {{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
   true
-{{- else if and $saas (or (eq $name "openframe-ui") (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
+{{- else if and $saas $saasLocalhost (or (eq $name "openframe-ui") (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
+  true
+{{- else if and $saas $saasGcp (eq $name "ingress-nginx") }}
   true
 {{- else }}
   false
