@@ -2,6 +2,8 @@ server:
   port: 8888
 
 spring:
+  profiles:
+    include: composite
   application:
     name: config-server
   main:
@@ -14,13 +16,26 @@ spring:
       favor-parameter: true
       media-types:
         actuator: application/vnd.spring-boot.actuator.v3+json
+
   cloud:
     config:
       server:
-        git:
-          uri: https://github.com/flamingo-stack/${CONFIG_GIT_REPO:openframe-oss-tenant-cfg}
-          clone-on-start: true
-          default-label: ${CONFIG_GIT_BRANCH:main}
+        fail-on-composite-error: false
+        composite:
+          - type: git
+            uri: https://github.com/flamingo-stack/${CONFIG_GIT_REPO_0:openframe-oss-tenant-cfg}
+            default-label: ${CONFIG_GIT_BRANCH_0:main}
+            clone-on-start: true
+            username: ${GITHUB_ACTOR:}
+            password: ${GITHUB_TOKEN:}
+            order: 0
+          - type: git
+            uri: https://github.com/flamingo-stack/${CONFIG_GIT_REPO_1:}
+            default-label: ${CONFIG_GIT_BRANCH_1:main}
+            username: ${GITHUB_ACTOR:}
+            password: ${GITHUB_TOKEN:}
+            order: 1
+
 
 # Management server configuration
 management:
