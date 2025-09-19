@@ -70,9 +70,9 @@ public class DynamicRepositoryConfiguration {
             final ObservationRegistry observationRegistry) {
 
         final List<EnvironmentRepository> repositories = new ArrayList<>();
+        String username = "username";
 
         // Add second repository first (higher priority)
-        String username = "username";
         if (isValidRepoName(repo1Name)) {
             final MultipleJGitEnvironmentProperties props1 =
                 createRepoProperties(
