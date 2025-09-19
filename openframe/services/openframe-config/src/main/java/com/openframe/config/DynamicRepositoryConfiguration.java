@@ -42,13 +42,21 @@ public class DynamicRepositoryConfiguration {
     @Value("${CONFIG_GIT_BRANCH_1:main}")
     private String repo1Branch;
 
-    /** GitHub actor for authentication. */
-    @Value("${GITHUB_ACTOR:}")
-    private String githubActor;
+    /** GitHub actor for primary repository authentication. */
+    @Value("${GITHUB_ACTOR_0:${GITHUB_ACTOR:}}")
+    private String githubActor0;
 
-    /** GitHub token for authentication. */
-    @Value("${GITHUB_TOKEN:}")
-    private String githubToken;
+    /** GitHub token for primary repository authentication. */
+    @Value("${GITHUB_TOKEN_0:${GITHUB_TOKEN:}}")
+    private String githubToken0;
+
+    /** GitHub actor for secondary repository authentication. */
+    @Value("${GITHUB_ACTOR_1:${GITHUB_ACTOR:}}")
+    private String githubActor1;
+
+    /** GitHub token for secondary repository authentication. */
+    @Value("${GITHUB_TOKEN_1:${GITHUB_TOKEN:}}")
+    private String githubToken1;
 
     /** Base GitHub organization URL. */
     @Value("${GITHUB_BASE_URL:https://github.com/flamingo-stack/}")
@@ -74,7 +82,7 @@ public class DynamicRepositoryConfiguration {
             final MultipleJGitEnvironmentProperties props0 =
                 createRepoProperties(
                     githubBaseUrl + repo0Name,
-                    repo0Branch, 0
+                    repo0Branch, 0, githubActor0, githubToken0
                 );
             final JGitEnvironmentRepository repo0 =
                 new JGitEnvironmentRepository(
@@ -93,7 +101,7 @@ public class DynamicRepositoryConfiguration {
             final MultipleJGitEnvironmentProperties props1 =
                 createRepoProperties(
                     githubBaseUrl + repo1Name,
-                    repo1Branch, 1
+                    repo1Branch, 1, githubActor1, githubToken1
                 );
             final JGitEnvironmentRepository repo1 =
                 new JGitEnvironmentRepository(
@@ -136,10 +144,13 @@ public class DynamicRepositoryConfiguration {
      * @param uri the repository URI
      * @param branch the repository branch
      * @param order the repository order
+     * @param githubActor the GitHub actor for authentication
+     * @param githubToken the GitHub token for authentication
      * @return configured properties
      */
     private MultipleJGitEnvironmentProperties createRepoProperties(
-            final String uri, final String branch, final int order) {
+            final String uri, final String branch, final int order,
+            final String githubActor, final String githubToken) {
         final MultipleJGitEnvironmentProperties props =
                 new MultipleJGitEnvironmentProperties();
         props.setUri(uri);
@@ -147,12 +158,12 @@ public class DynamicRepositoryConfiguration {
         props.setCloneOnStart(true);
         props.setOrder(order);
 
-        if (!githubActor.isEmpty()) {
+        if (githubActor != null && !githubActor.isEmpty()) {
             props.setUsername(githubActor);
             log.debug("Set GitHub username for repository order {}: {}",
                     order, githubActor);
         }
-        if (!githubToken.isEmpty()) {
+        if (githubToken != null && !githubToken.isEmpty()) {
             props.setPassword(githubToken);
             log.debug("Set GitHub token for repository order {}", order);
         }
