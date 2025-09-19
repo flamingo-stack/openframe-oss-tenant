@@ -82,7 +82,7 @@ spec:
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/metrics"],
                   "debeziumConnector": {
-                    "name": "tactical-rmm-psql-connector-1",
+                    "name": "tactical-rmm-psql-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
                       "tasks.max": "1",
@@ -90,7 +90,9 @@ spec:
                       "database.port": "'"${POSTGRES_PORT}"'",
                       "database.user": "'"${POSTGRES_USER}"'",
                       "database.password": "'"${POSTGRES_PASSWORD}"'",
-                      "database.dbname": "'"${POSTGRES_DB}"'","topic.prefix": "trmm",
+                      "database.dbname": "'"${POSTGRES_DB}"'",
+                      "plugin.name": "pgoutput",
+                      "topic.prefix": "trmm",
                       "table.include.list": "public.logs_auditlog,public.agents_agenthistory",
                       "slot.name": "dbz_slot_trmm_combined",
                       "publication.name": "dbz_pub_trmm_combined",
