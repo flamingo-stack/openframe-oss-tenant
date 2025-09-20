@@ -63,10 +63,12 @@ impl AgentRegistrationService {
             .unwrap_or_else(|| String::new());
         let agent_version = self.device_data_fetcher.get_agent_version()
             .unwrap_or_else(|| String::new());
+        let organization_id = self.initial_configuration_service.get_org_id().unwrap_or_default();
 
         let request = AgentRegistrationRequest {
             hostname,
             agent_version,
+            organization_id,
         };
 
         Ok(request)
