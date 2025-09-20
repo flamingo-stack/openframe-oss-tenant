@@ -55,7 +55,7 @@ kubectl exec -it gateway-pod -- nslookup openframe-config-server
 kubectl rollout restart deployment/openframe-config -n microservices
 
 # Check config service health
-curl http://openframe-config:8888/actuator/health
+curl http://openframe-config.microservices.svc.cluster.local:8888/actuator/health
 
 # Verify JWT configuration
 kubectl get secret jwt-secret -o yaml

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '@/src/lib/api-client'
 import { GET_DEVICES_QUERY } from '../queries/devices-queries'
 
 interface DeviceTag {

@@ -24,37 +24,42 @@ func NewBranchConfigurator(modifier *templates.HelmValuesModifier) *BranchConfig
 
 // Configure asks user about Git branch configuration
 func (b *BranchConfigurator) Configure(config *types.ChartConfiguration) error {
-	// Get current branch from existing values
-	currentBranch := b.modifier.GetCurrentBranch(config.ExistingValues)
-	
-	pterm.Info.Printf("Git Branch Configuration (current: %s)", currentBranch)
-	
+	// Skip branch configuration for SaaS mode - it's handled in SaaS configuration
+	if config.DeploymentMode != nil && *config.DeploymentMode == types.DeploymentModeSaaS {
+		return nil
+	}
+
+	// For OSS deployment, configure OSS repository branch
+	currentBranch := b.modifier.GetCurrentOSSBranch(config.ExistingValues)
+
+	pterm.Info.Printf("OSS Repository Branch Configuration (current: %s)", currentBranch)
+
 	options := []string{
 		fmt.Sprintf("Keep '%s' branch", currentBranch),
 		"Specify custom branch",
 	}
-	
-	_, choice, err := sharedUI.SelectFromList("Manifests branch", options)
+
+	_, choice, err := sharedUI.SelectFromList("OSS repository branch", options)
 	if err != nil {
 		return fmt.Errorf("branch choice failed: %w", err)
 	}
-	
+
 	if strings.Contains(choice, "custom") {
 		branch, err := pterm.DefaultInteractiveTextInput.
 			WithDefaultValue(currentBranch).
 			WithMultiLine(false).
-			Show("Enter Git branch name")
-		
+			Show("Enter OSS Git branch name")
+
 		if err != nil {
 			return fmt.Errorf("branch input failed: %w", err)
 		}
-		
+
 		branch = strings.TrimSpace(branch)
 		if branch != currentBranch {
 			config.Branch = &branch
 			config.ModifiedSections = append(config.ModifiedSections, "branch")
 		}
 	}
-	
+
 	return nil
 }

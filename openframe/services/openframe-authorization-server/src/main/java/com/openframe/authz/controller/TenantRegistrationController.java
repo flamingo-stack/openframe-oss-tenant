@@ -2,7 +2,7 @@ package com.openframe.authz.controller;
 
 import com.openframe.authz.dto.TenantRegistrationRequest;
 import com.openframe.authz.service.TenantRegistrationService;
-import com.openframe.data.document.auth.Tenant;
+import com.openframe.data.document.tenant.Tenant;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;

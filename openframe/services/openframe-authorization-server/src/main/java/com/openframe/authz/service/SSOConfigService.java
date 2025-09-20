@@ -2,8 +2,9 @@ package com.openframe.authz.service;
 
 import com.openframe.core.service.EncryptionService;
 import com.openframe.data.document.sso.SSOConfig;
-import com.openframe.data.document.sso.SSOPerTenantConfig;
-import com.openframe.data.repository.sso.SSOPerTenantConfigRepository;
+
+import com.openframe.data.document.tenant.SSOPerTenantConfig;
+import com.openframe.data.repository.tenant.SSOPerTenantConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

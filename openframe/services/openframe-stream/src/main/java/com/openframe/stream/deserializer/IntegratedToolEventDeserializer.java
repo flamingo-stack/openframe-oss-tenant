@@ -2,9 +2,9 @@ package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openframe.data.mapper.EventTypeMapper;
-import com.openframe.data.model.debezium.CommonDebeziumMessage;
-import com.openframe.data.model.debezium.DebeziumMessage;
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
+import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
+import com.openframe.kafka.model.debezium.DebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
 import com.openframe.data.model.enums.IntegratedToolType;
 import com.openframe.data.model.enums.MessageType;
 import com.openframe.data.model.enums.UnifiedEventType;

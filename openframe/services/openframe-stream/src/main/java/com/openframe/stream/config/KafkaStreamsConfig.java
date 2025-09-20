@@ -26,10 +26,10 @@ import java.util.Map;
 @EnableKafkaStreams
 public class KafkaStreamsConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
+    @Value("${spring.oss-tenant.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Value("${spring.application.name:openframe-stream}")
+    @Value("${spring.application.name}")
     private String applicationName;
 
     private final ObjectMapper objectMapper;

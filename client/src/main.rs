@@ -1,10 +1,15 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use openframe::platform::permissions::{Capability, PermissionUtils};
 use openframe::{service::Service, Client};
+use openframe::models::InitialConfiguration;
+use openframe::platform::DirectoryManager;
+use openframe::services::InitialConfigurationService;
 use std::process;
+use std::process::Command;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
+use openframe::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -13,10 +18,25 @@ struct Cli {
     command: Option<Commands>,
 }
 
+#[derive(Args, Debug, Clone)]
+struct InstallArgs {
+    #[arg(long = "serverUrl")]
+    server_url: Option<String>,
+
+    #[arg(long = "initialKey")]
+    initial_key: Option<String>,
+
+    #[arg(long = "localMode", default_value_t = false)]
+    local_mode: bool,
+
+    #[arg(long = "orgId")]
+    org_id: Option<String>,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Install the OpenFrame client as a system service
-    Install,
+    Install(InstallArgs),
     /// Uninstall the OpenFrame client service
     Uninstall,
     /// Run the OpenFrame client directly (not as a service)
@@ -53,7 +73,7 @@ fn main() -> Result<()> {
     let rt = Runtime::new()?;
 
     match cli.command {
-        Some(Commands::Install) => {
+        Some(Commands::Install(args)) => {
             info!("Running install command");
             // Check for admin privileges - this is required for installation
             if !is_admin {
@@ -63,8 +83,15 @@ fn main() -> Result<()> {
                 process::exit(1);
             }
 
+            let params = InstallConfigParams {
+                server_url: args.server_url.clone(),
+                initial_key: args.initial_key.clone(),
+                org_id: args.org_id.clone(),
+                local_mode: args.local_mode.clone(),
+            };
+
             rt.block_on(async {
-                match Service::install().await {
+                match Service::install(params).await {
                     Ok(_) => {
                         info!("OpenFrame client service installed successfully");
                         process::exit(0);

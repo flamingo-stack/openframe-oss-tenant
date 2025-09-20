@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { useTokenStorage } from '../hooks/use-token-storage'
 import { useAuthStore } from '../stores/auth-store'
-import { apiClient } from 'lib/api-client'
+import { apiClient } from '@lib/api-client'
 
 /**
  * Hook for exchanging devTicket via API

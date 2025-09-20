@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -31,6 +31,12 @@
             <groupId>com.openframe</groupId>
             <artifactId>openframe-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-kafka</artifactId>
+            <version>${openframe.libs.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.openframe</groupId>
             <artifactId>openframe-jwt</artifactId>
@@ -86,6 +92,35 @@
             <version>2.2.0</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- Default profile: OSS libraries only -->
+        <profile>
+            <id>oss</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <profile.description>OSS profile with open source libraries</profile.description>
+            </properties>
+            <!-- OSS dependencies are already included above -->
+        </profile>
+        
+        <!-- SAAS K8s profile: includes private SAAS libraries -->
+        <profile>
+            <id>saas-k8s</id>
+            <properties>
+                <profile.description>SAAS K8s profile with private libraries</profile.description>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.openframe.saas</groupId>
+                    <artifactId>openframe-saas-kafka</artifactId>
+                    <version>${openframe.saas.libs.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>

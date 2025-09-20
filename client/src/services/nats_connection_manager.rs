@@ -3,7 +3,7 @@ use async_nats::Client;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::dev_tls_config_provider::DevTlsConfigProvider;
+use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use std::sync::Arc;
 use std::env;
 use log::error;
@@ -14,7 +14,7 @@ pub struct NatsConnectionManager {
     client: Arc<RwLock<Option<Arc<Client>>>>,
     nats_server_url: String,
     config_service: AgentConfigurationService,
-    tls_config_provider: DevTlsConfigProvider,
+    tls_config_provider: LocalTlsConfigProvider,
     initial_configuration_service: InitialConfigurationService,
     auth_service: AgentAuthService
 }
@@ -28,13 +28,14 @@ impl NatsConnectionManager {
         nats_server_url: String,
         config_service: AgentConfigurationService,
         initial_configuration_service: InitialConfigurationService,
-        auth_service: AgentAuthService
+        auth_service: AgentAuthService,
+        tls_config_provider: LocalTlsConfigProvider,
     ) -> Self {
         Self {
             client: Arc::new(RwLock::new(None)),
             nats_server_url: nats_server_url.to_string(),
             config_service,
-            tls_config_provider: DevTlsConfigProvider::new(),
+            tls_config_provider,
             initial_configuration_service,
             auth_service
         }

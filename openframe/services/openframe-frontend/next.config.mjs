@@ -16,10 +16,13 @@ const nextConfig = {
   // Disable SSR completely
   experimental: {
     esmExternals: true,
+    forceSwcTransforms: true,
   },
   // Force client-side rendering
   basePath: '',
   assetPrefix: '',
+  // Transpile the ui-kit package to handle TypeScript files
+  transpilePackages: ['@flamingo/ui-kit'],
 }
 
 export default nextConfig
