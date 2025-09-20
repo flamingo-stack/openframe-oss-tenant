@@ -9,7 +9,7 @@ registerJob:
 # Deployment configuration
 deployment:
   oss:
-    enabled: false    
+    enabled: true    
     # Ingress configuration - enable only ONE of the following
     ingress:
       localhost:
@@ -26,7 +26,7 @@ deployment:
       branch: main
       autoSync: true
   saas:
-    enabled: true
+    enabled: false
     # Ingress configuration for SaaS deployment
     ingress:
       localhost:

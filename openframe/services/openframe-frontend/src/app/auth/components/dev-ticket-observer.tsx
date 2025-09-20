@@ -19,7 +19,15 @@ export function DevTicketObserver() {
   const isEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
   
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  
+  // Use try-catch to handle static generation
+  let searchParams
+  try {
+    searchParams = useSearchParams()
+  } catch {
+    // During static generation, return null
+    return null
+  }
   const lastTicket = useRef<string | null>(null)
   
   // Access auth store for state information

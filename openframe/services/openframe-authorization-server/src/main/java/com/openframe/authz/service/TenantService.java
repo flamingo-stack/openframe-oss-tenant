@@ -1,10 +1,10 @@
 package com.openframe.authz.service;
 
-import com.openframe.data.document.auth.Tenant;
-import com.openframe.data.document.auth.TenantPlan;
-import com.openframe.data.document.auth.TenantStatus;
-import com.openframe.data.repository.auth.TenantRepository;
-import com.openframe.data.repository.auth.TenantRepository.DomainView;
+import com.openframe.data.document.tenant.Tenant;
+import com.openframe.data.document.tenant.TenantPlan;
+import com.openframe.data.document.tenant.TenantStatus;
+import com.openframe.data.repository.tenant.TenantRepository;
+import com.openframe.data.repository.tenant.TenantRepository.DomainView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

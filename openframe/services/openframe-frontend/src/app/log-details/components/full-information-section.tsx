@@ -1,41 +1,21 @@
 'use client'
 
 import React from 'react'
+import { InfoRow } from '@flamingo/ui-kit'
 
 // Fleet MDM icon component
 const FleetMDMIcon = () => (
   <div className="relative size-4">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1.33" y="1.33" width="3.34" height="3.34" fill="#888888"/>
-      <rect x="6.33" y="1.33" width="3.34" height="3.34" fill="#888888"/>
-      <rect x="11.33" y="1.33" width="3.34" height="3.34" fill="#888888"/>
-      <rect x="1.33" y="6.33" width="3.34" height="3.34" fill="#888888"/>
-      <rect x="6.33" y="6.33" width="3.34" height="3.34" fill="#888888"/>
-      <rect x="1.33" y="11.33" width="3.34" height="3.34" fill="#888888"/>
+      <rect x="1.33" y="1.33" width="3.34" height="3.34" className="fill-text-secondary"/>
+      <rect x="6.33" y="1.33" width="3.34" height="3.34" className="fill-text-secondary"/>
+      <rect x="11.33" y="1.33" width="3.34" height="3.34" className="fill-text-secondary"/>
+      <rect x="1.33" y="6.33" width="3.34" height="3.34" className="fill-text-secondary"/>
+      <rect x="6.33" y="6.33" width="3.34" height="3.34" className="fill-text-secondary"/>
+      <rect x="1.33" y="11.33" width="3.34" height="3.34" className="fill-text-secondary"/>
     </svg>
   </div>
 )
-
-interface InfoRowProps {
-  label: string
-  value: string
-  icon?: React.ReactNode
-}
-
-function InfoRow({ label, value, icon }: InfoRowProps) {
-  return (
-    <div className="flex gap-2 items-center w-full">
-      <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap">
-        {label}
-      </div>
-      <div className="flex-1 bg-[#3a3a3a] h-px min-h-px min-w-px" />
-      <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1">
-        {value}
-        {icon}
-      </div>
-    </div>
-  )
-}
 
 interface LogEntry {
   toolEventId: string
@@ -78,11 +58,11 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
   if (!logDetails) {
     return (
       <div className="flex flex-col gap-1 flex-1 min-w-0">
-        <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-[#888888] w-full">
+        <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
           Full Information
         </div>
-        <div className="bg-[#212121] border border-[#3a3a3a] rounded-[6px] flex flex-col gap-3 items-center justify-center p-8 w-full">
-          <div className="text-[#888888] text-center">
+        <div className="bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3 items-center justify-center p-8 w-full">
+          <div className="text-ods-text-secondary text-center">
             No log details available
           </div>
         </div>
@@ -93,12 +73,12 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
   return (
     <div className="flex flex-col gap-1 flex-1 min-w-0">
       {/* Section Title */}
-      <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-[#888888] w-full">
+      <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
         Full Information
       </div>
 
       {/* Info Card */}
-      <div className="bg-[#212121] border border-[#3a3a3a] rounded-[6px] flex flex-col gap-3 items-start p-4 w-full">
+      <div className="bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3 items-start p-4 w-full">
         <InfoRow label="toolEventId" value={logDetails.toolEventId} />
         <InfoRow label="ingestDay" value={logDetails.ingestDay} />
         <InfoRow 

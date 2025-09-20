@@ -2,6 +2,41 @@
  * GraphQL queries for devices
  */
 
+export const GET_DEVICE_FILTERS_QUERY = `
+  query GetDeviceFilters($filter: DeviceFilterInput) {
+    deviceFilters(filter: $filter) {
+      statuses {
+        value
+        count
+        __typename
+      }
+      deviceTypes {
+        value
+        count
+        __typename
+      }
+      osTypes {
+        value
+        count
+        __typename
+      }
+      organizationIds {
+        value
+        count
+        __typename
+      }
+      tags {
+        value
+        label
+        count
+        __typename
+      }
+      filteredCount
+      __typename
+    }
+  }
+`
+
 export const GET_DEVICES_QUERY = `
   query GetDevices($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String) {
     devices(filter: $filter, pagination: $pagination, search: $search) {

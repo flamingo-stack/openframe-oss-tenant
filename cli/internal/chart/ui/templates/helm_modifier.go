@@ -199,6 +199,16 @@ func (h *HelmValuesModifier) applySaaSConfig(values map[string]interface{}, saas
 	saasRepository["password"] = saasConfig.RepositoryPassword
 	saasRepository["branch"] = saasConfig.SaaSBranch
 
+	// Ensure SaaS config section exists
+	saasConfigSection, ok := saas["config"].(map[string]interface{})
+	if !ok {
+		saasConfigSection = make(map[string]interface{})
+		saas["config"] = saasConfigSection
+	}
+
+	// Set SaaS config repository password
+	saasConfigSection["password"] = saasConfig.ConfigRepositoryPassword
+
 	// Configure OSS repository settings
 	oss, ok := deployment["oss"].(map[string]interface{})
 	if !ok {

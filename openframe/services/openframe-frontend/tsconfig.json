@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
     "lib": [
       "dom",
       "dom.iterable",
-      "ES6"
+      "esnext"
     ],
     "allowJs": true,
+    "target": "ES6",
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -22,15 +22,22 @@
         "name": "next"
       }
     ],
-    "baseUrl": "./src",
     "paths": {
-      "@/*": ["/*"],
-      "@app/*": ["app/*"],
-      "@lib/*": ["lib/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@app/*": [
+        "./src/app/*"
+      ],
+      "@lib/*": [
+        "./src/lib/*"
+      ],
+      "@flamingo/ui-kit/*": [
+        "./ui-kit/src/*"
+      ]
     }
   },
   "include": [
-    "src",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
@@ -38,8 +45,6 @@
     "dist/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "multi-platform-hub",
-    "ui-kit"
+    "node_modules"
   ]
 }

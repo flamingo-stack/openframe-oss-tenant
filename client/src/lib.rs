@@ -30,6 +30,7 @@ pub mod service;
 pub mod service_adapter;
 pub mod system;
 pub mod updater;
+pub mod installation_initial_config_service;
 
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
@@ -47,6 +48,7 @@ use crate::services::initial_authentication_processor::InitialAuthenticationProc
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
+use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -206,11 +208,13 @@ impl Client {
 
         // Initialize NATS connection manager
         let ws_url = format!("wss://{}", initial_configuration_service.get_server_url()?);
+        let tls_config_provider = LocalTlsConfigProvider::new(initial_configuration_service.clone());
         let nats_connection_manager = NatsConnectionManager::new(
             ws_url,
             config_service.clone(),
             initial_configuration_service.clone(),
             auth_service.clone(),
+            tls_config_provider,
         );
         
         // Initialize tool agent file client

@@ -44,9 +44,10 @@ type NgrokConfig struct {
 
 // SaaSConfig holds SaaS-specific configuration
 type SaaSConfig struct {
-	RepositoryPassword string `json:"repositoryPassword"`
-	SaaSBranch         string `json:"saasBranch"`
-	OSSBranch          string `json:"ossBranch"`
+	RepositoryPassword       string `json:"repositoryPassword"`
+	ConfigRepositoryPassword string `json:"configRepositoryPassword"`
+	SaaSBranch              string `json:"saasBranch"`
+	OSSBranch               string `json:"ossBranch"`
 }
 
 // IngressConfig holds ingress configuration options
