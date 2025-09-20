@@ -23,12 +23,6 @@ jobs:
         run: |
           matrix_json='[
             {
-              "name": "openframe-core",
-              "type": ["java"],
-              "path": "./openframe/libs/openframe-core",
-              "artifact_name": "openframe-core"
-            },
-            {
               "name": "openframe-data",
               "type": ["java"],
               "path": "./openframe/libs/openframe-data",

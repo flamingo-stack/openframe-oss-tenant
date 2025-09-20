@@ -179,7 +179,6 @@ Technical reference for all OpenFrame components.
   - [Environment Variables](reference/configuration/environment.md)
   - [Secret Configuration](reference/configuration/secrets.md)
 - **Libraries**
-  - [OpenFrame Core](reference/libraries/openframe-core.md)
   - [OpenFrame Data](reference/libraries/openframe-data.md)
   - [OpenFrame JWT](reference/libraries/openframe-jwt.md)
   - [API Library](reference/libraries/api-library.md)

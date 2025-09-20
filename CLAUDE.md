@@ -66,7 +66,6 @@ OpenFrame is a distributed microservices platform with the following core archit
 - **client/** (Rust): Cross-platform system agent for monitoring and management
 
 ### Shared Libraries
-- **openframe-core**: Core models, utilities, and base configurations
 - **openframe-data**: Data access layer (MongoDB, Cassandra, Redis, Kafka)
 - **openframe-jwt**: JWT security implementation with cookie support
 - **api-library**: Common API services and DTOs
