@@ -4,9 +4,10 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { Button, RemoteControlIcon, ShellIcon } from '@flamingo/ui-kit'
-import { ScriptIcon } from '@flamingo/ui-kit'
+import { ScriptIcon, DetailPageContainer } from '@flamingo/ui-kit'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
+import { CardLoader, LoadError, NotFoundError } from '@flamingo/ui-kit'
 import { DeviceStatusBadge } from './device-status-badge'
 import { ScriptsModal } from './scripts-modal'
 import { 
@@ -57,95 +58,55 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   }
 
   if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 w-64 bg-[#3a3a3a] rounded mb-6" />
-          <div className="bg-[#212121] border border-[#3a3a3a] rounded-lg p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i}>
-                  <div className="h-4 w-20 bg-[#3a3a3a] rounded mb-2" />
-                  <div className="h-6 w-32 bg-[#3a3a3a] rounded" />
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-[#3a3a3a] pt-4">
-              <div className="h-4 w-64 bg-[#3a3a3a] rounded" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <CardLoader items={4} />
   }
 
   if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4">
-          <p className="text-red-400">Error loading device: {error}</p>
-        </div>
-      </div>
-    )
+    return <LoadError message={`Error loading device: ${error}`} />
   }
 
   if (!normalizedDevice) {
-    return (
-      <div className="p-6">
-        <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
-          <p className="text-yellow-400">Device not found</p>
-        </div>
-      </div>
-    )
+    return <NotFoundError message="Device not found" />
   }
 
+  const headerActions = (
+    <>
+      <Button
+        onClick={handleRunScript}
+        variant="primary"
+        className="bg-ods-accent hover:bg-ods-accent-hover text-ods-text-on-accent px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+        leftIcon={<ScriptIcon className="h-6 w-6" />}
+      >
+        Run Script
+      </Button>
+      <Button
+        onClick={handleRemoteShell}
+        variant="outline"
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+        leftIcon={<ShellIcon className="h-6 w-6" />}
+      >
+        Remote Shell
+      </Button>
+      <Button
+        onClick={handleRemoteControl}
+        variant="outline"
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+        leftIcon={<RemoteControlIcon className="h-6 w-6" />}
+      >
+        Remote Control
+      </Button>
+    </>
+  )
+
   return (
-    <div className="flex flex-col gap-6 w-full">
-      {/* Header Section */}
-      <div className="flex items-end justify-between gap-4 pl-6 pr-6">
-        <div className="flex flex-col gap-2 flex-1">
-          {/* Back Button */}
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 p-3 rounded-[6px] hover:bg-[#2a2a2a] transition-colors self-start"
-          >
-            <ChevronLeft className="h-6 w-6 text-[#888888]" />
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#888888]">
-              Back to Devices
-            </span>
-          </button>
-
-          {/* Device Name */}
-          <h1 className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] tracking-[-0.64px] text-[#fafafa]">
-            {normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'}
-          </h1>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 items-center">
-          <Button
-            onClick={handleRunScript}
-            leftIcon={<ScriptIcon size={24} />}
-            className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
-          >
-            Run Script
-          </Button>
-          <Button
-            onClick={handleRemoteControl}
-            leftIcon={<RemoteControlIcon size={24} />}
-            className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
-          >
-            Remote Control
-          </Button>
-          <Button
-            onClick={handleRemoteShell}
-            leftIcon={<ShellIcon size={24} />}
-            className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
-          >
-            Remote Shell
-          </Button>
-        </div>
-      </div>
+    <DetailPageContainer
+      title={normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'}
+      backButton={{
+        label: 'Back to Devices',
+        onClick: handleBack
+      }}
+      headerActions={headerActions}
+    >
 
       {/* Status Badge */}
       <div className="flex gap-2 items-center pl-6">
@@ -179,6 +140,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         device={normalizedDevice}
         onRunScripts={handleRunScripts}
       />
-    </div>
+    </DetailPageContainer>
   )
 }

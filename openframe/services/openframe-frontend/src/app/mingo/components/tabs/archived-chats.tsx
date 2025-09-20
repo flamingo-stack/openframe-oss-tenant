@@ -9,6 +9,7 @@ import {
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
+import { PageError } from '@flamingo/ui-kit/components/ui'
 import { useDialogs } from '../../hooks/use-dialogs'
 import { Dialog } from '../../types/dialog.types'
 import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table-columns'
@@ -51,25 +52,21 @@ export function ArchivedChats() {
   }, [])
 
   if (error) {
-    return (
-      <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4">
-        <p className="text-red-400">Error: {error}</p>
-      </div>
-    )
+    return <PageError message={error} />
   }
 
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Header for Archived Chats */}
       <div className="flex items-center justify-between">
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-[#fafafa]">
+        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
           Archived Chats
         </h1>
         <div className="flex items-center gap-2">
           <Button
             onClick={handleRefresh}
             leftIcon={<RefreshIcon size={20} />}
-            className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
           >
             Refresh
           </Button>

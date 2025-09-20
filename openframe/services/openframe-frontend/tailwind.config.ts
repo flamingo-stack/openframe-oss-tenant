@@ -2,14 +2,16 @@ import type { Config } from 'tailwindcss'
 
 const config: Config = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './hooks/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
     './ui-kit/src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
+      // Custom breakpoints for OpenFrame layout requirements
+      screens: {
+        'md': '860px',     // Custom breakpoint for 2-column layout
+        'xl': '1550px',    // Custom breakpoint for 3-column vendor grid
+      },
       // Extend with ui-kit design tokens
       fontFamily: {
         'body': ['var(--font-dm-sans)', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -17,8 +19,8 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
-  // Extend the ui-kit configuration
+  plugins: [require("tailwindcss-animate")],
+  // Use ui-kit configuration as preset - this provides all ODS colors
   presets: [require('./ui-kit/tailwind.config.js')],
 }
 

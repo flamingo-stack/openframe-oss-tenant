@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation"
 import { 
   Table, 
   SearchBar, 
-  Button
+  Button,
+  ListPageContainer,
+  PageError
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon, GridViewIcon, TableViewIcon } from "@flamingo/ui-kit/components/icons"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
@@ -32,7 +34,7 @@ export function DevicesView() {
   }, [])
 
   const handleDeviceDetails = useCallback((device: Device) => {
-    router.push(`/devices/details?id=${device.agent_id}`)
+    router.push(`/devices/details/${device.agent_id}`)
   }, [router])
 
   const rowActions = useMemo(
@@ -71,58 +73,56 @@ export function DevicesView() {
   }, [])
 
   if (error) {
-    return (
-      <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4">
-        <p className="text-red-400">Error: {error}</p>
-      </div>
-    )
+    return <PageError message={error} />
   }
 
-  return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-[#fafafa]">
-          Devices
-        </h1>
-        <div className="flex items-center gap-2">
-          {/* View Toggle */}
-          <div className="flex bg-[#212121] border border-[#3a3a3a] rounded-[6px] p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                "p-2 rounded transition-all duration-200",
-                viewMode === 'grid' 
-                  ? "bg-[#FFD951] text-[#212121]" 
-                  : "text-[#888888] hover:text-[#fafafa] hover:bg-[#2a2a2a]"
-              )}
-              aria-label="Grid view"
-            >
-              <GridViewIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={cn(
-                "p-2 rounded transition-all duration-200",
-                viewMode === 'table'
-                  ? "bg-[#FFD951] text-[#212121]"
-                  : "text-[#888888] hover:text-[#fafafa] hover:bg-[#2a2a2a]"
-              )}
-              aria-label="Table view"
-            >
-              <TableViewIcon className="w-5 h-5" />
-            </button>
-          </div>
-
-          <Button
-            onClick={handleRefresh}
-            leftIcon={<RefreshIcon size={20} />}
-            className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-          >
-            Refresh
-          </Button>
-        </div>
+  const viewToggle = (
+    <div className="flex items-center gap-2">
+      <div className="flex bg-ods-card border border-ods-border rounded-[6px] p-1">
+        <Button
+          onClick={() => setViewMode('grid')}
+          variant="ghost"
+          className={cn(
+            "p-2 rounded transition-all duration-200",
+            viewMode === 'grid' 
+              ? "bg-ods-accent-hover text-ods-text-on-accent" 
+              : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
+          )}
+          aria-label="Grid view"
+        >
+          <GridViewIcon className="w-5 h-5" />
+        </Button>
+        <Button
+          onClick={() => setViewMode('table')}
+          variant="ghost"
+          className={cn(
+            "p-2 rounded transition-all duration-200",
+            viewMode === 'table'
+              ? "bg-ods-accent-hover text-ods-text-on-accent"
+              : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
+          )}
+          aria-label="Table view"
+        >
+          <TableViewIcon className="w-5 h-5" />
+        </Button>
       </div>
+      
+      <Button
+        onClick={handleRefresh}
+        leftIcon={<RefreshIcon size={20} />}
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+      >
+        Refresh
+      </Button>
+    </div>
+  )
+
+  return (
+    <ListPageContainer
+      title="Devices"
+      headerActions={viewToggle}
+      padding="sm"
+    >
 
       {/* Search */}
       <SearchBar
@@ -158,6 +158,6 @@ export function DevicesView() {
           onDeviceDetails={handleDeviceDetails}
         />
       )}
-    </div>
+    </ListPageContainer>
   )
 }

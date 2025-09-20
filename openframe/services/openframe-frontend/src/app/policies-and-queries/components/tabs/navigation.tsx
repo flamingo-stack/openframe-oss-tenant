@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { Button } from '@flamingo/ui-kit'
 import { MessageCircle, Archive } from 'lucide-react'
 import { Policies } from './policies'
 import { Queries } from './queries'
@@ -45,13 +46,13 @@ export const getTabComponent = (tabId: string): React.ComponentType | null => {
 
 export function PoliciesAndQueriesTabNavigation({ activeTab, onTabChange }: PoliciesAndQueriesTabNavigationProps) {
   return (
-    <div className="bg-[#161616] relative w-full h-14 border-b border-[#3a3a3a]">
+    <div className="bg-ods-bg relative w-full h-14 border-b border-ods-border">
       <div className="flex gap-1 items-center justify-start h-full overflow-x-auto">
         {POLICIES_AND_QUERIES_TABS.map((tab) => {
           const isActive = activeTab === tab.id
           
           return (
-            <button
+            <Button variant="ghost"
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`
@@ -59,13 +60,13 @@ export function PoliciesAndQueriesTabNavigation({ activeTab, onTabChange }: Poli
                 transition-all duration-200
                 ${isActive 
                   ? 'bg-gradient-to-b from-[rgba(255,192,8,0)] to-[rgba(255,192,8,0.1)]' 
-                  : 'hover:bg-[#212121]/50'
+                  : 'hover:bg-ods-card/50'
                 }
               `}
             >
               {/* Icon */}
               <div className="relative">
-                <div className={`${isActive ? 'text-[#fafafa]' : 'text-[#888888]'} transition-colors`}>
+                <div className={`${isActive ? 'text-ods-text-primary' : 'text-ods-text-secondary'} transition-colors`}>
                   {tab.icon}
                 </div>
               </div>
@@ -73,21 +74,21 @@ export function PoliciesAndQueriesTabNavigation({ activeTab, onTabChange }: Poli
               {/* Tab label */}
               <span className={`
                 font-['DM_Sans'] font-medium text-[18px] leading-[24px] whitespace-nowrap
-                ${isActive ? 'text-[#fafafa]' : 'text-[#888888]'} transition-colors
+                ${isActive ? 'text-ods-text-primary' : 'text-ods-text-secondary'} transition-colors
               `}>
                 {tab.label}
               </span>
               
               {/* Active tab indicator */}
               {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#ffc008]" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-ods-accent" />
               )}
-            </button>
+            </Button>
           )
         })}
         
         {/* Gradient overlay */}
-        <div className="absolute right-0 top-0 w-10 h-14 bg-gradient-to-r from-transparent to-[#161616] pointer-events-none" />
+        <div className="absolute right-0 top-0 w-10 h-14 bg-gradient-to-r from-transparent to-bg-primary pointer-events-none" />
       </div>
     </div>
   )

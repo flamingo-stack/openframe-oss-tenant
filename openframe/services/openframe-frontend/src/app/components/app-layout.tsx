@@ -8,17 +8,11 @@ import { useAuthStore } from '../auth/stores/auth-store'
 import { useAuth } from '../auth/hooks/use-auth'
 import { getNavigationItems } from '../../lib/navigation-config'
 import { shouldShowNavigationSidebar, isAuthOnlyMode } from '../../lib/app-mode'
+import { ListLoader } from '@flamingo/ui-kit/components/ui'
 
 // Loading component for content area
 function ContentLoading() {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-ods-border border-t-ods-accent" />
-        <div className="text-sm text-ods-text-secondary">Loading...</div>
-      </div>
-    </div>
-  )
+  return <ListLoader />
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {

@@ -15,16 +15,16 @@ export function DeviceStatusBadge({ status, className }: DeviceStatusBadgeProps)
   const getStatusColors = (variant: string) => {
     switch (variant) {
       case 'success':
-        return 'bg-[#22c55e]/20 text-[#22c55e]'
+        return 'bg-success/20 text-success'
       case 'error':
-        return 'bg-[#ef4444]/20 text-[#ef4444]'
+        return 'bg-error/20 text-error'
       case 'warning':
-        return 'bg-[#f59e0b]/20 text-[#f59e0b]'
+        return 'bg-warning/20 text-warning'
       case 'critical':
-        return 'bg-[#dc2626]/20 text-[#dc2626]'
+        return 'bg-error/20 text-error'
       case 'info':
       default:
-        return 'bg-[#3b82f6]/20 text-[#3b82f6]'
+        return 'bg-info/20 text-info'
     }
   }
 

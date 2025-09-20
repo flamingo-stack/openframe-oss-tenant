@@ -1,14 +1,17 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { AppLayout } from '../components/app-layout'
+import { ContentPageContainer } from '@flamingo/ui-kit'
 import { MingoView } from './components/mingo-view'
 
 export default function Mingo() {
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <ContentPageContainer padding="none">
         <MingoView />
-      </div>
+      </ContentPageContainer>
     </AppLayout>
   )
 }

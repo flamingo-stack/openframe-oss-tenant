@@ -12,7 +12,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
   if (!device) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-[#888888] text-lg">No device data available</div>
+        <div className="text-ods-text-secondary text-lg">No device data available</div>
       </div>
     )
   }
@@ -93,7 +93,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
     <div className="">
       {/* Disk Info Section */}
       <div className="pt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-[#888888]">
+        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
           DISK INFO
         </h3>
         
@@ -137,7 +137,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
       {/* RAM Info Section */}
       <div className="pt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-[#888888]">
+        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
           RAM INFO
         </h3>
         
@@ -159,7 +159,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
       {/* CPU Section */}
       <div className="pt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-[#888888]">
+        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
           CPU
         </h3>
         

@@ -10,16 +10,16 @@ export function getPolicyTableRowActions(
   return [
     {
       label: '',
-      icon: <MoreHorizontal className="h-6 w-6 text-[#fafafa]" />,
+      icon: <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />,
       onClick: onMore,
       variant: 'outline',
-      className: 'bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] h-12 w-12'
+      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
     },
     {
       label: 'Details',
       onClick: onDetails,
       variant: 'outline',
-      className: "bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
+      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
     }
   ]
 }
@@ -32,7 +32,7 @@ export function getPolicyTableColumns(): TableColumn<Policy>[] {
       width: 'w-80',
       renderCell: (policy) => (
         <div className="flex flex-col justify-center w-80 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
             {policy.name}
           </span>
         </div>
@@ -59,7 +59,7 @@ export function getPolicyTableColumns(): TableColumn<Policy>[] {
       width: 'w-40',
       renderCell: (policy) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-[#888888] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
             {policy.category}
           </span>
         </div>
@@ -71,7 +71,7 @@ export function getPolicyTableColumns(): TableColumn<Policy>[] {
       width: 'w-32',
       renderCell: (policy) => (
         <div className="flex flex-col justify-center w-32 shrink-0">
-          <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-[#888888] truncate">
+          <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-ods-text-secondary truncate">
             {policy.enabled}
           </span>
         </div>

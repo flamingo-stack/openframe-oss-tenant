@@ -7,6 +7,8 @@ import {
   StatusTag, 
   SearchBar, 
   Button,
+  ListPageContainer,
+  PageError,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -87,10 +89,10 @@ export function LogsTable() {
       width: 'w-40',
       renderCell: (log) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {log.logId}
           </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
             {log.timestamp}
           </span>
         </div>
@@ -133,7 +135,7 @@ export function LogsTable() {
       renderCell: (log) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
           <div className="flex items-center gap-1">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
               {log.source.name}
             </span>
             {log.source.icon}
@@ -147,11 +149,11 @@ export function LogsTable() {
       width: 'w-40',
       renderCell: (log) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {log.device.name}
           </span>
           {log.device.organization && (
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888] truncate">
+            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
               {log.device.organization}
             </span>
           )}
@@ -165,11 +167,11 @@ export function LogsTable() {
       renderCell: (log) => (
         <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex flex-col justify-center">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
               {log.description.title}
             </span>
             {log.description.details && (
-              <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888] truncate">
+              <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
                 {log.description.details}
               </span>
             )}
@@ -182,12 +184,12 @@ export function LogsTable() {
   const rowActions: RowAction<UILogEntry>[] = useMemo(() => [
     {
       label: '',
-      icon: <MoreHorizontal className="h-6 w-6 text-[#fafafa]" />,
+      icon: <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />,
       onClick: (log) => {
         console.log('More clicked for log:', log.id)
       },
       variant: 'outline',
-      className: 'bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] h-12 w-12'
+      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
     },
     {
       label: 'Log Details',
@@ -199,7 +201,7 @@ export function LogsTable() {
         router.push(`/log-details?id=${log.id}&ingestDay=${ingestDay}&toolType=${toolType}&eventType=${eventType}&timestamp=${encodeURIComponent(timestamp || '')}`)
       },
       variant: 'outline',
-      className: "bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
+      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
     }
   ], [router])
 
@@ -265,28 +267,26 @@ export function LogsTable() {
   }, [])
 
   if (error) {
-    return (
-      <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4">
-        <p className="text-red-400">Error: {error}</p>
-      </div>
-    )
+    return <PageError message={error} />
   }
 
+  const headerActions = (
+    <Button
+      onClick={handleRefresh}
+      leftIcon={<RefreshIcon size={20} />}
+      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+    >
+      Refresh
+    </Button>
+  )
+
   return (
-    <div className="flex flex-col gap-4 bg-[#161616] p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-[#fafafa]">
-          Logs
-        </h1>
-        <Button
-          onClick={handleRefresh}
-          leftIcon={<RefreshIcon size={20} />}
-          className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-        >
-          Refresh
-        </Button>
-      </div>
+    <ListPageContainer
+      title="Logs"
+      headerActions={headerActions}
+      background="default"
+      padding="sm"
+    >
 
       {/* Search */}
       <SearchBar
@@ -319,6 +319,6 @@ export function LogsTable() {
         log={selectedLog}
         fetchLogDetails={fetchLogDetails}
       />
-    </div>
+    </ListPageContainer>
   )
 }

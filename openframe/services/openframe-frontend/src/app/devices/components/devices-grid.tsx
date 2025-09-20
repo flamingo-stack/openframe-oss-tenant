@@ -1,5 +1,5 @@
 import React from 'react'
-import { DeviceCard } from "@flamingo/ui-kit/components/ui"
+import { DeviceCard, ListLoader } from "@flamingo/ui-kit/components/ui"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig, getDeviceOperatingSystem } from '../utils/device-status'
 
@@ -27,17 +27,17 @@ export function DevicesGrid({
       {(filters.statuses?.length || filters.deviceTypes?.length || filters.osTypes?.length) ? (
         <div className="flex flex-wrap gap-2">
           {filters.statuses?.map(status => (
-            <span key={status} className="px-3 py-1 bg-[#212121] border border-[#3a3a3a] rounded-[6px] text-[14px] text-[#fafafa]">
+            <span key={status} className="px-3 py-1 bg-ods-card border border-ods-border rounded-[6px] text-[14px] text-ods-text-primary">
               Status: {status}
             </span>
           ))}
           {filters.deviceTypes?.map(type => (
-            <span key={type} className="px-3 py-1 bg-[#212121] border border-[#3a3a3a] rounded-[6px] text-[14px] text-[#fafafa]">
+            <span key={type} className="px-3 py-1 bg-ods-card border border-ods-border rounded-[6px] text-[14px] text-ods-text-primary">
               Type: {type}
             </span>
           ))}
           {filters.osTypes?.map(os => (
-            <span key={os} className="px-3 py-1 bg-[#212121] border border-[#3a3a3a] rounded-[6px] text-[14px] text-[#fafafa]">
+            <span key={os} className="px-3 py-1 bg-ods-card border border-ods-border rounded-[6px] text-[14px] text-ods-text-primary">
               OS: {os}
             </span>
           ))}
@@ -45,12 +45,10 @@ export function DevicesGrid({
       ) : null}
       
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-[#888888]">Loading devices...</div>
-        </div>
+        <ListLoader />
       ) : devices.length === 0 ? (
-        <div className="flex items-center justify-center h-64 bg-[#212121] border border-[#3a3a3a] rounded-[6px]">
-          <p className="text-[#888888]">No devices found. Try adjusting your search or filters.</p>
+        <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
+          <p className="text-ods-text-secondary">No devices found. Try adjusting your search or filters.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

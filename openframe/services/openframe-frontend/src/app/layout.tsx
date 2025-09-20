@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 import '@flamingo/ui-kit/styles'
 import { azeretMono, dmSans } from '@flamingo/ui-kit/fonts'
@@ -31,7 +32,13 @@ export default function RootLayout({
         <DevTicketObserver />
         <RouteGuard>
           <div className="relative flex min-h-screen flex-col">
-            {children}
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="text-ods-text-secondary">Loading...</div>
+              </div>
+            }>
+              {children}
+            </Suspense>
           </div>
         </RouteGuard>
         <Toaster />

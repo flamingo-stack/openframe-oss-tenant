@@ -54,10 +54,10 @@ interface DetailedLogData {
 
 const InfoField = ({ label, value }: { label: string; value: string | React.ReactNode }) => (
   <div className="flex flex-col gap-1">
-    <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888]">
+    <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
       {label}
     </span>
-    <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa]">
+    <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
       {value}
     </span>
   </div>
@@ -173,28 +173,28 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
       <div
         ref={modalRef}
         className={cn(
-          "fixed top-0 right-0 h-full w-full max-w-[480px] bg-[#212121] z-[1001] flex flex-col",
+          "fixed top-0 right-0 h-full w-full max-w-[480px] bg-ods-card z-[1001] flex flex-col",
           "transform transition-transform duration-300 ease-in-out",
-          "border-l border-[#3a3a3a]",
+          "border-l border-ods-border",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-[#212121] p-4 z-10">
+        <div className="sticky top-0 bg-ods-card p-4 z-10">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="font-['DM_Sans'] font-bold text-[20px] leading-[28px] text-[#fafafa] mb-2">
+              <h2 className="font-['DM_Sans'] font-bold text-[20px] leading-[28px] text-ods-text-primary mb-2">
                 {displayData.message || log.description.title}
               </h2>
               <div className="flex items-center gap-2">
                 <StatusTag label={displayData.severity || log.status.label} variant={log.status.variant} />
-                <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888]">
+                <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
                   {displayData.timestamp || log.timestamp}
                 </span>
                 {isLoadingDetails && (
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-[#888888] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-[12px] text-[#888888]">Loading details...</span>
+                    <div className="w-4 h-4 border-2 border-ods-border border-t-ods-accent rounded-full animate-spin" />
+                    <span className="text-[12px] text-ods-text-secondary">Loading details...</span>
                   </div>
                 )}
               </div>
@@ -203,9 +203,9 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="hover:bg-[#2a2a2a] h-8 w-8"
+              className="hover:bg-ods-bg-hover h-8 w-8"
             >
-              <X className="h-4 w-4 text-[#888888]" />
+              <X className="h-4 w-4 text-ods-text-secondary" />
             </Button>
           </div>
         </div>
@@ -215,13 +215,13 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
           <div className="flex-1 p-4 space-y-6 overflow-y-auto min-h-0">
             {/* Description */}
             {(displayData.message || log.description.details) && (
-              <p className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888]">
+              <p className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
                 {displayData.message || log.description.details}
               </p>
             )}
 
             {/* Log Details Section */}
-            <div className="p-4 bg-[#212121] border border-[#3a3a3a] rounded-[6px] space-y-4">
+            <div className="p-4 bg-ods-card border border-ods-border rounded-[6px] space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <InfoField label="Log ID" value={displayData.toolEventId || log.logId} />
                 <InfoField label="User" value={displayData.userId || log.user || "null"} />
@@ -242,13 +242,13 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
             </div>
 
             {/* Raw Data Section */}
-            <pre className="font-['Azeret_Mono'] text-[12px] leading-[16px] text-[#888888] p-4 bg-[#161616] rounded border border-[#3a3a3a] whitespace-pre-wrap break-words overflow-wrap-break-word">
+            <pre className="font-['Azeret_Mono'] text-[12px] leading-[16px] text-ods-text-secondary p-4 bg-ods-bg rounded border border-ods-border whitespace-pre-wrap break-words overflow-wrap-break-word">
               {rawDataDisplay}
             </pre>
           </div>
 
           {/* Device Card Section */}
-          <div className="p-4 bg-[#212121]">
+          <div className="p-4 bg-ods-card">
             <DeviceCard
               device={{
                 name: log.device.name || "Unknown Device",

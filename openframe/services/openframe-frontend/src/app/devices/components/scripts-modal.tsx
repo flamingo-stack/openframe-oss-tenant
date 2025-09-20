@@ -9,10 +9,11 @@ import { ScriptEntry } from '../../scripts/stores/scripts-store'
 import { Device } from '../types/device.types'
 import { tacticalApiClient } from '../../../lib/tactical-api-client'
 import { ScriptsConfirmationModal } from './scripts-confirmation-modal'
+import { ListLoader, PageError } from '@flamingo/ui-kit/components/ui'
 
 const scrollbarStyles = {
   scrollbarWidth: 'thin' as const,
-  scrollbarColor: '#888888 #3a3a3a'
+  scrollbarColor: 'var(--color-text-secondary) var(--color-border-default)'
 }
 
 interface ScriptsModalProps {
@@ -73,15 +74,15 @@ function CustomCheckbox({ active = true, state = 'default' }: CheckboxProps) {
   if (!active) {
     return (
       <div className="relative w-6 h-6">
-        <div className="absolute bg-[#212121] inset-0 rounded-[6px]">
-          <div className="absolute border-2 border-[#3a3a3a] inset-0 rounded-[6px]" />
+        <div className="absolute bg-ods-card inset-0 rounded-[6px]">
+          <div className="absolute border-2 border-ods-border inset-0 rounded-[6px]" />
         </div>
       </div>
     )
   }
   return (
     <div className="relative w-6 h-6">
-      <div className="absolute bg-[#ffc008] inset-0 rounded-[6px]" />
+      <div className="absolute bg-ods-accent inset-0 rounded-[6px]" />
       <div className="absolute inset-[29.17%] flex items-center justify-center">
         <Check className="h-3 w-3 text-black" />
       </div>
@@ -254,30 +255,31 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#212121] border border-[#3a3a3a] rounded-[6px] w-full max-w-[600px] h-[90vh] max-h-[800px] flex flex-col p-10 gap-6">
+      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[600px] h-[90vh] max-h-[800px] flex flex-col p-10 gap-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] text-[#fafafa] tracking-[-0.64px] leading-[40px]">
+          <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] text-ods-text-primary tracking-[-0.64px] leading-[40px]">
             Select Script
           </h2>
-          <button
+          <Button
             onClick={onClose}
-            className="text-[#888888] hover:text-white transition-colors"
+            variant="ghost"
+            className="text-ods-text-secondary hover:text-white transition-colors p-1"
           >
             <X className="h-6 w-6" />
-          </button>
+          </Button>
         </div>
 
         {/* Search Input */}
         <div className="flex flex-col gap-1">
-          <div className="bg-[#212121] border border-[#3a3a3a] rounded-[6px] flex items-center gap-2 p-3">
-            <Search className="h-6 w-6 text-[#888888]" />
+          <div className="bg-ods-card border border-ods-border rounded-[6px] flex items-center gap-2 p-3">
+            <Search className="h-6 w-6 text-ods-text-secondary" />
             <input
               type="text"
               placeholder="Search for Script"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent text-[#888888] font-['DM_Sans'] font-medium text-[18px] leading-[24px] flex-1 placeholder-[#888888] focus:outline-none"
+              className="bg-transparent text-ods-text-secondary font-['DM_Sans'] font-medium text-[18px] leading-[24px] flex-1 placeholder-ods-text-secondary focus:outline-none"
             />
           </div>
           
@@ -285,49 +287,52 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
           <div className="flex items-center gap-1">
             <div className="flex flex-wrap gap-1 flex-1">
               {categories.map(category => (
-                <button
+                <Button
                   key={category}
                   onClick={() => handleCategoryFilter(category)}
-                  className="bg-[#212121] border border-[#3a3a3a] rounded-[6px] px-2 py-2 h-8 flex items-center justify-center"
+                  variant="outline"
+                  className="bg-ods-card border border-ods-border rounded-[6px] px-2 py-2 h-8 flex items-center justify-center"
                 >
-                  <span className="font-['Azeret_Mono'] font-medium text-[14px] text-[#fafafa] tracking-[-0.28px] leading-[20px] uppercase">
+                  <span className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-primary tracking-[-0.28px] leading-[20px] uppercase">
                     {category}
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
-            <button
+            <Button
               onClick={handleShowAll}
-              className="font-['DM_Sans'] font-medium text-[14px] text-[#888888] underline leading-[20px] ml-2"
+              variant="link"
+              className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary underline leading-[20px] ml-2 p-0 h-auto"
             >
               Show All
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Script List */}
         <div className="flex flex-col gap-2 flex-1 min-h-0">
           <div className="flex justify-end">
-            <button
+            <Button
               onClick={handleSelectAll}
-              className="font-['DM_Sans'] font-medium text-[14px] text-[#ffc008] underline leading-[20px]"
+              variant="link"
+              className="font-['DM_Sans'] font-medium text-[14px] text-ods-accent underline leading-[20px] p-0 h-auto"
             >
               Select All
-            </button>
+            </Button>
           </div>
 
-          <div className="bg-[#212121] border border-[#3a3a3a] rounded-[6px] flex-1 min-h-0 overflow-hidden">
-            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[#3a3a3a] scrollbar-track-transparent">
+          <div className="bg-ods-card border border-ods-border rounded-[6px] flex-1 min-h-0 overflow-hidden">
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-ods-border scrollbar-track-transparent">
               {isLoading ? (
-                <div className="text-center text-[#888888] py-8">
-                  Loading scripts...
+                <div className="py-8">
+                  <ListLoader />
                 </div>
               ) : error ? (
-                <div className="text-center text-red-400 py-8">
-                  Error loading scripts: {error}
+                <div className="py-4">
+                  <PageError message={`Error loading scripts: ${error}`} />
                 </div>
               ) : filteredScripts.length === 0 ? (
-                <div className="text-center text-[#888888] py-8">
+                <div className="text-center text-ods-text-secondary py-8">
                   No scripts found matching your criteria
                 </div>
               ) : (
@@ -338,16 +343,16 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                       <div
                         key={script.id}
                         onClick={() => handleScriptToggle(script.id)}
-                        className={`flex gap-4 items-center justify-start px-4 py-3 cursor-pointer border-b border-[#3a3a3a] ${
-                          isSelected ? 'bg-[#7f6004]' : 'bg-[#161616]'
+                        className={`flex gap-4 items-center justify-start px-4 py-3 cursor-pointer border-b border-ods-border ${
+                          isSelected ? 'bg-accent-active' : 'bg-ods-bg'
                         } ${index === filteredScripts.length - 1 ? 'border-b-0' : ''}`}
                       >
                         <div className="flex flex-col flex-1">
-                          <div className="font-['DM_Sans'] font-medium text-[18px] text-[#fafafa] leading-[24px] mb-1">
+                          <div className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary leading-[24px] mb-1">
                             {script.name}
                           </div>
                           <div className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
-                            isSelected ? 'text-[#ffc008]' : 'text-[#888888]'
+                            isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'
                           }`}>
                             {script.description}
                           </div>
@@ -369,14 +374,14 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
         <div className="flex gap-6">
           <Button
             onClick={onClose}
-            className="flex-1 bg-[#212121] border border-[#3a3a3a] text-[#fafafa] font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-[#3a3a3a] transition-colors"
+            className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface transition-colors"
           >
             Cancel
           </Button>
           <Button
             onClick={handleRunScripts}
             disabled={selectedScripts.length === 0}
-            className="flex-1 bg-[#ffc008] text-[#212121] font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#ffd951] transition-colors"
+            className="flex-1 bg-ods-accent text-text-on-accent font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ods-accent-hover transition-colors"
           >
             Run Script{selectedScripts.length !== 1 ? 's' : ''}
           </Button>

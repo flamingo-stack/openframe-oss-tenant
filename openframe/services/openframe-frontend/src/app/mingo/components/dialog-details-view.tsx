@@ -12,6 +12,8 @@ import {
   Send,
   Monitor
 } from 'lucide-react'
+import { Button } from '@flamingo/ui-kit'
+import { DetailLoader } from '@flamingo/ui-kit/components/ui'
 import { mockDialogDetails, type DialogDetails, type DialogMessage } from '../data/mock-dialog-details'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
@@ -37,80 +39,80 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   }
 
   if (!dialog) {
-    return <div className="flex items-center justify-center h-full text-[#888888]">Loading...</div>
+    return <DetailLoader />
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return 'bg-[#2e461f] text-[#5ea62e]'
+        return 'bg-success text-success'
       case 'ON_HOLD':
-        return 'bg-yellow-900/20 text-yellow-400'
+        return 'bg-warning/20 text-warning'
       case 'TECH_REQUIRED':
-        return 'bg-red-900/20 text-red-400'
+        return 'bg-error/20 text-error'
       case 'RESOLVED':
-        return 'bg-green-900/20 text-green-400'
+        return 'bg-success/20 text-success'
       default:
-        return 'bg-gray-900/20 text-gray-400'
+        return 'bg-ods-bg-surface/20 text-ods-text-muted'
     }
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#161616]">
+    <div className="flex flex-col h-full bg-ods-bg">
       {/* Header */}
-      <div className="bg-[#161616] px-6 pt-6 pb-0">
+      <div className="bg-ods-bg px-6 pt-6 pb-0">
         <div className="flex gap-4 items-end justify-between">
           {/* Title Block */}
           <div className="flex-1 flex flex-col gap-2">
-            <button
+            <Button variant="ghost"
               onClick={() => router.push('/mingo')}
-              className="inline-flex items-center gap-2 text-[#888888] hover:text-[#fafafa] transition-colors py-3"
+              className="inline-flex items-center gap-2 text-ods-text-secondary hover:text-ods-text-primary transition-colors py-3"
             >
               <ChevronLeft className="h-6 w-6" />
               <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px]">
                 Back to Chats
               </span>
-            </button>
-            <h1 className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] text-[#fafafa] tracking-[-0.64px]">
+            </Button>
+            <h1 className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] text-ods-text-primary tracking-[-0.64px]">
               {dialog.topic}
             </h1>
-            <p className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#888888]">
+            <p className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-secondary">
               2 hours left
             </p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-4 items-center">
-            <button className="bg-[#212121] border border-[#3a3a3a] rounded-md p-3 hover:bg-[#2a2a2a] transition-colors">
-              <MoreHorizontal className="h-6 w-6 text-[#fafafa]" />
-            </button>
-            <button className="bg-[#212121] border border-[#3a3a3a] rounded-md px-4 py-3 flex items-center gap-2 hover:bg-[#2a2a2a] transition-colors">
-              <Clock className="h-6 w-6 text-[#fafafa]" />
-              <span className="font-['DM_Sans'] font-bold text-[18px] text-[#fafafa] tracking-[-0.36px]">
+            <Button variant="ghost" className="bg-ods-card border border-ods-border rounded-md p-3 hover:bg-ods-bg-hover transition-colors">
+              <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />
+            </Button>
+            <Button variant="ghost" className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors">
+              <Clock className="h-6 w-6 text-ods-text-primary" />
+              <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
                 Put On Hold
               </span>
-            </button>
-            <button className="bg-[#212121] border border-[#3a3a3a] rounded-md px-4 py-3 flex items-center gap-2 hover:bg-[#2a2a2a] transition-colors">
-              <CheckCircle className="h-6 w-6 text-[#fafafa]" />
-              <span className="font-['DM_Sans'] font-bold text-[18px] text-[#fafafa] tracking-[-0.36px]">
+            </Button>
+            <Button variant="ghost" className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors">
+              <CheckCircle className="h-6 w-6 text-ods-text-primary" />
+              <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
                 Resolve
               </span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Info Bar */}
-        <div className="mt-6 bg-[#212121] border border-[#3a3a3a] rounded-md p-4 flex items-center gap-4">
+        <div className="mt-6 bg-ods-card border border-ods-border rounded-md p-4 flex items-center gap-4">
           {/* Organization */}
           <div className="flex items-center gap-4 flex-1">
-            <div className="w-8 h-8 bg-[#3a3a3a] rounded flex items-center justify-center">
-              <span className="text-[#888888] text-sm">P</span>
+            <div className="w-8 h-8 bg-ods-bg-surface rounded flex items-center justify-center">
+              <span className="text-ods-text-secondary text-sm">P</span>
             </div>
             <div className="flex flex-col">
-              <span className="font-['DM_Sans'] font-medium text-[18px] text-[#fafafa]">
+              <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
                 {dialog.organization.name}
               </span>
-              <span className="font-['DM_Sans'] font-medium text-[14px] text-[#888888]">
+              <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
                 {dialog.organization.type}
               </span>
             </div>
@@ -120,12 +122,12 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
           <div className="flex items-center gap-4 flex-1">
             <div className="flex flex-col">
               <div className="flex items-center gap-1">
-                <span className="font-['DM_Sans'] font-medium text-[18px] text-[#fafafa]">
+                <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
                   {dialog.device.name}
                 </span>
-                <Monitor className="h-4 w-4 text-[#888888]" />
+                <Monitor className="h-4 w-4 text-ods-text-secondary" />
               </div>
-              <span className="font-['DM_Sans'] font-medium text-[14px] text-[#888888]">
+              <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
                 Device
               </span>
             </div>
@@ -133,10 +135,10 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
           {/* SLA Countdown */}
           <div className="flex flex-col flex-1">
-            <span className="font-['DM_Sans'] font-medium text-[18px] text-[#f36666]">
+            <span className="font-['DM_Sans'] font-medium text-[18px] text-error">
               {dialog.slaCountdown}
             </span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-[#888888]">
+            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
               SLA Countdown
             </span>
           </div>
@@ -156,25 +158,25 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       <div className="flex-1 flex gap-6 p-6 overflow-hidden">
         {/* Client Chat */}
         <div className="flex-1 flex flex-col gap-1">
-          <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-[#888888] uppercase tracking-[-0.28px] mb-2">
+          <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px] mb-2">
             Client Chat
           </h2>
-          <div className="flex-1 bg-[#161616] border border-[#3a3a3a] rounded-md flex flex-col">
+          <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col">
             {/* Messages */}
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
               {dialog.clientMessages.map((message) => (
                 <div key={message.id} className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
                     <span className={`font-['Azeret_Mono'] font-medium text-[18px] ${
-                      message.sender === 'fae' ? 'text-[#f357bb]' : 'text-[#888888]'
+                      message.sender === 'fae' ? 'text-ods-flamingo-pink-base' : 'text-ods-text-secondary'
                     }`}>
                       {message.senderName}:
                     </span>
-                    <span className="font-['DM_Sans'] font-medium text-[14px] text-[#888888]">
+                    <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
                       {message.timestamp}
                     </span>
                   </div>
-                  <p className="font-['DM_Sans'] font-medium text-[18px] text-[#fafafa]">
+                  <p className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
                     {message.content}
                   </p>
                 </div>
@@ -184,21 +186,21 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
             {/* Pause Fae Button */}
             {!isPaused && (
               <div className="absolute top-4 right-4">
-                <button
+                <Button variant="ghost"
                   onClick={handlePauseFae}
-                  className="bg-[#212121] border border-[#3a3a3a] rounded-md px-4 py-3 flex items-center gap-2 hover:bg-[#2a2a2a] transition-colors"
+                  className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors"
                 >
-                  <Pause className="h-6 w-6 text-[#fafafa]" />
-                  <span className="font-['DM_Sans'] font-bold text-[18px] text-[#fafafa] tracking-[-0.36px]">
+                  <Pause className="h-6 w-6 text-ods-text-primary" />
+                  <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
                     Pause Fae
                   </span>
-                </button>
+                </Button>
               </div>
             )}
 
             {/* Input */}
             <div className="p-3">
-              <div className="bg-[#161616] border border-[#3a3a3a] rounded-md flex items-center px-3 py-3 gap-2">
+              <div className="bg-ods-bg border border-ods-border rounded-md flex items-center px-3 py-3 gap-2">
                 <input
                   type="text"
                   value={messageInput}
@@ -206,15 +208,15 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder={isPaused ? "Type your message..." : "You should pause Fae to Start Direct Chat"}
                   disabled={!isPaused}
-                  className="flex-1 bg-transparent font-['DM_Sans'] font-medium text-[18px] text-[#fafafa] placeholder:text-[#3a3a3a] focus:outline-none disabled:cursor-not-allowed"
+                  className="flex-1 bg-transparent font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary placeholder:text-ods-text-disabled focus:outline-none disabled:cursor-not-allowed"
                 />
-                <button 
+                <Button variant="ghost" 
                   onClick={handleSendMessage}
                   disabled={!isPaused || !messageInput.trim()}
-                  className="text-[#888888] hover:text-[#fafafa] disabled:text-[#3a3a3a] disabled:cursor-not-allowed transition-colors"
+                  className="text-ods-text-secondary hover:text-ods-text-primary disabled:text-ods-text-disabled disabled:cursor-not-allowed transition-colors"
                 >
                   <Send className="h-6 w-6" />
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -222,31 +224,31 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
         {/* Technician Chat */}
         <div className="flex-1 flex flex-col gap-1">
-          <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-[#888888] uppercase tracking-[-0.28px] mb-2">
+          <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px] mb-2">
             Technician Chat
           </h2>
-          <div className="flex-1 bg-[#212121] border border-[#3a3a3a] rounded-md flex flex-col items-center justify-center p-8">
+          <div className="flex-1 bg-ods-card border border-ods-border rounded-md flex flex-col items-center justify-center p-8">
             {/* Empty State */}
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="relative w-12 h-12">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <MessageCircle className="h-8 w-8 text-[#888888]" />
+                  <MessageCircle className="h-8 w-8 text-ods-text-secondary" />
                 </div>
               </div>
-              <p className="font-['DM_Sans'] font-medium text-[14px] text-[#888888] max-w-xs">
+              <p className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary max-w-xs">
                 This chat has not yet required technician involved.
                 <br />
                 You can still pause Fae and start a direct chat with the user.
               </p>
-              <button
+              <Button variant="ghost"
                 onClick={handlePauseFae}
-                className="bg-[#212121] border border-[#3a3a3a] rounded-md px-4 py-3 flex items-center gap-2 hover:bg-[#2a2a2a] transition-colors"
+                className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors"
               >
-                <MessageCircle className="h-6 w-6 text-[#fafafa]" />
-                <span className="font-['DM_Sans'] font-bold text-[18px] text-[#fafafa] tracking-[-0.36px]">
+                <MessageCircle className="h-6 w-6 text-ods-text-primary" />
+                <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
                   Pause Fae and Start Direct Chat
                 </span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>

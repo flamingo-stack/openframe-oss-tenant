@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useAuthStore } from '@app/auth/stores/auth-store'
+import { ContentPageContainer } from '@flamingo/ui-kit/components/ui'
 import { getDefaultRedirectPath, isAuthOnlyMode } from '../lib/app-mode'
 
 export default function HomePage() {
@@ -23,15 +24,11 @@ export default function HomePage() {
   }, [router, isAuthenticated])
 
   return (
-    <div className="min-h-screen bg-ods-bg flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-ods-text-primary mb-4">
-          Loading...
-        </h1>
-        <p className="text-ods-text-secondary">
-          Please wait while we prepare your experience
-        </p>
-      </div>
-    </div>
+    <ContentPageContainer
+      title="Welcome"
+      subtitle="Loading your dashboard..."
+    >
+      <div />
+    </ContentPageContainer>
   )
 }

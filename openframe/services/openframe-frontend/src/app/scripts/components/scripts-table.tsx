@@ -6,6 +6,8 @@ import {
   Table,
   SearchBar, 
   Button,
+  ListPageContainer,
+  PageError,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -60,10 +62,10 @@ export function ScriptsTable() {
       width: 'w-80',
       renderCell: (script) => (
         <div className="flex flex-col justify-center w-80 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {script.name}
           </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
             {script.description}
           </span>
         </div>
@@ -81,7 +83,7 @@ export function ScriptsTable() {
       ],
       renderCell: (script) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {script.shellType}
           </span>
         </div>
@@ -98,7 +100,7 @@ export function ScriptsTable() {
       ],
       renderCell: (script) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {script.addedBy}
           </span>
         </div>
@@ -110,7 +112,7 @@ export function ScriptsTable() {
       width: 'w-40',
       renderCell: (script) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {script.category}
           </span>
         </div>
@@ -122,7 +124,7 @@ export function ScriptsTable() {
       width: 'flex-1 min-w-0',
       renderCell: (script) => (
         <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {script.timeout}
           </span>
         </div>
@@ -133,20 +135,20 @@ export function ScriptsTable() {
   const rowActions: RowAction<UIScriptEntry>[] = useMemo(() => [
     {
       label: '',
-      icon: <MoreHorizontal className="h-6 w-6 text-[#fafafa]" />,
+      icon: <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />,
       onClick: (script) => {
         console.log('More clicked for script:', script.id)
       },
       variant: 'outline',
-      className: 'bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] h-12 w-12'
+      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
     },
     {
       label: 'Details',
       onClick: (script) => {
-        router.push(`/scripts/details?id=${script.id}`)
+        router.push(`/scripts/details/${script.id}`)
       },
       variant: 'outline',
-      className: "bg-[#212121] border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
+      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
     }
   ], [router])
 
@@ -191,7 +193,7 @@ export function ScriptsTable() {
   }, [refreshScripts])
 
   const handleNewScript = () => {
-    router.push('/scripts/edit')
+    router.push('/scripts/edit/new')
   }
 
   // const handleSaveScript = () => {
@@ -217,37 +219,37 @@ export function ScriptsTable() {
   }, [])
 
   if (error) {
-    return (
-      <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4">
-        <p className="text-red-400">Error: {error}</p>
-      </div>
-    )
+    return <PageError message={error} />
   }
 
+  const headerActions = (
+    <>
+      <Button
+        onClick={handleNewScript}
+        variant="primary"
+        className="flex items-center gap-2 bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover font-['DM_Sans'] font-bold px-4 py-2.5 rounded-[6px] text-[16px] transition-colors"
+        leftIcon={<Plus size={20} />}
+      >
+        New Script
+      </Button>
+      <Button
+        onClick={handleRefresh}
+        variant="outline"
+        className="flex items-center gap-2 bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] transition-colors"
+        leftIcon={<RefreshIcon size={20} />}
+      >
+        Refresh
+      </Button>
+    </>
+  )
+
   return (
-    <div className="flex flex-col gap-4 bg-[#161616] p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-[#fafafa]">
-          Scripts
-        </h1>
-        <div className="flex gap-3">
-          <button
-            onClick={handleNewScript}
-            className="flex items-center gap-2 bg-[#ffc008] text-[#212121] hover:bg-[#ffd951] font-['DM_Sans'] font-bold px-4 py-2.5 rounded-[6px] text-[16px] transition-colors"
-          >
-            <Plus size={20} />
-            New Script
-          </button>
-          <button
-            onClick={handleRefresh}
-            className="flex items-center gap-2 bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] transition-colors"
-          >
-            <RefreshIcon size={20} />
-            Refresh
-          </button>
-        </div>
-      </div>
+    <ListPageContainer
+      title="Scripts"
+      headerActions={headerActions}
+      background="default"
+      padding="sm"
+    >
 
       {/* Search */}
       <SearchBar
@@ -280,7 +282,7 @@ export function ScriptsTable() {
         onSave={handleSaveScript}
         scriptData={null}
         isEditMode={false}
-      /> */}
-    </div>
+      /> */      }
+    </ListPageContainer>
   )
 }
