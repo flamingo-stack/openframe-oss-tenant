@@ -103,7 +103,7 @@ spec:
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/metrics"],
                   "debeziumConnector": {
-                    "name": "meshcentral-mongo-connector-1",
+                    "name": "meshcentral-mongo-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
                       "mongodb.connection.string": "mongodb://'"${MONGO_INITDB_ROOT_USERNAME}"':'"${MONGO_INITDB_ROOT_PASSWORD}"'@'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0&authSource=admin",

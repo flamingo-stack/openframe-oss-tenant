@@ -3,6 +3,7 @@ package com.openframe.stream.deserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.enums.MessageType;
+import com.openframe.stream.mapper.constants.SourceEventTypes;
 import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,10 @@ public class TrmmAuditEventDeserializer extends IntegratedToolEventDeserializer 
     private static final String FIELD_ENTRY_TIME = "entry_time";
 
     public TrmmAuditEventDeserializer(ObjectMapper objectMapper) {
-        super(objectMapper, List.of(), List.of());
+        super(objectMapper,
+                List.of(),
+                List.of(SourceEventTypes.Tactical.AGENT_EXECUTE_SCRIPT, SourceEventTypes.Tactical.AGENT_EXECUTE_COMMAND)
+        );
     }
 
     @Override
