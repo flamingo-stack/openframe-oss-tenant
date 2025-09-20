@@ -25,7 +25,7 @@
         </dependency>
         <!-- OpenFrame Dependencies -->
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-core</artifactId>
         </dependency>
         <dependency>
