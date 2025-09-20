@@ -7,6 +7,8 @@ pub struct InitialConfiguration {
     pub local_mode: bool,
     #[serde(default)]
     pub org_id: String,
+    #[serde(default)]
+    pub local_ca_cert_path: String,
 }
 
 impl Default for InitialConfiguration {
@@ -16,6 +18,7 @@ impl Default for InitialConfiguration {
             initial_key: String::new(),
             local_mode: false,
             org_id: String::new(),
+            local_ca_cert_path: String::new(),
         }
     }
 }
