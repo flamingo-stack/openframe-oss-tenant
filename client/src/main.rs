@@ -20,19 +20,15 @@ struct Cli {
 
 #[derive(Args, Debug, Clone)]
 struct InstallArgs {
-    /// Server URL/host, e.g. api.openframe.local
     #[arg(long = "serverUrl")]
     server_url: Option<String>,
 
-    /// Initial registration key
     #[arg(long = "initialKey")]
     initial_key: Option<String>,
 
-    /// Enable local/development mode (disables TLS verification)
     #[arg(long = "localMode", default_value_t = false)]
     local_mode: bool,
 
-    /// Organization ID
     #[arg(long = "orgId")]
     org_id: Option<String>,
 }
