@@ -1,28 +1,22 @@
 use anyhow::{anyhow, Context, Result};
-use std::env;
 use std::path::PathBuf;
 use std::fs;
 use std::io::Cursor;
 use tracing::info;
 use async_nats::rustls::{ClientConfig, RootCertStore};
+use crate::services::InitialConfigurationService;
 
 #[derive(Clone)]
-pub struct DevTlsConfigProvider;
+pub struct LocalTlsConfigProvider {
+    initial_configuration_service: InitialConfigurationService,
+}
 
-impl DevTlsConfigProvider {
-    pub fn new() -> Self {
-        Self
+impl LocalTlsConfigProvider {
+    pub fn new(initial_configuration_service: InitialConfigurationService) -> Self {
+        Self { initial_configuration_service }
     }
 
     pub fn create_tls_config(&self) -> Result<ClientConfig> {
-        // Check if we're in development mode
-        if env::var("OPENFRAME_DEV_MODE").is_err() {
-            return Err(anyhow!(
-                "DevTlsConfigProvider should only be used in development mode. \
-                 Set OPENFRAME_DEV_MODE environment variable."
-            ));
-        }
-
         info!("Creating development TLS configuration with mkcert certificate...");
 
         // Get certificate path
@@ -51,21 +45,27 @@ impl DevTlsConfigProvider {
     }
 
     fn get_certificate_path(&self) -> Result<String> {
-        info!("Looking for mkcert certificate in development mode...");
-        
-        // Only check standard macOS mkcert path
-        if let Ok(home) = env::var("HOME") {
-            let cert_path = PathBuf::from(home).join("Library/Application Support/mkcert/rootCA.pem");
-            if cert_path.exists() {
-                let path_str = cert_path.to_string_lossy().to_string();
-                info!("Found mkcert certificate at: {}", path_str);
-                return Ok(path_str);
-            }
+        info!("Resolving dev CA path from initial configuration...");
+
+        let saved_path = self.initial_configuration_service
+            .get_local_ca_cert_path()
+            .context("Failed to read local CA cert path from initial configuration")?;
+
+        if saved_path.is_empty() {
+            return Err(anyhow!("local_ca_cert_path is not set in initial configuration"));
         }
 
-        Err(anyhow!(
-            "mkcert certificate not found at ~/Library/Application Support/mkcert/rootCA.pem\n\
-             Please install mkcert and generate certificates with 'mkcert -install'"
-        ))
+        let path = PathBuf::from(&saved_path);
+        if !path.exists() {
+            return Err(anyhow!(
+                "local_ca_cert_path points to non-existent file: {}",
+                saved_path
+            ));
+        }
+
+        info!("Using dev CA path from initial configuration: {}", saved_path);
+        Ok(saved_path)
     }
 }
+
+

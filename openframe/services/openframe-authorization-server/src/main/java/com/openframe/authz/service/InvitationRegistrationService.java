@@ -5,7 +5,7 @@ import com.openframe.authz.exception.UserActiveInAnotherTenantException;
 import com.openframe.data.document.auth.AuthInvitation;
 import com.openframe.data.document.auth.AuthUser;
 import com.openframe.data.repository.auth.AuthInvitationRepository;
-import com.openframe.data.repository.auth.TenantRepository;
+import com.openframe.data.repository.tenant.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
