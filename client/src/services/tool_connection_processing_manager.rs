@@ -166,7 +166,8 @@ impl ToolConnectionProcessingManager {
 
                                 info!(tool_id = %tool.tool_agent_id, "Tool connection message published successfully");
                                 // Stop processing after successful publish
-                                break;
+                                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                continue;
                             }
                             Err(e) => {
                                 error!("Failed to get machine_id: {:#}", e);

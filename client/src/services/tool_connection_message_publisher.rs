@@ -20,7 +20,7 @@ impl ToolConnectionMessagePublisher {
     }
 
     fn build_topic_name(machine_id: String) -> String {
-        format!("machine.{}.toolconnection", machine_id)
+        format!("machine.{}.tool-connection", machine_id)
     }
 
     fn build_message(tool_agent_id: String) -> ToolConnectionMessage {

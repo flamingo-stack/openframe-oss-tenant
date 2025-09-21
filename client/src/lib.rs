@@ -297,7 +297,7 @@ impl Client {
         self.tool_installation_message_listener.start().await?;
 
         // Start tool run manager
-        self.tool_run_manager.run().await?;
+        // self.tool_run_manager.run().await?;
 
         // Start tool connection processing manager
         self.tool_connection_processing_manager.run().await?;

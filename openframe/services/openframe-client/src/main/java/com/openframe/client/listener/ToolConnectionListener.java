@@ -45,7 +45,7 @@ public class ToolConnectionListener {
     }
 
     private String getMachineId(Message<String> message) {
-        String topicName = message.getHeaders().get("NATS_RECEIVED_TOPIC", String.class);
+        String topicName = message.getHeaders().get("subject", String.class);
         if (isEmpty(topicName)) {
             throw new IllegalStateException("Tool connection topic name is empty");
         }
