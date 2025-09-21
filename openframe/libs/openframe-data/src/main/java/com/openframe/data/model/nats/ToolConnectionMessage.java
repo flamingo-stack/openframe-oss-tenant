@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class ToolConnectionMessage {
 
-    private String toolId;
+    private String toolType;
     private String agentToolId;
 
 }

@@ -19,6 +19,7 @@ impl Default for ToolStatus {
 pub struct InstalledTool {
     pub tool_agent_id: String,
     pub tool_id: String,
+    pub tool_type: String,
     pub version: String,
     pub run_command_args: Vec<String>,
     pub tool_agent_id_command_args: Vec<String>,
@@ -30,6 +31,7 @@ impl Default for InstalledTool {
         Self {
             tool_agent_id: String::new(),
             tool_id: String::new(),
+            tool_type: String::new(),
             version: String::new(),
             run_command_args: Vec::new(),
             status: ToolStatus::default(),

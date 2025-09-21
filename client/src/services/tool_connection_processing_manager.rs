@@ -157,7 +157,7 @@ impl ToolConnectionProcessingManager {
                         match config_service.get_machine_id().await {
                             Ok(machine_id) => {
                                 if let Err(e) = tool_connection_publisher
-                                    .publish(machine_id, tool.tool_id.clone(), agent_tool_id.clone())
+                                    .publish(machine_id, agent_tool_id.clone(), tool.tool_type.clone())
                                     .await
                                 {
                                     error!(tool_id = %tool.tool_id, error = %e, "Failed to publish tool connection message");

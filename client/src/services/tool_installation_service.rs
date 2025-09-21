@@ -193,6 +193,7 @@ impl ToolInstallationService {
         let installed_tool = InstalledTool {
             tool_agent_id: tool_agent_id.clone(),
             tool_id: tool_installation_message.tool_id.clone(),
+            tool_type: tool_installation_message.tool_type.clone(),
             version: version_clone,
             run_command_args: run_args_clone,
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args,
