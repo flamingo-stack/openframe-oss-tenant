@@ -3,12 +3,6 @@ name: Generate Changes
 on:
   workflow_call:
     outputs:
-      openframe-data: 
-        value: ${{ jobs.changes.outputs.openframe-data }}
-      openframe-jwt: 
-        value: ${{ jobs.changes.outputs.openframe-jwt }}
-      api-library: 
-        value: ${{ jobs.changes.outputs.api-library }}
       sdk-fleetmdm: 
         value: ${{ jobs.changes.outputs.sdk-fleetmdm }}
       openframe-api: 
@@ -57,9 +51,6 @@ jobs:
     name: Changes check
     runs-on: ubuntu-latest
     outputs:
-      openframe-data: ${{ steps.filter.outputs.openframe-data }}
-      openframe-jwt: ${{ steps.filter.outputs.openframe-jwt }}
-      api-library: ${{ steps.filter.outputs.api-library }}
       sdk-fleetmdm: ${{ steps.filter.outputs.sdk-fleetmdm }}
       openframe-api: ${{ steps.filter.outputs.openframe-api }}
       openframe-authorization-server: ${{ steps.filter.outputs.openframe-authorization-server }}
@@ -100,56 +91,33 @@ jobs:
           filters: |
             client:
               - './client/**'
-            openframe-data:
-              - './pom.xml'
-              - './openframe/libs/openframe-data/**'
-            openframe-jwt:
-              - './pom.xml'
-              - './openframe/libs/openframe-jwt/**'
-            api-library:
-              - './pom.xml'
-              - './openframe/libs/api-library/**'
-              - './openframe/libs/openframe-data/**'
             sdk-fleetmdm:
               - './pom.xml'
               - './openframe/libs/sdk-fleetmdm/**'
             openframe-api:
               - './pom.xml'
               - './openframe/services/openframe-api/**'
-              - './openframe/libs/api-library/**'
-              - './openframe/libs/openframe-data/**'
-              - './openframe/libs/openframe-jwt/**'
             openframe-authorization-server:
               - './pom.xml'
               - './openframe/services/openframe-authorization-server/**'
-              - './openframe/libs/openframe-jwt/**'
             openframe-external-api:
               - './pom.xml'
               - './openframe/services/openframe-external-api/**'
-              - './openframe/libs/api-library/**'
-              - './openframe/libs/openframe-data/**'
             openframe-client:
               - './pom.xml'
               - './openframe/services/openframe-client/**'
-              - './openframe/libs/openframe-data/**'
-              - './openframe/libs/openframe-jwt/**'
             openframe-config:
               - './pom.xml'
               - './openframe/services/openframe-config/**'
             openframe-gateway:
               - './pom.xml'
               - './openframe/services/openframe-gateway/**'
-              - './openframe/libs/openframe-jwt/**'
-              - './openframe/libs/openframe-data/**'
             openframe-management:
               - './pom.xml'
               - './openframe/services/openframe-management/**'
-              - './openframe/libs/openframe-data/**'
             openframe-stream:
               - './pom.xml'
               - './openframe/services/openframe-stream/**'
-              - './openframe/libs/sdk-fleetmdm/**'
-              - './openframe/libs/openframe-data/**'
             openframe-ui:
               - './pom.xml'
               - './openframe/services/openframe-ui/**'
