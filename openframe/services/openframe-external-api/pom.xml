@@ -30,8 +30,8 @@
 
         <!-- OpenFrame Dependencies -->
         <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>api-library</artifactId>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-api-lib</artifactId>
         </dependency>
 
         <!-- Spring Cloud Config -->
