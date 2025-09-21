@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use tracing::{info, warn, error, debug};
+use tracing::{info, error};
 use std::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
@@ -73,7 +73,7 @@ impl ToolConnectionProcessingManager {
                 info!("Processing tool connection for {}", tool.tool_id);
                 self.process_tool(tool).await?;
             } else {
-                warn!("Connection processing for tool {} is already running - skipping", tool.tool_id);
+                info!("Connection processing for tool {} is already running - skipping", tool.tool_id);
             }
         }
 
@@ -90,7 +90,7 @@ impl ToolConnectionProcessingManager {
         }
 
         if !self.try_mark_running(&installed_tool.tool_id).await {
-            warn!(
+            info!(
                 "Connection processing for tool {} is already running - skipping",
                 installed_tool.tool_id
             );
@@ -139,7 +139,7 @@ impl ToolConnectionProcessingManager {
                     }
                 };
 
-                debug!(
+                info!(
                     "Run tool {} agentId command (to get agent_tool_id) with args: {:?}",
                     tool.tool_id,
                     processed_args
@@ -154,24 +154,25 @@ impl ToolConnectionProcessingManager {
                     .to_string_lossy()
                     .to_string();
 
+                info!("Running...");
                 // Execute command and capture output
                 let output = match Command::new(&command_path).args(&processed_args).output() {
-                    Ok(out) => out,
+                    Ok(out) => {
+                        info!("Command completed successfully: {}", String::from_utf8_lossy(&out.stdout));
+                        out
+                    },
                     Err(e) => {
-                        error!(
-                            tool_id = %tool.tool_id,
-                            error = %e,
-                            "Failed to execute agentId command - retrying in {} seconds",
-                            RETRY_DELAY_SECONDS
-                        );
+                        error!("Failed to execute agentId command - retry");
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
                     }
                 };
 
+                info!("Checking success");
+
                 if output.status.success() {
                     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                    debug!(tool_id = %tool.tool_id, result = %stdout, "agentId command completed successfully");
+                    info!(tool_id = %tool.tool_id, result = %stdout, "agentId command completed successfully");
 
                     // Parse agent_tool_id from command output
                     if !stdout.is_empty() {
@@ -210,7 +211,7 @@ impl ToolConnectionProcessingManager {
                             }
                         }
                     } else {
-                        warn!(
+                        info!(
                             tool_id = %tool.tool_id,
                             "agentId command returned empty output - retrying in {} seconds",
                             RETRY_DELAY_SECONDS
