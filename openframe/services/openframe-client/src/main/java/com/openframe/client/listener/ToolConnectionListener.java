@@ -23,6 +23,7 @@ public class ToolConnectionListener {
     private final ObjectMapper objectMapper;
     private final ToolConnectionService toolConnectionService;
 
+    // TODO: idempotent id of tool connection
     @Bean
     public Consumer<Message<String>> toolConnectionConsumer() {
         return message -> {
