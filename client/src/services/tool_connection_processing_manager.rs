@@ -115,7 +115,6 @@ impl ToolConnectionProcessingManager {
     }
 
     async fn process_tool(&self, tool: InstalledTool) -> Result<()> {
-
         let params_processor = self.params_processor.clone();
         let config_service = self.config_service.clone();
         let tool_connection_publisher = self.tool_connection_publisher.clone();
@@ -176,6 +175,7 @@ impl ToolConnectionProcessingManager {
 
                     // Parse agent_tool_id from command output
                     if !stdout.is_empty() {
+                        // TODO: add mechanism to verify that it's correct agent id
                         let agent_tool_id = stdout; // Use the command output as agent_tool_id
                         
                         match config_service.get_machine_id().await {
@@ -230,6 +230,7 @@ impl ToolConnectionProcessingManager {
                         RETRY_DELAY_SECONDS
                     );
                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                    continue;
                 }
             }
         });
