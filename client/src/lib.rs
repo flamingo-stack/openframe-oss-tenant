@@ -49,6 +49,7 @@ use crate::services::tool_connection_message_publisher::ToolConnectionMessagePub
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
+use crate::services::tool_connection_service::ToolConnectionService;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -247,12 +248,17 @@ impl Client {
         // Initialize tool run manager
         let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), tool_command_params_resolver.clone());
 
+        // Initialize tool connection service
+        let tool_connection_service = ToolConnectionService::new(directory_manager.clone())
+            .context("Failed to initialize tool connection service")?;
+
         // Initialize tool connection processing manager
         let tool_connection_processing_manager = ToolConnectionProcessingManager::new(
             installed_tools_service.clone(),
             tool_command_params_resolver.clone(),
             tool_connection_message_publisher.clone(),
             config_service.clone(),
+            tool_connection_service.clone(),
         );
 
         // Initialize tool installation service
