@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use tracing::{info, error};
-use std::process::Command;
-use tokio::time::sleep;
+use tokio::process::Command;
+use tokio::time::{sleep, timeout};
 use std::time::Duration;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -155,14 +155,23 @@ impl ToolConnectionProcessingManager {
                     .to_string();
 
                 info!("Running...");
-                // Execute command and capture output
-                let output = match Command::new(&command_path).args(&processed_args).output() {
-                    Ok(out) => {
+                // Execute command with a 2-second timeout and capture output
+                let command_future = Command::new(&command_path).args(&processed_args).output();
+                let output = match timeout(Duration::from_secs(2), command_future).await {
+                    // Command finished within timeout
+                    Ok(Ok(out)) => {
                         info!("Command completed successfully: {}", String::from_utf8_lossy(&out.stdout));
                         out
-                    },
-                    Err(e) => {
-                        error!("Failed to execute agentId command - retry");
+                    }
+                    // Command returned an error before timeout
+                    Ok(Err(e)) => {
+                        error!("Failed to execute agentId command: {:#} – retrying", e);
+                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        continue;
+                    }
+                    // Timeout expired
+                    Err(_) => {
+                        error!("agentId command timed out after 2 seconds – retrying");
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
                     }

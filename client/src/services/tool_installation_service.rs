@@ -207,7 +207,7 @@ impl ToolInstallationService {
         info!("Running tool {} after successful installation", tool_agent_id);
         self.tool_run_manager.run_new_tool(installed_tool.clone()).await
             .context("Failed to run tool after installation")?;
-        
+
         // Start tool connection processing for newly installed tool
         info!("Processing connection for tool {} after installation", tool_agent_id);
         self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
