@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { apiClient } from '../../../lib/api-client'
 import { useLogsStore, LogEntry, LogEdge, PageInfo } from '../stores/logs-store'
@@ -58,7 +58,6 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     reset
   } = useLogsStore()
 
-  // Fetch logs from GraphQL API with specific search term and filters
   const fetchLogs = useCallback(async (
     searchTerm: string,
     filters: LogFilterInput = {},
@@ -125,7 +124,6 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     }
   }, [pageSize, toast])
 
-  // Fetch next page of logs
   const fetchNextPage = useCallback(async () => {
     if (!pageInfo?.hasNextPage || !pageInfo?.endCursor) {
       return
@@ -134,7 +132,6 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     return fetchLogs(search, activeFilters, pageInfo.endCursor, true)
   }, [pageInfo, fetchLogs, search, activeFilters])
 
-  // Fetch previous page of logs  
   const fetchPreviousPage = useCallback(async () => {
     if (!pageInfo?.hasPreviousPage || !pageInfo?.startCursor) {
       return
@@ -143,7 +140,6 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     return fetchLogs(search, activeFilters, pageInfo.startCursor, false)
   }, [pageInfo, fetchLogs, search, activeFilters])
 
-  // Fetch a single log's details
   const fetchLogDetails = useCallback(async (logEntry: LogEntry) => {
     try {
       const response = await apiClient.post<GraphQLResponse<LogDetailsResponse>>('graphql', {
@@ -186,20 +182,16 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     }
   }, [toast])
 
-
-  // Search logs
   const searchLogs = useCallback(async (searchTerm: string) => {
     setSearch(searchTerm)
     return fetchLogs(searchTerm, activeFilters, null, false)
   }, [setSearch, fetchLogs, activeFilters])
 
-  // Change page size
   const changePageSize = useCallback(async (newSize: number) => {
     setPageSize(newSize)
     return fetchLogs(search, activeFilters, null, false)
   }, [setPageSize, fetchLogs, search, activeFilters])
 
-  // Refresh logs (re-fetch with current filter and search)
   const refreshLogs = useCallback(async () => {
     return fetchLogs(search, activeFilters, null, false)
   }, [fetchLogs, search, activeFilters])

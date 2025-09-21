@@ -7,6 +7,7 @@ import { useAuth } from '@app/auth/hooks/use-auth'
 import { useAuthStore } from '@app/auth/stores/auth-store'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@flamingo/ui-kit/hooks'
+import { isAuthOnlyMode } from '@lib/app-mode'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -14,11 +15,13 @@ export default function AuthPage() {
   const { isAuthenticated } = useAuthStore()
   const { isLoading, discoverTenants } = useAuth()
 
-  // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('🔄 [Auth Page] User already authenticated, redirecting to dashboard')
-      router.push('/dashboard')
+      if (isAuthOnlyMode()) {
+        router.push('/auth/already-signed-in')
+      } else {
+        router.push('/dashboard')
+      }
     }
   }, [isAuthenticated, router])
 
@@ -31,8 +34,7 @@ export default function AuthPage() {
 
   const handleSignIn = async (email: string) => {
     const result = await discoverTenants(email)
-    
-    // Check if user has existing accounts
+
     if (result && result.has_existing_accounts) {
       router.push('/auth/login')
     } else {
