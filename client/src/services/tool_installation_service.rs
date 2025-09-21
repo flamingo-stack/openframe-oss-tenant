@@ -159,7 +159,7 @@ impl ToolInstallationService {
 
         // TODO: there's risk that tool have been installed but data haven't been sent 
         //  there should be mechanism of pre check if tool have been installed(some command)
-        //  Also, logic should prevent race conditions if installation stucked 
+        //  Also, logic should prevent race conditions if installation stuck
         // Run installation command if provided
         if tool_installation_message.installation_command_args.is_some() {
             info!("Start run tool installation command for tool {}", tool_agent_id);
