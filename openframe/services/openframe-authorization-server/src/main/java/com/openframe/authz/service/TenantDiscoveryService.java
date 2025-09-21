@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.openframe.authz.config.GoogleSSOProperties.GOOGLE;
-import static com.openframe.core.util.SlugUtil.toSlug;
 
 /**
  * Service for tenant discovery based on user email
@@ -60,29 +59,6 @@ public class TenantDiscoveryService {
                         .email(email)
                         .hasExistingAccounts(false)
                         .build());
-    }
-
-    /**
-     * Suggest available domain(s) based on requested domain and organization name.
-     * - If requested domain is free -> return empty list
-     * - Else -> generate candidates from organization name and append configured base domain
-     */
-    public List<String> suggestDomains(String requestedDomain, String organizationName) {
-        if (tenantService.isTenantDomainAvailable(requestedDomain)) {
-            return List.of();
-        }
-
-        String orgSlug = toSlug(organizationName);
-
-        List<String> labels = List.of(orgSlug, orgSlug + "-app", orgSlug + "-team", orgSlug + "-io");
-        List<String> candidates = labels.stream().map(c -> c + "." + baseDomain).toList();
-
-        var existing = tenantService.findExistingDomains(candidates);
-        return candidates.stream()
-                .filter(d -> !existing.contains(d))
-                .distinct()
-                .limit(3)
-                .toList();
     }
 
     /**
