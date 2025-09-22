@@ -130,10 +130,10 @@ func (i *IngressConfigurator) getCurrentNgrokSettings(values map[string]interfac
 							current.APIKey = apiKey
 						}
 						// Check both possible field names for auth token
-						if authToken, ok := credentials["authToken"].(string); ok {
-							current.AuthToken = authToken
-						} else if authToken, ok := credentials["authtoken"].(string); ok {
-							current.AuthToken = authToken
+						if authtoken, ok := credentials["authtoken"].(string); ok {
+							current.AuthToken = authtoken
+						} else if authtoken, ok := credentials["authtoken"].(string); ok {
+							current.AuthToken = authtoken
 						}
 					}
 				}
@@ -176,11 +176,11 @@ func (i *IngressConfigurator) collectNgrokCredentials(current *types.NgrokConfig
 	if current.AuthToken != "" {
 		authTokenInput = authTokenInput.WithDefaultValue(current.AuthToken)
 	}
-	authToken, err := authTokenInput.Show("Add Tunnel Authtoken at https://dashboard.ngrok.com/authtokens")
+	authtoken, err := authTokenInput.Show("Add Tunnel Authtoken at https://dashboard.ngrok.com/authtokens")
 	if err != nil {
 		return nil, fmt.Errorf("auth token input failed: %w", err)
 	}
-	config.AuthToken = strings.TrimSpace(authToken)
+	config.AuthToken = strings.TrimSpace(authtoken)
 
 	return config, nil
 }
@@ -309,7 +309,7 @@ func (i *IngressConfigurator) applyNgrokConfig(values map[string]interface{}, ng
 		"url":     ngrokConfig.Domain,
 		"credentials": map[string]interface{}{
 			"apiKey":    ngrokConfig.APIKey,
-			"authToken": ngrokConfig.AuthToken,
+			"authtoken": ngrokConfig.AuthToken,
 		},
 	}
 
