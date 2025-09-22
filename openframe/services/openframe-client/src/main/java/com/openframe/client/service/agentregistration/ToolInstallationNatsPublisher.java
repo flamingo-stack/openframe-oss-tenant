@@ -1,5 +1,6 @@
 package com.openframe.client.service.agentregistration;
 
+import com.openframe.data.document.tool.IntegratedTool;
 import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import com.openframe.data.document.toolagent.ToolAgentAsset;
 import com.openframe.data.document.toolagent.ToolAgentAssetSource;
@@ -21,9 +22,9 @@ public class ToolInstallationNatsPublisher {
 
     private final NatsMessagePublisher natsMessagePublisher;
 
-    public void publish(String machineId, IntegratedToolAgent toolAgent) {
+    public void publish(String machineId, IntegratedToolAgent toolAgent, IntegratedTool tool) {
         String topicName = buildTopicName(machineId);
-        ToolInstallationMessage message = buildMessage(toolAgent);
+        ToolInstallationMessage message = buildMessage(toolAgent, tool);
         natsMessagePublisher.publish(topicName, message);
     }
 
@@ -31,14 +32,16 @@ public class ToolInstallationNatsPublisher {
         return format(TOPIC_NAME_TEMPLATE, machineId);
     }
 
-    private ToolInstallationMessage buildMessage(IntegratedToolAgent toolAgent) {
+    private ToolInstallationMessage buildMessage(IntegratedToolAgent toolAgent, IntegratedTool tool) {
         ToolInstallationMessage message = new ToolInstallationMessage();
         message.setToolAgentId(toolAgent.getId());
         message.setToolId(toolAgent.getToolId());
+        message.setToolType(tool.getToolType());
         message.setVersion(toolAgent.getVersion());
+        message.setAssets(mapAssets(toolAgent.getAssets()));
         message.setInstallationCommandArgs(toolAgent.getInstallationCommandArgs());
         message.setRunCommandArgs(toolAgent.getRunCommandArgs());
-        message.setAssets(mapAssets(toolAgent.getAssets()));
+        message.setToolAgentIdCommandArgs(toolAgent.getAgentToolIdCommandArgs());
         return message;
     }
 

@@ -34,7 +34,7 @@ pub mod installation_initial_config_service;
 
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolRunManager};
+use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolRunManager, ToolConnectionProcessingManager};
 use crate::services::InstalledToolsService;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
@@ -49,6 +49,7 @@ use crate::services::tool_connection_message_publisher::ToolConnectionMessagePub
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
+use crate::services::tool_connection_service::ToolConnectionService;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -117,6 +118,7 @@ pub struct Client {
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
     tool_run_manager: ToolRunManager,
+    tool_connection_processing_manager: ToolConnectionProcessingManager,
 }
 
 impl Client {
@@ -246,6 +248,19 @@ impl Client {
         // Initialize tool run manager
         let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), tool_command_params_resolver.clone());
 
+        // Initialize tool connection service
+        let tool_connection_service = ToolConnectionService::new(directory_manager.clone())
+            .context("Failed to initialize tool connection service")?;
+
+        // Initialize tool connection processing manager
+        let tool_connection_processing_manager = ToolConnectionProcessingManager::new(
+            installed_tools_service.clone(),
+            tool_command_params_resolver.clone(),
+            tool_connection_message_publisher.clone(),
+            config_service.clone(),
+            tool_connection_service.clone(),
+        );
+
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             tool_agent_file_client,
@@ -254,6 +269,7 @@ impl Client {
             installed_tools_service.clone(),
             directory_manager.clone(),
             tool_run_manager.clone(),
+            tool_connection_processing_manager.clone(),
         );
 
         // Initialize tool installation message listener
@@ -267,6 +283,7 @@ impl Client {
             nats_connection_manager,
             tool_installation_message_listener,
             tool_run_manager,
+            tool_connection_processing_manager,
         })
     }
 
@@ -287,6 +304,9 @@ impl Client {
 
         // Start tool run manager
         self.tool_run_manager.run().await?;
+
+        // Start tool connection processing manager
+        self.tool_connection_processing_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

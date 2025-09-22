@@ -10,6 +10,7 @@ use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::tool_run_manager::ToolRunManager;
+use crate::services::tool_connection_processing_manager::ToolConnectionProcessingManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
@@ -25,6 +26,7 @@ pub struct ToolInstallationService {
     installed_tools_service: InstalledToolsService,
     directory_manager: DirectoryManager,
     tool_run_manager: ToolRunManager,
+    tool_connection_processing_manager: ToolConnectionProcessingManager,
 }
 
 impl ToolInstallationService {
@@ -35,6 +37,7 @@ impl ToolInstallationService {
         installed_tools_service: InstalledToolsService,
         directory_manager: DirectoryManager,
         tool_run_manager: ToolRunManager,
+        tool_connection_processing_manager: ToolConnectionProcessingManager,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -49,6 +52,7 @@ impl ToolInstallationService {
             installed_tools_service,
             directory_manager,
             tool_run_manager,
+            tool_connection_processing_manager,
         }
     }
 
@@ -153,6 +157,9 @@ impl ToolInstallationService {
             info!("No assets to download for tool: {}", tool_agent_id);
         }
 
+        // TODO: there's risk that tool have been installed but data haven't been sent 
+        //  there should be mechanism of pre check if tool have been installed(some command)
+        //  Also, logic should prevent race conditions if installation stuck
         // Run installation command if provided
         if tool_installation_message.installation_command_args.is_some() {
             info!("Start run tool installation command for tool {}", tool_agent_id);
@@ -185,8 +192,11 @@ impl ToolInstallationService {
         // Persist installed tool information
         let installed_tool = InstalledTool {
             tool_agent_id: tool_agent_id.clone(),
+            tool_id: tool_installation_message.tool_id.clone(),
+            tool_type: tool_installation_message.tool_type.clone(),
             version: version_clone,
             run_command_args: run_args_clone,
+            tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args,
             status: ToolStatus::Installed,
         };
 
@@ -195,8 +205,14 @@ impl ToolInstallationService {
 
         // Run the tool after successful installation
         info!("Running tool {} after successful installation", tool_agent_id);
-        self.tool_run_manager.run_new_tool(installed_tool).await
+        self.tool_run_manager.run_new_tool(installed_tool.clone()).await
             .context("Failed to run tool after installation")?;
+
+        // Start tool connection processing for newly installed tool
+        info!("Processing connection for tool {} after installation", tool_agent_id);
+        self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
+            .await
+            .context("Failed to process tool connection after installation")?;
 
         Ok(())
     }

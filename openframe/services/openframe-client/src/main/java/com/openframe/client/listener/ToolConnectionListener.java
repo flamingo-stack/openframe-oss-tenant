@@ -23,6 +23,7 @@ public class ToolConnectionListener {
     private final ObjectMapper objectMapper;
     private final ToolConnectionService toolConnectionService;
 
+    // TODO: idempotent id of tool connection
     @Bean
     public Consumer<Message<String>> toolConnectionConsumer() {
         return message -> {
@@ -31,12 +32,12 @@ public class ToolConnectionListener {
                 ToolConnectionMessage toolConnectionMessage = objectMapper.readValue(messagePayload, ToolConnectionMessage.class);
 
                 String machineId = getMachineId(message);
-                String toolId = toolConnectionMessage.getToolId();
+                String toolType = toolConnectionMessage.getToolType();
                 String agentToolId = toolConnectionMessage.getAgentToolId();
 
-                log.info("Received tool connection message with machineId {} toolId {} agentToolId {}", machineId, toolId, agentToolId);
+                log.info("Received tool connection message with machineId {} toolType {} agentToolId {}", machineId, toolType, agentToolId);
 
-                toolConnectionService.addToolConnection(machineId, toolId, agentToolId);
+                toolConnectionService.addToolConnection(machineId, toolType, agentToolId);
             } catch (Exception e) {
                 log.error("Failed to process tool connection event: {}", messagePayload, e);
                 throw new NatsException("Failed to process tool connection", e);
@@ -45,7 +46,7 @@ public class ToolConnectionListener {
     }
 
     private String getMachineId(Message<String> message) {
-        String topicName = message.getHeaders().get("NATS_RECEIVED_TOPIC", String.class);
+        String topicName = message.getHeaders().get("subject", String.class);
         if (isEmpty(topicName)) {
             throw new IllegalStateException("Tool connection topic name is empty");
         }

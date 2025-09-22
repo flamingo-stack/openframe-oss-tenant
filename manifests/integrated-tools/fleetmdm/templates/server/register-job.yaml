@@ -152,6 +152,9 @@ spec:
                   "--openframe-osquery-path", "${client.assetPath.osqueryd}",
                   "--openframe-token-path", "${client.openframeTokenPath}"
                 ],
+                "toolAgentIdCommandArgs": [
+                    "uuid"
+                ],
                 "assets": [
                   {
                     "id": "osqueryd",
