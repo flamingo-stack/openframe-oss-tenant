@@ -144,6 +144,9 @@ spec:
                     "--openframe-secret", "${client.openframeSecret}",
                     "--openframe-token-path", "${client.openframeTokenPath}"
                   ],
+                  "toolAgentIdCommandArgs": [
+                    "-nodeid-base64"
+                  ],
                   "assets": [
                     {
                       "id": "meshcentral-core-module",
