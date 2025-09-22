@@ -22,6 +22,12 @@ type CursorPageInfo {
     endCursor: String
 }
 
+enum ToolType {
+    MESHCENTRAL
+    TACTICAL_RMM
+    FLEET_MDM
+}
+
 # Common input for cursor-based pagination
 input CursorPaginationInput {
     limit: Int
