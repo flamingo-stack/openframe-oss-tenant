@@ -1,4 +1,4 @@
-{{- if false }}
+{{- if .Values.deployment.oss.ingress.ngrok.enabled }}
 apiVersion: ngrok.k8s.ngrok.com/v1alpha1
 kind: NgrokTrafficPolicy
 metadata:
