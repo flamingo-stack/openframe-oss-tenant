@@ -28,7 +28,7 @@ impl ToolInstallationMessageListener {
     ) -> Self {
         Self { 
             nats_connection_manager, 
-            tool_installation_service, 
+            tool_installation_service,
             config_service 
         }
     }

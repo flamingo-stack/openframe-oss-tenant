@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.openframe</groupId>
@@ -45,16 +45,14 @@
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
         <!-- Centralized OpenFrame OSS libs version -->
-        <openframe.libs.version>1.4.0</openframe.libs.version>
+        <openframe.libs.version>1.5.0</openframe.libs.version>
         <openframe.saas.libs.version>1.1.1</openframe.saas.libs.version>
     </properties>
 
     <modules>
         <!-- Libraries -->
-        <!-- moved to com.openframe.oss in openframe-oss-lib repo -->
         <module>openframe/libs/sdk/fleetmdm</module>
         <module>openframe/libs/sdk/tacticalrmm</module>
-        <!-- moved to com.openframe.oss in openframe-oss-lib repo -->
 
         <!-- Services -->
         <module>openframe/services/openframe-config</module>
