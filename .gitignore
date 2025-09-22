@@ -72,3 +72,4 @@ client/Cargo.lock
 .**.json
 .next/
 openframe/services/openframe-frontend/pnpm-lock.yaml
+tsconfig.tsbuildinfo

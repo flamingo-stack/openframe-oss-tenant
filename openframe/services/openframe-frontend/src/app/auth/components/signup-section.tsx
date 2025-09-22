@@ -227,7 +227,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
                 {isCloud && password && password.length < 8 && (
-                  <p className="text-xs text-red-500 mt-1">Password must be at least 8 characters</p>
+                  <p className="text-xs text-error mt-1">Password must be at least 8 characters</p>
                 )}
               </div>
               <div className="flex-1 flex flex-col gap-1">
@@ -241,7 +241,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
                 {confirmPassword && password !== confirmPassword && (
-                  <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                  <p className="text-xs text-error mt-1">Passwords do not match</p>
                 )}
               </div>
             </div>

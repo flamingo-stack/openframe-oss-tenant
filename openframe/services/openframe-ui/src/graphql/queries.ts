@@ -46,39 +46,50 @@ export const GET_DEVICES = gql`
     devices(filter: $filter, pagination: $pagination, search: $search) {
       edges {
         node {
-        id
-        machineId
-        hostname
-          displayName
-        ip
-        macAddress
-        osUuid
-        agentVersion
-        status
-        lastSeen
-        organizationId
-        serialNumber
-        manufacturer
-        model
-        type
-        osType
-        osVersion
-        osBuild
-        timezone
-        registeredAt
-        updatedAt
-        tags {
           id
-          name
+          machineId
+          hostname
+          displayName
+          ip
+          macAddress
+          osUuid
+          agentVersion
+          status
+          lastSeen
+          organizationId
+          serialNumber
+          manufacturer
+          model
+          type
+          osType
+          osVersion
+          osBuild
+          timezone
+          registeredAt
+          updatedAt
+          tags {
+            id
+            name
             description
-          color
+            color
             organizationId
             createdAt
             createdBy
           }
-    }
+          toolConnections {
+            id
+            machineId
+            toolType
+            agentToolId
+            status
+            metadata
+            connectedAt
+            lastSyncAt
+            disconnectedAt
+          }
+        }
         cursor
-  }
+      }
       pageInfo {
         hasNextPage
         hasPreviousPage
@@ -145,13 +156,24 @@ export const GET_DEVICE_BY_ID = gql`
       registeredAt
       updatedAt
       tags {
-          id
-          name
+        id
+        name
         description
-          color
+        color
         organizationId
         createdAt
         createdBy
+      }
+      toolConnections {
+        id
+        machineId
+        toolType
+        agentToolId
+        status
+        metadata
+        connectedAt
+        lastSyncAt
+        disconnectedAt
       }
     }
   }

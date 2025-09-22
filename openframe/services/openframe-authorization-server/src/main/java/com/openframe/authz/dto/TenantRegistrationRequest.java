@@ -1,6 +1,6 @@
 package com.openframe.authz.dto;
 
-import com.openframe.authz.validation.TenantDomain;
+import com.openframe.core.validation.TenantDomain;
 import com.openframe.core.validation.ValidEmail;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
