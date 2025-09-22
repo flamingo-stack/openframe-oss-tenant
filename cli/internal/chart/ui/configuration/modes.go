@@ -18,6 +18,7 @@ func (w *ConfigurationWizard) showDeploymentModeSelection() (types.DeploymentMod
 		Items: []string{
 			"OSS Tenant deployment (Default self-hosted version)",
 			"SaaS Tenant deployment",
+			"SaaS Shared deployment",
 		},
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{ . }}:",
@@ -32,10 +33,16 @@ func (w *ConfigurationWizard) showDeploymentModeSelection() (types.DeploymentMod
 		return "", err
 	}
 
-	if idx == 0 {
+	switch idx {
+	case 0:
+		return types.DeploymentModeOSS, nil
+	case 1:
+		return types.DeploymentModeSaaS, nil
+	case 2:
+		return types.DeploymentModeSaaSShared, nil
+	default:
 		return types.DeploymentModeOSS, nil
 	}
-	return types.DeploymentModeSaaS, nil
 }
 
 // showConfigurationModeSelection shows the initial configuration mode selection
@@ -83,8 +90,8 @@ func (w *ConfigurationWizard) configureWithDefaults(deploymentMode types.Deploym
 	config.DeploymentMode = &deploymentMode
 	config.ModifiedSections = append(config.ModifiedSections, "deployment")
 
-	// Configure SaaS-specific settings if in SaaS mode
-	if deploymentMode == types.DeploymentModeSaaS {
+	// Configure SaaS-specific settings if in SaaS or SaaS Shared mode
+	if deploymentMode == types.DeploymentModeSaaS || deploymentMode == types.DeploymentModeSaaSShared {
 		if err := w.configureSaaSDefaults(config); err != nil {
 			return nil, fmt.Errorf("SaaS configuration failed: %w", err)
 		}
@@ -112,8 +119,8 @@ func (w *ConfigurationWizard) configureInteractive(deploymentMode types.Deployme
 	config.DeploymentMode = &deploymentMode
 	config.ModifiedSections = append(config.ModifiedSections, "deployment")
 
-	// Configure SaaS-specific settings if in SaaS mode
-	if deploymentMode == types.DeploymentModeSaaS {
+	// Configure SaaS-specific settings if in SaaS or SaaS Shared mode
+	if deploymentMode == types.DeploymentModeSaaS || deploymentMode == types.DeploymentModeSaaSShared {
 		if err := w.configureSaaSInteractive(config); err != nil {
 			return nil, fmt.Errorf("SaaS configuration failed: %w", err)
 		}
