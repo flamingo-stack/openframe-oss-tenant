@@ -8,7 +8,7 @@
     <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-light-bg.png" width="400">
   </picture>
 
-  <h1>RMM Agent</h1>
+  <h1>Tactical RMM Agent</h1>
 
   <p><b>Cross-platform Rust agent for remote monitoring, automation, and secure device management in the OpenFrame ecosystem.</b></p>
 
@@ -66,8 +66,6 @@ Prerequisites:
 - Go 1.21+ (если нужен Go-билд в стиле Tactical RMM)  
 - Access to a running OpenFrame Gateway  
 
----
-
 ### Build (Rust - OpenFrame RMM Agent)
 
 ```bash
@@ -81,8 +79,6 @@ Run:
 ./target/release/rmmagent --server https://gateway.local --token <JWT>
 ```
 
----
-
 ### Build (Go - Tactical RMM)
 
 ```bash
@@ -91,6 +87,7 @@ cd rmmagent
 env CGO_ENABLED=0 GOOS=<GOOS> GOARCH=<GOARCH> go build -ldflags "-s -w"
 ```
  
+Examples:  
 - Linux x64:  
   ```bash
   env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w"
@@ -104,17 +101,19 @@ env CGO_ENABLED=0 GOOS=<GOOS> GOARCH=<GOARCH> go build -ldflags "-s -w"
 
 ## Configuration
 
-Environment variables and CLI flags are supported:  
+Configuration files and environment variables allow you to set:  
 
 - `RMM_SERVER` - Gateway base URL  
 - `RMM_TOKEN` - JWT token for authentication  
-- `RMM_LOG_LEVEL` - info, debug, trace  
+- `RMM_LOG_LEVEL` - error, warning, info, debug  
 - `RMM_UPDATE_CHANNEL` - stable, beta  
+- Polling/metrics reporting intervals  
 
 ---
 
 ## Development
 
+### Rust  
 Run Tests:  
 ```bash
 cargo test
@@ -126,12 +125,22 @@ cargo fmt
 cargo clippy
 ```
 
+### Go 
+```bash
+cd agent
+go mod download
+env CGO_ENABLED=0 GOOS=$(uname | tr '[:upper:]' '[:lower:]') GOARCH=amd64 go build -ldflags "-s -w"
+```
+
 ---
 
 ## Security
 
-- TLS 1.3 is enforced for all communication  
+- TLS 1.3 enforced for all communication  
 - OAuth2/OIDC → JWT for authentication (via Gateway)  
+- Supports authentication via token or key  
+- Minimal client-side privileges required  
+- Safeguards against unsafe command execution  
 - Least privilege mode on endpoints  
 
 Found a vulnerability? Email **security@flamingo.run** instead of opening a public issue.  
@@ -140,14 +149,23 @@ Found a vulnerability? Email **security@flamingo.run** instead of opening a publ
 
 ## Compatibility Notes
 
-- This agent is inspired by and compatible with the **Tactical RMM Agent**.  
-- Supports similar build patterns (`go build` with `GOOS`/`GOARCH`) for environments already using Tactical RMM.  
-- Extends functionality with **OpenFrame integration**, adding:  
+- Inspired by and compatible with the **Tactical RMM Agent**  
+- Supports similar build patterns (`go build` with `GOOS`/`GOARCH`)  
+- Extended with OpenFrame integration:  
   - Kafka & Pinot streaming pipeline  
   - Unified API layer with OpenFrame Gateway  
   - Multi-tenant security and advanced monitoring  
 
-This makes migration from Tactical RMM or hybrid deployments seamless.
+---
+
+## Contributing
+
+We welcome PRs! Please follow these guidelines:  
+
+- Use branching strategy: `feature/...`, `bugfix/...`  
+- Add descriptions to the **CHANGELOG**  
+- Follow consistent code style (`cargo fmt` for Rust, `go fmt` + linters for Go)  
+- Keep documentation updated in `docs/`  
 
 ---
 
