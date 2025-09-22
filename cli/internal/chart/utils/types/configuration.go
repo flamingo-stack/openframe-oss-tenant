@@ -9,12 +9,13 @@ type DockerRegistryConfig struct {
 	Email    string
 }
 
-// DeploymentMode represents the deployment mode (OSS or SaaS)
+// DeploymentMode represents the deployment mode (OSS, SaaS, or SaaS Shared)
 type DeploymentMode string
 
 const (
-	DeploymentModeOSS  DeploymentMode = "oss"
-	DeploymentModeSaaS DeploymentMode = "saas"
+	DeploymentModeOSS        DeploymentMode = "oss"
+	DeploymentModeSaaS       DeploymentMode = "saas"
+	DeploymentModeSaaSShared DeploymentMode = "saas-shared"
 )
 
 // IngressType represents the type of ingress to use
@@ -82,4 +83,18 @@ type ChartConfiguration struct {
 	DockerRegistry     *DockerRegistryConfig  // nil means use existing, otherwise use this value
 	IngressConfig      *IngressConfig         // nil means use existing, otherwise use this value
 	SaaSConfig         *SaaSConfig            // nil means use existing, otherwise use this value
+}
+
+// GetRepositoryURL returns the appropriate repository URL based on deployment mode
+func GetRepositoryURL(mode DeploymentMode) string {
+	switch mode {
+	case DeploymentModeSaaSShared:
+		return "https://github.com/flamingo-stack/openframe-saas-shared"
+	case DeploymentModeSaaS, DeploymentModeOSS:
+		// Both SaaS and OSS use the same repository for now
+		return "https://github.com/flamingo-stack/openframe-oss-tenant"
+	default:
+		// Default to OSS repository
+		return "https://github.com/flamingo-stack/openframe-oss-tenant"
+	}
 }

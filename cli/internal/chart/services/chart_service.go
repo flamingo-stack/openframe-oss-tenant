@@ -168,7 +168,7 @@ func (w *InstallationWorkflow) ExecuteWithContext(parentCtx context.Context, req
 	}
 
 	// Step 5: Build configuration
-	config, err := w.buildConfiguration(req, clusterName, chartConfig.TempHelmValuesPath)
+	config, err := w.buildConfiguration(req, clusterName, chartConfig)
 	if err != nil {
 		chartErr := errors.WrapAsChartError("configuration", "build", err).WithCluster(clusterName)
 		return sharedErrors.HandleGlobalError(chartErr, req.Verbose)
@@ -267,12 +267,28 @@ func (w *InstallationWorkflow) waitForArgoCDSync(ctx context.Context, config con
 }
 
 // buildConfiguration constructs the installation configuration
-func (w *InstallationWorkflow) buildConfiguration(req utilTypes.InstallationRequest, clusterName string, helmValuesPath string) (config.ChartInstallConfig, error) {
+func (w *InstallationWorkflow) buildConfiguration(req utilTypes.InstallationRequest, clusterName string, chartConfig *types.ChartConfiguration) (config.ChartInstallConfig, error) {
 	configBuilder := config.NewBuilder(w.chartService.operationsUI)
+
+	// Determine repository URL based on deployment mode
+	githubRepo := req.GitHubRepo
+	if chartConfig.DeploymentMode != nil {
+		// Always use deployment mode to determine repository URL if deployment mode is specified
+		// This ensures that SaaS Shared mode gets the correct repository
+		githubRepo = types.GetRepositoryURL(*chartConfig.DeploymentMode)
+	}
+
+	// Convert deployment mode to string for builder
+	var deploymentModeStr string
+	if chartConfig.DeploymentMode != nil {
+		deploymentModeStr = string(*chartConfig.DeploymentMode)
+	}
+
 	return configBuilder.BuildInstallConfigWithCustomHelmPath(
 		req.Force, req.DryRun, req.Verbose, clusterName,
-		req.GitHubRepo, req.GitHubBranch, req.CertDir,
-		helmValuesPath,
+		githubRepo, req.GitHubBranch, req.CertDir,
+		chartConfig.TempHelmValuesPath,
+		deploymentModeStr,
 	)
 }
 
