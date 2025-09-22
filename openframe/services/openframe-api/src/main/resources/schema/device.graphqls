@@ -61,6 +61,7 @@ type Machine {
     registeredAt: Instant
     updatedAt: Instant
     tags: [Tag]
+    toolConnections: [ToolConnection]
 }
 
 type Tag {
@@ -104,4 +105,22 @@ type DeviceConnection {
 type DeviceEdge {
     node: Machine!
     cursor: String!
+}
+
+type ToolConnection {
+    id: ID!
+    machineId: String!
+    toolType: ToolType!
+    agentToolId: String!
+    status: ConnectionStatus!
+    metadata: String
+    connectedAt: Instant
+    lastSyncAt: Instant
+    disconnectedAt: Instant
+}
+
+enum ConnectionStatus {
+    CONNECTED
+    DISCONNECTED
+    ERROR
 }
