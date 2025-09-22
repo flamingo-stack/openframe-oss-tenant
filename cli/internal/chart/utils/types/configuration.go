@@ -30,7 +30,7 @@ const (
 // NgrokConfig holds Ngrok-specific configuration
 type NgrokConfig struct {
 	// Ngrok credentials
-	AuthToken string `json:"authToken"`
+	AuthToken string `json:"authtoken"`
 	APIKey    string `json:"apiKey"`
 	Domain    string `json:"domain"`
 
@@ -47,8 +47,8 @@ type NgrokConfig struct {
 type SaaSConfig struct {
 	RepositoryPassword       string `json:"repositoryPassword"`
 	ConfigRepositoryPassword string `json:"configRepositoryPassword"`
-	SaaSBranch              string `json:"saasBranch"`
-	OSSBranch               string `json:"ossBranch"`
+	SaaSBranch               string `json:"saasBranch"`
+	OSSBranch                string `json:"ossBranch"`
 }
 
 // IngressConfig holds ingress configuration options
