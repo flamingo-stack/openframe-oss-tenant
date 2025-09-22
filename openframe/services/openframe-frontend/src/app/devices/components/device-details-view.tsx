@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { Button, RemoteControlIcon, ShellIcon } from '@flamingo/ui-kit'
+import { RemoteShellModal } from './remote-shell-modal'
 import { ScriptIcon, DetailPageContainer } from '@flamingo/ui-kit'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
@@ -28,6 +29,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const { deviceDetails, isLoading, error, fetchDeviceById } = useDeviceDetails()
 
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false)
+  const [isRemoteShellOpen, setIsRemoteShellOpen] = useState(false)
 
   useEffect(() => {
     if (deviceId) {
@@ -54,7 +56,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   }
 
   const handleRemoteShell = () => {
-    console.log('Remote shell clicked for device:', deviceId)
+    setIsRemoteShellOpen(true)
   }
 
   if (isLoading) {
@@ -139,6 +141,13 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         deviceId={deviceId}
         device={normalizedDevice}
         onRunScripts={handleRunScripts}
+      />
+
+      <RemoteShellModal
+        isOpen={isRemoteShellOpen}
+        onClose={() => setIsRemoteShellOpen(false)}
+        deviceId={deviceId}
+        deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
       />
     </DetailPageContainer>
   )

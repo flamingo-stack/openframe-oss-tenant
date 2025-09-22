@@ -1,0 +1,362 @@
+I'll scan the codebase to find how the web UI initiates a remote terminal, how data flows between the frontend and backend, and then draft a React-focused integration guide. Starting with broad semantic searches and exact string greps in parallel for speed.
+
+[5 tools called]
+
+I'll open the key frontend and relay files to extract the exact APIs and message formats used for terminal data: the WS client `agent-redir-ws-0.1.1.js`, terminal module in `xterm.handlebars`, and the server relay entrypoints in `meshrelay.js`/`apprelays.js`. Then I’ll draft the React integration guide with concrete code.
+
+[6 tools called]
+
+I identified the frontend terminal flow (`xterm.handlebars` + `CreateAgentRedirect`), the control and relay clients (`meshcentral.js`, `agent-redir-ws-0.1.1.js`), and the backend relay (`meshrelay.js`). I’ll create a short TODO to track the write-up, then produce the React integration guide now.
+
+[1 tool called]
+
+### How MeshCentral UI establishes a remote terminal session
+
+- • Frontend entrypoints:
+  - **xterm UI**: `views/xterm.handlebars`
+  - **Agent redirect client (WS/WebRTC)**: `public/scripts/agent-redir-ws-0.1.1.js`
+  - **Control channel client**: `public/scripts/meshcentral.js`
+
+- • Backend entrypoints:
+  - **Relay WS endpoint**: `webserver.js` registers `app.ws(... 'meshrelay.ashx' ...)` → handled by `meshrelay.js`
+  - **Relay core**: `meshrelay.js` (CreateMeshRelay/CreateLocalRelay)
+
+#### High-level sequence
+1. UI loads and connects a control socket:
+   - `meshcentral.js` → `MeshServerCreateControl(domainUrl, authCookie)` opens `wss://<host>/<domain>control.ashx` and sends `{ action: 'urlargs', args: { auth: <authCookie> } }` for session auth.
+
+2. User clicks Connect; UI sets up terminal:
+   - `views/xterm.handlebars`:
+     - Creates an `xterm.js` instance and the auto-fit addon.
+     - Hooks `term.onData(data)` to send keystrokes via `tunnel.sendText(data)`.
+     - Debounced `term.onResize` sends terminal size via control message: `tunnel.sendCtrlMsg(JSON.stringify({ ctrlChannel: '102938', type: 'termsize', cols, rows }))`.
+
+3. Tunnel creation and handshake:
+   - `CreateAgentRedirect(meshserver, CreateRemoteTunnel(...), serverPublicNamePort, authCookie, authRelayCookie, domainUrl)` opens a WS to:
+     - `wss://<host>/<path>/meshrelay.ashx?browser=1&p=1&nodeid=<id>&id=<rand>&auth=<authCookie>`
+     - On open, it emits periodic RTT pings: `{"ctrlChannel":"102938","type":"rtt","time":...}`
+   - When backend is ready, server sends `'c'` (or `'cr'` if recording). Client replies with protocol id (`1` for terminal) and optional `options` (cols/rows), then enters connected state 3.
+
+4. Data plane:
+   - Text data from the agent arrives either as:
+     - Prefixed strings: `'~' + payload` (handled by `obj.m.ProcessData`)
+     - Binary `ArrayBuffer` blocks (handled by `ProcessBinaryData` or command framing)
+   - UI writes to xterm: `term.writeUtf8(...)` or `term.write(...)`.
+
+5. Control plane:
+   - All control messages use JSON with `ctrlChannel: "102938"`, e.g.:
+     - RTT ping/pong: `type: "rtt"`, `type: "pong"`
+     - Console banner: `type: "console"`, `msg`
+     - Metadata: `type: "metadata"`
+     - Resize: `type: "termsize"`, `cols`, `rows`
+     - WebRTC switchover signaling: `type: "answer"`, `webrtc0/1/2`
+     - Keepalive: `type: "ping" | "pong"`
+     - Close: `type: "close"`
+
+6. Optional WebRTC switchover:
+   - Client can try datachannel (`attemptWebRTC = true`). WS control channel coordinates an ICE/SDP exchange; if successful, bulk data moves to the RTC datachannel while control stays on WS.
+
+#### Backend relay behavior
+- `webserver.js` registers `meshrelay.ashx` and defers to `meshrelay.js`.
+- `meshrelay.js` pairs the browser side and agent side by `id`:
+  - Auth: via `authCookie`/`rauth` baked in query or cookie.
+  - Routing: Server sends a `msg` to agent (`type: 'tunnel'`, `value: '*/<domain>meshrelay.ashx?...&id=<id>&rauth=<cookie>'`) to bring up the peer socket.
+  - When both sides are connected, server sends `'c'` or `'cr'` (recording) to both.
+  - Thereafter, the relay forwards raw frames between the two sockets:
+    - Strings and binary are passed through; strings may include JSON control messages or `'~'`-prefixed terminal data.
+- Recording and events:
+  - When enabled, traffic is logged with headers. Session start/stop events are dispatched.
+
+### Building a React UI that uses the existing backend to provide remote terminal
+
+Below is a concrete, minimal React integration using the same backend contracts. It assumes an authenticated app that can obtain `domainUrl`, `authCookie`, and `authRelayCookie` similar to how MeshCentral templates inject them.
+
+#### Dependencies
+- `xterm` and the fit addon:
+  - Install: `npm i xterm xterm-addon-fit`
+- If you want to reuse MeshCentral’s WS client to minimize work, copy `public/scripts/agent-redir-ws-0.1.1.js` and adapt to module scope, or implement a small, equivalent client that:
+  - Opens `wss://<host>/<domain>meshrelay.ashx?browser=1&p=1&id=<id>&nodeid=<nodeId>&auth=<authCookie>`
+  - Sends/receives:
+    - On `'c'|'cr'`: send protocol number `1` and an optional options object `{"type":"options","cols":..., "rows":...}`
+    - Terminal input: UTF-8 bytes
+    - Control JSON on channel `ctrlChannel: "102938"` for resize, pings, metadata
+  - Routes data to your terminal and from it
+
+#### Session parameters you must provide
+- **domainUrl**: `/<domainId>/` or `/` for empty domain. Use as prefix to `control.ashx` and to build meshrelay path if needed.
+- **authCookie**: encoded by server to authenticate WS calls. In MeshCentral view templates this is injected; in custom apps, fetch this after login from your backend integration.
+- **authRelayCookie**: optional, used for remote relay initiation messages (common in integrated flows).
+- **nodeId**: target device `node/<domain>/<id>`.
+
+#### React component outline
+
+```tsx
+import React, { useEffect, useRef, useState } from 'react';
+import { Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+
+// Minimal tunnel wrapper (WS only) that mirrors agent-redir behavior for terminal
+class MeshTunnel {
+  constructor(opts: {
+    domainUrl: string;
+    authCookie: string;
+    nodeId: string;
+    protocol?: number; // default 1
+    options?: { cols?: number; rows?: number; requireLogin?: boolean };
+    onData: (data: string | Uint8Array) => void;
+    onConsoleMessage?: (msg: string) => void;
+    onStateChange?: (state: number) => void; // 0,1,2,3
+  }) {
+    this.domainUrl = opts.domainUrl;
+    this.authCookie = opts.authCookie;
+    this.nodeId = opts.nodeId;
+    this.protocol = opts.protocol ?? 1;
+    this.options = opts.options ?? {};
+    this.onData = opts.onData;
+    this.onConsoleMessage = opts.onConsoleMessage;
+    this.onStateChange = opts.onStateChange;
+    this.id = Math.random().toString(36).slice(2);
+  }
+  state = 0;
+  socket?: WebSocket;
+  id: string;
+  domainUrl: string;
+  authCookie: string;
+  nodeId: string;
+  protocol: number;
+  options: any;
+  onData: (d: string | Uint8Array) => void;
+  onConsoleMessage?: (m: string) => void;
+  onStateChange?: (s: number) => void;
+  latency = { timer: null as any };
+
+  start() {
+    const urlBase = `${location.protocol.replace('http', 'ws')}//${location.host}`;
+    let url = `${urlBase}${this.domainUrl}meshrelay.ashx?browser=1&p=${this.protocol}&nodeid=${encodeURIComponent(this.nodeId)}&id=${this.id}`;
+    if (this.authCookie) url += `&auth=${encodeURIComponent(this.authCookie)}`;
+    this.socket = new WebSocket(url);
+    this.socket.binaryType = 'arraybuffer';
+    this.socket.onopen = () => {
+      this.setState(2);
+      // kick RTT
+      this.sendCtrl({ ctrlChannel: 102938, type: 'rtt', time: Date.now() });
+      this.latency.timer = setInterval(() => this.sendCtrl({ ctrlChannel: 102938, type: 'rtt', time: Date.now() }), 10000);
+    };
+    this.socket.onmessage = (e) => this.onMessage(e);
+    this.socket.onclose = () => this.stop(1);
+    this.setState(1);
+  }
+
+  onMessage(e: MessageEvent) {
+    if (this.state < 3) {
+      const data = e.data;
+      if (data === 'c' || data === 'cr') {
+        if (this.options) {
+          const opts = { ...this.options, type: 'options' };
+          this.sendCtrl(opts);
+        }
+        this.sendRaw(String(this.protocol)); // protocol number
+        this.setState(3);
+        return;
+      }
+    }
+    if (typeof e.data === 'string') {
+      const s = e.data as string;
+      if (s[0] === '~') {
+        this.onData(s.substring(1));
+        return;
+      }
+      try {
+        const j = JSON.parse(s);
+        if (j && j.ctrlChannel === 102938) {
+          if (j.type === 'console' && this.onConsoleMessage) this.onConsoleMessage(j.msg);
+          if (j.type === 'ping') this.sendCtrl({ ctrlChannel: 102938, type: 'pong' });
+          if (j.type === 'rtt' && typeof j.time === 'number') { /* handle RTT if desired */ }
+          return;
+        }
+      } catch {
+        // not JSON, ignore
+      }
+    } else {
+      const buf = new Uint8Array(e.data as ArrayBuffer);
+      this.onData(buf);
+    }
+  }
+
+  sendCtrl(obj: any) {
+    try { this.socket?.send(JSON.stringify(obj)); } catch {}
+  }
+
+  sendText(text: string) {
+    // send UTF-8 bytes like MeshCentral client
+    const enc = new TextEncoder();
+    this.sendRaw(enc.encode(text));
+  }
+
+  sendRaw(x: string | Uint8Array) {
+    try {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+      if (typeof x === 'string') {
+        const b = new Uint8Array(x.length);
+        for (let i = 0; i < x.length; i++) b[i] = x.charCodeAt(i);
+        this.socket.send(b.buffer);
+      } else {
+        this.socket.send(x);
+      }
+    } catch {}
+  }
+
+  stop() {
+    if (this.latency.timer) { clearInterval(this.latency.timer); this.latency.timer = null; }
+    try { if (this.socket?.readyState === WebSocket.OPEN) this.sendCtrl({ ctrlChannel: 102938, type: 'close' }); } catch {}
+    try { if (this.socket) this.socket.close(); } catch {}
+    this.socket = undefined;
+    this.setState(0);
+  }
+
+  setState(s: number) {
+    if (this.state === s) return;
+    this.state = s;
+    this.onStateChange?.(s);
+  }
+}
+
+type Props = {
+  domainUrl: string;        // e.g. "/mydomain/" or "/"
+  authCookie: string;       // provided by your backend after login
+  nodeId: string;           // "node/<domain>/<id>"
+  requireLogin?: boolean;
+};
+
+export function MeshTerminal({ domainUrl, authCookie, nodeId, requireLogin }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const termRef = useRef<Terminal | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
+  const tunnelRef = useRef<MeshTunnel | null>(null);
+  const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    const term = new Terminal();
+    const fit = new FitAddon();
+    term.loadAddon(fit);
+    term.open(containerRef.current!);
+    fit.fit();
+    termRef.current = term;
+    fitRef.current = fit;
+    const onResize = () => {
+      fit.fit();
+      if (tunnelRef.current && termRef.current) {
+        tunnelRef.current.sendCtrl({ ctrlChannel: 102938, type: 'termsize', cols: term.cols, rows: term.rows });
+      }
+    };
+    window.addEventListener('resize', onResize);
+    term.onResize(() => {
+      // debounce client-side if desired
+      if (tunnelRef.current) {
+        tunnelRef.current.sendCtrl({ ctrlChannel: 102938, type: 'termsize', cols: term.cols, rows: term.rows });
+      }
+    });
+    term.onData((d) => tunnelRef.current?.sendText(d));
+    return () => {
+      window.removeEventListener('resize', onResize);
+      tunnelRef.current?.stop();
+      term.dispose();
+    };
+  }, []);
+
+  useEffect(() => {
+    const term = termRef.current;
+    if (!term) return;
+    const tunnel = new MeshTunnel({
+      domainUrl,
+      authCookie,
+      nodeId,
+      protocol: 1,
+      options: { cols: term.cols, rows: term.rows, requireLogin },
+      onData: (data) => {
+        if (term.writeUtf8) {
+          if (typeof data === 'string') term.writeUtf8(data);
+          else term.writeUtf8(new Uint8Array(data));
+        } else {
+          if (typeof data === 'string') term.write(data);
+          else term.write(new Uint8Array(data as Uint8Array));
+        }
+      },
+      onConsoleMessage: (msg) => { /* show toast if desired */ },
+      onStateChange: (s) => setConnected(s === 3)
+    });
+    tunnelRef.current = tunnel;
+    tunnel.start();
+    return () => tunnel.stop();
+  }, [domainUrl, authCookie, nodeId, requireLogin]);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <button onClick={() => tunnelRef.current?.start()} disabled={connected}>Connect</button>
+        <button onClick={() => tunnelRef.current?.stop()} disabled={!connected}>Disconnect</button>
+        <span>{connected ? 'Connected' : 'Disconnected'}</span>
+      </div>
+      <div ref={containerRef} style={{ width: '100%', height: 400, background: '#000' }} />
+    </div>
+  );
+}
+```
+
+#### Notes and gotchas
+- **Authentication**: Your app must obtain or mint the same `authCookie` MeshCentral uses. In MeshCentral, this is emitted by the server into the page template after user login. For a separate React app, integrate with your MeshCentral server to log in and receive `authCookie` (and optionally `authRelayCookie`) from an authenticated backend endpoint you own.
+- **Domain prefix**: Use the correct `domainUrl` prefix for multi-tenant deployments.
+- **Protocol id**: Terminal is `1`. Other modes (desktop, files) use different ids. Keep `p=1` in the `meshrelay.ashx` URL.
+- **Control channel**: Always send resize as `{"ctrlChannel":102938,"type":"termsize","cols":N,"rows":N}`. Reply to pings with `pong` if you implement custom control handling.
+- **Recording indicator**: Server sends `'cr'` if session is being recorded. Treat as `'c'` for connect, optionally display a banner.
+- **Binary vs string**: Terminal output can be string (prefixed by `~`) or binary `ArrayBuffer`. Handle both.
+- **Keepalives**: The client emits RTT pings; backend replies with RTT or `pong`. Not mandatory but helps latency calculation and proxies.
+
+#### Optional: Use original MeshCentral client
+If you prefer to reuse the exact client behavior (including WebRTC), you can adapt `public/scripts/agent-redir-ws-0.1.1.js` into your app and call:
+- `const tunnel = CreateAgentRedirect(null, module, serverPublicNamePort, authCookie, authRelayCookie, domainUrl)`
+- With a minimal module object for terminal:
+  - `module = { protocol: 1, ProcessData: onData, ProcessBinaryData: onData, xxStateChange: () => {} }`
+
+This exactly mirrors `xterm.handlebars`:
+- `tunnel.onStateChanged = (t, state) => ...`
+- `tunnel.onConsoleMessageChange = (t, msg) => ...`
+- `tunnel.sendText(data)`, `tunnel.sendCtrlMsg(json)`, `tunnel.Start(nodeId)`, `tunnel.Stop()`
+
+#### Server configuration checklist
+- Ensure `meshrelay.ashx` is enabled (default).
+- Your React app must be served from the same origin (or configure CORS and cookies appropriately) to access `wss://<host>/<domain>meshrelay.ashx`.
+- The logged-in user must have `MESHRIGHT_REMOTECONTROL` on the target node.
+
+#### Minimal flow to fetch the cookies
+- Log in against MeshCentral (or a proxy endpoint in your app) to obtain `authCookie` and `domainUrl`. In MeshCentral, they’re produced via `encodeCookie` and injected into templates. Reuse your MeshCentral server’s login and store the provided cookie token on your app server, then pass it to the React client as `authCookie`.
+
+- If you need to start relays by asking the agent to connect back (common if no direct `nodeid` routing), you’ll additionally send a `msg` via the control channel (`control.ashx`) to instruct the agent to connect to your relay id. The simplified example above uses `nodeid` and `auth` directly, which works in standard MeshCentral setups.
+
+- WebRTC is optional. Start with WS-only; add RTC later by following the `agent-redir-ws-0.1.1.js` webrtc signaling fields.
+
+- Security: don’t expose `authCookie` beyond your trusted frontend; rotate/expire per session as MeshCentral does.
+
+- Resilience: on `close` or `error`, stop and allow user to reconnect; debounce resizes; avoid flooding control channel.
+
+- Accessibility: forward paste and keyboard shortcuts; handle terminal size on container resize.
+
+- The backend will stream data transparently once paired; you don’t need additional APIs.
+
+- Testing: Use a known node id from your MeshCentral; confirm the control socket connects; verify `'c'` connect marker, then that typing echoes back.
+
+- Troubleshooting: If you never receive `'c'`, the agent side may not be pairing—check permissions, cookies, `nodeid`, and server logs around `meshrelay.js` “Relay connected/holding” lines.
+
+- Extensibility: Terminal modes (admin/user shell) use different protocol ids per `meshrelay.js` header comments.
+
+- Cleanup: On unmount, always call `tunnel.stop()` to close WS and timers.
+
+- UI polish: Add status labels for “Connecting…/Setup…/Connected”, show console banner messages (`onConsoleMessage`), and optional recording indicator when `'cr'` arrives.
+
+- Security compliance: Respect consent/notification if your domain uses them; those are enforced server-side via the relay initiation path.
+
+- Version compatibility: Behavior described matches repo files present; if your server differs, align protocol ids and control messages accordingly.
+
+- Deployment: Host React app under the same domain to simplify auth; otherwise configure your server to accept the proper cookies and headers from your app’s origin.
+
+I’ve completed the analysis and provided a React implementation outline with working WS protocol details.
