@@ -7,7 +7,10 @@ use std::path::Path;
 use tracing::{info, error, warn};
 
 #[cfg(target_os = "macos")]
-use tray_icon::{TrayIconBuilder, menu::Menu};
+use tray_icon::{TrayIconBuilder, menu::Menu, TrayIconEvent};
+
+#[cfg(target_os = "macos")]
+use std::sync::mpsc;
 
 #[cfg(target_os = "macos")]
 use image::io::Reader as ImageReader;
@@ -71,19 +74,30 @@ fn run_tray_app() -> Result<(), Box<dyn std::error::Error>> {
     // Create a simple menu (for future use)
     let menu = Menu::new();
     
-    // Create the tray icon
+    // Create channel for tray events
+    let (tx, rx) = mpsc::channel();
+    
+    // Set up global event handler for tray events
+    TrayIconEvent::set_event_handler(Some(move |event| {
+        if let Err(e) = tx.send(event) {
+            eprintln!("Failed to send tray event: {}", e);
+        }
+    }));
+    
+    // Create the tray icon with event handling
     let _tray_icon = TrayIconBuilder::new()
         .with_menu(Box::new(menu))
-        .with_tooltip("OpenFrame")
+        .with_tooltip("OpenFrame - Click to open chat")
         .with_icon(icon)
         .build()?;
 
     info!("System tray icon created successfully");
     info!("Look for the OpenFrame icon in the menu bar (top right)");
+    info!("Click the icon to open chat window");
     info!("Press Ctrl+C to stop the application");
 
     // Keep the application running with proper event loop
-    run_event_loop();
+    run_event_loop_with_events(rx);
     
     Ok(())
 }
@@ -221,12 +235,15 @@ fn init_macos_app() {
 }
 
 #[cfg(target_os = "macos")]
-fn run_event_loop() {
+fn run_event_loop_with_events(rx: mpsc::Receiver<TrayIconEvent>) {
     use tao::event_loop::{EventLoop, ControlFlow};
     use tao::event::Event;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
     
     // Create proper event loop for macOS
     let event_loop = EventLoop::new();
+    let window_open = Arc::new(AtomicBool::new(false));
     
     // Set up signal handler for graceful shutdown
     ctrlc::set_handler(move || {
@@ -235,14 +252,37 @@ fn run_event_loop() {
     }).expect("Error setting Ctrl-C handler");
     
     println!("Starting macOS event loop...");
+    println!("Click the tray icon to open chat window");
     
     // Run the proper macOS event loop
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, event_loop_target, control_flow| {
         *control_flow = ControlFlow::Wait;
         
+        // Check for tray icon events
+        if let Ok(tray_event) = rx.try_recv() {
+            match tray_event {
+                TrayIconEvent::Click { .. } => {
+                    println!("Tray icon clicked!");
+                    if !window_open.load(Ordering::SeqCst) {
+                        if let Err(e) = open_simple_chat_window() {
+                            eprintln!("Failed to open chat window: {}", e);
+                        } else {
+                            window_open.store(true, Ordering::SeqCst);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        
         match event {
-            Event::WindowEvent { .. } => {
-                // Handle window events if needed
+            Event::WindowEvent { event: window_event, .. } => {
+                match window_event {
+                    tao::event::WindowEvent::CloseRequested => {
+                        window_open.store(false, Ordering::SeqCst);
+                    }
+                    _ => {}
+                }
             }
             Event::MainEventsCleared => {
                 // Main events cleared
@@ -250,4 +290,40 @@ fn run_event_loop() {
             _ => {}
         }
     });
+}
+
+#[cfg(target_os = "macos")]
+fn open_simple_chat_window() -> Result<(), Box<dyn std::error::Error>> {
+    use std::process::Command;
+    
+    println!("Opening chat window using AppleScript...");
+    
+    // Create AppleScript to show a dialog with the message
+    let applescript = r#"
+    tell application "System Events"
+        set dialogResult to display dialog "hello, I'm chat" with title "OpenFrame Chat" buttons {"OK"} default button "OK" with icon note
+    end tell
+    "#;
+    
+    // Execute AppleScript
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(applescript)
+        .output()?;
+    
+    if output.status.success() {
+        println!("Chat dialog opened successfully");
+    } else {
+        let error = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Failed to open dialog: {}", error);
+    }
+    
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn get_screen_size() -> (i32, i32) {
+    // Simplified approach - use common macOS resolution
+    // In a real app, you could use CoreGraphics to get actual screen size
+    (1440, 900) // Common MacBook resolution
 }
