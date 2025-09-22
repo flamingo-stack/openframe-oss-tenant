@@ -18,7 +18,6 @@ OpenFrame follows a microservices architecture with these core components:
 │   ├── openframe-stream/    # Stream processing service
 │   └── openframe-config/    # Configuration service
 ├── libs/                    # Shared libraries
-│   ├── openframe-core/      # Core libraries
 │   ├── openframe-data/      # Data access libraries
 │   └── openframe-security/  # Security libraries
 ├── config/                  # Configuration files

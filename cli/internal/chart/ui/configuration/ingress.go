@@ -31,7 +31,7 @@ func (i *IngressConfigurator) Configure(config *types.ChartConfiguration) error 
 
 	// Choose options based on deployment mode
 	var options []string
-	isSaaS := config.DeploymentMode != nil && *config.DeploymentMode == types.DeploymentModeSaaS
+	isSaaS := config.DeploymentMode != nil && (*config.DeploymentMode == types.DeploymentModeSaaS || *config.DeploymentMode == types.DeploymentModeSaaSShared)
 
 	if isSaaS {
 		options = []string{

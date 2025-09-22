@@ -100,9 +100,9 @@ func (h *HelmValuesModifier) ApplyConfiguration(values map[string]interface{}, c
 			values["registry"] = registry
 		}
 
-		// For SaaS mode, update GHCR registry; for OSS, update docker registry
-		if config.DeploymentMode != nil && *config.DeploymentMode == types.DeploymentModeSaaS {
-			// Update GHCR registry section for SaaS
+		// For SaaS and SaaS Shared modes, update GHCR registry; for OSS, update docker registry
+		if config.DeploymentMode != nil && (*config.DeploymentMode == types.DeploymentModeSaaS || *config.DeploymentMode == types.DeploymentModeSaaSShared) {
+			// Update GHCR registry section for SaaS and SaaS Shared
 			ghcr, ok := registry["ghcr"].(map[string]interface{})
 			if !ok {
 				ghcr = make(map[string]interface{})
@@ -151,8 +151,9 @@ func (h *HelmValuesModifier) applyDeploymentMode(values map[string]interface{}, 
 		// Enable OSS, disable SaaS
 		h.ensureDeploymentSection(deployment, "oss", true)
 		h.ensureDeploymentSection(deployment, "saas", false)
-	case types.DeploymentModeSaaS:
+	case types.DeploymentModeSaaS, types.DeploymentModeSaaSShared:
 		// Enable SaaS, disable OSS
+		// SaaS Shared uses the same Helm configuration as SaaS but with different repository
 		h.ensureDeploymentSection(deployment, "oss", false)
 		h.ensureDeploymentSection(deployment, "saas", true)
 	default:
@@ -198,6 +199,16 @@ func (h *HelmValuesModifier) applySaaSConfig(values map[string]interface{}, saas
 	// Set SaaS repository password and branch
 	saasRepository["password"] = saasConfig.RepositoryPassword
 	saasRepository["branch"] = saasConfig.SaaSBranch
+
+	// Ensure SaaS config section exists
+	saasConfigSection, ok := saas["config"].(map[string]interface{})
+	if !ok {
+		saasConfigSection = make(map[string]interface{})
+		saas["config"] = saasConfigSection
+	}
+
+	// Set SaaS config repository password
+	saasConfigSection["password"] = saasConfig.ConfigRepositoryPassword
 
 	// Configure OSS repository settings
 	oss, ok := deployment["oss"].(map[string]interface{})

@@ -83,6 +83,7 @@ public class AgentRegistrationService {
         machine.setAgentVersion(request.getAgentVersion());
         machine.setLastSeen(Instant.now());
         machine.setStatus(DeviceStatus.ACTIVE);
+        machine.setOrganizationId(request.getOrganizationId());
 
         machineRepository.save(machine);
     }

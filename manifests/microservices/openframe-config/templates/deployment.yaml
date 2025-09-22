@@ -22,13 +22,9 @@ spec:
               name: http
             - containerPort: 8889
               name: management
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "k8s" 
-            - name: CONFIG_GIT_REPO
-              value: "{{ .Values.config.repo }}"
-            - name: CONFIG_GIT_BRANCH
-              value: "{{ .Values.config.branch }}"
+          envFrom:
+            - configMapRef:
+                name: openframe-config
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml

@@ -2,7 +2,7 @@ package com.openframe.authz.service;
 
 import com.openframe.authz.dto.TenantRegistrationRequest;
 import com.openframe.data.document.auth.AuthUser;
-import com.openframe.data.document.auth.Tenant;
+import com.openframe.data.document.tenant.Tenant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
