@@ -24,8 +24,8 @@ func NewBranchConfigurator(modifier *templates.HelmValuesModifier) *BranchConfig
 
 // Configure asks user about Git branch configuration
 func (b *BranchConfigurator) Configure(config *types.ChartConfiguration) error {
-	// Skip branch configuration for SaaS mode - it's handled in SaaS configuration
-	if config.DeploymentMode != nil && *config.DeploymentMode == types.DeploymentModeSaaS {
+	// Skip branch configuration for SaaS and SaaS Shared modes - it's handled in SaaS configuration
+	if config.DeploymentMode != nil && (*config.DeploymentMode == types.DeploymentModeSaaS || *config.DeploymentMode == types.DeploymentModeSaaSShared) {
 		return nil
 	}
 

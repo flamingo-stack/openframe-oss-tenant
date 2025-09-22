@@ -226,8 +226,8 @@ jobs:
       - name: Override branch name
         run: |
           # Override branch name
-          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+          yq eval ".deployment.oss.repository.branch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+          echo "Updated deployment.oss.repository.branch to: ${{ github.head_ref }}"
 
       - name: Override registry
         run: |

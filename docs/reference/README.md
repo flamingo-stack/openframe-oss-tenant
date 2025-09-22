@@ -14,7 +14,6 @@ This section provides comprehensive reference documentation for OpenFrame compon
 - **[OpenFrame UI](services/openframe-ui.md)** - Vue.js frontend application
 
 ### Shared Libraries
-- **[OpenFrame Core](libraries/openframe-core.md)** - Core models and utilities
 - **[OpenFrame Data](libraries/openframe-data.md)** - Data access layer
 - **[OpenFrame JWT](libraries/openframe-jwt.md)** - JWT security implementation
 - **[API Library](libraries/api-library.md)** - Common API services and DTOs
@@ -34,7 +33,7 @@ This section provides comprehensive reference documentation for OpenFrame compon
 - **[Secret Management](configuration/secrets.md)** - Secret configuration and management
 
 ### 📚 Library Documentation
-- **[Core Library](libraries/openframe-core.md)** - Foundation classes and utilities
+<!-- Core Library moved to openframe-oss-lib -->
 - **[Data Access Library](libraries/openframe-data.md)** - Database and messaging abstractions
 - **[JWT Library](libraries/openframe-jwt.md)** - Authentication and authorization
 - **[API Library](libraries/api-library.md)** - Shared API components and DTOs

@@ -26,7 +26,3 @@ registry:
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-config
   tag: latest
-
-config:
-  repo: "openframe-oss-tenant-cfg"
-  branch: "main"

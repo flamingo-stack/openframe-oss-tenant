@@ -28,7 +28,7 @@ deployment:
       gcp:
         enabled: false 
         privateDomain: "internal.flamingo.cx"
-        tenantID: "cluster-1001" 
+        tenantID: "example" 
     repository:
       baseDir: manifests
       appsDir: apps
@@ -55,9 +55,3 @@ registry:
 
 registerJob:
   enabled: true
-
-apps:
-  openframe-config:
-    values:
-      config:
-        branch: main

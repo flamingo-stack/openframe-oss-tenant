@@ -28,7 +28,7 @@
             <artifactId>openframe-notification-mail</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-data</artifactId>
         </dependency>
         <dependency>
@@ -38,12 +38,12 @@
         </dependency>
 
         <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>openframe-jwt</artifactId>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-security-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>api-library</artifactId>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-api-lib</artifactId>
         </dependency>
 
         <!-- Spring Cloud -->
