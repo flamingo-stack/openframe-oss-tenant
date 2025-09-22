@@ -9,6 +9,7 @@ import com.openframe.api.service.DeviceFilterService;
 import com.openframe.api.service.DeviceService;
 import com.openframe.data.document.device.Machine;
 import com.openframe.data.document.tool.Tag;
+import com.openframe.data.document.tool.ToolConnection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +62,13 @@ public class DeviceDataFetcher {
         DataLoader<String, List<Tag>> dataLoader = dfe.getDataLoader("tagDataLoader");
         Machine machine = dfe.getSource();
         return dataLoader.load(machine.getId());
+    }
+
+    @DgsData(parentType = "Machine")
+    public CompletableFuture<List<ToolConnection>> toolConnections(DgsDataFetchingEnvironment dfe) {
+        DataLoader<String, List<ToolConnection>> dataLoader = dfe.getDataLoader("toolConnectionDataLoader");
+        Machine machine = dfe.getSource();
+        return dataLoader.load(machine.getMachineId());
     }
 }
 
