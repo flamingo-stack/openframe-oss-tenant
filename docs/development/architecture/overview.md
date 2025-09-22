@@ -169,7 +169,6 @@ openframe/
 │       │   └── router/
 │       └── package.json
 └── libraries/
-    ├── openframe-core/
     ├── openframe-data/
     └── openframe-security/
 ```

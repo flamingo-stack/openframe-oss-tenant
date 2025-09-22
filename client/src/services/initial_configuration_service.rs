@@ -37,6 +37,16 @@ impl InitialConfigurationService {
         Ok(config.local_mode)
     }
 
+    pub fn get_org_id(&self) -> Result<String> {
+        let config = self.get()?;
+        Ok(config.org_id.clone())
+    }
+
+    pub fn get_local_ca_cert_path(&self) -> Result<String> {
+        let config = self.get()?;
+        Ok(config.local_ca_cert_path.clone())
+    }
+
     fn get(&self) -> Result<InitialConfiguration> {
         if !self.config_file_path.exists() {
             return Err(anyhow::anyhow!("Initial configuration file does not exist"));

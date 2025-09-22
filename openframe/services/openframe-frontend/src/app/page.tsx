@@ -1,26 +1,30 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+export const dynamic = 'force-dynamic'
 
-const HomePage = dynamic(
-  () => import('./home-page'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="min-h-screen bg-ods-bg flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-ods-text-primary mb-4">
-            Loading...
-          </h1>
-          <p className="text-ods-text-secondary">
-            Please wait while we prepare your experience
-          </p>
-        </div>
-      </div>
-    )
-  }
-)
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { ContentPageContainer } from '@flamingo/ui-kit/components/ui'
+import { useAuthStore } from './auth/stores/auth-store'
+import { getDefaultRedirectPath } from '../lib/app-mode'
 
 export default function Home() {
-  return <HomePage />
+  const router = useRouter()
+  const { isAuthenticated } = useAuthStore()
+
+  useEffect(() => {
+    if (isAuthenticated !== null) {
+      const redirectPath = getDefaultRedirectPath(isAuthenticated)
+      router.push(redirectPath)
+    }
+  }, [router, isAuthenticated])
+
+  return (
+    <ContentPageContainer
+      title="Welcome"
+      subtitle="Loading your dashboard..."
+    >
+      <div />
+    </ContentPageContainer>
+  )
 }

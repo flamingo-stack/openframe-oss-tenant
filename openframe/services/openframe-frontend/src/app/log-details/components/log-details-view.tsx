@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
-import { Button, StatusTag } from '@flamingo/ui-kit/components/ui'
+import { Button, StatusTag, DetailPageContainer, DetailLoader } from '@flamingo/ui-kit/components/ui'
 import { CopyIcon } from '@flamingo/ui-kit/components/icons'
 import { DeviceInfoSection } from './device-info-section'
 import { FullInformationSection } from './full-information-section'
@@ -61,14 +61,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3a3a3a] border-t-[#ffc008]" />
-          <div className="text-sm text-[#888888]">Loading log details...</div>
-        </div>
-      </div>
-    )
+    return <DetailLoader />
   }
 
   // Error state
@@ -76,15 +69,15 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <div className="text-center">
-          <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] text-[#fafafa] mb-2">
+          <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] text-ods-text-primary mb-2">
             Log Not Found
           </h2>
-          <p className="text-[#888888] mb-4">
+          <p className="text-ods-text-secondary mb-4">
             {error || `Could not find log with ID: ${logId}`}
           </p>
           <Button
             onClick={handleBackToLogs}
-            className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] flex items-center gap-2"
+            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] flex items-center gap-2"
           >
             <ChevronLeft className="h-4 w-4" />
             Back to Logs
@@ -94,59 +87,46 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     )
   }
 
+  const headerActions = (
+    <>
+      <Button
+        onClick={handleCopyLogDetails}
+        leftIcon={<CopyIcon size={24} />}
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+      >  
+        Copy Log Details
+      </Button>
+    </>
+  )
+
   return (
-    <div className="flex flex-col gap-6 w-full">
-      {/* Header Section */}
-      <div className="flex items-end justify-between gap-4 pt-6">
-        <div className="flex flex-col gap-2 flex-1">
-          {/* Back Button */}
-          <button
-            onClick={handleBackToLogs}
-            className="flex items-center gap-2 p-3 rounded-[6px] hover:bg-[#2a2a2a] transition-colors self-start"
-          >
-            <ChevronLeft className="h-6 w-6 text-[#888888]" />
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#888888]">
-              Back to Logs
-            </span>
-          </button>
-
-          {/* Page Title */}
-          <h1 className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] tracking-[-0.64px] text-[#fafafa]">
-            Log Details
-          </h1>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-4 items-center">
-          <Button
-            onClick={handleCopyLogDetails}
-            leftIcon={<CopyIcon size={24} />}
-            className="bg-[#212121] border border-[#3a3a3a] hover:bg-[#2a2a2a] text-[#fafafa] px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
-          >  
-            Copy Log Details
-          </Button>
-        </div>
-      </div>
-
+    <DetailPageContainer
+      title="Log Details"
+      backButton={{
+        label: 'Back to Logs',
+        onClick: handleBackToLogs
+      }}
+      headerActions={headerActions}
+    >
       {/* Status and Timestamp */}
       <div className="flex gap-2 items-center">
         <StatusTag label={logDetails.severity} variant={getSeverityVariant(logDetails.severity)} />
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa]">
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
           {new Date(logDetails.timestamp).toLocaleString()}
         </span>
       </div>
 
       {/* Log Summary Card */}
-      <div className="bg-[#212121] border border-[#3a3a3a] rounded-[8px] w-full">
-        <div className="flex flex-col gap-4 items-center h-20 px-4 py-0 border-b border-[#3a3a3a]">
+      <div className="bg-ods-card border border-ods-border rounded-[8px] w-full">
+        <div className="flex flex-col gap-4 items-center h-20 px-4 py-0 border-b border-ods-border">
           <div className="flex gap-2 items-center h-20 w-full overflow-hidden">
             <div className="flex flex-col flex-1 justify-center">
               <div className="flex gap-1 items-center w-full">
-                <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap">
+                <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
                   {logDetails.message || 'No message available'}
                 </div>
               </div>
-              <div className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888888] h-5 w-full overflow-hidden text-ellipsis">
+              <div className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary h-5 w-full overflow-hidden text-ellipsis">
                 {logDetails.toolType} • {logDetails.eventType}
               </div>
             </div>
@@ -162,6 +142,6 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
 
       {/* Details Section */}
       <DetailsSection logDetails={logDetails} />
-    </div>
+    </DetailPageContainer>
   )
 }

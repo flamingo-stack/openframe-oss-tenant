@@ -222,7 +222,7 @@ const fetchDeviceStats = async () => {
     const response = await restClient.get<Device[]>(`${API_URL}/agents/`);
     console.log('API Response:', response);
     
-    const devices = Array.isArray(response) ? response : [];
+    const devices = Array.isArray(JSON.parse(response)) ? JSON.parse(response) : [];
     console.log('Processed devices:', devices);
     
     const total = devices.length;

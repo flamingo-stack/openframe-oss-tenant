@@ -7,17 +7,12 @@ import type { NavigationSidebarConfig } from '@flamingo/ui-kit/types/navigation'
 import { useAuthStore } from '../auth/stores/auth-store'
 import { useAuth } from '../auth/hooks/use-auth'
 import { getNavigationItems } from '../../lib/navigation-config'
+import { shouldShowNavigationSidebar, isAuthOnlyMode } from '../../lib/app-mode'
+import { ListLoader } from '@flamingo/ui-kit/components/ui'
 
 // Loading component for content area
 function ContentLoading() {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-ods-border border-t-ods-accent" />
-        <div className="text-sm text-ods-text-secondary">Loading...</div>
-      </div>
-    </div>
-  )
+  return <ListLoader />
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +20,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { isAuthenticated } = useAuthStore()
   const { logout } = useAuth()
+
+  // In auth-only mode, don't render the app layout
+  if (isAuthOnlyMode()) {
+    return <>{children}</>
+  }
 
   // Memoize navigation handler to prevent recreating on every render
   const handleNavigate = useCallback((path: string) => {
@@ -60,8 +60,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-ods-bg">
-      {/* Navigation Sidebar - Always visible once mounted */}
-      <NavigationSidebar config={sidebarConfig} />
+      {/* Navigation Sidebar - Only show if navigation should be visible */}
+      {shouldShowNavigationSidebar() && (
+        <NavigationSidebar config={sidebarConfig} />
+      )}
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
