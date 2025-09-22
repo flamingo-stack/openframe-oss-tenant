@@ -249,4 +249,4 @@ jobs:
           echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "**Duration:** Approximately ${{ github.event.created_at }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 Check the Allure reports for detailed test results!" >> $GITHUB_STEP_SUMMARY
+          echo "Check the Allure reports for detailed test results!" >> $GITHUB_STEP_SUMMARY
