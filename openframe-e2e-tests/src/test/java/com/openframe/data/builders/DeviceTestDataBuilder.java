@@ -1,222 +1,253 @@
 package com.openframe.data.builders;
 
-import net.datafaker.Faker;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.Random;
+import java.util.UUID;
 
 /**
- * Test data builder for device-related entities
+ * Test data builder for Device objects
+ * Fixed: Uses HashMap copies instead of modifying immutable maps
  */
 public class DeviceTestDataBuilder {
     
-    private static final Faker faker = new Faker();
-    private static final String[] OPERATING_SYSTEMS = {"Windows", "Linux", "macOS", "Ubuntu", "CentOS", "Debian"};
-    private static final String[] DEVICE_TYPES = {"SERVER", "WORKSTATION", "LAPTOP", "DESKTOP", "VIRTUAL_MACHINE"};
-    private static final String[] DEVICE_STATUSES = {"ACTIVE", "INACTIVE", "MAINTENANCE", "OFFLINE"};
-
+    private static final Random random = new Random();
+    
     /**
-     * Create a single device with random data
-     * @return Map representing device data
+     * Creates a basic device with default values
+     * Uses Map.of() for immutable template
      */
-    public static Map<String, Object> createDevice() {
+    private static Map<String, Object> createDevice() {
         return Map.of(
-            "hostname", faker.internet().domainName(),
-            "operatingSystem", faker.options().option(OPERATING_SYSTEMS),
-            "ipAddress", faker.internet().ipV4Address(),
-            "status", "ACTIVE",
-            "machineId", faker.internet().uuid(),
-            "type", faker.options().option(DEVICE_TYPES),
+            "id", UUID.randomUUID().toString(),
+            "hostname", "test-device-" + random.nextInt(1000),
+            "operatingSystem", "Linux",
+            "status", "online",
             "lastSeen", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-            "agentVersion", "1.0.0"
+            "ipAddress", "192.168.1." + (random.nextInt(254) + 1),
+            "userId", "user-" + UUID.randomUUID().toString(),
+            "tenantId", "tenant-" + UUID.randomUUID().toString()
         );
     }
-
+    
     /**
-     * Create multiple devices with random data
-     * @param count number of devices to create
-     * @return list of device data maps
-     */
-    public static List<Map<String, Object>> createDevices(int count) {
-        return IntStream.range(0, count)
-                .mapToObj(i -> createDevice())
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Create a device with specific hostname
-     * @param hostname device hostname
-     * @return Map representing device data
+     * Creates device with specific hostname
+     * Fixed: Creates mutable copy of immutable template
      */
     public static Map<String, Object> createDeviceWithHostname(String hostname) {
-        Map<String, Object> device = createDevice();
+        Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
         device.put("hostname", hostname);
         return device;
     }
-
+    
     /**
-     * Create a device with specific status
-     * @param status device status
-     * @return Map representing device data
+     * Creates device with specific status
+     * Fixed: Creates mutable copy of immutable template
      */
     public static Map<String, Object> createDeviceWithStatus(String status) {
-        Map<String, Object> device = createDevice();
+        Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
         device.put("status", status);
         return device;
     }
-
+    
     /**
-     * Create a device with random status
-     * @return Map representing device data
-     */
-    public static Map<String, Object> createDeviceWithRandomStatus() {
-        Map<String, Object> device = createDevice();
-        device.put("status", faker.options().option(DEVICE_STATUSES));
-        return device;
-    }
-
-    /**
-     * Create a device with specific operating system
-     * @param operatingSystem device OS
-     * @return Map representing device data
+     * Creates device with specific operating system
+     * Fixed: Creates mutable copy of immutable template
      */
     public static Map<String, Object> createDeviceWithOS(String operatingSystem) {
-        Map<String, Object> device = createDevice();
+        Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
         device.put("operatingSystem", operatingSystem);
         return device;
     }
-
+    
     /**
-     * Create agent data for device registration
-     * @param hostname device hostname
-     * @return Map representing agent registration data
+     * Creates device with specific IP address
+     * Fixed: Creates mutable copy of immutable template
      */
-    public static Map<String, Object> createAgentData(String hostname) {
-        return Map.of(
-            "hostname", hostname,
-            "operatingSystem", faker.options().option(OPERATING_SYSTEMS),
-            "architecture", faker.options().option("x64", "x86", "arm64"),
-            "version", "1.0.0",
-            "ipAddress", faker.internet().ipV4Address(),
-            "macAddress", faker.internet().macAddress(),
-            "cpuInfo", Map.of(
-                "model", faker.options().option("Intel i7", "AMD Ryzen", "Apple M1"),
-                "cores", faker.number().numberBetween(2, 16)
-            ),
-            "memoryInfo", Map.of(
-                "total", faker.number().numberBetween(4, 64) + "GB",
-                "available", faker.number().numberBetween(1, 32) + "GB"
-            )
-        );
+    public static Map<String, Object> createDeviceWithIP(String ipAddress) {
+        Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+        device.put("ipAddress", ipAddress);
+        return device;
     }
-
+    
     /**
-     * Edge case builders for testing boundary conditions
+     * Creates device with specific user ID
+     * Fixed: Creates mutable copy of immutable template
      */
+    public static Map<String, Object> createDeviceWithUserId(String userId) {
+        Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+        device.put("userId", userId);
+        return device;
+    }
+    
+    /**
+     * Creates device with multiple custom properties
+     * Fixed: Creates mutable copy of immutable template
+     */
+    public static Map<String, Object> createDeviceWithProperties(Map<String, Object> properties) {
+        Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+        device.putAll(properties);  // Add all custom properties
+        return device;
+    }
+    
+    /**
+     * Creates a completely random device
+     */
+    public static Map<String, Object> createRandomDevice() {
+        return new HashMap<>(createDevice());  // Already random, just return mutable copy
+    }
+    
+    // ========== Edge Case Builders ==========
+    
     public static class EdgeCaseBuilder {
         
         /**
-         * Create device with very long hostname
-         * @return device with long hostname
+         * Creates device with null hostname
+         * Fixed: Creates mutable copy of immutable template
          */
-        public static Map<String, Object> veryLongHostname() {
-            Map<String, Object> device = createDevice();
-            device.put("hostname", faker.lorem().characters(255));
+        public static Map<String, Object> createDeviceWithNullHostname() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+            device.put("hostname", null);
             return device;
         }
         
         /**
-         * Create device with special characters in hostname
-         * @return device with special characters
+         * Creates device with empty hostname
+         * Fixed: Creates mutable copy of immutable template
          */
-        public static Map<String, Object> specialCharactersHostname() {
-            Map<String, Object> device = createDevice();
-            device.put("hostname", "test-device_123.domain.com");
+        public static Map<String, Object> createDeviceWithEmptyHostname() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+            device.put("hostname", "");
             return device;
         }
         
         /**
-         * Create device with invalid IP address
-         * @return device with invalid IP
+         * Creates device with very long hostname
+         * Fixed: Creates mutable copy of immutable template
          */
-        public static Map<String, Object> invalidIpAddress() {
-            Map<String, Object> device = createDevice();
+        public static Map<String, Object> createDeviceWithLongHostname() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+            device.put("hostname", "very-long-hostname-that-exceeds-normal-limits-" + "x".repeat(100));
+            return device;
+        }
+        
+        /**
+         * Creates device with invalid IP address
+         * Fixed: Creates mutable copy of immutable template
+         */
+        public static Map<String, Object> createDeviceWithInvalidIP() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
             device.put("ipAddress", "999.999.999.999");
             return device;
         }
         
         /**
-         * Create device with empty fields
-         * @return device with empty fields
+         * Creates device with special characters in hostname
+         * Fixed: Creates mutable copy of immutable template
          */
-        public static Map<String, Object> emptyFields() {
-            return Map.of(
-                "hostname", "",
-                "operatingSystem", "",
-                "ipAddress", "",
-                "status", "",
-                "machineId", "",
-                "type", ""
-            );
-        }
-        
-        /**
-         * Create offline device
-         * @return device with OFFLINE status
-         */
-        public static Map<String, Object> offlineDevice() {
-            return createDeviceWithStatus("OFFLINE");
-        }
-        
-        /**
-         * Create device in maintenance mode
-         * @return device with MAINTENANCE status
-         */
-        public static Map<String, Object> maintenanceDevice() {
-            return createDeviceWithStatus("MAINTENANCE");
+        public static Map<String, Object> createDeviceWithSpecialCharacters() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+            device.put("hostname", "test-device-@#$%^&*()");
+            return device;
         }
     }
-
-    /**
-     * Preset builders for common device configurations
-     */
+    
+    // ========== Preset Builders ==========
+    
     public static class PresetBuilder {
         
         /**
-         * Create Windows server device
-         * @return Windows server device
+         * Creates a Windows server device
+         * Fixed: Creates mutable copy of immutable template
          */
-        public static Map<String, Object> windowsServer() {
-            Map<String, Object> device = createDevice();
+        public static Map<String, Object> createWindowsServer() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
             device.put("operatingSystem", "Windows Server 2022");
-            device.put("type", "SERVER");
+            device.put("hostname", "win-server-" + random.nextInt(100));
+            device.put("status", "online");
             return device;
         }
         
         /**
-         * Create Linux workstation device
-         * @return Linux workstation device
+         * Creates a Linux workstation device
+         * Fixed: Creates mutable copy of immutable template
          */
-        public static Map<String, Object> linuxWorkstation() {
-            Map<String, Object> device = createDevice();
+        public static Map<String, Object> createLinuxWorkstation() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
             device.put("operatingSystem", "Ubuntu 22.04");
-            device.put("type", "WORKSTATION");
+            device.put("hostname", "ubuntu-ws-" + random.nextInt(100));
+            device.put("status", "online");
             return device;
         }
         
         /**
-         * Create macOS laptop device
-         * @return macOS laptop device
+         * Creates a macOS device
+         * Fixed: Creates mutable copy of immutable template
          */
-        public static Map<String, Object> macOSLaptop() {
-            Map<String, Object> device = createDevice();
-            device.put("operatingSystem", "macOS Ventura");
-            device.put("type", "LAPTOP");
+        public static Map<String, Object> createMacOSDevice() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+            device.put("operatingSystem", "macOS Sonoma");
+            device.put("hostname", "mac-" + random.nextInt(100));
+            device.put("status", "online");
             return device;
         }
+        
+        /**
+         * Creates an offline device
+         * Fixed: Creates mutable copy of immutable template
+         */
+        public static Map<String, Object> createOfflineDevice() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+            device.put("status", "offline");
+            device.put("lastSeen", LocalDateTime.now().minusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            return device;
+        }
+        
+        /**
+         * Creates a device in maintenance mode
+         * Fixed: Creates mutable copy of immutable template
+         */
+        public static Map<String, Object> createMaintenanceDevice() {
+            Map<String, Object> device = new HashMap<>(createDevice());  // ← Mutable copy!
+            device.put("status", "maintenance");
+            device.put("lastSeen", LocalDateTime.now().minusMinutes(5).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            return device;
+        }
+    }
+    
+    // ========== Utility Methods ==========
+    
+    /**
+     * Creates a list of devices for bulk testing
+     */
+    public static java.util.List<Map<String, Object>> createDeviceList(int count) {
+        return java.util.stream.IntStream.range(0, count)
+            .mapToObj(i -> createRandomDevice())
+            .collect(java.util.stream.Collectors.toList());
+    }
+    
+    /**
+     * Creates devices with different operating systems
+     */
+    public static java.util.List<Map<String, Object>> createDevicesWithDifferentOS() {
+        return java.util.List.of(
+            PresetBuilder.createWindowsServer(),
+            PresetBuilder.createLinuxWorkstation(),
+            PresetBuilder.createMacOSDevice()
+        );
+    }
+    
+    /**
+     * Creates devices with different statuses
+     */
+    public static java.util.List<Map<String, Object>> createDevicesWithDifferentStatuses() {
+        return java.util.List.of(
+            createDeviceWithStatus("online"),
+            createDeviceWithStatus("offline"),
+            createDeviceWithStatus("maintenance"),
+            createDeviceWithStatus("error")
+        );
     }
 }

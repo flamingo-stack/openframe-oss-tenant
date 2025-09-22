@@ -41,7 +41,7 @@ public class UserRegistrationTestDataProvider {
             Arguments.of("!@#$%^&*"),             // No uppercase, no lowercase, no digit
             
             // Edge cases
-            Arguments.of(" "),                  // Only spaces
+            Arguments.of(" "),                    // Only spaces
             Arguments.of("        ")              // 8 spaces (meets length but invalid)
         );
     }
@@ -53,9 +53,9 @@ public class UserRegistrationTestDataProvider {
     public static Stream<Arguments> invalidEmails() {
         return Stream.of(
             // Empty and basic format errors
-            Arguments.of(""),                       // Empty email
-            Arguments.of("   "),                    // Only spaces
-            Arguments.of("invalid-email"),          // No @ symbol
+            Arguments.of(""),                      // Empty email
+            Arguments.of("   "),                   // Only spaces
+            Arguments.of("invalid-email"),         // No @ symbol
             Arguments.of("@domain.com"),           // Missing local part
             Arguments.of("user@"),                 // Missing domain
             Arguments.of("user@domain"),           // Missing TLD
@@ -83,7 +83,7 @@ public class UserRegistrationTestDataProvider {
             // Special characters in wrong places
             Arguments.of("user@"),                  // Just @
             Arguments.of("@"),                      // Only @
-            Arguments.of("user@domain@")          // @ at end
+            Arguments.of("user@domain@")            // @ at end
         );
     }
 
