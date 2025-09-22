@@ -30,6 +30,14 @@
 
 ---
 
+## Quick Links
+- [Quick Start](#quick-start)  
+- [Configuration](#configuration)  
+- [Development](#development)  
+- [Security](#security)  
+
+---
+
 ## Highlights
 
 - Cross-platform device management (Windows, macOS, Linux)  
