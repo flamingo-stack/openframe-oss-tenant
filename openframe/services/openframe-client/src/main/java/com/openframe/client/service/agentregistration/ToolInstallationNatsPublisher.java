@@ -41,7 +41,7 @@ public class ToolInstallationNatsPublisher {
         message.setAssets(mapAssets(toolAgent.getAssets()));
         message.setInstallationCommandArgs(toolAgent.getInstallationCommandArgs());
         message.setRunCommandArgs(toolAgent.getRunCommandArgs());
-        message.setToolAgentIdCommandArgs(toolAgent.getToolAgentIdCommandArgs());
+        message.setToolAgentIdCommandArgs(toolAgent.getAgentToolIdCommandArgs());
         return message;
     }
 
