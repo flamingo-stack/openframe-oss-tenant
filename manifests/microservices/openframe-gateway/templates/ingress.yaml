@@ -32,8 +32,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: openframe-gateway
-  annotations:
-    k8s.ngrok.com/traffic-policy: openframe-gateway
 spec:
   ingressClassName: ngrok
   rules:
