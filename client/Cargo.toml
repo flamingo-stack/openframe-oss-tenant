@@ -15,6 +15,10 @@ categories = ["system", "monitoring"]
 name = "openframe"
 path = "src/main.rs"
 
+[[bin]]
+name = "openframe-tray"
+path = "src/bin/tray_main.rs"
+
 [lib]
 name = "openframe"
 path = "src/lib.rs"
@@ -63,6 +67,13 @@ winapi = { version = "0.3", features = ["winuser", "shellapi", "securitybaseapi"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tray-icon = "0.17"
+image = "0.24"
+objc = "0.2"
+ctrlc = "3.4"
+tao = "0.30"
 
 [build-dependencies]
 embed-resource = "2.4"
