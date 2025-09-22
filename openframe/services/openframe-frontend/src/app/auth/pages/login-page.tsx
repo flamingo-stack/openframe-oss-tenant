@@ -6,6 +6,7 @@ import { useAuth } from '@app/auth/hooks/use-auth'
 import { useAuthStore } from '@app/auth/stores/auth-store'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { isAuthOnlyMode } from '@lib/app-mode'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -22,19 +23,19 @@ export default function LoginPage() {
     discoverTenants 
   } = useAuth()
 
-  // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('🔄 [Login Page] User already authenticated, redirecting to dashboard')
-      router.push('/dashboard')
+      if (isAuthOnlyMode()) {
+        router.push('/auth/already-signed-in')
+      } else {
+        router.push('/dashboard')
+      }
     }
   }, [isAuthenticated, router])
 
-  // Auto-discover tenants if email exists but discovery hasn't been attempted yet
   useEffect(() => {
-    if (!isInitialized) return // Wait for localStorage to initialize
+    if (!isInitialized) return
     
-    // Only attempt discovery once - when we have an email and haven't attempted discovery yet
     if (email && !discoveryAttempted && !isLoading) {
       discoverTenants(email)
     } else if (!email && !isLoading) {
@@ -49,7 +50,6 @@ export default function LoginPage() {
   const handleBack = () => {
     router.push('/auth/')
   }
-
 
   return (
     <AuthLayout>

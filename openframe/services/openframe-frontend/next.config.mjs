@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Pure frontend configuration - no server-side features
-  output: 'export',  // Static export for pure client-side
+  // output: 'export', 
   trailingSlash: true,
   distDir: 'dist',   // Output directory for static export
   images: {
@@ -9,15 +9,18 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_APP_TYPE: 'openframe',
+    // App mode configuration - defaults to full-app if not set
+    NEXT_PUBLIC_APP_MODE: process.env.NEXT_PUBLIC_APP_MODE || 'full-app',
   },
   // Disable server-side features
   poweredByHeader: false,
   reactStrictMode: true,
-  // Disable SSR completely
+  // Disable SSR completely and static generation
   experimental: {
     esmExternals: true,
     forceSwcTransforms: true,
   },
+  generateBuildId: () => 'build',
   // Force client-side rendering
   basePath: '',
   assetPrefix: '',

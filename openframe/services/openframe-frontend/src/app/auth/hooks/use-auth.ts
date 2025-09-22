@@ -33,8 +33,16 @@ interface RegisterRequest {
 export function useAuth() {
   const { toast } = useToast()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const pathname = usePathname()
+  
+  // Use try-catch to handle static generation
+  let searchParams
+  try {
+    searchParams = useSearchParams()
+  } catch {
+    // During static generation, create empty URLSearchParams
+    searchParams = new URLSearchParams()
+  }
   
   // Auth store for managing authentication state
   const { login: storeLogin, user, isAuthenticated, setTenantId } = useAuthStore()

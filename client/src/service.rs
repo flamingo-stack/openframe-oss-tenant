@@ -7,6 +7,7 @@ use tracing::{error, info, warn};
 use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::{logging, platform::DirectoryManager, Client};
+use crate::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
 
 const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
@@ -20,7 +21,7 @@ impl Service {
     }
 
     /// Install the service on the current platform
-    pub async fn install() -> Result<()> {
+    pub async fn install(params: InstallConfigParams) -> Result<()> {
         // Check if we have admin privileges
         if !PermissionUtils::is_admin() {
             error!("Service installation requires admin/root privileges");
@@ -35,6 +36,14 @@ impl Service {
         dir_manager
             .perform_health_check()
             .map_err(|e| anyhow::anyhow!("Directory health check failed: {}", e))?;
+
+        // Build and persist initial configuration before registering OS service
+        let installation_initial_config_service = InstallationInitialConfigService::new(dir_manager.clone())
+            .context("Failed to initialize InstallationInitialConfigService")?;
+        
+        installation_initial_config_service
+            .build_and_save(params)
+            .context("Failed to process initial configuration during service installation")?;
 
         // Get the current executable path
         let exec_path = std::env::current_exe().context("Failed to get current executable path")?;

@@ -13,6 +13,11 @@ NC='\033[0m' # No Color
 
 # Default API URL
 API_URL="https://localhost/api/agent/registration-secret/active"
+# Default Org ID for dev setup
+ORG_ID="test-org"
+
+# Will be populated by ensure_mkcert
+LOCAL_CA_CERT_PATH=""
 
 echo -e "${GREEN}OpenFrame Development Setup - Initial Configuration${NC}"
 echo "============================================================"
@@ -146,6 +151,48 @@ fetch_registration_secret() {
     fi
 }
 
+# Ensure mkcert is installed and a root CA is available; populate LOCAL_CA_CERT_PATH
+ensure_mkcert() {
+    echo -e "${YELLOW}Checking mkcert installation...${NC}"
+
+    if ! command -v mkcert >/dev/null 2>&1; then
+        echo -e "${RED}mkcert is not installed.${NC}"
+        if [[ "$(uname)" == "Darwin" ]]; then
+            echo -e "${YELLOW}Install with:${NC} brew install mkcert && mkcert -install"
+        else
+            echo -e "${YELLOW}Install with your package manager, e.g.:${NC}"
+            echo "  - macOS: brew install mkcert && mkcert -install"
+            echo "  - Linux (Debian/Ubuntu): sudo apt-get install mkcert libnss3-tools && mkcert -install"
+        fi
+        exit 1
+    fi
+
+    echo -e "${YELLOW}Resolving mkcert CAROOT...${NC}"
+    if ! CAROOT_DIR=$(mkcert -CAROOT 2>/dev/null); then
+        echo -e "${RED}Failed to run 'mkcert -CAROOT'. Ensure mkcert is installed correctly.${NC}"
+        exit 1
+    fi
+    CAROOT_DIR=$(echo "$CAROOT_DIR" | tr -d '\n')
+    ROOT_CA_FILE="$CAROOT_DIR/rootCA.pem"
+
+    if [[ ! -f "$ROOT_CA_FILE" ]]; then
+        echo -e "${YELLOW}mkcert root CA not found. Running 'mkcert -install'...${NC}"
+        mkcert -install || {
+            echo -e "${RED}Failed to initialize mkcert root CA.${NC}"
+            exit 1
+        }
+    fi
+
+    # Re-check after install
+    if [[ ! -f "$ROOT_CA_FILE" ]]; then
+        echo -e "${RED}rootCA.pem still not found at: $ROOT_CA_FILE${NC}"
+        exit 1
+    fi
+
+    LOCAL_CA_CERT_PATH="$ROOT_CA_FILE"
+    echo -e "${GREEN}mkcert root CA ready at:${NC} $LOCAL_CA_CERT_PATH"
+}
+
 # Function to create init_config.json file
 create_init_config() {
     local initial_key="$1"
@@ -166,7 +213,9 @@ create_init_config() {
 {
   "server_host": "localhost",
   "initial_key": "$initial_key",
-  "local_mode": true
+  "local_mode": true,
+  "org_id": "${ORG_ID}",
+  "local_ca_cert_path": "${LOCAL_CA_CERT_PATH}"
 }
 EOF
     
@@ -186,6 +235,7 @@ EOF
 # Main execution
 main() {
     get_access_token
+    ensure_mkcert
     fetch_registration_secret
 }
 
