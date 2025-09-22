@@ -119,12 +119,6 @@ type ToolConnection {
     disconnectedAt: Instant
 }
 
-enum ToolType {
-    MESHCENTRAL
-    TACTICAL_RMM
-    FLEET_MDM
-}
-
 enum ConnectionStatus {
     CONNECTED
     DISCONNECTED
