@@ -2,7 +2,7 @@ package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.stream.mapper.EventTypeMapper;
+import com.openframe.stream.mapping.EventTypeMapper;
 import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
 import com.openframe.kafka.model.debezium.DebeziumMessage;
 import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
@@ -55,7 +55,8 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
                     .unifiedEventType(getEventType(sourceEventType, messageType.getIntegratedToolType()))
                     .message(getMessage(after).orElse(null))
                     .integratedToolType(messageType.getIntegratedToolType())
-                    .debeziumMessage(getDetails(after))
+                    .debeziumMessage(getDebeziumMessage(after))
+                    .details(getDetails(after))
                     .eventTimestamp(eventTimestamp)
                     .skipProcessing(getSkipProcessing(sourceEventType))
                     .isVisible(isVisible(sourceEventType))
@@ -149,12 +150,14 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
      * Convert all fields from JsonNode after to Map<String, String>
      * This method extracts all key-value pairs from the after field and converts them to strings
      */
-    protected String getDetails(JsonNode after) {
+    protected String getDebeziumMessage(JsonNode after) {
         if (after == null || after.isNull()) {
             return null;
         }
         return after.toString();
     }
+
+    abstract protected String getDetails(JsonNode after);
 
     private UnifiedEventType getEventType(String sourceEventType, IntegratedToolType toolType) {
         return EventTypeMapper.mapToUnifiedType(toolType, sourceEventType);

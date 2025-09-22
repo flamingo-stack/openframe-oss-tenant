@@ -22,6 +22,7 @@ public class DeserializedDebeziumMessage extends CommonDebeziumMessage {
     private String message;
     private IntegratedToolType integratedToolType;
     private String debeziumMessage;
+    private String details;
     private Long eventTimestamp;
     private Boolean skipProcessing;
     private Boolean isVisible;

@@ -1,6 +1,5 @@
-package com.openframe.stream.mapper;
+package com.openframe.stream.mapping;
 
-import com.openframe.stream.mapper.constants.SourceEventTypes;
 import com.openframe.data.model.enums.IntegratedToolType;
 import com.openframe.data.model.enums.UnifiedEventType;
 import lombok.extern.slf4j.Slf4j;
@@ -111,7 +110,7 @@ public class EventTypeMapper {
         registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.SCRIPT_ADD, UnifiedEventType.SCRIPT_CREATED);
         registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.SCRIPT_MODIFY, UnifiedEventType.SCRIPT_UPDATED);
         registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.AGENT_EXECUTE_SCRIPT, UnifiedEventType.SCRIPT_EXECUTED);
-        registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.AGENT_EXECUTE_COMMAND, UnifiedEventType.SCRIPT_EXECUTED);
+        registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.AGENT_EXECUTE_COMMAND, UnifiedEventType.COMMAND_RUN_STARTED);
         registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.CMD_RUN_STARTED, UnifiedEventType.COMMAND_RUN_STARTED);
         registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.CMD_RUN_FINISHED, UnifiedEventType.COMMAND_RUN_FINISHED);
         registerMapping(IntegratedToolType.TACTICAL, SourceEventTypes.Tactical.SCRIPT_EXECUTION_STARTED, UnifiedEventType.SCRIPT_EXECUTION_STARTED);

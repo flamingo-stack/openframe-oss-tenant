@@ -30,6 +30,7 @@ import static com.openframe.kafka.enumeration.KafkaHeader.MESSAGE_TYPE_HEADER;
 public class ActivityEnrichmentService {
 
     private final Serde<ActivityMessage> activityMessageSerde;
+    private final Serde<ActivityMessage> outgoingActivityMessageSerde;
     private final Serde<HostActivityMessage> hostActivityMessageSerde;
     private final HostAgentCacheService hostAgentCacheService;
 
@@ -83,7 +84,7 @@ public class ActivityEnrichmentService {
         // Add constant header using modern Processor API and send to output topic
         KStream<String, ActivityMessage> withHeaderStream = enrichedStream.processValues(HeaderAdderFixedKey::new);
 
-        withHeaderStream.to(enrichedActivitiesTopic, Produced.with(Serdes.String(), activityMessageSerde));
+        withHeaderStream.to(enrichedActivitiesTopic, Produced.with(Serdes.String(), outgoingActivityMessageSerde));
 
         log.info("Activity enrichment stream built successfully");
         return withHeaderStream;
@@ -124,6 +125,7 @@ public class ActivityEnrichmentService {
         @Override
         public void process(FixedKeyRecord<String, ActivityMessage> record) {
             record.headers().add(MESSAGE_TYPE_HEADER, MessageType.FLEET_MDM_EVENT.name().getBytes(StandardCharsets.UTF_8));
+            record.headers().add("__TypeId__", "com.openframe.kafka.model.debezium.CommonDebeziumMessage".getBytes(StandardCharsets.UTF_8));
             context.forward(record);
         }
 

@@ -3,7 +3,7 @@ package com.openframe.stream.deserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.enums.MessageType;
-import com.openframe.stream.mapper.constants.SourceEventTypes;
+import com.openframe.stream.mapping.SourceEventTypes;
 import com.openframe.stream.util.TimestampParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,6 +21,7 @@ public class TrmmAuditEventDeserializer extends IntegratedToolEventDeserializer 
     private static final String FIELD_ID = "id";
     private static final String FIELD_MESSAGE = "message";
     private static final String FIELD_ENTRY_TIME = "entry_time";
+    private static final String FIELD_AFTER_VALUE = "after_value";
 
     public TrmmAuditEventDeserializer(ObjectMapper objectMapper) {
         super(objectMapper,
@@ -64,5 +65,10 @@ public class TrmmAuditEventDeserializer extends IntegratedToolEventDeserializer 
     protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
         return parseStringField(afterField, FIELD_ENTRY_TIME)
                 .flatMap(TimestampParser::parseIso8601);
+    }
+
+    @Override
+    protected String getDetails(JsonNode after) {
+        return parseStringField(after, FIELD_AFTER_VALUE).orElse("{}");
     }
 }

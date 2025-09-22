@@ -1,4 +1,4 @@
-package com.openframe.stream.mapper.constants;
+package com.openframe.stream.mapping;
 
 /**
  * Constants for source event types from integrated tools.
