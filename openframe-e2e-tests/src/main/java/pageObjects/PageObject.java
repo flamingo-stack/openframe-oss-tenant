@@ -30,4 +30,3 @@ public interface PageObject {
      */
     void navigateTo();
 }
-

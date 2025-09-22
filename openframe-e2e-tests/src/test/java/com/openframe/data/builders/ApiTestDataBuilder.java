@@ -142,7 +142,7 @@ public class ApiTestDataBuilder {
             return createApiRequest(endpoint, Map.of(
                 "specialChars", "!@#$%^&*()_+-={}[]|:;\"'<>,.?/",
                 "unicode", "Тест测试テストTest",
-                "emoji", "🚀🔥💯"
+                "emoji", "🚀"
             ));
         }
         
