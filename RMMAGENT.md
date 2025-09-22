@@ -30,6 +30,14 @@
 
 ---
 
+## Quick Links
+- [Quick Start](#quick-start)  
+- [Configuration](#configuration)  
+- [Development](#development)  
+- [Security](#security)  
+
+---
+
 ## Highlights
 
 - System Monitoring – CPU, memory, disk, services, processes  
