@@ -30,6 +30,16 @@ WORKDIR /app
 
 RUN apk add --no-cache git
 
+# Build-time NEXT_* variables (extend as needed). These are only used during build.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_MODE
+ARG NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER
+
+# Expose them to the build environment so Next can read process.env in next.config.mjs
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_APP_MODE=${NEXT_PUBLIC_APP_MODE} \
+    NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=${NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER}
+
 # Reuse installed node_modules and cloned ui-kit from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
