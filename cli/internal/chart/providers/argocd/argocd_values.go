@@ -23,5 +23,10 @@ configs:
         end
       end
       return hs
+
+repoServer:
+  env:
+    - name: ARGOCD_EXEC_TIMEOUT
+      value: "180s"
 `
 }

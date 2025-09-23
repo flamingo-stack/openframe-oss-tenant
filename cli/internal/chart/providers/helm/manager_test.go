@@ -211,7 +211,7 @@ func TestHelmManager_InstallArgoCD(t *testing.T) {
 				assert.Equal(t, "--install", installCmd[2])
 				assert.Equal(t, "argo-cd", installCmd[3])
 				assert.Equal(t, "argo/argo-cd", installCmd[4])
-				assert.Contains(t, installCmd, "--version=8.1.4")
+				assert.Contains(t, installCmd, "--version=8.2.7")
 				assert.Contains(t, installCmd, "--namespace")
 				assert.Contains(t, installCmd, "argocd")
 				assert.Contains(t, installCmd, "--create-namespace")

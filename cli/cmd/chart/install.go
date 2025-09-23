@@ -15,7 +15,7 @@ func getInstallCmd() *cobra.Command {
 		Long: `Install ArgoCD and app-of-apps on a Kubernetes cluster
 
 This command installs:
-1. ArgoCD (version 8.1.4) with custom values
+1. ArgoCD (version 8.2.7) with custom values
 2. App-of-apps from GitHub repository (configurable)
 
 The cluster must exist before running this command.
