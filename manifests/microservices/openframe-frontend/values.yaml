@@ -38,4 +38,4 @@ registry:
     
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-frontend
-  tag: test-75edd812
+  tag: latest
