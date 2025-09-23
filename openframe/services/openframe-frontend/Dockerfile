@@ -12,15 +12,15 @@ WORKDIR /app
 # git is required to clone ui-kit
 RUN apk add --no-cache git
 
-# Copy only package manifests first for better layer caching
-COPY package*.json ./
+# Copy only package.json (exclude lockfile) for better layer caching
+COPY package.json ./
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
 RUN rm -rf ui-kit \
  && git clone --depth=1 https://github.com/flamingo-stack/ui-kit.git ui-kit
 
-# Install dependencies (includes local file dependency to ./ui-kit)
-RUN npm ci
+# Install dependencies without using package-lock.json
+RUN npm install
 
 ##########
 # build
@@ -52,9 +52,9 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Ensure local file dependency exists, then install only production deps for `next start`
-COPY package*.json ./
+COPY package.json ./
 COPY --from=deps /app/ui-kit ./ui-kit
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Copy build output and public assets
 COPY --from=builder /app/dist ./dist
