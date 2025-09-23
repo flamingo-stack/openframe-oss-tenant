@@ -6,12 +6,15 @@ export type TunnelOptions = {
   cols?: number
   rows?: number
   requireLogin?: boolean
+  // desktop-specific options can be added later (compression, etc.)
 }
 
 type TunnelCallbacks = {
   onData: (data: string | Uint8Array) => void
   onConsoleMessage?: (msg: string) => void
   onStateChange?: (state: TunnelState) => void
+  onBinaryData?: (data: Uint8Array) => void
+  onCtrlMessage?: (msg: any) => void
 }
 
 export class MeshTunnel {
@@ -89,12 +92,14 @@ export class MeshTunnel {
         if (j && j.ctrlChannel === 102938) {
           if (j.type === 'console' && this.params.onConsoleMessage) this.params.onConsoleMessage(j.msg)
           if (j.type === 'ping') this.sendCtrl({ ctrlChannel: 102938, type: 'pong' })
+          if (this.params.onCtrlMessage) this.params.onCtrlMessage(j)
           return
         }
       } catch {}
     } else {
       const buf = new Uint8Array(e.data as ArrayBuffer)
-      this.params.onData(buf)
+      if (this.params.onBinaryData) this.params.onBinaryData(buf)
+      else this.params.onData(buf)
     }
   }
 
@@ -118,6 +123,10 @@ export class MeshTunnel {
         this.socket.send(x)
       }
     } catch {}
+  }
+
+  sendBinary(x: Uint8Array) {
+    this.sendRaw(x)
   }
 
   private setState(s: TunnelState) {

@@ -4,7 +4,7 @@ export type MeshUrlParts = {
 }
 
 export function getMeshBaseHostPort(): string {
-  const env = process.env.NEXT_PUBLIC_MESH_BASE || 'localhost:8383'
+  const env = process.env.NEXT_PUBLIC_MESH_BASE || 'localhost:8383' // wss://localhost/ws/tools/meshcentral-server/api/ws
   // Strip protocols if provided
   if (env.startsWith('ws://')) return env.substring('ws://'.length)
   if (env.startsWith('wss://')) return env.substring('wss://'.length)
@@ -28,6 +28,9 @@ export function buildWsUrl(path: string): string {
   return `${scheme}://${base}${normalizedPath}`
 }
 
-export const DEV_HARDCODED_NODE_ID = 'node//Z3dTHlaNOIlbvUJmooGExpu3p04OkLvHHmtmq2nKsVwHXNIqvsfhzfhWf@qg8ugD'
+export const MESH_USER = process.env.NEXT_PUBLIC_MESH_USER || 'mesh@openframe.io'
+export const MESH_PASS = process.env.NEXT_PUBLIC_MESH_PASS || 'meshpass@1234'
+
+export const DEV_HARDCODED_NODE_ID = process.env.NEXT_PUBLIC_DEV_HARDCODED_NODE_ID || ''
 
 

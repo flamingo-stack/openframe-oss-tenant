@@ -1,6 +1,6 @@
 type ControlAuthCookies = { authCookie: string; relayCookie?: string }
 
-import { buildWsUrl } from './meshcentral-config'
+import { buildWsUrl, MESH_USER, MESH_PASS } from './meshcentral-config'
 
 export class MeshControlClient {
   private socket: WebSocket | null = null
@@ -9,8 +9,8 @@ export class MeshControlClient {
   private openPromise: Promise<void> | null = null
   private cookies: ControlAuthCookies | null = null
 
-  constructor(private credentials: { user: string; pass: string }, private authCookie?: string) {
-    const qs = new URLSearchParams({ user: credentials.user, pass: credentials.pass })
+  constructor(private credentials?: { user: string; pass: string }, private authCookie?: string) {
+    const qs = new URLSearchParams({ user: credentials?.user || MESH_USER, pass: credentials?.pass || MESH_PASS })
     if (authCookie) qs.append('auth', authCookie)
     this.url = buildWsUrl(`/control.ashx?${qs.toString()}`)
   }
@@ -95,6 +95,12 @@ export class MeshControlClient {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return
     const msg = { action: 'msg', type: 'tunnel', nodeid: nodeId, value: relayPathValue }
     try { this.socket.send(JSON.stringify(msg)) } catch {}
+  }
+
+  sendDesktopTunnel(nodeId: string, relayId: string, relayCookie?: string, domainPrefix = ''): void {
+    const prefix = domainPrefix ? `${domainPrefix.replace(/^\/*|\/*$/g, '')}/` : ''
+    const value = `*/${prefix}meshrelay.ashx?p=2&nodeid=${encodeURIComponent(nodeId)}&id=${encodeURIComponent(relayId)}${relayCookie ? `&rauth=${encodeURIComponent(relayCookie)}` : ''}`
+    this.sendTunnelMsg(nodeId, value)
   }
 
   close() { this.cleanup() }

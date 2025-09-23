@@ -4,63 +4,55 @@ import React, { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { Terminal } from 'xterm'
-import { FitAddon } from 'xterm-addon-fit'
 import { MeshControlClient } from '../../../lib/meshcentral/meshcentral-control'
 import { DEV_HARDCODED_NODE_ID } from '../../../lib/meshcentral/meshcentral-config'
 import { MeshTunnel, TunnelState } from '../../../lib/meshcentral/meshcentral-tunnel'
+import { MeshDesktop } from '../../../lib/meshcentral/meshcentral-desktop'
 
-interface RemoteShellModalProps {
+interface RemoteDesktopModalProps {
   isOpen: boolean
   onClose: () => void
   deviceId: string
   deviceLabel?: string
 }
 
-export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: RemoteShellModalProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const termRef = useRef<Terminal | null>(null)
-  const fitRef = useRef<FitAddon | null>(null)
+export function RemoteDesktopModal({ isOpen, onClose, deviceId, deviceLabel }: RemoteDesktopModalProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const desktopRef = useRef<MeshDesktop | null>(null)
   const tunnelRef = useRef<MeshTunnel | null>(null)
   const [state, setState] = useState<TunnelState>(0)
   const [connecting, setConnecting] = useState(false)
+  const [viewOnly, setViewOnly] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
     if (!isOpen) return
-    const term = new Terminal({
-      fontFamily: 'monospace',
-      theme: { background: '#000000' },
-      cursorBlink: true
-    })
-    const fit = new FitAddon()
-    term.loadAddon(fit)
-    term.open(containerRef.current!)
-    fit.fit()
-    term.focus()
-    termRef.current = term
-    fitRef.current = fit
-
-    const handleResize = () => {
-      try { fit.fit() } catch {}
-      if (tunnelRef.current && termRef.current) {
-        tunnelRef.current.sendCtrl({ ctrlChannel: 102938, type: 'termsize', cols: term.cols, rows: term.rows })
+    const desktop = new MeshDesktop()
+    desktopRef.current = desktop
+    const canvas = canvasRef.current
+    if (canvas) {
+      // Initialize canvas size
+      const resize = () => {
+        const parent = canvas.parentElement
+        if (parent) {
+          const rect = parent.getBoundingClientRect()
+          canvas.width = Math.max(1, Math.floor(rect.width))
+          canvas.height = Math.max(1, Math.floor(rect.height))
+        }
+      }
+      resize()
+      window.addEventListener('resize', resize)
+      desktop.attach(canvas)
+      return () => {
+        window.removeEventListener('resize', resize)
+        desktop.detach()
       }
     }
-    window.addEventListener('resize', handleResize)
-    const disposeResize = term.onResize(() => handleResize)
-    const disposeData = term.onData((d) => tunnelRef.current?.sendText(d))
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      disposeResize.dispose()
-      disposeData.dispose()
-      tunnelRef.current?.stop()
-      term.dispose()
-      termRef.current = null
-      fitRef.current = null
-    }
   }, [isOpen])
+
+  useEffect(() => {
+    desktopRef.current?.setViewOnly(viewOnly)
+  }, [viewOnly])
 
   useEffect(() => {
     if (!isOpen) return
@@ -70,38 +62,32 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
       try {
         control = new MeshControlClient()
         const { authCookie, relayCookie } = await control.getAuthCookies()
-        const term = termRef.current
-        if (!term) throw new Error('Terminal not initialized')
         const tunnel = new MeshTunnel({
           authCookie,
           nodeId: DEV_HARDCODED_NODE_ID,
-          protocol: 1,
-          options: { cols: term.cols, rows: term.rows },
-          onData: (data) => {
-            if (typeof data === 'string') term.write(data)
-            else term.write(new TextDecoder().decode(data))
-          },
-          onConsoleMessage: (msg) => {
-            toast({ title: 'Remote Shell', description: msg, variant: 'default' })
-          },
+          protocol: 2,
+          onData: () => {},
+          onBinaryData: (bytes) => { desktopRef.current?.onBinaryFrame(bytes) },
+          onCtrlMessage: () => {},
+          onConsoleMessage: (msg) => { toast({ title: 'Remote Desktop', description: msg, variant: 'default' }) },
           onStateChange: (s) => setState(s)
         })
         tunnelRef.current = tunnel
-        // Reuse the same control connection to send the tunnel pairing message
+        // Wire desktop input sender to the tunnel
+        desktopRef.current?.setSender((data) => tunnel.sendBinary(data))
         try {
           await control.openSession()
           const relayId = tunnel.getRelayId()
-          const relayValue = `*/meshrelay.ashx?p=1&nodeid=${encodeURIComponent(DEV_HARDCODED_NODE_ID)}&id=${encodeURIComponent(relayId)}${relayCookie ? `&rauth=${encodeURIComponent(relayCookie)}` : ''}`
-          control.sendTunnelMsg(DEV_HARDCODED_NODE_ID, relayValue)
+          control.sendDesktopTunnel(DEV_HARDCODED_NODE_ID, relayId, relayCookie)
         } catch {}
         tunnel.start()
       } catch (e) {
-        toast({ title: 'Remote Shell failed', description: (e as Error).message, variant: 'destructive' })
+        toast({ title: 'Remote Desktop failed', description: (e as Error).message, variant: 'destructive' })
       } finally {
         setConnecting(false)
       }
     })()
-    return () => { control?.close() }
+    return () => { control?.close(); tunnelRef.current?.stop() }
   }, [isOpen, deviceId, toast])
 
   if (!isOpen) return null
@@ -114,11 +100,18 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <h2 className="font-['Azeret_Mono'] font-semibold text-[20px] text-ods-text-primary tracking-[-0.4px]">
-              Remote Shell {deviceLabel ? `- ${deviceLabel}` : ''}
+              Remote Desktop {deviceLabel ? `- ${deviceLabel}` : ''}
             </h2>
             <div className="text-ods-text-secondary text-sm">{statusText}{connecting ? '…' : ''}</div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setViewOnly((v) => !v)}
+              variant="outline"
+              className="bg-ods-card border border-ods-border text-ods-text-primary"
+            >
+              {viewOnly ? 'Switch to Control' : 'Switch to View-only'}
+            </Button>
             <Button
               onClick={() => tunnelRef.current?.stop()}
               variant="outline"
@@ -137,7 +130,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
           </div>
         </div>
         <div className="flex-1 min-h-0 bg-black rounded overflow-hidden">
-          <div ref={containerRef} className="w-full h-full" />
+          <canvas ref={canvasRef} className="w-full h-full block" />
         </div>
       </div>
     </div>
