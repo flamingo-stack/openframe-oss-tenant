@@ -14,10 +14,6 @@
     <artifactId>openframe-client</artifactId>
     <name>OpenFrame Client Service</name>
 
-    <properties>
-        <start-class>com.openframe.client.ClientApplication</start-class>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
@@ -76,29 +72,4 @@
         </dependency>
 
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>${start-class}</mainClass>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project> 
