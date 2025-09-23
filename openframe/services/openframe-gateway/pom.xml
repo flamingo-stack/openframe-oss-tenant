@@ -14,10 +14,6 @@
     <artifactId>openframe-gateway</artifactId>
     <name>OpenFrame Gateway Service</name>
 
-    <properties>
-        <start-class>com.openframe.gateway.GatewayApplication</start-class>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
@@ -84,29 +80,4 @@
             <artifactId>caffeine</artifactId>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>${start-class}</mainClass>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

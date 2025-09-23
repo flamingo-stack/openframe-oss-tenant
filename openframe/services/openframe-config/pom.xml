@@ -14,10 +14,6 @@
     <artifactId>openframe-config</artifactId>
     <name>OpenFrame Config Server</name>
 
-    <properties>
-        <start-class>com.openframe.config.ConfigServerApplication</start-class>
-    </properties>
-
     <dependencies>
         <!-- Spring Cloud Config -->
         <dependency>
@@ -56,23 +52,4 @@
         </dependency>
 
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>${start-class}</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>
