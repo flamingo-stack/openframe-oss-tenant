@@ -12,23 +12,24 @@ WORKDIR /app
 # git is required to clone ui-kit
 RUN apk add --no-cache git
 
+# Allow pinning the ui-kit ref for better Docker layer caching
+ARG UI_KIT_REF=main
+
 # Copy only package.json (exclude lockfile) for better layer caching
 COPY package.json ./
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
 RUN rm -rf ui-kit \
- && git clone --depth=1 https://github.com/flamingo-stack/ui-kit.git ui-kit
+ && git clone --depth=1 --branch ${UI_KIT_REF} https://github.com/flamingo-stack/ui-kit.git ui-kit
 
-# Install dependencies without using package-lock.json
-RUN npm install
+# Install dependencies without using package-lock.json (cache npm directory)
+RUN --mount=type=cache,target=/root/.npm npm install
 
 ##########
 # build
 ##########
 FROM node:22-alpine AS builder
 WORKDIR /app
-
-RUN apk add --no-cache git
 
 # Reuse installed node_modules and cloned ui-kit from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -39,8 +40,8 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the Next.js app (distDir is configured as "dist")
-RUN npm run build
+# Build the Next.js app (distDir is configured as "dist") with Next cache mounted
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 ##########
 # runtime
@@ -51,10 +52,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Ensure local file dependency exists, then install only production deps for `next start`
+# Use node_modules from deps and prune dev dependencies for production
 COPY package.json ./
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
-RUN npm install --omit=dev
+RUN npm prune --omit=dev
 
 # Copy build output and public assets
 COPY --from=builder /app/dist ./dist
