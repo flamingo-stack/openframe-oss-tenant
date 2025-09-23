@@ -19,6 +19,16 @@ spec:
                 name: openframe-gateway
                 port:
                   name: http
+     # add catch-all for IP access / other hosts
+    - http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: openframe-gateway
+              port:
+                name: http
   tls:
   - hosts:
     - localhost
