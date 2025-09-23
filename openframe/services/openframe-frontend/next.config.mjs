@@ -9,6 +9,7 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_APP_TYPE: 'openframe',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     // App mode configuration - defaults to full-app if not set
     NEXT_PUBLIC_APP_MODE: process.env.NEXT_PUBLIC_APP_MODE || 'full-app',
   },
