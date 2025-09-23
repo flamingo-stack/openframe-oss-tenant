@@ -60,11 +60,8 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
-# Copy docker entrypoint for runtime env injection
-COPY docker/entrypoint.sh ./docker/entrypoint.sh
-RUN chmod +x ./docker/entrypoint.sh
 
 EXPOSE 4000
 
-# Start via entrypoint to generate /public/runtime-config.js from env
-ENTRYPOINT ["/app/docker/entrypoint.sh"]
+# Default command uses package.json start script (next start -p 4000)
+CMD ["npm", "run", "start"]
