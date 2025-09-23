@@ -9,4 +9,4 @@ data:
   NEXT_PUBLIC_API_URL: "https://localhost/api"
   {{- end }}
   NEXT_PUBLIC_APP_MODE: full-app
-  NEXT_PUBLIC_AUTH_CHECK_INTERVAL: 30000
+  NEXT_PUBLIC_AUTH_CHECK_INTERVAL: "30000"
