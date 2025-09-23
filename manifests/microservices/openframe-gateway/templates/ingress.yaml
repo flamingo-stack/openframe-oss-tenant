@@ -32,6 +32,10 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: openframe-gateway
+  {{- if .Values.deployment.oss.ingress.ngrok.allowedIPs }}
+  annotations:
+    k8s.ngrok.com/traffic-policy: openframe-gateway
+  {{- end }}
 spec:
   ingressClassName: ngrok
   rules:
