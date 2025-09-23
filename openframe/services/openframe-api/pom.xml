@@ -21,106 +21,18 @@
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data-mongo</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-notification-mail</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data-kafka</artifactId>
+            <artifactId>openframe-api-service-core</artifactId>
             <version>${openframe.libs.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-security-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-api-lib</artifactId>
-        </dependency>
-
-        <!-- Spring Cloud -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
-
-        <!-- GraphQL -->
-        <dependency>
-            <groupId>com.netflix.graphql.dgs</groupId>
-            <artifactId>graphql-dgs-spring-boot-starter</artifactId>
-            <version>${netflix.dgs.version}</version>
-        </dependency>
-        <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- WebSocket -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
-        </dependency>
-
-        <!-- Spring Security OAuth2 Resource Server -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-jose</artifactId>
-        </dependency>
-
-        <!-- Caffeine cache for issuer decoders in resource server -->
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.api-client</groupId>
-            <artifactId>google-api-client</artifactId>
-            <version>2.2.0</version>
+            <artifactId>spring-boot-starter</artifactId>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <!-- Default profile: OSS libraries only -->
-        <profile>
-            <id>oss</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <profile.description>OSS profile with open source libraries</profile.description>
-            </properties>
-            <!-- OSS dependencies are already included above -->
-        </profile>
-        
-        <!-- SAAS K8s profile: includes private SAAS libraries -->
-        <profile>
-            <id>saas-k8s</id>
-            <properties>
-                <profile.description>SAAS K8s profile with private libraries</profile.description>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>com.openframe.saas</groupId>
-                    <artifactId>openframe-saas-kafka</artifactId>
-                    <version>${openframe.saas.libs.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 
     <build>
         <plugins>

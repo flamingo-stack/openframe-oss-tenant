@@ -161,7 +161,7 @@ spec:
                     "-openframe-secret", "${client.openframeSecret}",
                     "--openframe-token-path", "${client.openframeTokenPath}"
                   ],
-                  "toolAgentIdCommandArgs": [
+                  "agentToolIdCommandArgs": [
                     "-m", "agentid",
                     "--openframe-mode",
                     "-openframe-secret", "${client.openframeSecret}",
