@@ -217,7 +217,7 @@ cd openframe-oss-tenant
 mvn clean install
 
 # Start frontend development server
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm install && npm run dev
 
 # Build Rust agent
@@ -231,7 +231,7 @@ cargo build --release
 mvn test
 
 # Frontend tests
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm run type-check
 
 # Rust tests  

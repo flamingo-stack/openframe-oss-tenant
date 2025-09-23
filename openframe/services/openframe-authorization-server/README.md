@@ -231,7 +231,7 @@ curl http://localhost:9000/admin/sso/test/google
 {
   "iss": "http://localhost:9000",
   "sub": "user_id",
-  "aud": "openframe-ui",
+  "aud": "openframe-frontend",
   "exp": 1640995200,
   "iat": 1640991600,
   "username": "john.doe",
@@ -278,8 +278,8 @@ docker build -t openframe/authorization-server:latest .
 
 The server automatically creates these default OAuth2 clients:
 
-1. **openframe-ui**
-   - Client ID: `openframe-ui`
+1. **openframe-frontend**
+   - Client ID: `openframe-frontend`
    - Grant Types: `authorization_code`, `refresh_token`
    - PKCE: Required
    - Scopes: `openid`, `profile`, `email`, `openframe.read`, `openframe.write`

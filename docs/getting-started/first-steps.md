@@ -159,7 +159,7 @@ curl -X POST http://localhost:8080/graphql \
 ### 1. Making Your First Change
 
 **Frontend Changes**:
-1. Navigate to `openframe/services/openframe-ui`
+1. Navigate to `openframe/services/openframe-frontend`
 2. Run `npm run dev` for development mode
 3. Make changes and see live updates
 
@@ -176,7 +176,7 @@ curl -X POST http://localhost:8080/graphql \
 mvn test
 
 # Frontend tests  
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm run test
 
 # Rust agent tests

@@ -16,7 +16,7 @@ tests:
           of: Job
       - equal:
           path: metadata.name
-          value: openframe-ui
+          value: openframe-frontend
 
   # Register job disabled
   - it: should not render register job when disabled
