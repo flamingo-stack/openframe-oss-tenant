@@ -36,7 +36,9 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
             message.setToolType(debeziumMessage.getIntegratedToolType().name());
             message.setEventType(debeziumMessage.getUnifiedEventType().name());
             message.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
-            message.setSummary(debeziumMessage.getMessage());
+            message.setSummary(debeziumMessage.getMessage() == null || debeziumMessage.getMessage().isBlank()
+                    ? debeziumMessage.getUnifiedEventType().getSummary()
+                    : debeziumMessage.getMessage() );
             message.setEventTimestamp(debeziumMessage.getEventTimestamp());
 
         } catch (Exception e) {
@@ -69,6 +71,11 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
     @Override
     public Destination getDestination() {
         return Destination.KAFKA;
+    }
+
+    @Override
+    protected boolean isValidMessage(DeserializedDebeziumMessage message) {
+        return message.getIsVisible();
     }
 
     protected String getTopic() {
