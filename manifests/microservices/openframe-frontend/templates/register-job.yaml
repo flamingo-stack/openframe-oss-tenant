@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: openframe-ui
+  name: openframe-frontend
   annotations:
     "argocd.argoproj.io/hook": PostSync
     "argocd.argoproj.io/hook-delete-policy": HookSucceeded
@@ -23,24 +23,24 @@ spec:
           - /bin/sh
           - -c
           - |
-            echo "Registering OpenFrame UI..."
+            echo "Registering OpenFrame Frontend..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
             curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-ui" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-frontend" \
               -H "Content-Type: application/json" \
               -d '{
                 "tool": {
-                  "id": "openframe-ui",
+                  "id": "openframe-frontend",
                   "toolType": "OPENFRAME",
-                  "name": "OpenFrame UI",
-                  "description": "OpenFrame User Interface Service",
+                  "name": "OpenFrame Frontend",
+                  "description": "OpenFrame Frontend User Interface Service",
                   "toolUrls": [
                     {
-                      "url": "http://openframe-ui.microservices.svc.cluster.local",
+                      "url": "http://openframe-frontend.microservices.svc.cluster.local",
                       "port": "80",
                       "type": "DASHBOARD"
                     }
@@ -65,5 +65,5 @@ spec:
                           --retry-delay 2 \
               --retry-all-errors \
               --silent --show-error
-            echo "OpenFrame UI Registration complete."
+            echo "OpenFrame Frontend Registration complete."
 {{- end }}

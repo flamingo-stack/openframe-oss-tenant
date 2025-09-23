@@ -2,49 +2,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openframe-ui
+  name: openframe-frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openframe-ui
+      app: openframe-frontend
   template:
     metadata:
       labels:
-        app: openframe-ui
+        app: openframe-frontend
     spec:
 
       containers:
-        - name: openframe-ui
+        - name: openframe-frontend
           image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 3000
               name: http
-          env:
-            - name: VITE_API_URL
-              {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
-              value: {{ printf "https://%s/api" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
-              {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
-              value: "https://localhost/api"
-              {{- end }}
-            - name: VITE_CLIENT_URL
-              {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
-              value: {{ printf "https://%s/client" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
-              {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
-              value: "https://localhost/client"
-              {{- end }}
-            - name: VITE_GATEWAY_URL
-              {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
-              value: {{ printf "https://%s" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
-              {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
-              value: "https://localhost"
-              {{- end }}
-            - name: VITE_CLIENT_ID
-              value: "openframe_web_dashboard"
-            - name: VITE_CLIENT_SECRET
-              value: "prod_secret"
-            - name: VITE_GRAFANA_URL
-              value: "https://localhost:3000"
+          envFrom:
+            - configMapRef:
+                name: openframe-frontend
           livenessProbe:
             httpGet:
               path: /
