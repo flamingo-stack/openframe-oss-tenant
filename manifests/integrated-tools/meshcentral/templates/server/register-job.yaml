@@ -144,7 +144,7 @@ spec:
                     "--openframe-secret", "${client.openframeSecret}",
                     "--openframe-token-path", "${client.openframeTokenPath}"
                   ],
-                  "toolAgentIdCommandArgs": [
+                  "agentToolIdCommandArgs": [
                     "-nodeid-base64"
                   ],
                   "assets": [
