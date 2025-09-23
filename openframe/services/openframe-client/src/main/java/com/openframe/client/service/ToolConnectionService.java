@@ -64,8 +64,8 @@ public class ToolConnectionService {
     }
 
     @Transactional
-    public void addToolConnection(String openframeAgentId, String agentToolType, String agentId) {
-        ToolType toolType = getToolTypeFromString(agentToolType);
+    public void addToolConnection(String openframeAgentId, String toolTypeValue, String agentId) {
+        ToolType toolType = getToolTypeFromString(toolTypeValue);
 
         toolConnectionRepository
                 .findByMachineIdAndToolType(openframeAgentId, toolType)

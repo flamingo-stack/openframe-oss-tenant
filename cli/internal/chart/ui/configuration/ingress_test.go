@@ -63,7 +63,7 @@ func TestIngressConfigurator_Configure_NgrokIngress(t *testing.T) {
 	assert.Equal(t, "example.ngrok-free.app", ngrok["url"])
 
 	credentials := ngrok["credentials"].(map[string]interface{})
-	assert.Equal(t, "auth_token_123", credentials["authToken"])
+	assert.Equal(t, "auth_token_123", credentials["authtoken"])
 	assert.Equal(t, "api_key_456", credentials["apiKey"])
 }
 
@@ -96,7 +96,7 @@ func TestIngressConfigurator_Configure_NgrokWithAllowedIPs(t *testing.T) {
 	assert.Equal(t, "example.ngrok-free.app", ngrok["url"])
 
 	credentials := ngrok["credentials"].(map[string]interface{})
-	assert.Equal(t, "auth_token_123", credentials["authToken"])
+	assert.Equal(t, "auth_token_123", credentials["authtoken"])
 	assert.Equal(t, "api_key_456", credentials["apiKey"])
 
 	allowedIPs := ngrok["allowedIPs"].([]string)

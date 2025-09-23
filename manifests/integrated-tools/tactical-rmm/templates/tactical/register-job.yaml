@@ -147,6 +147,12 @@ spec:
                     "-logto", "stdout",
                     "-openframe-secret", "${client.openframeSecret}",
                     "--openframe-token-path", "${client.openframeTokenPath}"
+                  ],
+                  "agentToolIdCommandArgs": [
+                    "-m", "agentid",
+                    "--openframe-mode",
+                    "-openframe-secret", "${client.openframeSecret}",
+                    "--openframe-token-path", "${client.openframeTokenPath}"
                   ]
                 }
               }' \
