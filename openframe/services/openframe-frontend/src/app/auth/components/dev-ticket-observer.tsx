@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@app/auth/stores/auth-store'
 import { useDevTicketExchange } from '@app/auth/hooks/use-dev-ticket-exchange'
+import { runtimeEnv } from '@/src/lib/runtime-config'
 
 /**
  * Global DevTicket Observer Component
@@ -16,7 +17,7 @@ import { useDevTicketExchange } from '@app/auth/hooks/use-dev-ticket-exchange'
  */
 export function DevTicketObserver() {
   // Check if DevTicketObserver should be enabled
-  const isEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+  const isEnabled = runtimeEnv.enableDevTicketObserver();
   
   const pathname = usePathname()
   

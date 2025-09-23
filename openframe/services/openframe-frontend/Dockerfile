@@ -30,16 +30,6 @@ WORKDIR /app
 
 RUN apk add --no-cache git
 
-# Build-time NEXT_* variables (extend as needed). These are only used during build.
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_APP_MODE
-ARG NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER
-
-# Expose them to the build environment so Next can read process.env in next.config.mjs
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
-    NEXT_PUBLIC_APP_MODE=${NEXT_PUBLIC_APP_MODE} \
-    NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=${NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER}
-
 # Reuse installed node_modules and cloned ui-kit from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
@@ -70,10 +60,11 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
+# Copy docker entrypoint for runtime env injection
+COPY docker/entrypoint.sh ./docker/entrypoint.sh
+RUN chmod +x ./docker/entrypoint.sh
 
 EXPOSE 4000
 
-# Default command uses package.json start script (next start -p 4000)
-CMD ["npm", "run", "start"]
-
-
+# Start via entrypoint to generate /public/runtime-config.js from env
+ENTRYPOINT ["/app/docker/entrypoint.sh"]

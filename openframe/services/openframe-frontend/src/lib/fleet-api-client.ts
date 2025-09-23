@@ -4,6 +4,7 @@
  */
 
 import { apiClient, type ApiResponse, type ApiRequestOptions } from './api-client'
+import { runtimeEnv } from './runtime-config'
 import { Policy } from '../app/policies-and-queries/types/policies.types'
 
 interface Query {
@@ -48,7 +49,7 @@ class FleetApiClient {
   private baseUrl: string
 
   constructor() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api'
+    const apiUrl = runtimeEnv.apiUrl()
     this.baseUrl = apiUrl.replace('/api', '') + '/tools/fleetmdm-server'
   }
 

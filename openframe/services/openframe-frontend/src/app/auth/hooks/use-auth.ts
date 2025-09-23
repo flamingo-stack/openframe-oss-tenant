@@ -7,6 +7,7 @@ import { useLocalStorage } from '@flamingo/ui-kit/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
+import { runtimeEnv } from '@lib/runtime-config'
 
 interface TenantInfo {
   tenantId?: string
@@ -165,7 +166,7 @@ export function useAuth() {
           }
           
           // Get token from localStorage if DevTicket is enabled, otherwise use placeholder
-          const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+          const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
           const token = isDevTicketEnabled ? getAccessToken() : 'cookie-auth'
           
           if (userData && userData.email) {
@@ -184,7 +185,7 @@ export function useAuth() {
             logout()
             
             // Clear tokens
-            const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+            const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
             if (isDevTicketEnabled) {
               localStorage.removeItem('of_access_token')
               localStorage.removeItem('of_refresh_token')
@@ -203,7 +204,7 @@ export function useAuth() {
             console.log('⚠️ [Auth] Not authenticated (401 from /me)')
             
             // Clear any stale tokens if DevTicket is enabled
-            const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+            const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
             if (isDevTicketEnabled) {
               const token = getAccessToken()
               if (token) {
@@ -230,7 +231,7 @@ export function useAuth() {
     const initialTimer = setTimeout(() => checkExistingAuth(false), 100)
     
     // Set up periodic check interval (configurable via env var, default 5 minutes)
-    const authCheckInterval = parseInt(process.env.NEXT_PUBLIC_AUTH_CHECK_INTERVAL || '300000', 10)
+    const authCheckInterval = runtimeEnv.authCheckIntervalMs()
     const intervalId = setInterval(() => {
       if (isAuthenticated) {
         checkExistingAuth(true)
@@ -259,7 +260,7 @@ export function useAuth() {
     
     try {
       // Use external API call since this goes to a different base path
-      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
+      const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
       const response = await apiClient.external(
         `${baseUrl}/sas/tenant/discover?email=${encodeURIComponent(userEmail)}`,
         { method: 'GET', skipAuth: true } // Skip auth for tenant discovery
@@ -323,7 +324,7 @@ export function useAuth() {
     try {
       console.log('📝 [Auth] Attempting organization registration:', data.tenantName)
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api'
+      const apiUrl = runtimeEnv.apiUrl()
       const baseUrl = apiUrl.replace('/api', '')
       
       const response = await apiClient.external(
@@ -397,7 +398,7 @@ export function useAuth() {
           }
           
           const returnUrl = encodeURIComponent(getReturnUrl())
-          const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
+          const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
           const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&returnUrl=${returnUrl}`
           
           console.log('🔄 [Auth] Redirecting to OpenFrame SSO:', loginUrl)
@@ -430,7 +431,7 @@ export function useAuth() {
     storeLogout()
     
     // Clear tokens if DevTicket is enabled
-    const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+    const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
     if (isDevTicketEnabled) {
       clearTokens()
     }
