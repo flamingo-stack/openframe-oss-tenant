@@ -184,6 +184,10 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			totalApps := len(apps)
 			if totalApps > maxAppsSeenTotal {
 				maxAppsSeenTotal = totalApps
+				// Show initial application count when first detected (verbose mode)
+				if config.Verbose && totalApps > 0 {
+					pterm.Info.Printf("Detected %d ArgoCD applications to synchronize\n", totalApps)
+				}
 			}
 
 			if totalAppsExpected == -1 || maxAppsSeenTotal > totalAppsExpected {
@@ -212,9 +216,17 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 				if app.Health == "Healthy" && app.Sync == "Synced" {
 					everReadyApps[app.Name] = true
 				} else {
-					// Track apps that are not yet ready
+					// Track apps that are not yet ready with more detailed status
 					if app.Health != "Healthy" || app.Sync != "Synced" {
-						status := fmt.Sprintf("%s/%s", app.Health, app.Sync)
+						// Show the most important status issue
+						var status string
+						if app.Health != "Healthy" && app.Sync != "Synced" {
+							status = fmt.Sprintf("%s/%s", app.Health, app.Sync)
+						} else if app.Health != "Healthy" {
+							status = fmt.Sprintf("Health: %s", app.Health)
+						} else {
+							status = fmt.Sprintf("Sync: %s", app.Sync)
+						}
 						notReadyApps = append(notReadyApps, fmt.Sprintf("%s (%s)", app.Name, status))
 					}
 				}
