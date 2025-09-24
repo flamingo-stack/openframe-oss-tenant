@@ -135,5 +135,3 @@ jobs:
             tactical-base:
               - './integrated-tools/tactical-rmm/tactical-base/**'
               - './integrated-tools/tactical-rmm/shared/**'
-            client:
-              - './client/**'
