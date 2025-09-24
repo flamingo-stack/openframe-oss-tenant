@@ -79,15 +79,16 @@ export function DevicesView() {
         <Button
           onClick={() => setViewMode('grid')}
           variant="ghost"
-          className={cn(
-            "p-2 rounded transition-all duration-200",
-            viewMode === 'grid' 
-              ? "bg-ods-accent-hover text-ods-text-on-accent" 
-              : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
-          )}
+          centerIcon={<GridViewIcon className="w-5 h-5" />}
+          // className={cn(
+          //   "p-2 rounded transition-all duration-200",
+          //   viewMode === 'grid' 
+          //     ? "bg-ods-accent-hover text-ods-text-on-accent" 
+          //     : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
+          // )}
           aria-label="Grid view"
         >
-          <GridViewIcon className="w-5 h-5" />
+          
         </Button>
         <Button
           onClick={() => setViewMode('table')}
