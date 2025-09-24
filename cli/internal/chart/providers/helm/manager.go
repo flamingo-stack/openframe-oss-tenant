@@ -118,15 +118,22 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 
 // InstallArgoCDWithProgress installs ArgoCD using Helm with progress indicators
 func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config config.ChartInstallConfig) error {
-	// Show progress for each step
-	spinner, _ := pterm.DefaultSpinner.Start("Installing ArgoCD...")
+	// Show progress for each step only if not in silent/non-interactive mode
+	var spinner *pterm.SpinnerPrinter
+	if !config.Silent && !config.NonInteractive {
+		spinner, _ = pterm.DefaultSpinner.Start("Installing ArgoCD...")
+	} else {
+		pterm.Info.Println("Installing ArgoCD...")
+	}
 
 	// Add ArgoCD repository silently
 	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
 	if err != nil {
 		// Ignore if already exists
 		if !strings.Contains(err.Error(), "already exists") {
-			spinner.Stop()
+			if spinner != nil {
+				spinner.Stop()
+			}
 			return fmt.Errorf("failed to add ArgoCD repository: %w", err)
 		}
 	}
@@ -134,21 +141,27 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	// Update repositories silently
 	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
 	if err != nil {
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
 	}
 
 	// Create a temporary file with ArgoCD values
 	tmpFile, err := os.CreateTemp("", "argocd-values-*.yaml")
 	if err != nil {
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 		return fmt.Errorf("failed to create temporary values file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
 
 	// Write the ArgoCD values to the temporary file
 	if _, err := tmpFile.WriteString(argocd.GetArgoCDValues()); err != nil {
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 		return fmt.Errorf("failed to write values to temporary file: %w", err)
 	}
 	tmpFile.Close()
@@ -187,11 +200,15 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	if err != nil {
 		// Check if the error is due to context cancellation (CTRL-C)
 		if ctx.Err() == context.Canceled {
-			spinner.Stop()
+			if spinner != nil {
+				spinner.Stop()
+			}
 			return ctx.Err() // Return context cancellation directly without extra messaging
 		}
 
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 		// Include stderr output for better debugging
 		if result != nil && result.Stderr != "" {
 			return fmt.Errorf("failed to install ArgoCD: %w\nHelm output: %s", err, result.Stderr)
@@ -199,7 +216,9 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		return fmt.Errorf("failed to install ArgoCD: %w", err)
 	}
 
-	spinner.Stop()
+	if spinner != nil {
+		spinner.Stop()
+	}
 
 	return nil
 }
@@ -223,8 +242,19 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 		"--wait",
 		"--timeout", appConfig.Timeout,
 		"-f", appConfig.ValuesFile,
-		"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFile),
-		"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFile),
+	}
+
+	// Only add certificate files if they exist and are not empty paths
+	if certFile != "" && keyFile != "" {
+		// Check if files actually exist before adding them
+		if _, err := os.Stat(certFile); err == nil {
+			if _, err := os.Stat(keyFile); err == nil {
+				args = append(args,
+					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFile),
+					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFile),
+				)
+			}
+		}
 	}
 
 	if config.DryRun {

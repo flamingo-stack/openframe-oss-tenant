@@ -376,6 +376,6 @@ func TestSkaffoldUI_categorizeSkaffoldFiles_Sorting(t *testing.T) {
 	assert.Len(t, categories, 1)
 	openframeFiles := categories[0].Files
 	assert.Equal(t, "openframe-api", openframeFiles[0].ServiceName)
-	assert.Equal(t, "openframe-gateway", openframeFiles[1].ServiceName)
-	assert.Equal(t, "openframe-frontend", openframeFiles[2].ServiceName)
+	assert.Equal(t, "openframe-frontend", openframeFiles[1].ServiceName)
+	assert.Equal(t, "openframe-gateway", openframeFiles[2].ServiceName)
 }

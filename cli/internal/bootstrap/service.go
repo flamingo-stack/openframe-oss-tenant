@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	chartServices "github.com/flamingo/openframe/internal/chart/services"
+	utilTypes "github.com/flamingo/openframe/internal/chart/utils/types"
 	"github.com/flamingo/openframe/internal/cluster"
 	"github.com/flamingo/openframe/internal/cluster/models"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
@@ -21,10 +22,46 @@ func NewService() *Service {
 
 // Execute handles the bootstrap command execution
 func (s *Service) Execute(cmd *cobra.Command, args []string) error {
-	// Get verbose flag from root command
-	verbose, err := cmd.Root().PersistentFlags().GetBool("verbose")
+	// Get verbose flag - first check local flag, then root command
+	verbose := false
+	if localVerbose, err := cmd.Flags().GetBool("verbose"); err == nil {
+		verbose = localVerbose
+	}
+	if !verbose {
+		if rootVerbose, err := cmd.Root().PersistentFlags().GetBool("verbose"); err == nil {
+			verbose = rootVerbose
+		}
+	}
+
+	// Get deployment mode flags
+	deploymentMode, err := cmd.Flags().GetString("deployment-mode")
 	if err != nil {
-		verbose = false
+		deploymentMode = ""
+	}
+
+	nonInteractive, err := cmd.Flags().GetBool("non-interactive")
+	if err != nil {
+		nonInteractive = false
+	}
+
+	// Validate deployment mode
+	if deploymentMode != "" {
+		validModes := []string{"oss-tenant", "saas-tenant", "saas-shared"}
+		isValid := false
+		for _, mode := range validModes {
+			if deploymentMode == mode {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			return fmt.Errorf("invalid deployment mode: %s. Valid options: oss-tenant, saas-tenant, saas-shared", deploymentMode)
+		}
+	}
+
+	// Validate non-interactive requires deployment mode
+	if nonInteractive && deploymentMode == "" {
+		return fmt.Errorf("--deployment-mode is required when using --non-interactive")
 	}
 
 	// Get cluster name from args if provided
@@ -33,7 +70,7 @@ func (s *Service) Execute(cmd *cobra.Command, args []string) error {
 		clusterName = strings.TrimSpace(args[0])
 	}
 
-	err = s.bootstrap(clusterName, verbose)
+	err = s.bootstrap(clusterName, deploymentMode, nonInteractive, verbose)
 	if err != nil {
 		// Use shared error handler for consistent error display (same as chart install)
 		return sharedErrors.HandleGlobalError(err, verbose)
@@ -42,13 +79,13 @@ func (s *Service) Execute(cmd *cobra.Command, args []string) error {
 }
 
 // bootstrap executes cluster create followed by chart install
-func (s *Service) bootstrap(clusterName string, verbose bool) error {
+func (s *Service) bootstrap(clusterName, deploymentMode string, nonInteractive, verbose bool) error {
 	// Normalize cluster name (use default if empty)
 	config := s.buildClusterConfig(clusterName)
 	actualClusterName := config.Name
 
 	// Step 1: Create cluster with suppressed UI
-	if err := s.createClusterSuppressed(actualClusterName, verbose); err != nil {
+	if err := s.createClusterSuppressed(actualClusterName, verbose, nonInteractive); err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
@@ -56,8 +93,8 @@ func (s *Service) bootstrap(clusterName string, verbose bool) error {
 	fmt.Println()
 	fmt.Println()
 
-	// Step 2: Install charts with suppressed UI on the created cluster
-	if err := s.installChartSuppressed(actualClusterName, verbose); err != nil {
+	// Step 2: Install charts with deployment mode flags on the created cluster
+	if err := s.installChartWithMode(actualClusterName, deploymentMode, nonInteractive, verbose); err != nil {
 		return fmt.Errorf("failed to install charts: %w", err)
 	}
 
@@ -65,9 +102,9 @@ func (s *Service) bootstrap(clusterName string, verbose bool) error {
 }
 
 // createClusterSuppressed creates a cluster with suppressed UI elements
-func (s *Service) createClusterSuppressed(clusterName string, verbose bool) error {
+func (s *Service) createClusterSuppressed(clusterName string, verbose bool, nonInteractive bool) error {
 	// Use the wrapper function that includes prerequisite checks
-	return cluster.CreateClusterWithPrerequisites(clusterName, verbose)
+	return cluster.CreateClusterWithPrerequisitesNonInteractive(clusterName, verbose, nonInteractive)
 }
 
 // buildClusterConfig builds a cluster configuration from the cluster name
@@ -84,8 +121,18 @@ func (s *Service) buildClusterConfig(clusterName string) models.ClusterConfig {
 	}
 }
 
-// installChartSuppressed installs charts with suppressed UI elements
-func (s *Service) installChartSuppressed(clusterName string, verbose bool) error {
-	// Use the common chart installation function with defaults
-	return chartServices.InstallChartsWithDefaults([]string{clusterName}, false, false, verbose)
+// installChartWithMode installs charts with deployment mode flags
+func (s *Service) installChartWithMode(clusterName, deploymentMode string, nonInteractive, verbose bool) error {
+	// Use the chart installation function with deployment mode flags
+	return chartServices.InstallChartsWithConfig(utilTypes.InstallationRequest{
+		Args:           []string{clusterName},
+		Force:          false,
+		DryRun:         false,
+		Verbose:        verbose,
+		GitHubRepo:     "https://github.com/flamingo-stack/openframe-oss-tenant", // Default repository
+		GitHubBranch:   "main",                                                   // Default branch
+		CertDir:        "",                                                       // Auto-detected
+		DeploymentMode: deploymentMode,
+		NonInteractive: nonInteractive,
+	})
 }
