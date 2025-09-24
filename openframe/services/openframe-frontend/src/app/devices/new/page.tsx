@@ -7,14 +7,14 @@ import { DetailPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { useRouter } from 'next/navigation'
 import { useRegistrationSecret } from '../hooks/use-registration-secret'
-import { PLATFORMS, DEFAULT_PLATFORM, type PlatformId } from '@lib/platforms'
+import { OS_PLATFORMS, DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo/ui-kit/utils'
 
-type Platform = PlatformId
+type Platform = OSPlatformId
 
 export default function NewDevicePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [platform, setPlatform] = useState<Platform>(DEFAULT_PLATFORM)
+  const [platform, setPlatform] = useState<Platform>(DEFAULT_OS_PLATFORM)
   const { initialKey } = useRegistrationSecret()
   const [argInput, setArgInput] = useState('')
   const [args, setArgs] = useState<string[]>([])
@@ -70,7 +70,7 @@ export default function NewDevicePage() {
             <div className="flex flex-col gap-2">
               <div className="text-ods-text-secondary text-sm">Select Platform</div>
               <div className="flex w-full bg-ods-card border border-ods-border rounded-[6px] p-1 gap-1">
-                {PLATFORMS.filter(p => p.id !== 'linux').map((p) => {
+                {OS_PLATFORMS.filter(p => p.id !== 'linux').map((p) => {
                   const Icon = p.icon
                   const selected = platform === p.id
                   return (
