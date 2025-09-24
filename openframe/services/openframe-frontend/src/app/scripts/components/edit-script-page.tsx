@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@flamingo/ui-kit/components/ui'
 import { FormLoader, FormPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { LinuxIcon, MacOSIcon, WindowsIcon } from '@flamingo/ui-kit'
+import { PLATFORMS } from '@lib/platforms'
 
 interface ScriptData {
   name: string
@@ -28,12 +28,6 @@ interface ScriptData {
 interface EditScriptPageProps {
   scriptId: string | null
 }
-
-const PLATFORMS = [
-  { id: 'windows', name: 'Windows', icon: WindowsIcon },
-  { id: 'linux', name: 'Linux', icon: LinuxIcon },
-  { id: 'darwin', name: 'MacOS', icon: MacOSIcon }
-]
 
 const SHELL_TYPES = ['bash', 'powershell', 'python', 'batch', 'shell']
 const CATEGORIES = ['System Maintenance', 'Security', 'Network', 'Monitoring', 'Backup', 'Custom']
