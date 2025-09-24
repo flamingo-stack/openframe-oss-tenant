@@ -77,9 +77,9 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
           </p>
           <Button
             onClick={handleBackToLogs}
-            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] flex items-center gap-2"
+            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+            leftIcon={<ChevronLeft className="h-4 w-4" />}
           >
-            <ChevronLeft className="h-4 w-4" />
             Back to Logs
           </Button>
         </div>

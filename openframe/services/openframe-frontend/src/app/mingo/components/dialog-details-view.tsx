@@ -66,9 +66,9 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
           <div className="flex-1 flex flex-col gap-2">
             <Button variant="ghost"
               onClick={() => router.push('/mingo')}
-              className="inline-flex items-center gap-2 text-ods-text-secondary hover:text-ods-text-primary transition-colors py-3"
+              className="text-ods-text-secondary hover:text-ods-text-primary transition-colors py-3"
+              leftIcon={<ChevronLeft className="h-6 w-6" />}
             >
-              <ChevronLeft className="h-6 w-6" />
               <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px]">
                 Back to Chats
               </span>
@@ -83,17 +83,25 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
           {/* Action Buttons */}
           <div className="flex gap-4 items-center">
-            <Button variant="ghost" className="bg-ods-card border border-ods-border rounded-md p-3 hover:bg-ods-bg-hover transition-colors">
-              <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />
-            </Button>
-            <Button variant="ghost" className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors">
-              <Clock className="h-6 w-6 text-ods-text-primary" />
+            <Button
+              variant="ghost"
+              className="bg-ods-card border border-ods-border rounded-md p-3 hover:bg-ods-bg-hover transition-colors"
+              leftIcon={<MoreHorizontal className="h-6 w-6 text-ods-text-primary" />}
+            />
+            <Button
+              variant="ghost"
+              className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+              leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
+            >
               <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
                 Put On Hold
               </span>
             </Button>
-            <Button variant="ghost" className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors">
-              <CheckCircle className="h-6 w-6 text-ods-text-primary" />
+            <Button
+              variant="ghost"
+              className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+              leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
+            >
               <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
                 Resolve
               </span>
