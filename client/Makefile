@@ -11,28 +11,28 @@ endif
 .PHONY: lint build test fmt fmt-check clippy clean crossinstall crossbuild
 
 fmt:
-  $(CARGO) fmt --all
+	$(CARGO) fmt --all
 
 fmt-check:
-  $(CARGO) fmt --all -- --check
+	$(CARGO) fmt --all -- --check
 
 clippy:
-  $(CARGO) clippy --all-targets -- -D warnings
+	$(CARGO) clippy --all-targets -- -D warnings
 
 lint: fmt-check clippy
 
 build:
-  $(CARGO) build --release --locked
+	$(CARGO) build --release --locked
 
 test: build
-  $(CARGO) test --release --locked
+	$(CARGO) test --release --locked
 
 clean:
-  $(CARGO) clean
+	$(CARGO) clean
 
 # install cross tool
 crossinstall:
-  $(CARGO) install cross --git https://github.com/cross-rs/cross
+	$(CARGO) install cross --git https://github.com/cross-rs/cross
 
 crossbuild:
-  cross build --release $(TARGET_FLAG)
+	cross build --release $(TARGET_FLAG)
