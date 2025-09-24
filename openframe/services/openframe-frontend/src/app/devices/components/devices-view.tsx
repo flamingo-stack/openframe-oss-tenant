@@ -2,14 +2,15 @@
 
 import React, { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Table, 
-  SearchBar, 
+import {
+  Table,
+  SearchBar,
   Button,
   ListPageContainer,
   PageError
 } from "@flamingo/ui-kit/components/ui"
-import { GridViewIcon, TableViewIcon, PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
+import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
+import { ViewToggle } from "@flamingo/ui-kit/components/features"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { cn } from "@flamingo/ui-kit/utils"
 import { useDevices } from '../hooks/use-devices'
@@ -75,36 +76,11 @@ export function DevicesView() {
 
   const viewToggle = (
     <div className="flex items-center gap-2">
-      <div className="flex bg-ods-card border border-ods-border rounded-[6px] p-1">
-        <Button
-          onClick={() => setViewMode('grid')}
-          variant="ghost"
-          centerIcon={<GridViewIcon className="w-5 h-5" />}
-          // className={cn(
-          //   "p-2 rounded transition-all duration-200",
-          //   viewMode === 'grid' 
-          //     ? "bg-ods-accent-hover text-ods-text-on-accent" 
-          //     : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
-          // )}
-          aria-label="Grid view"
-        >
-          
-        </Button>
-        <Button
-          onClick={() => setViewMode('table')}
-          variant="ghost"
-          className={cn(
-            "p-2 rounded transition-all duration-200",
-            viewMode === 'table'
-              ? "bg-ods-accent-hover text-ods-text-on-accent"
-              : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
-          )}
-          aria-label="Table view"
-        >
-          <TableViewIcon className="w-5 h-5" />
-        </Button>
-      </div>
-      
+      <ViewToggle
+        value={viewMode}
+        onValueChange={setViewMode}
+      />
+
       <Button
         onClick={() => router.push('/devices/new')}
         leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay/>}
