@@ -22,10 +22,15 @@ func NewService() *Service {
 
 // Execute handles the bootstrap command execution
 func (s *Service) Execute(cmd *cobra.Command, args []string) error {
-	// Get verbose flag from root command
-	verbose, err := cmd.Root().PersistentFlags().GetBool("verbose")
-	if err != nil {
-		verbose = false
+	// Get verbose flag - first check local flag, then root command
+	verbose := false
+	if localVerbose, err := cmd.Flags().GetBool("verbose"); err == nil {
+		verbose = localVerbose
+	}
+	if !verbose {
+		if rootVerbose, err := cmd.Root().PersistentFlags().GetBool("verbose"); err == nil {
+			verbose = rootVerbose
+		}
 	}
 
 	// Get deployment mode flags

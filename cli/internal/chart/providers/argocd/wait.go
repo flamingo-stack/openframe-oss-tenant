@@ -76,6 +76,14 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		return nil
 	}
 	
+	// Show initial verbose info if enabled
+	if config.Verbose {
+		pterm.Info.Println("Starting ArgoCD application synchronization...")
+		pterm.Debug.Println("  - Waiting for applications to be created by app-of-apps")
+		pterm.Debug.Println("  - Each application must reach Healthy + Synced status")
+		pterm.Debug.Println("  - Progress updates every 10 seconds in verbose mode")
+	}
+
 	// Start pterm spinner
 	spinner, _ = pterm.DefaultSpinner.
 		WithRemoveWhenDone(false).
@@ -172,28 +180,87 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 				// Ignore parse errors and retry
 				continue
 			}
-			
+
 			totalApps := len(apps)
 			if totalApps > maxAppsSeenTotal {
 				maxAppsSeenTotal = totalApps
 			}
-			
+
 			if totalAppsExpected == -1 || maxAppsSeenTotal > totalAppsExpected {
 				totalAppsExpected = maxAppsSeenTotal
 			}
-			
+
 			// Track applications that have ever been ready during this session
 			currentHealthyCount := 0
+			healthyApps := make([]string, 0)
+			syncedApps := make([]string, 0)
+			notReadyApps := make([]string, 0)
+
 			for _, app := range apps {
 				// Count currently healthy apps for monitoring
 				if app.Health == "Healthy" {
 					currentHealthyCount++
+					healthyApps = append(healthyApps, app.Name)
 				}
-				
+
+				if app.Sync == "Synced" {
+					syncedApps = append(syncedApps, app.Name)
+				}
+
 				// Mark apps as "ever ready" if they are currently healthy and synced
 				// Once marked, they stay counted even if they go out of sync later
 				if app.Health == "Healthy" && app.Sync == "Synced" {
 					everReadyApps[app.Name] = true
+				} else {
+					// Track apps that are not yet ready
+					if app.Health != "Healthy" || app.Sync != "Synced" {
+						status := fmt.Sprintf("%s/%s", app.Health, app.Sync)
+						notReadyApps = append(notReadyApps, fmt.Sprintf("%s (%s)", app.Name, status))
+					}
+				}
+			}
+
+			// Show verbose logging if enabled
+			if config.Verbose && totalApps > 0 {
+				elapsed := time.Since(startTime)
+				readyCount := len(everReadyApps)
+
+				// Update spinner message with current status
+				spinnerMutex.Lock()
+				if !spinnerStopped && spinner != nil && spinner.IsActive {
+					progress := ""
+					if totalAppsExpected > 0 {
+						progressPercent := float64(readyCount) / float64(totalAppsExpected) * 100
+						progress = fmt.Sprintf(" (%.0f%%)", progressPercent)
+					}
+					spinner.UpdateText(fmt.Sprintf("Installing ArgoCD applications... %d/%d ready%s [%s]",
+						readyCount, totalApps, progress, elapsed.Round(time.Second)))
+				}
+				spinnerMutex.Unlock()
+
+				// Only show detailed status every 10 seconds to avoid spam
+				if int(elapsed.Seconds())%10 == 0 {
+					pterm.Info.Printf("ArgoCD Sync Progress: %d/%d applications ready (%s elapsed)\n",
+						readyCount, totalApps, elapsed.Round(time.Second))
+
+					// Always show pending applications when there are any
+					if len(notReadyApps) > 0 {
+						if len(notReadyApps) <= 8 {
+							pterm.Info.Printf("  Still waiting for: %v\n", notReadyApps)
+						} else {
+							pterm.Info.Printf("  Still waiting for %d applications (showing first 5): %v...\n",
+								len(notReadyApps), notReadyApps[:5])
+						}
+					}
+
+					// Show recently completed applications
+					if len(healthyApps) > 0 && len(healthyApps) <= 5 {
+						startIdx := 0
+						if len(healthyApps) > 5 {
+							startIdx = len(healthyApps) - 5
+						}
+						pterm.Debug.Printf("  Recently completed: %v\n", healthyApps[startIdx:])
+					}
 				}
 			}
 			
