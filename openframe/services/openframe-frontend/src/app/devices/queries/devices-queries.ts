@@ -63,6 +63,18 @@ export const GET_DEVICES_QUERY = `
           timezone
           registeredAt
           updatedAt
+          toolConnections {
+            id
+            machineId
+            toolType
+            agentToolId
+            status
+            metadata
+            connectedAt
+            lastSyncAt
+            disconnectedAt
+            __typename
+          }
           tags {
             id
             name
@@ -87,6 +99,54 @@ export const GET_DEVICES_QUERY = `
       }
       filteredCount
       __typename
+    }
+  }
+`
+
+export const GET_DEVICE_QUERY = `
+  query GetDevice($machineId: String!) {
+    device(machineId: $machineId) {
+      id
+      machineId
+      hostname
+      displayName
+      ip
+      macAddress
+      osUuid
+      agentVersion
+      status
+      lastSeen
+      organizationId
+      serialNumber
+      manufacturer
+      model
+      type
+      osType
+      osVersion
+      osBuild
+      timezone
+      registeredAt
+      updatedAt
+      tags {
+        id
+        name
+        description
+        color
+        organizationId
+        createdAt
+        createdBy
+      }
+      toolConnections {
+        id
+        machineId
+        toolType
+        agentToolId
+        status
+        metadata
+        connectedAt
+        lastSyncAt
+        disconnectedAt
+      }
     }
   }
 `
