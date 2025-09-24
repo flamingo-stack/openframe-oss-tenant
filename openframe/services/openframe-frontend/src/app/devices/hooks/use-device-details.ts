@@ -4,50 +4,8 @@ import { useState, useCallback } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { apiClient } from '@lib/api-client'
-import { Device, ToolConnection } from '../types/device.types'
+import { Device, DeviceGraphQLNode, GraphQLResponse } from '../types/device.types'
 import { GET_DEVICE_QUERY } from '../queries/devices-queries'
-
-interface GraphQLResponse<T> {
-  data?: T
-  errors?: Array<{
-    message: string
-    extensions?: any
-  }>
-}
-
-type DeviceGraphQLNode = {
-  id: string
-  machineId: string
-  hostname: string
-  displayName?: string
-  ip?: string
-  macAddress?: string
-  osUuid?: string
-  agentVersion?: string
-  status: string
-  lastSeen?: string
-  organizationId?: string
-  serialNumber?: string
-  manufacturer?: string
-  model?: string
-  type?: string
-  osType?: string
-  osVersion?: string
-  osBuild?: string
-  timezone?: string
-  registeredAt?: string
-  updatedAt?: string
-  tags?: Array<{
-    id: string
-    name: string
-    description?: string
-    color?: string
-    organizationId: string
-    createdAt: string
-    createdBy: string
-  }>
-  toolConnections?: ToolConnection[]
-}
 
 export function useDeviceDetails() {
   const { toast } = useToast()

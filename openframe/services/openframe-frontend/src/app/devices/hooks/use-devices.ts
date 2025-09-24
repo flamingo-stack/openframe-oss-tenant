@@ -3,50 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { apiClient } from '@lib/api-client'
-import { Device, DeviceFilters, DeviceFilterInput, ToolConnection } from '../types/device.types'
+import { Device, DeviceFilters, DeviceFilterInput, DevicesGraphQLNode, GraphQLResponse } from '../types/device.types'
 import { GET_DEVICES_QUERY, GET_DEVICE_FILTERS_QUERY } from '../queries/devices-queries'
-
-interface GraphQLResponse<T> {
-  data?: T
-  errors?: Array<{
-    message: string
-    extensions?: any
-  }>
-}
-
-type DevicesGraphQLNode = {
-  id: string
-  machineId?: string
-  hostname: string
-  displayName?: string
-  ip?: string
-  macAddress?: string
-  osUuid?: string
-  agentVersion?: string
-  status: string
-  lastSeen?: string
-  organizationId?: string
-  serialNumber?: string
-  manufacturer?: string
-  model?: string
-  type?: string
-  osType?: string
-  osVersion?: string
-  osBuild?: string
-  timezone?: string
-  registeredAt?: string
-  updatedAt?: string
-  tags?: Array<{
-    id: string
-    name: string
-    description?: string
-    color?: string
-    organizationId: string
-    createdAt: string
-    createdBy: string
-  }>
-  toolConnections?: ToolConnection[]
-}
 
 export function useDevices(filters: DeviceFilterInput = {}) {
   const { toast } = useToast()

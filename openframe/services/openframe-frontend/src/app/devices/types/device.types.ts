@@ -137,3 +137,79 @@ export interface DeviceFilterInput {
   organizationIds?: string[]
   tags?: string[]
 }
+
+export interface GraphQLResponse<T> {
+  data?: T
+  errors?: Array<{
+    message: string
+    extensions?: any
+  }>
+}
+
+export type DevicesGraphQLNode = {
+  id: string
+  machineId?: string
+  hostname: string
+  displayName?: string
+  ip?: string
+  macAddress?: string
+  osUuid?: string
+  agentVersion?: string
+  status: string
+  lastSeen?: string
+  organizationId?: string
+  serialNumber?: string
+  manufacturer?: string
+  model?: string
+  type?: string
+  osType?: string
+  osVersion?: string
+  osBuild?: string
+  timezone?: string
+  registeredAt?: string
+  updatedAt?: string
+  tags?: Array<{
+    id: string
+    name: string
+    description?: string
+    color?: string
+    organizationId: string
+    createdAt: string
+    createdBy: string
+  }>
+  toolConnections?: ToolConnection[]
+}
+
+export type DeviceGraphQLNode = {
+  id: string
+  machineId: string
+  hostname: string
+  displayName?: string
+  ip?: string
+  macAddress?: string
+  osUuid?: string
+  agentVersion?: string
+  status: string
+  lastSeen?: string
+  organizationId?: string
+  serialNumber?: string
+  manufacturer?: string
+  model?: string
+  type?: string
+  osType?: string
+  osVersion?: string
+  osBuild?: string
+  timezone?: string
+  registeredAt?: string
+  updatedAt?: string
+  tags?: Array<{
+    id: string
+    name: string
+    description?: string
+    color?: string
+    organizationId: string
+    createdAt: string
+    createdBy: string
+  }>
+  toolConnections?: ToolConnection[]
+}
