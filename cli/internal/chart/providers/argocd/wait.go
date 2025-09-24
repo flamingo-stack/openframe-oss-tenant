@@ -201,6 +201,7 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 
 			// Track applications that have ever been ready during this session
 			currentHealthyCount := 0
+			currentlyReady := 0
 			healthyApps := make([]string, 0)
 			syncedApps := make([]string, 0)
 			notReadyApps := make([]string, 0)
@@ -216,9 +217,11 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 					syncedApps = append(syncedApps, app.Name)
 				}
 
-				// Mark apps as "ever ready" if they are currently healthy and synced
-				// Once marked, they stay counted even if they go out of sync later
+				// Count currently ready apps (both healthy and synced)
 				if app.Health == "Healthy" && app.Sync == "Synced" {
+					currentlyReady++
+					// Mark apps as "ever ready" if they are currently healthy and synced
+					// Once marked, they stay counted even if they go out of sync later
 					everReadyApps[app.Name] = true
 				} else {
 					// Track apps that are not yet ready with more detailed status
@@ -240,25 +243,24 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			// Show verbose logging if enabled
 			if config.Verbose && totalApps > 0 {
 				elapsed := time.Since(startTime)
-				readyCount := len(everReadyApps)
 
 				// Update spinner message with current status
 				spinnerMutex.Lock()
 				if !spinnerStopped && spinner != nil && spinner.IsActive {
 					progress := ""
-					if totalAppsExpected > 0 {
-						progressPercent := float64(readyCount) / float64(totalAppsExpected) * 100
+					if totalApps > 0 {
+						progressPercent := float64(currentlyReady) / float64(totalApps) * 100
 						progress = fmt.Sprintf(" (%.0f%%)", progressPercent)
 					}
 					spinner.UpdateText(fmt.Sprintf("Installing ArgoCD applications... %d/%d ready%s [%s]",
-						readyCount, totalApps, progress, elapsed.Round(time.Second)))
+						currentlyReady, totalApps, progress, elapsed.Round(time.Second)))
 				}
 				spinnerMutex.Unlock()
 
 				// Only show detailed status every 10 seconds to avoid spam
 				if int(elapsed.Seconds())%10 == 0 {
 					pterm.Info.Printf("ArgoCD Sync Progress: %d/%d applications ready (%s elapsed)\n",
-						readyCount, totalApps, elapsed.Round(time.Second))
+						currentlyReady, totalApps, elapsed.Round(time.Second))
 
 					// Always show pending applications when there are any
 					if len(notReadyApps) > 0 {
@@ -283,26 +285,21 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			
 			// Use the high water mark of applications that have ever been ready
 			readyCount := len(everReadyApps)
-			
+
 			if readyCount > maxAppsSeenReady {
 				maxAppsSeenReady = readyCount
 			}
 			
-			// Check if deployment is complete using high water mark approach
+			// Check if deployment is complete - ALL currently detected apps must be healthy and synced
+			// All apps must be currently ready (not just "ever ready")
 			allReady := false
-			if totalAppsExpected > 0 && readyCount >= totalAppsExpected {
-				// We know the expected count and have seen enough apps become ready
+			if totalApps > 0 && currentlyReady == totalApps {
 				allReady = true
-			} else if totalApps > 0 && totalApps >= 5 {
-				// For larger deployments, consider ready when we've seen most apps become ready
-				// Use 95% threshold since some apps might temporarily be out of sync
-				readyRatio := float64(readyCount) / float64(totalApps)
-				if readyRatio >= 0.95 {
-					allReady = true
-				}
-			} else if totalApps > 0 && readyCount == totalApps {
-				// For smaller deployments, wait for all apps to have been ready at least once
-				allReady = true
+			}
+
+			// Update ready count for display purposes (still use everReady for progress tracking)
+			if currentlyReady > maxAppsSeenReady {
+				maxAppsSeenReady = currentlyReady
 			}
 			
 			if allReady {
