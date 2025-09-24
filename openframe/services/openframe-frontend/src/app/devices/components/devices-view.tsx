@@ -34,7 +34,8 @@ export function DevicesView() {
   }, [])
 
   const handleDeviceDetails = useCallback((device: Device) => {
-    router.push(`/devices/details/${device.agent_id}`)
+    const machineId = device.machineId || device.agent_id
+    router.push(`/devices/details/${machineId}`)
   }, [router])
 
   const rowActions = useMemo(
@@ -138,7 +139,7 @@ export function DevicesView() {
         <Table
           data={devices}
           columns={columns}
-          rowKey="agent_id"
+          rowKey="machineId"
           loading={isLoading}
           emptyMessage="No devices found. Try adjusting your search or filters."
           rowActions={rowActions}

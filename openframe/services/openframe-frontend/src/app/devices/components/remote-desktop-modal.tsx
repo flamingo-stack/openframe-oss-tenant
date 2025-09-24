@@ -5,7 +5,6 @@ import { X } from 'lucide-react'
 import { Button } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { MeshControlClient } from '../../../lib/meshcentral/meshcentral-control'
-import { DEV_HARDCODED_NODE_ID } from '../../../lib/meshcentral/meshcentral-config'
 import { MeshTunnel, TunnelState } from '../../../lib/meshcentral/meshcentral-tunnel'
 import { MeshDesktop } from '../../../lib/meshcentral/meshcentral-desktop'
 
@@ -62,9 +61,10 @@ export function RemoteDesktopModal({ isOpen, onClose, deviceId, deviceLabel }: R
       try {
         control = new MeshControlClient()
         const { authCookie, relayCookie } = await control.getAuthCookies()
+        const nodeId = `node//${deviceId}`
         const tunnel = new MeshTunnel({
           authCookie,
-          nodeId: DEV_HARDCODED_NODE_ID,
+          nodeId: nodeId,
           protocol: 2,
           onData: () => {},
           onBinaryData: (bytes) => { desktopRef.current?.onBinaryFrame(bytes) },
@@ -78,7 +78,7 @@ export function RemoteDesktopModal({ isOpen, onClose, deviceId, deviceLabel }: R
         try {
           await control.openSession()
           const relayId = tunnel.getRelayId()
-          control.sendDesktopTunnel(DEV_HARDCODED_NODE_ID, relayId, relayCookie)
+          control.sendDesktopTunnel(nodeId, relayId, relayCookie)
         } catch {}
         tunnel.start()
       } catch (e) {

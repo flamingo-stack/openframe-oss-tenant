@@ -7,7 +7,6 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { MeshControlClient } from '../../../lib/meshcentral/meshcentral-control'
-import { DEV_HARDCODED_NODE_ID } from '../../../lib/meshcentral/meshcentral-config'
 import { MeshTunnel, TunnelState } from '../../../lib/meshcentral/meshcentral-tunnel'
 
 interface RemoteShellModalProps {
@@ -71,10 +70,11 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
         control = new MeshControlClient()
         const { authCookie, relayCookie } = await control.getAuthCookies()
         const term = termRef.current
+        const nodeId = `node//${deviceId}`
         if (!term) throw new Error('Terminal not initialized')
         const tunnel = new MeshTunnel({
           authCookie,
-          nodeId: DEV_HARDCODED_NODE_ID,
+          nodeId: nodeId,
           protocol: 1,
           options: { cols: term.cols, rows: term.rows },
           onData: (data) => {
@@ -91,8 +91,8 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
         try {
           await control.openSession()
           const relayId = tunnel.getRelayId()
-          const relayValue = `*/meshrelay.ashx?p=1&nodeid=${encodeURIComponent(DEV_HARDCODED_NODE_ID)}&id=${encodeURIComponent(relayId)}${relayCookie ? `&rauth=${encodeURIComponent(relayCookie)}` : ''}`
-          control.sendTunnelMsg(DEV_HARDCODED_NODE_ID, relayValue)
+          const relayValue = `*/meshrelay.ashx?p=1&nodeid=${encodeURIComponent(nodeId)}&id=${encodeURIComponent(relayId)}${relayCookie ? `&rauth=${encodeURIComponent(relayCookie)}` : ''}`
+          control.sendTunnelMsg(nodeId, relayValue)
         } catch {}
         tunnel.start()
       } catch (e) {

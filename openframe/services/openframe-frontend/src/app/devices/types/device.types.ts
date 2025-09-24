@@ -13,6 +13,21 @@ export interface DeviceTag {
   __typename?: string
 }
 
+export type ToolType = 'MESHCENTRAL' | 'TACTICAL_RMM' | 'FLEET_MDM'
+
+export interface ToolConnection {
+  id: string
+  machineId: string
+  toolType: ToolType
+  agentToolId: string
+  status: string
+  metadata?: any
+  connectedAt?: string
+  lastSyncAt?: string
+  disconnectedAt?: string
+  __typename?: string
+}
+
 export interface Device {
   // Core tactical-rmm fields
   agent_id: string
@@ -88,6 +103,7 @@ export interface Device {
   agentVersion?: string
   serialNumber?: string
   totalRam?: string
+  toolConnections?: ToolConnection[]
 }
 
 // Additional types for device filtering

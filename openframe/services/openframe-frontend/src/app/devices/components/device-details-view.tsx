@@ -40,6 +40,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const normalizedDevice = deviceDetails
 
+  const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
+    || normalizedDevice?.agent_id
+
   const handleBack = () => {
     router.push('/devices')
   }
@@ -148,13 +151,13 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       <RemoteShellModal
         isOpen={isRemoteShellOpen}
         onClose={() => setIsRemoteShellOpen(false)}
-        deviceId={deviceId}
+        deviceId={meshcentralAgentId || deviceId}
         deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
       />
       <RemoteDesktopModal
           isOpen={isRemoteDesktopOpen}
           onClose={() => setIsRemoteDesktopOpen(false)}
-          deviceId={deviceId}
+          deviceId={meshcentralAgentId || deviceId}
           deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
         />
     </div>
