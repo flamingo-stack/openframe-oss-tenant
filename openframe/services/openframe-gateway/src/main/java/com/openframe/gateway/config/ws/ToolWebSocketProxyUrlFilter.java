@@ -1,9 +1,9 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.core.model.ToolUrl;
-import com.openframe.core.model.ToolUrlType;
 import com.openframe.core.service.ProxyUrlResolver;
-import com.openframe.data.repository.mongo.ReactiveIntegratedToolRepository;
+import com.openframe.data.document.tool.ToolUrl;
+import com.openframe.data.document.tool.ToolUrlType;
+import com.openframe.data.reactive.repository.tool.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -40,7 +40,7 @@ public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Orde
         return getToolUrl(toolId)
                 .flatMap(toolUrl -> {
                     String endpointPrefix = getEndpointPrefix();
-                    URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl, requestUri, endpointPrefix);
+                    URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl.getUrl(), toolUrl.getPort(), requestUri, endpointPrefix);
 
                     exchange.getAttributes()
                             .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);

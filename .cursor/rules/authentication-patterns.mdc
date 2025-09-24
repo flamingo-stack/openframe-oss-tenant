@@ -11,7 +11,7 @@ globs:
   - "openframe/services/*/src/main/java/**/controller/**"
   - "openframe/services/*/src/main/java/**/service/**"
   - "openframe/libs/openframe-jwt/**"
-  - "openframe/services/openframe-ui/src/stores/auth.ts"
+  - "openframe/services/openframe-frontend/src/stores/auth.ts"
 alwaysApply: false
 ---
 
@@ -184,7 +184,7 @@ export const useAuthStore = defineStore('auth', () => {
 })
 ```
 
-**Reference**: [auth.ts](mdc:openframe/services/openframe-ui/src/stores/auth.ts)
+**Reference**: [auth.ts](mdc:openframe/services/openframe-frontend/src/stores/auth.ts)
 
 ## Security Best Practices
 

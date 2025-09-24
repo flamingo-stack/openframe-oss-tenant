@@ -1,8 +1,12 @@
 package com.openframe.gateway.service;
 
-import com.openframe.core.model.*;
 import com.openframe.core.service.ProxyUrlResolver;
-import com.openframe.data.repository.mongo.ReactiveIntegratedToolRepository;
+import com.openframe.data.document.apikey.APIKeyType;
+import com.openframe.data.document.tool.IntegratedTool;
+import com.openframe.data.document.tool.ToolCredentials;
+import com.openframe.data.document.tool.ToolUrl;
+import com.openframe.data.document.tool.ToolUrlType;
+import com.openframe.data.reactive.repository.tool.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import com.openframe.gateway.config.CurlLoggingHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
@@ -57,7 +61,7 @@ public class RestProxyService {
                     }
                     ToolUrl toolUrl = optionalToolUrl.get();
 
-                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUri, "/tools");
+                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl.getUrl(), toolUrl.getPort(), originalUri, "/tools");
                     log.debug("Proxying api request for tool: {}, url: {}", toolId, targetUri);
 
                     HttpMethod method = request.getMethod();
@@ -129,7 +133,7 @@ public class RestProxyService {
                     }
                     ToolUrl toolUrl = optionalToolUrl.get();
 
-                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl, originalUri, "/tools/agent");
+                    URI targetUri = proxyUrlResolver.resolve(toolId, toolUrl.getUrl(), toolUrl.getPort(), originalUri, "/tools/agent");
                     log.debug("Proxying api request for tool: {}, url: {}", toolId, targetUri);
 
                     HttpMethod method = request.getMethod();

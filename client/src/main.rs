@@ -1,10 +1,15 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use openframe::platform::permissions::{Capability, PermissionUtils};
 use openframe::{service::Service, Client};
+use openframe::models::InitialConfiguration;
+use openframe::platform::DirectoryManager;
+use openframe::services::InitialConfigurationService;
 use std::process;
+use std::process::Command;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
+use openframe::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -13,10 +18,25 @@ struct Cli {
     command: Option<Commands>,
 }
 
+#[derive(Args, Debug, Clone)]
+struct InstallArgs {
+    #[arg(long = "serverUrl")]
+    server_url: Option<String>,
+
+    #[arg(long = "initialKey")]
+    initial_key: Option<String>,
+
+    #[arg(long = "localMode", default_value_t = false)]
+    local_mode: bool,
+
+    #[arg(long = "orgId")]
+    org_id: Option<String>,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Install the OpenFrame client as a system service
-    Install,
+    Install(InstallArgs),
     /// Uninstall the OpenFrame client service
     Uninstall,
     /// Run the OpenFrame client directly (not as a service)
@@ -30,6 +50,12 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
+    // allow to run only as root user
+    if unsafe { libc::geteuid() } != 0 {
+        eprintln!("Please run application with administrator/root privileges");
+        process::exit(1);
+    }
+
     // Initialize logging first
     if let Err(e) = openframe::logging::init(None, None) {
         eprintln!("Failed to initialize logging: {}", e);
@@ -47,7 +73,7 @@ fn main() -> Result<()> {
     let rt = Runtime::new()?;
 
     match cli.command {
-        Some(Commands::Install) => {
+        Some(Commands::Install(args)) => {
             info!("Running install command");
             // Check for admin privileges - this is required for installation
             if !is_admin {
@@ -57,14 +83,21 @@ fn main() -> Result<()> {
                 process::exit(1);
             }
 
+            let params = InstallConfigParams {
+                server_url: args.server_url.clone(),
+                initial_key: args.initial_key.clone(),
+                org_id: args.org_id.clone(),
+                local_mode: args.local_mode.clone(),
+            };
+
             rt.block_on(async {
-                match Service::install().await {
+                match Service::install(params).await {
                     Ok(_) => {
                         info!("OpenFrame client service installed successfully");
                         process::exit(0);
                     }
                     Err(e) => {
-                        error!("Failed to install OpenFrame client service: {}", e);
+                        error!("Failed to install OpenFrame client service: {:#}", e);
                         process::exit(1);
                     }
                 }
@@ -87,7 +120,7 @@ fn main() -> Result<()> {
                         process::exit(0);
                     }
                     Err(e) => {
-                        error!("Failed to uninstall OpenFrame client service: {}", e);
+                        error!("Failed to uninstall OpenFrame client service: {:#}", e);
                         process::exit(1);
                     }
                 }
@@ -105,12 +138,12 @@ fn main() -> Result<()> {
                 Ok(client) => {
                     info!("Starting OpenFrame client in direct mode");
                     if let Err(e) = rt.block_on(client.start()) {
-                        error!("Client failed: {}", e);
+                        error!("Client failed: {:#}", e);
                         process::exit(1);
                     }
                 }
                 Err(e) => {
-                    error!("Failed to initialize client: {}", e);
+                    error!("Failed to initialize client: {:#}", e);
                     process::exit(1);
                 }
             }
@@ -123,7 +156,7 @@ fn main() -> Result<()> {
 
             // This command is used when started by the service manager
             if let Err(e) = rt.block_on(Service::run_as_service()) {
-                error!("Service failed: {}", e);
+                error!("Service failed: {:#}", e);
                 process::exit(1);
             }
         }
@@ -157,8 +190,8 @@ fn main() -> Result<()> {
         None => {
             info!("No command specified, running as service (legacy mode)");
             // Run as service by default for backward compatibility
-            if let Err(e) = rt.block_on(Service::run_as_service()) {
-                error!("Service failed: {}", e);
+            if let Err(e) = rt.block_on(Service::run()) {
+                error!("Service failed: {:#}", e);
                 process::exit(1);
             }
         }

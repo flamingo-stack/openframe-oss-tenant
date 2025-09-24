@@ -2,8 +2,8 @@ package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.cassandra.UnifiedLogEvent;
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
-import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.Destination;
 import com.openframe.data.model.enums.EventHandlerType;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +42,11 @@ public class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<Unif
             logEvent.setUserId(enrichedData.getUserId());
             logEvent.setDeviceId(enrichedData.getMachineId());
             logEvent.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
+            logEvent.setDebeziumMessage(debeziumMessage.getDebeziumMessage());
+            logEvent.setMessage(debeziumMessage.getMessage() ==  null
+                    ? debeziumMessage.getUnifiedEventType().getSummary()
+                    : debeziumMessage.getMessage());
             logEvent.setDetails(debeziumMessage.getDetails());
-            logEvent.setMessage(debeziumMessage.getMessage());
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);

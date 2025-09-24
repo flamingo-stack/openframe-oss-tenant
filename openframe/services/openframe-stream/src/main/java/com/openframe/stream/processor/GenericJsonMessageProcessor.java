@@ -1,8 +1,8 @@
 package com.openframe.stream.processor;
 
-import com.openframe.data.model.debezium.CommonDebeziumMessage;
-import com.openframe.data.model.debezium.DeserializedDebeziumMessage;
-import com.openframe.data.model.debezium.IntegratedToolEnrichedData;
+import com.openframe.kafka.model.debezium.CommonDebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
+import com.openframe.stream.model.fleet.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.EventHandlerType;
 import com.openframe.stream.deserializer.KafkaMessageDeserializer;
 import com.openframe.data.model.enums.DataEnrichmentServiceType;
@@ -41,6 +41,9 @@ public class GenericJsonMessageProcessor {
 
     public void process(CommonDebeziumMessage message, MessageType type) {
         DeserializedDebeziumMessage deserializedKafkaMessage = deserialize(message, type);
+        if (deserializedKafkaMessage != null && deserializedKafkaMessage.getSkipProcessing()) {
+            return;
+        }
         IntegratedToolEnrichedData enrichedData = getExtraParams(deserializedKafkaMessage, type);
         type.getDestinationList().forEach(destination -> {
             MessageHandler handler = handlers.get(type.getEventHandlerType()).get(destination);

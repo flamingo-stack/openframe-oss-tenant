@@ -1,15 +1,28 @@
 'use client'
 
+import { useEffect } from 'react'
 import { AuthSignupSection } from '@app/auth/components/signup-section'
 import { AuthLayout } from '@app/auth/layouts'
 import { useAuth } from '@app/auth/hooks/use-auth'
+import { useAuthStore } from '@app/auth/stores/auth-store'
 import { useRouter } from 'next/navigation'
+import { isAuthOnlyMode } from '../../../lib/app-mode'
 
 export default function SignupPage() {
   const router = useRouter()
+  const { isAuthenticated } = useAuthStore()
   const { isLoading, registerOrganization, loginWithSSO } = useAuth()
 
-  // Get stored org details
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isAuthOnlyMode()) {
+        router.push('/auth/already-signed-in')
+      } else {
+        router.push('/dashboard')
+      }
+    }
+  }, [isAuthenticated, router])
+
   const storedOrgName = typeof window !== 'undefined' ? sessionStorage.getItem('auth:org_name') || '' : ''
   const storedDomain = typeof window !== 'undefined' ? sessionStorage.getItem('auth:domain') || 'localhost' : 'localhost'
 
@@ -18,14 +31,11 @@ export default function SignupPage() {
   }
 
   const handleSSOSignup = async (provider: string) => {
-    // Store org details for after SSO callback
     if (storedOrgName) {
       sessionStorage.setItem('auth:signup_org', storedOrgName)
       sessionStorage.setItem('auth:signup_domain', storedDomain)
     }
     
-    // Redirect to SSO provider for signup
-    // The provider will handle new user creation
     await loginWithSSO(provider)
   }
 

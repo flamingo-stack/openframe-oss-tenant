@@ -14,13 +14,18 @@ spring:
       favor-parameter: true
       media-types:
         actuator: application/vnd.spring-boot.actuator.v3+json
-  cloud:
-    config:
-      server:
-        git:
-          uri: https://github.com/flamingo-stack/${CONFIG_GIT_REPO:openframe-oss-tenant-cfg}
-          clone-on-start: true
-          default-label: ${CONFIG_GIT_BRANCH:main}
+
+# Enable dynamic repository configuration
+openframe:
+  config:
+    dynamic-repos: true
+    git-repo-base-url: ${GITHUB_BASE_URL:https://github.com/flamingo-stack/}
+    git-repo-0: ${CONFIG_GIT_REPO_0:openframe-oss-tenant-cfg}
+    git-branch-0: ${CONFIG_GIT_BRANCH_0:main}
+    git-repo-1: ${CONFIG_GIT_REPO_1:}
+    git-branch-1: ${CONFIG_GIT_BRANCH_1:main}
+    password: ${GITHUB_PASSWORD:}
+
 
 # Management server configuration
 management:
@@ -55,15 +60,18 @@ logging:
   config: classpath:logging/shared-logback-spring.xml
   level:
     root: INFO
-    org.springframework.boot.actuate: DEBUG
+    org.springframework.boot.actuator: DEBUG
     org.springframework.boot.actuate.metrics: DEBUG
     org.springframework.boot.actuate.endpoint: DEBUG
     io.micrometer: DEBUG
     org.springframework.boot.actuate.autoconfigure.metrics: DEBUG
     org.springframework.boot.actuate.metrics.export.prometheus: DEBUG
-    org.springframework.cloud.config: TRACE
+    org.springframework.cloud.config: INFO
     org.springframework.web: DEBUG
     ch.qos.logback: DEBUG
-    com.openframe.config.controller: DEBUG
+    com.openframe.config: DEBUG
+    org.springframework.cloud.config.server.environment: WARN
+    org.eclipse.jgit: ERROR
+    org.apache.http: ERROR
   file:
     path: ${LOG_PATH:logs}

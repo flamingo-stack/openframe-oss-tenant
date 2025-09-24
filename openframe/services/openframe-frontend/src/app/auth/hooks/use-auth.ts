@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { useLocalStorage } from '@flamingo/ui-kit/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
-import { apiClient } from 'lib/api-client'
+import { apiClient } from '@lib/api-client'
+import { runtimeEnv } from '@lib/runtime-config'
 
 interface TenantInfo {
   tenantId?: string
@@ -14,7 +15,7 @@ interface TenantInfo {
   tenantDomain: string
 }
 
-interface TenantDiscoveryResponse {
+export interface TenantDiscoveryResponse {
   email: string
   has_existing_accounts: boolean
   tenant_id?: string | null
@@ -33,13 +34,22 @@ interface RegisterRequest {
 export function useAuth() {
   const { toast } = useToast()
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  
+  // Use try-catch to handle static generation
+  let searchParams
+  try {
+    searchParams = useSearchParams()
+  } catch {
+    // During static generation, create empty URLSearchParams
+    searchParams = new URLSearchParams()
+  }
   
   // Auth store for managing authentication state
-  const { login: storeLogin, user, isAuthenticated } = useAuthStore()
+  const { login: storeLogin, user, isAuthenticated, setTenantId } = useAuthStore()
   
   // Token storage for managing tokens in localStorage
-  const { getAccessToken, storeAccessToken, storeRefreshToken } = useTokenStorage()
+  const { getAccessToken, storeAccessToken, storeRefreshToken, clearTokens } = useTokenStorage()
   
   // Use UI Kit's localStorage hook for persistent state
   const [email, setEmail] = useLocalStorage('auth:email', '')
@@ -80,6 +90,12 @@ export function useAuth() {
       // Store in auth store
       storeLogin(user)
       
+      // Store tenant ID if available
+      const tenantId = userData.tenantId || userData.organizationId || tenantInfo?.tenantId
+      if (tenantId) {
+        setTenantId(tenantId)
+      }
+      
       console.log('✅ [Auth] User authenticated:', user.email)
       
       toast({
@@ -93,12 +109,16 @@ export function useAuth() {
       setDiscoveryAttempted(false)
       setAvailableProviders([])
       
-      // Redirect if specified
+      // Redirect if specified or if on auth page
       if (redirectPath) {
         router.push(redirectPath)
+      } else if (pathname?.startsWith('/auth')) {
+        // If on auth page and successfully authenticated, redirect to dashboard
+        console.log('🔄 [Auth] Redirecting to dashboard after successful authentication')
+        router.push('/dashboard')
       }
     },
-    [email, tenantInfo, storeAccessToken, storeRefreshToken, storeLogin, toast, router, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders]
+    [email, tenantInfo, storeAccessToken, storeRefreshToken, storeLogin, toast, router, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, setTenantId, pathname]
   )
 
   // Track when localStorage is initialized
@@ -109,6 +129,21 @@ export function useAuth() {
   
   // Check for existing authentication on mount and periodically
   useEffect(() => {
+    // Check if we just returned from OAuth (has devTicket or state parameter)
+    const hasOAuthCallback = searchParams?.has('devTicket') || searchParams?.has('state') || searchParams?.has('code')
+    
+    // Skip auth checks when on auth pages UNLESS we just returned from OAuth
+    const isAuthPage = pathname?.startsWith('/auth')
+    if (isAuthPage && !hasOAuthCallback) {
+      console.log('🔐 [Auth] Skipping auth check on auth page:', pathname)
+      return
+    }
+    
+    // If we have OAuth callback parameters, force an immediate auth check
+    if (hasOAuthCallback) {
+      console.log('🔐 [Auth] OAuth callback detected, forcing auth check')
+    }
+
     const checkExistingAuth = async (isPeriodicCheck = false) => {
       // For initial check, skip if already authenticated
       if (!isPeriodicCheck && isAuthenticated) {
@@ -131,7 +166,7 @@ export function useAuth() {
           }
           
           // Get token from localStorage if DevTicket is enabled, otherwise use placeholder
-          const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+          const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
           const token = isDevTicketEnabled ? getAccessToken() : 'cookie-auth'
           
           if (userData && userData.email) {
@@ -150,7 +185,7 @@ export function useAuth() {
             logout()
             
             // Clear tokens
-            const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+            const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
             if (isDevTicketEnabled) {
               localStorage.removeItem('of_access_token')
               localStorage.removeItem('of_refresh_token')
@@ -169,7 +204,7 @@ export function useAuth() {
             console.log('⚠️ [Auth] Not authenticated (401 from /me)')
             
             // Clear any stale tokens if DevTicket is enabled
-            const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+            const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
             if (isDevTicketEnabled) {
               const token = getAccessToken()
               if (token) {
@@ -196,7 +231,7 @@ export function useAuth() {
     const initialTimer = setTimeout(() => checkExistingAuth(false), 100)
     
     // Set up periodic check interval (configurable via env var, default 5 minutes)
-    const authCheckInterval = parseInt(process.env.NEXT_PUBLIC_AUTH_CHECK_INTERVAL || '300000', 10)
+    const authCheckInterval = runtimeEnv.authCheckIntervalMs()
     const intervalId = setInterval(() => {
       if (isAuthenticated) {
         checkExistingAuth(true)
@@ -208,9 +243,9 @@ export function useAuth() {
       clearTimeout(initialTimer)
       clearInterval(intervalId)
     }
-  }, [getAccessToken, isAuthenticated, handleAuthenticationSuccess, toast, router])
+  }, [getAccessToken, isAuthenticated, handleAuthenticationSuccess, toast, router, pathname, searchParams])
 
-  const discoverTenants = async (userEmail: string) => {
+  const discoverTenants = async (userEmail: string): Promise<TenantDiscoveryResponse | null> => {
     setIsLoading(true)
     
     // If email is different from stored email, reset discovery state
@@ -225,7 +260,7 @@ export function useAuth() {
     
     try {
       // Use external API call since this goes to a different base path
-      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
+      const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
       const response = await apiClient.external(
         `${baseUrl}/sas/tenant/discover?email=${encodeURIComponent(userEmail)}`,
         { method: 'GET', skipAuth: true } // Skip auth for tenant discovery
@@ -251,6 +286,9 @@ export function useAuth() {
         setAvailableProviders(providers)
         setHasDiscoveredTenants(true)
         
+        // Store tenant ID in auth store (in memory) for token refresh
+        setTenantId(data.tenant_id)
+        
         console.log('✅ [Tenant Discovery] Found existing account:', data.tenant_id)
       } else {
         setHasDiscoveredTenants(false)
@@ -259,6 +297,9 @@ export function useAuth() {
       
       // Mark discovery as attempted after successful API call
       setDiscoveryAttempted(true)
+      
+      // Return the response data
+      return data
     } catch (error) {
       console.error('Tenant discovery failed:', error)
       
@@ -270,6 +311,8 @@ export function useAuth() {
       setHasDiscoveredTenants(false)
       // Mark as attempted even on error to prevent spam
       setDiscoveryAttempted(true)
+      
+      return null
     } finally {
       setIsLoading(false)
     }
@@ -281,7 +324,7 @@ export function useAuth() {
     try {
       console.log('📝 [Auth] Attempting organization registration:', data.tenantName)
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api'
+      const apiUrl = runtimeEnv.apiUrl()
       const baseUrl = apiUrl.replace('/api', '')
       
       const response = await apiClient.external(
@@ -337,7 +380,8 @@ export function useAuth() {
       if (provider === 'openframe-sso') {
         // Store tenant ID and redirect to Gateway OAuth login
         if (tenantInfo?.tenantId) {
-          sessionStorage.setItem('auth:tenant_id', tenantInfo.tenantId)
+          // Store tenant ID in auth store for token refresh
+          setTenantId(tenantInfo.tenantId)
           
           // Determine return URL based on environment
           const getReturnUrl = () => {
@@ -354,7 +398,7 @@ export function useAuth() {
           }
           
           const returnUrl = encodeURIComponent(getReturnUrl())
-          const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
+          const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
           const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&returnUrl=${returnUrl}`
           
           console.log('🔄 [Auth] Redirecting to OpenFrame SSO:', loginUrl)
@@ -379,6 +423,30 @@ export function useAuth() {
     }
   }
 
+  const logout = useCallback(() => {
+    console.log('🔐 [Auth] Logging out user')
+    
+    // Clear auth store
+    const { logout: storeLogout } = useAuthStore.getState()
+    storeLogout()
+    
+    // Clear tokens if DevTicket is enabled
+    const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
+    if (isDevTicketEnabled) {
+      clearTokens()
+    }
+    
+    // Reset auth flow state
+    setEmail('')
+    setTenantInfo(null)
+    setHasDiscoveredTenants(false)
+    setDiscoveryAttempted(false)
+    setAvailableProviders([])
+    setIsLoading(false)
+    
+    console.log('✅ [Auth] Logout completed')
+  }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders])
+
   const reset = () => {
     setEmail('')
     setTenantInfo(null)
@@ -398,6 +466,7 @@ export function useAuth() {
     discoverTenants,
     registerOrganization,
     loginWithSSO,
+    logout,
     reset
   }
 }

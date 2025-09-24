@@ -1,8 +1,7 @@
 package com.openframe.client.dto.agent;
 
-import com.openframe.core.model.device.DeviceStatus;
-import com.openframe.core.model.device.DeviceType;
-import jakarta.validation.constraints.NotBlank;
+import com.openframe.data.document.device.DeviceStatus;
+import com.openframe.data.document.device.DeviceType;
 import lombok.Data;
 
 @Data

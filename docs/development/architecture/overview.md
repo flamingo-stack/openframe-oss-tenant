@@ -161,7 +161,7 @@ openframe/
 │   │   │   │           └── model/
 │   │   │   └── test/
 │   │   └── pom.xml
-│   └── openframe-ui/
+│   └── openframe-frontend/
 │       ├── src/
 │       │   ├── components/
 │       │   ├── views/
@@ -169,7 +169,6 @@ openframe/
 │       │   └── router/
 │       └── package.json
 └── libraries/
-    ├── openframe-core/
     ├── openframe-data/
     └── openframe-security/
 ```

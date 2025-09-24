@@ -59,7 +59,7 @@ impl LogShipper {
                     // Ship batch if it reaches max size
                     if batch.len() >= BATCH_SIZE {
                         if let Err(e) = Self::send_batch(&client, &endpoint, &agent_id, batch.clone()).await {
-                            tracing::error!("Failed to ship log batch: {}", e);
+                            tracing::error!("Failed to ship log batch: {:#}", e);
                         }
                         batch.clear();
                     }
@@ -68,7 +68,7 @@ impl LogShipper {
                     // Ship current batch if we have any logs
                     if !batch.is_empty() {
                         if let Err(e) = Self::send_batch(&client, &endpoint, &agent_id, batch.clone()).await {
-                            tracing::error!("Failed to ship log batch: {}", e);
+                            tracing::error!("Failed to ship log batch: {:#}", e);
                         }
                         batch.clear();
                     }

@@ -1,8 +1,10 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import nextDynamic from 'next/dynamic'
 
-const AuthPage = dynamic(
+export const dynamic = 'force-dynamic'
+
+const AuthPage = nextDynamic(
   () => import('@app/auth/pages/auth-page'),
   { ssr: false }
 )

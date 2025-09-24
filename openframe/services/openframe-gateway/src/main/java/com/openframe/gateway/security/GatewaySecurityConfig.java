@@ -1,5 +1,6 @@
 package com.openframe.gateway.security;
 
+import com.openframe.gateway.config.prop.CorsProperties;
 import com.openframe.gateway.security.filter.AddAuthorizationHeaderFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,16 +28,20 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 
+import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.NATS_WS_ENDPOINT_PATH;
 import static com.openframe.gateway.security.SecurityConstants.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @Configuration
 @EnableWebFluxSecurity
-@EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class})
+@EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class, CorsProperties.class})
 @RequiredArgsConstructor
 @Slf4j
 public class GatewaySecurityConfig {
+
+    private static final String ADMIN = "ADMIN";
+    private static final String AGENT = "AGENT";
 
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
@@ -61,13 +66,11 @@ public class GatewaySecurityConfig {
         return jwtAuthenticationConverter;
     }
 
-    /* TODO:
-      - Consider extracting permitted paths configuration to a separate component for reusability
-     */
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(
             ServerHttpSecurity http,
             @Value("${management.endpoints.web.base-path}") String managementBasePath,
+            CorsProperties corsProperties,
             ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver,
             AddAuthorizationHeaderFilter addAuthorizationHeaderFilter
     ) {
@@ -76,7 +79,7 @@ public class GatewaySecurityConfig {
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource(corsProperties)))
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -92,36 +95,43 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/api/agents/register",
                                 CLIENTS_PREFIX + "/oauth/token",
                                 DASHBOARD_PREFIX + "/sso/providers",
-                                managementContextPath + "/**"
+                                managementContextPath + "/**",
+                                // TODO: removxxe after migration artifacts to GitHub
+                                CLIENTS_PREFIX + "/tool-agent/**"
                         ).permitAll()
-                                .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole("USER")
+                        // Api service
+                        .pathMatchers(DASHBOARD_PREFIX + "/**").hasRole(ADMIN)
                         // Agent tools
-                                .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
-                                .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole("AGENT")
-                                .pathMatchers(CLIENTS_PREFIX + "/**").hasRole("AGENT")
+                        .pathMatchers(TOOLS_PREFIX + "/agent/**").hasRole(AGENT)
+                        .pathMatchers(WS_TOOLS_PREFIX + "/agent/**").hasRole(AGENT)
+                        // Agent nats
+                        .pathMatchers(NATS_WS_ENDPOINT_PATH).hasRole("AGENT")
+                        // Client service
+                        .pathMatchers(CLIENTS_PREFIX + "/**").hasRole(AGENT)
                         // Api tools
-                                .pathMatchers(TOOLS_PREFIX + "/**").hasRole("USER")
-                                .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole("USER")
-                                .pathMatchers("/**").permitAll()
+                        .pathMatchers(TOOLS_PREFIX + "/**").hasRole(ADMIN)
+                        .pathMatchers(WS_TOOLS_PREFIX + "/**").hasRole(ADMIN)
+                        // UI
+                        .pathMatchers("/**").permitAll()
                 )
                 .build();
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(true);
-        configuration.addAllowedOriginPattern("http://localhost:*"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("https://localhost:*"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("http://localhost"); // Allow any localhost port for development
-        configuration.addAllowedOriginPattern("https://localhost"); // Allow any localhost port for development
-        configuration.addAllowedHeader("*");
-        configuration.addAllowedMethod("*");
-        configuration.setMaxAge(3600L);
-        configuration.addExposedHeader("Authorization");
-        configuration.addExposedHeader("Content-Type");
-        configuration.addExposedHeader(ACCESS_TOKEN_HEADER);
-        configuration.addExposedHeader(REFRESH_TOKEN_HEADER);
+        configuration.setAllowCredentials(Boolean.TRUE.equals(corsProperties.getAllowCredentials()));
+
+        if (!corsProperties.getAllowedOrigins().isEmpty()) {
+            configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
+        }
+        if (!corsProperties.getAllowedOriginPatterns().isEmpty()) {
+            configuration.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
+        }
+        configuration.setAllowedHeaders(corsProperties.getAllowedHeaders());
+        configuration.setAllowedMethods(corsProperties.getAllowedMethods());
+        configuration.setExposedHeaders(corsProperties.getExposedHeaders());
+        configuration.setMaxAge(corsProperties.getMaxAge());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

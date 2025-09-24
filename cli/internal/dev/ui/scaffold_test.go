@@ -247,7 +247,7 @@ func TestSkaffoldUI_categorizeSkaffoldFiles_SingleCategory(t *testing.T) {
 
 	files := []SkaffoldFile{
 		{ServiceName: "openframe-api", FilePath: "../openframe/services/openframe-api/skaffold.yaml"},
-		{ServiceName: "openframe-ui", FilePath: "../openframe/services/openframe-ui/skaffold.yaml"},
+		{ServiceName: "openframe-frontend", FilePath: "../openframe/services/openframe-frontend/skaffold.yaml"},
 	}
 
 	categories := ui.categorizeSkaffoldFiles(files)
@@ -259,7 +259,7 @@ func TestSkaffoldUI_categorizeSkaffoldFiles_SingleCategory(t *testing.T) {
 
 	// Should be sorted alphabetically
 	assert.Equal(t, "openframe-api", categories[0].Files[0].ServiceName)
-	assert.Equal(t, "openframe-ui", categories[0].Files[1].ServiceName)
+	assert.Equal(t, "openframe-frontend", categories[0].Files[1].ServiceName)
 }
 
 func TestSkaffoldFile_Structure(t *testing.T) {
@@ -365,7 +365,7 @@ func TestSkaffoldUI_categorizeSkaffoldFiles_Sorting(t *testing.T) {
 
 	// Create files in non-alphabetical order
 	files := []SkaffoldFile{
-		{ServiceName: "openframe-ui", FilePath: "../openframe/services/openframe-ui/skaffold.yaml"},
+		{ServiceName: "openframe-frontend", FilePath: "../openframe/services/openframe-frontend/skaffold.yaml"},
 		{ServiceName: "openframe-api", FilePath: "../openframe/services/openframe-api/skaffold.yaml"},
 		{ServiceName: "openframe-gateway", FilePath: "../openframe/services/openframe-gateway/skaffold.yaml"},
 	}
@@ -377,5 +377,5 @@ func TestSkaffoldUI_categorizeSkaffoldFiles_Sorting(t *testing.T) {
 	openframeFiles := categories[0].Files
 	assert.Equal(t, "openframe-api", openframeFiles[0].ServiceName)
 	assert.Equal(t, "openframe-gateway", openframeFiles[1].ServiceName)
-	assert.Equal(t, "openframe-ui", openframeFiles[2].ServiceName)
+	assert.Equal(t, "openframe-frontend", openframeFiles[2].ServiceName)
 }

@@ -1,20 +1,14 @@
 package com.openframe.management.controller;
 
-import java.util.Map;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.openframe.core.model.IntegratedTool;
+import com.openframe.data.document.tool.IntegratedTool;
 import com.openframe.data.service.IntegratedToolService;
-
+import com.openframe.management.service.DebeziumService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -23,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 public class IntegratedToolController {
 
     private final IntegratedToolService toolService;
+    private final DebeziumService debeziumService;
 
     @GetMapping
     public Map<String, Object> getTools() {
@@ -55,6 +50,7 @@ public class IntegratedToolController {
 
             IntegratedTool savedTool = toolService.saveTool(tool);
             log.info("Successfully saved tool configuration for: {}", id);
+            debeziumService.createDebeziumConnector(savedTool.getDebeziumConnector());
             return Map.of("status", "success", "tool", savedTool);
         } catch (Exception e) {
             log.error("Failed to save tool: {}", id, e);

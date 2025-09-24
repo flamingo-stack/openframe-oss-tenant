@@ -3,11 +3,14 @@
 import { AuthLoginSection } from '@app/auth/components/login-section'
 import { AuthLayout } from '@app/auth/layouts'
 import { useAuth } from '@app/auth/hooks/use-auth'
+import { useAuthStore } from '@app/auth/stores/auth-store'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { isAuthOnlyMode } from '@lib/app-mode'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { isAuthenticated } = useAuthStore()
   const { 
     email, 
     tenantInfo, 
@@ -20,11 +23,19 @@ export default function LoginPage() {
     discoverTenants 
   } = useAuth()
 
-  // Auto-discover tenants if email exists but discovery hasn't been attempted yet
   useEffect(() => {
-    if (!isInitialized) return // Wait for localStorage to initialize
+    if (isAuthenticated) {
+      if (isAuthOnlyMode()) {
+        router.push('/auth/already-signed-in')
+      } else {
+        router.push('/dashboard')
+      }
+    }
+  }, [isAuthenticated, router])
+
+  useEffect(() => {
+    if (!isInitialized) return
     
-    // Only attempt discovery once - when we have an email and haven't attempted discovery yet
     if (email && !discoveryAttempted && !isLoading) {
       discoverTenants(email)
     } else if (!email && !isLoading) {
@@ -39,7 +50,6 @@ export default function LoginPage() {
   const handleBack = () => {
     router.push('/auth/')
   }
-
 
   return (
     <AuthLayout>

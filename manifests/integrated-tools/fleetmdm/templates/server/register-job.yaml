@@ -108,13 +108,10 @@ spec:
                       "topic.creation.default.partitions": 10,
                       "topic.creation.default.cleanup.policy": "compact",
                       "topic.creation.default.compression.type": "lz4",
-                      "transforms": "route,addHeaders",
+                      "transforms": "route",
                       "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
                       "transforms.route.topic.regex": "fleet_mysql\\.'"${MYSQL_DATABASE}"'\\.(.*)",
                       "transforms.route.topic.replacement": "fleet.$1.events",
-                      "transforms.addHeaders.type": "org.apache.kafka.connect.transforms.InsertHeader",
-                      "transforms.addHeaders.header": "message-type",
-                      "transforms.addHeaders.value.literal": "FLEET_MDM_EVENT",
                       "snapshot.mode": "initial",
                       "include.schema.changes": "false",
                       "database.allowPublicKeyRetrieval": "true",
@@ -128,4 +125,40 @@ spec:
               --retry-delay 2 \
               --retry-all-errors
             echo "FleetMDM Server Registration complete."
+
+            echo "Registering FleetMDM Agent..."
+            curl --verbose --show-error --fail \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tool-agents/fleetmdm-agent" \
+              -H "Content-Type: application/json" \
+              -d '{
+              "toolAgent": {
+                "id": "fleetmdm-agent",
+                "toolId": "fleetmdm-server",
+                "version": "1.0",
+                "status": "ENABLED",
+                "runCommandArgs": [
+                  "--fleet-url", "${client.serverUrl}",
+                  "--enroll-secret", "${server.registrationSecret}",
+                  "--insecure",
+                  "--disable-updates",
+                  "--openframe-mode",
+                  "--openframe-secret", "${client.openframeSecret}",
+                  "--openframe-osquery-path", "${client.assetPath.osqueryd}",
+                  "--openframe-token-path", "${client.openframeTokenPath}"
+                ],
+                "agentToolIdCommandArgs": [
+                    "uuid"
+                ],
+                "assets": [
+                  {
+                    "id": "osqueryd",
+                    "localFilename": "osqueryd",
+                    "source": "ARTIFACTORY"
+                  }
+                ]
+              }
+            }' \
+            --retry-delay 2 \
+            --retry-all-errors
+            echo "FleetMdm Agent Registration complete."
 {{- end }}

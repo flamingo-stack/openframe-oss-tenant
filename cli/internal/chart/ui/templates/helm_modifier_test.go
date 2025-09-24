@@ -91,32 +91,55 @@ func TestHelmValuesModifier_LoadExistingValues_InvalidYAML(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse helm values YAML")
 }
 
-func TestHelmValuesModifier_GetCurrentBranch(t *testing.T) {
+func TestHelmValuesModifier_LoadExistingValues_EmptyFile(t *testing.T) {
 	modifier := NewHelmValuesModifier()
 
-	// Test with existing branch
+	// Create a temporary test file that is empty
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "empty-values.yaml")
+
+	// Create empty file
+	err := os.WriteFile(testFile, []byte(""), 0644)
+	require.NoError(t, err)
+
+	// Test loading empty file - should return empty map, not nil
+	values, err := modifier.LoadExistingValues(testFile)
+	assert.NoError(t, err)
+	assert.NotNil(t, values)
+	assert.Equal(t, 0, len(values))
+}
+
+func TestHelmValuesModifier_GetCurrentOSSBranch(t *testing.T) {
+	modifier := NewHelmValuesModifier()
+
+	// Test with existing OSS branch in deployment structure
 	values := map[string]interface{}{
-		"global": map[string]interface{}{
-			"repoBranch": "develop",
-			"repoURL":    "https://github.com/test/repo.git",
+		"deployment": map[string]interface{}{
+			"oss": map[string]interface{}{
+				"repository": map[string]interface{}{
+					"branch": "develop",
+				},
+			},
 		},
 	}
 
-	branch := modifier.GetCurrentBranch(values)
+	branch := modifier.GetCurrentOSSBranch(values)
 	assert.Equal(t, "develop", branch)
 
-	// Test with no global section - should return default
+	// Test with no deployment section - should return default
 	emptyValues := make(map[string]interface{})
-	defaultBranch := modifier.GetCurrentBranch(emptyValues)
+	defaultBranch := modifier.GetCurrentOSSBranch(emptyValues)
 	assert.Equal(t, "main", defaultBranch)
 
-	// Test with global section but no branch - should return default
+	// Test with deployment section but no OSS branch - should return default
 	nobranchValues := map[string]interface{}{
-		"global": map[string]interface{}{
-			"repoURL": "https://github.com/test/repo.git",
+		"deployment": map[string]interface{}{
+			"oss": map[string]interface{}{
+				"enabled": true,
+			},
 		},
 	}
-	noBranch := modifier.GetCurrentBranch(nobranchValues)
+	noBranch := modifier.GetCurrentOSSBranch(nobranchValues)
 	assert.Equal(t, "main", noBranch)
 }
 
@@ -163,27 +186,23 @@ func TestHelmValuesModifier_GetCurrentDockerSettings(t *testing.T) {
 func TestHelmValuesModifier_ApplyConfiguration_Branch(t *testing.T) {
 	modifier := NewHelmValuesModifier()
 
-	// Prepare initial values
+	// Prepare initial values with deployment structure
 	values := map[string]interface{}{
-		"global": map[string]interface{}{
-			"repoBranch": "main",
-			"repoURL":    "https://github.com/test/repo.git",
-		},
-		"apps": map[string]interface{}{
-			"openframe-config": map[string]interface{}{
-				"values": map[string]interface{}{
-					"config": map[string]interface{}{
-						"branch": "main",
-					},
+		"deployment": map[string]interface{}{
+			"oss": map[string]interface{}{
+				"repository": map[string]interface{}{
+					"branch": "main",
 				},
 			},
 		},
 	}
 
-	// Create configuration with new branch
+	// Create configuration with new branch for OSS deployment
 	newBranch := "develop"
+	deploymentMode := types.DeploymentModeOSS
 	config := &types.ChartConfiguration{
 		Branch:           &newBranch,
+		DeploymentMode:   &deploymentMode,
 		ModifiedSections: []string{"branch"},
 	}
 
@@ -191,34 +210,31 @@ func TestHelmValuesModifier_ApplyConfiguration_Branch(t *testing.T) {
 	err := modifier.ApplyConfiguration(values, config)
 	assert.NoError(t, err)
 
-	// Verify changes
-	global := values["global"].(map[string]interface{})
-	assert.Equal(t, "develop", global["repoBranch"])
-
-	// Verify apps section is also updated
-	apps := values["apps"].(map[string]interface{})
-	openframeConfig := apps["openframe-config"].(map[string]interface{})
-	appValues := openframeConfig["values"].(map[string]interface{})
-	appConfig := appValues["config"].(map[string]interface{})
-	assert.Equal(t, "develop", appConfig["branch"])
+	// Verify changes in deployment structure
+	deployment := values["deployment"].(map[string]interface{})
+	oss := deployment["oss"].(map[string]interface{})
+	repository := oss["repository"].(map[string]interface{})
+	assert.Equal(t, "develop", repository["branch"])
 }
 
-func TestHelmValuesModifier_ApplyConfiguration_Branch_NoGlobal(t *testing.T) {
+func TestHelmValuesModifier_ApplyConfiguration_Branch_NoDeployment(t *testing.T) {
 	modifier := NewHelmValuesModifier()
 
-	// Prepare values without global section
+	// Prepare values without deployment section
 	values := map[string]interface{}{
-		"deployment": map[string]interface{}{
-			"ingress": map[string]interface{}{
-				"enabled": true,
+		"registry": map[string]interface{}{
+			"docker": map[string]interface{}{
+				"username": "test",
 			},
 		},
 	}
 
-	// Create configuration with new branch
+	// Create configuration with new branch for OSS deployment
 	newBranch := "develop"
+	deploymentMode := types.DeploymentModeOSS
 	config := &types.ChartConfiguration{
 		Branch:           &newBranch,
+		DeploymentMode:   &deploymentMode,
 		ModifiedSections: []string{"branch"},
 	}
 
@@ -226,10 +242,14 @@ func TestHelmValuesModifier_ApplyConfiguration_Branch_NoGlobal(t *testing.T) {
 	err := modifier.ApplyConfiguration(values, config)
 	assert.NoError(t, err)
 
-	// Verify global section was created
-	global, ok := values["global"].(map[string]interface{})
+	// Verify deployment structure was created
+	deployment, ok := values["deployment"].(map[string]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, "develop", global["repoBranch"])
+	oss, ok := deployment["oss"].(map[string]interface{})
+	assert.True(t, ok)
+	repository, ok := oss["repository"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, "develop", repository["branch"])
 }
 
 func TestHelmValuesModifier_ApplyConfiguration_Docker(t *testing.T) {
@@ -399,7 +419,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with ngrok enabled
 	valuesWithNgrok := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"selfHosted": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"ingress": map[string]interface{}{
 					"ngrok": map[string]interface{}{
 						"enabled": true,
@@ -418,7 +438,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with localhost enabled
 	valuesWithLocalhost := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"selfHosted": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"ingress": map[string]interface{}{
 					"localhost": map[string]interface{}{
 						"enabled": true,
@@ -442,7 +462,7 @@ func TestHelmValuesModifier_GetCurrentIngressSettings(t *testing.T) {
 	// Test with deployment but no ingress section - should return default
 	noIngressValues := map[string]interface{}{
 		"deployment": map[string]interface{}{
-			"selfHosted": map[string]interface{}{
+			"oss": map[string]interface{}{
 				"enabled": true,
 			},
 		},

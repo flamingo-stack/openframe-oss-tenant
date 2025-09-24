@@ -13,7 +13,7 @@ mvn test                                    # Run all tests
 
 ### Frontend (UI) Commands
 ```bash
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm install                                 # Install dependencies
 npm run dev                                 # Start development server
 npm run build                               # Build for production
@@ -41,10 +41,12 @@ cargo run                                   # Run the client locally
 
 ### Docker Operations
 ```bash
-# Individual service stacks:
-docker-compose -f docker-compose.openframe-infrastructure.yml up -d
-docker-compose -f docker-compose.openframe-tactical-rmm.yml up -d
-docker-compose -f docker-compose.openframe-fleet-mdm.yml up -d
+# Note: Docker Compose files are located in integrated-tools/ directory
+# Individual service stacks can be found in their respective subdirectories:
+# - integrated-tools/tactical-rmm/
+# - integrated-tools/fleetmdm/
+# - integrated-tools/meshcentral/
+# - integrated-tools/authentik/
 ```
 
 ## Architecture Overview
@@ -58,13 +60,12 @@ OpenFrame is a distributed microservices platform with the following core archit
 - **openframe-stream**: Stream processing service using Kafka for real-time data processing (NOT NiFi)
 - **openframe-config**: Spring Cloud Config Server for centralized configuration management
 - **openframe-client** (Java): Agent management and authentication service
-- **openframe-ui**: Vue 3 + TypeScript frontend with PrimeVue components
+- **openframe-frontend**: Vue 3 + TypeScript frontend with PrimeVue components
 
 ### Client Agent
 - **client/** (Rust): Cross-platform system agent for monitoring and management
 
 ### Shared Libraries
-- **openframe-core**: Core models, utilities, and base configurations
 - **openframe-data**: Data access layer (MongoDB, Cassandra, Redis, Kafka)
 - **openframe-jwt**: JWT security implementation with cookie support
 - **api-library**: Common API services and DTOs
@@ -124,8 +125,10 @@ OpenFrame is a distributed microservices platform with the following core archit
 │   │   ├── openframe-stream/           # Kafka stream processing
 │   │   ├── openframe-config/           # Configuration server
 │   │   ├── openframe-client/           # Agent management service
-│   │   ├── openframe-external-api/               # External API integrations
-│   │   └── openframe-ui/               # Vue.js frontend
+│   │   ├── openframe-external-api/     # External API integrations
+│   │   ├── openframe-authorization-server/ # Authorization server
+│   │   ├── openframe-frontend/               # Vue.js frontend (primary)
+│   │   └── openframe-frontend/         # Alternative frontend (React/Next.js)
 │   └── libs/                           # Shared libraries
 │       ├── openframe-core/             # Core models and utilities
 │       ├── openframe-data/             # Data access layer
@@ -201,7 +204,7 @@ mvn test -Dtest=ClassName#methodName    # Run specific test method
 
 ### Frontend
 ```bash
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm run test:unit                       # Unit tests (if configured)
 npm run type-check                      # TypeScript validation
 ```
@@ -272,7 +275,7 @@ Data Sources → OpenFrame Stream Service → Kafka → [Cassandra/Pinot/MongoDB
 ```
 
 ### DO NOT Reference
-- Apache NiFi (removed from project)
+- Apache NiFi (removed from project - NOTE: Some NiFi dependencies may still exist in pom.xml but should not be used)
 - Authorization header JWT (now uses cookies)
 - Nested `docs/docs/` structure (flattened)
 

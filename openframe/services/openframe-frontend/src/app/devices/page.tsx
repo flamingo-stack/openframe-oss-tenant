@@ -1,14 +1,21 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { AppLayout } from '../components/app-layout'
+import { DevicesView } from './components/devices-view'
+import { Suspense } from 'react'
 
 export default function Devices() {
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-ods-text-primary">Devices</h1>
-        <p className="text-ods-text-secondary">Manage and monitor your devices</p>
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-ods-text-secondary">Loading...</div>
       </div>
-    </AppLayout>
+    }>
+      <AppLayout>
+        <DevicesView />
+      </AppLayout>
+    </Suspense>
   )
 }

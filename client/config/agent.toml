@@ -39,7 +39,7 @@ custom_metrics = []  # List of custom metrics to collect
 
 [security]
 tls_verify = true
-certificate_path = ""  # Optional: Path to custom certificate
+certificate_path = ""  # Optional: Path to custom certificate (empty = auto-detect)
 private_key_path = ""  # Optional: Path to private key
 ca_certificates = []  # List of additional CA certificates
 min_tls_version = "1.2"  # Minimum TLS version

@@ -60,7 +60,9 @@ jobs:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
@@ -86,30 +88,21 @@ jobs:
           cache-dependency-path: '**/pom.xml'  # Simplified pattern
           check-latest: true
 
-      - name: Cache Maven packages
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ${{ matrix.path }}/target
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.name }}
-          restore-keys: |
-            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-            ${{ runner.os }}-maven-
-
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true')
         run: |
           mvn clean install \
+            -U \
             -pl ${{ matrix.path }} \
             -am \
             -Dcompress \
-            -T 2C \
+            --threads 2C \
             --batch-mode \
             --no-transfer-progress \
             -Dmaven.javadoc.skip=true \
-            -DskipTests=false
+            -s .mvn/settings.xml
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload Java artifacts
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -128,7 +121,9 @@ jobs:
     name: "Build image: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
@@ -145,7 +140,10 @@ jobs:
           fetch-depth: 2
 
       - name: Download Java artifacts
-        if: contains(fromJSON(toJSON(matrix.type)), 'java') && matrix.artifact_name != '' && contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          contains(fromJSON(toJSON(matrix.type)), 'java') && 
+          matrix.artifact_name != '' && 
+          contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -183,9 +181,7 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
-            type=sha,prefix={{branch}}-
             type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
-            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -213,20 +209,23 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ steps.format_args.outputs.formatted_args }}
-          cache-from: |
-            type=gha,scope=${{ matrix.name }}
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-          cache-to: |
-            type=gha,scope=${{ matrix.name }},mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
+          build-args: |
+            ${{ env.BUILD_ARGS }}
+#          cache-from: |
+#            type=gha,scope=${{ matrix.name }}
+#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
+#          cache-to: |
+#            type=gha,scope=${{ matrix.name }},mode=max
+#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
   test:
     name: Run Tests
     needs: [build_images, changes, matrix]
     runs-on: Linux-x64
     timeout-minutes: 60
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v4
         with:
@@ -246,8 +245,8 @@ jobs:
       - name: Override branch name
         run: |
           # Override branch name
-          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+          yq eval ".deployment.oss.repository.branch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+          echo "Updated deployment.oss.repository.branch to: ${{ github.head_ref }}"
 
       - name: Override registry
         run: |
@@ -266,31 +265,43 @@ jobs:
           ./scripts/run.sh bootstrap
 
   test_client:
-    name: "Test Rust Client"
+    name: "Test Client: ${{ matrix.os }}"
     needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && contains(needs.changes.outputs.client, 'true')
+    runs-on: ${{ matrix.os }}
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft && 
+      contains(needs.changes.outputs.client, 'true')
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: openframe-oss-client-macos-x64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: openframe-oss-client-linux-x64
+#          - os: windows-latest
+#            target: x86_64-pc-windows-msvc
+#            artifact_name: openframe-oss-client-windows-x64
+         
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Prepare Rust tools
+        uses: ./.github/steps/rust-setup
         with:
-          override: true
-          components: rustfmt, clippy
-
-      # Enhanced Rust caching
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: client
-          prefix-key: "v1-rust"
+          toolchain: stable
+          targets: ${{ matrix.target }}
+          components: clippy, rustfmt
           shared-key: ${{ matrix.target }}
-          cache-targets: true
-          cache-on-failure: true
 
       - name: Run lint
         working-directory: client
@@ -298,22 +309,11 @@ jobs:
           make lint
         continue-on-error: true
 
-      - name: Run clippy
+      - name: Test client
         working-directory: client
         run: |
-          make clippy
+            make build
         continue-on-error: true
-
-## Disabled as for now
- #     # Run tests only for native builds to save time
- #     - name: Test client
- #       working-directory: client
- #       run: |
- #         if command -v make >/dev/null 2>&1; then
- #           make test
- #         else
- #           cargo test --release
- #         fi
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
@@ -350,7 +350,9 @@ jobs:
     name: Final tests
     needs: [test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
     steps:
       - name: Checkout
         uses: actions/checkout@v4

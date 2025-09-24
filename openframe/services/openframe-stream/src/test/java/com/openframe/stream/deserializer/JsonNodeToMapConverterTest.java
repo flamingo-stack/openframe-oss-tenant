@@ -182,7 +182,7 @@ class JsonNodeToMapConverterTest {
     }
 
     /**
-     * Copy of the conversion method from IntegratedToolEventDeserializer for testing
+     * Copy of the conversion method from IntegratedToolEventBrokerDeserializer for testing
      */
     private void convertJsonNodeToMap(JsonNode node, String prefix, Map<String, String> result) {
         if (node.isObject()) {

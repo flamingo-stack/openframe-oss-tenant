@@ -4,7 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 
 /**
  * Logs Store
- * Manages system logs state following OpenFrame patterns
+ * Manages system logs state
  */
 
 export interface LogEntry {
@@ -16,6 +16,7 @@ export interface LogEntry {
   userId?: string
   deviceId?: string
   summary: string
+  message?: string
   timestamp: string
   details?: string
   metadata?: Record<string, any>

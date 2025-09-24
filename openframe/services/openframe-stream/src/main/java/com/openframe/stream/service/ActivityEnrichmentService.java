@@ -11,8 +11,6 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
-import org.apache.kafka.streams.processor.ProcessorContext;
-import org.apache.kafka.streams.kstream.ValueTransformerWithKey;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
 import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext;
@@ -24,7 +22,7 @@ import org.springframework.context.annotation.Bean;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-import static com.openframe.stream.listener.JsonKafkaListener.MESSAGE_TYPE_HEADER;
+import static com.openframe.kafka.enumeration.KafkaHeader.MESSAGE_TYPE_HEADER;
 
 @Service
 @RequiredArgsConstructor
@@ -32,16 +30,17 @@ import static com.openframe.stream.listener.JsonKafkaListener.MESSAGE_TYPE_HEADE
 public class ActivityEnrichmentService {
 
     private final Serde<ActivityMessage> activityMessageSerde;
+    private final Serde<ActivityMessage> outgoingActivityMessageSerde;
     private final Serde<HostActivityMessage> hostActivityMessageSerde;
     private final HostAgentCacheService hostAgentCacheService;
 
-    @Value("${kafka.consumer.topic.stream.fleet-mdm.activities}")
+    @Value("${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-activities}")
     private String activitiesTopic;
 
-    @Value("${kafka.consumer.topic.stream.fleet-mdm.host-activities}")
+    @Value("${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-host-activities}")
     private String hostActivitiesTopic;
 
-    @Value("${kafka.consumer.topic.event.fleet-mdm.name}")
+    @Value("${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-events}")
     private String enrichedActivitiesTopic;
 
     private static final Duration JOIN_WINDOW_DURATION = Duration.ofSeconds(5);
@@ -85,7 +84,7 @@ public class ActivityEnrichmentService {
         // Add constant header using modern Processor API and send to output topic
         KStream<String, ActivityMessage> withHeaderStream = enrichedStream.processValues(HeaderAdderFixedKey::new);
 
-        withHeaderStream.to(enrichedActivitiesTopic, Produced.with(Serdes.String(), activityMessageSerde));
+        withHeaderStream.to(enrichedActivitiesTopic, Produced.with(Serdes.String(), outgoingActivityMessageSerde));
 
         log.info("Activity enrichment stream built successfully");
         return withHeaderStream;
@@ -126,6 +125,7 @@ public class ActivityEnrichmentService {
         @Override
         public void process(FixedKeyRecord<String, ActivityMessage> record) {
             record.headers().add(MESSAGE_TYPE_HEADER, MessageType.FLEET_MDM_EVENT.name().getBytes(StandardCharsets.UTF_8));
+            record.headers().add("__TypeId__", "com.openframe.kafka.model.debezium.CommonDebeziumMessage".getBytes(StandardCharsets.UTF_8));
             context.forward(record);
         }
 

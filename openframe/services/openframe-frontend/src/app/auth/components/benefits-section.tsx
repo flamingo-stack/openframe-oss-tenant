@@ -18,7 +18,7 @@ export function AuthBenefitsSection() {
       <div className="flex flex-col items-center justify-center gap-10 w-full max-w-lg">
         {/* OpenFrame Logo */}
         <div className="flex items-center justify-center">
-          <OpenFrameLogo className="h-10 w-auto" lowerPathColor="#FFC008" upperPathColor="#ffffff" />
+          <OpenFrameLogo className="h-10 w-auto" lowerPathColor="var(--color-accent-primary)" upperPathColor="var(--color-text-primary)" />
           <span className="p-4 font-heading fon-[Azeret_Mono] font-semibold text-[24px] text-ods-text-primary">OpenFrame </span>
         </div>
         

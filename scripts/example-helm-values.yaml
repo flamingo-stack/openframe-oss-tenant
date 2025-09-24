@@ -191,6 +191,12 @@ apps:
     project: datasources  # Use datasources ArgoCD project
     namespace: datasources  # Deploy to datasources namespace
     syncWave: "1"     # Deploy in sync wave 1
+  
+  nats:
+    enabled: true     # Message streaming platform
+    project: datasources  # Use datasources ArgoCD project
+    namespace: datasources  # Deploy to datasources namespace
+    syncWave: "1"     # Deploy in sync wave 1
     
   mongodb-exporter:
     enabled: true     # MongoDB metrics exporter for Prometheus
@@ -220,12 +226,6 @@ apps:
     project: default  # Use default ArgoCD project
     namespace: microservices  # Kubernetes namespace for microservices
     syncWave: "2"     # Deploy in sync wave 2 (after datasources)
-    values:
-      ghcrRegistry:
-        server: ghcr.io
-        username: CI
-        password: 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
-        email: CI@flamingo.cx
     
   openframe-config:
     enabled: true     # Configuration management service
@@ -320,7 +320,7 @@ apps:
         repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-stream
         tag: latest
     
-  openframe-ui: 
+  openframe-frontend: 
     enabled: true     # User interface service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
@@ -335,7 +335,7 @@ apps:
       registerJob:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-ui
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-frontend
         tag: latest
 
   # =============================================================================

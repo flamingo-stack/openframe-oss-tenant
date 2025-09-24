@@ -73,7 +73,7 @@ func TestDisplayService_ShowDryRunResults(t *testing.T) {
 
 	var buf bytes.Buffer
 	results := []string{
-		"Would install ArgoCD v8.1.4",
+		"Would install ArgoCD v8.2.7",
 		"Would create namespace argocd",
 	}
 
