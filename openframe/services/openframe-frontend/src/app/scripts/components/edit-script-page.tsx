@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@flamingo/ui-kit/components/ui'
 import { FormLoader, FormPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { LinuxIcon, MacOSIcon, WindowsIcon } from '@flamingo/ui-kit'
+import { OS_PLATFORMS } from '@flamingo/ui-kit/utils'
 
 interface ScriptData {
   name: string
@@ -28,12 +28,6 @@ interface ScriptData {
 interface EditScriptPageProps {
   scriptId: string | null
 }
-
-const PLATFORMS = [
-  { id: 'windows', name: 'Windows', icon: WindowsIcon },
-  { id: 'linux', name: 'Linux', icon: LinuxIcon },
-  { id: 'darwin', name: 'MacOS', icon: MacOSIcon }
-]
 
 const SHELL_TYPES = ['bash', 'powershell', 'python', 'batch', 'shell']
 const CATEGORIES = ['System Maintenance', 'Security', 'Network', 'Monitoring', 'Backup', 'Custom']
@@ -243,7 +237,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           <div className="space-y-1">
             <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</label>
             <div className="flex gap-4 pt-2">
-              {PLATFORMS.map((platform) => {
+              {OS_PLATFORMS.map((platform) => {
                 const Icon = platform.icon
                 const isSelected = scriptData.supported_platforms.includes(platform.id)
                 return (

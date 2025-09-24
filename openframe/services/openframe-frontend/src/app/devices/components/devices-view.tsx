@@ -9,7 +9,7 @@ import {
   ListPageContainer,
   PageError
 } from "@flamingo/ui-kit/components/ui"
-import { RefreshIcon, GridViewIcon, TableViewIcon } from "@flamingo/ui-kit/components/icons"
+import { GridViewIcon, TableViewIcon, PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { cn } from "@flamingo/ui-kit/utils"
 import { useDevices } from '../hooks/use-devices'
@@ -49,10 +49,6 @@ export function DevicesView() {
     }
   }, [debouncedSearchTerm, searchDevices])
 
-  const handleRefresh = useCallback(() => {
-    refreshDevices()
-  }, [refreshDevices])
-  
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
     
@@ -109,11 +105,11 @@ export function DevicesView() {
       </div>
       
       <Button
-        onClick={handleRefresh}
-        leftIcon={<RefreshIcon size={20} />}
+        onClick={() => router.push('/devices/new')}
+        leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay/>}
         className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
       >
-        Refresh
+        Add Device
       </Button>
     </div>
   )
