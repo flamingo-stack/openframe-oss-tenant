@@ -55,6 +55,7 @@ export function PoliciesAndQueriesTabNavigation({ activeTab, onTabChange }: Poli
             <Button variant="ghost"
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
+              leftIcon={tab.icon}
               className={`
                 flex gap-2 items-center justify-center p-4 relative shrink-0 h-14
                 transition-all duration-200
@@ -65,12 +66,12 @@ export function PoliciesAndQueriesTabNavigation({ activeTab, onTabChange }: Poli
               `}
             >
               {/* Icon */}
-              <div className="relative">
+              {/* <div className="relative">
                 <div className={`${isActive ? 'text-ods-text-primary' : 'text-ods-text-secondary'} transition-colors`}>
                   {tab.icon}
                 </div>
               </div>
-              
+               */}
               {/* Tab label */}
               <span className={`
                 font-['DM_Sans'] font-medium text-[18px] leading-[24px] whitespace-nowrap
