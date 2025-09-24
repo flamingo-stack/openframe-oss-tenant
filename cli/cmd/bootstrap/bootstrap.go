@@ -20,14 +20,20 @@ This is equivalent to running both commands sequentially but provides
 a streamlined experience for getting started with OpenFrame.
 
 Examples:
-  openframe bootstrap                    # Bootstrap with default cluster name
-  openframe bootstrap my-cluster        # Bootstrap with custom cluster name`,
+  openframe bootstrap                                    # Interactive mode (default)
+  openframe bootstrap my-cluster                        # Bootstrap with custom cluster name
+  openframe bootstrap --deployment-mode=oss-tenant     # Skip deployment selection
+  openframe bootstrap --deployment-mode=saas-shared --non-interactive  # Full CI/CD mode`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Logo will be shown by cluster wrapper before prerequisites
 			return bootstrap.NewService().Execute(cmd, args)
 		},
 	}
+
+	// Add deployment mode flags
+	cmd.Flags().String("deployment-mode", "", "Deployment mode: oss-tenant, saas-tenant, saas-shared (skips deployment selection)")
+	cmd.Flags().Bool("non-interactive", false, "Skip all prompts, use existing helm-values.yaml")
 
 	return cmd
 }
