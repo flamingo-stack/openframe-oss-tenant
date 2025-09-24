@@ -55,7 +55,7 @@ spec:
               -d '{
                 "tool": {
                   "id": "fleetmdm-server",
-                  "toolType": "FLEET",
+                  "toolType": "FLEET_MDM",
                   "name": "FleetMDM Server",
                   "description": "Fleet Device Management Platform",
                   "toolUrls": [

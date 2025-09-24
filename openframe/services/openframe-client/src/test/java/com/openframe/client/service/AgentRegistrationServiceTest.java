@@ -4,6 +4,7 @@ import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.client.dto.agent.AgentRegistrationResponse;
 import com.openframe.client.service.agentregistration.AgentRegistrationService;
 import com.openframe.client.service.agentregistration.AgentRegistrationToolService;
+import com.openframe.client.service.agentregistration.AgentSecretGenerator;
 import com.openframe.client.service.agentregistration.MachineIdGenerator;
 import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.data.document.device.DeviceStatus;
