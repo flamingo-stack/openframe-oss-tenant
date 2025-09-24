@@ -42,7 +42,6 @@ impl AgentAuthService {
         }
 
         // Fallback to client credentials authentication
-        info!("Use client credentials to authenticate user");
         self.authenticate_with_client_credentials().await
     }
 
@@ -51,7 +50,6 @@ impl AgentAuthService {
         
         match self.auth_client.authenticate_with_refresh_token(refresh_token).await {
             Ok(token_response) => {
-                info!("Authenticated with refresh token");
                 self.save_tokens_to_config(&token_response).await?;
                 info!("Successfully authenticated using refresh token");
                 Ok(token_response)

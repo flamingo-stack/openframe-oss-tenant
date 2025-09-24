@@ -108,7 +108,7 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-          compression-level: 6  # Balanced compression
+          compression-level: 6
 
   build_images:
     name: "Build: ${{ matrix.name }}"
@@ -139,21 +139,6 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.path }}/target
-
-      # Configure Docker with optimizations
-      - name: Set up Docker Buildx
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
-            image=moby/buildkit:buildx-stable-1
-
-      - name: Set up QEMU
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Log in to GitHub Container Registry
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -197,8 +182,9 @@ jobs:
         uses: ./.github/steps/docker-format-build-args
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
+        env:
+          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-      # Optimized Docker build with registry cache
       - name: Build and push image
         if: contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
@@ -208,7 +194,7 @@ jobs:
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
-          provenance: mode=max
+          provenance: false
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use tokio::time::{sleep, Duration};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 use crate::services::AgentRegistrationService;
 use crate::services::agent_configuration_service::AgentConfigurationService;
@@ -41,7 +41,10 @@ impl RegistrationProcessor {
                     return Ok(());
                 }
                 Err(e) => {
-                    error!("Registration attempt failed. Retrying in 60 seconds…: {:#}", e);
+                    warn!(
+                        "Registration attempt failed: {}. Retrying in 60 seconds…",
+                        e
+                    );
                     // TODO: Add exponential backoff
                     sleep(Duration::from_secs(60)).await;
                 }

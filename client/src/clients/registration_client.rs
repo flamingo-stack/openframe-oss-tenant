@@ -37,7 +37,7 @@ impl RegistrationClient {
         let status = response.status();
         
         if !status.is_success() {
-            return Err(anyhow::anyhow!("Failed to register agent with status {} and body {}", status, response.text().await?));
+            return Err(anyhow::anyhow!("Failed to register agent"));
         }
 
         let registration_response: AgentRegistrationResponse = response
