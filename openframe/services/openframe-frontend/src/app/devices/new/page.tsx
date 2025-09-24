@@ -2,20 +2,12 @@
 
 import React, { useCallback, useMemo, useState } from 'react'
 import { AppLayout } from '../../components/app-layout'
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo/ui-kit/components/ui'
+import { Button, Input } from '@flamingo/ui-kit/components/ui'
 import { DetailPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { useRouter } from 'next/navigation'
 import { useRegistrationSecret } from '../hooks/use-registration-secret'
 import { PLATFORMS, DEFAULT_PLATFORM, type PlatformId } from '@lib/platforms'
-
-const MOCK_ORGS = [
-  { id: 'org_1', name: 'Northbridge Legal Group' },
-  { id: 'org_2', name: 'Acme Corp' },
-  { id: 'org_3', name: 'Umbrella Labs' },
-]
-
-const DEFAULT_ORG_ID = process.env.NEXT_PUBLIC_AGENT_ORG_ID || (MOCK_ORGS[0]?.id || 'd_org')
 
 type Platform = PlatformId
 
@@ -23,7 +15,6 @@ export default function NewDevicePage() {
   const router = useRouter()
   const { toast } = useToast()
   const [platform, setPlatform] = useState<Platform>(DEFAULT_PLATFORM)
-  const [orgId, setOrgId] = useState<string>(DEFAULT_ORG_ID)
   const { initialKey } = useRegistrationSecret()
   const [argInput, setArgInput] = useState('')
   const [args, setArgs] = useState<string[]>([])
@@ -50,7 +41,7 @@ export default function NewDevicePage() {
     const base = `client % sudo /target/debug/openframe install --serverUrl localhost --initialkey ${initialKey} --localMode`
     const extras = args.length ? ' ' + args.join(' ') : ''
     return base + extras
-  }, [initialKey, orgId, args])
+  }, [initialKey, args])
 
   const copyCommand = useCallback(async () => {
     try {
