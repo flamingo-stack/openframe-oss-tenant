@@ -34,7 +34,7 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  HELM_VALUES_FILE: "scripts/helm-values.yaml"
+  HELM_VALUES_FILE: "cli/helm-values.yaml"
 
 # =============================================================================
 # JOBS
@@ -243,7 +243,8 @@ jobs:
         env:
           TERM: dumb
         run: |
-          ./scripts/run.sh bootstrap
+          cd cli && ./openframe bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
+          # ./scripts/run.sh bootstrap
 
   test_client:
     name: "Test Client: ${{ matrix.os }}"
