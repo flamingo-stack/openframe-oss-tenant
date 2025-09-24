@@ -104,15 +104,27 @@ func (s *ClusterService) CreateCluster(config models.ClusterConfig) error {
 	}
 
 	// Cluster doesn't exist, proceed with creation
-	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Creating %s cluster '%s'...", config.Type, config.Name))
+	var spinner *pterm.SpinnerPrinter
+	if !s.suppressUI {
+		spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Creating %s cluster '%s'...", config.Type, config.Name))
+	} else {
+		// In non-interactive mode, just show a simple info message
+		pterm.Info.Printf("Creating %s cluster '%s'...\n", config.Type, config.Name)
+	}
 
 	err := s.manager.CreateCluster(ctx, config)
 	if err != nil {
-		spinner.Fail(fmt.Sprintf("Failed to create cluster '%s'", config.Name))
+		if spinner != nil {
+			spinner.Fail(fmt.Sprintf("Failed to create cluster '%s'", config.Name))
+		}
 		return err
 	}
 
-	spinner.Success(fmt.Sprintf("Cluster '%s' created successfully", config.Name))
+	if spinner != nil {
+		spinner.Success(fmt.Sprintf("Cluster '%s' created successfully", config.Name))
+	} else {
+		pterm.Success.Printf("Cluster '%s' created successfully\n", config.Name)
+	}
 
 	// Get and display cluster status
 	if clusterInfo, statusErr := s.manager.GetClusterStatus(ctx, config.Name); statusErr == nil {
@@ -130,15 +142,24 @@ func (s *ClusterService) DeleteCluster(name string, clusterType models.ClusterTy
 	ctx := context.Background()
 
 	// Show deletion progress
-	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Deleting %s cluster '%s'...", clusterType, name))
+	var spinner *pterm.SpinnerPrinter
+	if !s.suppressUI {
+		spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Deleting %s cluster '%s'...", clusterType, name))
+	} else {
+		pterm.Info.Printf("Deleting %s cluster '%s'...\n", clusterType, name)
+	}
 
 	err := s.manager.DeleteCluster(ctx, name, clusterType, force)
 	if err != nil {
-		spinner.Fail(fmt.Sprintf("Failed to delete cluster '%s'", name))
+		if spinner != nil {
+			spinner.Fail(fmt.Sprintf("Failed to delete cluster '%s'", name))
+		}
 		return err
 	}
 
-	spinner.Stop() // Stop spinner without message - UI layer will show success
+	if spinner != nil {
+		spinner.Stop() // Stop spinner without message - UI layer will show success
+	}
 
 	// Don't show summary here - let the UI layer handle it
 
