@@ -9,7 +9,7 @@ This document outlines the UI component standards and usage patterns for the Ope
 
 ## Component Library
 
-OpenFrame uses a shared component library to ensure consistency across the application. The component library is located in `services/openframe-ui/src/components/ui/`.
+OpenFrame uses a shared component library to ensure consistency across the application. The component library is located in `services/openframe-frontend/src/components/ui/`.
 
 ### Core Components
 

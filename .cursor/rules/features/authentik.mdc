@@ -267,9 +267,9 @@ public class UserProvisioningService {
 
 The Authentik UI is integrated into the OpenFrame dashboard:
 
-- `services/openframe-ui/src/views/admin/Users.vue`: User management view
-- `services/openframe-ui/src/views/admin/Roles.vue`: Role management view
-- `services/openframe-ui/src/views/admin/Permissions.vue`: Permission management view
+- `services/openframe-frontend/src/views/admin/Users.vue`: User management view
+- `services/openframe-frontend/src/views/admin/Roles.vue`: Role management view
+- `services/openframe-frontend/src/views/admin/Permissions.vue`: Permission management view
 
 Example UI component:
 

@@ -87,7 +87,7 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 	// Install ArgoCD with upgrade --install
 	args := []string{
 		"upgrade", "--install", "argo-cd", "argo/argo-cd",
-		"--version=8.1.4",
+		"--version=8.2.7",
 		"--namespace", "argocd",
 		"--create-namespace",
 		"--wait",
@@ -155,7 +155,7 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 
 	// Installation details are now silent - just show in verbose mode
 	if config.Verbose {
-		pterm.Info.Printf("   Version: 8.1.4\n")
+		pterm.Info.Printf("   Version: 8.2.7\n")
 		pterm.Info.Printf("   Namespace: argocd\n")
 		pterm.Info.Printf("   Values file: %s\n", tmpFile.Name())
 	}
@@ -163,7 +163,7 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	// Install ArgoCD with upgrade --install
 	args := []string{
 		"upgrade", "--install", "argo-cd", "argo/argo-cd",
-		"--version=8.1.4",
+		"--version=8.2.7",
 		"--namespace", "argocd",
 		"--create-namespace",
 		"--wait",

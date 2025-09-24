@@ -3,6 +3,8 @@
  * Controls whether the app runs in auth-only mode or full application mode
  */
 
+import { runtimeEnv } from "./runtime-config"
+
 export type AppMode = 'auth-only' | 'full-app'
 
 /**
@@ -10,7 +12,7 @@ export type AppMode = 'auth-only' | 'full-app'
  * @returns The current app mode, defaults to 'full-app'
  */
 export function getAppMode(): AppMode {
-  const mode = process.env.NEXT_PUBLIC_APP_MODE as AppMode
+  const mode = runtimeEnv.appMode() as AppMode
   return mode || 'full-app'
 }
 

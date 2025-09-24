@@ -87,7 +87,7 @@ openframe-library/
 The UI service follows this structure:
 
 ```
-openframe-ui/
+openframe-frontend/
 ├── src/
 │   ├── assets/                  # Static assets
 │   ├── components/              # Vue components

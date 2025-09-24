@@ -4,6 +4,7 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { useTokenStorage } from '../hooks/use-token-storage'
 import { useAuthStore } from '../stores/auth-store'
 import { apiClient } from '@lib/api-client'
+import { runtimeEnv } from '@lib/runtime-config'
 
 /**
  * Hook for exchanging devTicket via API
@@ -19,7 +20,7 @@ export function useDevTicketExchange() {
   const exchangeTicket = useCallback(
     async (ticket: string) => {
       try {
-        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
+        const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
         
         console.log('🎫 [DevTicket Exchange] Initiating exchange for ticket:', ticket)
         

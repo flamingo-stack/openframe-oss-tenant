@@ -19,6 +19,8 @@ interface ApiResponse<T = any> {
   ok: boolean
 }
 
+import { runtimeEnv } from './runtime-config'
+
 class ApiClient {
   private baseUrl: string
   private isDevTicketEnabled: boolean
@@ -26,11 +28,9 @@ class ApiClient {
   private refreshPromise: Promise<boolean> | null = null
 
   constructor() {
-    // Get base URL from environment or default
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api'
-    
-    // Check if DevTicket observer is enabled
-    this.isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+    // Get base URL and flags from runtime-config (falls back to env and defaults)
+    this.baseUrl = runtimeEnv.apiUrl()
+    this.isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
   }
 
   /**

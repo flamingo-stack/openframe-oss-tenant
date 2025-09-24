@@ -1,4 +1,5 @@
 import React from 'react'
+import { runtimeEnv } from './runtime-config'
 import { openframeConfig } from './platform-configs/openframe.config'
 
 export type AppType = 'openframe-auth' | 'openframe-dashboard'
@@ -165,8 +166,8 @@ const APP_CONFIGS: Record<AppType, AppConfig> = {
 
 // Get current app type from environment
 export function getCurrentAppType(): AppType {
-  const appType = process.env.NEXT_PUBLIC_APP_TYPE as AppType
-  return appType || 'openframe-dashboard' // default fallback
+  const appType = runtimeEnv.appType() as AppType
+  return (appType as AppType) || 'openframe-dashboard'
 }
 
 // Get app configuration for current or specified app
@@ -192,13 +193,13 @@ export function getCurrentPlatform(): 'openframe' {
 
 // Get metadata base URL function for client-side
 export function getMetadataBaseUrl(): string {
-  // Production - use environment variables
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.NEXT_PUBLIC_APP_URL || 'https://openframe.dev'
+  // Decide based on window presence rather than NODE_ENV to allow runtime
+  if (typeof window !== 'undefined') {
+    // In browser, prefer appUrl, else devUrl
+    return runtimeEnv.appUrl() || runtimeEnv.devUrl()
   }
-  
-  // Development - use localhost
-  return process.env.NEXT_PUBLIC_DEV_URL || 'http://localhost:4000'
+  // In non-browser contexts, fall back similarly
+  return runtimeEnv.appUrl() || runtimeEnv.devUrl()
 }
 
 // Get platform-specific asset paths

@@ -13,7 +13,7 @@ mvn test                                    # Run all tests
 
 ### Frontend (UI) Commands
 ```bash
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm install                                 # Install dependencies
 npm run dev                                 # Start development server
 npm run build                               # Build for production
@@ -60,7 +60,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 - **openframe-stream**: Stream processing service using Kafka for real-time data processing (NOT NiFi)
 - **openframe-config**: Spring Cloud Config Server for centralized configuration management
 - **openframe-client** (Java): Agent management and authentication service
-- **openframe-ui**: Vue 3 + TypeScript frontend with PrimeVue components
+- **openframe-frontend**: Vue 3 + TypeScript frontend with PrimeVue components
 
 ### Client Agent
 - **client/** (Rust): Cross-platform system agent for monitoring and management
@@ -127,7 +127,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 │   │   ├── openframe-client/           # Agent management service
 │   │   ├── openframe-external-api/     # External API integrations
 │   │   ├── openframe-authorization-server/ # Authorization server
-│   │   ├── openframe-ui/               # Vue.js frontend (primary)
+│   │   ├── openframe-frontend/               # Vue.js frontend (primary)
 │   │   └── openframe-frontend/         # Alternative frontend (React/Next.js)
 │   └── libs/                           # Shared libraries
 │       ├── openframe-core/             # Core models and utilities
@@ -204,7 +204,7 @@ mvn test -Dtest=ClassName#methodName    # Run specific test method
 
 ### Frontend
 ```bash
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm run test:unit                       # Unit tests (if configured)
 npm run type-check                      # TypeScript validation
 ```

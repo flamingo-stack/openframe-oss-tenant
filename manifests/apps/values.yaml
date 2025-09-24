@@ -199,7 +199,7 @@ apps:
     project: microservices
     namespace: microservices
     syncWave: "2"
-  openframe-ui: 
+  openframe-frontend: 
     enabled: true
     project: microservices
     namespace: microservices

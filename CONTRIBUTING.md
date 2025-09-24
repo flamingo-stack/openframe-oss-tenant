@@ -31,7 +31,7 @@ Below are brief steps for a standard dev environment:
 1. Run Maven to build the backend libraries and services:   ```bash
    mvn clean install   ```
 2. For the front-end (if you plan to make UI changes):   ```bash
-   cd services/openframe-ui
+   cd services/openframe-frontend
    npm install
    npm run serve   ```
 3. Optionally launch the entire stack using Docker Compose:   ```bash

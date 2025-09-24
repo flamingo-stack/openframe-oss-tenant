@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { PublicEnvScript } from 'next-runtime-env'
 import { Suspense } from 'react'
 import './globals.css'
 import '@flamingo/ui-kit/styles'
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`dark ${azeretMono.variable} ${dmSans.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <PublicEnvScript />
       </head>
       <body 
         suppressHydrationWarning 

@@ -85,10 +85,10 @@ jobs:
               "artifact_name": "openframe-stream"
             },
             {
-              "name": "openframe-ui",
+              "name": "openframe-frontend",
               "type": ["container"],
-              "path": "./openframe/services/openframe-ui",
-              "manifest_path": "./manifests/microservices/openframe-ui"
+              "path": "./openframe/services/openframe-frontend",
+              "manifest_path": "./manifests/microservices/openframe-frontend"
             },
             {
               "name": "authentik-postgresql",

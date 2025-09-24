@@ -75,7 +75,7 @@ spring:
 
 ```bash
 # Navigate to UI service
-cd services/openframe-ui
+cd services/openframe-frontend
 
 # Install dependencies
 npm install
@@ -87,7 +87,7 @@ npm install -g @vue/cli
 ### 2. Configure Frontend Environment
 
 ```env
-# services/openframe-ui/.env
+# services/openframe-frontend/.env
 VUE_APP_API_URL=http://localhost:8080
 VUE_APP_WS_URL=ws://localhost:8080/ws
 ```
@@ -106,7 +106,7 @@ cd openframe/services/openframe-api
 mvn spring-boot:run
 
 # Start frontend development server (separate terminal)
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm run dev
 
 # Build Rust client agent
@@ -176,7 +176,7 @@ cd services/openframe-api
 mvn spring-boot:run
 
 # Start frontend development server
-cd openframe/services/openframe-ui
+cd openframe/services/openframe-frontend
 npm run dev
 ```
 

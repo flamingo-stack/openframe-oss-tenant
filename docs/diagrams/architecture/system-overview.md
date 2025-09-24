@@ -60,7 +60,7 @@ graph TB
 - **openframe-stream**: Stream processing service using Kafka for event streaming
 - **openframe-config**: Spring Cloud Config Server for centralized configuration
 - **openframe-client**: Agent management and authentication service
-- **openframe-ui**: Vue 3 + TypeScript frontend with PrimeVue components
+- **openframe-frontend**: Vue 3 + TypeScript frontend with PrimeVue components
 
 ### 2. System Agent
 - **Rust Client**: Cross-platform agent for system monitoring and management

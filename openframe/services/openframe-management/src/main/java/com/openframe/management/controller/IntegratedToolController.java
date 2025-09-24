@@ -2,6 +2,7 @@ package com.openframe.management.controller;
 
 import com.openframe.data.document.tool.IntegratedTool;
 import com.openframe.data.service.IntegratedToolService;
+import com.openframe.management.service.DebeziumService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class IntegratedToolController {
 
     private final IntegratedToolService toolService;
+    private final DebeziumService debeziumService;
 
     @GetMapping
     public Map<String, Object> getTools() {
@@ -48,6 +50,7 @@ public class IntegratedToolController {
 
             IntegratedTool savedTool = toolService.saveTool(tool);
             log.info("Successfully saved tool configuration for: {}", id);
+            debeziumService.createDebeziumConnector(savedTool.getDebeziumConnector());
             return Map.of("status", "success", "tool", savedTool);
         } catch (Exception e) {
             log.error("Failed to save tool: {}", id, e);

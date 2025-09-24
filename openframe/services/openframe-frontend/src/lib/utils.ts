@@ -7,22 +7,19 @@
  * In production, uses the deployment URL
  * In development, uses localhost:4000
  */
+import { runtimeEnv } from './runtime-config'
+
 export function getBaseUrl(): string {
   // In browser, use relative URLs
   if (typeof window !== 'undefined') {
     return ''
   }
   
-  // For server-side rendering
-  if (process.env.NODE_ENV === 'production') {
-    // Use Vercel URL or custom domain
-    return process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : 'https://openframe.dev'
-  }
-  
-  // Development
-  return 'http://localhost:4000'
+  // For non-browser contexts, prefer configured URLs
+  const appUrl = runtimeEnv.appUrl()
+  const devUrl = runtimeEnv.devUrl()
+
+  return appUrl || devUrl || 'http://localhost:4000'
 }
 
 /**

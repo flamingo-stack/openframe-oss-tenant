@@ -189,7 +189,7 @@ Technical reference for all OpenFrame components.
   - [OpenFrame Stream](reference/services/openframe-stream.md)
   - [OpenFrame Management](reference/services/openframe-management.md)
   - [OpenFrame Config](reference/services/openframe-config.md)
-  - [OpenFrame UI](reference/services/openframe-ui.md)
+  - [OpenFrame Frontend](reference/services/openframe-frontend.md)
 - **Data Storage**
   - [MongoDB Schemas](reference/data/mongodb.md)
   - [Cassandra Schemas](reference/data/cassandra.md)

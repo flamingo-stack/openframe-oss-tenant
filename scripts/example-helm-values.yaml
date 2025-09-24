@@ -320,7 +320,7 @@ apps:
         repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-stream
         tag: latest
     
-  openframe-ui: 
+  openframe-frontend: 
     enabled: true     # User interface service
     project: microservices  # Use microservices ArgoCD project
     namespace: microservices  # Deploy to microservices namespace
@@ -335,7 +335,7 @@ apps:
       registerJob:
         enabled: true
       image:
-        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-ui
+        repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-frontend
         tag: latest
 
   # =============================================================================
