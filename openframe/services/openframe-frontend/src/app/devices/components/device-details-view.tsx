@@ -11,10 +11,8 @@ import { DeviceInfoSection } from './device-info-section'
 import { CardLoader, LoadError, NotFoundError } from '@flamingo/ui-kit'
 import { DeviceStatusBadge } from './device-status-badge'
 import { ScriptsModal } from './scripts-modal'
-import {
-  DeviceTabNavigation,
-  DeviceTabContent
-} from './tabs'
+import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
+import { DEVICE_TABS } from './tabs/device-tabs'
 
 interface DeviceDetailsViewProps {
   deviceId: string
@@ -42,6 +40,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
     || normalizedDevice?.agent_id
+
+  const TabComponent = getTabComponent(DEVICE_TABS, activeTab)
 
   const handleBack = () => {
     router.push('/devices')
@@ -125,16 +125,18 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
           {/* Tab Navigation */}
           <div className="mt-6">
-            <DeviceTabNavigation
+            <TabNavigation
               activeTab={activeTab}
               onTabChange={(tabId) => setActiveTab(tabId as TabId)}
+              tabs={DEVICE_TABS}
             />
           </div>
 
           {/* Tab Content */}
-          <DeviceTabContent
+          <TabContent
             activeTab={activeTab}
-            device={normalizedDevice}
+            TabComponent={TabComponent}
+            componentProps={{ device: normalizedDevice }}
           />
         </div>
 

@@ -2,16 +2,16 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { 
-  ChevronLeft, 
-  MoreHorizontal, 
-  Clock, 
-  CheckCircle, 
+import {
+  ChevronLeft,
+  MoreHorizontal,
+  Clock,
+  CheckCircle,
   Pause,
-  MessageCircle,
   Send,
   Monitor
 } from 'lucide-react'
+import { MessageCircleIcon } from '@flamingo/ui-kit'
 import { Button } from '@flamingo/ui-kit'
 import { DetailLoader } from '@flamingo/ui-kit/components/ui'
 import { mockDialogDetails, type DialogDetails, type DialogMessage } from '../data/mock-dialog-details'
@@ -232,7 +232,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="relative w-12 h-12">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <MessageCircle className="h-8 w-8 text-ods-text-secondary" />
+                  <MessageCircleIcon className="h-8 w-8 text-ods-text-secondary" />
                 </div>
               </div>
               <p className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary max-w-xs">
@@ -244,7 +244,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
                 onClick={handlePauseFae}
                 className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors"
               >
-                <MessageCircle className="h-6 w-6 text-ods-text-primary" />
+                <MessageCircleIcon className="h-6 w-6 text-ods-text-primary" />
                 <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
                   Pause Fae and Start Direct Chat
                 </span>
