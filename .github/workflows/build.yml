@@ -279,30 +279,31 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts
-          cp "client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
-          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
-          # List what we're uploading
-          ls -la artifacts/
-
-      - name: Sign MacOS package
-        if: runner.os == 'macOS'
-        uses: ./.github/steps/sign-macos-package
-        with:
-          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
-          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
-          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
-          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: ${{ matrix.artifact_name }}
-          app_name: OpenFrameOSSClient
-
-      - name: Upload client artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            artifacts/
-          if-no-files-found: warn
-          retention-days: 30
-          compression-level: 9
+          find ./client/ -iname "*openframe*" -type f
+##          cp "client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
+##          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
+##          # List what we're uploading
+##          ls -la artifacts/
+##
+##      - name: Sign MacOS package
+##        if: runner.os == 'macOS'
+##        uses: ./.github/steps/sign-macos-package
+##        with:
+##          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+##          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+##          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
+##          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+##          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+##          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+##          binary_name: ${{ matrix.artifact_name }}
+##          app_name: OpenFrameOSSClient
+##
+##      - name: Upload client artifact
+##        uses: actions/upload-artifact@v4
+##        with:
+##          name: ${{ matrix.artifact_name }}
+##          path: |
+##            artifacts/
+##          if-no-files-found: warn
+##          retention-days: 30
+##          compression-level: 9
