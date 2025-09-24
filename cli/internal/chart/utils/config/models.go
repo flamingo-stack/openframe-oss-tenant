@@ -6,11 +6,12 @@ import (
 
 // ChartInstallConfig holds configuration for chart installation
 type ChartInstallConfig struct {
-	ClusterName string
-	Force       bool
-	DryRun      bool
-	Verbose     bool
-	Silent      bool
+	ClusterName    string
+	Force          bool
+	DryRun         bool
+	Verbose        bool
+	Silent         bool
+	NonInteractive bool // Suppresses interactive UI elements and spinners
 	// App-of-apps specific configuration
 	AppOfApps *models.AppOfAppsConfig
 }

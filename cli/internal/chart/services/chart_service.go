@@ -393,7 +393,7 @@ func (w *InstallationWorkflow) buildConfiguration(req utilTypes.InstallationRequ
 	}
 
 	return configBuilder.BuildInstallConfigWithCustomHelmPath(
-		req.Force, req.DryRun, req.Verbose, clusterName,
+		req.Force, req.DryRun, req.Verbose, req.NonInteractive, clusterName,
 		githubRepo, req.GitHubBranch, req.CertDir,
 		chartConfig.TempHelmValuesPath,
 		deploymentModeStr,

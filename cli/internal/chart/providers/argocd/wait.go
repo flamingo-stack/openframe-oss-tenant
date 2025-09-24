@@ -50,7 +50,6 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	
 	
 	// Check if we should start the spinner (skip if context is cancelled or expiring soon)
-	var spinner *pterm.SpinnerPrinter
 	shouldSkipSpinner := false
 	
 	// Check if context is cancelled
@@ -84,11 +83,17 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		pterm.Debug.Println("  - Progress updates every 10 seconds in verbose mode")
 	}
 
-	// Start pterm spinner
-	spinner, _ = pterm.DefaultSpinner.
-		WithRemoveWhenDone(false).
-		WithShowTimer(true).
-		Start("Installing ArgoCD applications...")
+	// Start pterm spinner only if not in silent/non-interactive mode
+	var spinner *pterm.SpinnerPrinter
+	if !config.Silent {
+		spinner, _ = pterm.DefaultSpinner.
+			WithRemoveWhenDone(false).
+			WithShowTimer(true).
+			Start("Installing ArgoCD applications...")
+	} else {
+		// In non-interactive mode, just show a simple info message
+		pterm.Info.Println("Installing ArgoCD applications...")
+	}
 	
 	var spinnerMutex sync.Mutex
 	spinnerStopped := false
