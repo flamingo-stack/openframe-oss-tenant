@@ -223,8 +223,19 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 		"--wait",
 		"--timeout", appConfig.Timeout,
 		"-f", appConfig.ValuesFile,
-		"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFile),
-		"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFile),
+	}
+
+	// Only add certificate files if they exist and are not empty paths
+	if certFile != "" && keyFile != "" {
+		// Check if files actually exist before adding them
+		if _, err := os.Stat(certFile); err == nil {
+			if _, err := os.Stat(keyFile); err == nil {
+				args = append(args,
+					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFile),
+					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFile),
+				)
+			}
+		}
 	}
 
 	if config.DryRun {

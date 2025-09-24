@@ -36,6 +36,11 @@ func (i *Installer) InstallMissingPrerequisites() error {
 }
 
 func (i *Installer) installMissingTools(tools []string) error {
+	return i.installMissingToolsNonInteractive(tools, false)
+}
+
+// installMissingToolsNonInteractive installs missing tools with optional non-interactive mode
+func (i *Installer) installMissingToolsNonInteractive(tools []string, nonInteractive bool) error {
 	if len(tools) == 0 {
 		pterm.Success.Println("All prerequisites are already installed.")
 		return nil
@@ -52,7 +57,12 @@ func (i *Installer) installMissingTools(tools []string) error {
 		// Create a spinner for the installation process
 		spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("[%d/%d] Installing %s...", idx+1, len(tools), tool))
 
-		if err := i.installTool(tool); err != nil {
+		if err := i.installToolNonInteractive(tool, nonInteractive); err != nil {
+			// In non-interactive mode, log error but continue with next tool
+			if nonInteractive {
+				spinner.Warning(fmt.Sprintf("Skipped %s: %v", tool, err))
+				continue
+			}
 			spinner.Fail(fmt.Sprintf("Failed to install %s: %v", tool, err))
 			return fmt.Errorf("failed to install %s: %w", tool, err)
 		}
@@ -72,6 +82,12 @@ func (i *Installer) installMissingTools(tools []string) error {
 	}
 
 	if len(stillMissingInstallable) > 0 {
+		// In non-interactive mode, just warn and continue
+		if nonInteractive {
+			pterm.Warning.Printf("Some tools are still missing: %s\n", strings.Join(stillMissingInstallable, ", "))
+			pterm.Info.Println("Continuing with available tools (non-interactive mode)...")
+			return nil
+		}
 		pterm.Warning.Printf("Some tools are still missing: %s\n", strings.Join(stillMissingInstallable, ", "))
 		return fmt.Errorf("installation completed but some tools are still missing: %s", strings.Join(stillMissingInstallable, ", "))
 	}
@@ -81,6 +97,11 @@ func (i *Installer) installMissingTools(tools []string) error {
 }
 
 func (i *Installer) installTool(tool string) error {
+	return i.installToolNonInteractive(tool, false)
+}
+
+// installToolNonInteractive installs a single tool with optional non-interactive mode
+func (i *Installer) installToolNonInteractive(tool string, nonInteractive bool) error {
 	switch strings.ToLower(tool) {
 	case "git":
 		checker := git.NewGitChecker()
@@ -95,6 +116,11 @@ func (i *Installer) installTool(tool string) error {
 		// Memory cannot be automatically installed
 		return fmt.Errorf("memory cannot be automatically increased. Please add more physical RAM or increase virtual memory allocation")
 	case "certificates":
+		if nonInteractive {
+			// In non-interactive mode (CI/CD), skip certificate generation
+			pterm.Info.Println("Skipping certificate generation in non-interactive mode (not needed for CI/CD)")
+			return nil
+		}
 		installer := certificates.NewCertificateInstaller()
 		return installer.Install()
 	default:
@@ -117,6 +143,11 @@ func (i *Installer) runCommand(name string, args ...string) error {
 }
 
 func (i *Installer) CheckAndInstall() error {
+	return i.CheckAndInstallNonInteractive(false)
+}
+
+// CheckAndInstallNonInteractive checks and installs prerequisites with optional non-interactive mode
+func (i *Installer) CheckAndInstallNonInteractive(nonInteractive bool) error {
 	_, missing := i.checker.CheckAll()
 
 	// Check memory separately for warning
@@ -142,14 +173,28 @@ func (i *Installer) CheckAndInstall() error {
 		// Show missing prerequisites with nice formatting
 		pterm.Warning.Printf("Missing Prerequisites: %s\n", strings.Join(installableMissing, ", "))
 
-		// Single confirmation using shared UI
-		confirmed, err := ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
-		if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
-			return err
+		var confirmed bool
+		if nonInteractive {
+			// Auto-approve in non-interactive mode
+			pterm.Info.Println("Auto-installing prerequisites (non-interactive mode)...")
+			confirmed = true
+		} else {
+			// Single confirmation using shared UI
+			var err error
+			confirmed, err = ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
+			if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
+				return err
+			}
 		}
 
 		if confirmed {
-			if err := i.installMissingTools(installableMissing); err != nil {
+			if err := i.installMissingToolsNonInteractive(installableMissing, nonInteractive); err != nil {
+				// In non-interactive mode, log error but continue
+				if nonInteractive {
+					pterm.Warning.Printf("Failed to install some prerequisites: %v\n", err)
+					pterm.Info.Println("Continuing anyway (non-interactive mode)...")
+					return nil
+				}
 				return err
 			}
 		} else {

@@ -131,6 +131,11 @@ func (i *Installer) runCommand(name string, args ...string) error {
 }
 
 func (i *Installer) CheckAndInstall() error {
+	return i.CheckAndInstallNonInteractive(false)
+}
+
+// CheckAndInstallNonInteractive checks and installs prerequisites with optional non-interactive mode
+func (i *Installer) CheckAndInstallNonInteractive(nonInteractive bool) error {
 	// PHASE 1: Check what's actually missing vs what's not running
 	allPresent, missing := i.checker.CheckAll()
 	if allPresent {
@@ -140,7 +145,7 @@ func (i *Installer) CheckAndInstall() error {
 	// Separate into truly missing tools vs Docker not running
 	var missingTools []string
 	var dockerNotRunning bool
-	
+
 	for _, tool := range missing {
 		switch strings.ToLower(tool) {
 		case "docker":
@@ -161,16 +166,31 @@ func (i *Installer) CheckAndInstall() error {
 	if len(missingTools) > 0 {
 		pterm.Warning.Printf("Missing Prerequisites: %s\n", strings.Join(missingTools, ", "))
 
-		confirmed, err := ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
-		if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
-			return err
+		var confirmed bool
+		if nonInteractive {
+			// Auto-approve in non-interactive mode
+			pterm.Info.Println("Auto-installing prerequisites (non-interactive mode)...")
+			confirmed = true
+		} else {
+			var err error
+			confirmed, err = ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
+			if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
+				return err
+			}
 		}
 
 		if confirmed {
 			if err := i.installSpecificTools(missingTools); err != nil {
-				return err
+				// In non-interactive mode, log error but continue
+				if nonInteractive {
+					pterm.Warning.Printf("Failed to install some prerequisites: %v\n", err)
+					pterm.Info.Println("Continuing anyway (non-interactive mode)...")
+				} else {
+					return err
+				}
+			} else {
+				pterm.Success.Println("All missing tools installed successfully!")
 			}
-			pterm.Success.Println("All missing tools installed successfully!")
 		} else {
 			i.showManualInstructions()
 			os.Exit(1)
@@ -179,30 +199,53 @@ func (i *Installer) CheckAndInstall() error {
 
 	// PHASE 3: Now check if Docker needs to be started (after all tools are installed)
 	if dockerNotRunning {
-		pterm.Warning.Println("Docker is not running.")
-		confirmed, err := ui.ConfirmActionInteractive("Would you like me to start Docker for you?", true)
-		if errors.HandleConfirmationError(err) {
-			return nil // Won't be reached due to os.Exit in handler
-		}
-		if err != nil {
-			return fmt.Errorf("failed to get Docker start confirmation: %w", err)
-		}
-		if confirmed {
+		if nonInteractive {
+			// In non-interactive mode, try to start Docker automatically
+			pterm.Warning.Println("Docker is not running.")
+			pterm.Info.Println("Attempting to start Docker automatically (non-interactive mode)...")
+
 			if err := docker.StartDocker(); err != nil {
-				pterm.Error.Printf("Failed to start Docker: %v\n", err)
-				pterm.Info.Println("Please start Docker Desktop manually and try again.")
-				os.Exit(1)
+				pterm.Warning.Printf("Could not start Docker automatically: %v\n", err)
+				pterm.Info.Println("Docker must be started manually. Continuing anyway...")
+				// Don't exit in non-interactive mode, let it fail later if needed
+				return nil
 			}
+
 			spinner, _ := pterm.DefaultSpinner.Start("Waiting for Docker to start...")
 			if err := docker.WaitForDocker(); err != nil {
-				spinner.Fail("Docker failed to start")
-				pterm.Info.Println("Please start Docker Desktop manually and try again.")
-				os.Exit(1)
+				spinner.Warning("Docker failed to start automatically")
+				pterm.Info.Println("Please ensure Docker is running before cluster operations.")
+				// Don't exit in non-interactive mode
+				return nil
 			}
 			spinner.Success("Docker started successfully")
 		} else {
-			i.showDockerStartInstructions()
-			os.Exit(1)
+			// Interactive mode - prompt user
+			pterm.Warning.Println("Docker is not running.")
+			confirmed, err := ui.ConfirmActionInteractive("Would you like me to start Docker for you?", true)
+			if errors.HandleConfirmationError(err) {
+				return nil // Won't be reached due to os.Exit in handler
+			}
+			if err != nil {
+				return fmt.Errorf("failed to get Docker start confirmation: %w", err)
+			}
+			if confirmed {
+				if err := docker.StartDocker(); err != nil {
+					pterm.Error.Printf("Failed to start Docker: %v\n", err)
+					pterm.Info.Println("Please start Docker Desktop manually and try again.")
+					os.Exit(1)
+				}
+				spinner, _ := pterm.DefaultSpinner.Start("Waiting for Docker to start...")
+				if err := docker.WaitForDocker(); err != nil {
+					spinner.Fail("Docker failed to start")
+					pterm.Info.Println("Please start Docker Desktop manually and try again.")
+					os.Exit(1)
+				}
+				spinner.Success("Docker started successfully")
+			} else {
+				i.showDockerStartInstructions()
+				os.Exit(1)
+			}
 		}
 	}
 

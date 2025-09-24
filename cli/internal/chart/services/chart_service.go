@@ -192,8 +192,13 @@ func (w *InstallationWorkflow) ExecuteWithContext(parentCtx context.Context, req
 	}
 
 	// Step 4: Regenerate certificates after configuration and cluster selection
-	if err := w.regenerateCertificates(); err != nil {
-		// Non-fatal - continue anyway as logged in the method
+	// Skip certificate regeneration in non-interactive mode
+	if !req.NonInteractive {
+		if err := w.regenerateCertificates(); err != nil {
+			// Non-fatal - continue anyway as logged in the method
+		}
+	} else {
+		pterm.Warning.Println("Skipping certificate regeneration (non-interactive mode)")
 	}
 
 	// Step 5: Build configuration
@@ -481,7 +486,7 @@ func InstallChartsWithConfigContext(ctx context.Context, req utilTypes.Installat
 
 	// Check prerequisites first
 	installer := prerequisites.NewInstaller()
-	if err := installer.CheckAndInstall(); err != nil {
+	if err := installer.CheckAndInstallNonInteractive(req.NonInteractive); err != nil {
 		return err
 	}
 

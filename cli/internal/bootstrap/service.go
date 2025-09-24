@@ -85,7 +85,7 @@ func (s *Service) bootstrap(clusterName, deploymentMode string, nonInteractive, 
 	actualClusterName := config.Name
 
 	// Step 1: Create cluster with suppressed UI
-	if err := s.createClusterSuppressed(actualClusterName, verbose); err != nil {
+	if err := s.createClusterSuppressed(actualClusterName, verbose, nonInteractive); err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
@@ -102,9 +102,9 @@ func (s *Service) bootstrap(clusterName, deploymentMode string, nonInteractive, 
 }
 
 // createClusterSuppressed creates a cluster with suppressed UI elements
-func (s *Service) createClusterSuppressed(clusterName string, verbose bool) error {
+func (s *Service) createClusterSuppressed(clusterName string, verbose bool, nonInteractive bool) error {
 	// Use the wrapper function that includes prerequisite checks
-	return cluster.CreateClusterWithPrerequisites(clusterName, verbose)
+	return cluster.CreateClusterWithPrerequisitesNonInteractive(clusterName, verbose, nonInteractive)
 }
 
 // buildClusterConfig builds a cluster configuration from the cluster name

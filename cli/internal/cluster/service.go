@@ -689,12 +689,17 @@ func (s *ClusterService) DisplayClusterList(clusters []models.ClusterInfo, quiet
 // CreateClusterWithPrerequisites creates a cluster after checking prerequisites
 // This is a wrapper function for bootstrap and other automated flows
 func CreateClusterWithPrerequisites(clusterName string, verbose bool) error {
+	return CreateClusterWithPrerequisitesNonInteractive(clusterName, verbose, false)
+}
+
+// CreateClusterWithPrerequisitesNonInteractive creates a cluster with non-interactive support
+func CreateClusterWithPrerequisitesNonInteractive(clusterName string, verbose bool, nonInteractive bool) error {
 	// Show logo first, then check prerequisites (consistent with individual commands)
 	ui.ShowLogo()
-	
+
 	// Check prerequisites using the installer directly
 	installer := prerequisites.NewInstaller()
-	if err := installer.CheckAndInstall(); err != nil {
+	if err := installer.CheckAndInstallNonInteractive(nonInteractive); err != nil {
 		return err
 	}
 	
