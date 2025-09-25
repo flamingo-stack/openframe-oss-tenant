@@ -18,7 +18,7 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tracing::info;
+use tracing::{error, info, warn};
 
 use super::permissions::{PermissionError, Permissions};
 
@@ -101,7 +101,7 @@ pub fn get_app_support_directory() -> PathBuf {
         PathBuf::from("/Library/Application Support/OpenFrame")
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux" to cover all Unix systems
+    #[cfg(target_os = "linux")]
     {
         PathBuf::from("/var/lib/openframe")
     }
@@ -144,7 +144,7 @@ pub fn get_logs_directory() -> PathBuf {
         PathBuf::from("/Library/Logs/OpenFrame")
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+    #[cfg(target_os = "linux")]
     {
         PathBuf::from("/var/log/openframe")
     }
@@ -167,7 +167,7 @@ pub fn get_secured_directory() -> PathBuf {
         PathBuf::from("/Library/Application Support/OpenFrame/secured")
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+    #[cfg(target_os = "linux")]
     {
         PathBuf::from("/var/lib/openframe/secured")
     }
@@ -214,7 +214,7 @@ pub fn set_directory_permissions(path: &Path) -> io::Result<()> {
             .status();
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+    #[cfg(target_os = "linux")]
     {
         // Set directory permissions to 755 (rwxr-xr-x) on Linux
         info!(
@@ -222,13 +222,16 @@ pub fn set_directory_permissions(path: &Path) -> io::Result<()> {
             path.display()
         );
 
-        let permissions = fs::Permissions::from_mode(0o755);
-        fs::set_permissions(path, permissions)?;
+        #[cfg(unix)]
+        {
+            let permissions = fs::Permissions::from_mode(0o755);
+            fs::set_permissions(path, permissions)?;
 
-        // On Linux, we typically want root:root ownership
-        let _ = Command::new("chown")
-            .args(["-R", "root:root", path.to_str().unwrap()])
-            .status();
+            // On Linux, we typically want root:root ownership
+            let _ = Command::new("chown")
+                .args(["-R", "root:root", path.to_str().unwrap()])
+                .status();
+        }
     }
 
     Ok(())
@@ -270,21 +273,24 @@ pub fn set_secured_directory_permissions(path: &Path) -> io::Result<()> {
             .status();
     }
 
-    #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+    #[cfg(target_os = "linux")]
     {
         info!(
             "Setting Linux secured directory permissions for: {}",
             path.display()
         );
 
-        // Set permissions to 700 (rwx------) - only owner can access
-        let permissions = fs::Permissions::from_mode(0o700);
-        fs::set_permissions(path, permissions)?;
+        #[cfg(unix)]
+        {
+            // Set permissions to 700 (rwx------) - only owner can access
+            let permissions = fs::Permissions::from_mode(0o700);
+            fs::set_permissions(path, permissions)?;
 
-        // Set ownership to root:root
-        let _ = Command::new("chown")
-            .args(["-R", "root:root", path.to_str().unwrap()])
-            .status();
+            // Set ownership to root:root
+            let _ = Command::new("chown")
+                .args(["-R", "root:root", path.to_str().unwrap()])
+                .status();
+        }
     }
 
     Ok(())
@@ -314,7 +320,7 @@ impl DirectoryManager {
         Self {
             logs_dir,
             app_support_dir,
-            secured_dir,
+            secured_dir: secured_dir,
             user_logs_dir: None,
         }
     }
@@ -383,7 +389,7 @@ impl DirectoryManager {
             }
         }
 
-        #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+        #[cfg(target_os = "linux")]
         {
             if let Some(base_dirs) = BaseDirs::new() {
                 let mut path = base_dirs.home_dir().to_path_buf();
@@ -634,12 +640,19 @@ impl DirectoryManager {
         {
             // Check if the directory has 700 permissions and is owned by root
             if let Ok(metadata) = fs::metadata(path) {
-                use std::os::unix::fs::MetadataExt;
-                let mode = metadata.permissions().mode() & 0o777;
-                let uid = metadata.uid();
-                
-                // Directory should have 700 permissions and be owned by root (uid 0)
-                mode == 0o700 && uid == 0
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::MetadataExt;
+                    let mode = metadata.permissions().mode() & 0o777;
+                    let uid = metadata.uid();
+                    
+                    // Directory should have 700 permissions and be owned by root (uid 0)
+                    mode == 0o700 && uid == 0
+                }
+                #[cfg(not(unix))]
+                {
+                    true
+                }
             } else {
                 false
             }
@@ -765,9 +778,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Test directory creation
         assert!(manager.ensure_directories().is_ok());
@@ -780,9 +792,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -805,9 +816,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -823,16 +833,7 @@ mod tests {
         // Verify file permissions
         #[cfg(unix)]
         {
-            // Fixed: Removed unsafe libc call, use safe alternative
-            let current_uid = std::process::Command::new("id")
-                .arg("-u")
-                .output()
-                .ok()
-                .and_then(|output| String::from_utf8(output.stdout).ok())
-                .and_then(|s| s.trim().parse::<u32>().ok())
-                .unwrap_or(1000); // Default to non-root
-            
-            if current_uid == 0 {
+            if unsafe { libc::geteuid() } == 0 {
                 // Only run this check if we're root, otherwise it will fail
                 let metadata = fs::metadata(&test_file).unwrap();
                 assert_eq!(metadata.permissions().mode() & 0o777, 0o644);
@@ -846,19 +847,10 @@ mod tests {
         let non_existent = PathBuf::from("/non_existent_dir_for_test");
 
         let manager =
-            DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone(), non_existent.clone());
+            DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone());
 
         // This should fail on validate because we can't create the directory
-        // Fixed: Removed unsafe libc call
-        let current_uid = std::process::Command::new("id")
-            .arg("-u")
-            .output()
-            .ok()
-            .and_then(|output| String::from_utf8(output.stdout).ok())
-            .and_then(|s| s.trim().parse::<u32>().ok())
-            .unwrap_or(1000); // Default to non-root
-            
-        if cfg!(unix) && current_uid != 0 {
+        if cfg!(unix) && unsafe { libc::geteuid() } != 0 {
             // We expect this to fail if we're not root
             assert!(manager.validate_permissions().is_err());
         }
@@ -885,7 +877,7 @@ mod tests {
             assert!(user_logs.to_string_lossy().contains("OpenFrame\\Logs"));
         }
 
-        #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+        #[cfg(target_os = "linux")]
         {
             let user_logs = manager.user_logs_dir.unwrap();
             assert!(user_logs
@@ -899,9 +891,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Test health check
         assert!(manager.perform_health_check().is_ok());
@@ -911,16 +902,7 @@ mod tests {
         // Intentionally corrupt permissions to test fixing
         #[cfg(unix)]
         {
-            // Fixed: Removed unsafe libc call
-            let current_uid = std::process::Command::new("id")
-                .arg("-u")
-                .output()
-                .ok()
-                .and_then(|output| String::from_utf8(output.stdout).ok())
-                .and_then(|s| s.trim().parse::<u32>().ok())
-                .unwrap_or(1000); // Default to non-root
-                
-            if current_uid == 0 {
+            if unsafe { libc::geteuid() } == 0 {
                 // Only run this check if we're root, otherwise it will fail
                 use std::os::unix::fs::PermissionsExt;
                 let bad_perms = fs::Permissions::from_mode(0o700);
@@ -941,9 +923,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -960,7 +941,7 @@ mod tests {
         #[cfg(target_os = "macos")]
         assert_eq!(logs_dir, PathBuf::from("/Library/Logs/OpenFrame"));
 
-        #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+        #[cfg(target_os = "linux")]
         assert_eq!(logs_dir, PathBuf::from("/var/log/openframe"));
 
         #[cfg(target_os = "windows")]
@@ -981,7 +962,7 @@ mod tests {
             PathBuf::from("/Library/Application Support/OpenFrame")
         );
 
-        #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+        #[cfg(target_os = "linux")]
         assert_eq!(app_dir, PathBuf::from("/var/lib/openframe"));
 
         #[cfg(target_os = "windows")]
@@ -999,7 +980,7 @@ mod tests {
         let app_dir = temp_dir.path().join("app");
         let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir, app_dir, secured_dir.clone());
+        let manager = DirectoryManager::with_all_custom_dirs(logs_dir, app_dir, secured_dir.clone());
 
         // Test secured directory creation
         assert!(manager.ensure_directories().is_ok());
@@ -1008,16 +989,7 @@ mod tests {
         // Test secured directory permissions (only on Unix systems with root)
         #[cfg(unix)]
         {
-            // Fixed: Removed unsafe libc call
-            let current_uid = std::process::Command::new("id")
-                .arg("-u")
-                .output()
-                .ok()
-                .and_then(|output| String::from_utf8(output.stdout).ok())
-                .and_then(|s| s.trim().parse::<u32>().ok())
-                .unwrap_or(1000); // Default to non-root
-                
-            if current_uid == 0 {
+            if unsafe { libc::geteuid() } == 0 {
                 // Only run this check if we're root
                 let metadata = fs::metadata(&secured_dir).unwrap();
                 assert_eq!(metadata.permissions().mode() & 0o777, 0o700);
@@ -1035,7 +1007,7 @@ mod tests {
             PathBuf::from("/Library/Application Support/OpenFrame/secured")
         );
 
-        #[cfg(all(unix, not(target_os = "macos")))] // Fixed: Changed from target_os = "linux"
+        #[cfg(target_os = "linux")]
         assert_eq!(secured_dir, PathBuf::from("/var/lib/openframe/secured"));
 
         #[cfg(target_os = "windows")]

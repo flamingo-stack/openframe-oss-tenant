@@ -1,17 +1,15 @@
 use anyhow::{Context, Result};
 use plist::Dictionary;
+use serde_json;
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
 };
+use std::collections::HashMap;
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, info, warn};
-
-// Add the missing imports for Linux compilation
-#[cfg(all(unix, not(target_os = "macos")))]
-use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct ServiceConfig {
@@ -264,8 +262,7 @@ impl CrossPlatformServiceManager {
 
     // Platform-specific helpers
 
-    #[allow(unused_variables)]
-    fn add_platform_specific_env(&self, environment: &mut Vec<(String, String)>) {
+    fn add_platform_specific_env(&self, _environment: &mut Vec<(String, String)>) {
         #[cfg(target_os = "macos")]
         {
             // Add any macOS-specific environment variables
@@ -364,7 +361,7 @@ impl CrossPlatformServiceManager {
                 dict.insert("ExitTimeOut".into(), plist::Value::Integer(timeout.into()));
             } else {
                 // Add default ExitTimeOut of 10 seconds
-                dict.insert("ExitTimeOut".into(), plist::Value::Integer(10.into()));
+                dict.insert("ExitTimeOut".into(), 10.into());
             }
 
             // Add AbandonProcessGroup
@@ -398,11 +395,11 @@ impl CrossPlatformServiceManager {
                             ctx.contents = Some(plist_xml);
                         }
                         Err(e) => {
-                            warn!("Failed to convert plist XML to string: {}", e);
+                            warn!("Failed to convert plist XML to string: {:#}", e);
                         }
                     },
                     Err(e) => {
-                        warn!("Failed to serialize macOS service options to plist: {}", e);
+                        warn!("Failed to serialize macOS service options to plist: {:#}", e);
                     }
                 }
             }
@@ -420,31 +417,31 @@ impl CrossPlatformServiceManager {
 
             // Add stdout/stderr paths if configured
             if let Some(stdout_path) = &self.config.stdout_path {
-                advanced_options.insert("StandardOutput".to_string(), "file".to_string());
+                advanced_options.insert("StandardOutput", "file".to_string());
                 advanced_options.insert(
-                    "StandardOutputPath".to_string(),
+                    "StandardOutputPath",
                     stdout_path.to_string_lossy().to_string(),
                 );
             }
 
             if let Some(stderr_path) = &self.config.stderr_path {
-                advanced_options.insert("StandardError".to_string(), "file".to_string());
+                advanced_options.insert("StandardError", "file".to_string());
                 advanced_options.insert(
-                    "StandardErrorPath".to_string(),
+                    "StandardErrorPath",
                     stderr_path.to_string_lossy().to_string(),
                 );
             }
 
             // Add resource limits if configured
             if let Some(limit) = self.config.file_limit {
-                advanced_options.insert("LimitNOFILE".to_string(), limit.to_string());
+                advanced_options.insert("LimitNOFILE", limit.to_string());
             }
 
             // Handle restart settings
             if self.config.restart_on_crash {
-                advanced_options.insert("Restart".to_string(), "on-failure".to_string());
+                advanced_options.insert("Restart", "on-failure".to_string());
                 advanced_options.insert(
-                    "RestartSec".to_string(),
+                    "RestartSec",
                     self.config.restart_throttle_seconds.to_string(),
                 );
             }
@@ -457,7 +454,7 @@ impl CrossPlatformServiceManager {
                         ctx.contents = Some(json_string);
                     }
                     Err(e) => {
-                        warn!("Failed to serialize Linux service options: {}", e);
+                        warn!("Failed to serialize Linux service options: {:#}", e);
                     }
                 }
             }

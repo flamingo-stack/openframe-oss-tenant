@@ -1,4 +1,4 @@
-# Makefile for OpenFrame OSS Rust project 
+# Makefile for Rust project
 
 CARGO ?= cargo
 
@@ -22,7 +22,7 @@ clippy:
 lint: fmt-check clippy
 
 build:
-	$(CARGO) build --release --locked $(TARGET_FLAG)
+	$(CARGO) build --release --locked
 
 test: build
 	$(CARGO) test --release --locked
