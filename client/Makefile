@@ -1,4 +1,4 @@
-# Makefile for Rust project
+# Makefile for Rust project 
 
 CARGO ?= cargo
 
