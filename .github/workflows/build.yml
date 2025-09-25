@@ -240,7 +240,7 @@ jobs:
         include:
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-x64
+            artifact_name: openframe-oss-client-macos-universal
             cross: false
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -273,13 +273,20 @@ jobs:
       - name: Build client
         working-directory: client
         run: |
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            make build TARGET=x86_64-apple-darwin
+            make build TARGET=aarch64-apple-darwin
+            ls -la target/release/
+            lipo -create target/release/openframe* -output target/release/openframe-oss-client-macos-universal
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             make build
+          fi
 
       - name: Prepare Rust Artifacts
         shell: bash
         run: |
           mkdir -p artifacts
-          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
+          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
           # List what we're uploading
           ls -la artifacts/
 
