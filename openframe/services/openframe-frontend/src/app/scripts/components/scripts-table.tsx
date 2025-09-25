@@ -78,6 +78,7 @@ export function ScriptsTable() {
         { id: 'BASH', label: 'bash', value: 'BASH' },
         { id: 'POWERSHELL', label: 'powershell', value: 'POWERSHELL' },
         { id: 'PYTHON', label: 'python', value: 'PYTHON' },
+        { id: 'CMD', label: 'cmd', value: 'CMD' },
       ],
       renderCell: (script) => (
         <div className="flex flex-col justify-center w-40 shrink-0">

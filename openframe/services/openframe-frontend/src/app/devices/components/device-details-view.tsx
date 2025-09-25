@@ -38,6 +38,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const normalizedDevice = deviceDetails
 
+  const tacticalAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId
+    || normalizedDevice?.agent_id
+
   const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
     || normalizedDevice?.agent_id
 
@@ -144,7 +147,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         <ScriptsModal
           isOpen={isScriptsModalOpen}
           onClose={() => setIsScriptsModalOpen(false)}
-          deviceId={deviceId}
+          deviceId={tacticalAgentId || deviceId}
           device={normalizedDevice}
           onRunScripts={handleRunScripts}
         />        

@@ -29,7 +29,14 @@ interface EditScriptPageProps {
   scriptId: string | null
 }
 
-const SHELL_TYPES = ['bash', 'powershell', 'python', 'batch', 'shell']
+const SHELL_TYPES: { label: string, value: string }[] = [
+  { label: 'Powershell', value: 'powershell' },
+  { label: 'Batch', value: 'batch' },
+  { label: 'Python', value: 'python' },
+  { label: 'Shell', value: 'shell' },
+  { label: 'Nushell', value: 'nushell' },
+  { label: 'Deno', value: 'deno' },
+]
 const CATEGORIES = ['System Maintenance', 'Security', 'Network', 'Monitoring', 'Backup', 'Custom']
 
 export function EditScriptPage({ scriptId }: EditScriptPageProps) {
@@ -129,6 +136,14 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       const filteredArgs = scriptData.args.filter(arg => arg.name.trim() !== '')
       const filteredEnvVars = scriptData.env_vars.filter(envVar => envVar.name.trim() !== '')
 
+      const mapPlatformIdToTactical = (id: string) => {
+        const n = id.toLowerCase()
+        if (n.includes('win')) return 'windows'
+        if (n.includes('linux')) return 'linux'
+        if (n.includes('mac') || n.includes('darwin') || n.includes('osx')) return 'darwin'
+        return id
+      }
+
       const payload = {
         name: scriptData.name,
         shell: scriptData.type,
@@ -138,7 +153,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         run_as_user: scriptData.run_as_user,
         env_vars: filteredEnvVars.map(envVar => `${envVar.name}=${envVar.value}`),
         description: scriptData.description,
-        supported_platforms: scriptData.supported_platforms,
+        supported_platforms: Array.from(new Set(scriptData.supported_platforms.map(mapPlatformIdToTactical))),
         category: scriptData.category
       }
 
@@ -301,8 +316,8 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
                   <SelectValue placeholder="Select Shell Type"/>
                 </SelectTrigger>
                 <SelectContent>
-                  {SHELL_TYPES.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  {SHELL_TYPES.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
