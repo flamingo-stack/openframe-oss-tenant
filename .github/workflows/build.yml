@@ -244,7 +244,11 @@ jobs:
             cross: false
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: openframe-oss-client-windows-x64
+            artifact_name: openframe-oss-client-windows-x64.exe
+            cross: false
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x32.exe
             cross: false
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -278,11 +282,11 @@ jobs:
               mkdir -p build_targets
               rustup target list | grep installed | grep "$RUST_TARGET" || rustup target add "$RUST_TARGET"
               make build TARGET="$RUST_TARGET"
-              cp target/${RUST_TARGET}/release/openframe build_targets/openframe-${RUST_TARGET}
+              cp ./target/${RUST_TARGET}/release/openframe ./build_targets/openframe-${RUST_TARGET}
             done
-            ls -la build_targets/
-            mkdir -p artifacts
-            lipo -create build_targets/openframe* -output artifacts/openframe-oss-client-macos-universal
+            ls -la ./build_targets/
+            mkdir -p ../artifacts
+            lipo -create ./build_targets/openframe* -output ../artifacts/openframe-oss-client-macos-universal
           else
             make build
           fi
@@ -292,7 +296,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts
-          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
           # List what we're uploading
           ls -la artifacts/
 
