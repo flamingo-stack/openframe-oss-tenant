@@ -2,13 +2,11 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Table, 
-  StatusTag, 
-  SearchBar, 
+import {
+  Table,
+  StatusTag,
   Button,
-  ListPageContainer,
-  PageError,
+  ListPageLayout,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -266,36 +264,28 @@ export function LogsTable() {
     })
   }, [])
 
-  if (error) {
-    return <PageError message={error} />
-  }
 
   const headerActions = (
     <Button
       onClick={handleRefresh}
       leftIcon={<RefreshIcon size={20} />}
-      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
     >
       Refresh
     </Button>
   )
 
   return (
-    <ListPageContainer
+    <ListPageLayout
       title="Logs"
       headerActions={headerActions}
+      searchPlaceholder="Search for Logs"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
       background="default"
       padding="sm"
     >
-
-      {/* Search */}
-      <SearchBar
-        placeholder="Search for Logs"
-        onSubmit={setSearchTerm}
-        value={searchTerm}
-        className="w-full"
-      />
-
       {/* Table */}
       <Table
         data={transformedLogs}
@@ -311,7 +301,7 @@ export function LogsTable() {
         mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
       />
-      
+
       {/* Log Info Modal */}
       <LogInfoModal
         isOpen={!!selectedLog}
@@ -319,6 +309,6 @@ export function LogsTable() {
         log={selectedLog}
         fetchLogDetails={fetchLogDetails}
       />
-    </ListPageContainer>
+    </ListPageLayout>
   )
 }

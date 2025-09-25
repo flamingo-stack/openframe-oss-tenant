@@ -4,10 +4,8 @@ import React, { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
-  SearchBar,
   Button,
-  ListPageContainer,
-  PageError
+  ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
@@ -70,42 +68,34 @@ export function DevicesView() {
     setFilters(newFilters)
   }, [])
 
-  if (error) {
-    return <PageError message={error} />
-  }
 
   const viewToggle = (
-    <div className="flex items-center gap-2">
+    <>
       <ViewToggle
         value={viewMode}
         onValueChange={setViewMode}
+        className="bg-ods-card border border-ods-border h-12"
       />
-
       <Button
         onClick={() => router.push('/devices/new')}
         leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay/>}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
       >
         Add Device
       </Button>
-    </div>
+    </>
   )
 
   return (
-    <ListPageContainer
+    <ListPageLayout
       title="Devices"
       headerActions={viewToggle}
+      searchPlaceholder="Search for Devices"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
       padding="sm"
     >
-
-      {/* Search */}
-      <SearchBar
-        placeholder="Search for Devices"
-        onSubmit={setSearchTerm}
-        value={searchTerm}
-        className="w-full"
-      />
-
       {/* Conditional View Rendering */}
       {viewMode === 'table' ? (
         // Table View
@@ -132,6 +122,6 @@ export function DevicesView() {
           onDeviceDetails={handleDeviceDetails}
         />
       )}
-    </ListPageContainer>
+    </ListPageLayout>
   )
 }
