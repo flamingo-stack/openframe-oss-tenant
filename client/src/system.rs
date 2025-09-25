@@ -55,7 +55,7 @@ impl SystemInfo {
             memory_used,
             disk_total,
             disk_used,
-            uptime: sys.uptime() as u64,
+            uptime: 0, // TODO: remove as deprecated class
         })
     }
 }
