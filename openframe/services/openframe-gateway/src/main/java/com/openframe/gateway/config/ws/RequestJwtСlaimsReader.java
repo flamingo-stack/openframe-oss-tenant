@@ -31,7 +31,7 @@ public class RequestJwtСlaimsReader {
             throw new IllegalStateException("No bearer token found");
         }
 
-        String jwtClaimsPart = authorization.substring(0, authorization.lastIndexOf('.') + 1);
+        String jwtClaimsPart = authorization.substring(7, authorization.lastIndexOf('.') + 1);
         return Jwts.parserBuilder()
                 .build()
                 .parseClaimsJwt(jwtClaimsPart)

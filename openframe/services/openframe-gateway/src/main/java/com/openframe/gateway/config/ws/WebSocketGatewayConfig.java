@@ -46,10 +46,10 @@ public class WebSocketGatewayConfig {
     @Bean
     @Primary
     public WebSocketService webSocketServiceDecorator(
-            JwtService jwtService,
+            RequestJwtСlaimsReader requestJwtСlaimsReader,
             WebSocketService defaultWebSocketService
     ) {
-        return new WebSocketServiceSecurityDecorator(defaultWebSocketService, jwtService);
+        return new WebSocketServiceSecurityDecorator(defaultWebSocketService, requestJwtСlaimsReader);
     }
 
 
