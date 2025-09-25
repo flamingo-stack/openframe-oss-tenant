@@ -2,14 +2,13 @@
 
 import React, { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Table, 
-  SearchBar, 
-  Button
+import {
+  Table,
+  Button,
+  ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
-import { PageError } from '@flamingo/ui-kit/components/ui'
 import { usePolicies } from '../../hooks/use-policies'
 import { Policy } from '../../types/policies.types'
 import { getPolicyTableColumns, getPolicyTableRowActions } from '../policies-table-columns'
@@ -55,43 +54,34 @@ export function Policies() {
     router.push('/policies-and-queries/new-policy')
   }, [router])
 
-  if (error) {
-    return <PageError message={error} />
-  }
+  const headerActions = (
+    <>
+      <Button
+        onClick={handleRefresh}
+        leftIcon={<RefreshIcon size={20} />}
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+      >
+        Refresh
+      </Button>
+      <Button
+        onClick={handleCreatePolicy}
+        className="bg-ods-accent hover:bg-ods-accent-hover text-text-on-accent px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+      >
+        New Policy
+      </Button>
+    </>
+  )
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* Header for Policies */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-          Policies
-        </h1>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRefresh}
-            leftIcon={<RefreshIcon size={20} />}
-            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-          >
-            Refresh
-          </Button>
-          <Button
-            onClick={handleCreatePolicy}
-            className="bg-ods-accent hover:bg-ods-accent-hover text-text-on-accent px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-          >
-            New Policy
-          </Button>
-        </div>
-      </div>
-
-      {/* Search for Policies */}
-      <SearchBar
-        placeholder="Search for Policy"
-        onSubmit={setSearchTerm}
-        value={searchTerm}
-        className="w-full"
-      />
-
-      {/* Policies Table */}
+    <ListPageLayout
+      title="Policies"
+      headerActions={headerActions}
+      searchPlaceholder="Search for Policy"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
+      padding="sm"
+    >
       <Table
         data={policies}
         columns={columns}
@@ -105,7 +95,7 @@ export function Policies() {
         mobileColumns={['name', 'status', 'critical']}
         rowClassName="mb-1"
       />
-    </div>
+    </ListPageLayout>
   )
 }
 

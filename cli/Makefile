@@ -12,8 +12,10 @@ all: build
 ## Build the CLI binary
 build:
 	@echo "Building $(BINARY_NAME)..."
-	@go build -o $(BINARY_NAME) .
-	@echo "Built ./$(BINARY_NAME)"
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $(BINARY_NAME)-linux-amd64 .
+	@GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o $(BINARY_NAME) .
+	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o $(BINARY_NAME)-windows-amd64.exe .
+	@echo "Built ./$(BINARY_NAME)-linux-amd64 ./$(BINARY_NAME) and ./$(BINARY_NAME)-windows-amd64.exe"
 
 ## Run unit tests
 test-unit:

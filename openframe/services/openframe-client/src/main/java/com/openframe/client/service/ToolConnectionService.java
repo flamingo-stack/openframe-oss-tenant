@@ -1,11 +1,9 @@
 package com.openframe.client.service;
 
-import com.openframe.client.dto.agent.AgentToolCollectionResponse;
-import com.openframe.client.dto.agent.ToolConnectionResponse;
-import com.openframe.client.exception.ConnectionNotFoundException;
 import com.openframe.client.exception.InvalidAgentIdException;
 import com.openframe.client.exception.InvalidToolTypeException;
 import com.openframe.client.exception.MachineNotFoundException;
+import com.openframe.client.service.agentregistration.transformer.ToolAgentIdTransformerService;
 import com.openframe.data.document.tool.ConnectionStatus;
 import com.openframe.data.document.tool.ToolConnection;
 import com.openframe.data.document.tool.ToolType;
@@ -17,8 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,45 +23,18 @@ public class ToolConnectionService {
 
     private final ToolConnectionRepository toolConnectionRepository;
     private final MachineRepository machineRepository;
-
-    public List<ToolConnectionResponse> getAllToolConnections() {
-        return toolConnectionRepository.findAll().stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
-
-    public List<ToolConnectionResponse> getToolConnectionsByMachineId(String openframeAgentId) {
-        validateAgentId(openframeAgentId);
-        return toolConnectionRepository.findByMachineId(openframeAgentId).stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
-
-    public AgentToolCollectionResponse getAgentToolCollection(String openframeAgentId) {
-        validateAgentId(openframeAgentId);
-        List<ToolConnection> connections = toolConnectionRepository.findByMachineId(openframeAgentId);
-        List<AgentToolCollectionResponse.ToolInfo> tools = connections.stream()
-                .map(conn -> new AgentToolCollectionResponse.ToolInfo(
-                        conn.getToolType().toString().toLowerCase(),
-                        conn.getAgentToolId()))
-                .collect(Collectors.toList());
-
-        return new AgentToolCollectionResponse(openframeAgentId, tools);
-    }
-
-    public ToolConnectionResponse getToolConnectionByMachineIdAndToolType(String openframeAgentId, String agentToolType) {
-        validateAgentId(openframeAgentId);
-        validateToolType(agentToolType);
-
-        ToolType toolType = getToolTypeFromString(agentToolType);
-        return toolConnectionRepository.findByMachineIdAndToolType(openframeAgentId, toolType)
-                .map(this::convertToResponse)
-                .orElseThrow(() -> new ConnectionNotFoundException("Connection not found for machine " + openframeAgentId + " and tool type " + agentToolType));
-    }
+    private final ToolAgentIdTransformerService toolAgentIdTransformerService;
 
     @Transactional
-    public void addToolConnection(String openframeAgentId, String toolTypeValue, String agentId) {
+    public void addToolConnection(String openframeAgentId, String toolTypeValue, String agentToolId) {
+        validateAgentId(openframeAgentId);
+        validateToolType(toolTypeValue);
+        validateAgentToolId(agentToolId);
+        validateMachineExists(openframeAgentId);
+
         ToolType toolType = getToolTypeFromString(toolTypeValue);
+        
+        log.info("Tool connection processing: machineId={}, toolType={}, agentToolId={}", openframeAgentId, toolType, agentToolId);
 
         toolConnectionRepository
                 .findByMachineIdAndToolType(openframeAgentId, toolType)
@@ -74,9 +43,9 @@ public class ToolConnectionService {
                                 toolConnection,
                                 openframeAgentId,
                                 toolType,
-                                agentId
+                                agentToolId
                         ),
-                        () -> addNewToolConnection(openframeAgentId, toolType, agentId)
+                        () -> addNewToolConnection(openframeAgentId, toolType, agentToolId)
                 );
     }
 
@@ -100,49 +69,20 @@ public class ToolConnectionService {
         }
     }
 
-    private void addNewToolConnection(String openframeAgentId, ToolType toolType, String agentId) {
+    private void addNewToolConnection(String openframeAgentId, ToolType toolType, String agentToolId) {
         ToolConnection connection = new ToolConnection();
         connection.setMachineId(openframeAgentId);
         connection.setToolType(toolType);
-        connection.setAgentToolId(agentId);
+        connection.setAgentToolId(toolAgentIdTransformerService.transform(toolType, agentToolId));
         connection.setStatus(ConnectionStatus.CONNECTED);
         connection.setConnectedAt(Instant.now());
         toolConnectionRepository.save(connection);
 
-        log.info("Saved tool connection with machineId {} tool {} agentToolId {}", openframeAgentId, toolType, agentId);
-    }
-
-    @Transactional
-    public ToolConnectionResponse updateToolConnection(String openframeAgentId, String agentToolType, String agentId) {
-        validateAgentId(openframeAgentId);
-        validateToolType(agentToolType);
-        validateAgentToolId(agentId);
-
-        ToolType toolType = getToolTypeFromString(agentToolType);
-        ToolConnection connection = toolConnectionRepository.findByMachineIdAndToolType(openframeAgentId, toolType)
-                .orElseThrow(() -> new ConnectionNotFoundException("Connection not found for machine " + openframeAgentId + " and tool type " + agentToolType));
-
-        connection.setAgentToolId(agentId);
-        connection.setLastSyncAt(Instant.now());
-        return convertToResponse(toolConnectionRepository.save(connection));
-    }
-
-    @Transactional
-    public void deleteToolConnection(String openframeAgentId, String agentToolType) {
-        validateAgentId(openframeAgentId);
-        validateToolType(agentToolType);
-
-        ToolType toolType = getToolTypeFromString(agentToolType);
-        ToolConnection connection = toolConnectionRepository.findByMachineIdAndToolType(openframeAgentId, toolType)
-                .orElseThrow(() -> new ConnectionNotFoundException("Connection not found for machine " + openframeAgentId + " and tool type " + agentToolType));
-
-        connection.setStatus(ConnectionStatus.DISCONNECTED);
-        connection.setDisconnectedAt(Instant.now());
-        toolConnectionRepository.save(connection);
+        log.info("Saved tool connection with machineId {} tool {} agentToolId {}", openframeAgentId, toolType, agentToolId);
     }
 
     private void validateMachineExists(String machineId) {
-        if (!machineRepository.findByMachineId(machineId).isPresent()) {
+        if (machineRepository.findByMachineId(machineId).isEmpty()) {
             throw new MachineNotFoundException("Machine not found: " + machineId);
         }
     }
@@ -173,12 +113,4 @@ public class ToolConnectionService {
         }
     }
 
-    private ToolConnectionResponse convertToResponse(ToolConnection connection) {
-        return new ToolConnectionResponse(
-                connection.getMachineId(),
-                connection.getToolType().toString().toLowerCase(),
-                connection.getAgentToolId(),
-                connection.getStatus().toString()
-        );
-    }
 }

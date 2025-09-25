@@ -1,6 +1,8 @@
 package chart
 
 import (
+	"fmt"
+
 	"github.com/flamingo/openframe/internal/chart/services"
 	"github.com/flamingo/openframe/internal/chart/utils/types"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
@@ -22,10 +24,11 @@ The cluster must exist before running this command.
 Certificates are automatically regenerated during installation.
 
 Examples:
-  openframe chart install                                    # Install with defaults
+  openframe chart install                                    # Interactive mode (default)
   openframe chart install my-cluster                        # Install on specific cluster
-  openframe chart install --github-branch develop          # Use develop branch
-  openframe chart install --cert-dir /path/to/certs        # Custom cert directory`,
+  openframe chart install --deployment-mode=oss-tenant     # Skip deployment selection
+  openframe chart install --deployment-mode=saas-shared --non-interactive  # Full CI/CD mode
+  openframe chart install --github-branch develop          # Use develop branch`,
 		RunE:          runInstallCommand,
 		SilenceErrors: true, // Errors are handled by our custom error handler
 		SilenceUsage:  true, // Don't show usage on errors
@@ -52,13 +55,15 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 
 	// Use common installation function
 	req := types.InstallationRequest{
-		Args:         args,
-		Force:        flags.Force,
-		DryRun:       flags.DryRun,
-		Verbose:      verbose,
-		GitHubRepo:   flags.GitHubRepo,
-		GitHubBranch: flags.GitHubBranch,
-		CertDir:      flags.CertDir,
+		Args:           args,
+		Force:          flags.Force,
+		DryRun:         flags.DryRun,
+		Verbose:        verbose,
+		GitHubRepo:     flags.GitHubRepo,
+		GitHubBranch:   flags.GitHubBranch,
+		CertDir:        flags.CertDir,
+		DeploymentMode: flags.DeploymentMode,
+		NonInteractive: flags.NonInteractive,
 	}
 
 	err = services.InstallChartsWithConfig(req)
@@ -71,11 +76,13 @@ func runInstallCommand(cmd *cobra.Command, args []string) error {
 
 // InstallFlags contains all flags needed for chart installation
 type InstallFlags struct {
-	Force        bool
-	DryRun       bool
-	GitHubRepo   string
-	GitHubBranch string
-	CertDir      string
+	Force          bool
+	DryRun         bool
+	GitHubRepo     string
+	GitHubBranch   string
+	CertDir        string
+	DeploymentMode string
+	NonInteractive bool
 }
 
 // extractInstallFlags extracts install flags from cobra command
@@ -101,6 +108,34 @@ func extractInstallFlags(cmd *cobra.Command) (*InstallFlags, error) {
 
 	if flags.CertDir, err = cmd.Flags().GetString("cert-dir"); err != nil {
 		return nil, err
+	}
+
+	if flags.DeploymentMode, err = cmd.Flags().GetString("deployment-mode"); err != nil {
+		return nil, err
+	}
+
+	if flags.NonInteractive, err = cmd.Flags().GetBool("non-interactive"); err != nil {
+		return nil, err
+	}
+
+	// Validate deployment mode
+	if flags.DeploymentMode != "" {
+		validModes := []string{"oss-tenant", "saas-tenant", "saas-shared"}
+		isValid := false
+		for _, mode := range validModes {
+			if flags.DeploymentMode == mode {
+				isValid = true
+				break
+			}
+		}
+		if !isValid {
+			return nil, fmt.Errorf("invalid deployment mode: %s. Valid options: oss-tenant, saas-tenant, saas-shared", flags.DeploymentMode)
+		}
+	}
+
+	// Validate non-interactive requires deployment mode
+	if flags.NonInteractive && flags.DeploymentMode == "" {
+		return nil, fmt.Errorf("--deployment-mode is required when using --non-interactive")
 	}
 
 	return flags, nil
@@ -131,4 +166,6 @@ func addInstallFlags(cmd *cobra.Command) {
 	cmd.Flags().String("github-repo", "https://github.com/flamingo-stack/openframe-oss-tenant", "GitHub repository URL")
 	cmd.Flags().String("github-branch", "main", "GitHub repository branch")
 	cmd.Flags().String("cert-dir", "", "Certificate directory (auto-detected if not provided)")
+	cmd.Flags().String("deployment-mode", "", "Deployment mode: oss-tenant, saas-tenant, saas-shared (skips deployment selection)")
+	cmd.Flags().Bool("non-interactive", false, "Skip all prompts, use existing helm-values.yaml")
 }

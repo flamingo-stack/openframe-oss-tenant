@@ -1,4 +1,4 @@
-package com.openframe.client.service;
+package com.openframe.client.service.agentregistration;
 
 import org.springframework.stereotype.Component;
 

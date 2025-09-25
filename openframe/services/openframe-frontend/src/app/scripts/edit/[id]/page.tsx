@@ -1,23 +1,16 @@
+'use client'
+
 import { AppLayout } from '../../../components/app-layout'
 import { EditScriptPage } from '../../components/edit-script-page'
-import { FormLoader } from '@flamingo/ui-kit'
+import { useParams } from 'next/navigation'
 
-interface EditScriptPageProps {
-  params: Promise<{
-    id?: string
-  }>
-}
-
-export async function generateStaticParams() {
-  // Return empty array for static export - pages will be generated on demand
-  return []
-}
-
-export default async function EditScriptPageWrapper({ params }: EditScriptPageProps) {
-  const { id } = await params
+export default function EditScriptPageWrapper() {
+  const params = useParams<{ id?: string }>()
+  const rawId = params?.id
+  const id = rawId === 'new' ? null : (typeof rawId === 'string' ? rawId : null)
   return (
     <AppLayout>
-      <EditScriptPage scriptId={id || null} />
+      <EditScriptPage scriptId={typeof id === 'string' ? id : null} />
     </AppLayout>
   )
 }

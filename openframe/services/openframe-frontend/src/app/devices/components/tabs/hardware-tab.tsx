@@ -85,7 +85,6 @@ export function HardwareTab({ device }: HardwareTabProps) {
     }))
   }
 
-  const physicalDisks = parsePhysicalDisks(device.physical_disks || [])
   const cpuModels = parseCpuModel(device.cpu_model || [])
   const diskData = processDiskData(device.disks || [])
 

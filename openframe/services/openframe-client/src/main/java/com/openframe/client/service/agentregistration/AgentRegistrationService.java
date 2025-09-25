@@ -2,7 +2,6 @@ package com.openframe.client.service.agentregistration;
 
 import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.client.dto.agent.AgentRegistrationResponse;
-import com.openframe.client.service.AgentSecretGenerator;
 import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.data.document.device.DeviceStatus;
 import com.openframe.data.document.device.Machine;

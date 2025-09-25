@@ -85,7 +85,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: '**/pom.xml'  # Simplified pattern
+          cache-dependency-path: '**/pom.xml'
           check-latest: true
 
       - name: Build with Maven
@@ -115,7 +115,7 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-          compression-level: 6  # Balanced compression
+          compression-level: 6
 
   build_images:
     name: "Build image: ${{ matrix.name }}"
@@ -163,7 +163,6 @@ jobs:
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
-      # Configure Docker with optimizations
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
@@ -280,14 +279,17 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-x64
+            target: aarch64-apple-darwin
+            artifact_name: openframe-oss-client-macos-universal
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64.exe
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x32.exe
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: openframe-oss-client-linux-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
          
     steps:
       - name: Checkout

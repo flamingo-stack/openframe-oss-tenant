@@ -13,6 +13,21 @@ export interface DeviceTag {
   __typename?: string
 }
 
+export type ToolType = 'MESHCENTRAL' | 'TACTICAL_RMM' | 'FLEET_MDM'
+
+export interface ToolConnection {
+  id: string
+  machineId: string
+  toolType: ToolType
+  agentToolId: string
+  status: string
+  metadata?: any
+  connectedAt?: string
+  lastSyncAt?: string
+  disconnectedAt?: string
+  __typename?: string
+}
+
 export interface Device {
   // Core tactical-rmm fields
   agent_id: string
@@ -88,6 +103,7 @@ export interface Device {
   agentVersion?: string
   serialNumber?: string
   totalRam?: string
+  toolConnections?: ToolConnection[]
 }
 
 // Additional types for device filtering
@@ -120,4 +136,80 @@ export interface DeviceFilterInput {
   osTypes?: string[]
   organizationIds?: string[]
   tags?: string[]
+}
+
+export interface GraphQLResponse<T> {
+  data?: T
+  errors?: Array<{
+    message: string
+    extensions?: any
+  }>
+}
+
+export type DevicesGraphQLNode = {
+  id: string
+  machineId?: string
+  hostname: string
+  displayName?: string
+  ip?: string
+  macAddress?: string
+  osUuid?: string
+  agentVersion?: string
+  status: string
+  lastSeen?: string
+  organizationId?: string
+  serialNumber?: string
+  manufacturer?: string
+  model?: string
+  type?: string
+  osType?: string
+  osVersion?: string
+  osBuild?: string
+  timezone?: string
+  registeredAt?: string
+  updatedAt?: string
+  tags?: Array<{
+    id: string
+    name: string
+    description?: string
+    color?: string
+    organizationId: string
+    createdAt: string
+    createdBy: string
+  }>
+  toolConnections?: ToolConnection[]
+}
+
+export type DeviceGraphQLNode = {
+  id: string
+  machineId: string
+  hostname: string
+  displayName?: string
+  ip?: string
+  macAddress?: string
+  osUuid?: string
+  agentVersion?: string
+  status: string
+  lastSeen?: string
+  organizationId?: string
+  serialNumber?: string
+  manufacturer?: string
+  model?: string
+  type?: string
+  osType?: string
+  osVersion?: string
+  osBuild?: string
+  timezone?: string
+  registeredAt?: string
+  updatedAt?: string
+  tags?: Array<{
+    id: string
+    name: string
+    description?: string
+    color?: string
+    organizationId: string
+    createdAt: string
+    createdBy: string
+  }>
+  toolConnections?: ToolConnection[]
 }
