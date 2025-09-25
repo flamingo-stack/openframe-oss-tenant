@@ -16,6 +16,10 @@ public class ToolAgentFileController {
     //  Currently we return hardcoded content for testing purposes only
     @GetMapping
     public byte[] getToolAgentFile(@PathVariable String assetId) {
+        if (assetId.contains("application")) {
+            throw new IllegalArgumentException("No asset available");
+        }
+
         try (InputStream stream = ToolAgentFileController.class.getResourceAsStream("/" + assetId)) {
             if (stream == null) {
                 throw new RuntimeException("No content");

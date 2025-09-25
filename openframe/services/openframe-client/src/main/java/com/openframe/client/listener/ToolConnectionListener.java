@@ -2,6 +2,7 @@ package com.openframe.client.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.client.service.ToolConnectionService;
+import com.openframe.client.service.agentregistration.transformer.ToolAgentIdTransformerService;
 import com.openframe.core.exception.NatsException;
 import com.openframe.data.model.nats.ToolConnectionMessage;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class ToolConnectionListener {
 
     private final ObjectMapper objectMapper;
     private final ToolConnectionService toolConnectionService;
+    private final ToolAgentIdTransformerService toolAgentIdTransformerService;
 
     // TODO: idempotent id of tool connection
     @Bean

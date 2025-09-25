@@ -157,7 +157,7 @@ impl ToolConnectionProcessingManager {
                 info!("Running...");
                 // Execute command with a 2-second timeout and capture output
                 let command_future = Command::new(&command_path).args(&processed_args).output();
-                let output = match timeout(Duration::from_secs(2), command_future).await {
+                let output = match timeout(Duration::from_secs(15), command_future).await {
                     // Command finished within timeout
                     Ok(Ok(out)) => {
                         info!("Command completed successfully: {}", String::from_utf8_lossy(&out.stdout));
@@ -206,6 +206,8 @@ impl ToolConnectionProcessingManager {
                                     published: true,
                                 }).await {
                                     error!(tool_id = %tool.tool_id, error = %e, "Failed to save tool connection record");
+                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                    continue;
                                 }
 
                                 info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");

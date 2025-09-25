@@ -134,7 +134,8 @@ export function useAuth() {
     
     // Skip auth checks when on auth pages UNLESS we just returned from OAuth
     const isAuthPage = pathname?.startsWith('/auth')
-    if (isAuthPage && !hasOAuthCallback) {
+    const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
+    if (isAuthPage && isDevTicketEnabled && !hasOAuthCallback) {
       console.log('🔐 [Auth] Skipping auth check on auth page:', pathname)
       return
     }
