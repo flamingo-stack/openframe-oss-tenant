@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/update-gha-pipelines]
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -28,6 +28,11 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
+  # Cache optimization
+  MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
 
 # =============================================================================
 # JOBS
@@ -56,6 +61,10 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
+      - name: Skip if no changes
+        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
+        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
+
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -99,6 +108,7 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
+          compression-level: 6
 
   build_images:
     name: "Build: ${{ matrix.name }}"
@@ -110,6 +120,10 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
+      - name: Skip if no changes
+        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
+        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
+
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -181,6 +195,7 @@ jobs:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
           provenance: false
+          sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -202,7 +217,12 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+          exclude-tags: |
+            latest
+            test-*
+            ${{ needs.changes.outputs.commit_sha }}
+            ${{ needs.changes.outputs.timestamp_tag }}
+          keep-last: 10
 
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
@@ -219,15 +239,23 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-x64
+            target: aarch64-apple-darwin
+            artifact_name: openframe-oss-client-macos-universal
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64.exe
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x32.exe
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: openframe-oss-client-linux-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
-         
+#          # Add ARM64 builds
+#          - os: ubuntu-latest
+#            target: aarch64-unknown-linux-gnu
+#            artifact_name: openframe-oss-client-linux-arm64
+#            cross: true
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -245,15 +273,48 @@ jobs:
       - name: Build client
         working-directory: client
         run: |
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            for RUST_TARGET in x86_64-apple-darwin aarch64-apple-darwin; do
+              mkdir -p build_targets
+              rustup target list | grep installed | grep "$RUST_TARGET" || rustup target add "$RUST_TARGET"
+              make build TARGET="$RUST_TARGET"
+              cp ./target/${RUST_TARGET}/release/openframe ./build_targets/openframe-${RUST_TARGET}
+            done
+            ls -la ./build_targets/
+            mkdir -p ../artifacts
+            lipo -create ./build_targets/openframe* -output ../artifacts/openframe-oss-client-macos-universal
+          else
             make build
+          fi
+
+      - name: Prepare Rust Artifacts
+        if: "!(runner.os == 'macOS')"
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
+          # List what we're uploading
+          ls -la artifacts/
+
+      - name: Sign MacOS package
+        if: runner.os == 'macOS'
+        uses: ./.github/steps/sign-macos-package
+        with:
+          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
+          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+          binary_name: ${{ matrix.artifact_name }}
+          app_name: OpenFrameOSSClient
 
       - name: Upload client artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-            client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+            artifacts/
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
