@@ -143,5 +143,4 @@ public class GatewaySecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 }
