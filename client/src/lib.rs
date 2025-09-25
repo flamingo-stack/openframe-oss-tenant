@@ -300,13 +300,13 @@ impl Client {
         self.nats_connection_manager.connect().await?;
 
         // Start tool installation message listener in background
-        self.tool_installation_message_listener.start().await?;
+        // self.tool_installation_message_listener.start().await?;
 
         // Start tool run manager
         self.tool_run_manager.run().await?;
 
         // Start tool connection processing manager
-        self.tool_connection_processing_manager.run().await?;
+        // self.tool_connection_processing_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;
