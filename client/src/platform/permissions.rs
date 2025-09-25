@@ -10,8 +10,6 @@ use tracing::{error, info, warn};
 #[cfg(unix)]
 use libc;
 #[cfg(target_os = "windows")]
-use winapi::um::securitybaseapi::IsUserAnAdmin;
-#[cfg(target_os = "windows")]
 use winapi::um::shellapi::ShellExecuteW;
 #[cfg(target_os = "windows")]
 use winapi::um::winuser::SW_NORMAL;
@@ -184,8 +182,8 @@ impl PermissionUtils {
 
         #[cfg(target_os = "windows")]
         {
-            // On Windows, use the IsUserAnAdmin function
-            unsafe { IsUserAnAdmin() != 0 }
+            // TODO: implement proper admin check on Windows; returning false for now
+            false
         }
 
         #[cfg(all(not(unix), not(target_os = "windows")))]

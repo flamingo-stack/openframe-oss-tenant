@@ -55,7 +55,7 @@ impl SystemInfo {
             memory_used,
             disk_total,
             disk_used,
-            uptime: sys_info::boottime()?.tv_sec as u64,
+            uptime: sys.uptime() as u64,
         })
     }
 }
