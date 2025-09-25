@@ -30,10 +30,10 @@
             <artifactId>openframe-data</artifactId>
         </dependency>
         <!-- Fleet MDM SDK -->
-         <dependency>
-             <groupId>com.openframe</groupId>
-             <artifactId>fleetmdm</artifactId>
-         </dependency>
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>fleetmdm</artifactId>
+        </dependency>
 
         <!-- Spring Cloud -->
         <dependency>
