@@ -239,7 +239,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: universal-apple-darwin # as fallback option to complete matrix, actually doesn't used
+            target: aarch64-apple-darwin
             artifact_name: openframe-oss-client-macos-universal
           - os: windows-latest
             target: x86_64-pc-windows-msvc
