@@ -1,6 +1,4 @@
-use std::net::TcpStream;
-use std::panic;
-use tracing::{info, warn, debug};
+use tracing::{info, warn};
 
 #[derive(Clone)]
 pub struct DeviceDataFetcher;
@@ -17,7 +15,7 @@ impl DeviceDataFetcher {
                 Some(hostname_str)
             }
             Err(e) => {
-                warn!("Failed to get hostname: {:#}", e);
+                warn!("Failed to get hostname: {}", e);
                 None
             }
         }

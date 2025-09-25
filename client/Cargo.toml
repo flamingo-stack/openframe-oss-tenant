@@ -52,14 +52,10 @@ service-manager = "0.8"
 plist = "1.7.1"
 # System information collection dependencies
 hostname = "0.3"
-bytes = "1.10.1"
-async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "feature/openframe-auth-callback", features = ["websockets"] }
-rustls-pemfile = "1.0"
-regex = "1.11.1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
-winapi = { version = "0.3", features = ["winuser", "shellapi", "securitybaseapi", "errhandlingapi", "winerror"] }
+winapi = { version = "0.3", features = ["winuser", "shellapi", "securitybaseapi", "winerror", "shlobj", "sysinfoapi", "errhandlingapi", "handleapi", "processthreadsapi", "winnt"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

@@ -1,9 +1,7 @@
 use anyhow::Result;
 use serde::Serialize;
-use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
-use tracing::{error, info};
 
 const BATCH_SIZE: usize = 100;
 const BATCH_TIMEOUT: Duration = Duration::from_secs(30);
@@ -61,7 +59,7 @@ impl LogShipper {
                     // Ship batch if it reaches max size
                     if batch.len() >= BATCH_SIZE {
                         if let Err(e) = Self::send_batch(&client, &endpoint, &agent_id, batch.clone()).await {
-                            tracing::error!("Failed to ship log batch: {:#}", e);
+                            tracing::error!("Failed to ship log batch: {}", e);
                         }
                         batch.clear();
                     }
@@ -70,7 +68,7 @@ impl LogShipper {
                     // Ship current batch if we have any logs
                     if !batch.is_empty() {
                         if let Err(e) = Self::send_batch(&client, &endpoint, &agent_id, batch.clone()).await {
-                            tracing::error!("Failed to ship log batch: {:#}", e);
+                            tracing::error!("Failed to ship log batch: {}", e);
                         }
                         batch.clear();
                     }
