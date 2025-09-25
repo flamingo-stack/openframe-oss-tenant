@@ -147,7 +147,9 @@ spec:
                   "--openframe-token-path", "${client.openframeTokenPath}"
                 ],
                 "agentToolIdCommandArgs": [
-                    "uuid"
+                    "uuid",
+                    "--openframe-mode",
+                    "--openframe-osquery-path", "${client.assetPath.osqueryd}"
                 ],
                 "assets": [
                   {
