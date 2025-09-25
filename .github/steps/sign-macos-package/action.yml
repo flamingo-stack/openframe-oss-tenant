@@ -22,11 +22,9 @@ inputs:
   binary_name:
     description: 'Name of built MacOS binary (e.g. "rmmagent-mac-universal")'
     required: true
-    default: ""
   app_name:
     description: 'Name of MacOS App targets to add (e.g. "RMMAgent")'
     required: true
-    default: ""
 
 runs:
   using: "composite"
