@@ -2,14 +2,13 @@
 
 import React, { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Table, 
-  SearchBar, 
-  Button
+import {
+  Table,
+  Button,
+  ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
-import { PageError } from '@flamingo/ui-kit/components/ui'
 import { useDialogs } from '../../hooks/use-dialogs'
 import { Dialog } from '../../types/dialog.types'
 import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table-columns'
@@ -51,37 +50,26 @@ export function ArchivedChats() {
     setTableFilters(columnFilters)
   }, [])
 
-  if (error) {
-    return <PageError message={error} />
-  }
+  const headerActions = (
+    <Button
+      onClick={handleRefresh}
+      leftIcon={<RefreshIcon size={20} />}
+      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+    >
+      Refresh
+    </Button>
+  )
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* Header for Archived Chats */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-          Archived Chats
-        </h1>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRefresh}
-            leftIcon={<RefreshIcon size={20} />}
-            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      {/* Search for Archived Chats */}
-      <SearchBar
-        placeholder="Search for Chat"
-        onSubmit={setSearchTerm}
-        value={searchTerm}
-        className="w-full"
-      />
-
-      {/* Archived Chats Table */}
+    <ListPageLayout
+      title="Archived Chats"
+      headerActions={headerActions}
+      searchPlaceholder="Search for Chat"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
+      padding="sm"
+    >
       <Table
         data={dialogs}
         columns={columns}
@@ -95,6 +83,6 @@ export function ArchivedChats() {
         mobileColumns={['topic', 'status', 'countdown']}
         rowClassName="mb-1"
       />
-    </div>
+    </ListPageLayout>
   )
 }

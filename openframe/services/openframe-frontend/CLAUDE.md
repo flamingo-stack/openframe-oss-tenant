@@ -1,925 +1,408 @@
-# CLAUDE.md
+# OpenFrame Frontend - Claude Development Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the OpenFrame Frontend service.
+**Next.js 15 + React 19 + TypeScript 5.8 + @flamingo/ui-kit (328+ components)**
 
-## Project Overview
+> Comprehensive instructions for Claude when working with the OpenFrame Frontend service.
 
-OpenFrame Frontend is a **pure Next.js client-side application** with multi-platform architecture serving as the web interface for the OpenFrame platform. Following the exact pattern from multi-platform-hub, it provides two distinct apps within a single codebase:
+## Core Principles
 
-- **OpenFrame-Auth**: Authentication and organization setup (`/auth/*`)
-- **OpenFrame-Dashboard**: Main application interface (`/dashboard`, `/devices`, `/settings`)
+**MANDATORY REQUIREMENTS:**
+1. ALL UI components MUST use @flamingo/ui-kit (328+ components available)
+2. ALL API operations MUST use `useToast` hook for feedback
+3. ALL styling MUST use ODS design tokens (no hardcoded values)
+4. Follow WCAG 2.1 AA accessibility standards
+5. Use state-driven interactions (NOT traditional forms)
 
-This pure client-side application provides a responsive, user-friendly interface for managing devices, monitoring systems, and configuring the OpenFrame platform.
+## Quick Navigation
 
-### Key Principles
-- **Pure Client-Side Architecture**: No server-side rendering, optimized for performance
-- **Multi-Platform Structure**: Follows exact multi-platform-hub pattern with app/_components
-- **100% UI-Kit Design System**: All UI components must come from @flamingo/ui-kit
-- **Multi-Platform-Hub as Reference**: Use only for learning patterns, NOT for component sharing
-- **OpenFrame Platform Focus**: Tailored specifically for OpenFrame branding and theming
+- [Setup & Commands](#setup--commands)
+- [Architecture & Structure](#architecture--structure)
+- [UI-Kit Integration](#ui-kit-integration)
+- [Development Patterns](#development-patterns)
+- [Testing & Deployment](#testing--deployment)
+- [Troubleshooting](#troubleshooting)
 
-## Essential Commands
+## Setup & Commands
 
-### Development
+### Quick Setup
 ```bash
-cd openframe/services/openframe-frontend
-npm install                                 # Install dependencies
-npm run dev                                 # Start development server on port 4000 (foreground)
-nohup npm run dev > dev.log 2>&1 &         # Start development server (background)
-npm run build                               # Build for production
-npm run start                               # Start production server on port 4000
-npm run lint                                # Run ESLint
-npm run type-check                          # TypeScript type checking
-```
-
-### Important: API URL Configuration
-When running against the Kubernetes cluster, ensure the API URL is correctly set:
-```bash
-# Set via environment variable
-NEXT_PUBLIC_API_URL=http://localhost/api npm run dev
-
-# Or use .env.local file (preferred)
+npm install
 echo "NEXT_PUBLIC_API_URL=http://localhost/api" >> .env.local
 echo "NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard" >> .env.local
 echo "NEXT_PUBLIC_CLIENT_SECRET=prod_secret" >> .env.local
+npm run dev
 ```
+Access: http://localhost:3000
 
-### UI-Kit Integration
+### Essential Commands
+| Command | Purpose |
+|---------|----------|
+| `npm run dev` | Development server (port 3000) |
+| `npm run build` | Production build |
+| `npm run type-check` | TypeScript validation |
+| `npm run lint` | Code quality check |
+
+### Environment Variables
 ```bash
-cd openframe/services/openframe-frontend/ui-kit
-npm install                                 # Install UI-Kit dependencies
-npm run type-check                          # Check UI-Kit types
+# Required
+NEXT_PUBLIC_API_URL=http://localhost/api
+NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard
+NEXT_PUBLIC_CLIENT_SECRET=prod_secret
+
+# Optional
+NEXT_PUBLIC_APP_MODE=full-app  # or auth-only
+NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true
 ```
 
-### Reference Exploration (Read-Only)
-```bash
-cd openframe/services/openframe-frontend/multi-platform-hub
-npm run dev                                 # Explore multi-platform-hub for patterns
-# NOTE: This is for reference only - DO NOT copy components
-```
-
-## Architecture Overview
+## Architecture & Structure
 
 ### Technology Stack
-- **Framework**: Next.js 15 with React 18 and TypeScript (PURE CLIENT-SIDE ONLY)
-- **Build Tool**: Next.js (pure client-side export - NO SERVER-SIDE FEATURES)
-- **Routing**: Next.js App Router (file-based routing - CLIENT-SIDE ONLY)
-- **CRITICAL**: NO API ROUTES - Pure static export only
-- **State Management**: Zustand v5.0.8 with Immer middleware
-- **API Client**: Apollo Client (GraphQL)
-- **UI Components**: @flamingo/ui-kit
-- **Styling**: Tailwind CSS + UI-Kit design tokens
-- **Authentication**: JWT with HTTP-only cookies
+- **Next.js 15** - App Router, SSG/SSR
+- **React 19** - UI library with new features
+- **TypeScript 5.8** - Type safety
+- **Zustand 5.0.8** - State management
+- **Apollo Client 3.8** - GraphQL
+- **@flamingo/ui-kit** - Design system (328+ components)
+- **Tailwind CSS 3.4** - Styling with ODS tokens
+- **xterm.js 5.3** - Terminal interface
 
-### Actual Project Structure
+### Application Modules
+- **Authentication** - Multi-provider SSO, organization setup
+- **Dashboard** - System overview, real-time metrics
+- **Device Management** - Monitoring, terminal access, actions
+- **Log Analysis** - Streaming, search, filtering, export
+- **Mingo Query Interface** - MongoDB-like query builder
 
+### Project Structure
 ```
-openframe-frontend/
-├── src/                                    # Source directory
-│   ├── app/                                # Next.js app directory
-│   │   ├── auth/                           # Auth module
-│   │   │   ├── components/                 # Auth components
-│   │   │   │   ├── auth-guard.tsx         # Authentication guard
-│   │   │   │   ├── benefits-section.tsx   # Shared benefits panel
-│   │   │   │   ├── choice-section.tsx     # Create org + sign in
-│   │   │   │   ├── signup-section.tsx     # Registration form
-│   │   │   │   ├── login-section.tsx      # SSO login
-│   │   │   │   └── dev-ticket-observer.tsx # Dev ticket observer
-│   │   │   ├── hooks/                      # Auth-specific hooks
-│   │   │   │   ├── use-auth.ts            # Authentication hook
-│   │   │   │   ├── use-token-storage.ts   # Token storage hook
-│   │   │   │   └── use-dev-ticket-exchange.ts # Dev ticket hook
-│   │   │   ├── pages/                      # Auth page components
-│   │   │   │   ├── auth-page.tsx          # Main auth page
-│   │   │   │   ├── signup-page.tsx        # Signup page
-│   │   │   │   └── login-page.tsx         # Login page
-│   │   │   ├── stores/                     # Auth stores
-│   │   │   │   ├── auth-store.ts          # Auth state store
-│   │   │   │   └── index.ts               # Store exports
-│   │   │   ├── layouts/                    # Auth layouts
-│   │   │   │   └── index.tsx              # Layout components
-│   │   │   ├── signup/                     # Signup route
-│   │   │   │   └── page.tsx               # /auth/signup
-│   │   │   ├── login/                      # Login route
-│   │   │   │   └── page.tsx               # /auth/login
-│   │   │   ├── layout.tsx                 # Auth layout
-│   │   │   └── page.tsx                   # /auth route
-│   │   ├── components/                     # Shared app components
-│   │   │   ├── openframe-dashboard/        # Dashboard components
-│   │   │   │   ├── dashboard-page.tsx     # Main dashboard
-│   │   │   │   ├── devices-page.tsx       # Device management
-│   │   │   │   └── settings-page.tsx      # Settings
-│   │   │   └── deployment-initializer.tsx  # Deployment initializer
-│   │   ├── dashboard/                      # Dashboard route
-│   │   │   ├── layout.tsx                 # Dashboard layout
-│   │   │   └── page.tsx                   # /dashboard
-│   │   ├── settings/                       # Settings route
-│   │   │   └── page.tsx                   # /settings
-│   │   ├── pages/                         # Page components
-│   │   │   ├── dashboard-page/            # Dashboard page
-│   │   │   │   └── index.tsx
-│   │   │   └── settings-page/             # Settings page
-│   │   │       └── index.tsx
-│   │   ├── hooks/                         # App-level hooks
-│   │   │   └── use-deployment.ts          # Deployment hook
-│   │   ├── home-page.tsx                  # Home page component
-│   │   ├── layout.tsx                     # Root layout
-│   │   └── page.tsx                       # Root page (redirect)
-│   ├── stores/                             # Global Zustand stores
-│   │   ├── devices-store.ts               # Device management state
-│   │   └── index.ts                       # Central store exports
-│   └── lib/                                # Utilities and config
-│       ├── platform-configs/              # Platform configurations
-│       │   ├── openframe.config.tsx       # OpenFrame config
-│       │   └── index.ts                   # Config exports
-│       ├── api-client.ts                  # API client setup
-│       ├── app-config.tsx                 # App configuration
-│       ├── deployment-detector.ts         # Deployment detection
-│       └── utils.ts                       # Utility functions
-├── public/                                 # Static assets
-│   ├── assets/                            # Asset files
-│   └── icons/                             # Icon files
-├── docs/                                   # Documentation
-├── ui-kit -> /path/to/ui-kit             # Symlink to UI-Kit
-├── next.config.mjs                        # Next.js configuration
-├── tailwind.config.js                     # Tailwind CSS config
-├── tailwind.config.ts                     # Tailwind TS config
-├── tsconfig.json                          # TypeScript config
-├── package.json                           # Package dependencies
-├── .env.example                           # Environment variables example
-└── .env.local                             # Local environment variables
+src/
+├── app/                 # Next.js App Router
+│   ├── auth/           # Authentication module
+│   ├── dashboard/      # Main dashboard
+│   ├── devices/        # Device management
+│   ├── logs-page/      # Log analysis
+│   ├── mingo/          # Query interface
+│   └── components/     # Shared components
+├── stores/             # Zustand state stores
+├── lib/                # Utilities & config
+ui-kit/                 # Design system (symlink)
 ```
 
-## UI-Kit Integration (PRIMARY FOCUS)
+## UI-Kit Integration
 
-### Component Usage Guidelines
-All UI components MUST come from @flamingo/ui-kit. No custom UI components are allowed.
-
-#### Importing Components
+### Core Import Pattern
 ```typescript
-// Core UI Components
-import { Button, Card, Modal } from '@flamingo/ui-kit/components/ui'
+// ALWAYS import styles first
+import '@flamingo/ui-kit/styles'
 
-// Feature Components  
-import { AuthProvidersList, AuthTrigger } from '@flamingo/ui-kit/components/features'
+// Core UI components
+import {
+  Button, Card, CardHeader, CardContent, CardFooter,
+  Input, Textarea, Label, Checkbox, Switch,
+  Badge, Alert, AlertDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogTrigger,
+  Tabs, TabsList, TabsTrigger, TabsContent,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  AlertDialog, AlertDialogContent, AlertDialogHeader,
+  ContentLoader, Separator, Avatar, Progress, Table
+} from '@flamingo/ui-kit/components/ui'
 
-// Hooks
-import { useDebounce, useLocalStorage } from '@flamingo/ui-kit/hooks'
+// Feature components
+import {
+  AuthProvidersList, AuthTrigger, ProviderButton,
+  Terminal
+} from '@flamingo/ui-kit/components/features'
+
+// MANDATORY hooks
+import {
+  useToast,        // REQUIRED for all API operations
+  useDebounce,
+  useLocalStorage,
+  useTerminal
+} from '@flamingo/ui-kit/hooks'
 
 // Utilities
-import { cn, getPlatformAccentColor } from '@flamingo/ui-kit/utils'
-
-// Styles (required)
-import '@flamingo/ui-kit/styles'
+import {
+  cn,                      // Tailwind class merging
+  getPlatformAccentColor,  // Platform colors
+  getProxiedImageUrl      // Safe image loading
+} from '@flamingo/ui-kit/utils'
 ```
 
-#### Available UI-Kit Components
-- **Core UI**: Button, Card, Modal, Input, Textarea, Checkbox, Switch, Toast
-- **Layout**: Pagination, Slider (when needed)
-- **Authentication**: AuthProvidersList, AuthTrigger, ProviderButton
-- **Business**: CommentCard, VendorIcon, JoinWaitlistButton (if applicable)
-- **Icons**: GitHubIcon, XLogo, OpenFrameLogo, etc.
-
-#### OpenFrame Platform Theming
-UI-Kit automatically adapts to OpenFrame platform via:
-```typescript
-// Platform is detected automatically
-process.env.NEXT_PUBLIC_APP_TYPE = 'openframe'
-
-// UI-Kit components will use OpenFrame theming
-<Button variant="primary">OpenFrame Button</Button>
-```
-
-### Custom Component Guidelines
-Only business logic components are allowed - they must wrap UI-Kit components:
-
-```typescript
-// GOOD: Business logic component using UI-Kit
-import { Card, Button } from '@flamingo/ui-kit/components/ui'
-
-export function DeviceCard({ device, onAction }) {
-  return (
-    <Card>
-      <h3>{device.name}</h3>
-      <p>{device.status}</p>
-      <Button onClick={() => onAction(device.id)}>
-        Manage Device
-      </Button>
-    </Card>
-  )
-}
-
-// BAD: Custom UI component
-export function CustomButton({ children }) {
-  return <button className="custom-styles">{children}</button>
-}
-```
-
-## Multi-Platform-Hub Reference Guidelines
-
-The multi-platform-hub is included **ONLY as a reference** for learning patterns. It should NOT be used for component sharing.
-
-### What to Reference
-- **React Patterns**: Study authentication flows, state management patterns
-- **Architecture Patterns**: Learn from component organization and structure  
-- **API Integration**: Understand GraphQL integration patterns
-- **Routing Patterns**: Study client-side routing implementations
-
-### What NOT to Do
-- ❌ Copy components from multi-platform-hub
-- ❌ Import multi-platform-hub components
-- ❌ Use multi-platform-hub as a dependency
-- ❌ Copy server-side Next.js patterns
-
-### Correct Usage
-```typescript
-// GOOD: Learn from patterns but implement with UI-Kit
-// Study: multi-platform-hub/components/auth/auth-provider.tsx
-// Implement: Use UI-Kit AuthProvidersList component
-
-import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
-
-function LoginPage() {
-  return (
-    <div>
-      <AuthProvidersList 
-        enabledProviders={providers}
-        onProviderClick={handleAuth}
-      />
-    </div>
-  )
-}
-```
-
-## Multi-Platform Architecture
-
-### App Structure
-The application follows a modular architecture with distinct apps:
-
-#### OpenFrame-Auth App (`/auth/*`)
-- **Routes**: `/auth`, `/auth/signup`, `/auth/login`  
-- **Components**: `src/app/auth/components/`, `src/app/auth/pages/`
-- **Stores**: `src/app/auth/stores/`
-- **Hooks**: `src/app/auth/hooks/`
-- **Purpose**: Authentication and organization setup
-
-#### OpenFrame-Dashboard App  
-- **Routes**: `/dashboard`, `/settings` (Note: `/devices` route not yet implemented)
-- **Components**: `src/app/components/openframe-dashboard/`
-- **Pages**: `src/app/pages/dashboard-page/`, `src/app/pages/settings-page/`
-- **Purpose**: Main application interface
-
-### Component Organization
-Components are organized within each module following a feature-based structure:
-
-```typescript
-// src/app/auth/pages/auth-page.tsx
-'use client'
-import { useRouter, usePathname } from 'next/navigation'
-
-export function AuthPage() {
-  const router = useRouter()
-  const pathname = usePathname()
-  
-  // Authentication logic with URL synchronization
-}
-```
-
-**Component Structure**:
-- **Module-specific**: Each app module (auth, dashboard) has its own components
-- **Pages**: Page-level components in `pages/` subdirectories
-- **Components**: Reusable components in `components/` subdirectories
-- **Shared**: Global shared components in `src/app/components/`
-
-### Navigation Pattern
-Next.js App Router with file-based routing:
-
-```typescript
-import { useRouter } from 'next/navigation'
-
-function MyComponent() {
-  const router = useRouter()
-  
-  const handleSubmit = () => {
-    router.push('/auth/signup')  // Navigate to signup
-  }
-}
-```
-
-**Available Routes**:
-- `/auth` → Auth choice screen
-- `/auth/signup` → Registration form  
-- `/auth/login` → SSO provider selection
-- `/dashboard` → Main dashboard
-- `/settings` → Application settings
-- **Note**: `/devices` route is planned but not yet implemented
-
-### Authentication Component Structure
-All auth screens share the exact same layout with modular sections:
-
-```typescript
-// Main auth page following multi-platform-hub pattern
-<div className="min-h-screen bg-ods-bg flex flex-col lg:flex-row">
-  <AuthChoiceSection />      {/* Left side - forms */}
-  <AuthBenefitsSection />    {/* Right side - identical across screens */}
-</div>
-```
-
-**Benefits of New Structure**:
-- ✅ **100% Shared Benefits Panel**: Identical right side across all auth screens
-- ✅ **URL Synchronization**: Back button properly updates URLs
-- ✅ **Reusable Sections**: Each auth step is an independent component
-- ✅ **Multi-Platform Pattern**: Follows established architecture from multi-platform-hub
+### Component Categories
+- **Core UI (50+)** - Button, Card, Input, Dialog, Tabs, etc.
+- **Feature Components** - Auth, Terminal, specialized business logic
+- **Platform-Specific** - OpenFrame system admin components
 
 ## Development Patterns
 
-### Toast System for Error Reporting (MANDATORY PATTERN)
-ALWAYS use the unified toast system for error reporting. This is a MANDATORY pattern for all custom hooks and components.
-
-**Setup**: Add `<Toaster />` from 'sonner' to your App.tsx:
+### MANDATORY: API Hook Pattern with Toast
 ```typescript
-import { Toaster } from 'sonner';
+import { useToast } from '@flamingo/ui-kit/hooks'
 
-export const App = () => {
-  return (
-    <ApolloProvider client={apolloClient}>
-      <RouterProvider router={router} />
-      <Toaster />
-    </ApolloProvider>
-  );
-};
-```
-
-**MANDATORY Usage Pattern**: ALL API calls MUST use `use...` hook pattern with `useToast`:
-```typescript
-import { useToast } from '@flamingo/ui-kit/hooks';
-
-// MANDATORY: All API operations must be in custom hooks with use... pattern
-export function useAuth() {
-  const { toast } = useToast() // ← REQUIRED for all API hooks
-  
-  const discoverTenants = async (email: string) => {
-    try {
-      const response = await fetch(`/api/sas/tenant/discover?email=${email}`)
-      // Handle response...
-    } catch (error) {
-      toast({
-        title: "Discovery Failed",
-        description: error.message || "Unable to check for existing accounts",
-        variant: "destructive"
-      })
-    }
-  }
-  
-  const registerOrganization = async (data: RegisterRequest) => {
-    try {
-      const response = await fetch('/api/sas/oauth/register', { 
-        method: 'POST',
-        body: JSON.stringify(data)
-      })
-      toast({
-        title: "Success!",
-        description: "Organization created successfully",
-        variant: "success"
-      })
-    } catch (error) {
-      toast({
-        title: "Registration Failed", 
-        description: error.message || "Unable to create organization",
-        variant: "destructive"
-      })
-    }
-  }
-  
-  return { discoverTenants, registerOrganization, ... }
-}
-
-// EXAMPLE: Device management hook
 export function useDevices() {
-  const { toast } = useToast() // ← REQUIRED
-  
+  const { toast } = useToast() // REQUIRED for all API hooks
+
   const fetchDevices = async () => {
     try {
       const response = await fetch('/api/devices')
+      const data = await response.json()
+
+      // SUCCESS feedback - REQUIRED
+      toast({
+        title: "Success",
+        description: "Devices loaded successfully",
+        variant: "success",
+        duration: 3000
+      })
+
+      return data
+    } catch (error) {
+      // ERROR feedback - REQUIRED
+      toast({
+        title: "Fetch Failed",
+        description: error.message || "Unable to load devices",
+        variant: "destructive",
+        duration: 5000
+      })
+      throw error
+    }
+  }
+
+  const executeAction = async (deviceId: string, action: string) => {
+    try {
+      // Loading feedback
+      toast({
+        title: "Processing...",
+        description: `Executing ${action} on device ${deviceId}`,
+        variant: "info",
+        duration: 2000
+      })
+
+      const response = await fetch(`/api/devices/${deviceId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      })
+
+      // Success feedback
+      toast({
+        title: "Action Executed",
+        description: `${action} completed successfully`,
+        variant: "success",
+        duration: 4000
+      })
+
       return await response.json()
     } catch (error) {
       toast({
-        title: "Fetch Failed",
-        description: "Unable to load devices",
-        variant: "destructive"
+        title: "Action Failed",
+        description: error.message || `Unable to execute ${action}`,
+        variant: "destructive",
+        duration: 6000
       })
-    }
-  }
-  
-  return { fetchDevices, ... }
-}
-
-// MANDATORY: Components using hooks with error handling must also use useToast
-function AuthComponent() {
-  const { toast } = useToast() // ← REQUIRED for components with error handling
-  const { discoverTenants } = useAuth()
-  
-  const handleSubmit = async () => {
-    try {
-      await discoverTenants(email)
-    } catch (error) {
-      toast({
-        title: "Discovery Failed",
-        description: "Unable to check for existing accounts",
-        variant: "destructive"
-      })
-    }
-  }
-}
-```
-
-**Toast Variants**:
-- `variant: "destructive"` - For errors and failures
-- `variant: "success"` - For successful operations
-- `variant: "default"` - For informational messages
-
-### Authentication Integration
-Use UI-Kit authentication components for OpenFrame SSO with dynamic loading states:
-
-```typescript
-import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
-import { Button } from '@flamingo/ui-kit/components/ui'
-
-function AuthPage() {
-  const [isLoading, setIsLoading] = useState(false)
-  
-  const handleProviderClick = async (provider: string) => {
-    setIsLoading(true)
-    try {
-      // Implement OpenFrame OAuth flow with dynamic loading
-      await authService.signInWithSSO(provider)
-    } finally {
-      setIsLoading(false)
+      throw error
     }
   }
 
-  const handleSubmit = async (email: string, password: string) => {
-    setIsLoading(true)
-    try {
-      // Dynamic loading - no forms, only state-driven UI updates
-      await authService.login(email, password)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  return (
-    <div>
-      {/* Dynamic loading states with UI-Kit components */}
-      <Button 
-        variant="primary" 
-        loading={isLoading}
-        onClick={() => handleSubmit(email, password)}
-      >
-        {isLoading ? 'Signing in...' : 'Sign In'}
-      </Button>
-      
-      <AuthProvidersList
-        enabledProviders={[
-          { provider: 'google', enabled: true },
-          { provider: 'microsoft', enabled: true }
-        ]}
-        onProviderClick={handleProviderClick}
-        loading={isLoading}
-        orientation="vertical"
-      />
-    </div>
-  )
+  return { fetchDevices, executeAction }
 }
 ```
 
-### API Integration
-Use Apollo Client for OpenFrame GraphQL backend:
-
-```typescript
-import { useQuery } from '@apollo/client'
-import { Card } from '@flamingo/ui-kit/components/ui'
-
-function Dashboard() {
-  const { data, loading } = useQuery(GET_DEVICES_QUERY)
-  
-  if (loading) return <div>Loading...</div>
-  
-  return (
-    <div>
-      {data.devices.map(device => (
-        <Card key={device.id}>
-          {/* Device content using UI-Kit components */}
-        </Card>
-      ))}
-    </div>
-  )
-}
-```
-
-### State Management with Zustand (Updated 2025-08-28)
-
-The application uses Zustand v5.0.8 for centralized state management with Immer middleware for immutable updates.
-
-#### Store Structure
-```
-src/
-├── app/auth/stores/  # Auth-specific stores
-│   ├── auth-store.ts # Authentication state
-│   └── index.ts      # Auth store exports
-└── stores/           # Global stores
-    ├── devices-store.ts  # Device management with filtering/sorting
-    └── index.ts         # Central exports and selectors
-```
-
-#### Creating a Zustand Store
+### State Management with Zustand
 ```typescript
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
-interface StoreState {
-  // State properties
-  items: any[]
+interface DevicesState {
+  devices: Device[]
+  selectedDevice: Device | null
   loading: boolean
-  
-  // Actions
-  setItems: (items: any[]) => void
-  setLoading: (loading: boolean) => void
+  setDevices: (devices: Device[]) => void
+  selectDevice: (device: Device | null) => void
 }
 
-export const useStore = create<StoreState>()(
+export const useDevicesStore = create<DevicesState>()(
   devtools(
     persist(
       immer((set) => ({
-        // State
-        items: [],
+        devices: [],
+        selectedDevice: null,
         loading: false,
-        
-        // Actions using Immer for mutations
-        setItems: (items) =>
-          set((state) => {
-            state.items = items
-          }),
-        
-        setLoading: (loading) =>
-          set((state) => {
-            state.loading = loading
-          })
+
+        setDevices: (devices) => set(state => { state.devices = devices }),
+        selectDevice: (device) => set(state => { state.selectedDevice = device })
       })),
-      {
-        name: 'store-key', // localStorage key
-        partialize: (state) => ({ items: state.items }) // Selective persistence
-      }
+      { name: 'devices-store' }
     ),
-    { name: 'store-name' } // Redux DevTools name
+    { name: 'devices-store' }
   )
 )
 ```
 
-#### Using Stores in Components
+### State-Driven Form Pattern
 ```typescript
-import { useAuthStore, useDevicesStore } from '@/stores'
+export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
+  const [name, setName] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const { toast } = useToast()
 
-function Component() {
-  // Direct usage
-  const { user, login, logout } = useAuthStore()
-  
-  // With selectors for optimized re-renders
-  const devices = useDevicesStore(selectFilteredDevices)
-  const isLoading = useDevicesStore(selectIsLoading)
-  
-  return <div>...</div>
-}
-```
-
-#### Integration with Custom Hooks (MANDATORY PATTERN)
-```typescript
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { useDevicesStore } from '@/stores/devices-store'
-
-export function useDevices() {
-  const { toast } = useToast() // MANDATORY
-  const { setDevices, setLoading, setError } = useDevicesStore()
-  
-  const fetchDevices = async () => {
-    setLoading(true)
+  const handleSave = async () => {
+    setIsUpdating(true)
     try {
-      const response = await fetch('/api/devices')
-      const data = await response.json()
-      setDevices(data.devices)
-      toast({ title: 'Success', variant: 'success' })
+      await updateDevice(deviceId, { name })
+      toast({
+        title: "Settings Saved",
+        description: "Device configuration updated successfully",
+        variant: "success"
+      })
     } catch (error) {
-      setError(error.message)
-      toast({ title: 'Error', variant: 'destructive' })
+      toast({
+        title: "Save Failed",
+        description: error.message || "Unable to save configuration",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUpdating(false)
     }
   }
-  
-  return { fetchDevices }
+
+  return (
+    <Card>
+      <CardHeader>
+        <h2>Device Configuration</h2>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="device-name">Device Name</Label>
+          <Input
+            id="device-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter device name"
+            disabled={isUpdating}
+          />
+        </div>
+        <Button onClick={handleSave} disabled={isUpdating}>
+          {isUpdating ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </CardContent>
+    </Card>
+  )
 }
 ```
 
-#### Available Stores
-- **useAuthStore**: User authentication, tokens, session management
-- **useDevicesStore**: Device CRUD, filtering, sorting, selection
+## Accessibility Standards
 
-## Code Standards
+### Required Practices
+1. **Semantic HTML** - Use proper HTML elements and UI-Kit components
+2. **Keyboard Navigation** - UI-Kit provides automatic support
+3. **Screen Reader Support** - Add aria-labels and descriptions
+4. **Color/Contrast** - Use ODS design tokens only
+5. **Focus Management** - Handle focus in modals and dynamic content
 
-### Next.js/React/TypeScript
-- Use Next.js 15 with React 18 and TypeScript strict mode
-- Functional components with hooks only ('use client' where needed)
-- Use TypeScript for all new code
-- Follow Next.js App Router patterns for pure client-side applications
-- **NO FORMS**: Use dynamic loading states and event handlers only
-- **State-Driven UI**: All interactions through state updates, not form submissions
-
-### UI Components
-- **MANDATORY**: All UI components from @flamingo/ui-kit
-- **NO CUSTOM UI**: Only business logic components allowed
-- **NO FORMS**: Replace `<form>` elements with state-driven interactions
-- **Dynamic Loading**: Use Button loading states and UI feedback instead of form validation
-- **Design System**: Use UI-Kit design tokens exclusively
-- **OpenFrame Theming**: Let UI-Kit handle platform-specific theming
-
-### Project Organization
-- **src/app/auth/**: Complete auth module with components, hooks, stores, and pages
-- **src/app/components/**: Shared components across apps
-- **src/app/dashboard/**, **src/app/settings/**: Route-specific pages
-- **src/app/pages/**: Page-level components
-- **src/app/hooks/**: App-level hooks (e.g., use-deployment)
-- **src/stores/**: Global Zustand state management stores
-- **src/lib/**: Utilities, configurations, and API services
-
-## Testing Strategy
-
-### Client-Side Testing
-```bash
-npm test                                    # Run all tests
-npm run test:watch                          # Watch mode
-npm run test:coverage                       # Coverage report
-```
-
-- Unit tests for business logic components
-- Integration tests for API services  
-- UI component testing using UI-Kit components
-- Next.js App Router navigation tests
-
-## Important Development Rules
-
-### UI Component Rules
-1. **NEVER create custom UI components** - use UI-Kit only
-2. **Business logic components** can wrap UI-Kit components
-3. **100% UI-Kit design system** - no custom styles for UI elements
-4. **Platform theming** is handled automatically by UI-Kit
-5. **NO FORMS** - never use `<form>` elements or form submissions
-6. **NEVER REPLACE SHARED COMPONENTS WITH MANUAL DESIGN** - If UI-Kit components don't work as expected, fix the underlying issue or use proper ODS theming variables, never replace with hardcoded values
-7. **ALWAYS USE TOAST FOR ERROR REPORTING** - Use `useToast` hook from UI-Kit for all error/success messages, never create custom error divs
-8. **MANDATORY use... HOOK PATTERN** - ALL API calls must be wrapped in custom hooks with `use...` naming pattern
-9. **MANDATORY useToast IN ALL API HOOKS** - Every `use...` hook with API calls MUST include `const { toast } = useToast()` for error handling
-
-### Multi-Platform-Hub Rules
-1. **Reference ONLY** - never copy components
-2. **Learn patterns** - study architecture and patterns
-3. **No imports** - never import from multi-platform-hub
-4. **App structure** - follow the exact _components pattern
-5. **Pure client-side** - use 'use client' directive, no server components
-
-### Development Workflow
-1. **Use UI-Kit components** for all UI elements  
-2. **Reference multi-platform-hub** for learning patterns only
-3. **Build business logic** around UI-Kit components
-4. **Follow modular structure** with feature-based organization
-5. **Dynamic loading states** - no form validation, use Button loading prop
-6. **State-driven interactions** - all user actions through event handlers
-7. **Test with OpenFrame theming** enabled  
-8. **Pure client-side** - use 'use client' directive, static export only
-9. **Always use ODS theming** - Use semantic color variables (bg-ods-card, text-ods-text-primary) instead of hardcoded values
-10. **MANDATORY use... HOOK PATTERN** - ALL new/existing API calls must be in custom hooks with `use...` naming
-11. **MANDATORY useToast IN ALL API HOOKS** - Every API hook must implement `const { toast } = useToast()` for error handling
-12. **NO SERVER-SIDE FEATURES** - No API routes, no server components, no SSR - PURE STATIC CLIENT-SIDE ONLY
-
-## Access URLs
-
-### Application Routes
-- **Development**: http://localhost:4000 (configured port)
-- **Auth App**: http://localhost:4000/auth (OpenFrame-Auth)
-- **Dashboard App**: http://localhost:4000/dashboard (OpenFrame-Dashboard)
-- **Device Management**: http://localhost:4000/devices
-- **Settings**: http://localhost:4000/settings
-
-### API Endpoints
-- **OpenFrame API (K8s)**: http://localhost/api
-- **OpenFrame GraphQL (K8s)**: http://localhost/api/graphql
-- **OpenFrame API (Local)**: http://localhost:8100/api (when running gateway in debug mode)
-- **UI-Kit Storybook**: (if available) http://localhost:6006
-
-## Browser Automation with Browser MCP
-
-### Overview
-Browser MCP is a Model Context Protocol (MCP) server that enables AI-powered browser automation. It can be used to automate testing, UI interactions, and browser-based tasks for the OpenFrame Frontend.
-
-### Setup Instructions
-1. **Install Browser MCP Chrome Extension**
-   - Visit the Chrome Web Store and install the Browser MCP extension
-   - Or download from: https://chromewebstore.google.com/detail/browser-mcp-automate-your/bjfgambnhccakkhmkepdoekmckoijdlc
-
-2. **Configure MCP Server**
-   - Follow setup instructions at: https://docs.browsermcp.io/setup-server
-   - The MCP server connects your AI tools (Claude, Cursor, VS Code) to the browser
-
-3. **Enable in Your AI Tool**
-   - For Claude Desktop: Configure MCP settings to include Browser MCP
-   - For Cursor/VS Code: Install the Browser MCP extension and configure
-
-### Use Cases for OpenFrame Frontend
-
-#### Automated Testing
+### ODS Design Tokens (MANDATORY)
 ```typescript
-// Example: Test authentication flow
-// Claude/Cursor can automate this via Browser MCP
-// 1. Navigate to login page
-// 2. Click SSO provider button
-// 3. Complete OAuth flow
-// 4. Verify redirect to dashboard
+// ✅ GOOD: Using ODS tokens
+<Card className="bg-ods-card border-ods-border">
+  <div className="text-ods-text-primary">Primary text</div>
+  <div className="text-ods-text-secondary">Secondary text</div>
+  <Button className="bg-ods-accent text-ods-text-on-accent">
+    Action
+  </Button>
+</Card>
+
+// ❌ BAD: Hardcoded values
+<Card className="bg-gray-800 border-gray-700">
+  <div className="text-white">Primary text</div>
+</Card>
 ```
 
-#### UI Component Testing
-```typescript
-// Test UI-Kit components in real browser environment
-// 1. Navigate to component demo page
-// 2. Interact with buttons, modals, forms
-// 3. Capture screenshots for visual regression
-// 4. Test responsive behavior
-```
+## Testing & Deployment
 
-#### Development Workflow Automation
-- Auto-refresh browser on code changes
-- Capture console logs and errors
-- Take screenshots of UI states
-- Test different user flows
-- Verify GraphQL API integrations
+### Development Testing
+| Command | Purpose |
+|---------|---------|
+| `npm run type-check` | TypeScript validation |
+| `npm run lint` | Code quality check |
+| `npm run build` | Production build verification |
 
-### Browser MCP Commands
-When using Claude/Cursor with Browser MCP enabled:
-- `navigate to [URL]` - Open a page
-- `click on [element]` - Click UI elements
-- `type [text] in [field]` - Fill input fields
-- `take screenshot` - Capture current state
-- `get console logs` - Retrieve browser console output
-
-### Integration with OpenFrame Development
-1. **Start the development server**: `npm run dev`
-2. **Enable Browser MCP** in your AI tool
-3. **Use AI to automate**:
-   - Testing authentication flows with UI-Kit components
-   - Verifying OpenFrame theming
-   - Testing GraphQL queries and mutations
-   - Checking responsive design
-   - Debugging client-side routing
-
-### Best Practices
-- Use Browser MCP for repetitive testing tasks
-- Automate visual regression testing
-- Test error states and edge cases
-- Verify toast notifications appear correctly
-- Check loading states for dynamic components
-
-## Debugging Session Instructions
-
-Every debugging session should follow these steps to ensure a clean environment:
-
-### 1. Kill Existing Processes on Port 4000
+### Build & Deployment
 ```bash
-# Find and kill any process using port 4000
-lsof -ti:4000 | xargs kill -9 2>/dev/null || true
-
-# Alternative for Linux
-# fuser -k 4000/tcp 2>/dev/null || true
-
-# Alternative for Windows
-# netstat -ano | findstr :4000
-# taskkill /PID <PID> /F
-```
-
-### 2. Start Frontend Development Server
-```bash
-# Navigate to frontend directory
-cd openframe/services/openframe-frontend
-
-# Install dependencies if needed
-npm install
-
-# IMPORTANT: Set correct API URL for K8s cluster
-export NEXT_PUBLIC_API_URL=http://localhost/api
-export NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard
-export NEXT_PUBLIC_CLIENT_SECRET=prod_secret
-
-# Start development server in background (use nohup to prevent hanging)
-nohup npm run dev > dev.log 2>&1 &
-FRONTEND_PID=$!
-
-# Wait for server to start
-sleep 5
-
-# Verify server is running
-curl http://localhost:4000 || echo "Server not responding"
-
-# Monitor logs
-tail -f dev.log
-```
-
-### 3. Check Logs and Debug
-```bash
-# Monitor frontend logs
-tail -f ~/.npm/_logs/*.log
-
-# Check browser console for errors
-# Use Browser MCP to capture console logs:
-# - Navigate to http://localhost:4000
-# - Open developer tools or use Browser MCP's get_console_logs
-
-# Check for TypeScript errors
-npm run type-check
-
-# Check for build errors
+# Full application build
 npm run build
+
+# Auth-only build (minimal)
+npm run build:auth
+
+# Output: dist/ directory (static export)
 ```
 
-### Automated Debug Script
-Create a debug script for convenience:
-
-```bash
-#!/bin/bash
-# save as: scripts/debug-frontend.sh
-
-echo "🔧 Starting OpenFrame Frontend Debug Session..."
-
-# Step 1: Kill port 4000
-echo "1️⃣ Killing existing processes on port 4000..."
-lsof -ti:4000 | xargs kill -9 2>/dev/null || true
-
-# Step 2: Set environment variables for K8s cluster
-echo "2️⃣ Setting environment variables..."
-export NEXT_PUBLIC_API_URL=http://localhost/api
-export NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard
-export NEXT_PUBLIC_CLIENT_SECRET=prod_secret
-
-# Step 3: Start frontend
-echo "3️⃣ Starting frontend development server..."
-cd openframe/services/openframe-frontend
-nohup npm run dev > dev.log 2>&1 &
-FRONTEND_PID=$!
-
-# Step 4: Wait and check
-echo "4️⃣ Waiting for server startup..."
-sleep 5
-
-# Step 5: Verify
-if curl -s http://localhost:4000 > /dev/null; then
-    echo "✅ Frontend running at http://localhost:4000"
-    echo "📋 Frontend PID: $FRONTEND_PID"
-    echo "🔗 API URL: $NEXT_PUBLIC_API_URL"
-else
-    echo "❌ Frontend failed to start"
-    tail -n 50 dev.log
-fi
-
-# Step 6: Monitor (optional)
-echo "📊 Monitoring logs (Ctrl+C to stop)..."
-tail -f dev.log
-```
+**Deployment Targets:**
+- Static hosting (Vercel, Netlify, AWS S3)
+- Container deployment with nginx
+- CDN distribution
 
 ## Troubleshooting
 
 ### Common Issues
-- **Port 4000 Already in Use**: Follow step 1 of debugging instructions above
-- **UI-Kit import errors**: Ensure UI-Kit is properly installed and built
-- **Theming issues**: Verify NEXT_PUBLIC_APP_TYPE is set to 'openframe'
-- **Component not found**: Check UI-Kit exports, never create custom UI
-- **Build errors**: Run type-check on both main project and UI-Kit
-- **Browser MCP connection**: Ensure Chrome extension is installed and MCP server is running
-- **Zustand store errors**: Ensure immer is installed, check Redux DevTools for state debugging
-- **State persistence issues**: Check localStorage permissions and clear if corrupted
-
-### Diagnostic Commands
+**Port Conflicts:**
 ```bash
-# Check what's using port 4000
-lsof -i:4000
-
-# Check UI-Kit build
-cd ui-kit && npm run type-check
-
-# Verify component imports
-npm run type-check
-
-# Check development server
-npm run dev
-
-# View recent npm logs
-ls -la ~/.npm/_logs/
-
-# For Browser MCP issues
-# 1. Check Chrome extension is enabled
-# 2. Verify MCP server is running
-# 3. Check AI tool MCP configuration
+lsof -i:3000                    # Check port usage
+lsof -ti:3000 | xargs kill -9   # Kill processes
+PORT=3001 npm run dev           # Use different port
 ```
+
+**UI-Kit Issues:**
+```bash
+cd ui-kit && npm install       # Reinstall dependencies
+cd ui-kit && npm run type-check # Verify build
+```
+
+**API Connection:**
+- Verify `NEXT_PUBLIC_API_URL` matches backend
+- Check CORS configuration
+- Verify `CLIENT_ID` and `CLIENT_SECRET`
+
+**State Management:**
+```javascript
+// Clear corrupted localStorage
+localStorage.removeItem('devices-store')
+localStorage.removeItem('auth-store')
+```
+
+### Performance Optimization
+- Use React.memo for expensive components
+- Implement proper loading states
+- Optimize bundle size with dynamic imports
+- Use GraphQL query caching
+- Implement code splitting at route level
+
+## Development Workflow
+
+1. **Install dependencies**: `npm install`
+2. **Configure environment**: Set API URL and credentials
+3. **Start development**: `npm run dev`
+4. **Follow patterns**: Use UI-Kit components and API hooks with toast
+5. **Test thoroughly**: Type-check, lint, manual testing
+6. **Build and deploy**: Verify production build works
+
+## Key Integration Points
+
+### Backend Services
+- **API Gateway** - `/api` - Primary API access
+- **GraphQL** - `/api/graphql` - Real-time queries
+- **WebSocket** - `/api/ws` - Live updates
+- **Authentication** - `/api/oauth/*` - OAuth2/OpenID Connect
+
+### External Dependencies
+- **UI-Kit** - Local symlink with OpenFrame theming
+- **Terminal Libraries** - xterm.js integration
+- **Query Libraries** - Apollo + TanStack for GraphQL + REST
+
+---
+
+**Remember: Always use UI-Kit components and follow the mandatory useToast pattern for all API operations!**

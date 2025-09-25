@@ -3,7 +3,7 @@ import { DeviceDetailsView } from '../../components/device-details-view'
 
 interface DeviceDetailsPageProps {
   params: Promise<{
-    id: string
+    machineId: string
   }>
 }
 
@@ -13,10 +13,12 @@ export async function generateStaticParams() {
 }
 
 export default async function DeviceDetailsPage({ params }: DeviceDetailsPageProps) {
-  const { id } = await params
+  const { machineId } = await params
   return (
     <AppLayout>
-      <DeviceDetailsView deviceId={id} />
+      <DeviceDetailsView deviceId={machineId} />
     </AppLayout>
   )
 }
+
+

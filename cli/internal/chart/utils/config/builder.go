@@ -158,7 +158,7 @@ func (b *Builder) BuildInstallConfig(
 
 // BuildInstallConfigWithCustomHelmPath constructs the installation configuration using a custom helm values file
 func (b *Builder) BuildInstallConfigWithCustomHelmPath(
-	force, dryRun, verbose bool,
+	force, dryRun, verbose, nonInteractive bool,
 	clusterName, githubRepo, githubBranch, certDir, helmValuesPath string,
 	deploymentMode string,
 ) (ChartInstallConfig, error) {
@@ -198,9 +198,15 @@ func (b *Builder) BuildInstallConfigWithCustomHelmPath(
 		}
 	}
 
-	return b.configService.BuildInstallConfig(
+	config := b.configService.BuildInstallConfig(
 		force, dryRun, verbose,
 		clusterName,
 		appOfAppsConfig,
-	), nil
+	)
+
+	// Set Silent flag based on NonInteractive mode
+	config.Silent = nonInteractive
+	config.NonInteractive = nonInteractive
+
+	return config, nil
 }

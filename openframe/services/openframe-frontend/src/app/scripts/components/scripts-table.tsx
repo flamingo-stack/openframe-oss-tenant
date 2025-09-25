@@ -2,12 +2,10 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
+import {
   Table,
-  SearchBar, 
   Button,
-  ListPageContainer,
-  PageError,
+  ListPageLayout,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -218,16 +216,13 @@ export function ScriptsTable() {
     })
   }, [])
 
-  if (error) {
-    return <PageError message={error} />
-  }
 
   const headerActions = (
     <>
       <Button
         onClick={handleNewScript}
         variant="primary"
-        className="flex items-center gap-2 bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover font-['DM_Sans'] font-bold px-4 py-2.5 rounded-[6px] text-[16px] transition-colors"
+        className="bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover font-['DM_Sans'] font-bold px-4 py-2.5 rounded-[6px] text-[16px] transition-colors h-12"
         leftIcon={<Plus size={20} />}
       >
         New Script
@@ -235,7 +230,7 @@ export function ScriptsTable() {
       <Button
         onClick={handleRefresh}
         variant="outline"
-        className="flex items-center gap-2 bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] transition-colors"
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] transition-colors h-12"
         leftIcon={<RefreshIcon size={20} />}
       >
         Refresh
@@ -244,21 +239,16 @@ export function ScriptsTable() {
   )
 
   return (
-    <ListPageContainer
+    <ListPageLayout
       title="Scripts"
       headerActions={headerActions}
+      searchPlaceholder="Search for Scripts"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
       background="default"
       padding="sm"
     >
-
-      {/* Search */}
-      <SearchBar
-        placeholder="Search for Scripts"
-        onSubmit={setSearchTerm}
-        value={searchTerm}
-        className="w-full"
-      />
-
       {/* Table */}
       <Table
         data={transformedScripts}
@@ -282,7 +272,7 @@ export function ScriptsTable() {
         onSave={handleSaveScript}
         scriptData={null}
         isEditMode={false}
-      /> */      }
-    </ListPageContainer>
+      /> */}
+    </ListPageLayout>
   )
 }
