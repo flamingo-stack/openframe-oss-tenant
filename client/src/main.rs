@@ -19,7 +19,7 @@ fn ensure_admin_privileges() {
 #[cfg(windows)]
 fn ensure_admin_privileges() {
     // On Windows we rely on PermissionUtils which internally calls Windows APIs.
-    if !openframe::utils::PermissionUtils::is_admin() {
+    if !PermissionUtils::is_admin() {
         eprintln!("Please run application with administrator privileges");
         process::exit(1);
     }
