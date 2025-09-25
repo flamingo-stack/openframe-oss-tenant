@@ -274,15 +274,21 @@ jobs:
         working-directory: client
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            make build TARGET=x86_64-apple-darwin
-            make build TARGET=aarch64-apple-darwin
-            ls -la target/release/
-            lipo -create target/release/openframe* -output target/release/openframe-oss-client-macos-universal
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            for RUST_TARGET in x86_64-apple-darwin aarch64-apple-darwin; do
+              mkdir -p build_targets
+              rustup target list | grep installed | grep "$RUST_TARGET" || rustup target add "$RUST_TARGET"
+              make build TARGET="$RUST_TARGET"
+              cp target/${RUST_TARGET}/release/openframe build_targets/openframe-${RUST_TARGET}
+            done
+            ls -la build_targets/
+            mkdir -p artifacts
+            lipo -create build_targets/openframe* -output artifacts/openframe-oss-client-macos-universal
+          else
             make build
           fi
 
       - name: Prepare Rust Artifacts
+        if: "!(runner.os == 'macOS')"
         shell: bash
         run: |
           mkdir -p artifacts
