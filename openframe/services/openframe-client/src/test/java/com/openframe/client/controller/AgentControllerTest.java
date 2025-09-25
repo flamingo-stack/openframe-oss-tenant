@@ -40,23 +40,13 @@ class AgentControllerTest {
     @Mock
     private AgentRegistrationService agentRegistrationService;
 
-    @Mock
-    private ToolConnectionService toolConnectionService;
-
-    private static final String OPENFRAME_AGENT_ID = "test-agent-id";
-    private static final String TOOL_TYPE = "test-tool-type";
-    private static final String AGENT_TOOL_ID = "test-remote-agent-id";
-
     private AgentRegistrationRequest registrationRequest;
     private AgentRegistrationResponse registrationResponse;
-    private ToolConnectionRequest toolConnectionRequest;
-    private ToolConnectionResponse toolConnectionResponse;
-    private ToolConnectionUpdateRequest toolConnectionUpdateRequest;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setup() {
-        AgentController controller = new AgentController(agentRegistrationService, toolConnectionService);
+        AgentController controller = new AgentController(agentRegistrationService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
@@ -76,20 +66,6 @@ class AgentControllerTest {
         registrationRequest.setOsUuid("test-os-uuid");
         registrationRequest.setAgentVersion("1.0.0");
         registrationResponse = new AgentRegistrationResponse("test-machine-id", "client-id", "client-secret");
-
-        toolConnectionRequest = new ToolConnectionRequest();
-        toolConnectionRequest.setOpenframeAgentId(OPENFRAME_AGENT_ID);
-        toolConnectionRequest.setToolType(TOOL_TYPE);
-        toolConnectionRequest.setAgentToolId(AGENT_TOOL_ID);
-
-        toolConnectionUpdateRequest = new ToolConnectionUpdateRequest();
-        toolConnectionUpdateRequest.setAgentToolId(AGENT_TOOL_ID);
-
-        toolConnectionResponse = new ToolConnectionResponse();
-        toolConnectionResponse.setOpenframeAgentId(OPENFRAME_AGENT_ID);
-        toolConnectionResponse.setToolType(TOOL_TYPE);
-        toolConnectionResponse.setAgentToolId(AGENT_TOOL_ID);
-        toolConnectionResponse.setStatus("CONNECTED");
     }
 
     @Test
@@ -107,55 +83,6 @@ class AgentControllerTest {
     }
 
     @Test
-    @WithAnonymousUser
-    void anonymousAccess_ReturnsUnauthorized() throws Exception {
-        when(toolConnectionService.getAllToolConnections())
-                .thenThrow(new AccessDeniedException("Access is denied"));
-
-        mockMvc.perform(get("/api/agents/tool-connections"))
-                .andExpect(status().isUnauthorized()); // Returns 403 FORBIDDEN
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void userCanAccessToolConnections() throws Exception {
-        when(toolConnectionService.getAllToolConnections())
-                .thenReturn(Arrays.asList(toolConnectionResponse));
-
-        mockMvc.perform(get("/api/agents/tool-connections"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].openframeAgentId").value(OPENFRAME_AGENT_ID))
-                .andExpect(jsonPath("$[0].toolType").value(TOOL_TYPE))
-                .andExpect(jsonPath("$[0].agentToolId").value(AGENT_TOOL_ID))
-                .andExpect(jsonPath("$[0].status").value("CONNECTED"));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void getToolConnectionsByMachineId_WithUserRole_ReturnsOk() throws Exception {
-        when(toolConnectionService.getToolConnectionsByMachineId(OPENFRAME_AGENT_ID))
-                .thenReturn(Arrays.asList(toolConnectionResponse));
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}", OPENFRAME_AGENT_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].openframeAgentId").value(OPENFRAME_AGENT_ID))
-                .andExpect(jsonPath("$[0].toolType").value(TOOL_TYPE))
-                .andExpect(jsonPath("$[0].status").value("CONNECTED"));
-    }
-
-    @Test
-    @WithMockUser
-    void getToolConnectionsByMachineId_WhenEmpty_ReturnsEmptyArray() throws Exception {
-        when(toolConnectionService.getToolConnectionsByMachineId(OPENFRAME_AGENT_ID))
-                .thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}", OPENFRAME_AGENT_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
-    }
-
-    @Test
     void register_MissingHeader_ReturnsBadRequest() throws Exception {
         mockMvc.perform(post("/api/agents/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,16 +90,6 @@ class AgentControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("bad_request"))
                 .andExpect(jsonPath("$.message").value("Required header 'X-Initial-Key' is missing"));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void accessWithUserRole_Succeeds() throws Exception {
-        when(toolConnectionService.getAllToolConnections())
-                .thenReturn(Arrays.asList(toolConnectionResponse));
-
-        mockMvc.perform(get("/api/agents/tool-connections"))
-                .andExpect(status().isOk());
     }
 
     @Test
@@ -248,83 +165,5 @@ class AgentControllerTest {
                                 request.getAgentVersion().equals("1.0.0")
                 )
         );
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void getToolConnectionByMachineIdAndToolType_WhenExists_ReturnsOk() throws Exception {
-        when(toolConnectionService.getToolConnectionByMachineIdAndToolType(OPENFRAME_AGENT_ID, TOOL_TYPE))
-                .thenReturn(toolConnectionResponse);
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, TOOL_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.openframeAgentId").value(OPENFRAME_AGENT_ID))
-                .andExpect(jsonPath("$.toolType").value(TOOL_TYPE))
-                .andExpect(jsonPath("$.agentToolId").value(AGENT_TOOL_ID))
-                .andExpect(jsonPath("$.status").value("CONNECTED"));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void getToolConnectionByMachineIdAndToolType_WhenNotFound_Returns404() throws Exception {
-        when(toolConnectionService.getToolConnectionByMachineIdAndToolType(OPENFRAME_AGENT_ID, TOOL_TYPE))
-                .thenThrow(new ConnectionNotFoundException("Connection not found"));
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, TOOL_TYPE))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("not_found"))
-                .andExpect(jsonPath("$.message").value("Connection not found"));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void getToolConnectionByMachineIdAndToolType_WithInvalidAgentId_ReturnsBadRequest() throws Exception {
-        when(toolConnectionService.getToolConnectionByMachineIdAndToolType(eq("invalid-id"), any()))
-                .thenThrow(new InvalidAgentIdException("Invalid agent ID"));
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        "invalid-id", TOOL_TYPE))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("bad_request"))
-                .andExpect(jsonPath("$.message").value("Invalid agent ID"));
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void getToolConnectionByMachineIdAndToolType_WithInvalidToolType_ReturnsBadRequest() throws Exception {
-        when(toolConnectionService.getToolConnectionByMachineIdAndToolType(any(), eq("invalid-type")))
-                .thenThrow(new InvalidToolTypeException("Invalid tool type: invalid-type"));
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, "invalid-type"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("bad_request"))
-                .andExpect(jsonPath("$.message").value("Invalid tool type: invalid-type"));
-    }
-
-    @Test
-    @WithAnonymousUser
-    void getToolConnectionByMachineIdAndToolType_WithoutAuth_ReturnsUnauthorized() throws Exception {
-        when(toolConnectionService.getToolConnectionByMachineIdAndToolType(any(), any()))
-                .thenThrow(new AccessDeniedException("Access is denied"));
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        OPENFRAME_AGENT_ID, TOOL_TYPE))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @WithMockUser(roles = "USER")
-    void getMachineNotFound_Returns404() throws Exception {
-        when(toolConnectionService.getToolConnectionByMachineIdAndToolType(eq("non-existent"), any()))
-                .thenThrow(new MachineNotFoundException("Machine not found: non-existent"));
-
-        mockMvc.perform(get("/api/agents/tool-connections/{openframeAgentId}/{toolType}",
-                        "non-existent", TOOL_TYPE))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("not_found"))
-                .andExpect(jsonPath("$.message").value("Machine not found: non-existent"));
     }
 }

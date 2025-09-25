@@ -85,41 +85,85 @@ class ApiClient {
     // Create the refresh promise
     this.refreshPromise = (async () => {
       try {
-        // Get tenant ID from auth store
+        // Get tenant ID from auth store with robust fallbacks
         const { useAuthStore } = await import('../app/auth/stores/auth-store')
-        const tenantId = useAuthStore.getState().tenantId
-        
+        const authState = useAuthStore.getState()
+        const storeTenantId = authState.tenantId
+        const userTenantId = (authState.user as any)?.organizationId || (authState.user as any)?.tenantId
+        const tenantId = storeTenantId || userTenantId
+
         if (!tenantId) {
-          console.error('❌ [API Client] No tenant ID found for token refresh')
-          return false
+          console.warn('⚠️ [API Client] No tenant ID found for refresh; attempting refresh without tenantId')
         }
 
         const baseUrl = this.baseUrl.replace('/api', '')
-        const refreshUrl = `${baseUrl}/oauth/refresh?tenantId=${encodeURIComponent(tenantId)}`
-        
+        const refreshUrl = tenantId
+          ? `${baseUrl}/oauth/refresh?tenantId=${encodeURIComponent(tenantId)}`
+          : `${baseUrl}/oauth/refresh`
+
         console.log('🔄 [API Client] Attempting token refresh...')
-        
+
+        // Build headers and include Refresh-Token when available
+        const refreshHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+        if (this.isDevTicketEnabled) {
+          try {
+            const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+            if (refreshToken) {
+              refreshHeaders['Refresh-Token'] = refreshToken
+              console.log('🔄 [API Client] Included Refresh-Token header for token refresh')
+            }
+          } catch {}
+        }
+
         const response = await fetch(refreshUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
+          headers: refreshHeaders,
           credentials: 'include', // Include cookies for refresh
         })
 
         if (response.ok) {
-          const data = await response.json()
-          
-          // Store new tokens if DevTicket is enabled
-          if (this.isDevTicketEnabled && data.access_token) {
-            localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token)
-            if (data.refresh_token) {
-              localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
+          // If running in header-token mode, try to capture new tokens from headers or JSON
+          if (this.isDevTicketEnabled) {
+            let newAccessToken: string | null = null
+            let newRefreshToken: string | null = null
+
+            // Prefer tokens from response headers if present
+            try {
+              newAccessToken = response.headers.get('Access-Token') || response.headers.get('access-token')
+              newRefreshToken = response.headers.get('Refresh-Token') || response.headers.get('refresh-token')
+            } catch {}
+
+            // Fall back to JSON body if headers were not provided
+            if (!newAccessToken || !newRefreshToken) {
+              try {
+                const contentType = response.headers.get('content-type') || ''
+                if (contentType.includes('application/json')) {
+                  const data = await response.json()
+                  newAccessToken = newAccessToken || data?.access_token || data?.accessToken || null
+                  newRefreshToken = newRefreshToken || data?.refresh_token || data?.refreshToken || null
+                }
+              } catch (e) {
+                console.warn('⚠️ [API Client] Unable to parse refresh response JSON:', e)
+              }
             }
-            console.log('✅ [API Client] Token refreshed successfully')
+
+            if (newAccessToken) {
+              localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken)
+              if (newRefreshToken) {
+                localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken)
+              }
+              console.log('✅ [API Client] Token refreshed and stored successfully')
+            } else {
+              // In header-token mode, absence of new tokens likely means refresh is not usable
+              console.error('❌ [API Client] Refresh succeeded but no tokens provided in header-token mode')
+              return false
+            }
           }
-          
+
+          // In cookie mode, cookies are updated server-side; nothing to store
           return true
         } else {
           console.error('❌ [API Client] Token refresh failed with status:', response.status)
