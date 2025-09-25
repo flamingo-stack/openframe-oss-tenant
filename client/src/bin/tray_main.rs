@@ -1,50 +1,281 @@
-#[cfg(target_os = "macos")]
-#[macro_use]
-extern crate objc;
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::process;
-use std::path::Path;
-use tracing::{info, error, warn};
+use tauri::{
+    AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
+    SystemTrayMenuItem, WindowBuilder, WindowUrl,
+};
+use tracing::{info, error};
 
-#[cfg(target_os = "macos")]
-use tray_icon::{TrayIconBuilder, menu::Menu, TrayIconEvent};
-
-#[cfg(target_os = "macos")]
-use std::sync::mpsc;
-
-#[cfg(target_os = "macos")]
-use image::io::Reader as ImageReader;
-
-/// Main entry point for the OpenFrame system tray application
 fn main() {
-    // Initialize logging with fallback to stdout if system logging fails
-    if let Err(e) = init_simple_logging() {
-        eprintln!("Failed to initialize logging: {}", e);
-        // Continue anyway, just log to stdout
+    // Initialize logging
+    init_simple_logging().expect("Failed to initialize logging");
+    
+    info!("OpenFrame Tray starting up - Cross Platform with Tauri + React");
+
+    // Create system tray menu
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+    let show = CustomMenuItem::new("show".to_string(), "Show Chat");
+    let tray_menu = SystemTrayMenu::new()
+        .add_item(show)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(quit);
+
+    // Create system tray
+    let system_tray = SystemTray::new()
+        .with_menu(tray_menu)
+        .with_tooltip("OpenFrame - Click to open React chat");
+
+    // Build the Tauri app
+    tauri::Builder::default()
+        .system_tray(system_tray)
+        .on_system_tray_event(|app, event| {
+            match event {
+                SystemTrayEvent::LeftClick {
+                    position: _,
+                    size: _,
+                    ..
+                } => {
+                    info!("System tray left clicked");
+                    show_chat_window(app);
+                }
+                SystemTrayEvent::MenuItemClick { id, .. } => {
+                    match id.as_str() {
+                        "quit" => {
+                            info!("Quit selected from tray menu");
+                            std::process::exit(0);
+                        }
+                        "show" => {
+                            info!("Show selected from tray menu");
+                            show_chat_window(app);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        })
+        .invoke_handler(tauri::generate_handler![])
+        .setup(|app| {
+            info!("Tauri app setup complete");
+            info!("System tray icon should be visible");
+            info!("Click the tray icon to open React chat window");
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+fn show_chat_window(app: &AppHandle) {
+    // Check if window already exists
+    if let Some(window) = app.get_window("chat") {
+        info!("Chat window already exists, showing it");
+        window.show().unwrap();
+        window.set_focus().unwrap();
+        return;
     }
 
-    info!("OpenFrame Tray starting up");
+    info!("Creating new chat window");
+    
+    // Create the HTML content with embedded React
+    let html_content = get_react_html();
+    
+    // Create new window with React content
+    let _window = WindowBuilder::new(
+        app,
+        "chat",
+        WindowUrl::App("index.html".into())
+    )
+    .title("OpenFrame Chat")
+    .inner_size(800.0, 600.0)
+    .resizable(true)
+    .center()
+    .build();
 
-    #[cfg(target_os = "macos")]
-    {
-        if let Err(e) = run_tray_app() {
-            error!("Failed to run tray app: {}", e);
-            process::exit(1);
+    match _window {
+        Ok(window) => {
+            info!("Chat window created successfully");
+            // Load the HTML content
+            window.eval(&format!(
+                r#"document.body.innerHTML = `{}`;"#,
+                html_content.replace('`', r#"\`"#)
+            )).unwrap();
         }
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        eprintln!("This tray application is currently only supported on macOS");
-        process::exit(1);
+        Err(e) => {
+            error!("Failed to create chat window: {}", e);
+        }
     }
 }
 
-/// Simple logging initialization that doesn't require system directories
+fn get_react_html() -> String {
+    r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenFrame Chat</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 60px 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .chat-title {
+            color: #333;
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 300;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .chat-message {
+            color: #555;
+            font-size: 1.4em;
+            margin-bottom: 40px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+        
+        .chat-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .chat-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .chat-button:active {
+            transform: translateY(-1px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function ChatApp() {
+            const [message, setMessage] = useState("Hi, I'm chat");
+            const [isAnimated, setIsAnimated] = useState(false);
+            const [clickCount, setClickCount] = useState(0);
+
+            useEffect(() => {
+                setIsAnimated(true);
+            }, []);
+
+            const messages = [
+                "Hi, I'm chat",
+                "Hello from OpenFrame! 👋",
+                "Ready to assist you! 🚀",
+                "What can I help you with? 💬",
+                "OpenFrame at your service! ⚡",
+                "Cross-platform desktop app! 💻",
+                "Built with Rust + Tauri + React! 🦀⚛️",
+                "System tray integration! 📱"
+            ];
+
+            const handleClick = () => {
+                setClickCount(prev => prev + 1);
+                const newMessage = messages[clickCount % messages.length];
+                setMessage(newMessage);
+            };
+
+            return (
+                <div className={`chat-container ${isAnimated ? 'fade-in' : ''}`}>
+                    <h1 className="chat-title">OpenFrame</h1>
+                    <p className="chat-message">
+                        <span className="status-indicator"></span>
+                        {message}
+                    </p>
+                    <button className="chat-button" onClick={handleClick}>
+                        Say Hello
+                    </button>
+                    <div style={{ marginTop: '20px', fontSize: '0.9em', color: '#888' }}>
+                        Desktop App • Cross Platform • Tauri + React
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ChatApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>"#.to_string()
+}
+
 fn init_simple_logging() -> Result<(), Box<dyn std::error::Error>> {
     use tracing_subscriber::{fmt, EnvFilter};
     
-    // Use simple stdout logging instead of system logging
     let subscriber = fmt::Subscriber::builder()
         .with_env_filter(EnvFilter::from_default_env().add_directive("openframe_tray=info".parse()?))
         .with_target(false)
@@ -55,275 +286,4 @@ fn init_simple_logging() -> Result<(), Box<dyn std::error::Error>> {
     
     tracing::subscriber::set_global_default(subscriber)?;
     Ok(())
-}
-
-#[cfg(target_os = "macos")]
-fn run_tray_app() -> Result<(), Box<dyn std::error::Error>> {
-    use std::thread;
-    use std::time::Duration;
-
-    info!("Initializing system tray for macOS");
-
-    // Initialize macOS application
-    init_macos_app();
-
-    // Load the tray icon
-    let icon_path = get_icon_path();
-    let icon = load_icon(&icon_path)?;
-
-    // Create a simple menu (for future use)
-    let menu = Menu::new();
-    
-    // Create channel for tray events
-    let (tx, rx) = mpsc::channel();
-    
-    // Set up global event handler for tray events
-    TrayIconEvent::set_event_handler(Some(move |event| {
-        if let Err(e) = tx.send(event) {
-            eprintln!("Failed to send tray event: {}", e);
-        }
-    }));
-    
-    // Create the tray icon with event handling
-    let _tray_icon = TrayIconBuilder::new()
-        .with_menu(Box::new(menu))
-        .with_tooltip("OpenFrame - Click to open chat")
-        .with_icon(icon)
-        .build()?;
-
-    info!("System tray icon created successfully");
-    info!("Look for the OpenFrame icon in the menu bar (top right)");
-    info!("Click the icon to open chat window");
-    info!("Press Ctrl+C to stop the application");
-
-    // Keep the application running with proper event loop
-    run_event_loop_with_events(rx);
-    
-    Ok(())
-}
-
-#[cfg(target_os = "macos")]
-fn get_icon_path() -> String {
-    // Try to find the icon in different possible locations
-    let possible_paths = vec![
-        "assets/icons/tray_icon.png",
-        "client/assets/icons/tray_icon.png",
-        "../assets/icons/tray_icon.png",
-        "./tray_icon.png",
-    ];
-
-    for path in possible_paths {
-        if Path::new(path).exists() {
-            info!("Found icon at: {}", path);
-            return path.to_string();
-        }
-    }
-
-    // If no icon found, we'll create a fallback
-    warn!("Icon file not found in expected locations, will create a simple fallback");
-    create_fallback_icon()
-}
-
-#[cfg(target_os = "macos")]
-fn create_fallback_icon() -> String {
-    use std::fs;
-    
-    // Create a simple 64x64 PNG icon programmatically
-    let icon_data = create_simple_icon_data();
-    let fallback_path = "/tmp/openframe_tray_icon.png";
-    
-    if let Err(e) = fs::write(fallback_path, icon_data) {
-        error!("Failed to create fallback icon: {}", e);
-        return String::new();
-    }
-    
-    info!("Created fallback icon at: {}", fallback_path);
-    fallback_path.to_string()
-}
-
-#[cfg(target_os = "macos")]
-fn create_simple_icon_data() -> Vec<u8> {
-    // This is a minimal 32x32 PNG icon data (a simple square)
-    vec![
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x20,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x73, 0x7A, 0x7A, 0xF4, 0x00, 0x00, 0x00,
-        0x19, 0x74, 0x45, 0x58, 0x74, 0x53, 0x6F, 0x66, 0x74, 0x77, 0x61, 0x72,
-        0x65, 0x00, 0x41, 0x64, 0x6F, 0x62, 0x65, 0x20, 0x49, 0x6D, 0x61, 0x67,
-        0x65, 0x52, 0x65, 0x61, 0x64, 0x79, 0x71, 0xC9, 0x65, 0x3C, 0x00, 0x00,
-        0x02, 0x40, 0x49, 0x44, 0x41, 0x54, 0x78, 0xDA, 0xED, 0x97, 0x4D, 0x6A,
-        0x02, 0x31, 0x10, 0x85, 0xDF, 0x26, 0x26, 0x26, 0x26, 0x26, 0x26, 0x26,
-        0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
-    ]
-}
-
-#[cfg(target_os = "macos")]
-fn load_icon(icon_path: &str) -> Result<tray_icon::Icon, Box<dyn std::error::Error>> {
-    use tray_icon::Icon;
-
-    if icon_path.is_empty() || !Path::new(icon_path).exists() {
-        warn!("Icon file not found: {}, using fallback", icon_path);
-        return create_fallback_tray_icon();
-    }
-
-    info!("Loading icon from: {}", icon_path);
-    
-    // Load the image
-    let img = ImageReader::open(icon_path)?
-        .decode()?;
-    
-    // Convert to RGBA
-    let rgba_img = img.to_rgba8();
-    let (width, height) = rgba_img.dimensions();
-    let rgba_data = rgba_img.into_raw();
-    
-    // Create the tray icon
-    let icon = Icon::from_rgba(rgba_data, width, height)?;
-    
-    info!("Icon loaded successfully: {}x{}", width, height);
-    Ok(icon)
-}
-
-#[cfg(target_os = "macos")]
-fn create_fallback_tray_icon() -> Result<tray_icon::Icon, Box<dyn std::error::Error>> {
-    use tray_icon::Icon;
-    
-    // Create a simple 64x64 red square as fallback for better visibility
-    let width = 64;
-    let height = 64;
-    let mut rgba_data = Vec::with_capacity((width * height * 4) as usize);
-    
-    for y in 0..height {
-        for x in 0..width {
-            // Create a simple pattern - blue square with white border
-            if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
-                // White border
-                rgba_data.extend_from_slice(&[255, 255, 255, 255]);
-            } else if x > 16 && x < width - 16 && y > 16 && y < height - 16 {
-                // Inner bright red square - very visible!
-                rgba_data.extend_from_slice(&[255, 0, 0, 255]);
-            } else {
-                // Light red area
-                rgba_data.extend_from_slice(&[255, 150, 150, 255]);
-            }
-        }
-    }
-    
-    let icon = Icon::from_rgba(rgba_data, width, height)?;
-    info!("Created fallback tray icon: {}x{}", width, height);
-    Ok(icon)
-}
-
-#[cfg(target_os = "macos")]
-fn init_macos_app() {
-    use objc::runtime::{Class, Object};
-    use objc::{class, msg_send, sel, sel_impl};
-    
-    unsafe {
-        // Get NSApplication class
-        let ns_app_class: &Class = class!(NSApplication);
-        let shared_app: *mut Object = msg_send![ns_app_class, sharedApplication];
-        
-        if !shared_app.is_null() {
-            // Set activation policy to accessory (1) so the app doesn't appear in dock
-            let _: () = msg_send![shared_app, setActivationPolicy: 1];
-            info!("macOS NSApplication initialized");
-        } else {
-            warn!("Failed to get NSApplication shared instance");
-        }
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn run_event_loop_with_events(rx: mpsc::Receiver<TrayIconEvent>) {
-    use tao::event_loop::{EventLoop, ControlFlow};
-    use tao::event::Event;
-    use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, Ordering};
-    
-    // Create proper event loop for macOS
-    let event_loop = EventLoop::new();
-    let window_open = Arc::new(AtomicBool::new(false));
-    
-    // Set up signal handler for graceful shutdown
-    ctrlc::set_handler(move || {
-        println!("Received interrupt signal, shutting down...");
-        std::process::exit(0);
-    }).expect("Error setting Ctrl-C handler");
-    
-    println!("Starting macOS event loop...");
-    println!("Click the tray icon to open chat window");
-    
-    // Run the proper macOS event loop
-    event_loop.run(move |event, event_loop_target, control_flow| {
-        *control_flow = ControlFlow::Wait;
-        
-        // Check for tray icon events
-        if let Ok(tray_event) = rx.try_recv() {
-            match tray_event {
-                TrayIconEvent::Click { .. } => {
-                    println!("Tray icon clicked!");
-                    if !window_open.load(Ordering::SeqCst) {
-                        if let Err(e) = open_simple_chat_window() {
-                            eprintln!("Failed to open chat window: {}", e);
-                        } else {
-                            window_open.store(true, Ordering::SeqCst);
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-        
-        match event {
-            Event::WindowEvent { event: window_event, .. } => {
-                match window_event {
-                    tao::event::WindowEvent::CloseRequested => {
-                        window_open.store(false, Ordering::SeqCst);
-                    }
-                    _ => {}
-                }
-            }
-            Event::MainEventsCleared => {
-                // Main events cleared
-            }
-            _ => {}
-        }
-    });
-}
-
-#[cfg(target_os = "macos")]
-fn open_simple_chat_window() -> Result<(), Box<dyn std::error::Error>> {
-    use std::process::Command;
-    
-    println!("Opening chat window using AppleScript...");
-    
-    // Create AppleScript to show a dialog with the message
-    let applescript = r#"
-    tell application "System Events"
-        set dialogResult to display dialog "hello, I'm chat" with title "OpenFrame Chat" buttons {"OK"} default button "OK" with icon note
-    end tell
-    "#;
-    
-    // Execute AppleScript
-    let output = Command::new("osascript")
-        .arg("-e")
-        .arg(applescript)
-        .output()?;
-    
-    if output.status.success() {
-        println!("Chat dialog opened successfully");
-    } else {
-        let error = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Failed to open dialog: {}", error);
-    }
-    
-    Ok(())
-}
-
-#[cfg(target_os = "macos")]
-fn get_screen_size() -> (i32, i32) {
-    // Simplified approach - use common macOS resolution
-    // In a real app, you could use CoreGraphics to get actual screen size
-    (1440, 900) // Common MacBook resolution
 }
