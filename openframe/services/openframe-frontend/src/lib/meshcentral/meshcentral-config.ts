@@ -7,7 +7,7 @@ export type MeshUrlParts = {
 
 export function getMeshBaseHostPort(): string {
   const apiUrl = runtimeEnv.apiUrl()
-  const env = apiUrl.replace('/api', '') + '/ws/tools/meshcentral-server/api/ws' // 'localhost:8383' || wss://localhost/ws/tools/meshcentral-server/api/ws
+  const env = apiUrl.replace('/api', '') + '/ws/tools/meshcentral-server' // 'localhost:8383'
 
   // Strip protocols if provided
   if (env.startsWith('ws://')) return env.substring('ws://'.length)

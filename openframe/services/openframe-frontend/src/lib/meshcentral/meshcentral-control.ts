@@ -1,6 +1,7 @@
 type ControlAuthCookies = { authCookie: string; relayCookie?: string }
 
 import { buildWsUrl, MESH_USER, MESH_PASS } from './meshcentral-config'
+import { runtimeEnv } from '../runtime-config'
 
 export class MeshControlClient {
   private socket: WebSocket | null = null
@@ -13,6 +14,15 @@ export class MeshControlClient {
     const qs = new URLSearchParams({ user: credentials?.user || MESH_USER, pass: credentials?.pass || MESH_PASS })
     if (authCookie) qs.append('auth', authCookie)
     this.url = buildWsUrl(`/control.ashx?${qs.toString()}`)
+
+    // Attempt to include bearer token via WebSocket subprotocols (browser-safe)
+    try {
+      const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
+      if (isDevTicketEnabled && typeof window !== 'undefined') {
+        const token = localStorage.getItem('of_access_token')
+        if (token) this.url += `&authorization=${token}`
+      }
+    } catch {}
   }
 
   async getAuthCookies(timeoutMs = 8000): Promise<ControlAuthCookies> {
