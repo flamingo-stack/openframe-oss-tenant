@@ -1,10 +1,8 @@
-export { 
-  DeviceTabNavigation, 
-  type DeviceTab, 
-  getDeviceTabs, 
-  getDeviceTab, 
-  getTabComponent 
-} from './device-tab-navigation'
+export {
+  DEVICE_TABS,
+  getDeviceTab,
+  getTabComponent
+} from './device-tabs'
 export { DeviceTabContent } from './device-tab-content'
 export { HardwareTab } from './hardware-tab'
 export { NetworkTab } from './network-tab'

@@ -21,11 +21,15 @@ type ArgoCD struct {
 }
 
 // NewArgoCD creates a new ArgoCD service
-func NewArgoCD(helmManager *helm.HelmManager, pathResolver *config.PathResolver, executor executor.CommandExecutor) *ArgoCD {
+func NewArgoCD(helmManager *helm.HelmManager, pathResolver *config.PathResolver, exec executor.CommandExecutor) *ArgoCD {
+	// Create a non-verbose executor for ArgoCD operations to reduce command spam
+	// We'll handle verbose logging at a higher level in the ArgoCD manager
+	argoCDExecutor := executor.NewRealCommandExecutor(false, false) // Never verbose for internal operations
+
 	return &ArgoCD{
 		helmManager:   helmManager,
 		pathResolver:  pathResolver,
-		argoCDManager: argocd.NewManager(executor),
+		argoCDManager: argocd.NewManager(argoCDExecutor),
 	}
 }
 

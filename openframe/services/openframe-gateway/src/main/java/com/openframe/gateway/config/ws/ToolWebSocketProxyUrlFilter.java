@@ -6,6 +6,7 @@ import com.openframe.data.document.tool.ToolUrlType;
 import com.openframe.data.reactive.repository.tool.ReactiveIntegratedToolRepository;
 import com.openframe.data.service.ToolUrlService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.RouteToRequestUrlFilter;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 import java.net.URI;
 
 @RequiredArgsConstructor
+@Slf4j
 public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Ordered {
 
     private final ReactiveIntegratedToolRepository toolRepository;
@@ -41,6 +43,8 @@ public abstract class ToolWebSocketProxyUrlFilter implements GatewayFilter, Orde
                 .flatMap(toolUrl -> {
                     String endpointPrefix = getEndpointPrefix();
                     URI proxyUri = proxyUrlResolver.resolve(toolId, toolUrl.getUrl(), toolUrl.getPort(), requestUri, endpointPrefix);
+
+                    log.info("Proxy web socket request: {}", proxyUri);
 
                     exchange.getAttributes()
                             .put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, proxyUri);

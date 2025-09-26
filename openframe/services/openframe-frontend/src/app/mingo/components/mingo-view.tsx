@@ -1,26 +1,28 @@
 'use client'
 
 import React, { useState } from "react"
-import { 
-  MingoTabNavigation, 
-  MingoTabContent 
-} from './tabs'
+import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
+import { MINGO_TABS } from './tabs/mingo-tabs'
 
 type TabId = 'current' | 'archived'
 
 export function MingoView() {
   const [activeTab, setActiveTab] = useState<TabId>('current')
 
+  const TabComponent = getTabComponent(MINGO_TABS, activeTab)
+
   return (
     <div className="flex flex-col w-full">
-      {/* Tab Navigation */}
-      <MingoTabNavigation
+      <TabNavigation
         activeTab={activeTab}
         onTabChange={(tabId) => setActiveTab(tabId as TabId)}
+        tabs={MINGO_TABS}
       />
 
-      {/* Tab Content */}
-      <MingoTabContent activeTab={activeTab} />
+      <TabContent
+        activeTab={activeTab}
+        TabComponent={TabComponent}
+      />
     </div>
   )
 }

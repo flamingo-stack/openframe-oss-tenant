@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::models::ToolConnectionMessage;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 
@@ -16,6 +17,7 @@ impl ToolConnectionMessagePublisher {
         let topic = Self::build_topic_name(machine_id);
         let message = Self::build_message(agent_tool_id, tool_type);
         self.nats_message_publisher.publish(&topic, message).await
+            .context(format!("Failed to publish tool connection message to topic: {}", topic))
         // TODO: wait for ack and publish again if failed
     }
 

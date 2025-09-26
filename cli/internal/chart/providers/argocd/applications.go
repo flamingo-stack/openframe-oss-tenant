@@ -39,7 +39,7 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 		resources := strings.Fields(manifestResult.Stdout)
 		if len(resources) > 0 {
 			if config.Verbose {
-				pterm.Debug.Printf("Found %d Application resources planned by app-of-apps\n", len(resources))
+				pterm.Debug.Printf("Detected %d applications planned by app-of-apps\n", len(resources))
 			}
 			return len(resources)
 		}

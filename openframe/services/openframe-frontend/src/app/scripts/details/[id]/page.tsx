@@ -1,19 +1,12 @@
+'use client'
+
 import { AppLayout } from '../../../components/app-layout'
 import { ScriptDetailsView } from '../../components/script-details-view'
+import { useParams } from 'next/navigation'
 
-interface ScriptDetailsPageProps {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export async function generateStaticParams() {
-  // Return empty array for static export - pages will be generated on demand
-  return []
-}
-
-export default async function ScriptDetailsPage({ params }: ScriptDetailsPageProps) {
-  const { id } = await params
+export default function ScriptDetailsPage() {
+  const params = useParams<{ id?: string }>()
+  const id = typeof params?.id === 'string' ? params.id : ''
   return (
     <AppLayout>
       <ScriptDetailsView scriptId={id} />

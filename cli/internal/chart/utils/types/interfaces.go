@@ -135,11 +135,13 @@ type StepResult struct {
 
 // InstallationRequest contains all parameters for chart installation
 type InstallationRequest struct {
-	Args         []string
-	Force        bool
-	DryRun       bool
-	Verbose      bool
-	GitHubRepo   string
-	GitHubBranch string
-	CertDir      string
+	Args           []string
+	Force          bool
+	DryRun         bool
+	Verbose        bool
+	GitHubRepo     string
+	GitHubBranch   string
+	CertDir        string
+	DeploymentMode string // Deployment mode: "oss-tenant", "saas-tenant", "saas-shared", or empty for interactive
+	NonInteractive bool   // Skip all prompts, use existing helm-values.yaml
 }

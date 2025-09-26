@@ -2,6 +2,13 @@ global:
   registerJob:
     enabled: true
 
+registry:
+  docker:
+    server: https://index.docker.io/v1/
+    username: ""
+    password: ""
+    email: ""
+
 postgres:
   image: 
     repo: ghcr.io/flamingo-stack/openframe-oss-tenant/authentik-postgresql

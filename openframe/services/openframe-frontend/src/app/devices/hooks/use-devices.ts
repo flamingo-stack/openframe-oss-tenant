@@ -3,8 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { apiClient } from '@lib/api-client'
-import { tacticalApiClient } from '@lib/tactical-api-client'
-import { Device, DeviceFilters, DeviceFilterInput } from '../types/device.types'
+import { Device, DeviceFilters, DeviceFilterInput, DevicesGraphQLNode, GraphQLResponse } from '../types/device.types'
+import { GET_DEVICES_QUERY, GET_DEVICE_FILTERS_QUERY } from '../queries/devices-queries'
 
 export function useDevices(filters: DeviceFilterInput = {}) {
   const { toast } = useToast()
@@ -21,77 +21,98 @@ export function useDevices(filters: DeviceFilterInput = {}) {
     setError(null)
 
     try {
-      const response = await tacticalApiClient.getAgents()
+      const response = await apiClient.post<GraphQLResponse<{ devices: {
+        edges: Array<{ node: DevicesGraphQLNode, cursor: string }>
+        pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string, endCursor?: string }
+        filteredCount: number
+      }}>>('graphql', {
+        query: GET_DEVICES_QUERY,
+        variables: {
+          filter: filtersRef.current,
+          pagination: { limit: 100, cursor: null },
+          search: searchTerm || ''
+        }
+      })
 
       if (!response.ok) {
         throw new Error(response.error || `Request failed with status ${response.status}`)
       }
 
-      if (!response.data) {
+      const graphqlResponse = response.data
+      if (!graphqlResponse?.data) {
         throw new Error('No data received from server')
       }
-
-      const transformedDevices = response.data.map(agent => ({
-        ...agent,
-        displayName: agent.description || agent.hostname,
-        organizationId: agent.client_name,
-        organization: agent.client_name,
-        type: agent.monitoring_type?.toUpperCase() || 'UNKNOWN',
-        osType: agent.operating_system,
-        osVersion: agent.version,
-        osBuild: agent.version,
-        registeredAt: agent.last_seen,
-        updatedAt: agent.last_seen,
-        manufacturer: agent.make_model?.split('\n')[0] || 'Unknown',
-        model: agent.make_model?.trim() || 'Unknown',
-        osUuid: undefined,
-        machineId: agent.agent_id,
-        // Extract IP from local_ips (first IP)
-        ip: agent.local_ips?.split(',')[0]?.trim() || agent.public_ip,
-        macAddress: undefined,
-        agentVersion: agent.version,
-        disks: agent.disks || [],
-        serialNumber: agent.serial_number,
-        totalRam: agent.total_ram,
-        tags: []
-      }))
-
-      let filteredDevices = transformedDevices
-
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase()
-        filteredDevices = filteredDevices.filter(device => 
-          device.displayName?.toLowerCase().includes(term) ||
-          device.hostname.toLowerCase().includes(term) ||
-          device.agent_id.toLowerCase().includes(term) ||
-          device.client_name?.toLowerCase().includes(term) ||
-          device.logged_username?.toLowerCase().includes(term)
-        )
-      }
-      
-      if (filtersRef.current.statuses?.length) {
-        filteredDevices = filteredDevices.filter(device => {
-          const mappedStatus = device.status === 'online' ? 'ACTIVE' : 
-                             device.status === 'offline' ? 'DECOMMISSIONED' :
-                             device.status === 'idle' ? 'MAINTENANCE' : 
-                             device.status.toUpperCase()
-          return filtersRef.current.statuses!.includes(mappedStatus) || filtersRef.current.statuses!.includes(device.status.toUpperCase())
-        })
-      }
-      
-      if (filtersRef.current.deviceTypes?.length) {
-        filteredDevices = filteredDevices.filter(device => 
-          device.type && filtersRef.current.deviceTypes!.includes(device.type)
-        )
-      }
-      
-      if (filtersRef.current.osTypes?.length) {
-        filteredDevices = filteredDevices.filter(device => 
-          filtersRef.current.osTypes!.includes(device.operating_system)
-        )
+      if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
+        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
       }
 
-      setDevices(filteredDevices)
+      const nodes = graphqlResponse.data.devices.edges.map(e => e.node)
+
+      const transformedDevices: Device[] = nodes.map(node => {
+        const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')
+        return {
+          // legacy/tactical fields for UI compatibility
+          agent_id: tactical?.agentToolId || node.machineId || node.id,
+          hostname: node.hostname || node.displayName || '',
+          site_name: '',
+          client_name: node.organizationId || '',
+          monitoring_type: node.type || '',
+          description: node.displayName || node.hostname || '',
+          needs_reboot: false,
+          pending_actions_count: 0,
+          status: node.status || 'UNKNOWN',
+          overdue_text_alert: false,
+          overdue_email_alert: false,
+          overdue_dashboard_alert: false,
+          last_seen: node.lastSeen || '',
+          boot_time: 0,
+          checks: { total: 0, passing: 0, failing: 0, warning: 0, info: 0, has_failing_checks: false },
+          maintenance_mode: false,
+          logged_username: '',
+          italic: false,
+          block_policy_inheritance: false,
+          plat: node.osType || '',
+          goarch: '',
+          has_patches_pending: false,
+          version: node.agentVersion || '',
+          operating_system: node.osType || '',
+          public_ip: '',
+          cpu_model: [],
+          graphics: '',
+          local_ips: node.ip || '',
+          make_model: [node.manufacturer, node.model].filter(Boolean).join(' '),
+          physical_disks: [],
+          custom_fields: [],
+          serial_number: node.serialNumber || '',
+          total_ram: '',
+
+          // computed fields used by UI
+          id: node.id,
+          machineId: node.machineId,
+          displayName: node.displayName || node.hostname,
+          organizationId: node.organizationId,
+          organization: node.organizationId,
+          type: node.type,
+          osType: node.osType,
+          osVersion: node.osVersion,
+          osBuild: node.osBuild,
+          registeredAt: node.registeredAt,
+          updatedAt: node.updatedAt,
+          manufacturer: node.manufacturer,
+          model: node.model,
+          osUuid: node.osUuid,
+          lastSeen: node.lastSeen,
+          tags: node.tags || [],
+          ip: node.ip,
+          macAddress: node.macAddress,
+          agentVersion: node.agentVersion,
+          serialNumber: node.serialNumber,
+          totalRam: undefined,
+          toolConnections: node.toolConnections
+        }
+      })
+
+      setDevices(transformedDevices)
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch devices'
@@ -109,54 +130,24 @@ export function useDevices(filters: DeviceFilterInput = {}) {
 
   const fetchDeviceFilters = useCallback(async () => {
     try {
-      const response = await tacticalApiClient.getAgents()
+      const response = await apiClient.post<GraphQLResponse<{ deviceFilters: DeviceFilters }>>('graphql', {
+        query: GET_DEVICE_FILTERS_QUERY,
+        variables: {
+          filter: filtersRef.current
+        }
+      })
 
       if (!response.ok) {
         throw new Error(response.error || `Request failed with status ${response.status}`)
       }
 
-      if (response.data) {
-        const devices = response.data
-        
-        const statusCounts = new Map<string, number>()
-        const deviceTypeCounts = new Map<string, number>()
-        const osTypeCounts = new Map<string, number>()
-        const clientCounts = new Map<string, number>()
-        const tagCounts = new Map<string, { value: string; label: string; count: number }>()
-
-        devices.forEach(device => {
-          const status = device.status === 'online' ? 'ACTIVE' : 
-                        device.status === 'offline' ? 'DECOMMISSIONED' :
-                        device.status === 'idle' ? 'MAINTENANCE' : 
-                        device.status.toUpperCase()
-          statusCounts.set(status, (statusCounts.get(status) || 0) + 1)
-
-          const deviceType = device.monitoring_type?.toUpperCase() || 'UNKNOWN'
-          deviceTypeCounts.set(deviceType, (deviceTypeCounts.get(deviceType) || 0) + 1)
-
-          const osName = device.operating_system.split(' ')[0] || device.operating_system
-          osTypeCounts.set(osName, (osTypeCounts.get(osName) || 0) + 1)
-
-          if (device.client_name) {
-            clientCounts.set(device.client_name, (clientCounts.get(device.client_name) || 0) + 1)
-          }
-        })
-
-        const statuses = Array.from(statusCounts.entries()).map(([value, count]) => ({ value, count }))
-        const deviceTypes = Array.from(deviceTypeCounts.entries()).map(([value, count]) => ({ value, count }))
-        const osTypes = Array.from(osTypeCounts.entries()).map(([value, count]) => ({ value, count }))
-        const organizationIds = Array.from(clientCounts.entries()).map(([value, count]) => ({ value, count }))
-        const tags = Array.from(tagCounts.values())
-
-        setDeviceFilters({
-          statuses,
-          deviceTypes,
-          osTypes,
-          organizationIds,
-          tags,
-          filteredCount: devices.length
-        })
+      const graphqlResponse = response.data
+      if (!graphqlResponse?.data) return
+      if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
+        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
       }
+
+      setDeviceFilters(graphqlResponse.data.deviceFilters)
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device filters'

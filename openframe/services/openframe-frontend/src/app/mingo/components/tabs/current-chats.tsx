@@ -2,13 +2,12 @@
 
 import React, { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Table, 
-  SearchBar, 
-  Button
+import {
+  Table,
+  Button,
+  ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
-import { PageError } from '@flamingo/ui-kit/components/ui'
 import { useDialogs } from '../../hooks/use-dialogs'
 import { Dialog } from '../../types/dialog.types'
 import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table-columns'
@@ -46,41 +45,32 @@ export function CurrentChats() {
     setTableFilters(columnFilters)
   }, [])
 
-  if (error) {
-    return <PageError message={error} />
-  }
+  const headerActions = (
+    <>
+      <Button
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+      >
+        Archive Resolved
+      </Button>
+      <Button
+        className="bg-ods-accent hover:bg-ods-accent-hover text-text-on-accent px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+        disabled
+      >
+        New Chat
+      </Button>
+    </>
+  )
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* Header for Current Chats */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-          Current Chats
-        </h1>
-        <div className="flex items-center gap-2">
-          <Button
-            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-          >
-            Archive Resolved
-          </Button>
-          <Button
-            className="bg-ods-accent hover:bg-ods-accent-hover text-text-on-accent px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-            disabled
-          >
-            New Chat
-          </Button>
-        </div>
-      </div>
-
-      {/* Search for Current Chats */}
-      <SearchBar
-        placeholder="Search for Chat"
-        onSubmit={setSearchTerm}
-        value={searchTerm}
-        className="w-full"
-      />
-
-      {/* Current Chats Table */}
+    <ListPageLayout
+      title="Current Chats"
+      headerActions={headerActions}
+      searchPlaceholder="Search for Chat"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
+      padding="sm"
+    >
       <Table
         data={dialogs}
         columns={columns}
@@ -94,6 +84,6 @@ export function CurrentChats() {
         mobileColumns={['topic', 'status', 'countdown']}
         rowClassName="mb-1"
       />
-    </div>
+    </ListPageLayout>
   )
 }

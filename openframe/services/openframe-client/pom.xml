@@ -34,11 +34,11 @@
         </dependency>
         <!-- OpenFrame SDKs -->
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>tacticalrmm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>fleetmdm</artifactId>
         </dependency>
         <!-- Spring Boot starters with Jackson excluded -->

@@ -60,6 +60,7 @@ impl NatsConnectionManager {
             .reconnect_delay_callback(|attempt| {
                 std::time::Duration::from_secs(5)
             })
+            .ping_interval(std::time::Duration::from_secs(10))
             .event_callback(|event| async move {
                 info!("Nats event: {:?}", event);
             })

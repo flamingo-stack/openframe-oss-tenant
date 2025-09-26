@@ -71,30 +71,48 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
   }
 
   return (
-    <div className="flex flex-col gap-1 flex-1 min-w-0">
+    <div className="flex flex-col gap-3 w-full">
       {/* Section Title */}
       <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
         Full Information
       </div>
 
       {/* Info Card */}
-      <div className="bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3 items-start p-4 w-full">
-        <InfoRow label="toolEventId" value={logDetails.toolEventId} />
-        <InfoRow label="ingestDay" value={logDetails.ingestDay} />
-        <InfoRow 
-          label="toolType" 
-          value={logDetails.toolType} 
-          icon={getToolIcon(logDetails.toolType)} 
-        />
-        <InfoRow label="eventType" value={logDetails.eventType} />
-        <InfoRow label="severity" value={logDetails.severity} />
-        {logDetails.userId && (
-          <InfoRow label="userId" value={logDetails.userId} />
-        )}
-        {logDetails.deviceId && (
-          <InfoRow label="deviceId" value={logDetails.deviceId} />
-        )}
-        <InfoRow label="timestamp" value={formatTimestamp(logDetails.timestamp)} />
+      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full">
+        <div className="flex flex-col divide-y divide-ods-border">
+          <div className="p-4 sm:p-6">
+            <InfoRow label="toolEventId" value={logDetails.toolEventId} />
+          </div>
+          <div className="p-4 sm:p-6">
+            <InfoRow label="ingestDay" value={logDetails.ingestDay} />
+          </div>
+          <div className="p-4 sm:p-6">
+            <InfoRow
+              label="toolType"
+              value={logDetails.toolType}
+              icon={getToolIcon(logDetails.toolType)}
+            />
+          </div>
+          <div className="p-4 sm:p-6">
+            <InfoRow label="eventType" value={logDetails.eventType} />
+          </div>
+          <div className="p-4 sm:p-6">
+            <InfoRow label="severity" value={logDetails.severity} />
+          </div>
+          {logDetails.userId && (
+            <div className="p-4 sm:p-6">
+              <InfoRow label="userId" value={logDetails.userId} />
+            </div>
+          )}
+          {logDetails.deviceId && (
+            <div className="p-4 sm:p-6">
+              <InfoRow label="deviceId" value={logDetails.deviceId} />
+            </div>
+          )}
+          <div className="p-4 sm:p-6">
+            <InfoRow label="timestamp" value={formatTimestamp(logDetails.timestamp)} />
+          </div>
+        </div>
       </div>
     </div>
   )
