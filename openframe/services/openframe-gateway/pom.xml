@@ -24,6 +24,11 @@
             <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-security-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-security-oauth</artifactId>
+            <version>${openframe.libs.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.openframe.oss</groupId>
