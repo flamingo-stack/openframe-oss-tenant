@@ -1,0 +1,40 @@
+.status-indicator {
+  display: inline-block;
+  width: var(--status-size);
+  height: var(--status-size);
+  background: var(--status-color);
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.status-indicator--online {
+  animation: pulse 2s infinite;
+}
+
+.status-indicator--connecting {
+  animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+  0% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.7; 
+    transform: scale(1.1);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+
+@keyframes blink {
+  0%, 50% { 
+    opacity: 1; 
+  }
+  51%, 100% { 
+    opacity: 0.3; 
+  }
+}
