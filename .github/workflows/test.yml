@@ -11,6 +11,7 @@ permissions:
   pull-requests: write
   attestations: write
   id-token: write
+  pages: write
 
 on:
   pull_request:
@@ -25,6 +26,16 @@ on:
       - 'scripts/**'
       - 'client/**'
       - 'cli/**'
+
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test Suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
@@ -245,6 +256,80 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
+      - name: Install Allure
+        run: |
+          wget -q https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -xzf allure-2.25.0.tgz
+          sudo mv allure-2.25.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+          allure --version
+
+      - name: Run E2E Tests
+        working-directory: openframe-e2e-tests
+        run: |
+          mvn test -Dtest="**/*Test" -Dallure.results.directory=target/allure-results -Dmaven.test.failure.ignore=true
+
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: |
+            openframe-e2e-tests/target/allure-results
+            openframe-e2e-tests/target/surefire-reports
+          retention-days: 7
+
+  generate-allure-report:
+    name: Generate Allure Report
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+          fetch-depth: 1
+
+      - name: Install Allure
+        run: |
+          wget -q https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -xzf allure-2.25.0.tgz
+          sudo mv allure-2.25.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+          allure --version
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results --clean -o allure-report
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./allure-report
+          destination_dir: e2e-reports/${{ github.run_number }}
+          keep_files: true
+
+      - name: Comment with report links
+        if: always()
+        run: |
+          echo "📊 **E2E Test Report Generated**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **Links:**" >> $GITHUB_STEP_SUMMARY
+          echo "- [📈 Allure Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/e2e-reports/${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+
+
   test_client:
     name: "Test Client: ${{ matrix.os }}"
     needs: [changes, matrix]
@@ -298,7 +383,7 @@ jobs:
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
-    needs: [changes, matrix, test]
+    needs: [changes, matrix, test, generate-allure-report]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
     strategy:
@@ -329,7 +414,7 @@ jobs:
 
   final-checks:
     name: Final tests
-    needs: [test]
+    needs: [test, generate-allure-report]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' && 
