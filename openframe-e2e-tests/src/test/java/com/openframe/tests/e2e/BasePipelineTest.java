@@ -13,7 +13,7 @@ import java.util.concurrent.Callable;
 import org.awaitility.Awaitility;
 
 @Slf4j
-public abstract class BasePipelineE2ETest extends BaseTest {
+public abstract class BasePipelineTest extends BaseTest {
 
     protected static final Duration EVENTUAL_CONSISTENCY = Duration.ofSeconds(30);
     protected static final Duration PIPELINE_TIMEOUT = Duration.ofSeconds(60);

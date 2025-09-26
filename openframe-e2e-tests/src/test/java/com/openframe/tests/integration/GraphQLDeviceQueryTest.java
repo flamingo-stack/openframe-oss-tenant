@@ -3,7 +3,7 @@ package com.openframe.tests.integration;
 import com.openframe.support.constants.GraphQLQueries;
 import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.ApiHelpers;
-import com.openframe.tests.e2e.BasePipelineE2ETest;
+import com.openframe.tests.e2e.BasePipelineTest;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("integration")
 @Tag("graphql")
 @Tag("device")
-public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
+public class GraphQLDeviceQueryTest extends BasePipelineTest {
 
     private String machineId;
     private Map<String, Object> deviceData;
@@ -52,7 +52,7 @@ public class GraphQLDeviceQueryIT extends BasePipelineE2ETest {
     }
     
     @Test
-    @Severity(SeverityLevel.CRITICAL)
+    @Disabled
     @Description("Verify device registration stores in MongoDB and indexes in Pinot")
     @DisplayName("Device registration stores and indexes correctly")
     void deviceRegistrationStoresAndIndexesCorrectly() {

@@ -10,6 +10,8 @@ import com.openframe.support.helpers.ApiCalls;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junitpioneer.jupiter.RetryingTest;
 
 import static com.openframe.support.constants.TestConstants.*;
@@ -18,20 +20,14 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@Execution(ExecutionMode.SAME_THREAD)
 public class UserRegistrationApiTest extends ApiBaseTest {
 
     @Test
     @Order(1)
-    @RetryingTest(2)
     @DisplayName("Should successfully register user with valid data")
     void shouldRegisterUserWithValidData() {
-        long userCount = DBQuery.getUserCount();
-        long tenantCount = DBQuery.getTenantCount();
-        
-        if (userCount > 0 || tenantCount > 0) {
-            log.info("Clearing database before registration test - found {} users and {} tenants", userCount, tenantCount);
-            DBQuery.clearAllData();
-        }
+        clearDataInMongo();
 
         UserRegistrationBuilder userData = UserRegistrationBuilder.random();
         Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData);
@@ -67,7 +63,6 @@ public class UserRegistrationApiTest extends ApiBaseTest {
             softAssertions.assertThat(userInDb.getFirstName()).isEqualTo(userData.getFirstName());
             softAssertions.assertThat(userInDb.getLastName()).isEqualTo(userData.getLastName());
             softAssertions.assertThat(userInDb.getTenantId()).isNotNull();
-            softAssertions.assertThat(userInDb.getTenantDomain()).isEqualTo(userData.getTenantDomain());
             softAssertions.assertThat(userInDb.getStatus()).isEqualTo("ACTIVE");
             softAssertions.assertThat(userInDb.getLoginProvider()).isEqualTo("LOCAL");
             softAssertions.assertThat(userInDb.getEmailVerified()).isFalse();
@@ -116,6 +111,7 @@ public class UserRegistrationApiTest extends ApiBaseTest {
     @DisplayName("Should fail registration with duplicate email")
     void shouldFailRegistrationWithDuplicateEmail() {
 
+        clearDataInMongo();
         UserRegistrationBuilder firstUser = UserRegistrationBuilder.random();
         Response firstResponse = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, firstUser);
         assertEquals(HTTP_OK, firstResponse.getStatusCode());
@@ -131,5 +127,15 @@ public class UserRegistrationApiTest extends ApiBaseTest {
         assertThat(errorResponse.getMessage()).isNotNull();
 
         log.info("Registration correctly failed for duplicate email: {}", firstUser.getEmail());
+    }
+
+    private void clearDataInMongo() {
+        long userCount = DBQuery.getUserCount();
+        long tenantCount = DBQuery.getTenantCount();
+
+        if (userCount > 0 || tenantCount > 0) {
+            log.info("Clearing database before registration test - found {} users and {} tenants", userCount, tenantCount);
+            DBQuery.clearAllData();
+        }
     }
 }

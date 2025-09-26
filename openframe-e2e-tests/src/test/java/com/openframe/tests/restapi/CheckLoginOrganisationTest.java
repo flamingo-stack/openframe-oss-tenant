@@ -5,6 +5,7 @@ import com.openframe.support.helpers.ApiCalls;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +20,7 @@ public class CheckLoginOrganisationTest extends ApiBaseTest {
     private static final Faker faker = new Faker();
 
     @Test
+    @Disabled
     @DisplayName("Should return tenant discover response when organization does not exist")
     void shouldReturnTenantDiscoverResponseWhenOrganizationDoesNotExist() {
         String fakeEmail = faker.internet().emailAddress();

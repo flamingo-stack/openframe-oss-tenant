@@ -1,8 +1,8 @@
 package com.openframe.tests.integration;
 
 import com.openframe.support.enums.TestPhase;
-import com.openframe.tests.e2e.BasePipelineE2ETest;
 import com.openframe.support.helpers.ApiHelpers;
+import com.openframe.tests.e2e.BasePipelineTest;
 import io.qameta.allure.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("Agent Registration Flow E2E Test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.CONCURRENT)
-public class AgentRegistrationIT extends BasePipelineE2ETest {
+public class AgentRegistrationTest extends BasePipelineTest {
     private String machineId;
     
     @BeforeEach

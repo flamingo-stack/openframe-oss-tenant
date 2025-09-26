@@ -11,31 +11,36 @@ import org.junit.jupiter.api.*;
 @Slf4j
 public abstract class ApiBaseTest extends BaseTest {
     
-    protected MongoDBConnection mongoConnection;
+    protected static MongoDBConnection mongoConnection;
     
     @BeforeAll
     static void setupTests() {
         log.info("Setting up test environment");
         RestAssuredConfig.configure();
+        
+        // Створюємо одне з'єднання для всього класу
+        mongoConnection = MongoDBConnection.fromConfig();
+        ThreadSafeTestContext.setData(ThreadSafeTestContext.MONGO_CONNECTION, mongoConnection);
+        log.info("MongoDB connection established for all tests");
         log.info("Test environment ready");
     }
     
     @BeforeEach
     protected void setupTest(TestInfo testInfo) {
         super.setupTest(testInfo);
- 
-        mongoConnection = MongoDBConnection.fromConfig();
-        ThreadSafeTestContext.setData(ThreadSafeTestContext.MONGO_CONNECTION, mongoConnection);
-        log.info("MongoDB connection established for test: {}", testInfo.getDisplayName());
+        // З'єднання вже створене в @BeforeAll
+        log.info("Test started: {}", testInfo.getDisplayName());
     }
     
     @AfterAll
-    protected void cleanupAfterAllTests(TestInfo testInfo) {
+    static void cleanupAfterAllTests() {
         log.info("🧹 Cleaning up database after all tests...");
-        DBQuery.clearAllData();
         if (mongoConnection != null) {
+            DBQuery.clearAllData();
             mongoConnection.close();
-            log.info("MongoDB connection closed for test: {}", testInfo.getDisplayName());
+            log.info("MongoDB connection closed for all tests");
+        } else {
+            log.info("No MongoDB connection to cleanup (no tests were executed)");
         }
     }
 }

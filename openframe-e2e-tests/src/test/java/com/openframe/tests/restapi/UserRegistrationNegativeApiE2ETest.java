@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 @DisplayName("User Registration Negative API Tests")
-public class UserRegistrationNegativeApiTest extends ApiBaseTest {
+public class UserRegistrationNegativeApiE2ETest extends ApiBaseTest {
 
     @ParameterizedTest
     @DisplayName("Should fail registration with invalid passwords")
@@ -86,7 +86,7 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
         assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
         assertThat(errorResponse.getMessage()).contains("lastName");
         
-        log.info("✅ LastName validation working correctly for: '{}'", lastName);
+        log.info("LastName validation working correctly for: '{}'", lastName);
     }
     
     @ParameterizedTest

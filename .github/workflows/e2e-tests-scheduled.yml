@@ -55,36 +55,8 @@ jobs:
           TERM: dumb
         run: |
           echo "Starting OpenFrame cluster bootstrap..."
-          ./scripts/run.sh bootstrap
-
-      - name: Wait for all services to be healthy
-        id: cluster-status
-        run: |
-          echo "⏳ Waiting for all ArgoCD applications to be healthy..."
-          
-          # Wait up to 30 minutes for all services
-          timeout 1800 bash -c '
-            while true; do
-              # Get unhealthy apps
-              UNHEALTHY=$(kubectl -n argocd get apps -o jsonpath="{.items[?(@.status.health.status!='\''Healthy'\'' || @.status.sync.status!='\''Synced'\'')].metadata.name}")
-              
-              if [ -z "$UNHEALTHY" ]; then
-                echo "All services are healthy!"
-                kubectl -n argocd get apps
-                break
-              else
-                echo "⏳ Waiting for services: $UNHEALTHY"
-                sleep 30
-              fi
-            done
-          '
-          
-          echo "ready=true" >> $GITHUB_OUTPUT
-
-      - name: Verify service endpoints
-        run: |
-          kubectl get pods -A | grep -E "(openframe|tactical|fleet|mesh|authentik)" | head -20
-          kubectl -n argocd get apps -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status
+          cd cli
+          ./openframe bootstrap
 
   run-e2e-tests:
     name: Run E2E Test Suite

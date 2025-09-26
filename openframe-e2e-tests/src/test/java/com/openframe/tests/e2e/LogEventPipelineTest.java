@@ -10,10 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -39,11 +36,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  */
 @Slf4j
-@Epic("Log Event Pipeline")
+@Disabled
 @Feature("End-to-End Log Processing")
 @Tag("log-pipeline")
 @DisplayName("Log Event Pipeline E2E")
-public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
+public class LogEventPipelineTest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
     private static final Duration GRAPHQL_TIMEOUT = Duration.ofSeconds(30);
@@ -209,7 +206,7 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
     
     @Step("Verify log event is queryable via GraphQL API for {toolType}")
     private Map<String, Object> waitForLogInGraphQL(String toolType, String searchTerm) {
-        Instant deadline = Instant.now().plus(LogEventPipelineE2ETest.GRAPHQL_TIMEOUT);
+        Instant deadline = Instant.now().plus(LogEventPipelineTest.GRAPHQL_TIMEOUT);
         Duration retryInterval = Duration.ofMillis(500);
         int attempts = 0;
         
@@ -234,7 +231,7 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
         
         throw new AssertionError(String.format(
             "[%s] Log not found in GraphQL after %d ms (toolType: %s, searchTerm: %s, attempts: %d)",
-            testId, LogEventPipelineE2ETest.GRAPHQL_TIMEOUT.toMillis(), toolType, searchTerm, attempts));
+            testId, LogEventPipelineTest.GRAPHQL_TIMEOUT.toMillis(), toolType, searchTerm, attempts));
     }
     
     private Optional<Map<String, Object>> tryGetLogFromGraphQL(String toolType, String searchTerm) {

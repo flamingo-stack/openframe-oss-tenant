@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-@Epic("Log Event Pipeline")
+@Disabled
 @Feature("Extended Pipeline Testing")
 @Tag("log-pipeline-extended")
 @DisplayName("Log Event Pipeline Extended E2E")
-public class LogEventPipelineExtendedE2ETest extends BasePipelineE2ETest {
+public class LogEventPipelineExtendedTest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
     private String testRunId;

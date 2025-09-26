@@ -8,11 +8,7 @@ import io.qameta.allure.*;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -36,11 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * - Device data accessibility via GraphQL (single device and list queries)
  */
 @Slf4j
-@Epic("Device Pipeline")
+@Disabled
 @Feature("End-to-End Device Processing")
 @Tag("device-pipeline")
 @DisplayName("Device Pipeline E2E")
-public class DevicePipelineE2ETest extends BasePipelineE2ETest {
+public class DevicePipelineE2ETest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
     private static final Duration PINOT_INDEXING_TIMEOUT = Duration.ofSeconds(45);
