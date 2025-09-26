@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@flamingo/ui-kit'
-import { Input } from '@flamingo/ui-kit/components/ui'
+import { Input, Label, Textarea } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { X } from 'lucide-react'
 
@@ -82,7 +82,7 @@ export function CreateApiKeyModal({ isOpen, onClose, onCreated, create, mode = '
 
         {/* Name */}
         <div className="flex flex-col gap-2">
-          <label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">API Key Name</label>
+          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">API Key Name</Label>
           <Input
             placeholder="Enter Name Here"
             value={name}
@@ -93,8 +93,8 @@ export function CreateApiKeyModal({ isOpen, onClose, onCreated, create, mode = '
 
         {/* Description */}
         <div className="flex flex-col gap-2">
-          <label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Description</label>
-          <textarea
+          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Description</Label>
+          <Textarea
             placeholder="Enter Description Here"
             value={description}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
@@ -104,7 +104,7 @@ export function CreateApiKeyModal({ isOpen, onClose, onCreated, create, mode = '
 
         {/* Expiration */}
         <div className="flex flex-col gap-2">
-          <label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Expiration Date</label>
+          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Expiration Date</Label>
           <div className="relative">
             <Input
               type="datetime-local"

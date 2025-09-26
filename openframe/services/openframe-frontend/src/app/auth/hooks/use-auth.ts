@@ -398,7 +398,7 @@ export function useAuth() {
         const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
         // Pass provider param for non-default providers; omit for 'openframe-sso'
         const providerParam = provider && provider !== 'openframe-sso' ? `&provider=${encodeURIComponent(provider)}` : ''
-        const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&returnUrl=${returnUrl}${providerParam}`
+        const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&redirectTo=${returnUrl}${providerParam}`
 
         window.location.href = loginUrl
       } else {

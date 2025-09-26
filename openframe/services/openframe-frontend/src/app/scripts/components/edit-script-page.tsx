@@ -138,9 +138,9 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
 
       const mapPlatformIdToTactical = (id: string) => {
         const n = id.toLowerCase()
+        if (n.includes('mac') || n.includes('darwin') || n.includes('osx')) return 'darwin'
         if (n.includes('win')) return 'windows'
         if (n.includes('linux')) return 'linux'
-        if (n.includes('mac') || n.includes('darwin') || n.includes('osx')) return 'darwin'
         return id
       }
 

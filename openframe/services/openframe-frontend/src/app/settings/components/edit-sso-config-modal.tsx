@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
-import { Button } from '@flamingo/ui-kit'
+import { Button, Label } from '@flamingo/ui-kit'
 import { Input } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
 
@@ -62,7 +62,7 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
 
         {/* Provider (read-only) */}
         <div className="flex flex-col gap-2">
-          <label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">OAuth Provider</label>
+          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">OAuth Provider</Label>
           <div className="bg-ods-card border border-ods-border rounded-[6px] h-14 px-4 flex items-center text-ods-text-secondary">
             {providerDisplayName}
           </div>
@@ -70,7 +70,7 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
 
         {/* Client ID */}
         <div className="flex flex-col gap-2">
-          <label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">OAuth Client ID</label>
+          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">OAuth Client ID</Label>
           <Input
             placeholder="Enter OAuth Client ID"
             value={clientId}
@@ -81,7 +81,7 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
 
         {/* Client Secret */}
         <div className="flex flex-col gap-2">
-          <label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Client Secret</label>
+          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Client Secret</Label>
           <Input
             type="password"
             placeholder="Enter Client Secret"
