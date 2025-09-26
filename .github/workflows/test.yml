@@ -35,11 +35,6 @@ env:
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "cli/helm-values.yaml"
-  # Cache optimization
-  MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-  CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: 0
-  RUST_BACKTRACE: short
 
 # =============================================================================
 # JOBS
@@ -60,6 +55,8 @@ jobs:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft
@@ -68,10 +65,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -115,7 +108,6 @@ jobs:
             !${{ matrix.path }}/target/*-sources.jar
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
-          compression-level: 6
 
   build_images:
     name: "Build image: ${{ matrix.name }}"
@@ -129,10 +121,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
       - name: Checkout
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
@@ -166,10 +154,6 @@ jobs:
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
-            image=moby/buildkit:buildx-stable-1
 
       - name: Generate metadata
         if: contains(needs.changes.outputs[matrix.name], 'true')
@@ -220,8 +204,10 @@ jobs:
   test:
     name: Run Tests
     needs: [build_images, changes, matrix]
-    runs-on: Linux-x64
     timeout-minutes: 60
+    runs-on: Linux-x64
+    env:
+      CARGO_INCREMENTAL: 0
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft
@@ -284,10 +270,6 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: openframe-oss-client-windows-x64.exe
-#          # Win x86 and Ubuntu x64 disabled as for now
-#          - os: windows-latest
-#            target: i686-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x32.exe
 #          - os: ubuntu-latest
 #            target: x86_64-unknown-linux-gnu
 #            artifact_name: openframe-oss-client-linux-x64
@@ -317,7 +299,6 @@ jobs:
         working-directory: client
         run: |
             make build
-        continue-on-error: true
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
