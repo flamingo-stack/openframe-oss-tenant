@@ -233,11 +233,11 @@ apps:
     project: default
     namespace: integrated-tools
     syncWave: "3"
-  authentik: 
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
+  # authentik: 
+  #   enabled: true
+  #   project: integrated-tools
+  #   namespace: integrated-tools
+  #   syncWave: "3"
   fleetmdm: 
     enabled: true
     project: integrated-tools
