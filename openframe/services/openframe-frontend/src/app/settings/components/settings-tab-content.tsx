@@ -1,14 +1,15 @@
 'use client'
 
 import React from 'react'
-import { getTabComponent } from './tabs'
+import { getTabComponent } from '@flamingo/ui-kit'
+import { SETTINGS_TABS } from './tabs'
 
 interface SettingsTabContentProps {
   activeTab: string
 }
 
 export function SettingsTabContent({ activeTab }: SettingsTabContentProps) {
-  const TabComponent = getTabComponent(activeTab)
+  const TabComponent = getTabComponent(SETTINGS_TABS, activeTab)
   
   if (!TabComponent) {
     return (

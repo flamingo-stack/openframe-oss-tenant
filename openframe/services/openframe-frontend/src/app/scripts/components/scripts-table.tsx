@@ -57,9 +57,9 @@ export function ScriptsTable() {
     {
       key: 'name',
       label: 'Name',
-      width: 'w-80',
+      width: 'w-1/3',
       renderCell: (script) => (
-        <div className="flex flex-col justify-center w-80 shrink-0">
+        <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {script.name}
           </span>
@@ -72,7 +72,7 @@ export function ScriptsTable() {
     {
       key: 'shellType',
       label: 'Shell Type',
-      width: 'w-32',
+      width: 'w-1/6',
       filterable: true,
       filterOptions: [
         { id: 'BASH', label: 'bash', value: 'BASH' },
@@ -81,66 +81,49 @@ export function ScriptsTable() {
         { id: 'CMD', label: 'cmd', value: 'CMD' },
       ],
       renderCell: (script) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {script.shellType}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          {script.shellType}
+        </span>
       )
     },
     {
       key: 'addedBy',
       label: 'Added By',
-      width: 'w-40',
+      width: 'w-1/6',
       filterable: true,
       filterOptions: [
         { id: 'TACTICAL', label: 'Tactical RMM', value: 'TACTICAL' },
         { id: 'FLEET', label: 'Fleet MDM', value: 'FLEET' },
       ],
       renderCell: (script) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {script.addedBy}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          {script.addedBy}
+        </span>
       )
     },
     {
       key: 'category',
       label: 'Category',
-      width: 'w-40',
+      width: 'w-1/6',
       renderCell: (script) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {script.category}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          {script.category}
+        </span>
       )
     },
     {
       key: 'timeout',
       label: 'Timeout',
-      width: 'flex-1 min-w-0',
+      width: 'w-1/6',
       renderCell: (script) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {script.timeout}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          {script.timeout}
+        </span>
       )
     }
   ], [])
 
   const rowActions: RowAction<UIScriptEntry>[] = useMemo(() => [
-    {
-      label: '',
-      icon: <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />,
-      onClick: (script) => {
-        console.log('More clicked for script:', script.id)
-      },
-      variant: 'outline',
-      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
-    },
     {
       label: 'Details',
       onClick: (script) => {
@@ -264,6 +247,7 @@ export function ScriptsTable() {
         showFilters={true}
         mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
+        actionsWidth={100}
       />
 
       {/* New Script Modal - Now handled by routing */}

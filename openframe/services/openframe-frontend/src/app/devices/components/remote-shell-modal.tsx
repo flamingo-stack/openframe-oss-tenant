@@ -70,11 +70,10 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
         control = new MeshControlClient()
         const { authCookie, relayCookie } = await control.getAuthCookies()
         const term = termRef.current
-        const nodeId = `node//${deviceId}`
         if (!term) throw new Error('Terminal not initialized')
         const tunnel = new MeshTunnel({
           authCookie,
-          nodeId: nodeId,
+          nodeId: deviceId,
           protocol: 1,
           options: { cols: term.cols, rows: term.rows },
           onData: (data) => {
@@ -91,8 +90,8 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
         try {
           await control.openSession()
           const relayId = tunnel.getRelayId()
-          const relayValue = `*/meshrelay.ashx?p=1&nodeid=${encodeURIComponent(nodeId)}&id=${encodeURIComponent(relayId)}${relayCookie ? `&rauth=${encodeURIComponent(relayCookie)}` : ''}`
-          control.sendTunnelMsg(nodeId, relayValue)
+          const relayValue = `*/meshrelay.ashx?p=1&nodeid=${encodeURIComponent(deviceId)}&id=${encodeURIComponent(relayId)}${relayCookie ? `&rauth=${encodeURIComponent(relayCookie)}` : ''}`
+          control.sendTunnelMsg(deviceId, relayValue)
         } catch {}
         tunnel.start()
       } catch (e) {

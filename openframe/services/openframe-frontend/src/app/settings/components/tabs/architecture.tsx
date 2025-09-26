@@ -1,18 +1,39 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ServiceCard, Skeleton } from '@flamingo/ui-kit'
+import { SearchBar } from '@flamingo/ui-kit/components/ui'
 import { useIntegratedTools } from '../../hooks/use-integrated-tools'
 
 export function ArchitectureTab() {
   const { tools, isLoading, fetchIntegratedTools } = useIntegratedTools()
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     fetchIntegratedTools({ enabled: true, category: null }).catch(() => {})
   }, [fetchIntegratedTools])
 
-  // Group by layer
-  const grouped = tools.reduce<Record<string, typeof tools>>((acc, t) => {
+  const filteredTools = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return tools
+    return tools.filter((t) => {
+      const name = t.name?.toLowerCase() || ''
+      const description = t.description?.toLowerCase() || ''
+      const category = (t.category as unknown as string)?.toLowerCase?.() || ''
+      const layer = (t.layer as unknown as string)?.toLowerCase?.() || ''
+      const urls = (t.toolUrls || []).map(u => (u?.url || '').toLowerCase())
+      return (
+        name.includes(term) ||
+        description.includes(term) ||
+        category.includes(term) ||
+        layer.includes(term) ||
+        urls.some(u => u.includes(term))
+      )
+    })
+  }, [tools, searchTerm])
+
+  // Group by layer (after filtering)
+  const grouped = filteredTools.reduce<Record<string, typeof tools>>((acc, t) => {
     const layer = (t.layer as unknown as string) || 'Other'
     if (!acc[layer]) acc[layer] = []
     acc[layer].push(t)
@@ -22,7 +43,15 @@ export function ArchitectureTab() {
   const layerOrder = Object.keys(grouped).sort((a, b) => a.localeCompare(b))
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="pt-6 space-y-6">
+      <div>
+        <SearchBar
+          placeholder="Search for Tools..."
+          onSubmit={setSearchTerm}
+          value={searchTerm}
+          className="w-full"
+        />
+      </div>
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -42,7 +71,7 @@ export function ArchitectureTab() {
 
       {layerOrder.map((layer) => (
         <div key={layer} className="space-y-4">
-          <div className="text-sm font-semibold text-ods-text-secondary uppercase tracking-wide">{layer}</div>
+          <div className="text-ods-text-primary font-bold text-2xl">{layer}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {grouped[layer].map((tool) => {
               const rows: Array<{ label?: string; value: string; href?: string; isSecret?: boolean; actions?: any }> = []
