@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 use tracing::{info, warn, error};
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
+use crate::models::openframe_client_info::ClientUpdateStatus;
+use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::platform::DirectoryManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -12,12 +14,14 @@ use std::os::unix::fs::PermissionsExt;
 #[derive(Clone)]
 pub struct OpenFrameClientUpdateService {
     directory_manager: DirectoryManager,
+    client_info_service: OpenFrameClientInfoService,
 }
 
 impl OpenFrameClientUpdateService {
-    pub fn new(directory_manager: DirectoryManager) -> Self {
+    pub fn new(directory_manager: DirectoryManager, client_info_service: OpenFrameClientInfoService) -> Self {
         Self {
             directory_manager,
+            client_info_service,
         }
     }
 
@@ -25,11 +29,19 @@ impl OpenFrameClientUpdateService {
         let new_version = &message.version;
         info!("Processing OpenFrame client update to version: {}", new_version);
         
+        // Set update status to updating
+        self.client_info_service.set_update_status(ClientUpdateStatus::Updating, Some(new_version.clone())).await
+            .context("Failed to set update status")?;
+        
         // Get current binary path (where the service is running from)
         let current_binary_path = std::env::current_exe()
             .context("Failed to get current executable path")?;
         
         info!("Current OpenFrame binary path: {}", current_binary_path.display());
+        
+        // Store binary path in client info
+        self.client_info_service.set_binary_path(current_binary_path.to_string_lossy().to_string()).await
+            .context("Failed to store binary path")?;
         
         // Create backup of current binary
         let backup_path = current_binary_path.with_extension("backup");
@@ -68,6 +80,13 @@ impl OpenFrameClientUpdateService {
             .with_context(|| "Failed to replace current binary with new one")?;
 
         info!("OpenFrame client binary updated successfully to version: {}", new_version);
+        
+        // Update client info with new version
+        self.client_info_service.update_version(new_version.clone()).await
+            .context("Failed to update client version info")?;
+        
+        self.client_info_service.set_update_status(ClientUpdateStatus::Updated, None).await
+            .context("Failed to set update status to completed")?;
         
         // Kill current process - OS service manager will restart with new binary
         // TODO: This is dirty solution and should be revised

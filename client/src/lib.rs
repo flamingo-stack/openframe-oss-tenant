@@ -44,6 +44,11 @@ use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
+use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
+use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
+use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
+use crate::services::tool_agent_update_service::ToolAgentUpdateService;
+use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
@@ -117,6 +122,8 @@ pub struct Client {
     auth_processor: InitialAuthenticationProcessor,
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
+    openframe_client_update_listener: OpenFrameClientUpdateListener,
+    tool_agent_update_listener: ToolAgentUpdateListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
 }
