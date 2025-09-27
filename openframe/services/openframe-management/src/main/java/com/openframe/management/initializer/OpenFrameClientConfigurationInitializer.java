@@ -1,8 +1,8 @@
 package com.openframe.management.initializer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.management.a_tomove.OpenFrameClientConfiguration;
-import com.openframe.management.a_tomove.OpenFrameClientConfigurationService;
+import com.openframe.data.document.clientconfiguration.OpenFrameClientConfiguration;
+import com.openframe.data.service.OpenFrameClientConfigurationService;
 import com.openframe.management.service.OpenFrameClientUpdatePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

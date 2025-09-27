@@ -1,8 +1,7 @@
 package com.openframe.management.service;
 
+import com.openframe.data.model.nats.OpenFrameClientUpdateMessage;
 import com.openframe.data.repository.nats.NatsMessagePublisher;
-import com.openframe.management.a_tomove.OpenFrameClientConfiguration;
-import com.openframe.management.a_tomove.OpenFrameClientUpdateMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

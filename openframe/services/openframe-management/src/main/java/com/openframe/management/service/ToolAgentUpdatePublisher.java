@@ -1,6 +1,6 @@
 package com.openframe.management.service;
 
-import com.openframe.management.a_tomove.ToolAgentUpdateMessage;
+import com.openframe.data.model.nats.ToolAgentUpdateMessage;
 import com.openframe.data.repository.nats.NatsMessagePublisher;
 import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import lombok.RequiredArgsConstructor;
