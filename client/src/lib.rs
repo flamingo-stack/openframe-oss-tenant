@@ -270,7 +270,7 @@ impl Client {
 
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
-            tool_agent_file_client,
+            tool_agent_file_client.clone(),
             tool_api_client,
             tool_command_params_resolver.clone(),
             installed_tools_service.clone(),

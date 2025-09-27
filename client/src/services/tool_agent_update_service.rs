@@ -1,5 +1,5 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
-use tracing::{info, debug, warn};
+use tracing::{info, debug, warn, error};
 use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
 use crate::services::InstalledToolsService;
@@ -107,7 +107,6 @@ impl ToolAgentUpdateService {
 
         // Update installed tool version and status
         installed_tool.version = new_version.clone();
-        installed_tool.status = ToolStatus::Updated;
 
         self.installed_tools_service.save(installed_tool).await
             .with_context(|| format!("Failed to update installed tool record for: {}", tool_agent_id))?;
