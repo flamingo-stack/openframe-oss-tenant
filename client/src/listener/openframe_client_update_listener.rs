@@ -110,8 +110,8 @@ impl OpenFrameClientUpdateListener {
         }
     }
 
-    fn build_filter_subject(machine_id: &str) -> String {
-        format!("machine.{}.client-update", machine_id)
+    fn build_filter_subject(_machine_id: &str) -> String {
+        "machine.all.client-update".to_string()
     }
 
     fn build_deliver_subject(machine_id: &str) -> String {
