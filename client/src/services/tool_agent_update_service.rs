@@ -128,11 +128,6 @@ impl ToolAgentUpdateService {
 
     // TODO: This is a very dirty solution and should be revised
     // Currently we kill the process and rely on ToolRunManager to detect the exit and restart
-    // A better approach would be:
-    // 1. Graceful shutdown mechanism (signal handling)
-    // 2. Coordination with ToolRunManager for planned restarts
-    // 3. Atomic binary replacement without process interruption
-    // 4. Health checks before/after update
     async fn stop_tool_process(&self, tool_id: &str) -> Result<()> {
         use sysinfo::{System, Signal};
         
