@@ -312,6 +312,15 @@ jobs:
           name: allure-results
           path: allure-results
 
+      - name: Debug downloaded files
+        run: |
+          echo "=== Downloaded artifacts structure ==="
+          find allure-results -type f | head -20
+          echo "=== Allure results directory ==="
+          ls -la allure-results/
+          echo "=== Looking for JSON files ==="
+          find allure-results -name "*.json" | head -10
+
       - name: Generate Allure Report
         run: |
           allure generate allure-results --clean -o allure-report
