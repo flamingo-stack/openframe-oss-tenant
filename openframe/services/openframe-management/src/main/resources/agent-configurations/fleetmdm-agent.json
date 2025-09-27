@@ -1,7 +1,7 @@
 {
   "id": "fleetmdm-agent",
   "toolId": "fleetmdm-server",
-  "version": "1.0",
+  "version": "1.0.0",
   "status": "ENABLED",
   "runCommandArgs": [
     "--fleet-url", "${client.serverUrl}",
