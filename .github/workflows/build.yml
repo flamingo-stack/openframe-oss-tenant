@@ -39,198 +39,24 @@ env:
 # =============================================================================
 
 jobs:
-  # Keep original separate jobs structure for reusable workflows
-  changes:
-    name: Detect Changes
-    uses: ./.github/workflows/changes.yml
-    if: github.event_name == 'push'
+  # Disabled Java builds and Docker images - only Windows client needed
+  # changes:
+  #   name: Detect Changes
+  #   uses: ./.github/workflows/changes.yml
+  #   if: github.event_name == 'push'
 
-  matrix:
-    name: Generate Matrix
-    uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'push'
+  # matrix:
+  #   name: Generate Matrix
+  #   uses: ./.github/workflows/matrix.yml
+  #   if: github.event_name == 'push'
 
-  # Optimized Java build with better caching and parallel execution
-  build_java:
-    name: "Build Java: ${{ matrix.name }}"
-    needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
-    steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Set up JDK 21 with Maven Central
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-          cache-dependency-path: '**/pom.xml'
-          check-latest: true
-
-      - name: Build with Maven
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: |
-          mvn clean install \
-            -U \
-            -pl ${{ matrix.path }} \
-            -am \
-            -Dcompress \
-            --threads 2C \
-            --batch-mode \
-            --no-transfer-progress \
-            -Dmaven.javadoc.skip=true \
-            -s .mvn/settings.xml
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Java artifacts
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            ${{ matrix.path }}/target/*.jar
-            !${{ matrix.path }}/target/original-*.jar
-            !${{ matrix.path }}/target/*-sources.jar
-            !${{ matrix.path }}/target/*-javadoc.jar
-          retention-days: 1
-          compression-level: 6
-
-  build_images:
-    name: "Build: ${{ matrix.name }}"
-    needs: [build_java, matrix, changes]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
-    steps:
-      - name: Skip if no changes
-        if: "!contains(needs.changes.outputs[matrix.name], 'true')"
-        run: echo "No changes detected for ${{ matrix.name }}, skipping build"
-
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Download Java artifacts
-        if: |
-          contains(fromJSON(toJSON(matrix.type)), 'java') && 
-          matrix.artifact_name != '' && 
-          contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.path }}/target
-
-      - name: Log in to GitHub Container Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Set up QEMU
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-      
-      - name: Set up Docker Buildx
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: docker/setup-buildx-action@v3
-
-      - name: Generate metadata
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
-          tags: |
-            type=ref,event=tag
-            type=sha,prefix={{branch}}-
-            type=raw,value=${{ needs.changes.outputs.commit_sha }}
-            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
-            type=raw,value=latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
-            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-            org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
-      - name: Format build arguments
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: format_args
-        uses: ./.github/steps/docker-format-build-args
-        with:
-          build_args: ${{ toJSON(matrix.build_args) }}
-        env:
-          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
-
-      - name: Build and push image
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        id: docker_build
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context || matrix.path }}
-          file: ${{ matrix.path }}/Dockerfile
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-          push: true
-          provenance: false
-          sbom: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            ${{ env.BUILD_ARGS }}
-#          cache-from: |
-#            type=gha,scope=${{ matrix.name }}
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-#          cache-to: |
-#            type=gha,scope=${{ matrix.name }},mode=max
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
-
-      - name: Cleanup old container versions
-        if: |
-          contains(needs.changes.outputs[matrix.name], 'true') && 
-          steps.docker_build.outcome == 'success'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        continue-on-error: true
-        with:
-          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
-          delete-ghost-images: true
-          delete-tags: "*"
-          exclude-tags: |
-            latest
-            test-*
-            ${{ needs.changes.outputs.commit_sha }}
-            ${{ needs.changes.outputs.timestamp_tag }}
-          keep-last: 10
+  # build_java: [DISABLED - Server builds not needed]
+  # build_images: [DISABLED - Docker images not needed]
 
   build_client:
-    name: "Build Rust Client (${{ matrix.os }})"
-    needs: [changes]
-    runs-on: ${{ matrix.os }}
-    if: |
-      github.event_name == 'push' && 
-      contains(needs.changes.outputs.client, 'true')
+    name: "Build Windows Client (${{ matrix.target }})"
+    runs-on: windows-latest
+    if: github.event_name == 'push'
     defaults:
       run:
         shell: bash
@@ -238,23 +64,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-universal
-            cross: false
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact_name: openframe-oss-client-windows-x64
-            cross: false
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact_name: openframe-oss-client-linux-x64
-            cross: false
-#          # Add ARM64 builds
-#          - os: ubuntu-latest
-#            target: aarch64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-arm64
-#            cross: true
+          - target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64.exe
+          - target: i686-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x32.exe
 
     steps:
       - name: Checkout
@@ -270,44 +83,18 @@ jobs:
           components: clippy, rustfmt
           shared-key: ${{ matrix.target }}
 
-      - name: Build client
+      - name: Build Windows client
         working-directory: client
         run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            for RUST_TARGET in x86_64-apple-darwin aarch64-apple-darwin; do
-              mkdir -p build_targets
-              rustup target list | grep installed | grep "$RUST_TARGET" || rustup target add "$RUST_TARGET"
-              make build TARGET="$RUST_TARGET"
-              cp target/${RUST_TARGET}/release/openframe build_targets/openframe-${RUST_TARGET}
-            done
-            ls -la build_targets/
-            mkdir -p artifacts
-            lipo -create build_targets/openframe* -output artifacts/openframe-oss-client-macos-universal
-          else
-            make build
-          fi
+          make build TARGET=${{ matrix.target }}
 
-      - name: Prepare Rust Artifacts
-        if: "!(runner.os == 'macOS')"
+      - name: Prepare Windows Artifacts
         shell: bash
         run: |
           mkdir -p artifacts
-          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          cp "client/target/${{ matrix.target }}/release/openframe.exe" "artifacts/${{ matrix.artifact_name }}"
           # List what we're uploading
           ls -la artifacts/
-
-      - name: Sign MacOS package
-        if: runner.os == 'macOS'
-        uses: ./.github/steps/sign-macos-package
-        with:
-          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
-          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
-          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
-          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: ${{ matrix.artifact_name }}
-          app_name: OpenFrameOSSClient
 
       - name: Upload client artifact
         uses: actions/upload-artifact@v4
@@ -320,7 +107,6 @@ jobs:
           compression-level: 9
 
       - name: Log in to GitHub Container Registry
-        if: matrix.os == 'windows-latest'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -328,7 +114,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Windows client to GHCR as OCI artifact
-        if: matrix.os == 'windows-latest'
         run: |
           # Install ORAS (OCI Registry As Storage)
           curl -LO https://github.com/oras-project/oras/releases/download/v1.1.0/oras_1.1.0_windows_amd64.tar.gz
