@@ -1,4 +1,4 @@
-package com.openframe.management.document;
+package com.openframe.management.a_tomove;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

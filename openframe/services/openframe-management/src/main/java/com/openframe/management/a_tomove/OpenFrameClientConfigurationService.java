@@ -1,7 +1,5 @@
-package com.openframe.management.service;
+package com.openframe.management.a_tomove;
 
-import com.openframe.management.document.OpenFrameClientConfiguration;
-import com.openframe.management.repository.OpenFrameClientConfigurationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

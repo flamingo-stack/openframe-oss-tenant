@@ -1,6 +1,5 @@
-package com.openframe.management.repository;
+package com.openframe.management.a_tomove;
 
-import com.openframe.management.document.OpenFrameClientConfiguration;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
