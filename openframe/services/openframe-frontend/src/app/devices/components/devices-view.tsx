@@ -1,0 +1,128 @@
+'use client'
+
+import React, { useState, useCallback, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import {
+  Table,
+  Button,
+  ListPageLayout
+} from "@flamingo/ui-kit/components/ui"
+import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
+import { ViewToggle } from "@flamingo/ui-kit/components/features"
+import { useDebounce } from "@flamingo/ui-kit/hooks"
+import { cn } from "@flamingo/ui-kit/utils"
+import { useDevices } from '../hooks/use-devices'
+import { Device } from '../types/device.types'
+import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
+import { DevicesGrid } from './devices-grid'
+
+export function DevicesView() {
+  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filters, setFilters] = useState<{ statuses?: string[], deviceTypes?: string[], osTypes?: string[] }>({})
+  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
+  
+  const { devices, deviceFilters, isLoading, error, searchDevices, refreshDevices } = useDevices(filters)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  const columns = useMemo(() => getDeviceTableColumns(deviceFilters), [deviceFilters])
+
+  const handleDeviceMore = useCallback((device: Device) => {
+    console.log('More clicked for device:', device.agent_id)
+  }, [])
+
+  const handleDeviceDetails = useCallback((device: Device) => {
+    const machineId = device.machineId || device.agent_id
+    router.push(`/devices/details/${machineId}`)
+  }, [router])
+
+  const rowActions = useMemo(
+    () => getDeviceTableRowActions(handleDeviceMore, handleDeviceDetails),
+    [handleDeviceMore, handleDeviceDetails]
+  )
+
+  React.useEffect(() => {
+    if (debouncedSearchTerm !== undefined) {
+      searchDevices(debouncedSearchTerm)
+    }
+  }, [debouncedSearchTerm, searchDevices])
+
+  const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
+    setTableFilters(columnFilters)
+    
+    const newFilters: any = {}
+    
+    if (columnFilters.status?.length > 0) {
+      newFilters.statuses = columnFilters.status
+    }
+    
+    if (columnFilters.type?.length > 0) {
+      newFilters.deviceTypes = columnFilters.type
+    }
+    
+    if (columnFilters.os?.length > 0) {
+      newFilters.osTypes = columnFilters.os
+    }
+    
+    setFilters(newFilters)
+  }, [])
+
+
+  const viewToggle = (
+    <>
+      <ViewToggle
+        value={viewMode}
+        onValueChange={setViewMode}
+        className="bg-ods-card border border-ods-border h-12"
+      />
+      <Button
+        onClick={() => router.push('/devices/new')}
+        leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay/>}
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+      >
+        Add Device
+      </Button>
+    </>
+  )
+
+  return (
+    <ListPageLayout
+      title="Devices"
+      headerActions={viewToggle}
+      searchPlaceholder="Search for Devices"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
+      padding="sm"
+    >
+      {/* Conditional View Rendering */}
+      {viewMode === 'table' ? (
+        // Table View
+        <Table
+          data={devices}
+          columns={columns}
+          rowKey="machineId"
+          loading={isLoading}
+          emptyMessage="No devices found. Try adjusting your search or filters."
+          rowActions={rowActions}
+          actionsWidth={100}
+          filters={tableFilters}
+          onFilterChange={handleFilterChange}
+          showFilters={true}
+          mobileColumns={['device', 'status', 'lastSeen']}
+          rowClassName="mb-1"
+        />
+      ) : (
+        // Grid View
+        <DevicesGrid
+          devices={devices}
+          isLoading={isLoading}
+          filters={filters}
+          onDeviceMore={handleDeviceMore}
+          onDeviceDetails={handleDeviceDetails}
+        />
+      )}
+    </ListPageLayout>
+  )
+}

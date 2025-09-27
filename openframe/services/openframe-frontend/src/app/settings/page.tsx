@@ -1,14 +1,17 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { AppLayout } from '../components/app-layout'
+import { ContentPageContainer } from '@flamingo/ui-kit'
+import { SettingsView } from './components/settings-view'
 
 export default function Settings() {
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-ods-text-primary">Settings</h1>
-        <p className="text-ods-text-secondary">Configure your OpenFrame settings</p>
-      </div>
+      <ContentPageContainer padding='none'>
+        <SettingsView />
+      </ContentPageContainer>
     </AppLayout>
   )
 }

@@ -34,7 +34,7 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  HELM_VALUES_FILE: "scripts/helm-values.yaml"
+  HELM_VALUES_FILE: "cli/helm-values.yaml"
 
 # =============================================================================
 # JOBS
@@ -192,12 +192,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-          cache-from: |
-            type=gha,scope=${{ matrix.name }}
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-          cache-to: |
-            type=gha,scope=${{ matrix.name }},mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
+#          cache-from: |
+#            type=gha,scope=${{ matrix.name }}
+#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
+#          cache-to: |
+#            type=gha,scope=${{ matrix.name }},mode=max
+#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
   test:
     name: Run Tests
@@ -226,8 +226,8 @@ jobs:
       - name: Override branch name
         run: |
           # Override branch name
-          yq eval ".global.repoBranch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          echo "Updated global.repoBranch to: ${{ github.head_ref }}"
+          yq eval ".deployment.oss.repository.branch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
+          echo "Updated deployment.oss.repository.branch to: ${{ github.head_ref }}"
 
       - name: Override registry
         run: |
@@ -243,7 +243,7 @@ jobs:
         env:
           TERM: dumb
         run: |
-          ./scripts/run.sh bootstrap
+          cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
   test_client:
     name: "Test Client: ${{ matrix.os }}"

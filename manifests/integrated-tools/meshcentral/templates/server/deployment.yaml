@@ -29,20 +29,28 @@ spec:
               name: meshcentral-mongodb
           - secretRef:
               name: meshcentral-mongodb
-        command: ["sh", "-c"]
+        command: ["/bin/bash", "-c"]
         args:
           - |
-            echo "Waiting for MongoDB to be ready..."
-            sleep 30
-            for i in $(seq 1 300); do
+            echo "Waiting for MongoDB replica set to be ready..."
+            
+            # Use the readiness script with retry logic  
+            # Increased attempts for GitHub runners (slower environment)
+            MAX_ATTEMPTS=240  # 20 minutes total (240 * 5 seconds)
+            for i in $(seq 1 $MAX_ATTEMPTS); do
               if /usr/local/bin/readiness-command.sh; then
                 echo "MongoDB is ready after $i attempts"
                 exit 0
               fi
-              echo "Attempt $i: MongoDB not ready yet, waiting..."
+              
+              # Less verbose logging
+              if [ $((i % 12)) -eq 0 ]; then
+                echo "Attempt $i/$MAX_ATTEMPTS: MongoDB not ready yet, continuing..."
+              fi
               sleep 5
             done
-            echo "MongoDB did not become ready in time" >&2
+            
+            echo "MongoDB did not become ready after $MAX_ATTEMPTS attempts" >&2
             exit 1
         volumeMounts:
         - name: mongodb-readiness-command
@@ -88,12 +96,36 @@ spec:
               name: meshcentral-server
           - secretRef:
               name: meshcentral-mongodb
+        startupProbe:
+          httpGet:
+            path: /health.ashx
+            port: 8383
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30  # 30 * 10 = 5 minutes for startup
+        readinessProbe:
+          httpGet:
+            path: /health.ashx
+            port: 8383
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
         livenessProbe:
           httpGet:
             path: /health.ashx
             port: 8383
           initialDelaySeconds: 30
           periodSeconds: 15
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
         volumeMounts:
         - name: meshcentral-data
           mountPath: /opt/mesh
@@ -106,3 +138,4 @@ spec:
         - name: meshcentral-data
           persistentVolumeClaim:
             claimName: meshcentral-server
+

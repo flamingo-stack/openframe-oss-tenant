@@ -1,6 +1,0 @@
-apiVersion: v2
-name: openframe-ui
-description: A Helm chart to provision a openframe-ui service.
-type: application
-version: 0.1.0
-appVersion: "1.0.0"

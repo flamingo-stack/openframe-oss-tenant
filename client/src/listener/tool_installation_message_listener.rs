@@ -28,7 +28,7 @@ impl ToolInstallationMessageListener {
     ) -> Self {
         Self { 
             nats_connection_manager, 
-            tool_installation_service, 
+            tool_installation_service,
             config_service 
         }
     }
@@ -105,7 +105,7 @@ impl ToolInstallationMessageListener {
             filter_subject,
             deliver_subject,
             durable_name: Some(durable_name),
-            ack_wait: Duration::from_secs(30),
+            ack_wait: Duration::from_secs(60),
             ..Default::default()
         }
     }

@@ -22,7 +22,7 @@ spec:
       initContainers:
         - name: wait-for-config-server
           image: curlimages/curl:latest
-          command: ["sh", "-c", "until curl -f http://openframe-config:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
+          command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
           
       containers:
         - name: openframe-authorization-server
@@ -36,10 +36,17 @@ spec:
             - secretRef:
                 name: openframe-management
           env:
+            {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
+            - name: OPENFRAME_HOST_URL
+              value: {{ printf "https://%s" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
+            {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
+            - name: OPENFRAME_HOST_URL
+              value: "https://localhost"
+            {{- end }}
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: SPRING_CONFIG_IMPORT
-              value: "optional:configserver:http://openframe-config:8888"
+              value: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
           livenessProbe:
             httpGet:
               path: /management/v1/health

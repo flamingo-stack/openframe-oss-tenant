@@ -31,10 +31,14 @@ Validate ingress configuration for the enabled deployment type
 {{- end -}}
 
 {{- else if $saas -}}
-{{/* SaaS: only localhost ingress must be enabled */}}
+{{/* SaaS: exactly one ingress (localhost OR gcp) must be enabled */}}
 {{- $saasLocalhost := .Values.deployment.saas.ingress.localhost.enabled | default false -}}
-{{- if not $saasLocalhost -}}
-{{- fail "ERROR: localhost ingress must be enabled for SaaS deployment" -}}
+{{- $saasGCP := .Values.deployment.saas.ingress.gcp.enabled | default false -}}
+{{- $saasIngressCount := 0 -}}
+{{- if $saasLocalhost }}{{ $saasIngressCount = add $saasIngressCount 1 }}{{ end -}}
+{{- if $saasGCP }}{{ $saasIngressCount = add $saasIngressCount 1 }}{{ end -}}
+{{- if ne $saasIngressCount 1 -}}
+{{- fail (printf "ERROR: Exactly one ingress must be enabled for SaaS deployment. Currently localhost=%t, gcp=%t" $saasLocalhost $saasGCP) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

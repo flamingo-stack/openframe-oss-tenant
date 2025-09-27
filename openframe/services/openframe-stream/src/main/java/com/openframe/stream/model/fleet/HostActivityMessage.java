@@ -1,6 +1,6 @@
 package com.openframe.stream.model.fleet;
 
-import com.openframe.data.model.debezium.DebeziumMessage;
+import com.openframe.kafka.model.debezium.DebeziumMessage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

@@ -2,9 +2,9 @@ package com.openframe.client.service.agentregistration;
 
 import com.openframe.client.dto.agent.AgentRegistrationRequest;
 import com.openframe.client.dto.agent.AgentRegistrationResponse;
-import com.openframe.client.service.AgentSecretGenerator;
 import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.data.document.device.DeviceStatus;
+import com.openframe.data.document.device.DeviceType;
 import com.openframe.data.document.device.Machine;
 import com.openframe.data.document.oauth.OAuthClient;
 import com.openframe.data.repository.device.MachineRepository;
@@ -83,6 +83,8 @@ public class AgentRegistrationService {
         machine.setAgentVersion(request.getAgentVersion());
         machine.setLastSeen(Instant.now());
         machine.setStatus(DeviceStatus.ACTIVE);
+        machine.setOrganizationId(request.getOrganizationId());
+        machine.setType(DeviceType.DESKTOP);
 
         machineRepository.save(machine);
     }

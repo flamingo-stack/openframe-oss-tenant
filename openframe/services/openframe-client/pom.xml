@@ -14,30 +14,31 @@
     <artifactId>openframe-client</artifactId>
     <name>OpenFrame Client Service</name>
 
-    <properties>
-        <start-class>com.openframe.client.ClientApplication</start-class>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-data-mongo</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-data</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.openframe</groupId>
-            <artifactId>openframe-jwt</artifactId>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-kafka</artifactId>
+            <version>${openframe.libs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-security-core</artifactId>
         </dependency>
         <!-- OpenFrame SDKs -->
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>tacticalrmm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>fleetmdm</artifactId>
         </dependency>
         <!-- Spring Boot starters with Jackson excluded -->
@@ -71,29 +72,4 @@
         </dependency>
 
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>${start-class}</mainClass>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project> 

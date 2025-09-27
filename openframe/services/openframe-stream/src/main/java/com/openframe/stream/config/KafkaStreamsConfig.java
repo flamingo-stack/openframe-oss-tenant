@@ -13,6 +13,7 @@ import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JsonSerde;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
@@ -26,10 +27,10 @@ import java.util.Map;
 @EnableKafkaStreams
 public class KafkaStreamsConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
+    @Value("${spring.oss-tenant.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Value("${spring.application.name:openframe-stream}")
+    @Value("${spring.application.name}")
     private String applicationName;
 
     private final ObjectMapper objectMapper;
@@ -58,6 +59,13 @@ public class KafkaStreamsConfig {
             new JsonSerializer<>(objectMapper),
             new JsonDeserializer<>(HostActivityMessage.class, objectMapper)
         );
+    }
+
+    @Bean
+    public Serde<ActivityMessage> outgoingActivityMessageSerde() {
+        JsonSerde<ActivityMessage> serde = new JsonSerde<>(ActivityMessage.class);
+        serde.serializer().setAddTypeInfo(false);
+        return serde;
     }
 
     @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)

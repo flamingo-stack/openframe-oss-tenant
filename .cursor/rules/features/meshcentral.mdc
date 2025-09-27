@@ -125,9 +125,9 @@ public class MeshCentralAuthenticationService {
 
 The MeshCentral UI is integrated into the OpenFrame dashboard:
 
-- `services/openframe-ui/src/views/remote/Devices.vue`: Remote device management view
-- `services/openframe-ui/src/views/remote/Sessions.vue`: Remote session management view
-- `services/openframe-ui/src/views/remote/FileTransfer.vue`: File transfer view
+- `services/openframe-frontend/src/views/remote/Devices.vue`: Remote device management view
+- `services/openframe-frontend/src/views/remote/Sessions.vue`: Remote session management view
+- `services/openframe-frontend/src/views/remote/FileTransfer.vue`: File transfer view
 
 Example UI component:
 

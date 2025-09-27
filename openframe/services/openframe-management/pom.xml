@@ -25,11 +25,11 @@
         </dependency>
         <!-- OpenFrame Dependencies -->
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.openframe</groupId>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-data</artifactId>
         </dependency>
 
@@ -71,23 +71,4 @@
             <version>5.10.2</version>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>${start-class}</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

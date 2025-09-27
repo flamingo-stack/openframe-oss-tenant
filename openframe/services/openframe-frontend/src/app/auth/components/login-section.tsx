@@ -2,7 +2,7 @@
 
 import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
 import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
-import { ArrowLeft, Mail, Lock, User, Building, Shield, Cloud } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, User, Building, Cloud } from 'lucide-react'
 import { useState } from 'react'
 import { useDeployment } from '@app/hooks/use-deployment'
 
@@ -132,7 +132,7 @@ export function AuthLoginSection({
                           provider: p.provider, 
                           enabled: p.enabled 
                         }))}
-                        onProviderClick={handleSSOClick}
+                        onProviderClick={(provider) => handleSSOClick(provider)}
                         loading={isLoading && loginMethod === 'sso'}
                         orientation="vertical"
                         showDivider={false}

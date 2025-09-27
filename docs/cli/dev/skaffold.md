@@ -176,7 +176,7 @@ The CLI automatically discovers Skaffold configurations in your project:
 Found skaffold configuration file(s):
 ✓ openframe-api (./services/openframe-api/skaffold.yaml)
 ✓ openframe-gateway (./services/openframe-gateway/skaffold.yaml)
-✓ openframe-ui (./services/openframe-ui/skaffold.yaml)
+✓ openframe-frontend (./services/openframe-frontend/skaffold.yaml)
 ```
 
 ### Service Selection
@@ -187,7 +187,7 @@ Interactive service selection when multiple configurations are found:
 ? Select service to develop:
   > openframe-api - GraphQL API service
     openframe-gateway - API Gateway service
-    openframe-ui - Vue.js frontend
+    openframe-frontend - Next.js frontend
 ```
 
 ## Retry Logic

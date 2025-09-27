@@ -55,7 +55,7 @@ spec:
               -d '{
                 "tool": {
                   "id": "fleetmdm-server",
-                  "toolType": "FLEET",
+                  "toolType": "FLEET_MDM",
                   "name": "FleetMDM Server",
                   "description": "Fleet Device Management Platform",
                   "toolUrls": [
@@ -108,13 +108,10 @@ spec:
                       "topic.creation.default.partitions": 10,
                       "topic.creation.default.cleanup.policy": "compact",
                       "topic.creation.default.compression.type": "lz4",
-                      "transforms": "route,addHeaders",
+                      "transforms": "route",
                       "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
                       "transforms.route.topic.regex": "fleet_mysql\\.'"${MYSQL_DATABASE}"'\\.(.*)",
                       "transforms.route.topic.replacement": "fleet.$1.events",
-                      "transforms.addHeaders.type": "org.apache.kafka.connect.transforms.InsertHeader",
-                      "transforms.addHeaders.header": "message-type",
-                      "transforms.addHeaders.value.literal": "FLEET_MDM_EVENT",
                       "snapshot.mode": "initial",
                       "include.schema.changes": "false",
                       "database.allowPublicKeyRetrieval": "true",
@@ -146,13 +143,18 @@ spec:
                   "--disable-updates",
                   "--openframe-mode",
                   "--openframe-secret", "${client.openframeSecret}",
-                  "--openframe-osquery-path", "${client.assetPath.osquery}",
+                  "--openframe-osquery-path", "${client.assetPath.osqueryd}",
                   "--openframe-token-path", "${client.openframeTokenPath}"
+                ],
+                "agentToolIdCommandArgs": [
+                    "uuid",
+                    "--openframe-mode",
+                    "--openframe-osquery-path", "${client.assetPath.osqueryd}"
                 ],
                 "assets": [
                   {
-                    "id": "osquery",
-                    "localFilename": "osquery",
+                    "id": "osqueryd",
+                    "localFilename": "osqueryd",
                     "source": "ARTIFACTORY"
                   }
                 ]
