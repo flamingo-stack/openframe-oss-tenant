@@ -31,22 +31,37 @@ public class IntegratedToolAgentInitializer {
     public void initializeToolAgents() {
         log.info("Initializing IntegratedToolAgent configurations from resources...");
         
-        for (String agentConfigurationFilePath : AGENT_CONFIGURATION_FILE_PATHS) {
-            try {
-                saveToolAgent(agentConfigurationFilePath);
-            } catch (Exception e) {
-                log.error("Failed to load agent configuration from {}: {}", agentConfigurationFilePath, e.getMessage());
-            }
-        }
+        AGENT_CONFIGURATION_FILE_PATHS
+                .forEach(this::processAgentConfiguration);
         
         log.info("IntegratedToolAgent configurations initialized successfully");
     }
 
-    private void saveToolAgent(String agentConfigurationFilePath) throws IOException {
-        ClassPathResource resource = new ClassPathResource(agentConfigurationFilePath);
-        IntegratedToolAgent agent = objectMapper.readValue(resource.getInputStream(), IntegratedToolAgent.class);
+    private void processAgentConfiguration(String agentConfigurationFilePath) {
+        try {
+            ClassPathResource resource = new ClassPathResource(agentConfigurationFilePath);
+            IntegratedToolAgent agent = objectMapper.readValue(resource.getInputStream(), IntegratedToolAgent.class);
+            
+            integratedToolAgentService.findById(agent.getId())
+                .ifPresentOrElse(
+                    existingAgent -> processExistingAgent(existingAgent, agent, agentConfigurationFilePath),
+                    () -> processNewAgent(agent, agentConfigurationFilePath)
+                );
+        } catch (Exception e) {
+            log.error("Failed to load agent configuration from {}: {}", agentConfigurationFilePath, e.getMessage());
+        }
+    }
+
+    private void processExistingAgent(IntegratedToolAgent existingAgent, IntegratedToolAgent newAgent, String filePath) {
+        log.info("Agent configuration {} already exists, updating", newAgent.getId());
+        integratedToolAgentService.save(newAgent);
+        log.info("Updated agent configuration: {} from {}", newAgent.getId(), filePath);
+    }
+
+    private void processNewAgent(IntegratedToolAgent agent, String filePath) {
+        log.info("Found no existing agent configuration for {}", agent.getId());
         integratedToolAgentService.save(agent);
-        log.info("Saved agent configuration: {} from {}", agent.getId(), agentConfigurationFilePath);
+        log.info("Created new agent configuration: {} from {}", agent.getId(), filePath);
     }
 
 }

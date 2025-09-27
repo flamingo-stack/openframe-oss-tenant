@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -27,6 +26,7 @@ public class OpenFrameClientConfigurationInitializer {
 
     @PostConstruct
     public void init() throws IOException {
+        log.info("Initializing OpenFrame client configuration");
         ClassPathResource resource = new ClassPathResource(CONFIG_FILE);
         OpenFrameClientConfiguration newConfiguration = objectMapper.readValue(resource.getInputStream(), OpenFrameClientConfiguration.class);
         
@@ -36,6 +36,8 @@ public class OpenFrameClientConfigurationInitializer {
                         processExistingConfiguration(existingConfiguration, newConfiguration),
                     () -> processNewConfiguration(newConfiguration)
             );
+
+        log.info("Initialized OpenFrame client configuration");
     }
 
     private void processExistingConfiguration(
