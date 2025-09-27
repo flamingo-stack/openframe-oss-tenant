@@ -116,8 +116,8 @@ jobs:
       - name: Upload Windows client to GHCR as OCI artifact
         run: |
           # Install ORAS (OCI Registry As Storage)
-          curl -LO https://github.com/oras-project/oras/releases/download/v1.1.0/oras_1.1.0_windows_amd64.tar.gz
-          tar -xzf oras_1.1.0_windows_amd64.tar.gz
+          curl -LO https://github.com/oras-project/oras/releases/download/v1.1.0/oras_1.1.0_windows_amd64.zip
+          unzip oras_1.1.0_windows_amd64.zip
           
           # Push binary as OCI artifact
           ./oras push ghcr.io/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/client-windows:${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64' || 'x32' }} \
