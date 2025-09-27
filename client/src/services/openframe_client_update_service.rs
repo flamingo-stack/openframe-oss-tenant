@@ -25,6 +25,7 @@ impl OpenFrameClientUpdateService {
         }
     }
 
+    // TODO: add version timestamp and process race conditions
     pub async fn process_update(&self, message: OpenFrameClientUpdateMessage) -> Result<()> {
         let new_version = &message.version;
         info!("Processing OpenFrame client update to version: {}", new_version);

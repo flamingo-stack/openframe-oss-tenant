@@ -37,6 +37,7 @@ impl ToolAgentUpdateService {
         }
     }
 
+    // TODO: add version timestamp and process race conditions
     pub async fn process_update(&self, message: ToolAgentUpdateMessage) -> Result<()> {
         let tool_agent_id = &message.tool_agent_id;
         let new_version = &message.version;
