@@ -68,7 +68,7 @@ client/Cargo.lock
 **/ui-kit
 **/dist
 **/multi-platform-hub
-*.json
+#*.json
 .**.json
 .next/
 openframe/services/openframe-frontend/pnpm-lock.yaml
