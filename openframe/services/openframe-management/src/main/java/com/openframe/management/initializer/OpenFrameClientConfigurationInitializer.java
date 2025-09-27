@@ -18,33 +18,53 @@ import java.util.Optional;
 @Slf4j
 public class OpenFrameClientConfigurationInitializer {
 
+    private static final String DEFAULT_ID = "default";
+    private static final String CONFIG_FILE = "client-configuration.json";
+
     private final ObjectMapper objectMapper;
     private final OpenFrameClientConfigurationService clientConfigurationService;
     private final OpenFrameClientUpdatePublisher clientUpdatePublisher;
 
-    private static final String CONFIG_FILE = "client-configuration.json";
-
     @PostConstruct
     public void init() throws IOException {
-        Optional<OpenFrameClientConfiguration> existingConfiguration = clientConfigurationService.findById("default");
-        if (existingConfiguration.isPresent()) {
-            log.info("Default OpenFrame client configuration already exists");
-            ClassPathResource resource = new ClassPathResource(CONFIG_FILE);
-            OpenFrameClientConfiguration newConfiguration = objectMapper.readValue(resource.getInputStream(), OpenFrameClientConfiguration.class);
-            clientConfigurationService.save(newConfiguration);
-            log.info("Update existing OpenFrame client configuration");
+        ClassPathResource resource = new ClassPathResource(CONFIG_FILE);
+        OpenFrameClientConfiguration newConfiguration = objectMapper.readValue(resource.getInputStream(), OpenFrameClientConfiguration.class);
+        
+        clientConfigurationService.findById(DEFAULT_ID)
+            .ifPresentOrElse(
+                existingConfiguration ->
+                        processExistingConfiguration(existingConfiguration, newConfiguration),
+                    () -> processNewConfiguration(newConfiguration)
+            );
+    }
 
-            String existingVersion = existingConfiguration.get().getVersion();
-            String newVersion = newConfiguration.getVersion();
-            if (!existingVersion.equals(newVersion)) {
-                log.info("Detected version update from {} to {}", existingVersion, newVersion);
-                clientUpdatePublisher.publish(newVersion);
-            }
-        } else {
-            ClassPathResource resource = new ClassPathResource(CONFIG_FILE);
-            OpenFrameClientConfiguration newConfiguration = objectMapper.readValue(resource.getInputStream(), OpenFrameClientConfiguration.class);
-            clientConfigurationService.save(newConfiguration);
-            log.info("Saved new OpenFrame client configuration");
+    private void processExistingConfiguration(
+            OpenFrameClientConfiguration existingConfiguration,
+            OpenFrameClientConfiguration newConfiguration
+    ) {
+        log.info("Default OpenFrame client configuration already exists");
+        clientConfigurationService.save(newConfiguration);
+        log.info("Updated existing OpenFrame client configuration");
+
+        processVersionUpdate(existingConfiguration, newConfiguration);
+    }
+
+    private void processVersionUpdate(
+            OpenFrameClientConfiguration existingConfiguration,
+            OpenFrameClientConfiguration newConfiguration
+    ) {
+        String existingVersion = existingConfiguration.getVersion();
+        String newVersion = newConfiguration.getVersion();
+        if (!existingVersion.equals(newVersion)) {
+            log.info("Detected version update from {} to {}", existingVersion, newVersion);
+            clientUpdatePublisher.publish(newVersion);
+            log.info("Processed version update");
         }
+    }
+
+    private void processNewConfiguration(OpenFrameClientConfiguration newConfiguration) {
+        log.info("Found no existing openframe client configuration");
+        clientConfigurationService.save(newConfiguration);
+        log.info("Updated save new OpenFrame client configuration");
     }
 }
