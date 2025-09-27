@@ -3,6 +3,7 @@ package com.openframe.management.initializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import com.openframe.data.service.IntegratedToolAgentService;
+import com.openframe.management.service.ToolAgentUpdatePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -20,6 +21,7 @@ public class IntegratedToolAgentInitializer {
 
     private final ObjectMapper objectMapper;
     private final IntegratedToolAgentService integratedToolAgentService;
+    private final ToolAgentUpdatePublisher toolAgentUpdatePublisher;
 
     private static final List<String> AGENT_CONFIGURATION_FILE_PATHS = Arrays.asList(
             "agent-configurations/fleetmdm-agent.json",
@@ -56,12 +58,26 @@ public class IntegratedToolAgentInitializer {
         log.info("Agent configuration {} already exists, updating", newAgent.getId());
         integratedToolAgentService.save(newAgent);
         log.info("Updated agent configuration: {} from {}", newAgent.getId(), filePath);
+        
+        processVersionUpdate(existingAgent, newAgent);
     }
 
     private void processNewAgent(IntegratedToolAgent agent, String filePath) {
         log.info("Found no existing agent configuration for {}", agent.getId());
         integratedToolAgentService.save(agent);
         log.info("Created new agent configuration: {} from {}", agent.getId(), filePath);
+    }
+
+    private void processVersionUpdate(IntegratedToolAgent existingAgent, IntegratedToolAgent newAgent) {
+        String toolAgentId = newAgent.getId();
+        String existingVersion = existingAgent.getVersion();
+        String newVersion = newAgent.getVersion();
+
+        if (!existingVersion.equals(newVersion)) {
+            log.info("Detected version update for {} from {} to {}", toolAgentId, existingVersion, newVersion);
+            toolAgentUpdatePublisher.publish(newAgent);
+            log.info("Processed version update for {}", newAgent.getId());
+        }
     }
 
 }
