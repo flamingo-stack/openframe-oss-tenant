@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main, feature/build-windows-client]
+    branches: [main, feature/build-windows-client, feature/build-windows-client-kirill]
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -318,3 +318,26 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
+
+      - name: Log in to GitHub Container Registry
+        if: matrix.os == 'windows-latest'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows client to GHCR as OCI artifact
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Install ORAS (OCI Registry As Storage)
+          curl -LO https://github.com/oras-project/oras/releases/download/v1.1.0/oras_1.1.0_windows_amd64.tar.gz
+          tar -xzf oras_1.1.0_windows_amd64.tar.gz
+          
+          # Push binary as OCI artifact
+          ./oras push ghcr.io/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/client-windows:${{ matrix.target == 'x86_64-pc-windows-msvc' && 'x64' || 'x32' }} \
+            artifacts/${{ matrix.artifact_name }}:application/octet-stream \
+            --annotation "org.opencontainers.image.title=OpenFrame Windows Client" \
+            --annotation "org.opencontainers.image.description=OpenFrame Windows client binary for ${{ matrix.target }}" \
+            --annotation "org.opencontainers.image.version=${{ github.sha }}"
+        shell: bash
