@@ -61,10 +61,9 @@ export function RemoteDesktopModal({ isOpen, onClose, deviceId, deviceLabel }: R
       try {
         control = new MeshControlClient()
         const { authCookie, relayCookie } = await control.getAuthCookies()
-        const nodeId = `node//${deviceId}`
         const tunnel = new MeshTunnel({
           authCookie,
-          nodeId: nodeId,
+          nodeId: deviceId,
           protocol: 2,
           onData: () => {},
           onBinaryData: (bytes) => { desktopRef.current?.onBinaryFrame(bytes) },
@@ -78,7 +77,7 @@ export function RemoteDesktopModal({ isOpen, onClose, deviceId, deviceLabel }: R
         try {
           await control.openSession()
           const relayId = tunnel.getRelayId()
-          control.sendDesktopTunnel(nodeId, relayId, relayCookie)
+          control.sendDesktopTunnel(deviceId, relayId, relayCookie)
         } catch {}
         tunnel.start()
       } catch (e) {

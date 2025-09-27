@@ -32,8 +32,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [router])
 
   // Memoize logout handler to prevent recreating on every render
-  const handleLogout = useCallback(() => {
-    logout()
+  const handleLogout = useCallback(async () => {
+    await logout()
     router.push('/auth')
   }, [logout, router])
 

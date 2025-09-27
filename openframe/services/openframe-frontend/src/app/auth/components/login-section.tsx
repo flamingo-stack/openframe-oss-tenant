@@ -132,7 +132,7 @@ export function AuthLoginSection({
                           provider: p.provider, 
                           enabled: p.enabled 
                         }))}
-                        onProviderClick={handleSSOClick}
+                        onProviderClick={(provider) => handleSSOClick(provider)}
                         loading={isLoading && loginMethod === 'sso'}
                         orientation="vertical"
                         showDivider={false}

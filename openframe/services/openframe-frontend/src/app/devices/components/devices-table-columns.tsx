@@ -20,13 +20,6 @@ export function getDeviceTableRowActions(
 ): RowAction<Device>[] {
   return [
     {
-      label: '',
-      icon: <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />,
-      onClick: onMore,
-      variant: 'outline',
-      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
-    },
-    {
       label: 'Details',
       onClick: onDetails,
       variant: 'outline',
@@ -40,9 +33,9 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
     {
       key: 'device',
       label: 'DEVICE',
-      width: 'w-60',
+      width: 'w-1/4',
       renderCell: (device) => (
-        <div className="flex flex-col justify-center w-60 shrink-0">
+        <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
             {device.displayName || device.hostname}
           </span>
@@ -58,7 +51,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
     {
       key: 'status',
       label: 'STATUS',
-      width: 'w-40',
+      width: 'w-1/6',
       filterable: true,
       filterOptions: deviceFilters?.statuses?.map((status: any) => ({
         id: status.value,
@@ -68,7 +61,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       renderCell: (device) => {
         const statusConfig = getDeviceStatusConfig(device.status)
         return (
-          <div className="flex flex-col items-start gap-1 w-40 shrink-0">
+          <div className="flex flex-col items-start gap-1 shrink-0">
             <div className="inline-flex">
               <StatusTag 
                 label={statusConfig.label} 
@@ -86,7 +79,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
     {
       key: 'os',
       label: 'OS',
-      width: 'w-60',
+      width: 'w-1/6',
       filterable: true,
       filterOptions: deviceFilters?.osTypes?.map((os: any) => ({
         id: os.value,
@@ -94,7 +87,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
         value: os.value
       })) || [],
       renderCell: (device) => (
-        <div className="flex items-start gap-2 w-60 shrink-0">
+        <div className="flex items-start gap-2 shrink-0">
           <div className="flex items-center gap-1">
             <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary">
               {device.osType}
@@ -107,13 +100,13 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
     {
       key: 'details',
       label: 'DETAILS',
-      width: 'w-64',
+      width: 'w-1/6',
       renderCell: (device) => (
-        <div className="flex flex-col justify-center w-64 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary">
+        <div className="flex flex-col justify-center shrink-0">
+          <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
             {device.model || device.manufacturer || 'Unknown Model'}
           </span>
-          <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary">
+          <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate">
             {device.serial_number || device.agent_id}
           </span>
         </div>

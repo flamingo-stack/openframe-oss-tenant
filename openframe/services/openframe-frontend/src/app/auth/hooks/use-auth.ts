@@ -378,40 +378,31 @@ export function useAuth() {
     try {
       console.log('🔄 [Auth] Starting SSO login with provider:', provider)
       
-      if (provider === 'openframe-sso') {
-        // Store tenant ID and redirect to Gateway OAuth login
-        if (tenantInfo?.tenantId) {
-          // Store tenant ID in auth store for token refresh
-          setTenantId(tenantInfo.tenantId)
-          
-          // Determine return URL based on environment
-          const getReturnUrl = () => {
-            const hostname = window.location.hostname
-            const protocol = window.location.protocol
-            const port = window.location.port ? `:${window.location.port}` : ''
-            
-            // For development (localhost)
-            if (hostname === 'localhost' || hostname === '127.0.0.1') {
-              return `${protocol}//${hostname}${port}/dashboard`
-            }
-            // For production or other environments
-            return `${window.location.origin}/dashboard`
+      // Redirect to Gateway OAuth login for any provider listed by backend.
+      if (tenantInfo?.tenantId) {
+        // Store tenant ID in auth store for token refresh
+        setTenantId(tenantInfo.tenantId)
+
+        // Determine return URL based on environment
+        const getReturnUrl = () => {
+          const hostname = window.location.hostname
+          const protocol = window.location.protocol
+          const port = window.location.port ? `:${window.location.port}` : ''
+          if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return `${protocol}//${hostname}${port}/dashboard`
           }
-          
-          const returnUrl = encodeURIComponent(getReturnUrl())
-          const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
-          const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&returnUrl=${returnUrl}`
-          
-          console.log('🔄 [Auth] Redirecting to OpenFrame SSO:', loginUrl)
-          console.log('🔄 [Auth] Return URL after auth:', getReturnUrl())
-          
-          window.location.href = loginUrl
-        } else {
-          throw new Error('No tenant information available for SSO login')
+          return `${window.location.origin}/dashboard`
         }
+
+        const returnUrl = encodeURIComponent(getReturnUrl())
+        const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
+        // Pass provider param for non-default providers; omit for 'openframe-sso'
+        const providerParam = provider && provider !== 'openframe-sso' ? `&provider=${encodeURIComponent(provider)}` : ''
+        const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&redirectTo=${returnUrl}${providerParam}`
+
+        window.location.href = loginUrl
       } else {
-        // For other providers, implement their specific OAuth flows
-        throw new Error(`SSO provider '${provider}' not yet implemented`)
+        throw new Error('No tenant information available for SSO login')
       }
     } catch (error) {
       console.error('❌ [Auth] SSO login failed:', error)
@@ -424,8 +415,20 @@ export function useAuth() {
     }
   }
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     console.log('🔐 [Auth] Logging out user')
+
+    try {
+      const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
+      const { tenantId: storeTenantId } = useAuthStore.getState()
+      const effectiveTenantId = storeTenantId || tenantInfo?.tenantId
+      const logoutUrl = effectiveTenantId
+        ? `${baseUrl}/oauth/logout?tenantId=${encodeURIComponent(effectiveTenantId)}`
+        : `${baseUrl}/oauth/logout`
+      await apiClient.external(logoutUrl, { method: 'POST', keepalive: true })
+    } catch (error) {
+      console.warn('⚠️ [Auth] Server logout request failed (continuing):', error)
+    }
     
     // Clear auth store
     const { logout: storeLogout } = useAuthStore.getState()
@@ -446,7 +449,7 @@ export function useAuth() {
     setIsLoading(false)
     
     console.log('✅ [Auth] Logout completed')
-  }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders])
+  }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, tenantInfo])
 
   const reset = () => {
     setEmail('')
