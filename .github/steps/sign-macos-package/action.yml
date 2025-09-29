@@ -65,7 +65,7 @@ runs:
         rm "$CERTIFICATE_PATH"
         echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
 
-    - name: Code Sign Binary
+    - name: Code Sign App Bundle
       shell: bash
       run: |
         to_lower() {
@@ -158,6 +158,12 @@ runs:
         codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
         spctl --assess --type execute --verbose "$APP_BUNDLE"
         echo "Binary verification completed"
+
+    -name: Extract signed ${BINARY_NAME} from ${APP_BUNDLE} for futher distribution
+      shell: bash
+      run: |
+        rm -f ${BINARY_PATH}
+        cp "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}" "$BINARY_PATH"
 
     - name: Cleanup Keychain
       if: always()

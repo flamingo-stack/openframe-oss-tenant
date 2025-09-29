@@ -42,7 +42,9 @@ runs:
     - name: Add Rust targets, if needed
       shell: bash
       run: |
-        architectures=($(echo '${{ toJSON(inputs.targets) }}' | jq -r '.[]'))
-        for RUST_TARGET in "${architectures[@]}"; do
-          rustup target list | grep installed | grep "$RUST_TARGET" || (echo "Adding $RUST_TARGET" && rustup target add "$RUST_TARGET")
+        IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+        for RUST_TARGET in "${ARCHITECTURES[@]}"; do
+          # Trim whitespace
+          RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
+          rustup target list --installed | grep -q "^${RUST_TARGET}$" || (echo "Adding $RUST_TARGET" && rustup target add "$RUST_TARGET")
         done

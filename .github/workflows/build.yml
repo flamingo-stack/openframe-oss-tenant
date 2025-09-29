@@ -224,7 +224,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: [aarch64-apple-darwin, x86_64-apple-darwin]
+            target: "aarch64-apple-darwin,x86_64-apple-darwin"
             artifact_name: openframe-oss-client-macos-universal
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -245,14 +245,16 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
           components: clippy, rustfmt
-          shared-key: ${{ matrix.target }}
+          shared-key: ${{ runner.os }}-${{ runner.arch }}
 
       - name: Build client
         working-directory: client
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            architectures=($(echo '${{ toJSON(matrix.target) }}' | jq -r '.[]'))
-            for RUST_TARGET in "${architectures[@]}"; do
+            IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+            for RUST_TARGET in "${ARCHITECTURES[@]}"; do
+              # Trim whitespace
+              RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET"
             done
           else
@@ -275,9 +277,12 @@ jobs:
         run: |
           mkdir -p artifacts
           echo "Create ${{ matrix.artifact_name }}"
-          architectures=($(echo '${{ toJSON(matrix.target) }}' | jq -r '.[]'))
-          RUST_TARGET_ARM64=${architectures[0]}
-          RUST_TARGET_x64=${architectures[1]}
+          IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+          RUST_TARGET_ARM64=${ARCHITECTURES[0]}
+          RUST_TARGET_x64=${ARCHITECTURES[1]}
+          # Trim whitespace
+          RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
+          RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
           lipo -create ./clien/target/${RUST_TARGET_ARM64}/release/openframe ./client/target/${RUST_TARGET_x64}/release/openframe -output ./artifacts/${{ matrix.artifact_name }}
           
           echo "Verify ${{ matrix.artifact_name }}"
