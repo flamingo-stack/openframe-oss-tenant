@@ -148,11 +148,15 @@ impl ToolRunManager {
         sys.refresh_all();
 
         // Match processes whose command contains "/{tool_id}/agent"
-        let pattern = format!("/{}/agent", tool_id).to_lowercase();
+        let pattern = Self::build_cmd_pattern(tool_id);
 
         for (pid, process) in sys.processes() {
             let cmd_items = process.cmd();
             let cmdline = cmd_items.join(" ").to_lowercase();
+
+            if (cmdline.contains("mesh") || cmdline.contains("openframe")) {
+                info!("Cmdline: {}", cmdline);
+            }
 
             if cmdline.contains(&pattern) {
                 info!("Found previous tool process for {} with pid {}", tool_id, pid);
@@ -174,5 +178,15 @@ impl ToolRunManager {
         }
 
         Ok(())
+    }
+    fn build_cmd_pattern(tool_id: &str) -> String {
+        #[cfg(target_os = "windows")]
+        {
+            format!("\\{}\\agent", tool_id).to_lowercase()
+        }
+        #[cfg(any(target_os = "macos"))]
+        {
+            format!("/{}/agent", tool_id).to_lowercase()
+        }
     }
 }

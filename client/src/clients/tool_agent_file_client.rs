@@ -13,7 +13,7 @@ impl ToolAgentFileClient {
     }
 
     pub async fn get_tool_agent_file(&self, assetId: String) -> Result<bytes::Bytes> {
-        let url = format!("{}/clients/tool-agent/{}", self.base_url, assetId);
+        let url = format!("{}/clients/tool-agent/{}?os=windows", self.base_url, assetId);
         let response = self.http_client.get(url).send()
             .await
             .context("Failed to get tool agent file")?;
