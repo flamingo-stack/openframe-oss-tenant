@@ -25,7 +25,7 @@ export function useDevices(filters: DeviceFilterInput = {}) {
         edges: Array<{ node: DevicesGraphQLNode, cursor: string }>
         pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean, startCursor?: string, endCursor?: string }
         filteredCount: number
-      }}>>('graphql', {
+      }}>>('/api/graphql', {
         query: GET_DEVICES_QUERY,
         variables: {
           filter: filtersRef.current,
@@ -130,7 +130,7 @@ export function useDevices(filters: DeviceFilterInput = {}) {
 
   const fetchDeviceFilters = useCallback(async () => {
     try {
-      const response = await apiClient.post<GraphQLResponse<{ deviceFilters: DeviceFilters }>>('graphql', {
+      const response = await apiClient.post<GraphQLResponse<{ deviceFilters: DeviceFilters }>>('/api/graphql', {
         query: GET_DEVICE_FILTERS_QUERY,
         variables: {
           filter: filtersRef.current

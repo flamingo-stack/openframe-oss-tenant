@@ -9,7 +9,13 @@ import com.openframe.data.health.CassandraHealthIndicator;
 
 @SpringBootApplication
 @ComponentScan(
-    basePackages = {"com.openframe.client", "com.openframe.data", "com.openframe.core", "com.openframe.security"},
+    basePackages = {
+            "com.openframe.client",
+            "com.openframe.data",
+            "com.openframe.core",
+            "com.openframe.security",
+            "com.openframe.kafka.producer",
+    },
     excludeFilters = {
         @ComponentScan.Filter(
             type = FilterType.ASSIGNABLE_TYPE,

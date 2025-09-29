@@ -32,7 +32,7 @@ public class MachineTagEventAspect {
      * Intercepts Machine repository save operations.
      */
     @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineRepository.save(..)) && args(machine)",
+            pointcut = "execution(* com.openframe.data.repository.device.MachineRepository.save(..)) && args(machine)",
             returning = "result",
             argNames = "joinPoint,machine,result"
     )
@@ -51,7 +51,7 @@ public class MachineTagEventAspect {
      * Delegates to RepositoryEventService for processing.
      */
     @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineRepository.saveAll(..)) && args(machines)",
+            pointcut = "execution(* com.openframe.data.repository.device.MachineRepository.saveAll(..)) && args(machines)",
             returning = "result",
             argNames = "joinPoint,machines,result"
     )
@@ -69,7 +69,7 @@ public class MachineTagEventAspect {
      * Intercepts MachineTag repository save operations.
      */
     @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineTagRepository.save(..)) && args(machineTag)",
+            pointcut = "execution(* com.openframe.data.repository.device.MachineTagRepository.save(..)) && args(machineTag)",
             returning = "result",
             argNames = "joinPoint,machineTag,result"
     )
@@ -87,7 +87,7 @@ public class MachineTagEventAspect {
      * Intercepts MachineTag repository saveAll operations.
      */
     @AfterReturning(
-            pointcut = "execution(* com.openframe.data.repository.mongo.MachineTagRepository.saveAll(..)) && args(machineTags)",
+            pointcut = "execution(* com.openframe.data.repository.device.MachineTagRepository.saveAll(..)) && args(machineTags)",
             returning = "result",
             argNames = "joinPoint,machineTags,result"
     )
@@ -105,7 +105,7 @@ public class MachineTagEventAspect {
      * Intercepts Tag repository save operations using @Around advice.
      * Captures original state before save and processes after successful save.
      */
-    @Around("execution(* com.openframe.data.repository.mongo.TagRepository.save(..)) && args(tag)")
+    @Around("execution(* com.openframe.data.repository.tool.TagRepository.save(..)) && args(tag)")
     public Object aroundTagSave(ProceedingJoinPoint joinPoint, Object tag) throws Throwable {
         try {
             log.debug("Tag save operation detected, capturing state and delegating to service");
@@ -127,7 +127,7 @@ public class MachineTagEventAspect {
      * Intercepts Tag repository saveAll operations using @Around advice.
      * Captures original states before save and processes after successful save.
      */
-    @Around("execution(* com.openframe.data.repository.mongo.TagRepository.saveAll(..)) && args(tags)")
+    @Around("execution(* com.openframe.data.repository.tool.TagRepository.saveAll(..)) && args(tags)")
     public Object aroundTagSaveAll(ProceedingJoinPoint joinPoint, Object tags) throws Throwable {
         try {
             log.debug("Tag saveAll operation detected, capturing states and delegating to service");

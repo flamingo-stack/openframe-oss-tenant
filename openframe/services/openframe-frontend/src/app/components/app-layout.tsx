@@ -1,13 +1,14 @@
 'use client'
 
-import { useCallback, useMemo, Suspense } from 'react'
+import { useCallback, useMemo, Suspense, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { NavigationSidebar } from '@flamingo/ui-kit/components/navigation'
 import type { NavigationSidebarConfig } from '@flamingo/ui-kit/types/navigation'
 import { useAuthStore } from '../auth/stores/auth-store'
 import { useAuth } from '../auth/hooks/use-auth'
 import { getNavigationItems } from '../../lib/navigation-config'
-import { shouldShowNavigationSidebar, isAuthOnlyMode } from '../../lib/app-mode'
+import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, isSaasTenantMode, isOssTenantMode } from '../../lib/app-mode'
+import { UnauthorizedOverlay } from './unauthorized-overlay'
 import { ListLoader } from '@flamingo/ui-kit/components/ui'
 
 // Loading component for content area
@@ -15,16 +16,10 @@ function ContentLoading() {
   return <ListLoader />
 }
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { isAuthenticated } = useAuthStore()
   const { logout } = useAuth()
-
-  // In auth-only mode, don't render the app layout
-  if (isAuthOnlyMode()) {
-    return <>{children}</>
-  }
 
   // Memoize navigation handler to prevent recreating on every render
   const handleNavigate = useCallback((path: string) => {
@@ -34,7 +29,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   // Memoize logout handler to prevent recreating on every render
   const handleLogout = useCallback(async () => {
     await logout()
-    router.push('/auth')
+    router.push(getDefaultRedirectPath(false))
   }, [logout, router])
 
   // Memoize navigation items to only update when pathname or handleLogout changes
@@ -52,11 +47,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }),
     [navigationItems, handleNavigate]
   )
-
-  // Don't render anything if not authenticated
-  if (!isAuthenticated) {
-    return null
-  }
 
   return (
     <div className="flex h-screen bg-ods-bg">
@@ -76,4 +66,39 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   )
+}
+
+export function AppLayout({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuthStore()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  // Top-level effect to handle redirect in oss-tenant for unauthenticated users
+  useEffect(() => {
+    if (isOssTenantMode() && !isAuthenticated && !pathname?.startsWith('/auth')) {
+      router.push('/auth')
+    }
+  }, [isAuthenticated, pathname, router])
+
+  // In auth-only mode, don't render the app layout
+  if (isAuthOnlyMode()) {
+    return <>{children}</>
+  }
+
+  // In saas-tenant (app-only) mode and unauthenticated, show overlay instead of initializing auth hook
+  if (isSaasTenantMode() && !isAuthenticated) {
+    return <UnauthorizedOverlay />
+  }
+
+  // In oss-tenant mode and unauthenticated, show a lightweight loader to avoid flicker
+  if (isOssTenantMode() && !isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <ListLoader />
+      </div>
+    )
+  }
+
+  // Otherwise, render the full app shell (which uses auth hook internally)
+  return <AppShell>{children}</AppShell>
 }

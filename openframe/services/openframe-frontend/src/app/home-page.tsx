@@ -12,11 +12,7 @@ export default function HomePage() {
   
   useEffect(() => {
     if (isAuthOnlyMode()) {
-      if (isAuthenticated) {
-        router.push('/auth/already-signed-in')
-      } else {
-        router.push('/auth')
-      }
+      router.push('/auth')
     } else {
       const redirectPath = getDefaultRedirectPath(isAuthenticated)
       router.push(redirectPath)

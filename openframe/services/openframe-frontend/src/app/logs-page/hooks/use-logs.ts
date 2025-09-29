@@ -73,7 +73,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
         cursor: cursor || null
       }
 
-      const response = await apiClient.post<GraphQLResponse<LogsResponse>>('graphql', {
+      const response = await apiClient.post<GraphQLResponse<LogsResponse>>('api/graphql', {
         query: GET_LOGS_QUERY,
         variables: {
           filter: filters,
@@ -142,7 +142,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
 
   const fetchLogDetails = useCallback(async (logEntry: LogEntry) => {
     try {
-      const response = await apiClient.post<GraphQLResponse<LogDetailsResponse>>('graphql', {
+      const response = await apiClient.post<GraphQLResponse<LogDetailsResponse>>('api/graphql', {
         query: GET_LOG_DETAILS_QUERY,
         variables: {
           logId: logEntry.toolEventId,
