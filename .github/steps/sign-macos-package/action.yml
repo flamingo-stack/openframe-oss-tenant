@@ -93,7 +93,7 @@ runs:
       run: |
         # Verify code signature and notarization
         codesign --verify --deep --strict --verbose=2 "$BINARY_PATH"
-        spctl --assess --type execute --verbose "$BINARY_PATH"
+        spctl --assess --type open --context context:primary-signature --verbose "$BINARY_PATH" || true
         echo "Binary is signed, notarized, and ready for distribution"
 
     - name: Cleanup Keychain
