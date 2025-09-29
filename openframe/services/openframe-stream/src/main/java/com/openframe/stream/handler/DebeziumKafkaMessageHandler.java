@@ -1,12 +1,12 @@
 package com.openframe.stream.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.kafka.producer.retry.OssTenantRetryingKafkaProducer;
 import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
 import com.openframe.stream.model.fleet.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.EventHandlerType;
 import com.openframe.data.model.enums.Destination;
 import com.openframe.kafka.model.IntegratedToolEvent;
-import com.openframe.kafka.producer.OssTenantMessageProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -18,11 +18,11 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
     @Value("${openframe.oss-tenant.kafka.topics.outbound.integrated-tool-events}")
     private String topic;
 
-    protected final OssTenantMessageProducer messageProducer;
+    protected final OssTenantRetryingKafkaProducer kafkaProducer;
 
-    public DebeziumKafkaMessageHandler(OssTenantMessageProducer ossTenantMessageProducer, ObjectMapper objectMapper) {
+    public DebeziumKafkaMessageHandler(OssTenantRetryingKafkaProducer kafkaProducer, ObjectMapper objectMapper) {
         super(objectMapper);
-        this.messageProducer = ossTenantMessageProducer;
+        this.kafkaProducer = kafkaProducer;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
     }
 
     protected void handleCreate(IntegratedToolEvent message) {
-        messageProducer.sendMessage(topic, message, buildMessageBrokerKey(message));
+        kafkaProducer.publish(topic, buildMessageBrokerKey(message), message);
     }
 
     protected void handleRead(IntegratedToolEvent message) {
