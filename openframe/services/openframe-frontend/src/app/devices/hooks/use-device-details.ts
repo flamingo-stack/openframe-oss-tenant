@@ -24,7 +24,7 @@ export function useDeviceDetails() {
 
     try {
       // 1) Fetch primary device from GraphQL
-      const response = await apiClient.post<GraphQLResponse<{ device: DeviceGraphQLNode }>>('graphql', {
+      const response = await apiClient.post<GraphQLResponse<{ device: DeviceGraphQLNode }>>('/api/graphql', {
         query: GET_DEVICE_QUERY,
         variables: { machineId }
       })

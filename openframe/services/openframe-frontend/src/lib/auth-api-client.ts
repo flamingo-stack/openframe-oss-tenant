@@ -95,7 +95,7 @@ async function requestPublic<T = any>(path: string, init: RequestInit = {}): Pro
 
 export const authApiClient = {
   me<T = any>() {
-    return request<T>('/me')
+    return request<T>('/api/me')
   },
   devExchange(ticket: string): Promise<Response> {
     const base = runtimeEnv.sharedHostUrl() || ''
@@ -142,7 +142,7 @@ export const authApiClient = {
     const base = `/oauth/login?tenantId=${encodeURIComponent(tenantId)}${providerParam}`
     const path = isSaasSharedMode()
       ? base
-      : `${base}&redirectTo=${encodeURIComponent(redirectTo)}`
+      : `${base}&redirectTo=${redirectTo}`
     return buildAuthUrl(path)
   },
   logout<T = any>(tenantId?: string) {
