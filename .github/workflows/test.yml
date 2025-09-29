@@ -27,16 +27,6 @@ on:
       - 'client/**'
       - 'cli/**'
 
-  workflow_dispatch:
-    inputs:
-      test_suite:
-        description: 'Test Suite to run'
-        required: false
-        default: 'all'
-        type: choice
-        options:
-          - all
-
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
   cancel-in-progress: false
@@ -203,17 +193,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-#          cache-from: |
-#            type=gha,scope=${{ matrix.name }}
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-#          cache-to: |
-#            type=gha,scope=${{ matrix.name }},mode=max
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
+  #          cache-from: |
+  #            type=gha,scope=${{ matrix.name }}
+  #            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
+  #          cache-to: |
+  #            type=gha,scope=${{ matrix.name }},mode=max
+  #            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
   test:
     name: Run Tests
     needs: [build_images, changes, matrix]
-    runs-on: ubuntu-latest
+    runs-on: Linux-x64
     timeout-minutes: 60
     if: |
       github.event_name == 'pull_request' && 
@@ -223,15 +213,15 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Set up JDK 21
+      - name: Install tools and validate environment
+        uses: ./.github/steps/requirements-for-run.sh
+
+      - name: Set up JDK 21 for E2E tests
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-
-      - name: Install tools and validate environment
-        uses: ./.github/steps/requirements-for-run.sh
 
       - name: Override helm values
         uses: ./.github/steps/helm-override-image-tags
@@ -240,7 +230,7 @@ jobs:
           changes: ${{ toJSON(needs.changes.outputs) }}
           commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
           helm-values-file: ${{ env.HELM_VALUES_FILE }}
-        
+
       - name: Override branch name
         run: |
           # Override branch name
@@ -263,56 +253,91 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
-  generate-and-publish-allure-report:
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be fully ready..."
+          sleep 30
+          # Wait for API to be responsive
+          for i in {1..10}; do
+            if curl -f http://localhost:8080/actuator/health 2>/dev/null; then
+              echo "API is ready"
+              break
+            fi
+            echo "Waiting for API... attempt $i/10"
+            sleep 10
+          done
+
+      - name: Run API tests
+        run: |
+          cd openframe-e2e-tests
+          mvn clean test -Dtest="**/*Test" -Dmaven.test.failure.ignore=true \
+            -Dtest.timeout=60000 \
+            -Dapi.timeout=30000 \
+            -Dretry.max.attempts=3
+        continue-on-error: true
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: openframe-e2e-tests/target/allure-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+  allure-report:
     name: Generate and Publish Allure Report
-    runs-on: ubuntu-latest
-    needs: [ test ]
-    if: always()
-    permissions:
-      pages: write
-      id-token: write
+    needs: [test]
+    runs-on: Linux-x64
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft &&
+      always()
     steps:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
-      - name: Install Allure
+      - name: Install Allure CLI
         run: |
-          sudo wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
-          sudo tar -zxvf allure-2.25.0.tgz -C /opt/
+          wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -zxvf allure-2.25.0.tgz -C /opt/
           sudo ln -s /opt/allure-2.25.0/bin/allure /usr/bin/allure
           allure --version
 
-      - name: Download all test results
+      - name: Download Allure results
         uses: actions/download-artifact@v4
         with:
           name: allure-results
+          path: allure-results/
+        continue-on-error: true
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Contents of allure-results:"
+          ls -la allure-results/ || echo "No allure-results directory found"
 
       - name: Generate Allure Report
         run: |
-          allure generate -c allure-results -o _site
+          if [ -d "allure-results" ] && [ "$(ls -A allure-results 2>/dev/null)" ]; then
+            echo "Generating Allure report..."
+            allure generate -c allure-results -o _site
+            echo "Report generated successfully"
+          else
+            echo "No Allure results found, creating empty report"
+            mkdir -p _site
+            echo "<html><body><h1>No test results available</h1></body></html>" > _site/index.html
+          fi
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v2
+      - name: Deploy report to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: _site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v1.2.9
-
-      - name: Comment with report links
-        if: always()
-        run: |
-          echo "📊 **E2E Test Report Generated and Published**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 **Links:**" >> $GITHUB_STEP_SUMMARY
-          echo "- [📈 Allure Report](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: _site
+          destination_dir: allure/pr-${{ github.event.pull_request.number }}
 
   test_client:
     name: "Test Client: ${{ matrix.os }}"
@@ -335,10 +360,10 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: openframe-oss-client-linux-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
-         
+          #          - os: windows-latest
+          #            target: x86_64-pc-windows-msvc
+          #            artifact_name: openframe-oss-client-windows-x64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -363,11 +388,11 @@ jobs:
       - name: Test client
         working-directory: client
         run: |
-            make build
+          make build
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
-    needs: [changes, matrix, test, generate-and-publish-allure-report]
+    needs: [changes, matrix, test]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft && always()
     strategy:
@@ -385,7 +410,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      
+
       - name: Delete the CI tag
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: dataaxiom/ghcr-cleanup-action@v1
@@ -398,7 +423,7 @@ jobs:
 
   final-checks:
     name: Final tests
-    needs: [test, generate-and-publish-allure-report]
+    needs: [test]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' && 
@@ -406,7 +431,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Verify values are clean
         run: |
           [ -f "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE not found"; exit 1; }
