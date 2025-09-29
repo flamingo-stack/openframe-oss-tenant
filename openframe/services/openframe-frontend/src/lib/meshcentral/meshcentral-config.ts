@@ -6,8 +6,9 @@ export type MeshUrlParts = {
 }
 
 export function getMeshBaseHostPort(): string {
-  const apiUrl = runtimeEnv.apiUrl()
-  const env = apiUrl.replace('/api', '') + '/ws/tools/meshcentral-server' // 'localhost:8383'
+  // Use tenant host for application websocket endpoints when provided
+  const tenantHost = runtimeEnv.tenantHostUrl() || ''
+  const env = `${tenantHost}/ws/tools/meshcentral-server`
 
   // Strip protocols if provided
   if (env.startsWith('ws://')) return env.substring('ws://'.length)

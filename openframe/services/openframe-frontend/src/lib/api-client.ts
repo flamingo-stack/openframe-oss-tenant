@@ -20,16 +20,14 @@ interface ApiResponse<T = any> {
 }
 
 import { runtimeEnv } from './runtime-config'
+import { authApiClient } from './auth-api-client'
 
 class ApiClient {
-  private baseUrl: string
   private isDevTicketEnabled: boolean
   private isRefreshing: boolean = false
   private refreshPromise: Promise<boolean> | null = null
 
   constructor() {
-    // Get base URL and flags from runtime-config (falls back to env and defaults)
-    this.baseUrl = runtimeEnv.apiUrl()
     this.isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
   }
 
@@ -59,16 +57,20 @@ class ApiClient {
    * Build full URL from path
    */
   private buildUrl(path: string): string {
-    // If path is already a full URL, return it
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path
-    }
+    console.log('🔄 [API Client] Building URL for path:', path)
+    // Absolute URLs pass through
+    if (path.startsWith('http://') || path.startsWith('https://')) return path
+
+    const tenantHost = runtimeEnv.tenantHostUrl()
     
-    // Remove leading slash if present
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path
-    
-    // Build full URL
-    return `${this.baseUrl}/${cleanPath}`
+    const cleanPath = path.startsWith('/') ? path : `/${path}`
+    if (tenantHost) return `${tenantHost}${cleanPath}`
+
+    console.log('with tenantHost:', tenantHost)
+    console.log('🔄 [API Client] Clean path:', cleanPath)
+
+    // Default: use relative path (no host)
+    return cleanPath
   }
 
   /**
@@ -96,33 +98,16 @@ class ApiClient {
           console.warn('⚠️ [API Client] No tenant ID found for refresh; attempting refresh without tenantId')
         }
 
-        const baseUrl = this.baseUrl.replace('/api', '')
-        const refreshUrl = tenantId
-          ? `${baseUrl}/oauth/refresh?tenantId=${encodeURIComponent(tenantId)}`
-          : `${baseUrl}/oauth/refresh`
+        console.log('🔄 [API Client] Attempting token refresh via authApiClient...')
 
-        console.log('🔄 [API Client] Attempting token refresh...')
-
-        // Build headers and include Refresh-Token when available
-        const refreshHeaders: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        }
-        if (this.isDevTicketEnabled) {
-          try {
-            const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
-            if (refreshToken) {
-              refreshHeaders['Refresh-Token'] = refreshToken
-              console.log('🔄 [API Client] Included Refresh-Token header for token refresh')
-            }
-          } catch {}
-        }
-
-        const response = await fetch(refreshUrl, {
-          method: 'POST',
-          headers: refreshHeaders,
-          credentials: 'include', // Include cookies for refresh
-        })
+        const responseRaw = await authApiClient.refresh(tenantId)
+        // Adapter to existing logic
+        const response = {
+          ok: responseRaw.ok,
+          status: responseRaw.status,
+          headers: new Headers(),
+          json: async () => responseRaw.data as any,
+        } as unknown as Response
 
         if (response.ok) {
           // If running in header-token mode, try to capture new tokens from headers or JSON
@@ -222,8 +207,11 @@ class ApiClient {
         const { logout } = useAuthStore.getState()
         logout()
         
-        // Redirect to auth page
-        window.location.href = '/auth'
+        // Redirect to mode-aware path
+        import('./app-mode').then(({ getDefaultRedirectPath }) => {
+          console.log('🔄 [API Client] Redirecting to:', getDefaultRedirectPath(false))
+          window.location.href = getDefaultRedirectPath(false)
+        })
       })
     }
   }

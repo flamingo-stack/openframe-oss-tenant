@@ -5,7 +5,7 @@
 
 import { runtimeEnv } from "./runtime-config"
 
-export type AppMode = 'auth-only' | 'full-app'
+export type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared'
 
 /**
  * Get the current application mode from environment variable
@@ -13,7 +13,7 @@ export type AppMode = 'auth-only' | 'full-app'
  */
 export function getAppMode(): AppMode {
   const mode = runtimeEnv.appMode() as AppMode
-  return mode || 'full-app'
+  return (mode as AppMode) || 'oss-tenant'
 }
 
 /**
@@ -21,7 +21,20 @@ export function getAppMode(): AppMode {
  * @returns True if in auth-only mode
  */
 export function isAuthOnlyMode(): boolean {
-  return getAppMode() === 'auth-only'
+  // Backward-compatible alias for auth-only behavior
+  return getAppMode() === 'saas-shared'
+}
+
+export function isOssTenantMode(): boolean {
+  return getAppMode() === 'oss-tenant'
+}
+
+export function isSaasTenantMode(): boolean {
+  return getAppMode() === 'saas-tenant'
+}
+
+export function isSaasSharedMode(): boolean {
+  return getAppMode() === 'saas-shared'
 }
 
 /**
@@ -29,7 +42,22 @@ export function isAuthOnlyMode(): boolean {
  * @returns True if in full application mode
  */
 export function isFullAppMode(): boolean {
-  return getAppMode() === 'full-app'
+  // Kept for compatibility: means app pages are enabled
+  return isOssTenantMode() || isSaasTenantMode()
+}
+
+/**
+ * Whether authentication features (auth pages/flows) are enabled in current mode
+ */
+export function isAuthEnabled(): boolean {
+  return isOssTenantMode() || isSaasSharedMode()
+}
+
+/**
+ * Whether application pages are enabled in current mode
+ */
+export function isAppEnabled(): boolean {
+  return isOssTenantMode() || isSaasTenantMode()
 }
 
 /**
@@ -39,13 +67,29 @@ export function isFullAppMode(): boolean {
  */
 export function isRouteAllowedInCurrentMode(pathname: string): boolean {
   const mode = getAppMode()
-  
-  if (mode === 'auth-only') {
-    // In auth-only mode, only allow auth routes and the already-signed-in page
+
+  // Always allow Next.js internals and static assets
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.startsWith('/favicon') ||
+    pathname.startsWith('/assets') ||
+    pathname.startsWith('/icons')
+  ) {
+    return true
+  }
+
+  if (mode === 'saas-shared') {
+    // Auth-only mode: only auth routes and root
     return pathname.startsWith('/auth') || pathname === '/'
   }
-  
-  // In full-app mode, all routes are allowed (subject to auth checks)
+
+  if (mode === 'saas-tenant') {
+    // App-only mode: block all auth routes
+    return !pathname.startsWith('/auth')
+  }
+
+  // oss-tenant: everything allowed
   return true
 }
 
@@ -56,13 +100,17 @@ export function isRouteAllowedInCurrentMode(pathname: string): boolean {
  */
 export function getDefaultRedirectPath(isAuthenticated: boolean): string {
   const mode = getAppMode()
-  
-  if (mode === 'auth-only') {
-    // In auth-only mode, always redirect to auth
+
+  if (mode === 'saas-shared') {
     return '/auth'
   }
-  
-  // In full-app mode, redirect based on auth status
+
+  if (mode === 'saas-tenant') {
+    // App-only: send users to the app landing (no auth pages)
+    return '/dashboard'
+  }
+
+  // oss-tenant: auth + app
   return isAuthenticated ? '/dashboard' : '/auth'
 }
 
@@ -71,7 +119,7 @@ export function getDefaultRedirectPath(isAuthenticated: boolean): string {
  * @returns True if sidebar should be shown
  */
 export function shouldShowNavigationSidebar(): boolean {
-  return isFullAppMode()
+  return isAppEnabled()
 }
 
 /**
@@ -79,5 +127,5 @@ export function shouldShowNavigationSidebar(): boolean {
  * @returns True if app pages should be accessible
  */
 export function shouldShowAppPages(): boolean {
-  return isFullAppMode()
+  return isAppEnabled()
 }

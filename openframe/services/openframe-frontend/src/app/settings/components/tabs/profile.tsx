@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { InfoRow, CardLoader, PageError, ListPageContainer } from '@flamingo/ui-kit/components/ui'
-import { apiClient } from '../../../../lib/api-client'
+import { authApiClient } from '../../../../lib/auth-api-client'
 
 type MeResponse = {
   authenticated: boolean
@@ -26,7 +26,7 @@ export function ProfileTab() {
       setIsLoading(true)
       setError(null)
       try {
-        const res = await apiClient.get<MeResponse>('/me')
+        const res = await authApiClient.me<MeResponse>()
         if (!res.ok || !res.data?.authenticated || !res.data.user) {
           throw new Error(res.error || `Failed to load profile (${res.status})`)
         }
