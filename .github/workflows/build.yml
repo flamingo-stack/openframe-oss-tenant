@@ -224,11 +224,11 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: aarch64-apple-darwin
+            target: [aarch64-apple-darwin, x86_64-apple-darwin]
             artifact_name: openframe-oss-client-macos-universal
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: openframe-oss-client-windows-x64.exe
+            artifact_name: openframe-oss-client-windows-x64
 #          - os: ubuntu-latest
 #            target: x86_64-unknown-linux-gnu
 #            artifact_name: openframe-oss-client-linux-x64
@@ -251,30 +251,44 @@ jobs:
         working-directory: client
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            for RUST_TARGET in x86_64-apple-darwin aarch64-apple-darwin; do
-              mkdir -p build_targets
-              rustup target list | grep installed | grep "$RUST_TARGET" || rustup target add "$RUST_TARGET"
+            architectures=($(echo '${{ toJSON(matrix.target) }}' | jq -r '.[]'))
+            for RUST_TARGET in "${architectures[@]}"; do
               make build TARGET="$RUST_TARGET"
-              cp ./target/${RUST_TARGET}/release/openframe ./build_targets/openframe-${RUST_TARGET}
             done
-            ls -la ./build_targets/
-            mkdir -p ../artifacts
-            lipo -create ./build_targets/openframe* -output ../artifacts/openframe-oss-client-macos-universal
           else
-            make build
+            make build TARGET="${{ matrix.target }}"
           fi
 
-      - name: Prepare Rust Artifacts
+      - name: Upload Rust Artifacts for Windows / Linux
         if: "!(runner.os == 'macOS')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: "client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Create macOS universal package
+        if: "runner.os == 'macOS'"
         shell: bash
         run: |
           mkdir -p artifacts
-          cp "client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}" "artifacts/${{ matrix.artifact_name }}"
+          echo "Create ${{ matrix.artifact_name }}"
+          architectures=($(echo '${{ toJSON(matrix.target) }}' | jq -r '.[]'))
+          RUST_TARGET_ARM64=${architectures[0]}
+          RUST_TARGET_x64=${architectures[1]}
+          lipo -create ./clien/target/${RUST_TARGET_ARM64}/release/openframe ./client/target/${RUST_TARGET_x64}/release/openframe -output ./artifacts/${{ matrix.artifact_name }}
+          
+          echo "Verify ${{ matrix.artifact_name }}"
+          lipo -info ./artifacts/${{ matrix.artifact_name }}
+          file ./artifacts/${{ matrix.artifact_name }}
+
           # List what we're uploading
           ls -la artifacts/
 
       - name: Sign MacOS package
-        if: runner.os == 'macOS'
+        if: "runner.os == 'macOS'"
         uses: ./.github/steps/sign-macos-package
         with:
           apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
@@ -286,12 +300,11 @@ jobs:
           binary_name: ${{ matrix.artifact_name }}
           app_name: OpenFrameOSSClient
 
-      - name: Upload client artifact
+      - name: Upload macOS client artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: |
-            artifacts/
+          path: artifacts/
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9

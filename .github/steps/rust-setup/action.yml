@@ -38,3 +38,10 @@ runs:
         shared-key: ${{ inputs.shared-key }}
         cache-targets: true
         cache-on-failure: true
+
+    - name: Add Rust targets, if needed
+      run: |
+        architectures=($(echo '${{ toJSON(inputs.targets) }}' | jq -r '.[]'))
+        for RUST_TARGET in "${architectures[@]}"; do
+          rustup target list | grep installed | grep "$RUST_TARGET" || (echo "Adding $RUST_TARGET" && rustup target add "$RUST_TARGET")
+        done
