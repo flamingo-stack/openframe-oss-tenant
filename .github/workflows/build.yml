@@ -256,6 +256,7 @@ jobs:
               # Trim whitespace
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET"
+              find ./ -iname openframe -type f
             done
           else
             make build TARGET="${{ matrix.target }}"
