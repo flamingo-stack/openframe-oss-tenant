@@ -289,9 +289,6 @@ jobs:
           lipo -info ./artifacts/${{ matrix.artifact_name }}
           file ./artifacts/${{ matrix.artifact_name }}
 
-          # List what we're uploading
-          ls -la artifacts/
-
       - name: Sign MacOS package
         if: "runner.os == 'macOS'"
         uses: ./.github/steps/sign-macos-package

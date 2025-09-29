@@ -163,7 +163,7 @@ runs:
       shell: bash
       run: |
         rm -f ${BINARY_PATH}
-        cp "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}" "$BINARY_PATH"
+        cp -p "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}" "$BINARY_PATH"
 
     - name: Cleanup Keychain
       if: always()
