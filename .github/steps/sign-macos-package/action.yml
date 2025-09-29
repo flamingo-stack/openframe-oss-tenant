@@ -159,7 +159,7 @@ runs:
         spctl --assess --type execute --verbose "$APP_BUNDLE"
         echo "Binary verification completed"
 
-    -name: Extract signed ${BINARY_NAME} from ${APP_BUNDLE} for futher distribution
+    - name: Extract signed ${BINARY_NAME} from ${APP_BUNDLE} for futher distribution
       shell: bash
       run: |
         rm -f ${BINARY_PATH}
