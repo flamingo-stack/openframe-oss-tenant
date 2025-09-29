@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main, feature/update-gha-pipelines]
+    branches: [main, feature/update-macos-signing-pipeline]
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -300,7 +300,6 @@ jobs:
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
           binary_name: ${{ matrix.artifact_name }}
-          app_name: OpenFrameOSSClient
 
       - name: Upload macOS client artifact
         if: "runner.os == 'macOS'"
