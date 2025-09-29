@@ -12,7 +12,7 @@ class TacticalApiClient {
   constructor() {
     // Build base from tenant host when provided; otherwise relative paths via apiClient
     const tenantHost = runtimeEnv.tenantHostUrl() || ''
-    this.baseUrl = `${tenantHost}/tools/tactical-rmm`.replace(/\/+/, '/').replace(/:\/\//, '://')
+    this.baseUrl = `${tenantHost}/tools/tactical-rmm`
   }
 
   private buildTacticalUrl(path: string): string {
