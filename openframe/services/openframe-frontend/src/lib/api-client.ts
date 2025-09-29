@@ -21,6 +21,7 @@ interface ApiResponse<T = any> {
 
 import { runtimeEnv } from './runtime-config'
 import { authApiClient } from './auth-api-client'
+import { forceLogout } from './force-logout'
 
 class ApiClient {
   private isDevTicketEnabled: boolean
@@ -167,53 +168,12 @@ class ApiClient {
   }
 
   /**
-   * Force logout the user
+   * Force logout the user using unified logout utility
    */
-  private forceLogout(): void {
-    // Check if already on auth page to prevent redirect loops
-    const currentPath = window.location.pathname
-    const isAuthPage = currentPath.startsWith('/auth')
-    
-    if (isAuthPage) {
-      console.log('🔐 [API Client] Already on auth page, skipping force logout redirect')
-      // Still clear tokens but don't redirect
-      if (this.isDevTicketEnabled) {
-        localStorage.removeItem(ACCESS_TOKEN_KEY)
-        localStorage.removeItem(REFRESH_TOKEN_KEY)
-      }
-      
-      // Clear auth store
-      if (typeof window !== 'undefined') {
-        import('../app/auth/stores/auth-store').then(({ useAuthStore }) => {
-          const { logout } = useAuthStore.getState()
-          logout()
-        })
-      }
-      return
-    }
-    
-    console.log('🔐 [API Client] Forcing logout due to authentication failure')
-    
-    // Clear tokens
-    if (this.isDevTicketEnabled) {
-      localStorage.removeItem(ACCESS_TOKEN_KEY)
-      localStorage.removeItem(REFRESH_TOKEN_KEY)
-    }
-    
-    // Clear auth store
-    if (typeof window !== 'undefined') {
-      // Import auth store dynamically to avoid circular dependencies
-      import('../app/auth/stores/auth-store').then(({ useAuthStore }) => {
-        const { logout } = useAuthStore.getState()
-        logout()
-        
-        // Redirect to mode-aware path
-        import('./app-mode').then(({ getDefaultRedirectPath }) => {
-          console.log('🔄 [API Client] Redirecting to:', getDefaultRedirectPath(false))
-          window.location.href = getDefaultRedirectPath(false)
-        })
-      })
-    }
+  private async forceLogout(): Promise<void> {
+    await forceLogout({
+      reason: 'API Client - Authentication failure'
+    })
   }
 
   /**
@@ -279,7 +239,7 @@ class ApiClient {
         } else {
           console.error('❌ [API Client] Token refresh failed - forcing logout')
           // Force logout on refresh failure
-          this.forceLogout()
+          await this.forceLogout()
           
           return {
             error: 'Authentication failed - please login again',

@@ -9,7 +9,7 @@ export type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared'
 
 /**
  * Get the current application mode from environment variable
- * @returns The current app mode, defaults to 'full-app'
+ * @returns The current app mode, defaults to 'oss-tenant'
  */
 export function getAppMode(): AppMode {
   const mode = runtimeEnv.appMode() as AppMode

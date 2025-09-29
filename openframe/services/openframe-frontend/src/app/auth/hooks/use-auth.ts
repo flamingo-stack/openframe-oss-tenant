@@ -9,6 +9,7 @@ import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
 import { authApiClient } from '@lib/auth-api-client'
 import { runtimeEnv } from '@lib/runtime-config'
+import { clearStoredTokens } from '@lib/force-logout'
 
 interface TenantInfo {
   tenantId?: string
@@ -179,42 +180,26 @@ export function useAuth() {
           }
         } else if (response.status === 401) {
           if (isPeriodicCheck && isAuthenticated) {
-            // User was authenticated but now token is expired/invalid
-            console.log('⚠️ [Auth] Session expired, logging out...')
-            
-            // Clear auth store
             const { logout } = useAuthStore.getState()
             logout()
             
-            // Clear tokens
-            const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
-            if (isDevTicketEnabled) {
-              localStorage.removeItem('of_access_token')
-              localStorage.removeItem('of_refresh_token')
-            }
+            clearStoredTokens()
             
-            // Show notification
             toast({
               title: 'Session Expired',
               description: 'Your session has expired. Please sign in again.',
               variant: 'destructive',
             })
             
-            // Redirect using mode-aware default to avoid loops in app-only mode
             import('../../../lib/app-mode').then(({ getDefaultRedirectPath }) => {
               router.push(getDefaultRedirectPath(false))
             })
           } else if (!isPeriodicCheck) {
-            console.log('⚠️ [Auth] Not authenticated (401 from /me)')
-            
-            // Clear any stale tokens if DevTicket is enabled
             const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
             if (isDevTicketEnabled) {
               const token = getAccessToken()
               if (token) {
-                console.log('🔐 [Auth] Clearing stale tokens')
-                localStorage.removeItem('of_access_token')
-                localStorage.removeItem('of_refresh_token')
+                clearStoredTokens()
               }
             }
           }

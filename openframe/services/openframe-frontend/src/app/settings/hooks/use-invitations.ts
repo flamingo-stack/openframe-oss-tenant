@@ -13,7 +13,7 @@ export function useInvitations() {
 
     // Backend accepts a single email per request; send concurrently
     const results = await Promise.all(
-      trimmed.map(async (email) => ({ email, res: await apiClient.post('invitations', { email }) }))
+      trimmed.map(async (email) => ({ email, res: await apiClient.post('api/invitations', { email }) }))
     )
 
     const errors = results.filter(r => !r.res.ok).map(r => r.email)
