@@ -38,7 +38,7 @@ export default function NewDevicePage() {
   }, [addArgument])
 
   const command = useMemo(() => {
-    const base = `client % sudo /target/debug/openframe install --serverUrl localhost --initialkey ${initialKey} --localMode`
+    const base = `sudo ./target/debug/openframe install --serverUrl localhost --initialKey ${initialKey} --localMode`
     const extras = args.length ? ' ' + args.join(' ') : ''
     return base + extras
   }, [initialKey, args])

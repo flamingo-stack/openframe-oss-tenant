@@ -16,12 +16,8 @@ export default function AuthPage() {
   const { isLoading, discoverTenants } = useAuth()
 
   useEffect(() => {
-    if (isAuthenticated) {
-      if (isAuthOnlyMode()) {
-        router.push('/auth/already-signed-in')
-      } else {
-        router.push('/dashboard')
-      }
+    if (isAuthenticated && !isAuthOnlyMode()) {
+      router.push('/dashboard')
     }
   }, [isAuthenticated, router])
 
