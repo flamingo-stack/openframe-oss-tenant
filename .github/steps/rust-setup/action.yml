@@ -40,6 +40,7 @@ runs:
         cache-on-failure: true
 
     - name: Add Rust targets, if needed
+      shell: bash
       run: |
         architectures=($(echo '${{ toJSON(inputs.targets) }}' | jq -r '.[]'))
         for RUST_TARGET in "${architectures[@]}"; do
