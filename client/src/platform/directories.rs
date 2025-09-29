@@ -766,6 +766,19 @@ impl DirectoryManager {
             &self.logs_dir
         }
     }
+
+    /// Returns the path to the agent executable for a specific tool
+    pub fn get_agent_path(&self, tool_agent_id: &str) -> PathBuf {
+        let agent_name = if cfg!(target_os = "windows") {
+            "agent.exe"
+        } else {
+            "agent"
+        };
+        
+        self.app_support_dir()
+            .join(tool_agent_id)
+            .join(agent_name)
+    }
 }
 
 #[cfg(test)]
