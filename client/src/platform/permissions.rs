@@ -2,14 +2,13 @@ use std::fs::{self};
 use std::io;
 #[cfg(unix)]
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
+// Windows std::fs::Permissions already has readonly flag setters; no extra trait needed
 use std::path::Path;
 use std::process::Command;
 use tracing::{error, info, warn};
 
 #[cfg(unix)]
 use libc;
-#[cfg(target_os = "windows")]
-use winapi::um::securitybaseapi::IsUserAnAdmin;
 #[cfg(target_os = "windows")]
 use winapi::um::shellapi::ShellExecuteW;
 #[cfg(target_os = "windows")]
@@ -96,13 +95,9 @@ impl Permissions {
                 let mut perms = metadata.permissions();
                 #[cfg(target_os = "windows")]
                 {
-                    use std::os::windows::fs::PermissionsExt;
-                    // FILE_ATTRIBUTE_READONLY = 0x1
-                    let readonly_bit = 0x1;
-                    let current_attrs = perms.mode();
-                    // Remove readonly bit if it's set
-                    if current_attrs & readonly_bit != 0 {
-                        perms.set_mode(current_attrs & !readonly_bit);
+                    // Use cross-platform readonly flag instead of Windows-only bits
+                    if perms.readonly() {
+                        perms.set_readonly(false);
                         fs::set_permissions(path, perms)?;
                     }
                 }
@@ -125,11 +120,9 @@ impl Permissions {
             // On Windows, we can check if the file is read-only if that's what we care about
             #[cfg(target_os = "windows")]
             {
-                use std::os::windows::fs::PermissionsExt;
-                let current_attrs = metadata.permissions().mode();
-                // Check if the readonly attribute is not set when we need write permission
+                let perms = metadata.permissions();
                 let needs_write = self.mode & 0o200 != 0;
-                let is_readonly = current_attrs & 0x1 != 0;
+                let is_readonly = perms.readonly();
                 return Ok(!needs_write || !is_readonly);
             }
 
@@ -154,13 +147,11 @@ impl Permissions {
             // On non-Unix platforms, we'll return a default value based on readonly status
             #[cfg(target_os = "windows")]
             {
-                use std::os::windows::fs::PermissionsExt;
-                let current_attrs = metadata.permissions().mode();
-                let is_readonly = current_attrs & 0x1 != 0;
+                let is_readonly = metadata.permissions().readonly();
                 if is_readonly {
-                    Ok(Self { mode: 0o444 }) // read-only
+                    Ok(Self { mode: 0o444 })
                 } else {
-                    Ok(Self { mode: 0o644 }) // read-write
+                    Ok(Self { mode: 0o644 })
                 }
             }
 
@@ -191,8 +182,8 @@ impl PermissionUtils {
 
         #[cfg(target_os = "windows")]
         {
-            // On Windows, use the IsUserAnAdmin function
-            unsafe { IsUserAnAdmin() != 0 }
+            // TODO: implement proper admin check on Windows; returning false for now
+            false
         }
 
         #[cfg(all(not(unix), not(target_os = "windows")))]
@@ -244,7 +235,7 @@ impl PermissionUtils {
 
             // ShellExecute returns a value greater than 32 if successful
             if result as usize <= 32 {
-                error!("Failed to obtain admin privileges, error code: {}", result);
+                error!("Failed to obtain admin privileges, error code: {:?}", result);
                 return Err(PermissionError::CommandFailed(result as i32));
             }
 
