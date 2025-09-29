@@ -110,7 +110,7 @@ impl ToolInstallationService {
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
             for asset in assets {
-                let asset_path = tool_folder_path.join(&asset.local_filename);
+                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename);
                 
                 // Check if asset file already exists
                 if asset_path.exists() {
