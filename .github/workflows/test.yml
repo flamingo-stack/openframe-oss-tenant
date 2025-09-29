@@ -253,27 +253,10 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
-      - name: Wait for services to be ready
-        run: |
-          echo "Waiting for services to be fully ready..."
-          sleep 30
-          # Wait for API to be responsive
-          for i in {1..10}; do
-            if curl -f http://localhost:8080/actuator/health 2>/dev/null; then
-              echo "API is ready"
-              break
-            fi
-            echo "Waiting for API... attempt $i/10"
-            sleep 10
-          done
-
       - name: Run API tests
         run: |
           cd openframe-e2e-tests
-          mvn clean test -Dtest="**/*Test" -Dmaven.test.failure.ignore=true \
-            -Dtest.timeout=60000 \
-            -Dapi.timeout=30000 \
-            -Dretry.max.attempts=3
+          mvn clean test -Dtest="**/*Test" -Dmaven.test.failure.ignore=true
         continue-on-error: true
 
       - name: Upload Allure results
