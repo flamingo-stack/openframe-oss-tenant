@@ -44,6 +44,11 @@ use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
+use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
+use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
+use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
+use crate::services::tool_agent_update_service::ToolAgentUpdateService;
+use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
@@ -117,6 +122,8 @@ pub struct Client {
     auth_processor: InitialAuthenticationProcessor,
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
+    openframe_client_update_listener: OpenFrameClientUpdateListener,
+    tool_agent_update_listener: ToolAgentUpdateListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
 }
@@ -263,7 +270,7 @@ impl Client {
 
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
-            tool_agent_file_client,
+            tool_agent_file_client.clone(),
             tool_api_client,
             tool_command_params_resolver.clone(),
             installed_tools_service.clone(),
@@ -272,8 +279,43 @@ impl Client {
             tool_connection_processing_manager.clone(),
         );
 
+        // Initialize OpenFrame client info service
+        let openframe_client_info_service = OpenFrameClientInfoService::new(directory_manager.clone())
+            .context("Failed to initialize OpenFrame client info service")?;
+
+        // Initialize OpenFrame client update service
+        let openframe_client_update_service = OpenFrameClientUpdateService::new(
+            directory_manager.clone(),
+            openframe_client_info_service.clone()
+        );
+
+        // Initialize tool agent update service
+        let tool_agent_update_service = ToolAgentUpdateService::new(
+            tool_agent_file_client.clone(),
+            installed_tools_service.clone(),
+            directory_manager.clone()
+        );
+
         // Initialize tool installation message listener
-        let tool_installation_message_listener = ToolInstallationMessageListener::new(nats_connection_manager.clone(), tool_installation_service, config_service.clone());
+        let tool_installation_message_listener = ToolInstallationMessageListener::new(
+            nats_connection_manager.clone(), 
+            tool_installation_service, 
+            config_service.clone()
+        );
+
+        // Initialize OpenFrame client update listener
+        let openframe_client_update_listener = OpenFrameClientUpdateListener::new(
+            nats_connection_manager.clone(),
+            openframe_client_update_service,
+            config_service.clone()
+        );
+
+        // Initialize tool agent update listener
+        let tool_agent_update_listener = ToolAgentUpdateListener::new(
+            nats_connection_manager.clone(),
+            tool_agent_update_service,
+            config_service.clone()
+        );
 
         Ok(Self {
             config,
@@ -282,6 +324,8 @@ impl Client {
             auth_processor,
             nats_connection_manager,
             tool_installation_message_listener,
+            openframe_client_update_listener,
+            tool_agent_update_listener,
             tool_run_manager,
             tool_connection_processing_manager,
         })
@@ -301,6 +345,12 @@ impl Client {
 
         // Start tool installation message listener in background
         self.tool_installation_message_listener.start().await?;
+
+        // Start OpenFrame client update listener in background
+        self.openframe_client_update_listener.start().await?;
+
+        // Start tool agent update listener in background
+        self.tool_agent_update_listener.start().await?;
 
         // Start tool run manager
         self.tool_run_manager.run().await?;

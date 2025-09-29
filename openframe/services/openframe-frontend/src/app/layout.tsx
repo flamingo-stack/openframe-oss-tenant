@@ -8,6 +8,7 @@ import { Toaster } from '@flamingo/ui-kit/components/ui'
 import { DevTicketObserver } from './auth/components/dev-ticket-observer'
 import { DeploymentInitializer } from './components/deployment-initializer'
 import { RouteGuard } from '../components/route-guard'
+import { isAuthEnabled } from '../lib/app-mode'
 
 export const metadata: Metadata = {
   title: 'OpenFrame',
@@ -31,7 +32,7 @@ export default function RootLayout({
         data-app-type="openframe"
       >
         <DeploymentInitializer />
-        <DevTicketObserver />
+        {isAuthEnabled() && <DevTicketObserver />}
         <RouteGuard>
           <div className="relative flex min-h-screen flex-col">
             <Suspense fallback={

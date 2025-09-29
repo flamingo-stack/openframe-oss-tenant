@@ -84,9 +84,9 @@ export function LogsTable() {
     {
       key: 'logId',
       label: 'Log ID',
-      width: 'w-40',
+      width: 'w-1/3',
       renderCell: (log) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
+        <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {log.logId}
           </span>
@@ -99,7 +99,7 @@ export function LogsTable() {
     {
       key: 'status',
       label: 'Status',
-      width: 'w-32',
+      width: 'w-1/6',
       filterable: true,
       filterOptions: [
         { id: 'ERROR', label: 'Error', value: 'ERROR' },
@@ -109,7 +109,7 @@ export function LogsTable() {
         { id: 'CRITICAL', label: 'Critical', value: 'CRITICAL' }
       ],
       renderCell: (log) => (
-        <div className="w-32 shrink-0">
+        <div className="shrink-0">
           <StatusTag 
             label={log.status.label} 
             variant={log.status.variant}
@@ -120,7 +120,7 @@ export function LogsTable() {
     {
       key: 'tool',
       label: 'Tool',
-      width: 'w-40',
+      width: 'w-1/6',
       filterable: true,
       filterOptions: [
         { id: 'TACTICAL', label: 'Tactical', value: 'TACTICAL' },
@@ -131,7 +131,7 @@ export function LogsTable() {
         { id: 'SYSTEM', label: 'System', value: 'SYSTEM' }
       ],
       renderCell: (log) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
+        <div className="flex flex-col justify-center shrink-0">
           <div className="flex items-center gap-1">
             <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
               {log.source.name}
@@ -144,9 +144,9 @@ export function LogsTable() {
     {
       key: 'device',
       label: 'Device',
-      width: 'w-40',
+      width: 'w-1/6',
       renderCell: (log) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
+        <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
             {log.device.name}
           </span>
@@ -161,9 +161,9 @@ export function LogsTable() {
     {
       key: 'description',
       label: 'Log Details',
-      width: 'flex-1 min-w-0',
+      width: 'w-1/2',
       renderCell: (log) => (
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex-1 overflow-hidden">
           <div className="flex flex-col justify-center">
             <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
               {log.description.title}
@@ -181,16 +181,7 @@ export function LogsTable() {
 
   const rowActions: RowAction<UILogEntry>[] = useMemo(() => [
     {
-      label: '',
-      icon: <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />,
-      onClick: (log) => {
-        console.log('More clicked for log:', log.id)
-      },
-      variant: 'outline',
-      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
-    },
-    {
-      label: 'Log Details',
+      label: 'Details',
       onClick: (log) => {
         const ingestDay = log.originalLogEntry?.ingestDay
         const toolType = log.originalLogEntry?.toolType
@@ -300,6 +291,7 @@ export function LogsTable() {
         showFilters={true}
         mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
+        actionsWidth={100}
       />
 
       {/* Log Info Modal */}

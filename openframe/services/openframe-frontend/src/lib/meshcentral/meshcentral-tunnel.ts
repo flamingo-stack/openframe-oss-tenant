@@ -1,5 +1,5 @@
 import { buildWsUrl } from './meshcentral-config'
-
+import { runtimeEnv } from '../runtime-config'
 export type TunnelState = 0 | 1 | 2 | 3 // 0: stopped, 1: connecting, 2: open, 3: connected
 
 export type TunnelOptions = {
@@ -45,7 +45,16 @@ export class MeshTunnel {
       id: this.id,
     })
     if (this.params.authCookie) qs.append('auth', this.params.authCookie)
-    const url = buildWsUrl(`/meshrelay.ashx?${qs.toString()}`)
+
+    let url = buildWsUrl(`/meshrelay.ashx?${qs.toString()}`)
+
+    try {
+      const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
+      if (isDevTicketEnabled && typeof window !== 'undefined') {
+        const token = localStorage.getItem('of_access_token')
+        if (token) url += `&authorization=${token}`
+      }
+    } catch {}
 
     this.setState(1)
     this.socket = new WebSocket(url)

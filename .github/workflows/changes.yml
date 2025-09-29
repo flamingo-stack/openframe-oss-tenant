@@ -3,8 +3,6 @@ name: Generate Changes
 on:
   workflow_call:
     outputs:
-      sdk-fleetmdm: 
-        value: ${{ jobs.changes.outputs.sdk-fleetmdm }}
       openframe-api: 
         value: ${{ jobs.changes.outputs.openframe-api }}
       openframe-authorization-server: 
@@ -51,7 +49,6 @@ jobs:
     name: Changes check
     runs-on: ubuntu-latest
     outputs:
-      sdk-fleetmdm: ${{ steps.filter.outputs.sdk-fleetmdm }}
       openframe-api: ${{ steps.filter.outputs.openframe-api }}
       openframe-authorization-server: ${{ steps.filter.outputs.openframe-authorization-server }}
       openframe-external-api: ${{ steps.filter.outputs.openframe-external-api }}
@@ -91,9 +88,6 @@ jobs:
           filters: |
             client:
               - './client/**'
-            sdk-fleetmdm:
-              - './pom.xml'
-              - './openframe/libs/sdk-fleetmdm/**'
             openframe-api:
               - './pom.xml'
               - './openframe/services/openframe-api/**'

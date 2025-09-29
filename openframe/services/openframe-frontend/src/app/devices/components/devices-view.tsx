@@ -106,6 +106,7 @@ export function DevicesView() {
           loading={isLoading}
           emptyMessage="No devices found. Try adjusting your search or filters."
           rowActions={rowActions}
+          actionsWidth={100}
           filters={tableFilters}
           onFilterChange={handleFilterChange}
           showFilters={true}

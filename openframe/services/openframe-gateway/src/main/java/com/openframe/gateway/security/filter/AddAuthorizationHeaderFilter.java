@@ -10,8 +10,8 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-import static com.openframe.gateway.security.SecurityConstants.ACCESS_TOKEN_HEADER;
-import static com.openframe.gateway.security.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
+import static com.openframe.security.oauth.SecurityConstants.ACCESS_TOKEN_HEADER;
+import static com.openframe.security.oauth.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.util.StringUtils.hasText;
 

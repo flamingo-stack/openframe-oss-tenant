@@ -29,7 +29,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.NATS_WS_ENDPOINT_PATH;
-import static com.openframe.gateway.security.SecurityConstants.*;
+import static com.openframe.gateway.security.PathConstants.*;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)

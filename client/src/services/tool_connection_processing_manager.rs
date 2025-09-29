@@ -124,7 +124,7 @@ impl ToolConnectionProcessingManager {
             loop {
                 // Resolve placeholders for tool_agent_id_command_args (gets agent_tool_id from command output)
                 let processed_args = match params_processor.process(
-                    &tool.tool_id,
+                    &tool.tool_agent_id,
                     tool.tool_agent_id_command_args.clone(),
                 ) {
                     Ok(args) => args,

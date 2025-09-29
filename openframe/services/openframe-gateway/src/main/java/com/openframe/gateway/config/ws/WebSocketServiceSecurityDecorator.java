@@ -1,11 +1,7 @@
 package com.openframe.gateway.config.ws;
 
-import com.openframe.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.server.WebSocketService;
@@ -18,14 +14,13 @@ import java.time.Instant;
 import java.util.Set;
 
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.*;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @RequiredArgsConstructor
 @Slf4j
 public class WebSocketServiceSecurityDecorator implements WebSocketService {
 
     private final WebSocketService defaultWebSocketService;
-    private final JwtService jwtService;
+    private final RequestJwtСlaimsReader requestJwtReader;
     private static final long CLOCK_SKEW_SECONDS = 60; // align with Spring Security default skew
 
     @Override
@@ -34,8 +29,7 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
 
         if (isSecuredEndpoint(path)) {
             return defaultWebSocketService.handleRequest(exchange, session -> {
-                Jwt jwt = getRequestJwt(exchange);
-                Instant expiresAt = jwt.getExpiresAt();
+                Instant expiresAt = requestJwtReader.getExpiration(exchange);
                 long secondsUntilExpiration = Duration.between(Instant.now(), expiresAt).getSeconds();
 
                 // Account for clock skew (same tolerance as Spring Security JwtTimestampValidator)
@@ -58,28 +52,6 @@ public class WebSocketServiceSecurityDecorator implements WebSocketService {
         return Set.of(TOOLS_API_WS_ENDPOINT_PREFIX, TOOLS_AGENT_WS_ENDPOINT_PREFIX, NATS_WS_ENDPOINT_PATH)
                 .stream()
                 .anyMatch(path::startsWith);
-    }
-
-    private Jwt getRequestJwt(ServerWebExchange exchange) {
-        ServerHttpRequest request = exchange.getRequest();
-        String jwt = getRequestToken(request);
-        return jwtService.decodeToken(jwt);
-    }
-
-    private String getRequestToken(ServerHttpRequest request) {
-        String authorisation = extractAuthorisation(request);
-        if (!authorisation.startsWith("Bearer ")) {
-            throw new IllegalStateException("No bearer token found");
-        }
-        return authorisation.substring(7);
-    }
-
-    private String extractAuthorisation(ServerHttpRequest request) {
-        String authorisationHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (isNotEmpty(authorisationHeader)) {
-            return authorisationHeader;
-        }
-        throw new IllegalStateException("No authorization data found");
     }
 
     private Disposable scheduleSessionRemoveJob(WebSocketSession session, long secondsUntilExpiration) {

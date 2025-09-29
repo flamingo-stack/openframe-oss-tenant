@@ -7,6 +7,7 @@ import { useLocalStorage } from '@flamingo/ui-kit/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
+import { authApiClient } from '@lib/auth-api-client'
 import { runtimeEnv } from '@lib/runtime-config'
 
 interface TenantInfo {
@@ -156,8 +157,8 @@ export function useAuth() {
           console.log('🔐 [Auth] Initial authentication check via /me endpoint...')
         }
         
-        // Use the API client which handles both cookie and header auth automatically
-        const response = await apiClient.get('/me')
+        // Call auth service for /me (shared host if provided, else relative); includes cookies and header token (dev)
+        const response = await authApiClient.me()
         
         if (response.ok && response.data && response.data.authenticated) {
           const userData = response.data.user
@@ -199,8 +200,10 @@ export function useAuth() {
               variant: 'destructive',
             })
             
-            // Redirect to auth page
-            router.push('/auth')
+            // Redirect using mode-aware default to avoid loops in app-only mode
+            import('../../../lib/app-mode').then(({ getDefaultRedirectPath }) => {
+              router.push(getDefaultRedirectPath(false))
+            })
           } else if (!isPeriodicCheck) {
             console.log('⚠️ [Auth] Not authenticated (401 from /me)')
             
@@ -260,12 +263,8 @@ export function useAuth() {
     setEmail(userEmail)
     
     try {
-      // Use external API call since this goes to a different base path
-      const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
-      const response = await apiClient.external(
-        `${baseUrl}/sas/tenant/discover?email=${encodeURIComponent(userEmail)}`,
-        { method: 'GET', skipAuth: true } // Skip auth for tenant discovery
-      )
+      // Use auth api client (shared host or relative) for discovery
+      const response = await authApiClient.discoverTenants(userEmail)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -325,24 +324,14 @@ export function useAuth() {
     try {
       console.log('📝 [Auth] Attempting organization registration:', data.tenantName)
       
-      const apiUrl = runtimeEnv.apiUrl()
-      const baseUrl = apiUrl.replace('/api', '')
-      
-      const response = await apiClient.external(
-        `${baseUrl}/sas/oauth/register`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            password: data.password,
-            tenantName: data.tenantName,
-            tenantDomain: data.tenantDomain || 'localhost'
-          }),
-          skipAuth: true // Skip auth for registration
-        }
-      )
+      const response = await authApiClient.registerOrganization({
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        password: data.password,
+        tenantName: data.tenantName,
+        tenantDomain: data.tenantDomain || 'localhost'
+      })
 
       if (!response.ok) {
         const errorMessage = response.data?.message || response.error || 'Registration failed'
@@ -378,40 +367,27 @@ export function useAuth() {
     try {
       console.log('🔄 [Auth] Starting SSO login with provider:', provider)
       
-      if (provider === 'openframe-sso') {
-        // Store tenant ID and redirect to Gateway OAuth login
-        if (tenantInfo?.tenantId) {
-          // Store tenant ID in auth store for token refresh
-          setTenantId(tenantInfo.tenantId)
-          
-          // Determine return URL based on environment
-          const getReturnUrl = () => {
-            const hostname = window.location.hostname
-            const protocol = window.location.protocol
-            const port = window.location.port ? `:${window.location.port}` : ''
-            
-            // For development (localhost)
-            if (hostname === 'localhost' || hostname === '127.0.0.1') {
-              return `${protocol}//${hostname}${port}/dashboard`
-            }
-            // For production or other environments
-            return `${window.location.origin}/dashboard`
+      // Redirect to Gateway OAuth login for any provider listed by backend.
+      if (tenantInfo?.tenantId) {
+        // Store tenant ID in auth store for token refresh
+        setTenantId(tenantInfo.tenantId)
+
+        // Determine return URL based on environment
+        const getReturnUrl = () => {
+          const hostname = window.location.hostname
+          const protocol = window.location.protocol
+          const port = window.location.port ? `:${window.location.port}` : ''
+          if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return `${protocol}//${hostname}${port}/dashboard`
           }
-          
-          const returnUrl = encodeURIComponent(getReturnUrl())
-          const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
-          const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&returnUrl=${returnUrl}`
-          
-          console.log('🔄 [Auth] Redirecting to OpenFrame SSO:', loginUrl)
-          console.log('🔄 [Auth] Return URL after auth:', getReturnUrl())
-          
-          window.location.href = loginUrl
-        } else {
-          throw new Error('No tenant information available for SSO login')
+          return `${window.location.origin}/dashboard`
         }
+
+        const returnUrl = encodeURIComponent(getReturnUrl())
+        const loginUrl = authApiClient.loginUrl(tenantInfo.tenantId, returnUrl, provider)
+        window.location.href = loginUrl
       } else {
-        // For other providers, implement their specific OAuth flows
-        throw new Error(`SSO provider '${provider}' not yet implemented`)
+        throw new Error('No tenant information available for SSO login')
       }
     } catch (error) {
       console.error('❌ [Auth] SSO login failed:', error)
@@ -424,8 +400,16 @@ export function useAuth() {
     }
   }
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     console.log('🔐 [Auth] Logging out user')
+
+    try {
+      const { tenantId: storeTenantId } = useAuthStore.getState()
+      const effectiveTenantId = storeTenantId || tenantInfo?.tenantId
+      await authApiClient.logout(effectiveTenantId || undefined)
+    } catch (error) {
+      console.warn('⚠️ [Auth] Server logout request failed (continuing):', error)
+    }
     
     // Clear auth store
     const { logout: storeLogout } = useAuthStore.getState()
@@ -446,7 +430,7 @@ export function useAuth() {
     setIsLoading(false)
     
     console.log('✅ [Auth] Logout completed')
-  }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders])
+  }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, tenantInfo])
 
   const reset = () => {
     setEmail('')
