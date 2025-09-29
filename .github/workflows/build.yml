@@ -256,7 +256,6 @@ jobs:
               # Trim whitespace
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET"
-              find ./ -iname openframe -type f
             done
           else
             make build TARGET="${{ matrix.target }}"
@@ -284,7 +283,7 @@ jobs:
           # Trim whitespace
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
-          lipo -create ./clien/target/${RUST_TARGET_ARM64}/release/openframe ./client/target/${RUST_TARGET_x64}/release/openframe -output ./artifacts/${{ matrix.artifact_name }}
+          lipo -create ./client/target/${RUST_TARGET_ARM64}/release/openframe ./client/target/${RUST_TARGET_x64}/release/openframe -output ./artifacts/${{ matrix.artifact_name }}
           
           echo "Verify ${{ matrix.artifact_name }}"
           lipo -info ./artifacts/${{ matrix.artifact_name }}
