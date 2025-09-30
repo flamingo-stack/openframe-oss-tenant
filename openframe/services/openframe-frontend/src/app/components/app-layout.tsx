@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, Suspense, useEffect } from 'react'
+import { useCallback, useMemo, Suspense, useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { NavigationSidebar } from '@flamingo/ui-kit/components/navigation'
 import type { NavigationSidebarConfig } from '@flamingo/ui-kit/types/navigation'
@@ -9,11 +9,11 @@ import { useAuth } from '../auth/hooks/use-auth'
 import { getNavigationItems } from '../../lib/navigation-config'
 import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, isSaasTenantMode, isOssTenantMode } from '../../lib/app-mode'
 import { UnauthorizedOverlay } from './unauthorized-overlay'
-import { ListLoader } from '@flamingo/ui-kit/components/ui'
+import { PageLoader, CompactPageLoader } from '@flamingo/ui-kit/components/ui'
 
 // Loading component for content area
 function ContentLoading() {
-  return <ListLoader />
+  return <CompactPageLoader />
 }
 
 function AppShell({ children }: { children: React.ReactNode }) {
@@ -73,32 +73,54 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Top-level effect to handle redirect in oss-tenant for unauthenticated users
+  const [isHydrated, setIsHydrated] = useState(false)
+
   useEffect(() => {
-    if (isOssTenantMode() && !isAuthenticated && !pathname?.startsWith('/auth')) {
+    const checkHydration = () => {
+      const store = useAuthStore as any
+      const persistState = store.persist?.hasHydrated?.()
+      if (persistState !== undefined) {
+        setIsHydrated(persistState)
+      } else {
+        setTimeout(() => setIsHydrated(true), 100)
+      }
+    }
+    
+    checkHydration()
+
+    const store = useAuthStore as any
+    const unsubscribe = store.persist?.onFinishHydration?.(() => {
+      setIsHydrated(true)
+    })
+    
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isHydrated && isOssTenantMode() && !isAuthenticated && !pathname?.startsWith('/auth')) {
       router.push('/auth')
     }
-  }, [isAuthenticated, pathname, router])
+  }, [isHydrated, isAuthenticated, pathname, router])
 
-  // In auth-only mode, don't render the app layout
+  if (isOssTenantMode() && !isHydrated) {
+    return <PageLoader title="Initializing" description="Loading application..." />
+  }
+
   if (isAuthOnlyMode()) {
     return <>{children}</>
   }
 
-  // In saas-tenant (app-only) mode and unauthenticated, show overlay instead of initializing auth hook
   if (isSaasTenantMode() && !isAuthenticated) {
     return <UnauthorizedOverlay />
   }
 
-  // In oss-tenant mode and unauthenticated, show a lightweight loader to avoid flicker
-  if (isOssTenantMode() && !isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <ListLoader />
-      </div>
-    )
+  if (isOssTenantMode() && isHydrated && !isAuthenticated) {
+    return <PageLoader />
   }
 
-  // Otherwise, render the full app shell (which uses auth hook internally)
   return <AppShell>{children}</AppShell>
 }

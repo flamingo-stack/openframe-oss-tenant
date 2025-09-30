@@ -37,7 +37,7 @@ export function useUsers() {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await apiClient.get<PagedUsersResponse>(`users?page=${nextPage}&size=${nextSize}`)
+      const res = await apiClient.get<PagedUsersResponse>(`api/users?page=${nextPage}&size=${nextSize}`)
       if (!res.ok || !res.data) {
         throw new Error(res.error || `Failed to load users (${res.status})`)
       }

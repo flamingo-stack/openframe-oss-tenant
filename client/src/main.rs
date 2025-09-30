@@ -6,6 +6,25 @@ use openframe::models::InitialConfiguration;
 use openframe::platform::DirectoryManager;
 use openframe::services::InitialConfigurationService;
 use std::process;
+
+#[cfg(unix)]
+fn ensure_admin_privileges() {
+    // On Unix-like systems check effective UID == 0
+    if unsafe { libc::geteuid() } != 0 {
+        eprintln!("Please run application with administrator/root privileges");
+        process::exit(1);
+    }
+}
+
+#[cfg(windows)]
+fn ensure_admin_privileges() {
+    // On Windows we rely on PermissionUtils which internally calls Windows APIs.
+    if !PermissionUtils::is_admin() {
+        eprintln!("Please run application with administrator privileges");
+        process::exit(1);
+    }
+}
+
 use std::process::Command;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
@@ -50,11 +69,8 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
-    // allow to run only as root user
-    if unsafe { libc::geteuid() } != 0 {
-        eprintln!("Please run application with administrator/root privileges");
-        process::exit(1);
-    }
+    // Ensure the process is running with sufficient privileges (root/administrator)
+    ensure_admin_privileges();
 
     // Initialize logging first
     if let Err(e) = openframe::logging::init(None, None) {

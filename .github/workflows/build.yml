@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/update-gha-pipelines]
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -50,6 +50,8 @@ jobs:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
     if: github.event_name == 'push'
     strategy:
       fail-fast: false
@@ -181,6 +183,7 @@ jobs:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
           provenance: false
+          sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -208,6 +211,8 @@ jobs:
     name: "Build Rust Client (${{ matrix.os }})"
     needs: [changes]
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: 0
     if: |
       github.event_name == 'push' && 
       contains(needs.changes.outputs.client, 'true')
@@ -219,15 +224,15 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-x64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact_name: openframe-oss-client-linux-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
-         
+            target: "aarch64-apple-darwin,x86_64-apple-darwin"
+            artifact_name: openframe-oss-client-macos-universal
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64
+#          - os: ubuntu-latest
+#            target: x86_64-unknown-linux-gnu
+#            artifact_name: openframe-oss-client-linux-x64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -240,20 +245,69 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
           components: clippy, rustfmt
-          shared-key: ${{ matrix.target }}
+          shared-key: ${{ runner.os }}-${{ runner.arch }}
 
       - name: Build client
         working-directory: client
         run: |
-            make build
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+            for RUST_TARGET in "${ARCHITECTURES[@]}"; do
+              # Trim whitespace
+              RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
+              make build TARGET="$RUST_TARGET"
+            done
+          else
+            make build TARGET="${{ matrix.target }}"
+          fi
 
-      - name: Upload client artifact
+      - name: Upload Rust Artifacts for Windows / Linux
+        if: "!(runner.os == 'macOS')"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: |
-            client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-            client/target/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          path: "client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Create macOS universal package
+        if: "runner.os == 'macOS'"
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "Create ${{ matrix.artifact_name }}"
+          IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+          RUST_TARGET_ARM64=${ARCHITECTURES[0]}
+          RUST_TARGET_x64=${ARCHITECTURES[1]}
+          # Trim whitespace
+          RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
+          RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
+          lipo -create ./client/target/${RUST_TARGET_ARM64}/release/openframe ./client/target/${RUST_TARGET_x64}/release/openframe -output ./artifacts/${{ matrix.artifact_name }}
+          
+          echo "Verify ${{ matrix.artifact_name }}"
+          lipo -info ./artifacts/${{ matrix.artifact_name }}
+          file ./artifacts/${{ matrix.artifact_name }}
+
+      - name: Sign MacOS package
+        if: "runner.os == 'macOS'"
+        uses: ./.github/steps/sign-macos-package
+        with:
+          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
+          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+          binary_name: ${{ matrix.artifact_name }}
+          app_name: OpenFrameOSSClient
+
+      - name: Upload macOS client artifact
+        if: "runner.os == 'macOS'"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9

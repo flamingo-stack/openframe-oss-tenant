@@ -56,6 +56,8 @@ jobs:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft
@@ -77,7 +79,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: '**/pom.xml'  # Simplified pattern
+          cache-dependency-path: '**/pom.xml'
           check-latest: true
 
       - name: Build with Maven
@@ -193,18 +195,20 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-  #          cache-from: |
-  #            type=gha,scope=${{ matrix.name }}
-  #            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-  #          cache-to: |
-  #            type=gha,scope=${{ matrix.name }},mode=max
-  #            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
+#          cache-from: |
+#            type=gha,scope=${{ matrix.name }}
+#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
+#          cache-to: |
+#            type=gha,scope=${{ matrix.name }},mode=max
+#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
   test:
     name: Run Tests
     needs: [build_images, changes, matrix]
-    runs-on: Linux-x64
     timeout-minutes: 60
+    runs-on: Linux-x64
+    env:
+      CARGO_INCREMENTAL: 0
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft
@@ -230,7 +234,7 @@ jobs:
           changes: ${{ toJSON(needs.changes.outputs) }}
           commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
           helm-values-file: ${{ env.HELM_VALUES_FILE }}
-
+        
       - name: Override branch name
         run: |
           # Override branch name
@@ -338,15 +342,15 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-x64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact_name: openframe-oss-client-linux-x64
-          #          - os: windows-latest
-          #            target: x86_64-pc-windows-msvc
-          #            artifact_name: openframe-oss-client-windows-x64
-
+            target: aarch64-apple-darwin
+            artifact_name: openframe-oss-client-macos-aarch64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64.exe
+#          - os: ubuntu-latest
+#            target: x86_64-unknown-linux-gnu
+#            artifact_name: openframe-oss-client-linux-x64
+         
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -371,7 +375,7 @@ jobs:
       - name: Test client
         working-directory: client
         run: |
-          make build
+            make build
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
