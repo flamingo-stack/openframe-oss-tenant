@@ -1,0 +1,1 @@
+{machineId=cf99e293-202a-4dd0-8037-a949004ce825, clientId=agent_cf99e293-202a-4dd0-8037-a949004ce825, clientSecret=KauHWGNXJdcStteX9hzQy4wXEnpZdzAg_JsUR1KgyYY}
