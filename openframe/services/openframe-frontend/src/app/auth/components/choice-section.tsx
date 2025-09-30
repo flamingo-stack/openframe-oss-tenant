@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { isSaasSharedMode } from '@lib/app-mode'
-import { authApiClient } from '@lib/auth-api-client'
+import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@lib/auth-api-client'
 import { ForgotPasswordModal } from './forgot-password-modal'
 
 interface AuthChoiceSectionProps {
@@ -37,23 +37,24 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
       setSuggestedDomains([])
       
       try {
-        const fullDomain = `${domain.trim()}.openframe.ai`
-        const response = await authApiClient.checkDomainAvailability(fullDomain)
+        const subdomain = domain.trim()
+        const response = await authApiClient.checkDomainAvailability(subdomain, orgName.trim())
         
         if (response.ok && response.data) {
           const { isAvailable, suggestedUrl } = response.data as { isAvailable: boolean, suggestedUrl?: string[] }
           
           if (isAvailable) {
+            const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
             onCreateOrganization(orgName.trim(), fullDomain)
           } else {
             toast({
               title: "Domain Not Available",
-              description: `The subdomain '${domain}' is already taken. Please try another one.`,
+              description: `The subdomain '${subdomain}' is already taken. Please try another one.`,
               variant: "destructive"
             })
             
             if (suggestedUrl && suggestedUrl.length > 0) {
-              const suggestions = suggestedUrl.map(url => url.replace('.openframe.ai', ''))
+              const suggestions = suggestedUrl.map(url => url.replace(`.${SAAS_DOMAIN_SUFFIX}`, ''))
               setSuggestedDomains(suggestions)
             }
           }
@@ -129,7 +130,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                   />
                   {isSaasShared && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ods-text-secondary font-body text-[14px] font-medium leading-5">
-                      .openframe.ai
+                      .{SAAS_DOMAIN_SUFFIX}
                     </span>
                   )}
                 </div>

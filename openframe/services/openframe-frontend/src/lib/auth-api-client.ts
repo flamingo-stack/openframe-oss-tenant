@@ -9,6 +9,8 @@ import { isSaasSharedMode } from './app-mode'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@app/auth/hooks/use-token-storage'
 import { forceLogout, clearStoredTokens } from './force-logout'
 
+export const SAAS_DOMAIN_SUFFIX = 'openframe.ai'
+
 export interface AuthApiResponse<T = any> {
   data?: T
   error?: string
@@ -167,8 +169,9 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' })
   }
 
-  checkDomainAvailability<T = any>(domain: string) {
-    const path = `/sas/tenant/availability?domain=${encodeURIComponent(domain)}`
+  checkDomainAvailability<T = any>(subdomain: string, organizationName: string) {
+    const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
+    const path = `/sas/tenant/availability?domain=${encodeURIComponent(fullDomain)}&organizationName=${encodeURIComponent(organizationName)}`
     return requestPublic<T>(path, { method: 'GET' })
   }
 
