@@ -14,7 +14,7 @@ export function useRegistrationSecret() {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await apiClient.get('/agent/registration-secret/active')
+      const response = await apiClient.get('/api/agent/registration-secret/active')
       if (!response.ok) {
         throw new Error(response.error || `Request failed with status ${response.status}`)
       }
