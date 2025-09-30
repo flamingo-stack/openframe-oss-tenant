@@ -1,0 +1,34 @@
+<div>POST to https://localhost/sas/oauth/register</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;floria.dickens@gmail.com&quot;,
+    &quot;firstName&quot;: &quot;Jody&quot;,
+    &quot;lastName&quot;: &quot;Grimes&quot;,
+    &quot;password&quot;: &quot;Password123!&quot;,
+    &quot;tenantName&quot;: &quot;tenant\rname&quot;,
+    &quot;tenantDomain&quot;: &quot;localhost&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;https://localhost/sas/oauth/register&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;email&quot;: &quot;floria.dickens@gmail.com&quot;,
+    &quot;firstName&quot;: &quot;Jody&quot;,
+    &quot;lastName&quot;: &quot;Grimes&quot;,
+    &quot;password&quot;: &quot;Password123!&quot;,
+    &quot;tenantName&quot;: &quot;tenant\rname&quot;,
+    &quot;tenantDomain&quot;: &quot;localhost&quot;
+}&#39;
+</div>
