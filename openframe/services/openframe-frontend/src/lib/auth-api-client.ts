@@ -44,7 +44,7 @@ class AuthApiClient {
           tenantId = authState.tenantId || (authState.user as any)?.organizationId || (authState.user as any)?.tenantId
         } catch {}
 
-        const refreshResponse = await requestRefresh(tenantId || '')
+        const refreshResponse = await this.refresh(tenantId || '')
 
         if (refreshResponse.status === 401) {
           clearStoredTokens()
@@ -56,6 +56,7 @@ class AuthApiClient {
             let newAccessToken: string | null = null
             let newRefreshToken: string | null = null
 
+            // Check response data for tokens (now includes tokens from headers via requestRefresh)
             if (refreshResponse.data) {
               newAccessToken = refreshResponse.data?.access_token || refreshResponse.data?.accessToken || null
               newRefreshToken = refreshResponse.data?.refresh_token || refreshResponse.data?.refreshToken || null
@@ -68,7 +69,9 @@ class AuthApiClient {
               }
               return true
             } else {
-              return false
+              // No tokens found but refresh was still OK - might be cookie-based auth
+              console.warn('⚠️ [Auth API Client] Refresh succeeded but no tokens found in response')
+              return true  // Return true since refresh was successful
             }
           }
           return true
@@ -164,6 +167,11 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' })
   }
 
+  checkDomainAvailability<T = any>(domain: string) {
+    const path = `/saas/tenant/availability?domain=${encodeURIComponent(domain)}`
+    return requestPublic<T>(path, { method: 'GET' })
+  }
+
   registerOrganization<T = any>(payload: {
     email: string,
     firstName: string,
@@ -173,6 +181,41 @@ class AuthApiClient {
     tenantDomain: string,
   }) {
     return request<T>(`/sas/oauth/register`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  acceptInvitation<T = any>(payload: {
+    invitationId: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    switchTenant?: boolean
+  }) {
+    return request<T>(`/sas/invitations/accept`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...payload,
+        switchTenant: payload.switchTenant || false
+      }),
+    })
+  }
+
+  confirmPasswordReset<T = any>(payload: {
+    token: string,
+    newPassword: string
+  }) {
+    return request<T>(`/sas/password-reset/confirm`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  requestPasswordReset<T = any>(payload: {
+    email: string
+  }) {
+    return request<T>(`/sas/password-reset/request`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -225,6 +268,21 @@ async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Pr
     const contentType = res.headers.get('content-type') || ''
     if (contentType.includes('application/json')) {
       try { data = await res.json() } catch {}
+    }
+
+    // In DevTicket mode, capture tokens from response headers
+    if (runtimeEnv.enableDevTicketObserver() && res.ok) {
+      const accessToken = res.headers.get('Access-Token') || res.headers.get('access-token')
+      const refreshToken = res.headers.get('Refresh-Token') || res.headers.get('refresh-token')
+      
+      if (accessToken || refreshToken) {
+        // Include tokens in the data response for the refreshAccessToken method to process
+        data = {
+          ...data,
+          access_token: accessToken,
+          refresh_token: refreshToken
+        } as T
+      }
     }
 
     return {

@@ -2,9 +2,12 @@
 
 import React, { useEffect, useState } from 'react'
 import { ListPageContainer, Table, type TableColumn, StatusTag, MoreActionsMenu } from '@flamingo/ui-kit/components/ui'
+import { useToast } from '@flamingo/ui-kit/hooks'
 import { useUsers, type UserRecord } from '../../hooks/use-users'
 import { apiClient } from '../../../../lib/api-client'
+import { authApiClient } from '../../../../lib/auth-api-client'
 import { ConfirmDeleteUserModal } from '../confirm-delete-user-modal'
+import { ConfirmPasswordResetModal } from '../confirm-password-reset-modal'
 import { AddUsersModal } from '../add-users-modal'
 import { Button } from '@flamingo/ui-kit'
 import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
@@ -14,6 +17,7 @@ import { useInvitations } from '../../hooks/use-invitations'
 export function CompanyAndUsersTab() {
   const { users, size, isLoading, error, fetchUsers } = useUsers()
   const { user: currentUser } = useAuthStore()
+  const { toast } = useToast()
   const [isAddOpen, setIsAddOpen] = useState(false)
   const { inviteUsers } = useInvitations()
 
@@ -56,10 +60,16 @@ export function CompanyAndUsersTab() {
 
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false)
 
   const handleDeleteRequest = (user: UserRecord) => {
     setSelectedUser(user)
     setIsConfirmOpen(true)
+  }
+
+  const handlePasswordResetRequest = (user: UserRecord) => {
+    setSelectedUser(user)
+    setIsPasswordResetOpen(true)
   }
 
   const handleConfirmDelete = async () => {
@@ -69,6 +79,30 @@ export function CompanyAndUsersTab() {
       await fetchUsers(0, size)
     } catch {}
     setIsConfirmOpen(false)
+    setSelectedUser(null)
+  }
+
+  const handleConfirmPasswordReset = async () => {
+    if (!selectedUser || !selectedUser.email) return
+    try {
+      const response = await authApiClient.requestPasswordReset({ email: selectedUser.email })
+      if (response.ok) {
+        toast({
+          title: 'Password Reset Link Sent',
+          description: `A password reset link has been sent to ${selectedUser.email}`,
+          variant: 'success'
+        })
+      } else {
+        throw new Error(response.error || 'Failed to send reset link')
+      }
+    } catch (error) {
+      toast({
+        title: 'Failed to Send Reset Link',
+        description: error instanceof Error ? error.message : 'Unable to send password reset link. Please try again.',
+        variant: 'destructive'
+      })
+    }
+    setIsPasswordResetOpen(false)
     setSelectedUser(null)
   }
 
@@ -98,7 +132,10 @@ export function CompanyAndUsersTab() {
           return (
             <MoreActionsMenu 
               className="px-4"
-              items={[{ label: 'Delete', onClick: () => handleDeleteRequest(row), danger: true, disabled: disableDelete }]} 
+              items={[
+                { label: 'Reset Password', onClick: () => handlePasswordResetRequest(row) },
+                { label: 'Delete', onClick: () => handleDeleteRequest(row), danger: true, disabled: disableDelete }
+              ]} 
             />
           )
         }}
@@ -108,6 +145,13 @@ export function CompanyAndUsersTab() {
         onOpenChange={setIsConfirmOpen}
         userName={`${selectedUser?.firstName || ''} ${selectedUser?.lastName || ''}`.trim() || (selectedUser?.email || 'user')}
         onConfirm={handleConfirmDelete}
+      />
+      <ConfirmPasswordResetModal
+        open={isPasswordResetOpen}
+        onOpenChange={setIsPasswordResetOpen}
+        userName={`${selectedUser?.firstName || ''} ${selectedUser?.lastName || ''}`.trim() || (selectedUser?.email || 'user')}
+        userEmail={selectedUser?.email || ''}
+        onConfirm={handleConfirmPasswordReset}
       />
       <AddUsersModal
         isOpen={isAddOpen}

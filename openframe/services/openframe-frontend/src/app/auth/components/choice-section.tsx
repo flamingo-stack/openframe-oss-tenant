@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
-import { useDeployment } from '@app/hooks/use-deployment'
+import { useToast } from '@flamingo/ui-kit/hooks'
+import { isSaasSharedMode } from '@lib/app-mode'
+import { authApiClient } from '@lib/auth-api-client'
 
 interface AuthChoiceSectionProps {
   onCreateOrganization: (orgName: string, domain: string) => void
@@ -15,16 +17,61 @@ interface AuthChoiceSectionProps {
  * Matches Figma design exactly with proper colors, spacing, and typography
  */
 export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }: AuthChoiceSectionProps) {
-  const { isCloud, isSelfHosted, isDevelopment, hostname } = useDeployment()
+  const { toast } = useToast()
+  const isSaasShared = isSaasSharedMode()
+
+  console.log('🔐 [Auth Choice Section] isSaasShared:', isSaasShared)
 
   const [orgName, setOrgName] = useState('')
-  const [domain, setDomain] = useState(isCloud ? '' : 'localhost')
+  const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost')
   const [email, setEmail] = useState('')
   const [isSigningIn, setIsSigningIn] = useState(false)
+  const [isCheckingDomain, setIsCheckingDomain] = useState(false)
+  const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
 
-  const handleCreateOrganization = () => {
-    if (orgName.trim()) {
-      onCreateOrganization(orgName.trim(), domain)
+  const handleCreateOrganization = async () => {
+    if (!orgName.trim()) return
+
+    if (isSaasShared && domain.trim()) {
+      setIsCheckingDomain(true)
+      setSuggestedDomains([])
+      
+      try {
+        const fullDomain = `${domain.trim()}.openframe.ai`
+        const response = await authApiClient.checkDomainAvailability(fullDomain)
+        
+        if (response.ok && response.data) {
+          const { isAvailable, suggestedUrl } = response.data as { isAvailable: boolean, suggestedUrl?: string[] }
+          
+          if (isAvailable) {
+            onCreateOrganization(orgName.trim(), fullDomain)
+          } else {
+            toast({
+              title: "Domain Not Available",
+              description: `The subdomain '${domain}' is already taken. Please try another one.`,
+              variant: "destructive"
+            })
+            
+            if (suggestedUrl && suggestedUrl.length > 0) {
+              const suggestions = suggestedUrl.map(url => url.replace('.openframe.ai', ''))
+              setSuggestedDomains(suggestions)
+            }
+          }
+        } else {
+          throw new Error(response.error || 'Failed to check domain availability')
+        }
+      } catch (error) {
+        console.error('Domain check error:', error)
+        toast({
+          title: "Error",
+          description: "Failed to check domain availability. Please try again.",
+          variant: "destructive"
+        })
+      } finally {
+        setIsCheckingDomain(false)
+      }
+    } else {
+      onCreateOrganization(orgName.trim(), domain || 'localhost')
     }
   }
 
@@ -68,17 +115,44 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             </div>
             <div className="flex-1 flex flex-col gap-1">
               <Label>Domain</Label>
-              <div className="relative">
-                <Input
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder='Your domain'
-                  disabled={!isCloud}
-                  className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3 pr-32"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ods-text-secondary font-body text-[14px] font-medium leading-5">
-                  .openframe.ai
-                </span>
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <Input
+                    value={domain}
+                    onChange={(e) => {
+                      setDomain(e.target.value)
+                      setSuggestedDomains([])
+                    }}
+                    placeholder={isSaasShared ? 'your-subdomain' : 'localhost'}
+                    disabled={!isSaasShared || isLoading}
+                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3 pr-32"
+                  />
+                  {isSaasShared && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ods-text-secondary font-body text-[14px] font-medium leading-5">
+                      .openframe.ai
+                    </span>
+                  )}
+                </div>
+                {suggestedDomains.length > 0 && (
+                  <div className="text-sm text-ods-text-secondary">
+                    <p className="mb-1">Available suggestions:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedDomains.map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          onClick={() => {
+                            setDomain(suggestion)
+                            setSuggestedDomains([])
+                          }}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -89,12 +163,12 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <div className="flex-1">
               <Button
                 onClick={handleCreateOrganization}
-                disabled={!orgName.trim() || isLoading}
-                loading={isLoading}
+                disabled={!orgName.trim() || (isSaasShared && !domain.trim()) || isLoading || isCheckingDomain}
+                loading={isLoading || isCheckingDomain}
                 variant="primary"
                 className="w-full font-body text-[18px] font-bold leading-6 tracking-[-0.36px] py-3"
               >
-                Continue
+                {isCheckingDomain ? 'Checking...' : 'Continue'}
               </Button>
             </div>
           </div>
