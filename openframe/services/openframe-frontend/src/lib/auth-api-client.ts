@@ -58,7 +58,6 @@ class AuthApiClient {
             let newAccessToken: string | null = null
             let newRefreshToken: string | null = null
 
-            // Check response data for tokens (now includes tokens from headers via requestRefresh)
             if (refreshResponse.data) {
               newAccessToken = refreshResponse.data?.access_token || refreshResponse.data?.accessToken || null
               newRefreshToken = refreshResponse.data?.refresh_token || refreshResponse.data?.refreshToken || null
@@ -71,9 +70,7 @@ class AuthApiClient {
               }
               return true
             } else {
-              // No tokens found but refresh was still OK - might be cookie-based auth
-              console.warn('⚠️ [Auth API Client] Refresh succeeded but no tokens found in response')
-              return true  // Return true since refresh was successful
+              return true
             }
           }
           return true
@@ -273,13 +270,11 @@ async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Pr
       try { data = await res.json() } catch {}
     }
 
-    // In DevTicket mode, capture tokens from response headers
     if (runtimeEnv.enableDevTicketObserver() && res.ok) {
       const accessToken = res.headers.get('Access-Token') || res.headers.get('access-token')
       const refreshToken = res.headers.get('Refresh-Token') || res.headers.get('refresh-token')
       
       if (accessToken || refreshToken) {
-        // Include tokens in the data response for the refreshAccessToken method to process
         data = {
           ...data,
           access_token: accessToken,
