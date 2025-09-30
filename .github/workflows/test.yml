@@ -324,7 +324,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: _site
-          destination_dir: allure/pr-${{ github.event.pull_request.number }}
+          destination_dir: allure/${{ github.event.pull_request.number }}
 
       - name: Comment PR with Allure Report link
         if: always()
@@ -332,8 +332,8 @@ jobs:
         with:
           header: allure-report
           message: |
-            📊 **Allure Report** follow link:
-            🔗 https://flamingo-stack.github.io/openframe-oss-tenant/allure/pr-${{ github.event.pull_request.number }}/
+            **Allure Report** follow link:
+            https://flamingo-stack.github.io/openframe-oss-tenant/allure/${{ github.event.pull_request.number }}/
             
             📈 **Test status:** ${{ job.status }}
 
