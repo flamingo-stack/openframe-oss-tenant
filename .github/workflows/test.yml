@@ -257,10 +257,22 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
+      - name: Install Telepresence
+        run: |
+          # Install Telepresence binary directly
+          sudo curl -fL https://app.getambassador.io/download/tel2oss/releases/download/v2.20.2/telepresence-linux-amd64 -o /usr/local/bin/telepresence
+          sudo chmod a+x /usr/local/bin/telepresence
+          telepresence version
+
+      - name: Connect to cluster with Telepresence
+        run: |
+          telepresence connect
+        continue-on-error: true
+
       - name: Run Tests
         run: |
           cd openframe-e2e-tests
-          mvn clean test -Dtest="**/*Test" -Dmaven.test.failure.ignore=true
+          mvn test -Dgroups="smoke" -Dmaven.test.failure.ignore=true
         continue-on-error: true
 
       - name: Upload Allure results

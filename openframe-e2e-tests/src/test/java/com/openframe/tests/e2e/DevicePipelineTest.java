@@ -32,11 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * - Device data accessibility via GraphQL (single device and list queries)
  */
 @Slf4j
-@Disabled
 @Feature("End-to-End Device Processing")
-@Tag("device-pipeline")
+@Tag("smoke")
 @DisplayName("Device Pipeline E2E")
-public class DevicePipelineE2ETest extends BasePipelineTest {
+public class DevicePipelineTest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
     private static final Duration PINOT_INDEXING_TIMEOUT = Duration.ofSeconds(45);

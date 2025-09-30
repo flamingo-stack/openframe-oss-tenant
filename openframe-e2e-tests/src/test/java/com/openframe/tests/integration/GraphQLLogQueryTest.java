@@ -18,10 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 @Feature("GraphQL API")
-
+@Tag("smoke")
 @DisplayName("GraphQL Log Query Integration Test")
-@TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Execution(ExecutionMode.CONCURRENT)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class GraphQLLogQueryTest extends BasePipelineTest {
     

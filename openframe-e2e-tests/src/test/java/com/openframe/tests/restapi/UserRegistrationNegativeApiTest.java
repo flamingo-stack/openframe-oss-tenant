@@ -7,6 +7,7 @@ import com.openframe.support.helpers.ApiCalls;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -15,8 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@Tag("Regression")
 @DisplayName("User Registration Negative API Tests")
-public class UserRegistrationNegativeApiE2ETest extends ApiBaseTest {
+public class UserRegistrationNegativeApiTest extends ApiBaseTest {
 
     @ParameterizedTest
     @DisplayName("Should fail registration with invalid passwords")

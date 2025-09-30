@@ -22,15 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests device registration, GraphQL queries, filters, pagination, and search.
  */
 @Slf4j
-@Epic("Integration Tests")
 @Feature("GraphQL Device Queries")
-@Story("Device GraphQL operations and queries")
 @DisplayName("GraphQL Device Query Integration Tests")
-@TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Execution(ExecutionMode.CONCURRENT)
-@Tag("integration")
-@Tag("graphql")
-@Tag("device")
+@Tag("smoke")
 public class GraphQLDeviceQueryTest extends BasePipelineTest {
 
     private String machineId;
@@ -334,13 +328,13 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     void deviceFiltersWorkCorrectly() {
         long startTime = System.currentTimeMillis();
         
-        List<String> deviceTypes = executePhase(TestPhase.ARRANGE, "Get available device types", () -> {
+        List<Object> deviceTypes = executePhase(TestPhase.ARRANGE, "Get available device types", () -> {
             Response response = ApiHelpers.graphqlQuery(GraphQLQueries.DEVICE_FILTERS_QUERY);
             return response.jsonPath().getList("data.deviceFilters.deviceTypes");
         });
         
         if (deviceTypes != null && !deviceTypes.isEmpty()) {
-            String selectedDeviceType = deviceTypes.get(0);
+            String selectedDeviceType = deviceTypes.get(0).toString();
             
             List<Map<String, Object>> filteredDevices = executePhase(TestPhase.ACT, 
                 "Query devices filtered by device type: " + selectedDeviceType, () -> {

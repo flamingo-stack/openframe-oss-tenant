@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 @Disabled
 @Feature("End-to-End Log Processing")
-@Tag("log-pipeline")
+@Tag("smoke")
 @DisplayName("Log Event Pipeline E2E")
 public class LogEventPipelineTest extends BasePipelineTest {
     
@@ -53,8 +53,6 @@ public class LogEventPipelineTest extends BasePipelineTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("toolTestDataProvider")
-    @Story("Tool Integration Pipeline")
-    @Severity(SeverityLevel.CRITICAL)
     @Description("Verify log events flow through the complete pipeline to GraphQL")
     void logEventFlowsThroughPipeline(ToolTestData testData) throws Exception {
         long startTime = System.currentTimeMillis();

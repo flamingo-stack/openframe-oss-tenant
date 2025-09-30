@@ -20,6 +20,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@Tag("smoke1")
 @Execution(ExecutionMode.SAME_THREAD)
 public class UserRegistrationApiTest extends ApiBaseTest {
 
@@ -44,8 +45,6 @@ public class UserRegistrationApiTest extends ApiBaseTest {
             softAssertions.assertThat(registrationResponse.getPlan()).isEqualTo("FREE");
             softAssertions.assertThat(registrationResponse.getActive()).isTrue();
             softAssertions.assertThat(registrationResponse.getOwnerId()).isNotNull();
-
-            sleep(1000);
 
             long totalUsers = DBQuery.getUserCount();
             log.info("Total users in database after sleep: {}", totalUsers);

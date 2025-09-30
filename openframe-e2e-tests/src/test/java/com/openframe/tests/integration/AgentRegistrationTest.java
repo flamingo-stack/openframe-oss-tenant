@@ -16,13 +16,9 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-@Epic("Integration Tests")
 @Feature("Agent Registration")
-@Story("Agent registration workflow")
-@Tag("e2e")
-@Tag("api")
+@Tag("smoke")
 @DisplayName("Agent Registration Flow E2E Test")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.CONCURRENT)
 public class AgentRegistrationTest extends BasePipelineTest {
     private String machineId;

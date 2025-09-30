@@ -17,8 +17,7 @@ public abstract class ApiBaseTest extends BaseTest {
     static void setupTests() {
         log.info("Setting up test environment");
         RestAssuredConfig.configure();
-        
-        // Створюємо одне з'єднання для всього класу
+
         mongoConnection = MongoDBConnection.fromConfig();
         ThreadSafeTestContext.setData(ThreadSafeTestContext.MONGO_CONNECTION, mongoConnection);
         log.info("MongoDB connection established for all tests");
@@ -28,7 +27,6 @@ public abstract class ApiBaseTest extends BaseTest {
     @BeforeEach
     protected void setupTest(TestInfo testInfo) {
         super.setupTest(testInfo);
-        // З'єднання вже створене в @BeforeAll
         log.info("Test started: {}", testInfo.getDisplayName());
     }
     
