@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main, feature/update-gha-pipelines]
+    branches: [main]
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -311,3 +311,26 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
+  
+  build_helm:
+    name: "Build Helm Chart"
+    needs: [matrix, changes]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+
+      - name: Push Chart
+        uses: appany/helm-oci-chart-releaser@v0.5.0
+        with:
+          name: app-of-apps
+          tag: 0.1.1
+          path: ./manifests/app-of-apps 
+          registry: ${{ env.REGISTRY }}
+          repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}

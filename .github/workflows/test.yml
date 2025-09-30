@@ -299,6 +299,28 @@ jobs:
         working-directory: client
         run: |
             make build
+  
+  test_helm:
+    name: "Test Helm Chart"
+    needs: [matrix, changes]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+      
+      - name: Install Helm unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest
+      
+      - name: Test Chart
+        run: |
+          helm template app ./manifests/app-of-apps 
+          helm unittest ./manifests/app-of-apps 
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
