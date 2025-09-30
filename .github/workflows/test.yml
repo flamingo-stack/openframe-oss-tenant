@@ -257,7 +257,7 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
-      - name: Run API tests
+      - name: Run Tests
         run: |
           cd openframe-e2e-tests
           mvn clean test -Dtest="**/*Test" -Dmaven.test.failure.ignore=true
@@ -325,6 +325,17 @@ jobs:
           publish_branch: gh-pages
           publish_dir: _site
           destination_dir: allure/pr-${{ github.event.pull_request.number }}
+
+      - name: Comment PR with Allure Report link
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: allure-report
+          message: |
+            📊 **Allure Report** follow link:
+            🔗 https://flamingo-stack.github.io/openframe-oss-tenant/allure/pr-${{ github.event.pull_request.number }}/
+            
+            📈 **Test status:** ${{ job.status }}
 
   test_client:
     name: "Test Client: ${{ matrix.os }}"
