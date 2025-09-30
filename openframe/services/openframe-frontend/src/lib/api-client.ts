@@ -27,6 +27,7 @@ class ApiClient {
   private isDevTicketEnabled: boolean
   private isRefreshing: boolean = false
   private refreshPromise: Promise<boolean> | null = null
+  private requestQueue: Array<() => Promise<any>> = []
 
   constructor() {
     this.isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
@@ -111,29 +112,14 @@ class ApiClient {
         } as unknown as Response
 
         if (response.ok) {
-          // If running in header-token mode, try to capture new tokens from headers or JSON
           if (this.isDevTicketEnabled) {
             let newAccessToken: string | null = null
             let newRefreshToken: string | null = null
 
-            // Prefer tokens from response headers if present
-            try {
-              newAccessToken = response.headers.get('Access-Token') || response.headers.get('access-token')
-              newRefreshToken = response.headers.get('Refresh-Token') || response.headers.get('refresh-token')
-            } catch {}
-
-            // Fall back to JSON body if headers were not provided
-            if (!newAccessToken || !newRefreshToken) {
-              try {
-                const contentType = response.headers.get('content-type') || ''
-                if (contentType.includes('application/json')) {
-                  const data = await response.json()
-                  newAccessToken = newAccessToken || data?.access_token || data?.accessToken || null
-                  newRefreshToken = newRefreshToken || data?.refresh_token || data?.refreshToken || null
-                }
-              } catch (e) {
-                console.warn('⚠️ [API Client] Unable to parse refresh response JSON:', e)
-              }
+            const data = responseRaw.data
+            if (data) {
+              newAccessToken = data.access_token || data.accessToken || null
+              newRefreshToken = data.refresh_token || data.refreshToken || null
             }
 
             if (newAccessToken) {
@@ -141,15 +127,12 @@ class ApiClient {
               if (newRefreshToken) {
                 localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken)
               }
-              console.log('✅ [API Client] Token refreshed and stored successfully')
+              return true
             } else {
-              // In header-token mode, absence of new tokens likely means refresh is not usable
-              console.error('❌ [API Client] Refresh succeeded but no tokens provided in header-token mode')
               return false
             }
           }
 
-          // In cookie mode, cookies are updated server-side; nothing to store
           return true
         } else {
           console.error('❌ [API Client] Token refresh failed with status:', response.status)
@@ -161,6 +144,12 @@ class ApiClient {
       } finally {
         this.isRefreshing = false
         this.refreshPromise = null
+        
+        const queue = [...this.requestQueue]
+        if (queue.length > 0) {
+          this.requestQueue = []
+          queue.forEach(retryRequest => retryRequest())
+        }
       }
     })()
 
@@ -226,19 +215,30 @@ class ApiClient {
             ok: false,
           }
         }
-        
-        console.log('⚠️ [API Client] 401 Unauthorized - attempting token refresh...')
-        
-        // Try to refresh the token
+
+        if (this.isRefreshing) {
+          console.log('🔄 [API Client] Token refresh in progress, queuing request...')
+          return new Promise<ApiResponse<T>>((resolve) => {
+            this.requestQueue.push(async () => {
+              const result = await this.request<T>(path, options, true)
+              resolve(result)
+            })
+          })
+        }
+
         const refreshSuccess = await this.refreshAccessToken()
+
+        const queue = [...this.requestQueue]
+        this.requestQueue = []
         
         if (refreshSuccess) {
-          console.log('🔄 [API Client] Retrying request after token refresh...')
-          // Retry the original request with new token
+          queue.forEach(retryRequest => retryRequest())
           return this.request<T>(path, options, true)
         } else {
-          console.error('❌ [API Client] Token refresh failed - forcing logout')
-          // Force logout on refresh failure
+          queue.forEach(retryRequest => {
+            retryRequest().catch(() => {})
+          })
+
           await this.forceLogout()
           
           return {

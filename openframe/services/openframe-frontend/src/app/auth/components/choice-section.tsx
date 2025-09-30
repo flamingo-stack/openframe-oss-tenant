@@ -5,6 +5,7 @@ import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { isSaasSharedMode } from '@lib/app-mode'
 import { authApiClient } from '@lib/auth-api-client'
+import { ForgotPasswordModal } from './forgot-password-modal'
 
 interface AuthChoiceSectionProps {
   onCreateOrganization: (orgName: string, domain: string) => void
@@ -20,14 +21,13 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const { toast } = useToast()
   const isSaasShared = isSaasSharedMode()
 
-  console.log('🔐 [Auth Choice Section] isSaasShared:', isSaasShared)
-
   const [orgName, setOrgName] = useState('')
   const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost')
   const [email, setEmail] = useState('')
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [isCheckingDomain, setIsCheckingDomain] = useState(false)
   const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
 
   const handleCreateOrganization = async () => {
     if (!orgName.trim()) return
@@ -201,9 +201,17 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             />
           </div>
 
-          {/* Button Row */}
+          {/* Button Row with Forgot Password */}
           <div className="flex gap-6 items-center">
-            <div className="flex-1"></div>
+            <div className="flex-1 flex items-center">
+              <Button
+                onClick={() => setShowForgotPassword(true)}
+                variant="ghost"
+                className="text-ods-text-secondary hover:text-ods-accent font-body text-[14px] font-medium leading-5 p-0 h-auto"
+              >
+                Forgot password?
+              </Button>
+            </div>
             <div className="flex-1">
               <Button
                 onClick={handleSignIn}
@@ -218,6 +226,13 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        open={showForgotPassword}
+        onOpenChange={setShowForgotPassword}
+        defaultEmail={email}
+      />
     </>
   )
 }

@@ -168,7 +168,7 @@ class AuthApiClient {
   }
 
   checkDomainAvailability<T = any>(domain: string) {
-    const path = `/saas/tenant/availability?domain=${encodeURIComponent(domain)}`
+    const path = `/sas/tenant/availability?domain=${encodeURIComponent(domain)}`
     return requestPublic<T>(path, { method: 'GET' })
   }
 
@@ -231,9 +231,9 @@ class AuthApiClient {
     return buildAuthUrl(path)
   }
 
-  logout<T = any>(tenantId?: string) {
+  logout(tenantId?: string) {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''
-    return request<T>(`/oauth/logout${query}`, { method: 'GET', keepalive: true as any })
+    return window.location.href = `${buildAuthUrl(`/oauth/logout${query}`)}`
   }
 }
 
