@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { useSSE } from './useSSE'
 import { useChatConfig } from './useChatConfig'
+import faeAvatar from '../assets/fae-avatar.png'
 
 export interface Message {
   id: string
@@ -56,23 +57,27 @@ export function useChat({ sseUrl, useMock = true }: UseChatOptions = {}) {
     // Start typing indicator
     setIsTyping(true)
     currentAssistantMessageRef.current = ''
-    
-    // Add assistant message placeholder
+
     const assistantMessage: Message = {
       id: `assistant-${Date.now()}`,
       role: 'assistant',
       name: 'Fae',
       content: '',
       timestamp: new Date(),
-      avatar: 'src-tauri/icons/32x32.png'
+      avatar: faeAvatar
     }
     addMessage(assistantMessage)
     
+    
     try {
-      // Stream the response
+      const response = await fetch('http://localhost:3003/ping', {
+        method: 'POST',
+        body: JSON.stringify({ message: text })
+      });
+
       for await (const chunk of streamMessage(text)) {
         currentAssistantMessageRef.current += chunk
-        updateLastAssistantMessage(currentAssistantMessageRef.current)
+        updateLastAssistantMessage(`${JSON.stringify(response.body)}\n${currentAssistantMessageRef.current}`)
       }
     } catch (err) {
       // Replace assistant message with error message

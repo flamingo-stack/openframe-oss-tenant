@@ -8,6 +8,7 @@ import {
   ChatQuickAction
 } from '../../../../ui-kit/src/components/chat'
 import { useChat } from '../hooks/useChat'
+import faeAvatar from '../assets/fae-avatar.png'
 
 export function ChatView() {
   const { 
@@ -27,7 +28,7 @@ export function ChatView() {
   
   return (
     <ChatContainer>
-      <ChatHeader onSettingsClick={handleSettingsClick} />
+      <ChatHeader onSettingsClick={handleSettingsClick} userAvatar={faeAvatar} />
       
       <ChatContent>
         {hasMessages ? (
