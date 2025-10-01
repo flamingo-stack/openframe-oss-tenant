@@ -153,10 +153,6 @@ impl ToolRunManager {
             let cmd_items = process.cmd();
             let cmdline = cmd_items.join(" ").to_lowercase();
 
-            if (cmdline.contains("mesh") || cmdline.contains("openframe")) {
-                info!("Cmdline: {}", cmdline);
-            }
-
             if cmdline.contains(&pattern) {
                 info!("Found previous tool process for {} with pid {}", tool_id, pid);
 
