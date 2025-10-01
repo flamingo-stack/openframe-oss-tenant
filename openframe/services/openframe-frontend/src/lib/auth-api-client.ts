@@ -9,6 +9,8 @@ import { isSaasSharedMode } from './app-mode'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@app/auth/hooks/use-token-storage'
 import { forceLogout, clearStoredTokens } from './force-logout'
 
+export const SAAS_DOMAIN_SUFFIX = 'openframe.ai'
+
 export interface AuthApiResponse<T = any> {
   data?: T
   error?: string
@@ -44,7 +46,7 @@ class AuthApiClient {
           tenantId = authState.tenantId || (authState.user as any)?.organizationId || (authState.user as any)?.tenantId
         } catch {}
 
-        const refreshResponse = await requestRefresh(tenantId || '')
+        const refreshResponse = await this.refresh(tenantId || '')
 
         if (refreshResponse.status === 401) {
           clearStoredTokens()
@@ -68,7 +70,7 @@ class AuthApiClient {
               }
               return true
             } else {
-              return false
+              return true
             }
           }
           return true
@@ -164,6 +166,12 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' })
   }
 
+  checkDomainAvailability<T = any>(subdomain: string, organizationName: string) {
+    const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
+    const path = `/sas/tenant/availability?domain=${encodeURIComponent(fullDomain)}&organizationName=${encodeURIComponent(organizationName)}`
+    return requestPublic<T>(path, { method: 'GET' })
+  }
+
   registerOrganization<T = any>(payload: {
     email: string,
     firstName: string,
@@ -173,6 +181,41 @@ class AuthApiClient {
     tenantDomain: string,
   }) {
     return request<T>(`/sas/oauth/register`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  acceptInvitation<T = any>(payload: {
+    invitationId: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    switchTenant?: boolean
+  }) {
+    return request<T>(`/sas/invitations/accept`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...payload,
+        switchTenant: payload.switchTenant || false
+      }),
+    })
+  }
+
+  confirmPasswordReset<T = any>(payload: {
+    token: string,
+    newPassword: string
+  }) {
+    return request<T>(`/sas/password-reset/confirm`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  requestPasswordReset<T = any>(payload: {
+    email: string
+  }) {
+    return request<T>(`/sas/password-reset/request`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -188,9 +231,9 @@ class AuthApiClient {
     return buildAuthUrl(path)
   }
 
-  logout<T = any>(tenantId?: string) {
+  logout(tenantId?: string) {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''
-    return request<T>(`/oauth/logout${query}`, { method: 'GET', keepalive: true as any })
+    return window.location.href = `${buildAuthUrl(`/oauth/logout${query}`)}`
   }
 }
 
@@ -225,6 +268,19 @@ async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Pr
     const contentType = res.headers.get('content-type') || ''
     if (contentType.includes('application/json')) {
       try { data = await res.json() } catch {}
+    }
+
+    if (runtimeEnv.enableDevTicketObserver() && res.ok) {
+      const accessToken = res.headers.get('Access-Token') || res.headers.get('access-token')
+      const refreshToken = res.headers.get('Refresh-Token') || res.headers.get('refresh-token')
+      
+      if (accessToken || refreshToken) {
+        data = {
+          ...data,
+          access_token: accessToken,
+          refresh_token: refreshToken
+        } as T
+      }
     }
 
     return {

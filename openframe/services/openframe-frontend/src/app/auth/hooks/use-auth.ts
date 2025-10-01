@@ -437,6 +437,9 @@ export function useAuth() {
     registerOrganization,
     loginWithSSO,
     logout,
-    reset
+    reset,
+    handleAuthenticationSuccess,
+    isAuthenticated,
+    user
   }
 }
