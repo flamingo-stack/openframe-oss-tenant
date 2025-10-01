@@ -20,7 +20,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
-@Tag("smoke1")
+@Tag("smoke")
 @Execution(ExecutionMode.SAME_THREAD)
 public class UserRegistrationApiTest extends ApiBaseTest {
 

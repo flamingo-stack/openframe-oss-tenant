@@ -2,9 +2,8 @@
 
 import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
 import { useState } from 'react'
-import { useDeployment } from '@app/hooks/use-deployment'
-import { renderSvgIcon } from '@flamingo/ui-kit/components/icons'
 import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
+import { isSaasSharedMode } from '@lib/app-mode'
 
 interface RegisterRequest {
   tenantName: string
@@ -28,7 +27,7 @@ interface AuthSignupSectionProps {
  * Signup section for completing user registration
  */
 export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, isLoading }: AuthSignupSectionProps) {
-  const { isCloud, isSelfHosted, isDevelopment, hostname } = useDeployment()
+  const isSaasShared = isSaasSharedMode()
   
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -36,45 +35,12 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [signupMethod, setSignupMethod] = useState<'form' | 'sso'>('form')
+
+  const displayDomain = isSaasShared ? domain : domain
   
-  // Dynamic domain suffix based on deployment
-  const getDomainSuffix = () => {
-    if (isCloud) {
-      return '.openframe.ai'
-    } else if (isSelfHosted) {
-      // For self-hosted, use the actual hostname or allow custom domain
-      return hostname.startsWith('localhost') ? '.local' : ''
-    } else {
-      // Development
-      return '.dev'
-    }
-  }
-  
-  // Dynamic title and subtitle based on deployment
-  const getTitle = () => {
-    if (isCloud) {
-      return 'Create Organization'
-    } else {
-      return 'Create Organization'
-    }
-  }
-  
-  const getSubtitle = () => {
-    if (isCloud) {
-      return 'Start your journey with OpenFrame'
-    } else {
-      return 'Start your journey with OpenFrame'
-    }
-  }
-  
-  // Dynamic button text based on deployment
-  const getButtonText = () => {
-    if (isCloud) {
-      return 'Start Free Trial'
-    } else {
-      return 'Create Organization'
-    }
-  }
+  const getTitle = () => 'Create Organization'
+  const getSubtitle = () => 'Start your journey with OpenFrame'
+  const getButtonText = () => isSaasShared ? 'Start Free Trial' : 'Create Organization'
 
   const handleSubmit = () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || password !== confirmPassword) {
@@ -131,7 +97,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
             {/* Organization details (disabled) */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1 flex flex-col gap-1">
-                <Label>{isSelfHosted ? 'Instance Name' : 'Organization Name'}</Label>
+                <Label>Organization Name</Label>
                 <Input
                   value={orgName}
                   disabled
@@ -139,23 +105,16 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 />
               </div>
               <div className="flex-1 flex flex-col gap-1">
-                <Label>{isSelfHosted ? 'Instance URL' : 'Domain'}</Label>
-                <div className="relative">
-                  <Input
-                    value={domain}
-                    disabled={!isSelfHosted || isLoading}
-                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3 pr-32"
-                  />
-                  {getDomainSuffix() && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ods-text-secondary font-body text-[14px] font-medium leading-5">
-                      {getDomainSuffix()}
-                    </span>
-                  )}
-                </div>
+                <Label>Domain</Label>
+                <Input
+                  value={displayDomain}
+                  disabled
+                  className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3"
+                />
               </div>
             </div>
 
-            {isCloud && onSSO && (
+            {isSaasShared && onSSO && (
               <div className="space-y-6 mb-8">
                 <AuthProvidersList
                   enabledProviders={ssoProviders}
@@ -226,7 +185,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
-                {isCloud && password && password.length < 8 && (
+                {isSaasShared && password && password.length < 8 && (
                   <p className="text-xs text-error mt-1">Password must be at least 8 characters</p>
                 )}
               </div>
