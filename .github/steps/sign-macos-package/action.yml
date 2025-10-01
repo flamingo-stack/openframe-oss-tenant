@@ -20,7 +20,7 @@ inputs:
     description: 'Apple Developer ID'
     required: true
   binary_name:
-    description: 'Name of built MacOS binary (e.g. "rmmagent-mac-universal")'
+    description: 'Name of built MacOS binary (e.g. "rmmagent")'
     required: true
 
 runs:
