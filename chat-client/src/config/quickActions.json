@@ -1,0 +1,24 @@
+{
+  "actions": [
+    {
+      "id": "1",
+      "text": "My computer is running slow"
+    },
+    {
+      "id": "2", 
+      "text": "Check if I have updates available"
+    },
+    {
+      "id": "3",
+      "text": "I'm having internet issues"
+    },
+    {
+      "id": "4",
+      "text": "I can't open or access my files"
+    },
+    {
+      "id": "5",
+      "text": "I forgot my password"
+    }
+  ]
+}

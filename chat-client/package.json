@@ -1,12 +1,14 @@
 {
-  "name": "openframe-chat",
+  "name": "openframe-chat-client",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "OpenFrame Chat Desktop Client - Tauri + React",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "autoprefixer": "^10.4.21",
@@ -14,15 +16,16 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",
     "postcss": "^8.5.6",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@types/react": "^18.2.56",
-    "@types/react-dom": "^18.2.19",
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.4"
