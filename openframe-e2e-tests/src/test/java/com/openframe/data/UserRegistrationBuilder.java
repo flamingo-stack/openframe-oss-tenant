@@ -34,18 +34,6 @@ public class UserRegistrationBuilder {
                 .build();
     }
 
-    public static UserRegistrationBuilder withEmail(String email) {
-        Faker faker = new Faker();
-        return UserRegistrationBuilder.builder()
-                .email(email)
-                .firstName(faker.name().firstName())
-                .lastName(faker.name().lastName())
-                .password(correctPassword)
-                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
-                .tenantDomain(tenantDomainName)
-                .build();
-    }
-
     public static UserRegistrationBuilder forTenant(String tenantName) {
         Faker faker = new Faker();
         return UserRegistrationBuilder.builder()
@@ -54,42 +42,6 @@ public class UserRegistrationBuilder {
                 .lastName(faker.name().lastName())
                 .password(correctPassword)
                 .tenantName(tenantName)
-                .tenantDomain(tenantDomainName)
-                .build();
-    }
-
-    public static UserRegistrationBuilder withStrongPassword() {
-        Faker faker = new Faker();
-        return UserRegistrationBuilder.builder()
-                .email(faker.internet().emailAddress())
-                .firstName(faker.name().firstName())
-                .lastName(faker.name().lastName())
-                .password("StrongPass123!@#")
-                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
-                .tenantDomain(tenantDomainName)
-                .build();
-    }
-
-    public static UserRegistrationBuilder withWeakPassword() {
-        Faker faker = new Faker();
-        return UserRegistrationBuilder.builder()
-                .email(faker.internet().emailAddress())
-                .firstName(faker.name().firstName())
-                .lastName(faker.name().lastName())
-                .password("123")
-                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
-                .tenantDomain(tenantDomainName)
-                .build();
-    }
-
-    public static UserRegistrationBuilder withSpecialCharactersInName() {
-        Faker faker = new Faker();
-        return UserRegistrationBuilder.builder()
-                .email(faker.internet().emailAddress())
-                .firstName("José María")
-                .lastName("O'Connor-Smith")
-                .password(correctPassword)
-                .tenantName(faker.company().name().replaceAll(regexTemplate, ""))
                 .tenantDomain(tenantDomainName)
                 .build();
     }

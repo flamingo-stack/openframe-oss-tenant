@@ -102,13 +102,11 @@ public class KafkaTestInfrastructure implements AutoCloseable {
         
         try {
             ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, message);
-            
-            if (topic.equals(TOPIC_MESHCENTRAL_EVENTS)) {
-                record.headers().add("message-type", "MESHCENTRAL_EVENT".getBytes());
-            } else if (topic.equals(TOPIC_TACTICAL_RMM_EVENTS)) {
-                record.headers().add("message-type", "TACTICAL_RMM_EVENT".getBytes());
-            } else if (topic.equals(TOPIC_FLEET_MDM_EVENTS)) {
-                record.headers().add("message-type", "FLEET_MDM_EVENT".getBytes());
+
+            switch (topic) {
+                case TOPIC_MESHCENTRAL_EVENTS -> record.headers().add("message-type", "MESHCENTRAL_EVENT".getBytes());
+                case TOPIC_TACTICAL_RMM_EVENTS -> record.headers().add("message-type", "TACTICAL_RMM_EVENT".getBytes());
+                case TOPIC_FLEET_MDM_EVENTS -> record.headers().add("message-type", "FLEET_MDM_EVENT".getBytes());
             }
             
             producer.send(record, (metadata, exception) -> {
@@ -136,7 +134,7 @@ public class KafkaTestInfrastructure implements AutoCloseable {
      * Runs in background thread and collects messages
      */
     public void startConsuming(String topic) {
-        String groupId = "e2e-test-" + testRunId + "-" + UUID.randomUUID().toString();
+        String groupId = "e2e-test-" + testRunId + "-" + UUID.randomUUID();
         KafkaConsumer<String, String> consumer = createConsumer(topic, groupId);
         AtomicBoolean running = new AtomicBoolean(true);
         

@@ -23,11 +23,6 @@ public class DBQuery {
         return UserDocument.fromDocument(doc);
     }
 
-    public static boolean deleteUserByEmail(String email) {
-        MongoCollection<Document> users = getDatabase().getCollection("users");
-        return users.deleteOne(new Document("email", email)).getDeletedCount() > 0;
-    }
-
     public static long getUserCount() {
         MongoCollection<Document> users = getDatabase().getCollection("users");
         return users.countDocuments();

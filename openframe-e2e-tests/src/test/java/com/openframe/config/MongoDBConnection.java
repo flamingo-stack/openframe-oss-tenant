@@ -2,9 +2,7 @@ package com.openframe.config;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,24 +27,10 @@ public class MongoDBConnection {
         return database;
     }
 
-    public MongoCollection<Document> getCollection(String collectionName) {
-        return database.getCollection(collectionName);
-    }
-
     public void close() {
         if (mongoClient != null) {
             mongoClient.close();
             logger.info("MongoDB connection closed");
-        }
-    }
-
-    public boolean isConnected() {
-        try {
-            database.runCommand(new Document("ping", 1));
-            return true;
-        } catch (Exception e) {
-            logger.warn("MongoDB connection check failed: {}", e.getMessage());
-            return false;
         }
     }
 }
