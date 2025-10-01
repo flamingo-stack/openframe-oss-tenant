@@ -1,0 +1,1 @@
+{machineId=2997981b-b48a-40eb-bc79-85b1696fe688, hostname=stability-test-test-371c551c-a009-4642-a100-46370bc786bd-025536f5, status=ACTIVE, agentVersion=1.0.0, lastSeen=2025-10-01T11:56:51.321Z}

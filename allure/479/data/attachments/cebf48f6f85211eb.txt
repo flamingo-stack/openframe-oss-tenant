@@ -1,1 +1,0 @@
-{filteredCount=10, statuses=[{value=ACTIVE, count=10}], deviceTypes=[{value=DESKTOP, count=10}], osTypes=[{value=null, count=10}], organizationIds=[{value=null, count=10}], tags=[{value=null, label=null, count=10}]}

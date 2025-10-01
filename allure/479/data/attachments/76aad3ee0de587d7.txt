@@ -1,1 +1,0 @@
-{hostname=test-device-test-149deb19-d02f-4a7c-bc3a-0ea82539d636-df4b6b97, macAddress=02:1e:56:df:3d:2f, ip=192.168.1.31, osUuid=uuid-6bbae444, agentVersion=1.0.0}

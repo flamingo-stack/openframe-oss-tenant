@@ -1,0 +1,1 @@
+{machineId=4a883515-b6bb-4c40-bdc0-ae5daaf6b635, clientId=agent_4a883515-b6bb-4c40-bdc0-ae5daaf6b635, clientSecret=lejRKi3aAAGD91PrS78ynD4e9dFY5G3c7mYwqBLP4as}
