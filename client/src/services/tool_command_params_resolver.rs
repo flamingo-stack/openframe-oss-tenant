@@ -54,10 +54,9 @@ impl ToolCommandParamsResolver {
 
     fn process_assets_placeholders(&self, arg: &str, tool_agent_id: &str) -> String {
         ASSETS_PATH_REGEX.replace_all(arg, |caps: &regex::Captures| {
+            let asset_name = &caps[1];
             self.directory_manager
-                .app_support_dir()
-                .join(tool_agent_id)
-                .join(&caps[1])
+                .get_asset_path(tool_agent_id, asset_name)
                 .to_string_lossy()
                 .into_owned()
         }).to_string()
