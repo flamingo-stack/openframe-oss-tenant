@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/utils/config"
-	"github.com/flamingo/openframe/internal/chart/utils/errors"
 	"github.com/flamingo/openframe/internal/chart/models"
 	"github.com/flamingo/openframe/internal/chart/providers/git"
 	"github.com/flamingo/openframe/internal/chart/providers/helm"
+	"github.com/flamingo/openframe/internal/chart/utils/config"
+	"github.com/flamingo/openframe/internal/chart/utils/errors"
 	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
 	"github.com/pterm/pterm"
 )
@@ -47,7 +47,7 @@ func (a *AppOfApps) Install(ctx context.Context, config config.ChartInstallConfi
 
 	// Always show which branch is being used for cloning with dots to indicate work is happening
 	pterm.Info.Printf("Using branch '%s'...\n", appConfig.GitHubBranch)
-	
+
 	// Clone the repository to a temporary directory
 	cloneResult, err := a.gitRepo.CloneChartRepository(ctx, appConfig)
 	if err != nil {
@@ -82,7 +82,7 @@ func (a *AppOfApps) Install(ctx context.Context, config config.ChartInstallConfi
 		pterm.Info.Printf("   Chart path: %s\n", cloneResult.ChartPath)
 		pterm.Info.Printf("   Values file: %s\n", valuesFile)
 	}
-	
+
 	// Use helm manager to install app-of-apps
 	err = a.helmManager.InstallAppOfAppsFromLocal(ctx, localConfig, certFile, keyFile)
 	if err != nil {

@@ -80,55 +80,63 @@ spec:
             mountPath: /opt/mesh
 
       containers:
-      - name: meshcentral
-        image: "{{ .Values.server.image.repo }}:{{ .Values.server.image.tag }}"
-        ports:
         - name: meshcentral
-          containerPort: 8383
-        - name: agent
-          containerPort: 80
-        envFrom:
-          - configMapRef:
-              name: meshcentral-server
-          - configMapRef:
-              name: meshcentral-mongodb
-          - secretRef:
-              name: meshcentral-server
-          - secretRef:
-              name: meshcentral-mongodb
-        startupProbe:
-          httpGet:
-            path: /health.ashx
-            port: 8383
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 30  # 30 * 10 = 5 minutes for startup
-        readinessProbe:
-          httpGet:
-            path: /health.ashx
-            port: 8383
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 3
-        livenessProbe:
-          httpGet:
-            path: /health.ashx
-            port: 8383
-          initialDelaySeconds: 30
-          periodSeconds: 15
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "300m"
-        volumeMounts:
-        - name: meshcentral-data
-          mountPath: /opt/mesh
+          image: "{{ .Values.server.image.repo }}:{{ .Values.server.image.tag }}"
+          ports:
+          - name: meshcentral
+            containerPort: 8383
+          - name: agent
+            containerPort: 80
+          env:
+            {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
+            - name: OPENFRAME_GATEWAY_URL
+              value: {{ printf "%s" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
+            {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
+            - name: OPENFRAME_GATEWAY_URL
+              value: "localhost"
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: meshcentral-server
+            - configMapRef:
+                name: meshcentral-mongodb
+            - secretRef:
+                name: meshcentral-server
+            - secretRef:
+                name: meshcentral-mongodb
+          startupProbe:
+            httpGet:
+              path: /health.ashx
+              port: 8383
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30  # 30 * 10 = 5 minutes for startup
+          readinessProbe:
+            httpGet:
+              path: /health.ashx
+              port: 8383
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health.ashx
+              port: 8383
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "300m"
+          volumeMounts:
+          - name: meshcentral-data
+            mountPath: /opt/mesh
 
       volumes:
         - name: mongodb-readiness-command
