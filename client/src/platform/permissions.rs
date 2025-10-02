@@ -183,7 +183,7 @@ impl PermissionUtils {
         #[cfg(target_os = "windows")]
         {
             // TODO: implement proper admin check on Windows; returning false for now
-            false
+            is_elevated::is_elevated()
         }
 
         #[cfg(all(not(unix), not(target_os = "windows")))]

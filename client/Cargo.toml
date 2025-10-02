@@ -60,6 +60,7 @@ regex = "1.11.1"
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
 winapi = { version = "0.3", features = ["winuser", "shellapi", "securitybaseapi", "errhandlingapi", "winerror"] }
+is_elevated = "0.1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
