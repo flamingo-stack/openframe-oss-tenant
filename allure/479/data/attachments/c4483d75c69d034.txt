@@ -1,1 +1,0 @@
-[{value=DESKTOP, count=1}]

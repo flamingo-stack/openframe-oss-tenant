@@ -1,1 +1,0 @@
-[{toolType=MESHCENTRAL, eventType=SYSTEM_START, severity=INFO}, {toolType=MESHCENTRAL, eventType=GROUP_CREATED, severity=INFO}, {toolType=MESHCENTRAL, eventType=SYSTEM_START, severity=INFO}]
