@@ -7,7 +7,9 @@ import { useLocalStorage } from '@flamingo/ui-kit/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
+import { authApiClient } from '@lib/auth-api-client'
 import { runtimeEnv } from '@lib/runtime-config'
+import { clearStoredTokens } from '@lib/force-logout'
 
 interface TenantInfo {
   tenantId?: string
@@ -156,8 +158,8 @@ export function useAuth() {
           console.log('🔐 [Auth] Initial authentication check via /me endpoint...')
         }
         
-        // Use the API client which handles both cookie and header auth automatically
-        const response = await apiClient.get('/me')
+        // Call auth service for /me (shared host if provided, else relative); includes cookies and header token (dev)
+        const response = await authApiClient.me()
         
         if (response.ok && response.data && response.data.authenticated) {
           const userData = response.data.user
@@ -178,40 +180,26 @@ export function useAuth() {
           }
         } else if (response.status === 401) {
           if (isPeriodicCheck && isAuthenticated) {
-            // User was authenticated but now token is expired/invalid
-            console.log('⚠️ [Auth] Session expired, logging out...')
-            
-            // Clear auth store
             const { logout } = useAuthStore.getState()
             logout()
             
-            // Clear tokens
-            const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
-            if (isDevTicketEnabled) {
-              localStorage.removeItem('of_access_token')
-              localStorage.removeItem('of_refresh_token')
-            }
+            clearStoredTokens()
             
-            // Show notification
             toast({
               title: 'Session Expired',
               description: 'Your session has expired. Please sign in again.',
               variant: 'destructive',
             })
             
-            // Redirect to auth page
-            router.push('/auth')
+            import('../../../lib/app-mode').then(({ getDefaultRedirectPath }) => {
+              router.push(getDefaultRedirectPath(false))
+            })
           } else if (!isPeriodicCheck) {
-            console.log('⚠️ [Auth] Not authenticated (401 from /me)')
-            
-            // Clear any stale tokens if DevTicket is enabled
             const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
             if (isDevTicketEnabled) {
               const token = getAccessToken()
               if (token) {
-                console.log('🔐 [Auth] Clearing stale tokens')
-                localStorage.removeItem('of_access_token')
-                localStorage.removeItem('of_refresh_token')
+                clearStoredTokens()
               }
             }
           }
@@ -260,12 +248,8 @@ export function useAuth() {
     setEmail(userEmail)
     
     try {
-      // Use external API call since this goes to a different base path
-      const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
-      const response = await apiClient.external(
-        `${baseUrl}/sas/tenant/discover?email=${encodeURIComponent(userEmail)}`,
-        { method: 'GET', skipAuth: true } // Skip auth for tenant discovery
-      )
+      // Use auth api client (shared host or relative) for discovery
+      const response = await authApiClient.discoverTenants(userEmail)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -325,24 +309,14 @@ export function useAuth() {
     try {
       console.log('📝 [Auth] Attempting organization registration:', data.tenantName)
       
-      const apiUrl = runtimeEnv.apiUrl()
-      const baseUrl = apiUrl.replace('/api', '')
-      
-      const response = await apiClient.external(
-        `${baseUrl}/sas/oauth/register`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            password: data.password,
-            tenantName: data.tenantName,
-            tenantDomain: data.tenantDomain || 'localhost'
-          }),
-          skipAuth: true // Skip auth for registration
-        }
-      )
+      const response = await authApiClient.registerOrganization({
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        password: data.password,
+        tenantName: data.tenantName,
+        tenantDomain: data.tenantDomain || 'localhost'
+      })
 
       if (!response.ok) {
         const errorMessage = response.data?.message || response.error || 'Registration failed'
@@ -395,11 +369,7 @@ export function useAuth() {
         }
 
         const returnUrl = encodeURIComponent(getReturnUrl())
-        const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
-        // Pass provider param for non-default providers; omit for 'openframe-sso'
-        const providerParam = provider && provider !== 'openframe-sso' ? `&provider=${encodeURIComponent(provider)}` : ''
-        const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&redirectTo=${returnUrl}${providerParam}`
-
+        const loginUrl = authApiClient.loginUrl(tenantInfo.tenantId, returnUrl, provider)
         window.location.href = loginUrl
       } else {
         throw new Error('No tenant information available for SSO login')
@@ -419,13 +389,9 @@ export function useAuth() {
     console.log('🔐 [Auth] Logging out user')
 
     try {
-      const baseUrl = runtimeEnv.apiUrl().replace('/api', '')
       const { tenantId: storeTenantId } = useAuthStore.getState()
       const effectiveTenantId = storeTenantId || tenantInfo?.tenantId
-      const logoutUrl = effectiveTenantId
-        ? `${baseUrl}/oauth/logout?tenantId=${encodeURIComponent(effectiveTenantId)}`
-        : `${baseUrl}/oauth/logout`
-      await apiClient.external(logoutUrl, { method: 'POST', keepalive: true })
+      await authApiClient.logout(effectiveTenantId || undefined)
     } catch (error) {
       console.warn('⚠️ [Auth] Server logout request failed (continuing):', error)
     }
@@ -471,6 +437,9 @@ export function useAuth() {
     registerOrganization,
     loginWithSSO,
     logout,
-    reset
+    reset,
+    handleAuthenticationSuccess,
+    isAuthenticated,
+    user
   }
 }

@@ -36,8 +36,11 @@ public class ThreadSafeTestContext {
         THREAD_DATA.remove();
     }
     
+    // Test data keys (for dynamic test-specific data)
     public static final String CURRENT_USER = "current_user";
     public static final String PLAYER_ID = "player_id";
     public static final String RESPONSE_STATUS = "response_status";
-    public static final String MONGO_CONNECTION = "mongo_connection";
+    
+    // NOTE: Infrastructure connections (MongoDB, Kafka) are NOT stored here
+    // They are managed as static fields in test base classes (thread-safe via driver connection pools)
 } 

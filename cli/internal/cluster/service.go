@@ -723,10 +723,16 @@ func CreateClusterWithPrerequisitesNonInteractive(clusterName string, verbose bo
 	if err := installer.CheckAndInstallNonInteractive(nonInteractive); err != nil {
 		return err
 	}
-	
+
 	// Create service directly without using utils to avoid circular import
 	exec := executor.NewRealCommandExecutor(false, verbose) // dryRun = false
-	service := NewClusterServiceSuppressed(exec)
+	// Use regular service (with spinner) for interactive mode, suppressed for non-interactive
+	var service *ClusterService
+	if nonInteractive {
+		service = NewClusterServiceSuppressed(exec)
+	} else {
+		service = NewClusterService(exec)
+	}
 	
 	// Build cluster configuration
 	config := models.ClusterConfig{

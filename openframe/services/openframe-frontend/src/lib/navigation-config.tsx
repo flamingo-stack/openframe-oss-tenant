@@ -41,13 +41,13 @@ export const getNavigationItems = (
       path: '/scripts',
       isActive: pathname === '/scripts/'
     },
-    {
-      id: 'policies-and-queries',
-      label: 'Policies & Queries',
-      icon: <PoliciesIcon className="w-5 h-5" />,
-      path: '/policies-and-queries',
-      isActive: pathname === '/policies-and-queries/'
-    },
+    // {
+    //   id: 'policies-and-queries',
+    //   label: 'Policies & Queries',
+    //   icon: <PoliciesIcon className="w-5 h-5" />,
+    //   path: '/policies-and-queries',
+    //   isActive: pathname === '/policies-and-queries/'
+    // },
     {
       id: 'logs',
       label: 'Logs',

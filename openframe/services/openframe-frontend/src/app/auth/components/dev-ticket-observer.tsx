@@ -18,7 +18,7 @@ import { runtimeEnv } from '@/src/lib/runtime-config'
 export function DevTicketObserver() {
   // Check if DevTicketObserver should be enabled
   const isEnabled = runtimeEnv.enableDevTicketObserver();
-  
+
   const pathname = usePathname()
   
   // Use try-catch to handle static generation

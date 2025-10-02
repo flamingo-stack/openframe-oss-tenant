@@ -79,7 +79,7 @@ impl ToolInstallationService {
             .await
             .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
 
-        let file_path = tool_folder_path.join("agent");
+        let file_path = self.directory_manager.get_agent_path(tool_agent_id);
         
         // Check if agent file already exists
         if file_path.exists() {
@@ -110,7 +110,7 @@ impl ToolInstallationService {
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
             for asset in assets {
-                let asset_path = tool_folder_path.join(&asset.local_filename);
+                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename);
                 
                 // Check if asset file already exists
                 if asset_path.exists() {

@@ -5,13 +5,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 pub enum ToolStatus {
     Installed,
-    Uninstalled,
-    Installing,
 }
 
 impl Default for ToolStatus {
     fn default() -> Self {
-        ToolStatus::Uninstalled
+        ToolStatus::Installed
     }
 }
 

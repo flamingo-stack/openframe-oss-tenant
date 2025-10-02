@@ -11,31 +11,50 @@ import org.junit.jupiter.api.*;
 @Slf4j
 public abstract class ApiBaseTest extends BaseTest {
     
-    protected MongoDBConnection mongoConnection;
+    // Shared MongoDB connection for all API tests (thread-safe via MongoDB Driver connection pool)
+    private static MongoDBConnection mongoConnection;
+    
+    /**
+     * Get shared MongoDB connection for API tests
+     * Thread-safe: MongoDB Java Driver handles connection pooling internally
+     */
+    public static MongoDBConnection getMongoConnection() {
+        if (mongoConnection == null) {
+            throw new IllegalStateException("MongoDB connection not initialized. Ensure @BeforeAll setupTests() was called.");
+        }
+        return mongoConnection;
+    }
     
     @BeforeAll
     static void setupTests() {
-        log.info("Setting up test environment");
+        log.info("Setting up API test environment");
         RestAssuredConfig.configure();
+
+        // Initialize MongoDB connection once for all API test classes
+        if (mongoConnection == null) {
+            mongoConnection = MongoDBConnection.fromConfig();
+            log.info("MongoDB connection established (shared across all API test classes)");
+        } else {
+            log.info("MongoDB connection already initialized (reusing existing connection)");
+        }
+        
         log.info("Test environment ready");
     }
     
     @BeforeEach
     protected void setupTest(TestInfo testInfo) {
         super.setupTest(testInfo);
- 
-        mongoConnection = MongoDBConnection.fromConfig();
-        ThreadSafeTestContext.setData(ThreadSafeTestContext.MONGO_CONNECTION, mongoConnection);
-        log.info("MongoDB connection established for test: {}", testInfo.getDisplayName());
+        log.info("Test started: {}", testInfo.getDisplayName());
     }
     
     @AfterAll
-    protected void cleanupAfterAllTests(TestInfo testInfo) {
-        log.info("🧹 Cleaning up database after all tests...");
-        DBQuery.clearAllData();
+    static void cleanupApiTests() {
+        log.info("Cleaning up API test resources for current test class");
         if (mongoConnection != null) {
-            mongoConnection.close();
-            log.info("MongoDB connection closed for test: {}", testInfo.getDisplayName());
+            DBQuery.clearAllData();
+            log.info("Test data cleared from MongoDB");
         }
+        // NOTE: MongoDB connection is NOT closed here - it's shared across all API test classes
+        // JUnit will call BaseTest.cleanupAfterAllTests() automatically to clean ThreadLocal context
     }
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -384,6 +385,12 @@ func (w *InstallationWorkflow) buildConfiguration(req utilTypes.InstallationRequ
 		// Always use deployment mode to determine repository URL if deployment mode is specified
 		// This ensures that SaaS Shared mode gets the correct repository
 		githubRepo = types.GetRepositoryURL(*chartConfig.DeploymentMode)
+
+		// Inject authentication token for private SaaS Shared repository
+		if *chartConfig.DeploymentMode == types.DeploymentModeSaaSShared && chartConfig.SaaSConfig != nil && chartConfig.SaaSConfig.RepositoryPassword != "" {
+			// Replace https:// with https://token@
+			githubRepo = strings.Replace(githubRepo, "https://", "https://"+chartConfig.SaaSConfig.RepositoryPassword+"@", 1)
+		}
 	}
 
 	// Convert deployment mode to string for builder

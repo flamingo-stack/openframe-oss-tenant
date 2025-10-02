@@ -1,0 +1,28 @@
+{
+  "id": "fleetmdm-agent",
+  "toolId": "fleetmdm-server",
+  "version": "1.0.0",
+  "status": "ENABLED",
+  "runCommandArgs": [
+    "--fleet-url", "${client.serverUrl}",
+    "--enroll-secret", "${server.registrationSecret}",
+    "--insecure",
+    "--disable-updates",
+    "--openframe-mode",
+    "--openframe-secret", "${client.openframeSecret}",
+    "--openframe-osquery-path", "${client.assetPath.osqueryd}",
+    "--openframe-token-path", "${client.openframeTokenPath}"
+  ],
+  "agentToolIdCommandArgs": [
+    "uuid",
+    "--openframe-mode",
+    "--openframe-osquery-path", "${client.assetPath.osqueryd}"
+  ],
+  "assets": [
+    {
+      "id": "osqueryd",
+      "localFilename": "osqueryd",
+      "source": "ARTIFACTORY"
+    }
+  ]
+}

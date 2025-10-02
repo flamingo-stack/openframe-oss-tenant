@@ -21,6 +21,12 @@
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-idp-configuration</artifactId>
+            <version>${openframe.libs.version}</version>
+
+        </dependency>
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-data-mongo</artifactId>
         </dependency>
         <!-- OpenFrame Dependencies -->

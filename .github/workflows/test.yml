@@ -11,6 +11,7 @@ permissions:
   pull-requests: write
   attestations: write
   id-token: write
+  pages: write
 
 on:
   pull_request:
@@ -55,6 +56,8 @@ jobs:
     name: "Build Java: ${{ matrix.name }}"
     needs: [changes, matrix]
     runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft
@@ -76,7 +79,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: '**/pom.xml'  # Simplified pattern
+          cache-dependency-path: '**/pom.xml'
           check-latest: true
 
       - name: Build with Maven
@@ -202,8 +205,10 @@ jobs:
   test:
     name: Run Tests
     needs: [build_images, changes, matrix]
-    runs-on: Linux-x64
     timeout-minutes: 60
+    runs-on: Linux-x64
+    env:
+      CARGO_INCREMENTAL: 0
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft
@@ -214,6 +219,13 @@ jobs:
 
       - name: Install tools and validate environment
         uses: ./.github/steps/requirements-for-run.sh
+
+      - name: Set up JDK 21 for E2E tests
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
 
       - name: Override helm values
         uses: ./.github/steps/helm-override-image-tags
@@ -245,10 +257,184 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
+      - name: Install Telepresence
+        run: |
+          # Install Telepresence binary directly
+          sudo curl -fL https://app.getambassador.io/download/tel2oss/releases/download/v2.20.2/telepresence-linux-amd64 -o /usr/local/bin/telepresence
+          sudo chmod a+x /usr/local/bin/telepresence
+          telepresence version
+
+      - name: Connect to cluster with Telepresence
+        run: |
+          echo "Connecting to cluster via Telepresence..."
+          telepresence connect
+          echo "Verifying Telepresence connection status..."
+          telepresence status
+
+      - name: Setup port-forwarding to services
+        run: |
+          echo "Setting up port-forwarding to Kubernetes services..."
+          
+          # Start port-forwarding to main HTTP ports (where API endpoints are exposed)
+          kubectl port-forward svc/openframe-gateway -n microservices 8100:8100 > /tmp/pf-gateway.log 2>&1 &
+          echo $! > /tmp/pf-gateway.pid
+          
+          # Also forward management port for health checks
+          kubectl port-forward svc/openframe-gateway -n microservices 8101:8101 > /tmp/pf-gateway-mgmt.log 2>&1 &
+          echo $! > /tmp/pf-gateway-mgmt.pid
+          
+          echo "Waiting for port-forwards to establish (15 seconds)..."
+          sleep 15
+          
+          # Verify port-forwards are running
+          if ! kill -0 $(cat /tmp/pf-gateway.pid) 2>/dev/null; then
+            echo "❌ Gateway HTTP port-forward failed to start"
+            cat /tmp/pf-gateway.log
+            exit 1
+          fi
+          
+          if ! kill -0 $(cat /tmp/pf-gateway-mgmt.pid) 2>/dev/null; then
+            echo "❌ Gateway management port-forward failed to start"
+            cat /tmp/pf-gateway-mgmt.log
+            exit 1
+          fi
+          
+          echo "✅ Port-forwarding established"
+          
+      - name: Verify services are accessible
+        run: |
+          echo "Verifying Gateway health endpoint..."
+          
+          attempt=0
+          max_attempts=30
+          
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -f --max-time 5 "http://localhost:8101/actuator/health" 2>/dev/null | grep -q "UP"; then
+              echo "✅ openframe-gateway is accessible and healthy!"
+              break
+            fi
+            attempt=$((attempt + 1))
+            if [ $attempt -eq $max_attempts ]; then
+              echo "❌ Failed to connect to openframe-gateway after $max_attempts attempts"
+              echo "=== Gateway HTTP port-forward log ==="
+              cat /tmp/pf-gateway.log 2>/dev/null || echo "No log available"
+              echo "=== Gateway management port-forward log ==="
+              cat /tmp/pf-gateway-mgmt.log 2>/dev/null || echo "No log available"
+              exit 1
+            fi
+            echo "Attempt $attempt/$max_attempts failed, retrying in 2s..."
+            sleep 2
+          done
+          
+          echo "✅ Gateway is accessible and healthy!"
+
+      - name: Run Tests
+        env:
+          API_BASE_URL: http://localhost:8100
+        run: |
+          cd openframe-e2e-tests
+          mvn test -Dgroups="smoke"
+
+      - name: Cleanup port-forwarding
+        if: always()
+        run: |
+          echo "Cleaning up port-forward processes..."
+          
+          # Cleanup Gateway HTTP port-forward
+          if [ -f /tmp/pf-gateway.pid ]; then
+            kill $(cat /tmp/pf-gateway.pid) 2>/dev/null || echo "Gateway HTTP port-forward already stopped"
+            rm -f /tmp/pf-gateway.pid /tmp/pf-gateway.log
+          fi
+          
+          # Cleanup Gateway management port-forward
+          if [ -f /tmp/pf-gateway-mgmt.pid ]; then
+            kill $(cat /tmp/pf-gateway-mgmt.pid) 2>/dev/null || echo "Gateway management port-forward already stopped"
+            rm -f /tmp/pf-gateway-mgmt.pid /tmp/pf-gateway-mgmt.log
+          fi
+          
+          echo "✅ Cleanup completed"
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: openframe-e2e-tests/target/allure-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+  allure-report:
+    name: Generate and Publish Allure Report
+    needs: [test]
+    runs-on: Linux-x64
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft &&
+      always()
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Allure CLI
+        run: |
+          wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -zxvf allure-2.25.0.tgz -C /opt/
+          sudo ln -s /opt/allure-2.25.0/bin/allure /usr/bin/allure
+          allure --version
+
+      - name: Download Allure results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results/
+        continue-on-error: true
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Contents of allure-results:"
+          ls -la allure-results/ || echo "No allure-results directory found"
+
+      - name: Generate Allure Report
+        run: |
+          if [ -d "allure-results" ] && [ "$(ls -A allure-results 2>/dev/null)" ]; then
+            echo "Generating Allure report..."
+            allure generate -c allure-results -o _site
+            echo "Report generated successfully"
+          else
+            echo "No Allure results found, creating empty report"
+            mkdir -p _site
+            echo "<html><body><h1>No test results available</h1></body></html>" > _site/index.html
+          fi
+
+      - name: Deploy report to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: _site
+          destination_dir: allure/${{ github.event.pull_request.number }}
+
+      - name: Comment PR with Allure Report link
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: allure-report
+          message: |
+            **Allure Report** follow link:
+            https://flamingo-stack.github.io/openframe-oss-tenant/allure/${{ github.event.pull_request.number }}/
+            
+            📈 **Test status:** ${{ needs.test.result }}
+
   test_client:
     name: "Test Client: ${{ matrix.os }}"
     needs: [changes, matrix]
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: 0
+      BINARY_NAME: openframe
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft && 
@@ -261,14 +447,14 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: openframe-oss-client-macos-x64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact_name: openframe-oss-client-linux-x64
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: openframe-oss-client-windows-x64
+            target: "aarch64-apple-darwin,x86_64-apple-darwin"
+            artifact_name: openframe-oss-client-macos-universal
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openframe-oss-client-windows-x64
+#          - os: ubuntu-latest
+#            target: x86_64-unknown-linux-gnu
+#            artifact_name: openframe-oss-client-linux-x64
          
     steps:
       - name: Checkout
@@ -282,7 +468,7 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
           components: clippy, rustfmt
-          shared-key: ${{ matrix.target }}
+          shared-key: ${{ runner.os }}-${{ runner.arch }}
 
       - name: Run lint
         working-directory: client
@@ -290,11 +476,41 @@ jobs:
           make lint
         continue-on-error: true
 
-      # make tests are disabled untill all tests are valid
       - name: Test client
         working-directory: client
         run: |
-            make build
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+            for RUST_TARGET in "${ARCHITECTURES[@]}"; do
+              # Trim whitespace
+              RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
+              make build TARGET="$RUST_TARGET"
+            done
+          else
+            make build TARGET="${{ matrix.target }}"
+          fi
+  
+  test_helm:
+    name: "Test Helm Chart"
+    needs: [matrix, changes]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+      
+      - name: Install Helm unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest
+      
+      - name: Test Chart
+        run: |
+          helm template app ./manifests/app-of-apps 
+          helm unittest ./manifests/app-of-apps 
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
@@ -316,7 +532,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      
+
       - name: Delete the CI tag
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: dataaxiom/ghcr-cleanup-action@v1
@@ -337,7 +553,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Verify values are clean
         run: |
           [ -f "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE not found"; exit 1; }

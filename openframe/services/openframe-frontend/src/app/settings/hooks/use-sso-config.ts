@@ -23,7 +23,7 @@ export type UpdateSsoPayload = {
 
 export function useSsoConfig() {
   const fetchAvailableProviders = useCallback(async (): Promise<AvailableProvider[]> => {
-    const res = await apiClient.get<AvailableProvider[]>('sso/providers/available')
+    const res = await apiClient.get<AvailableProvider[]>('api/sso/providers/available')
     if (!res.ok || !Array.isArray(res.data)) {
       throw new Error(res.error || `Failed to load providers (${res.status})`)
     }
@@ -31,7 +31,7 @@ export function useSsoConfig() {
   }, [])
 
   const fetchProviderConfig = useCallback(async (provider: string): Promise<ProviderConfig | undefined> => {
-    const res = await apiClient.get<ProviderConfig>(`sso/${encodeURIComponent(provider)}`)
+    const res = await apiClient.get<ProviderConfig>(`api/sso/${encodeURIComponent(provider)}`)
     if (!res.ok) {
       // If no config exists, treat as undefined rather than throwing
       return undefined
@@ -40,14 +40,14 @@ export function useSsoConfig() {
   }, [])
 
   const updateProviderConfig = useCallback(async (provider: string, payload: UpdateSsoPayload): Promise<void> => {
-    const res = await apiClient.put<void>(`sso/${encodeURIComponent(provider)}`, payload)
+    const res = await apiClient.put<void>(`api/sso/${encodeURIComponent(provider)}`, payload)
     if (!res.ok) {
       throw new Error(res.error || `Failed to update provider (${res.status})`)
     }
   }, [])
 
   const toggleProviderEnabled = useCallback(async (provider: string, enabled: boolean): Promise<void> => {
-    const res = await apiClient.patch<void>(`sso/${encodeURIComponent(provider)}/toggle?enabled=${enabled ? 'true' : 'false'}`)
+    const res = await apiClient.patch<void>(`api/sso/${encodeURIComponent(provider)}/toggle?enabled=${enabled ? 'true' : 'false'}`)
     if (!res.ok) {
       throw new Error(res.error || `Failed to toggle provider (${res.status})`)
     }

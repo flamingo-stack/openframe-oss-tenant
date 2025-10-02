@@ -49,8 +49,9 @@ class FleetApiClient {
   private baseUrl: string
 
   constructor() {
-    const apiUrl = runtimeEnv.apiUrl()
-    this.baseUrl = apiUrl.replace('/api', '') + '/tools/fleetmdm-server'
+    // Build base from tenant host when provided; otherwise relative via apiClient
+    const tenantHost = runtimeEnv.tenantHostUrl() || ''
+    this.baseUrl = `${tenantHost}/tools/fleetmdm-server`
   }
 
   private buildFleetUrl(path: string): string {
@@ -58,9 +59,8 @@ class FleetApiClient {
       return path
     }
     
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path
-    
-    return `${this.baseUrl}/${cleanPath}`
+    const cleanPath = path.startsWith('/') ? path : `/${path}`
+    return `${this.baseUrl}${cleanPath}`
   }
 
   async request<T = any>(

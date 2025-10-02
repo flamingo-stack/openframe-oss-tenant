@@ -766,6 +766,32 @@ impl DirectoryManager {
             &self.logs_dir
         }
     }
+
+    /// Returns the path to the agent executable for a specific tool
+    pub fn get_agent_path(&self, tool_agent_id: &str) -> PathBuf {
+        let agent_name = if cfg!(target_os = "windows") {
+            "agent.exe"
+        } else {
+            "agent"
+        };
+        
+        self.app_support_dir()
+            .join(tool_agent_id)
+            .join(agent_name)
+    }
+
+    /// Returns the path to an asset file for a specific tool, adding .exe extension on Windows if needed
+    pub fn get_asset_path(&self, tool_agent_id: &str, asset_filename: &str) -> PathBuf {
+        let asset_name = if cfg!(target_os = "windows") {
+            format!("{}.exe", asset_filename)
+        } else {
+            asset_filename.to_string()
+        };
+        
+        self.app_support_dir()
+            .join(tool_agent_id)
+            .join(asset_name)
+    }
 }
 
 #[cfg(test)]

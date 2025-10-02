@@ -42,7 +42,7 @@ export function useDialogs(archived: boolean = false) {
         setDialogs(mockDialogs)
         return { dialogs: mockDialogs }
       } else {
-        const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('graphql', {
+        const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('/api/graphql', {
           query: GET_DIALOGS_QUERY,
           variables: {
             archived,

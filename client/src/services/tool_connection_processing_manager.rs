@@ -145,12 +145,9 @@ impl ToolConnectionProcessingManager {
                     processed_args
                 );
 
-                // Build executable path directly using directory manager
-                let command_path = params_processor
-                    .directory_manager
-                    .app_support_dir()
-                    .join(&tool.tool_agent_id)
-                    .join("agent")
+                // Build executable path using directory manager
+                let command_path = params_processor.directory_manager
+                    .get_agent_path(&tool.tool_agent_id)
                     .to_string_lossy()
                     .to_string();
 

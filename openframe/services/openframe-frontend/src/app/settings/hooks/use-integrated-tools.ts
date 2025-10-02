@@ -90,7 +90,7 @@ export function useIntegratedTools() {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await apiClient.post<GraphQLResponse<IntegratedToolsResponse>>('graphql', {
+      const response = await apiClient.post<GraphQLResponse<IntegratedToolsResponse>>('/api/graphql', {
         query: GET_INTEGRATED_TOOLS_QUERY,
         variables: { filter, search }
       })

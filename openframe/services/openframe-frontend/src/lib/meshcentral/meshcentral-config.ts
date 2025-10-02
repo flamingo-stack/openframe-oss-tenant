@@ -5,9 +5,14 @@ export type MeshUrlParts = {
   scheme: 'ws' | 'wss'
 }
 
-export function getMeshBaseHostPort(): string {
-  const apiUrl = runtimeEnv.apiUrl()
-  const env = apiUrl.replace('/api', '') + '/ws/tools/meshcentral-server' // 'localhost:8383'
+export function getMeshBaseHostPort(): string | null {
+  const tenantHost = runtimeEnv.tenantHostUrl()
+
+  if (!tenantHost) {
+    return null
+  }
+  
+  const env = `${tenantHost}/ws/tools/meshcentral-server`
 
   // Strip protocols if provided
   if (env.startsWith('ws://')) return env.substring('ws://'.length)
@@ -21,15 +26,28 @@ export function getMeshWsScheme(): 'ws' | 'wss' {
   if (typeof window !== 'undefined') {
     return window.location.protocol === 'https:' ? 'wss' : 'ws'
   }
-  // Default to ws for server-side or unknown
-  return 'ws'
+
+  return 'wss'
 }
 
 export function buildWsUrl(path: string): string {
   const base = getMeshBaseHostPort()
-  const scheme = getMeshWsScheme()
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return `${scheme}://${base}${normalizedPath}`
+
+  if (!base && typeof window !== 'undefined') {
+    const scheme = getMeshWsScheme()
+    const host = window.location.host
+
+    return `${scheme}://${host}/ws/tools/meshcentral-server${normalizedPath}`
+  }
+
+  if (base) {
+    const scheme = getMeshWsScheme()
+    return `${scheme}://${base}${normalizedPath}`
+  }
+  
+  const scheme = getMeshWsScheme()
+  return `${scheme}://localhost/ws/tools/meshcentral-server${normalizedPath}`
 }
 
 export const MESH_USER = process.env.NEXT_PUBLIC_MESH_USER || 'mesh@openframe.io'
