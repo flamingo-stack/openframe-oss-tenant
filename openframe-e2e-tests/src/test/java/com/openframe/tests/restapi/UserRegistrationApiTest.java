@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Slf4j
 @Tag("smoke")
 @Execution(ExecutionMode.SAME_THREAD)
+@DisplayName("User Registration API Tests")
 public class UserRegistrationApiTest extends ApiBaseTest {
 
     @Test
