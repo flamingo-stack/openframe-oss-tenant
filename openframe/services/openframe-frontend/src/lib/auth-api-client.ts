@@ -168,7 +168,7 @@ class AuthApiClient {
 
   checkDomainAvailability<T = any>(subdomain: string, organizationName: string) {
     const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
-    const path = `/sas/tenant/availability?domain=${encodeURIComponent(fullDomain)}&organizationName=${encodeURIComponent(organizationName)}`
+    const path = `/api/tenant/availability?domain=${encodeURIComponent(fullDomain)}&organizationName=${encodeURIComponent(organizationName)}`
     return requestPublic<T>(path, { method: 'GET' })
   }
 

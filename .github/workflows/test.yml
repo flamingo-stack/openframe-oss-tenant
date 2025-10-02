@@ -266,14 +266,35 @@ jobs:
 
       - name: Connect to cluster with Telepresence
         run: |
+          echo "Connecting to cluster via Telepresence..."
           telepresence connect
-        continue-on-error: true
+          echo "Verifying Telepresence connection status..."
+          telepresence status
+
+      - name: Verify services are accessible
+        run: |
+          echo "Verifying cluster connectivity..."
+          max_attempts=30
+          attempt=0
+          
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -k --max-time 5 https://localhost/actuator/health 2>/dev/null; then
+              echo "✅ Services are accessible!"
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+            echo "Attempt $attempt/$max_attempts failed, retrying in 2s..."
+            sleep 2
+          done
+          
+          echo "❌ Failed to connect to services after $max_attempts attempts"
+          telepresence status
+          exit 1
 
       - name: Run Tests
         run: |
           cd openframe-e2e-tests
-          mvn test -Dgroups="smoke" -Dmaven.test.failure.ignore=true
-        continue-on-error: true
+          mvn test -Dgroups="smoke"
 
       - name: Upload Allure results
         if: always()
