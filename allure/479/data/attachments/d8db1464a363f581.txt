@@ -1,1 +1,0 @@
-{"machineId":"7dde600a-3e1e-4dc8-861f-8fa178b6fa54","organizationId":null,"deviceType":"DESKTOP","status":"ACTIVE","osType":null,"tags":[]}
