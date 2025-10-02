@@ -55,19 +55,8 @@ impl ToolCommandParamsResolver {
     fn process_assets_placeholders(&self, arg: &str, tool_agent_id: &str) -> String {
         ASSETS_PATH_REGEX.replace_all(arg, |caps: &regex::Captures| {
             let asset_name = &caps[1];
-            
-            // TODO: Temporary solution - add .exe extension for executables on Windows
-            // This should be refactored to use DirectoryManager::get_asset_path method
-            let final_asset_name = if cfg!(target_os = "windows")) {
-                format!("{}.exe", asset_name)
-            } else {
-                asset_name.to_string()
-            };
-            
             self.directory_manager
-                .app_support_dir()
-                .join(tool_agent_id)
-                .join(&final_asset_name)
+                .get_asset_path(tool_agent_id, asset_name)
                 .to_string_lossy()
                 .into_owned()
         }).to_string()
