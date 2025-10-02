@@ -15,8 +15,11 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
 use tokio::process::Command;
+use std::path::Path;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(target_os = "windows")]
+use crate::platform::permissions::Permissions;
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
@@ -95,14 +98,8 @@ impl ToolInstallationService {
             File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
 
             // Set file permissions to executable
-            #[cfg(target_family = "unix")]
-            {
-                let mut perms = fs::metadata(&file_path).await?.permissions();
-                perms.set_mode(0o755);
-                fs::set_permissions(&file_path, perms)
-                    .await
-                    .with_context(|| format!("Failed to chmod +x {}", file_path.display()))?;
-            }
+            self.set_executable_permissions(&file_path).await
+                .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
             
             info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
         }
@@ -142,14 +139,8 @@ impl ToolInstallationService {
                 File::create(&asset_path).await?.write_all(&asset_bytes).await?;
                 
                 // Set file permissions to executable for assets as well
-                #[cfg(target_family = "unix")]
-                {
-                    let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
-                    asset_perms.set_mode(0o755);
-                    fs::set_permissions(&asset_path, asset_perms)
-                        .await
-                        .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
-                }
+                self.set_executable_permissions(&asset_path).await
+                    .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
                 
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
             }
@@ -213,6 +204,25 @@ impl ToolInstallationService {
         self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
             .await
             .context("Failed to process tool connection after installation")?;
+
+        Ok(())
+    }
+
+    /// Sets executable permissions for a file on both Unix and Windows platforms
+    async fn set_executable_permissions(&self, file_path: &Path) -> Result<()> {
+        #[cfg(target_family = "unix")]
+        {
+            let mut perms = fs::metadata(file_path).await?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(file_path, perms).await?;
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // Use the existing Permissions structure for Windows
+            let perms = Permissions::directory(); // 755 equivalent for Windows
+            perms.apply(file_path)?;
+        }
 
         Ok(())
     }
