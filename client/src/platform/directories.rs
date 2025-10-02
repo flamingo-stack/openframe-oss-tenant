@@ -782,8 +782,7 @@ impl DirectoryManager {
 
     /// Returns the path to an asset file for a specific tool, adding .exe extension on Windows if needed
     pub fn get_asset_path(&self, tool_agent_id: &str, asset_filename: &str) -> PathBuf {
-        let asset_name = if cfg!(target_os = "windows") && !asset_filename.ends_with(".exe") && 
-                           (asset_filename == "osqueryd" || asset_filename.contains("queryd")) {
+        let asset_name = if cfg!(target_os = "windows")) {
             format!("{}.exe", asset_filename)
         } else {
             asset_filename.to_string()
