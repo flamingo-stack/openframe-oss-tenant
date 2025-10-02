@@ -58,9 +58,7 @@ impl ToolCommandParamsResolver {
             
             // TODO: Temporary solution - add .exe extension for executables on Windows
             // This should be refactored to use DirectoryManager::get_asset_path method
-            let final_asset_name = if cfg!(target_os = "windows") && 
-                                     !asset_name.ends_with(".exe") && 
-                                     (asset_name == "osqueryd" || asset_name.contains("queryd")) {
+            let final_asset_name = if cfg!(target_os = "windows")) {
                 format!("{}.exe", asset_name)
             } else {
                 asset_name.to_string()
