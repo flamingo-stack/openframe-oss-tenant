@@ -271,30 +271,88 @@ jobs:
           echo "Verifying Telepresence connection status..."
           telepresence status
 
+      - name: Setup port-forwarding to services
+        run: |
+          echo "Setting up port-forwarding to Kubernetes services..."
+          
+          # Start port-forwarding to main HTTP ports (where API endpoints are exposed)
+          kubectl port-forward svc/openframe-gateway -n microservices 8100:8100 > /tmp/pf-gateway.log 2>&1 &
+          echo $! > /tmp/pf-gateway.pid
+          
+          # Also forward management port for health checks
+          kubectl port-forward svc/openframe-gateway -n microservices 8101:8101 > /tmp/pf-gateway-mgmt.log 2>&1 &
+          echo $! > /tmp/pf-gateway-mgmt.pid
+          
+          echo "Waiting for port-forwards to establish (15 seconds)..."
+          sleep 15
+          
+          # Verify port-forwards are running
+          if ! kill -0 $(cat /tmp/pf-gateway.pid) 2>/dev/null; then
+            echo "❌ Gateway HTTP port-forward failed to start"
+            cat /tmp/pf-gateway.log
+            exit 1
+          fi
+          
+          if ! kill -0 $(cat /tmp/pf-gateway-mgmt.pid) 2>/dev/null; then
+            echo "❌ Gateway management port-forward failed to start"
+            cat /tmp/pf-gateway-mgmt.log
+            exit 1
+          fi
+          
+          echo "✅ Port-forwarding established"
+          
       - name: Verify services are accessible
         run: |
-          echo "Verifying cluster connectivity..."
-          max_attempts=30
+          echo "Verifying Gateway health endpoint..."
+          
           attempt=0
+          max_attempts=30
           
           while [ $attempt -lt $max_attempts ]; do
-            if curl -k --max-time 5 https://localhost/actuator/health 2>/dev/null; then
-              echo "✅ Services are accessible!"
-              exit 0
+            if curl -f --max-time 5 "http://localhost:8101/actuator/health" 2>/dev/null | grep -q "UP"; then
+              echo "✅ openframe-gateway is accessible and healthy!"
+              break
             fi
             attempt=$((attempt + 1))
+            if [ $attempt -eq $max_attempts ]; then
+              echo "❌ Failed to connect to openframe-gateway after $max_attempts attempts"
+              echo "=== Gateway HTTP port-forward log ==="
+              cat /tmp/pf-gateway.log 2>/dev/null || echo "No log available"
+              echo "=== Gateway management port-forward log ==="
+              cat /tmp/pf-gateway-mgmt.log 2>/dev/null || echo "No log available"
+              exit 1
+            fi
             echo "Attempt $attempt/$max_attempts failed, retrying in 2s..."
             sleep 2
           done
           
-          echo "❌ Failed to connect to services after $max_attempts attempts"
-          telepresence status
-          exit 1
+          echo "✅ Gateway is accessible and healthy!"
 
       - name: Run Tests
+        env:
+          API_BASE_URL: http://localhost:8100
         run: |
           cd openframe-e2e-tests
           mvn test -Dgroups="smoke"
+
+      - name: Cleanup port-forwarding
+        if: always()
+        run: |
+          echo "Cleaning up port-forward processes..."
+          
+          # Cleanup Gateway HTTP port-forward
+          if [ -f /tmp/pf-gateway.pid ]; then
+            kill $(cat /tmp/pf-gateway.pid) 2>/dev/null || echo "Gateway HTTP port-forward already stopped"
+            rm -f /tmp/pf-gateway.pid /tmp/pf-gateway.log
+          fi
+          
+          # Cleanup Gateway management port-forward
+          if [ -f /tmp/pf-gateway-mgmt.pid ]; then
+            kill $(cat /tmp/pf-gateway-mgmt.pid) 2>/dev/null || echo "Gateway management port-forward already stopped"
+            rm -f /tmp/pf-gateway-mgmt.pid /tmp/pf-gateway-mgmt.log
+          fi
+          
+          echo "✅ Cleanup completed"
 
       - name: Upload Allure results
         if: always()
