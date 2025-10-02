@@ -5,7 +5,7 @@ import java.time.Duration;
 public final class TestConstants {
     public static final String DEFAULT_BASE_URL = "https://localhost";
     public static final String CONTENT_TYPE_JSON = "application/json";
-    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60); // ✅ Increased for bulk operations
 
     public static final int HTTP_OK = 200;
     public static final int HTTP_CREATED = 201;

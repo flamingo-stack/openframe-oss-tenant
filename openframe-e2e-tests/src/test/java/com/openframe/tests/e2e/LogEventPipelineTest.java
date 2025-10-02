@@ -85,8 +85,13 @@ public class LogEventPipelineTest extends BasePipelineTest {
                 () -> verifyMessageInPinotTopic(testId)
             );
             
-            assertThat(record).isNotNull();
-            assertThat(record.value()).contains(testId);
+            assertThat(record)
+                .as("Kafka message should be received in Pinot topic for test: %s", testId)
+                .isNotNull();
+            
+            assertThat(record.value())
+                .as("Message value should contain testId: %s", testId)
+                .contains(testId);
             
             Map<String, Object> logEntry = executePhase(
                 TestPhase.ASSERT,
@@ -156,7 +161,7 @@ public class LogEventPipelineTest extends BasePipelineTest {
         );
     }
     
-    @Step("Setup Kafka consumers for {sourceTopic}")
+    // No @Step - буде показано через executePhase
     private void setupKafkaConsumers(String sourceTopic) {
         log.info("[{}] Setting up test consumers", testId);
         
@@ -186,7 +191,7 @@ public class LogEventPipelineTest extends BasePipelineTest {
             String.format("Source: %s\nTarget: %s", sourceTopic, KafkaTestInfrastructure.TOPIC_PINOT_EVENTS));
     }
     
-    @Step("Verify message appears in Pinot topic")
+    // No @Step - буде показано через executePhase
     private ConsumerRecord<String, String> verifyMessageInPinotTopic(String testId) throws Exception {
         log.info("[{}] Verifying message in Pinot topic", testId);
         
@@ -202,7 +207,7 @@ public class LogEventPipelineTest extends BasePipelineTest {
         return record;
     }
     
-    @Step("Verify log event is queryable via GraphQL API for {toolType}")
+    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForLogInGraphQL(String toolType, String searchTerm) {
         Instant deadline = Instant.now().plus(LogEventPipelineTest.GRAPHQL_TIMEOUT);
         Duration retryInterval = Duration.ofMillis(500);
@@ -295,7 +300,7 @@ public class LogEventPipelineTest extends BasePipelineTest {
         }
     }
     
-    @Step("Verify log details in Cassandra")
+    // No @Step - буде показано через executePhase
     private void verifyLogDetailsInCassandra(Map<String, Object> logEntry) {
         try {
             String query = String.format("""

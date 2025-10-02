@@ -43,7 +43,7 @@ public class LogEventPipelineExtendedTest extends BasePipelineTest {
     @Description("Verify pipeline can handle high volume of events")
     @EnabledIfSystemProperty(named = "test.performance", matches = "true")
     void shouldHandleHighVolumeEvents() throws Exception {
-        int eventCount = 100; // Reduced for faster test, increase for stress testing
+        int eventCount = 100;
         long startTime = System.currentTimeMillis();
         
         log.info("[{}] Starting high volume test with {} events", testRunId, eventCount);

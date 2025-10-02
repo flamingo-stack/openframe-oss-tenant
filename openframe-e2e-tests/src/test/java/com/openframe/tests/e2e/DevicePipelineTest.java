@@ -48,8 +48,6 @@ public class DevicePipelineTest extends BasePipelineTest {
     }
     
     @Test
-    @Story("Device Registration Pipeline")
-    @Severity(SeverityLevel.CRITICAL)
     @Description("Verify device registration flows through complete pipeline to MongoDB and Pinot")
     void deviceRegistrationFlowsThroughPipeline() throws Exception {
         long startTime = System.currentTimeMillis();
@@ -230,7 +228,7 @@ public class DevicePipelineTest extends BasePipelineTest {
         }
     }
     
-    @Step("Wait for device to be accessible via GraphQL")
+    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForDeviceInGraphQL(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -257,7 +255,7 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), machineId, attempts));
     }
     
-    @Step("Wait for device to appear in Pinot filters")
+    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForDeviceInPinotFilters(Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -288,7 +286,7 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), attempts));
     }
     
-    @Step("Wait for device in GraphQL device list")
+    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForDeviceInGraphQLList(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;

@@ -3,6 +3,7 @@ package com.openframe.tests.restapi;
 import com.openframe.data.UserRegistrationBuilder;
 import com.openframe.data.dto.response.ErrorResponse;
 import com.openframe.support.enums.ApiEndpoints;
+import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.ApiCalls;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -24,15 +25,21 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
     @DisplayName("Should fail registration with invalid passwords")
     @MethodSource("com.openframe.data.dataProviders.UserRegistrationTestDataProvider#invalidPasswords")
     void shouldFailRegistrationWithInvalidPasswords(String password) {
-        UserRegistrationBuilder userData = UserRegistrationBuilder.random();
-        userData.setPassword(password);
+        UserRegistrationBuilder userData = executePhase(TestPhase.ARRANGE, "Generate user with invalid password", () -> {
+            UserRegistrationBuilder user = UserRegistrationBuilder.random();
+            user.setPassword(password);
+            return user;
+        });
         
-        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData);
-        assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
+        Response response = executePhase(TestPhase.ACT, "Attempt registration with invalid password", () -> 
+            ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData));
         
-        ErrorResponse errorResponse = response.as(ErrorResponse.class);
-        assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
-        assertThat(errorResponse.getMessage()).contains("password");
+        executePhase(TestPhase.ASSERT, "Verify validation error response", () -> {
+            assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
+            ErrorResponse errorResponse = response.as(ErrorResponse.class);
+            assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
+            assertThat(errorResponse.getMessage()).contains("password");
+        });
         
         log.info("Password validation working correctly for: '{}'", password);
     }
@@ -41,16 +48,21 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
     @DisplayName("Should fail registration with invalid emails")
     @MethodSource("com.openframe.data.dataProviders.UserRegistrationTestDataProvider#invalidEmails")
     void shouldFailRegistrationWithInvalidEmails(String email) {
-        UserRegistrationBuilder userData = UserRegistrationBuilder.random();
-        userData.setEmail(email);
+        UserRegistrationBuilder userData = executePhase(TestPhase.ARRANGE, "Generate user with invalid email", () -> {
+            UserRegistrationBuilder user = UserRegistrationBuilder.random();
+            user.setEmail(email);
+            return user;
+        });
         
-        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData);
+        Response response = executePhase(TestPhase.ACT, "Attempt registration with invalid email", () -> 
+            ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData));
         
-        assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
-        
-        ErrorResponse errorResponse = response.as(ErrorResponse.class);
-        assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
-        assertThat(errorResponse.getMessage()).contains("email");
+        executePhase(TestPhase.ASSERT, "Verify validation error response", () -> {
+            assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
+            ErrorResponse errorResponse = response.as(ErrorResponse.class);
+            assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
+            assertThat(errorResponse.getMessage()).contains("email");
+        });
         
         log.info("Email validation working correctly for: '{}'", email);
     }
@@ -59,16 +71,21 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
     @DisplayName("Should fail registration with invalid first names")
     @MethodSource("com.openframe.data.dataProviders.UserRegistrationTestDataProvider#invalidFirstNames")
     void shouldFailRegistrationWithInvalidFirstNames(String firstName) {
-        UserRegistrationBuilder userData = UserRegistrationBuilder.random();
-        userData.setFirstName(firstName);
+        UserRegistrationBuilder userData = executePhase(TestPhase.ARRANGE, "Generate user with invalid firstName", () -> {
+            UserRegistrationBuilder user = UserRegistrationBuilder.random();
+            user.setFirstName(firstName);
+            return user;
+        });
         
-        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData);
+        Response response = executePhase(TestPhase.ACT, "Attempt registration with invalid firstName", () -> 
+            ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData));
         
-        assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
-        
-        ErrorResponse errorResponse = response.as(ErrorResponse.class);
-        assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
-        assertThat(errorResponse.getMessage()).contains("firstName");
+        executePhase(TestPhase.ASSERT, "Verify validation error response", () -> {
+            assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
+            ErrorResponse errorResponse = response.as(ErrorResponse.class);
+            assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
+            assertThat(errorResponse.getMessage()).contains("firstName");
+        });
         
         log.info("FirstName validation working correctly for: '{}'", firstName);
     }
@@ -77,16 +94,21 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
     @DisplayName("Should fail registration with invalid last names")
     @MethodSource("com.openframe.data.dataProviders.UserRegistrationTestDataProvider#invalidLastNames")
     void shouldFailRegistrationWithInvalidLastNames(String lastName) {
-        UserRegistrationBuilder userData = UserRegistrationBuilder.random();
-        userData.setLastName(lastName);
+        UserRegistrationBuilder userData = executePhase(TestPhase.ARRANGE, "Generate user with invalid lastName", () -> {
+            UserRegistrationBuilder user = UserRegistrationBuilder.random();
+            user.setLastName(lastName);
+            return user;
+        });
         
-        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData);
+        Response response = executePhase(TestPhase.ACT, "Attempt registration with invalid lastName", () -> 
+            ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData));
         
-        assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
-        
-        ErrorResponse errorResponse = response.as(ErrorResponse.class);
-        assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
-        assertThat(errorResponse.getMessage()).contains("lastName");
+        executePhase(TestPhase.ASSERT, "Verify validation error response", () -> {
+            assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
+            ErrorResponse errorResponse = response.as(ErrorResponse.class);
+            assertThat(errorResponse.getCode()).isEqualTo("VALIDATION_ERROR");
+            assertThat(errorResponse.getMessage()).contains("lastName");
+        });
         
         log.info("LastName validation working correctly for: '{}'", lastName);
     }
@@ -95,26 +117,29 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
     @DisplayName("Should fail registration with invalid tenant names")
     @MethodSource("com.openframe.data.dataProviders.UserRegistrationTestDataProvider#invalidTenantNames")
     void shouldFailRegistrationWithInvalidTenantNames(String tenantName) {
-        UserRegistrationBuilder userData = UserRegistrationBuilder.random();
-        userData.setTenantName(tenantName);
+        UserRegistrationBuilder userData = executePhase(TestPhase.ARRANGE, "Generate user with invalid tenantName", () -> {
+            UserRegistrationBuilder user = UserRegistrationBuilder.random();
+            user.setTenantName(tenantName);
+            return user;
+        });
         
-        Response response = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData);
+        Response response = executePhase(TestPhase.ACT, "Attempt registration with invalid tenantName", () -> 
+            ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData));
         
-        assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
-        
-        ErrorResponse errorResponse = response.as(ErrorResponse.class);
-        
-        // Flexible assertion for error codes
-        assertThat(errorResponse.getCode())
-            .withFailMessage("Expected validation error code but got: %s", errorResponse.getCode())
-            .isIn("VALIDATION_ERROR", "BAD_REQUEST");
+        executePhase(TestPhase.ASSERT, "Verify validation error response", () -> {
+            assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
+            ErrorResponse errorResponse = response.as(ErrorResponse.class);
             
-        // Flexible assertion for error messages  
-        assertThat(errorResponse.getMessage().toLowerCase())
-            .withFailMessage("Expected tenant/organization validation message but got: %s", errorResponse.getMessage())
-            .containsAnyOf("tenant", "organization", "invalid");
+            assertThat(errorResponse.getCode())
+                .withFailMessage("Expected validation error code but got: %s", errorResponse.getCode())
+                .isIn("VALIDATION_ERROR", "BAD_REQUEST");
+                
+            assertThat(errorResponse.getMessage().toLowerCase())
+                .withFailMessage("Expected tenant/organization validation message but got: %s", errorResponse.getMessage())
+                .containsAnyOf("tenant", "organization", "invalid");
+        });
             
         log.info("✅ TenantName validation working correctly for: '{}' [code: {}, message: {}]", 
-                 tenantName, errorResponse.getCode(), errorResponse.getMessage());
+                 tenantName, response.as(ErrorResponse.class).getCode(), response.as(ErrorResponse.class).getMessage());
     }
 }

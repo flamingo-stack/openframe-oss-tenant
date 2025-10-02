@@ -236,8 +236,6 @@
                     <!-- Test selection - тільки unit тести -->
                     <includes>
                         <include>**/*Test.java</include>
-                        <include>**/*E2ETest.java</include>
-
                     </includes>
                     <testFailureIgnore>true</testFailureIgnore>
                 </configuration>
