@@ -157,16 +157,21 @@ export function useDevices(filters: DeviceFilterInput = {}) {
 
   const searchDevices = useCallback((searchTerm: string) => {
     fetchDevices(searchTerm)
-  }, [])
+  }, [fetchDevices])
 
   const refreshDevices = useCallback(() => {
     fetchDevices()
     fetchDeviceFilters()
-  }, [])
+  }, [fetchDevices, fetchDeviceFilters])
 
+  const initialLoadDone = useRef(false)
+  
   useEffect(() => {
-    fetchDevices()
-    fetchDeviceFilters()
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true
+      fetchDevices()
+      fetchDeviceFilters()
+    }
   }, [])
 
   return {

@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main, feature/update-gha-pipelines]
+    branches: [main]
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -213,6 +213,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: 0
+      BINARY_NAME: openframe
     if: |
       github.event_name == 'push' && 
       contains(needs.changes.outputs.client, 'true')
@@ -266,7 +267,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: "client/target/${{ matrix.target }}/release/openframe${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          path: "client/target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
@@ -283,11 +284,11 @@ jobs:
           # Trim whitespace
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
-          lipo -create ./client/target/${RUST_TARGET_ARM64}/release/openframe ./client/target/${RUST_TARGET_x64}/release/openframe -output ./artifacts/${{ matrix.artifact_name }}
+          lipo -create ./client/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ./client/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
           
-          echo "Verify ${{ matrix.artifact_name }}"
-          lipo -info ./artifacts/${{ matrix.artifact_name }}
-          file ./artifacts/${{ matrix.artifact_name }}
+          echo "Verify macOS openframe universal package"
+          lipo -info ./artifacts/${{ env.BINARY_NAME }}
+          file ./artifacts/${{ env.BINARY_NAME }}
 
       - name: Sign MacOS package
         if: "runner.os == 'macOS'"
@@ -299,8 +300,7 @@ jobs:
           apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: ${{ matrix.artifact_name }}
-          app_name: OpenFrameOSSClient
+          binary_name: ${{ env.BINARY_NAME }}
 
       - name: Upload macOS client artifact
         if: "runner.os == 'macOS'"
@@ -311,3 +311,26 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
+  
+  build_helm:
+    name: "Build Helm Chart"
+    needs: [matrix, changes]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+
+      - name: Push Chart
+        uses: appany/helm-oci-chart-releaser@v0.5.0
+        with:
+          name: app-of-apps
+          tag: 0.1.1
+          path: ./manifests/app-of-apps 
+          registry: ${{ env.REGISTRY }}
+          repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}

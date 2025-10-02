@@ -26,7 +26,7 @@ export function useApiKeys() {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await apiClient.get<ApiKeyRecord[]>('api-keys')
+      const res = await apiClient.get<ApiKeyRecord[]>('api/api-keys')
       if (!res.ok || !Array.isArray(res.data)) {
         throw new Error(res.error || `Failed to load API keys (${res.status})`)
       }
@@ -47,7 +47,7 @@ export function useApiKeys() {
       description: data.description || undefined,
       expiresAt: data.expiresAt ?? null,
     }
-    const res = await apiClient.post<{ apiKey: ApiKeyRecord; fullKey: string }>('api-keys', payload)
+    const res = await apiClient.post<{ apiKey: ApiKeyRecord; fullKey: string }>('api/api-keys', payload)
     if (!res.ok || !res.data) {
       throw new Error(res.error || `Failed to create API key (${res.status})`)
     }
@@ -60,7 +60,7 @@ export function useApiKeys() {
       description: data.description || undefined,
       expiresAt: data.expiresAt ?? null,
     }
-    const res = await apiClient.put<ApiKeyRecord>(`api-keys/${encodeURIComponent(id)}`, payload)
+    const res = await apiClient.put<ApiKeyRecord>(`api/api-keys/${encodeURIComponent(id)}`, payload)
     if (!res.ok || !res.data) {
       throw new Error(res.error || `Failed to update API key (${res.status})`)
     }
@@ -68,7 +68,7 @@ export function useApiKeys() {
   }, [])
 
   const regenerateApiKey = useCallback(async (id: string) => {
-    const res = await apiClient.post<{ apiKey: ApiKeyRecord; fullKey: string }>(`api-keys/${encodeURIComponent(id)}/regenerate`)
+    const res = await apiClient.post<{ apiKey: ApiKeyRecord; fullKey: string }>(`api/api-keys/${encodeURIComponent(id)}/regenerate`)
     if (!res.ok || !res.data) {
       throw new Error(res.error || `Failed to regenerate API key (${res.status})`)
     }
@@ -76,7 +76,7 @@ export function useApiKeys() {
   }, [])
 
   const setApiKeyEnabled = useCallback(async (id: string, enabled: boolean) => {
-    const res = await apiClient.put<ApiKeyRecord>(`api-keys/${encodeURIComponent(id)}`, { enabled })
+    const res = await apiClient.put<ApiKeyRecord>(`api/api-keys/${encodeURIComponent(id)}`, { enabled })
     if (!res.ok || !res.data) {
       throw new Error(res.error || `Failed to ${enabled ? 'enable' : 'disable'} API key (${res.status})`)
     }

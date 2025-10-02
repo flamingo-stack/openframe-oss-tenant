@@ -98,7 +98,9 @@ export function CompanyAndUsersTab() {
           return (
             <MoreActionsMenu 
               className="px-4"
-              items={[{ label: 'Delete', onClick: () => handleDeleteRequest(row), danger: true, disabled: disableDelete }]} 
+              items={[
+                { label: 'Delete', onClick: () => handleDeleteRequest(row), danger: true, disabled: disableDelete }
+              ]} 
             />
           )
         }}
