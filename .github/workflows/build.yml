@@ -346,14 +346,14 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [ build_java, matrix, changes ]
+    needs: [ build_java, build_client, build_images, matrix, changes ]
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download all Java artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
@@ -366,29 +366,27 @@ jobs:
             ls -R release-artifacts/
           else
             echo "No artifacts directory found"
-            exit 1
           fi
 
       - name: Prepare release artifacts
         run: |
-          mkdir -p final-artifacts/{java,client}
-          
+          mkdir -p final-artifacts/java final-artifacts/client
+
           # Copy Java JARs
           if [ -d "release-artifacts" ]; then
-          find release-artifacts -name "*.jar" \
-          ! -name "original-*.jar" \
-          ! -name "*-sources.jar" \
-          ! -name "*-javadoc.jar" \
-          -exec cp {} final-artifacts/java/ \;
+            find release-artifacts -name "*.jar" \
+              ! -name "original-*.jar" \
+              ! -name "*-sources.jar" \
+              ! -name "*-javadoc.jar" \
+              -exec cp {} final-artifacts/java/ \;
           fi
-  
+
           # Copy client binaries
           if [ -d "release-artifacts" ]; then
-          find release-artifacts -name "openframe-oss-client-*" -type d | while read dir; do
-          cp -r "$dir"/* final-artifacts/client/ 2>/dev/null || true
-          done
+            find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
+              -exec cp {} final-artifacts/client/ \;
           fi
-  
+
           echo "Final artifacts to release:"
           echo "=== Java artifacts ==="
           ls -lh final-artifacts/java/ 2>/dev/null || echo "No Java artifacts"
@@ -399,16 +397,34 @@ jobs:
         id: docker_images
         run: |
           MATRIX='${{ needs.matrix.outputs.matrix }}'
-          IMAGE_LIST=""
-          
-          echo "$MATRIX" | jq -r '.[] | .name' | while read -r name; do
-          IMAGE_LIST="${IMAGE_LIST}- \`${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${{ github.event.inputs.tag }}\`\n"
-          done
-          
-          echo "images<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$IMAGE_LIST" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          TAG="${{ github.event.inputs.tag }}"
 
+          # Generate image list
+          IMAGE_LIST=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
+            --arg org "$ORGANISATION" \
+            --arg repo "$REPOSITORY" \
+            --arg tag "$TAG" \
+            '.[] | "- `\($registry)/\($org)/\($repo)/\(.name):\($tag)`"' | tr '\n' '\n')
+
+          # Generate pull commands
+          PULL_COMMANDS=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
+            --arg org "$ORGANISATION" \
+            --arg repo "$REPOSITORY" \
+            --arg tag "$TAG" \
+            '.[] | "docker pull \($registry)/\($org)/\($repo)/\(.name):\($tag)"' | tr '\n' '\n')
+
+          {
+            echo "images<<EOF"
+            echo "$IMAGE_LIST"
+            echo "EOF"
+            echo "pull_commands<<EOF"
+            echo "$PULL_COMMANDS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          ORGANISATION: ${{ env.ORGANISATION }}
+          REPOSITORY: ${{ env.REPOSITORY }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -423,19 +439,22 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             Release ${{ github.event.inputs.tag }}
-            
+
             Built from commit: ${{ github.sha }}
-            
+
             ## 📦 Java Artifacts
-            Java JARs are attached to this release.
-            
+            Java service JARs are attached to this release.
+
             ## 🦀 Client Binaries
             - **macOS** (Universal): `openframe` (ARM64 + x86_64)
             - **Windows** (x64): `openframe.exe`
-            
+
             ## 🐳 Docker Images
+
+            **Available images:**
             ${{ steps.docker_images.outputs.images }}
-            
-            Pull images:
+
+            **Pull commands:**
             ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/<service>:${{ github.event.inputs.tag }}
+            ${{ steps.docker_images.outputs.pull_commands }}
+            ```
