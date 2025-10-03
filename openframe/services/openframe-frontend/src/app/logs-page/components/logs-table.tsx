@@ -275,7 +275,8 @@ export function LogsTable() {
       onSearch={setSearchTerm}
       error={error}
       background="default"
-      padding="sm"
+      padding="none"
+      className="pt-6"
     >
       {/* Table */}
       <Table

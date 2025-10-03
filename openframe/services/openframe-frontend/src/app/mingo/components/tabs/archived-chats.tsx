@@ -50,25 +50,15 @@ export function ArchivedChats() {
     setTableFilters(columnFilters)
   }, [])
 
-  const headerActions = (
-    <Button
-      onClick={handleRefresh}
-      leftIcon={<RefreshIcon size={20} />}
-      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
-    >
-      Refresh
-    </Button>
-  )
-
   return (
     <ListPageLayout
       title="Archived Chats"
-      headerActions={headerActions}
       searchPlaceholder="Search for Chat"
       searchValue={searchTerm}
       onSearch={setSearchTerm}
       error={error}
-      padding="sm"
+      padding="none"
+      className="pt-6"
     >
       <Table
         data={dialogs}

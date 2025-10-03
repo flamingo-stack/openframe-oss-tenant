@@ -30,43 +30,37 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
     {
       key: 'topic',
       label: 'TOPIC',
-      width: 'w-80',
+      width: 'w-1/3',
       renderCell: (dialog) => (
-        <div className="flex flex-col justify-center w-80 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
-            {dialog.topic}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+          {dialog.topic}
+        </span>
       )
     },
     {
       key: 'source',
       label: 'SOURCE',
-      width: 'w-40',
+      width: 'w-1/6',
       renderCell: (dialog) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
-            {dialog.source}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
+          {dialog.source}
+        </span>
       )
     },
     {
       key: 'slaCountdown',
       label: 'SLA COUNTDOWN',
-      width: 'w-32',
+      width: 'w-1/6',
       renderCell: (dialog) => (
-        <div className="flex flex-col justify-center w-32 shrink-0">
-          <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-ods-text-secondary truncate">
-            {dialog.slaCountdown}
-          </span>
-        </div>
+        <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-ods-text-secondary truncate">
+          {dialog.slaCountdown}
+        </span>
       )
     },
     {
       key: 'status',
       label: 'STATUS',
-      width: 'w-40',
+      width: 'w-1/6',
       filterable: true,
       renderCell: (dialog) => {
         const statusColors = {
@@ -76,13 +70,10 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
           'RESOLVED': 'bg-success/20 text-success border-success/30'
         }
         return (
-          <div className="flex flex-col items-start gap-1 w-40 shrink-0">
-            <span className={`px-2 py-1 rounded-md text-[14px] font-medium border ${
-              statusColors[dialog.status as keyof typeof statusColors] || 'bg-ods-bg-surface/20 text-ods-text-muted border-ods-border/30'
+          <span className={`px-2 py-1 rounded-md text-[14px] font-medium border ${statusColors[dialog.status as keyof typeof statusColors] || 'bg-ods-bg-surface/20 text-ods-text-muted border-ods-border/30'
             }`}>
-              {dialog.status.replace('_', ' ')}
-            </span>
-          </div>
+            {dialog.status.replace('_', ' ')}
+          </span>
         )
       }
     },
