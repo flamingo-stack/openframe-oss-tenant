@@ -55,8 +55,6 @@ jobs:
     needs: [matrix, changes]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'|| github.event_name == 'workflow_dispatch'
-    with:
-      context: .
     strategy:
       fail-fast: false
       matrix:
@@ -118,7 +116,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context || matrix.path }}
+          context: .
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
