@@ -3,17 +3,19 @@ FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /build
 
-# Copy Maven wrapper and configuration
-COPY mvnw mvnw.cmd ./
-COPY .mvn .mvn
+# Copy Maven wrapper and configuration (mvnw.cmd is optional)
+COPY mvnw ./
+COPY --chown=root:root .mvn .mvn
+
+# Make mvnw executable
+RUN chmod +x mvnw
 
 # Copy all POM files for dependency resolution
 COPY pom.xml ./
 COPY openframe/services/openframe-api/pom.xml openframe/services/openframe-api/
 
 # Download dependencies (cached layer)
-RUN chmod +x mvnw && \
-    ./mvnw dependency:go-offline -B -pl openframe/services/openframe-api -am || true
+RUN ./mvnw dependency:go-offline -B -pl openframe/services/openframe-api -am || true
 
 # Copy source code
 COPY openframe/services/openframe-api/src openframe/services/openframe-api/src
