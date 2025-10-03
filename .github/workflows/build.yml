@@ -104,7 +104,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [ build_java, matrix ]
+    needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
     steps:
@@ -115,20 +115,34 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
+        continue-on-error: true
 
       - name: Display artifact structure
         run: |
-          echo "Downloaded artifacts:"
-          ls -R release-artifacts/
+          if [ -d "release-artifacts" ]; then
+            echo "Downloaded artifacts:"
+            ls -R release-artifacts/
+          else
+            echo "No artifacts directory found"
+            exit 1
+          fi
 
       - name: Prepare release artifacts
         run: |
           mkdir -p final-artifacts
-          find release-artifacts -name "*.jar" \
-            ! -name "original-*.jar" \
-            ! -name "*-sources.jar" \
-            ! -name "*-javadoc.jar" \
-            -exec cp {} final-artifacts/ \;
+          if [ -d "release-artifacts" ]; then
+            find release-artifacts -name "*.jar" \
+              ! -name "original-*.jar" \
+              ! -name "*-sources.jar" \
+              ! -name "*-javadoc.jar" \
+              -exec cp {} final-artifacts/ \;
+          fi
+          
+          if [ -z "$(ls -A final-artifacts/)" ]; then
+            echo "No JAR files found to release"
+            exit 1
+          fi
+          
           echo "Final artifacts to release:"
           ls -lh final-artifacts/
 
@@ -143,10 +157,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             Release ${{ github.event.inputs.tag }}
-
+  
             **Java Artifacts:**
             Built from commit: ${{ github.sha }}
-  
+    
 
   build_images:
     name: "Build: ${{ matrix.name }}"
