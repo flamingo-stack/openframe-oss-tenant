@@ -116,6 +116,22 @@ jobs:
         with:
           path: release-artifacts
 
+      - name: Display artifact structure
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R release-artifacts/
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p final-artifacts
+          find release-artifacts -name "*.jar" \
+            ! -name "original-*.jar" \
+            ! -name "*-sources.jar" \
+            ! -name "*-javadoc.jar" \
+            -exec cp {} final-artifacts/ \;
+          echo "Final artifacts to release:"
+          ls -lh final-artifacts/
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -123,9 +139,14 @@ jobs:
           name: Release ${{ github.event.inputs.tag }}
           draft: false
           prerelease: false
-          files: |
-            release-artifacts/**/*.jar
+          files: final-artifacts/*.jar
           token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            Release ${{ github.event.inputs.tag }}
+
+            **Java Artifacts:**
+            Built from commit: ${{ github.sha }}
+  
 
   build_images:
     name: "Build: ${{ matrix.name }}"
