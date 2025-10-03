@@ -9,7 +9,6 @@ COPY .mvn .mvn
 
 # Copy all POM files for dependency resolution
 COPY pom.xml ./
-COPY openframe/pom.xml openframe/
 COPY openframe/services/openframe-api/pom.xml openframe/services/openframe-api/
 
 # Download dependencies (cached layer)
