@@ -37,12 +37,19 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
 
     @Override
     protected Optional<String> getAgentId(JsonNode after) {
-        Integer agentPkId = parseStringField(after, FIELD_AGENT_ID).map(Integer::parseInt).orElse(null);
-        if (agentPkId == null) {
-            log.error("Agent id is null");
+        try {
+            Integer agentPkId = parseStringField(after, FIELD_AGENT_ID)
+                    .map(Integer::parseInt)
+                    .orElse(null);
+            if (agentPkId == null) {
+                log.error("Agent id is null");
+                return Optional.empty();
+            } else {
+                return Optional.ofNullable(tacticalRmmCacheService.getAgentIdByPrimaryKey(agentPkId));
+            }
+        } catch (NumberFormatException e) {
+            log.error("Invalid agent_id format: {}", parseStringField(after, FIELD_AGENT_ID).orElse("null"), e);
             return Optional.empty();
-        } else {
-            return Optional.ofNullable(tacticalRmmCacheService.getAgentIdByPrimaryKey(agentPkId));
         }
     }
 
@@ -79,22 +86,29 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
                 }
             }
             case "script_run" -> {
-                Integer scriptId = parseStringField(after, FIELD_SCRIPT_ID).map(Integer::parseInt).orElse(null);
-                if (scriptId == null) {
-                    return Optional.of("Script execution event (script ID not found)");
-                }
-                
-                String scriptName = tacticalRmmCacheService.getScriptNameById(scriptId);
-                if (scriptName == null) {
-                    scriptName = "Unknown Script (ID: " + scriptId + ")";
-                }
-                
-                boolean hasScriptResults = parseStringField(after, FIELD_SCRIPT_RESULTS).isPresent();
-                
-                if (hasScriptResults) {
-                    return Optional.of(String.format("Script '%s' completed", scriptName));
-                } else {
-                    return Optional.of(String.format("Script '%s' started", scriptName));
+                try {
+                    Integer scriptId = parseStringField(after, FIELD_SCRIPT_ID)
+                            .map(Integer::parseInt)
+                            .orElse(null);
+                    if (scriptId == null) {
+                        return Optional.of("Script execution event (script ID not found)");
+                    }
+                    
+                    String scriptName = tacticalRmmCacheService.getScriptNameById(scriptId);
+                    if (scriptName == null) {
+                        scriptName = "Unknown Script (ID: " + scriptId + ")";
+                    }
+                    
+                    boolean hasScriptResults = parseStringField(after, FIELD_SCRIPT_RESULTS).isPresent();
+                    
+                    if (hasScriptResults) {
+                        return Optional.of(String.format("Script '%s' completed", scriptName));
+                    } else {
+                        return Optional.of(String.format("Script '%s' started", scriptName));
+                    }
+                } catch (NumberFormatException e) {
+                    log.error("Invalid script_id format: {}", parseStringField(after, FIELD_SCRIPT_ID).orElse("null"), e);
+                    return Optional.of("Script execution event (invalid script ID format)");
                 }
             }
             default -> {
