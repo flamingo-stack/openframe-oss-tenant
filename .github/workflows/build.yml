@@ -38,12 +38,12 @@ jobs:
   changes:
     name: Detect Changes
     uses: ./.github/workflows/changes.yml
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
   matrix:
     name: Generate Matrix
     uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
   # Optimized Java build with better caching and parallel execution
   build_java:
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -102,11 +102,36 @@ jobs:
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
 
+  release:
+    name: "Create Release"
+    needs: [ build_java, matrix ]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all Java artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: Release ${{ github.event.inputs.tag }}
+          draft: false
+          prerelease: false
+          files: |
+            release-artifacts/**/*.jar
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   build_images:
     name: "Build: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push'|| github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -216,7 +241,7 @@ jobs:
       BINARY_NAME: openframe
     if: |
       github.event_name == 'push' && 
-      contains(needs.changes.outputs.client, 'true')
+      contains(needs.changes.outputs.client, 'true') || github.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: bash
