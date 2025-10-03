@@ -34,7 +34,6 @@ env:
 # =============================================================================
 
 jobs:
-  # Keep original separate jobs structure for reusable workflows
   changes:
     name: Detect Changes
     uses: ./.github/workflows/changes.yml
@@ -45,82 +44,9 @@ jobs:
     uses: ./.github/workflows/matrix.yml
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
-  build_dependencies:
-    name: "Build Dependencies"
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
-    uses: flamingo-stack/openframe-oss-lib/.github/workflows/release.yml@ami/ci
-    with:
-      version: ${{ github.event.inputs.tag }}
-
-  # Optimized Java build with better caching and parallel execution
-  build_java:
-    name: "Build Java: ${{ matrix.name }}"
-    needs: [build_dependencies, changes, matrix]
-    runs-on: ubuntu-latest
-    env:
-      MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
-    steps:
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Set up JDK 21 with Maven Central
-        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-          cache-dependency-path: '**/pom.xml'
-          check-latest: true
-
-      - name: Set Maven version
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
-        run: |
-          # Remove 'v' prefix if present
-          VERSION="${{ github.event.inputs.tag }}"
-          VERSION="${VERSION#v}"
-          echo "Setting Maven version to: $VERSION"
-          mvn versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
-
-      - name: Build with Maven
-        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
-        run: |
-          mvn clean install \
-            -U \
-            -pl ${{ matrix.path }} \
-            -am \
-            -Dcompress \
-            --threads 2C \
-            --batch-mode \
-            --no-transfer-progress \
-            -Dmaven.javadoc.skip=true \
-            -s .mvn/settings.xml
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Java artifacts
-        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            ${{ matrix.path }}/target/*.jar
-            !${{ matrix.path }}/target/original-*.jar
-            !${{ matrix.path }}/target/*-sources.jar
-            !${{ matrix.path }}/target/*-javadoc.jar
-          retention-days: 1
-
   build_images:
     name: "Build: ${{ matrix.name }}"
-    needs: [build_java, matrix, changes]
+    needs: [matrix, changes]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'|| github.event_name == 'workflow_dispatch'
     strategy:
@@ -134,16 +60,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Download Java artifacts
-        if: |
-          contains(fromJSON(toJSON(matrix.type)), 'java') && 
-          matrix.artifact_name != '' && 
-          contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.path }}/target
-
       - name: Log in to GitHub Container Registry
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
@@ -151,13 +67,13 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Set up QEMU
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-      
+
       - name: Set up Docker Buildx
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
@@ -204,12 +120,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ${{ env.BUILD_ARGS }}
-#          cache-from: |
-#            type=gha,scope=${{ matrix.name }}
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-#          cache-to: |
-#            type=gha,scope=${{ matrix.name }},mode=max
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
       - name: Cleanup old container versions
         if: |
@@ -246,9 +156,6 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: openframe-oss-client-windows-x64
-#          - os: ubuntu-latest
-#            target: x86_64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-x64
 
     steps:
       - name: Checkout
@@ -270,7 +177,6 @@ jobs:
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
-              # Trim whitespace
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET"
             done
@@ -297,7 +203,6 @@ jobs:
           IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
           RUST_TARGET_ARM64=${ARCHITECTURES[0]}
           RUST_TARGET_x64=${ARCHITECTURES[1]}
-          # Trim whitespace
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
           lipo -create ./client/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ./client/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
@@ -327,7 +232,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
-  
+
   build_helm:
     name: "Build Helm Chart"
     needs: [matrix, changes]
@@ -345,7 +250,7 @@ jobs:
         with:
           name: app-of-apps
           tag: 0.1.1
-          path: ./manifests/app-of-apps 
+          path: ./manifests/app-of-apps
           registry: ${{ env.REGISTRY }}
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
           registry_username: ${{ github.actor }}
@@ -353,7 +258,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [ build_java, build_client, build_images, matrix, changes ]
+    needs: [ build_client, build_images, matrix, changes ]
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
     steps:
@@ -377,16 +282,7 @@ jobs:
 
       - name: Prepare release artifacts
         run: |
-          mkdir -p final-artifacts/java final-artifacts/client
-
-          # Copy Java JARs
-          if [ -d "release-artifacts" ]; then
-            find release-artifacts -name "*.jar" \
-              ! -name "original-*.jar" \
-              ! -name "*-sources.jar" \
-              ! -name "*-javadoc.jar" \
-              -exec cp {} final-artifacts/java/ \;
-          fi
+          mkdir -p final-artifacts/client
 
           # Copy client binaries
           if [ -d "release-artifacts" ]; then
@@ -395,8 +291,6 @@ jobs:
           fi
 
           echo "Final artifacts to release:"
-          echo "=== Java artifacts ==="
-          ls -lh final-artifacts/java/ 2>/dev/null || echo "No Java artifacts"
           echo "=== Client artifacts ==="
           ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
 
@@ -406,14 +300,12 @@ jobs:
           MATRIX='${{ needs.matrix.outputs.matrix }}'
           TAG="${{ github.event.inputs.tag }}"
 
-          # Generate image list
           IMAGE_LIST=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
             --arg org "$ORGANISATION" \
             --arg repo "$REPOSITORY" \
             --arg tag "$TAG" \
             '.[] | "- `\($registry)/\($org)/\($repo)/\(.name):\($tag)`"' | tr '\n' '\n')
 
-          # Generate pull commands
           PULL_COMMANDS=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
             --arg org "$ORGANISATION" \
             --arg repo "$REPOSITORY" \
@@ -441,16 +333,12 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            final-artifacts/java/*.jar
             final-artifacts/client/*
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             Release ${{ github.event.inputs.tag }}
 
             Built from commit: ${{ github.sha }}
-
-            ## 📦 Java Artifacts
-            Java service JARs are attached to this release.
 
             ## 🦀 Client Binaries
             - **macOS** (Universal): `openframe` (ARM64 + x86_64)
