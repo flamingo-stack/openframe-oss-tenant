@@ -59,13 +59,13 @@ jobs:
         include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
     steps:
       - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Set up JDK 21 with Maven Central
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -75,7 +75,7 @@ jobs:
           check-latest: true
 
       - name: Build with Maven
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
         run: |
           mvn clean install \
             -U \
