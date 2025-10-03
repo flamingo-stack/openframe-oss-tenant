@@ -74,6 +74,15 @@ jobs:
           cache-dependency-path: '**/pom.xml'
           check-latest: true
 
+      - name: Set Maven version
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
+        run: |
+          # Remove 'v' prefix if present
+          VERSION="${{ github.event.inputs.tag }}"
+          VERSION="${VERSION#v}"
+          echo "Setting Maven version to: $VERSION"
+          mvn versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
+
       - name: Build with Maven
         if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
         run: |
