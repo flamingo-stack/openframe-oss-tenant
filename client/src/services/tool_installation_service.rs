@@ -217,13 +217,6 @@ impl ToolInstallationService {
             fs::set_permissions(file_path, perms).await?;
         }
 
-        #[cfg(target_os = "windows")]
-        {
-            // Use the existing Permissions structure for Windows
-            let perms = Permissions::directory(); // 755 equivalent for Windows
-            perms.apply(file_path)?;
-        }
-
         Ok(())
     }
 }
