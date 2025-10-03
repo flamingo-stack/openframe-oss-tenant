@@ -91,7 +91,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload Java artifacts
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: contains(needs.changes.outputs[matrix.name], 'true') || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
