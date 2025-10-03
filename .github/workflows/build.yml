@@ -111,66 +111,6 @@ jobs:
             !${{ matrix.path }}/target/*-javadoc.jar
           retention-days: 1
 
-  release:
-    name: "Create Release"
-    needs: [build_java, matrix, changes]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download all Java artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release-artifacts
-        continue-on-error: true
-
-      - name: Display artifact structure
-        run: |
-          if [ -d "release-artifacts" ]; then
-            echo "Downloaded artifacts:"
-            ls -R release-artifacts/
-          else
-            echo "No artifacts directory found"
-            exit 1
-          fi
-
-      - name: Prepare release artifacts
-        run: |
-          mkdir -p final-artifacts
-          if [ -d "release-artifacts" ]; then
-            find release-artifacts -name "*.jar" \
-              ! -name "original-*.jar" \
-              ! -name "*-sources.jar" \
-              ! -name "*-javadoc.jar" \
-              -exec cp {} final-artifacts/ \;
-          fi
-          
-          if [ -z "$(ls -A final-artifacts/)" ]; then
-            echo "No JAR files found to release"
-            exit 1
-          fi
-          
-          echo "Final artifacts to release:"
-          ls -lh final-artifacts/
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: Release ${{ github.event.inputs.tag }}
-          draft: false
-          prerelease: false
-          files: final-artifacts/*.jar
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            Release ${{ github.event.inputs.tag }}
-  
-            **Java Artifacts:**
-            Built from commit: ${{ github.sha }}
-    
-
   build_images:
     name: "Build: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
@@ -403,3 +343,99 @@ jobs:
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: "Create Release"
+    needs: [ build_java, matrix, changes ]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all Java artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+        continue-on-error: true
+
+      - name: Display artifact structure
+        run: |
+          if [ -d "release-artifacts" ]; then
+            echo "Downloaded artifacts:"
+            ls -R release-artifacts/
+          else
+            echo "No artifacts directory found"
+            exit 1
+          fi
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p final-artifacts/{java,client}
+          
+          # Copy Java JARs
+          if [ -d "release-artifacts" ]; then
+          find release-artifacts -name "*.jar" \
+          ! -name "original-*.jar" \
+          ! -name "*-sources.jar" \
+          ! -name "*-javadoc.jar" \
+          -exec cp {} final-artifacts/java/ \;
+          fi
+  
+          # Copy client binaries
+          if [ -d "release-artifacts" ]; then
+          find release-artifacts -name "openframe-oss-client-*" -type d | while read dir; do
+          cp -r "$dir"/* final-artifacts/client/ 2>/dev/null || true
+          done
+          fi
+  
+          echo "Final artifacts to release:"
+          echo "=== Java artifacts ==="
+          ls -lh final-artifacts/java/ 2>/dev/null || echo "No Java artifacts"
+          echo "=== Client artifacts ==="
+          ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
+
+      - name: Generate Docker image list
+        id: docker_images
+        run: |
+          MATRIX='${{ needs.matrix.outputs.matrix }}'
+          IMAGE_LIST=""
+          
+          echo "$MATRIX" | jq -r '.[] | .name' | while read -r name; do
+          IMAGE_LIST="${IMAGE_LIST}- \`${REGISTRY}/${ORGANISATION}/${REPOSITORY}/${name}:${{ github.event.inputs.tag }}\`\n"
+          done
+          
+          echo "images<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$IMAGE_LIST" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: Release ${{ github.event.inputs.tag }}
+          draft: false
+          prerelease: false
+          files: |
+            final-artifacts/java/*.jar
+            final-artifacts/client/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            Release ${{ github.event.inputs.tag }}
+            
+            Built from commit: ${{ github.sha }}
+            
+            ## 📦 Java Artifacts
+            Java JARs are attached to this release.
+            
+            ## 🦀 Client Binaries
+            - **macOS** (Universal): `openframe` (ARM64 + x86_64)
+            - **Windows** (x64): `openframe.exe`
+            
+            ## 🐳 Docker Images
+            ${{ steps.docker_images.outputs.images }}
+            
+            Pull images:
+            ```bash
+            docker pull ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/<service>:${{ github.event.inputs.tag }}
