@@ -50,11 +50,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
     uses: flamingo-stack/openframe-oss-lib/.github/workflows/release.yml@ami/ci
     with:
-      tag: ${{ github.event.inputs.tag }}
-      version: ''
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      version: ${{ github.event.inputs.tag }}
 
   # Optimized Java build with better caching and parallel execution
   build_java:
