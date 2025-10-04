@@ -193,13 +193,9 @@ public class DevicePipelineTest extends BasePipelineTest {
                 return ids;
             });
             
-            Map<String, Object> filters = executePhase(TestPhase.ACT, "Query device filters", () -> {
-                Thread.sleep(5000);
-                
-                Response response = ApiHelpers.graphqlQuery(GraphQLQueries.DEVICE_FILTERS_QUERY);
-                response.then().statusCode(200);
-                return response.jsonPath().getMap("data.deviceFilters");
-            });
+            Map<String, Object> filters = executePhase(TestPhase.ASSERT, 
+                "Wait for devices to be indexed in Pinot filters", 
+                () -> waitForDeviceInPinotFilters(PINOT_INDEXING_TIMEOUT));
             
             assertThat(filters)
                 .as("Filters should be returned")

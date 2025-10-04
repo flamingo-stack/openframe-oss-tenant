@@ -16,6 +16,7 @@ import static com.openframe.support.constants.TestConstants.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
+@DisplayName("Tenant Discovery API Tests")
 public class CheckLoginOrganisationTest extends ApiBaseTest {
 
     private static final Faker faker = new Faker();
