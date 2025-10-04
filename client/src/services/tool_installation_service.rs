@@ -107,7 +107,9 @@ impl ToolInstallationService {
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
             for asset in assets {
-                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename);
+                // Determine if asset is executable based on source type
+                let is_executable = matches!(asset.source, AssetSource::Artifactory) && !asset.local_filename.to_lowercase().contains("core");
+                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename, is_executable);
                 
                 // Check if asset file already exists
                 if asset_path.exists() {
@@ -138,9 +140,11 @@ impl ToolInstallationService {
                 
                 File::create(&asset_path).await?.write_all(&asset_bytes).await?;
                 
-                // Set file permissions to executable for assets as well
-                self.set_executable_permissions(&asset_path).await
-                    .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
+                // Set file permissions to executable only for executable assets
+                if is_executable {
+                    self.set_executable_permissions(&asset_path).await
+                        .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
+                }
                 
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
             }
@@ -163,19 +167,23 @@ impl ToolInstallationService {
             
             let output = cmd.output().await
                 .context("Failed to execute installation command for tool")?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 return Err(anyhow::anyhow!(
-                    "Installation command failed with status: {}\nstdout: {}\nstderr: {}", 
+                    "Installation command failed with status: {}\no_stdout: {}\no_stderr: {}",
                     output.status, 
                     stdout, 
                     stderr
                 ));
             }
-            
-            info!("Installation command executed successfully for tool {}", tool_agent_id);
+
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stderr_empty = output.stderr.is_empty();
+            info!("Is std err {} empty: {}", stderr, stderr_empty);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            info!("Installation command executed successfully for tool {}\nstdout: {}\nstderr: {}", tool_agent_id, stdout, stderr);
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_agent_id);
         }
