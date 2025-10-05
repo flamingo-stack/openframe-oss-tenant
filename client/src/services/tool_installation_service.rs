@@ -172,18 +172,15 @@ impl ToolInstallationService {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 return Err(anyhow::anyhow!(
-                    "Installation command failed with status: {}\no_stdout: {}\no_stderr: {}",
+                    "Installation command failed with status: {}\nstdout: {}\nstderr: {}",
                     output.status, 
                     stdout, 
                     stderr
                 ));
             }
 
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stderr_empty = output.stderr.is_empty();
-            info!("Is std err {} empty: {}", stderr, stderr_empty);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            info!("Installation command executed successfully for tool {}\nstdout: {}\nstderr: {}", tool_agent_id, stdout, stderr);
+            info!("Installation command executed successfully for tool {}\nstdout: {}", tool_agent_id, stdout);
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_agent_id);
         }
