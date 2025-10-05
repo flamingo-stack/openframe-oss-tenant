@@ -107,8 +107,8 @@ impl ToolInstallationService {
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
             for asset in assets {
-                // Determine if asset is executable based on source type
-                let is_executable = matches!(asset.source, AssetSource::Artifactory) && !asset.local_filename.to_lowercase().contains("core");
+                // Use the executable field from the asset
+                let is_executable = asset.executable;
                 let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename, is_executable);
                 
                 // Check if asset file already exists
