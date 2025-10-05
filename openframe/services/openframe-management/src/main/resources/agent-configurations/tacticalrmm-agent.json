@@ -10,17 +10,18 @@
     "-client-id", "1",
     "-site-id", "1",
     "-agent-type", "workstation",
-    "-log", "DEBUG",
+    "-log", "INFO",
     "-logto", "stdout",
     "--openframe-mode",
     "-nomesh",
     "--openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}",
-    "--insecure"
+    "--insecure",
+    "--silent"
   ],
   "runCommandArgs": [
     "-m", "svc",
-    "-log", "DEBUG",
+    "-log", "INFO",
     "-logto", "stdout",
     "-openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
