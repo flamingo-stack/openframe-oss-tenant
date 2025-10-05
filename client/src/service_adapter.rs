@@ -180,9 +180,36 @@ impl CrossPlatformServiceManager {
         info!("Installing service with full configuration via CrossPlatformServiceManager");
         manager.install(ctx).context("Failed to install service")?;
 
-        // After installation, start the service to ensure it's running
-        self.start()?;
-
+        // Configure platform-specific auto-restart settings
+        // #[cfg(target_os = "windows")]
+        // {
+        //     use std::process::Command;
+        //     let service_name = format!("com.openframe.{}", self.config.name.to_lowercase());
+            
+        //     info!("Configuring Windows service auto-restart on failure");
+        //     // Configure auto-restart on crash (like macOS KeepAlive)
+        //     let _ = Command::new("sc")
+        //         .args(&[
+        //             "failure",
+        //             &service_name,
+        //             "reset=", "86400",  // Reset after 24 hours
+        //             "actions=", "restart/10000/restart/10000/restart/10000"  // Restart after 10s, 3 times
+        //         ])
+        //         .output();
+        // }
+        
+        // Start service asynchronously for all platforms
+        info!("Starting service asynchronously in background thread");
+        let manager_clone = Self::with_config(self.config.clone());
+        
+        std::thread::spawn(move || {
+            if let Err(e) = manager_clone.start() {
+                error!("Failed to start service in background: {:#}", e);
+            } else {
+                info!("Service started successfully in background");
+            }
+        });
+        
         Ok(())
     }
 
