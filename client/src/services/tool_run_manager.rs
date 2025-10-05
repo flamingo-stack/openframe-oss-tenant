@@ -1,12 +1,14 @@
 use anyhow::{Context, Result};
 use tracing::{info, warn, error, debug};
-use std::process::Command;
+use std::process::Stdio;
+use tokio::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use sysinfo::{System, Signal};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
@@ -102,9 +104,11 @@ impl ToolRunManager {
                     .to_string_lossy()
                     .to_string();
 
-                // spawn tool run process and wait async till the end
+                // spawn tool run process with piped stdout/stderr
                 let mut child = match Command::new(&command_path)
                     .args(&processed_args)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
                     .spawn()
                 {
                     Ok(child) => child,
@@ -116,7 +120,31 @@ impl ToolRunManager {
                     }
                 };
 
-                match child.wait() {
+                // Capture stdout
+                if let Some(stdout) = child.stdout.take() {
+                    let tool_id_clone = tool.tool_agent_id.clone();
+                    tokio::spawn(async move {
+                        let reader = BufReader::new(stdout);
+                        let mut lines = reader.lines();
+                        while let Ok(Some(line)) = lines.next_line().await {
+                            info!(tool_id = %tool_id_clone, "[STDOUT] {}", line);
+                        }
+                    });
+                }
+
+                // Capture stderr
+                if let Some(stderr) = child.stderr.take() {
+                    let tool_id_clone = tool.tool_agent_id.clone();
+                    tokio::spawn(async move {
+                        let reader = BufReader::new(stderr);
+                        let mut lines = reader.lines();
+                        while let Ok(Some(line)) = lines.next_line().await {
+                            warn!(tool_id = %tool_id_clone, "[STDERR] {}", line);
+                        }
+                    });
+                }
+
+                match child.wait().await {
                     Ok(status) => {
                         if status.success() {
                             warn!(tool_id = %tool.tool_agent_id,
