@@ -49,36 +49,40 @@ impl InstallationInitialConfigService {
         cfg.org_id = org_id;
         cfg.local_mode = params.local_mode;
 
-        // Resolve local CA path via mkcert -CAROOT (fail-fast as requested)
-        info!("Resolving mkcert CAROOT during install...");
-        let output = Command::new("mkcert")
-            .arg("-CAROOT")
-            .output()
-            .context("Failed to execute 'mkcert -CAROOT' during install")?;
+        // Only resolve local CA path via mkcert if running in local mode
+        if params.local_mode {
+            info!("Resolving mkcert CAROOT during install (local mode enabled)...");
+            let output = Command::new("mkcert")
+                .arg("-CAROOT")
+                .output()
+                .context("Failed to execute 'mkcert -CAROOT' during install")?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(anyhow!(
-                "'mkcert -CAROOT' failed with status {}: {}",
-                output.status, stderr
-            ));
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(anyhow!(
+                    "'mkcert -CAROOT' failed with status {}: {}",
+                    output.status, stderr
+                ));
+            }
+
+            let root = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if root.is_empty() {
+                return Err(anyhow!("'mkcert -CAROOT' returned empty output"));
+            }
+
+            let ca = PathBuf::from(&root).join("rootCA.pem");
+            if !ca.exists() {
+                return Err(anyhow!(
+                    "rootCA.pem not found at {} (from mkcert -CAROOT)",
+                    ca.to_string_lossy()
+                ));
+            }
+
+            cfg.local_ca_cert_path = ca.to_string_lossy().to_string();
+            info!("Resolved local CA cert path: {}", cfg.local_ca_cert_path);
+        } else {
+            info!("Skipping mkcert CAROOT resolution (local mode disabled)");
         }
-
-        let root = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if root.is_empty() {
-            return Err(anyhow!("'mkcert -CAROOT' returned empty output"));
-        }
-
-        let ca = PathBuf::from(&root).join("rootCA.pem");
-        if !ca.exists() {
-            return Err(anyhow!(
-                "rootCA.pem not found at {} (from mkcert -CAROOT)",
-                ca.to_string_lossy()
-            ));
-        }
-
-        cfg.local_ca_cert_path = ca.to_string_lossy().to_string();
-        info!("Resolved local CA cert path: {}", cfg.local_ca_cert_path);
 
         // Save the initial configuration
         self.initial_service
