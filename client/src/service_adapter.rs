@@ -200,15 +200,17 @@ impl CrossPlatformServiceManager {
         
         // Start service asynchronously for all platforms
         info!("Starting service asynchronously in background thread");
-        let manager_clone = Self::with_config(self.config.clone());
-        
-        std::thread::spawn(move || {
-            if let Err(e) = manager_clone.start() {
-                error!("Failed to start service in background: {:#}", e);
-            } else {
-                info!("Service started successfully in background");
-            }
-        });
+        //let manager_clone = Self::with_config(self.config.clone());
+
+        self.start()?;
+
+        //std::thread::spawn(move || {
+            //if let Err(e) = manager_clone.start() {
+              //  error!("Failed to start service in background: {:#}", e);
+            //} else {
+              //  info!("Service started successfully in background");
+            //}
+        //});
         
         Ok(())
     }
