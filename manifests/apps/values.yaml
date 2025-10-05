@@ -199,7 +199,7 @@ apps:
     project: microservices
     namespace: microservices
     syncWave: "2"
-  openframe-ui: 
+  openframe-frontend: 
     enabled: true
     project: microservices
     namespace: microservices
@@ -233,11 +233,11 @@ apps:
     project: default
     namespace: integrated-tools
     syncWave: "3"
-  authentik: 
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
+  # authentik: 
+  #   enabled: true
+  #   project: integrated-tools
+  #   namespace: integrated-tools
+  #   syncWave: "3"
   fleetmdm: 
     enabled: true
     project: integrated-tools

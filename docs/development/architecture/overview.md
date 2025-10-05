@@ -161,7 +161,7 @@ openframe/
 │   │   │   │           └── model/
 │   │   │   └── test/
 │   │   └── pom.xml
-│   └── openframe-ui/
+│   └── openframe-frontend/
 │       ├── src/
 │       │   ├── components/
 │       │   ├── views/

@@ -4,6 +4,7 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { useTokenStorage } from '../hooks/use-token-storage'
 import { useAuthStore } from '../stores/auth-store'
 import { apiClient } from '@lib/api-client'
+import { authApiClient } from '@lib/auth-api-client'
 
 /**
  * Hook for exchanging devTicket via API
@@ -19,22 +20,8 @@ export function useDevTicketExchange() {
   const exchangeTicket = useCallback(
     async (ticket: string) => {
       try {
-        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
-        
         console.log('🎫 [DevTicket Exchange] Initiating exchange for ticket:', ticket)
-        
-        // For DevTicket exchange, we need to use raw fetch to access response headers
-        // since apiClient doesn't expose the raw response headers
-        const response = await fetch(
-          `${baseUrl}/oauth/dev-exchange?ticket=${encodeURIComponent(ticket)}`,
-          {
-            method: 'GET',
-            credentials: 'include', // For cookie-based auth
-            headers: {
-              'Accept': 'application/json',
-            },
-          }
-        )
+        const response = await authApiClient.devExchange(ticket)
         
         console.log('🎫 [DevTicket Exchange] API call completed, status:', response.status)
         
@@ -47,9 +34,8 @@ export function useDevTicketExchange() {
         
         if (tokens.accessToken || tokens.refreshToken) {
           console.log('🎫 [DevTicket Exchange] Tokens stored, fetching user data...')
-          
-          // Now fetch user data using the /me endpoint
-          const meResponse = await apiClient.get('/me')
+
+          const meResponse = await authApiClient.me()
           
           if (meResponse.ok && meResponse.data && meResponse.data.authenticated) {
             const userData = meResponse.data.user

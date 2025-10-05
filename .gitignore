@@ -68,6 +68,7 @@ client/Cargo.lock
 **/ui-kit
 **/dist
 **/multi-platform-hub
+.**.json
 .next/
 openframe/services/openframe-frontend/pnpm-lock.yaml
 tsconfig.tsbuildinfo

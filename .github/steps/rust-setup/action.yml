@@ -38,3 +38,13 @@ runs:
         shared-key: ${{ inputs.shared-key }}
         cache-targets: true
         cache-on-failure: true
+
+    - name: Add Rust targets, if needed
+      shell: bash
+      run: |
+        IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+        for RUST_TARGET in "${ARCHITECTURES[@]}"; do
+          # Trim whitespace
+          RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
+          rustup target list --installed | grep -q "^${RUST_TARGET}$" || (echo "Adding $RUST_TARGET" && rustup target add "$RUST_TARGET")
+        done

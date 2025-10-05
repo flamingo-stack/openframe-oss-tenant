@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@flamingo/ui-kit/components/ui'
 import { FormLoader, FormPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { LinuxIcon, MacOSIcon, WindowsIcon } from '@flamingo/ui-kit'
+import { OS_PLATFORMS } from '@flamingo/ui-kit/utils'
 
 interface ScriptData {
   name: string
@@ -29,13 +29,14 @@ interface EditScriptPageProps {
   scriptId: string | null
 }
 
-const PLATFORMS = [
-  { id: 'windows', name: 'Windows', icon: WindowsIcon },
-  { id: 'linux', name: 'Linux', icon: LinuxIcon },
-  { id: 'darwin', name: 'MacOS', icon: MacOSIcon }
+const SHELL_TYPES: { label: string, value: string }[] = [
+  { label: 'Powershell', value: 'powershell' },
+  { label: 'Batch', value: 'batch' },
+  { label: 'Python', value: 'python' },
+  { label: 'Shell', value: 'shell' },
+  { label: 'Nushell', value: 'nushell' },
+  { label: 'Deno', value: 'deno' },
 ]
-
-const SHELL_TYPES = ['bash', 'powershell', 'python', 'batch', 'shell']
 const CATEGORIES = ['System Maintenance', 'Security', 'Network', 'Monitoring', 'Backup', 'Custom']
 
 export function EditScriptPage({ scriptId }: EditScriptPageProps) {
@@ -135,6 +136,14 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       const filteredArgs = scriptData.args.filter(arg => arg.name.trim() !== '')
       const filteredEnvVars = scriptData.env_vars.filter(envVar => envVar.name.trim() !== '')
 
+      const mapPlatformIdToTactical = (id: string) => {
+        const n = id.toLowerCase()
+        if (n.includes('mac') || n.includes('darwin') || n.includes('osx')) return 'darwin'
+        if (n.includes('win')) return 'windows'
+        if (n.includes('linux')) return 'linux'
+        return id
+      }
+
       const payload = {
         name: scriptData.name,
         shell: scriptData.type,
@@ -144,7 +153,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         run_as_user: scriptData.run_as_user,
         env_vars: filteredEnvVars.map(envVar => `${envVar.name}=${envVar.value}`),
         description: scriptData.description,
-        supported_platforms: scriptData.supported_platforms,
+        supported_platforms: Array.from(new Set(scriptData.supported_platforms.map(mapPlatformIdToTactical))),
         category: scriptData.category
       }
 
@@ -243,7 +252,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           <div className="space-y-1">
             <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</label>
             <div className="flex gap-4 pt-2">
-              {PLATFORMS.map((platform) => {
+              {OS_PLATFORMS.map((platform) => {
                 const Icon = platform.icon
                 const isSelected = scriptData.supported_platforms.includes(platform.id)
                 return (
@@ -307,8 +316,8 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
                   <SelectValue placeholder="Select Shell Type"/>
                 </SelectTrigger>
                 <SelectContent>
-                  {SHELL_TYPES.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  {SHELL_TYPES.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -7,6 +7,9 @@ import { useLocalStorage } from '@flamingo/ui-kit/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
+import { authApiClient } from '@lib/auth-api-client'
+import { runtimeEnv } from '@lib/runtime-config'
+import { clearStoredTokens } from '@lib/force-logout'
 
 interface TenantInfo {
   tenantId?: string
@@ -133,7 +136,8 @@ export function useAuth() {
     
     // Skip auth checks when on auth pages UNLESS we just returned from OAuth
     const isAuthPage = pathname?.startsWith('/auth')
-    if (isAuthPage && !hasOAuthCallback) {
+    const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
+    if (isAuthPage && isDevTicketEnabled && !hasOAuthCallback) {
       console.log('🔐 [Auth] Skipping auth check on auth page:', pathname)
       return
     }
@@ -154,8 +158,8 @@ export function useAuth() {
           console.log('🔐 [Auth] Initial authentication check via /me endpoint...')
         }
         
-        // Use the API client which handles both cookie and header auth automatically
-        const response = await apiClient.get('/me')
+        // Call auth service for /me (shared host if provided, else relative); includes cookies and header token (dev)
+        const response = await authApiClient.me()
         
         if (response.ok && response.data && response.data.authenticated) {
           const userData = response.data.user
@@ -165,7 +169,7 @@ export function useAuth() {
           }
           
           // Get token from localStorage if DevTicket is enabled, otherwise use placeholder
-          const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+          const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
           const token = isDevTicketEnabled ? getAccessToken() : 'cookie-auth'
           
           if (userData && userData.email) {
@@ -176,40 +180,26 @@ export function useAuth() {
           }
         } else if (response.status === 401) {
           if (isPeriodicCheck && isAuthenticated) {
-            // User was authenticated but now token is expired/invalid
-            console.log('⚠️ [Auth] Session expired, logging out...')
-            
-            // Clear auth store
             const { logout } = useAuthStore.getState()
             logout()
             
-            // Clear tokens
-            const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
-            if (isDevTicketEnabled) {
-              localStorage.removeItem('of_access_token')
-              localStorage.removeItem('of_refresh_token')
-            }
+            clearStoredTokens()
             
-            // Show notification
             toast({
               title: 'Session Expired',
               description: 'Your session has expired. Please sign in again.',
               variant: 'destructive',
             })
             
-            // Redirect to auth page
-            router.push('/auth')
+            import('../../../lib/app-mode').then(({ getDefaultRedirectPath }) => {
+              router.push(getDefaultRedirectPath(false))
+            })
           } else if (!isPeriodicCheck) {
-            console.log('⚠️ [Auth] Not authenticated (401 from /me)')
-            
-            // Clear any stale tokens if DevTicket is enabled
-            const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+            const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
             if (isDevTicketEnabled) {
               const token = getAccessToken()
               if (token) {
-                console.log('🔐 [Auth] Clearing stale tokens')
-                localStorage.removeItem('of_access_token')
-                localStorage.removeItem('of_refresh_token')
+                clearStoredTokens()
               }
             }
           }
@@ -230,7 +220,7 @@ export function useAuth() {
     const initialTimer = setTimeout(() => checkExistingAuth(false), 100)
     
     // Set up periodic check interval (configurable via env var, default 5 minutes)
-    const authCheckInterval = parseInt(process.env.NEXT_PUBLIC_AUTH_CHECK_INTERVAL || '300000', 10)
+    const authCheckInterval = runtimeEnv.authCheckIntervalMs()
     const intervalId = setInterval(() => {
       if (isAuthenticated) {
         checkExistingAuth(true)
@@ -258,12 +248,8 @@ export function useAuth() {
     setEmail(userEmail)
     
     try {
-      // Use external API call since this goes to a different base path
-      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
-      const response = await apiClient.external(
-        `${baseUrl}/sas/tenant/discover?email=${encodeURIComponent(userEmail)}`,
-        { method: 'GET', skipAuth: true } // Skip auth for tenant discovery
-      )
+      // Use auth api client (shared host or relative) for discovery
+      const response = await authApiClient.discoverTenants(userEmail)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -323,24 +309,14 @@ export function useAuth() {
     try {
       console.log('📝 [Auth] Attempting organization registration:', data.tenantName)
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api'
-      const baseUrl = apiUrl.replace('/api', '')
-      
-      const response = await apiClient.external(
-        `${baseUrl}/sas/oauth/register`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            password: data.password,
-            tenantName: data.tenantName,
-            tenantDomain: data.tenantDomain || 'localhost'
-          }),
-          skipAuth: true // Skip auth for registration
-        }
-      )
+      const response = await authApiClient.registerOrganization({
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        password: data.password,
+        tenantName: data.tenantName,
+        tenantDomain: data.tenantDomain || 'localhost'
+      })
 
       if (!response.ok) {
         const errorMessage = response.data?.message || response.error || 'Registration failed'
@@ -376,40 +352,27 @@ export function useAuth() {
     try {
       console.log('🔄 [Auth] Starting SSO login with provider:', provider)
       
-      if (provider === 'openframe-sso') {
-        // Store tenant ID and redirect to Gateway OAuth login
-        if (tenantInfo?.tenantId) {
-          // Store tenant ID in auth store for token refresh
-          setTenantId(tenantInfo.tenantId)
-          
-          // Determine return URL based on environment
-          const getReturnUrl = () => {
-            const hostname = window.location.hostname
-            const protocol = window.location.protocol
-            const port = window.location.port ? `:${window.location.port}` : ''
-            
-            // For development (localhost)
-            if (hostname === 'localhost' || hostname === '127.0.0.1') {
-              return `${protocol}//${hostname}${port}/dashboard`
-            }
-            // For production or other environments
-            return `${window.location.origin}/dashboard`
+      // Redirect to Gateway OAuth login for any provider listed by backend.
+      if (tenantInfo?.tenantId) {
+        // Store tenant ID in auth store for token refresh
+        setTenantId(tenantInfo.tenantId)
+
+        // Determine return URL based on environment
+        const getReturnUrl = () => {
+          const hostname = window.location.hostname
+          const protocol = window.location.protocol
+          const port = window.location.port ? `:${window.location.port}` : ''
+          if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return `${protocol}//${hostname}${port}/dashboard`
           }
-          
-          const returnUrl = encodeURIComponent(getReturnUrl())
-          const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://localhost/api').replace('/api', '')
-          const loginUrl = `${baseUrl}/oauth/login?tenantId=${encodeURIComponent(tenantInfo.tenantId)}&returnUrl=${returnUrl}`
-          
-          console.log('🔄 [Auth] Redirecting to OpenFrame SSO:', loginUrl)
-          console.log('🔄 [Auth] Return URL after auth:', getReturnUrl())
-          
-          window.location.href = loginUrl
-        } else {
-          throw new Error('No tenant information available for SSO login')
+          return `${window.location.origin}/dashboard`
         }
+
+        const returnUrl = encodeURIComponent(getReturnUrl())
+        const loginUrl = authApiClient.loginUrl(tenantInfo.tenantId, returnUrl, provider)
+        window.location.href = loginUrl
       } else {
-        // For other providers, implement their specific OAuth flows
-        throw new Error(`SSO provider '${provider}' not yet implemented`)
+        throw new Error('No tenant information available for SSO login')
       }
     } catch (error) {
       console.error('❌ [Auth] SSO login failed:', error)
@@ -422,15 +385,23 @@ export function useAuth() {
     }
   }
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     console.log('🔐 [Auth] Logging out user')
+
+    try {
+      const { tenantId: storeTenantId } = useAuthStore.getState()
+      const effectiveTenantId = storeTenantId || tenantInfo?.tenantId
+      await authApiClient.logout(effectiveTenantId || undefined)
+    } catch (error) {
+      console.warn('⚠️ [Auth] Server logout request failed (continuing):', error)
+    }
     
     // Clear auth store
     const { logout: storeLogout } = useAuthStore.getState()
     storeLogout()
     
     // Clear tokens if DevTicket is enabled
-    const isDevTicketEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER === 'true'
+    const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
     if (isDevTicketEnabled) {
       clearTokens()
     }
@@ -444,7 +415,7 @@ export function useAuth() {
     setIsLoading(false)
     
     console.log('✅ [Auth] Logout completed')
-  }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders])
+  }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, tenantInfo])
 
   const reset = () => {
     setEmail('')
@@ -466,6 +437,9 @@ export function useAuth() {
     registerOrganization,
     loginWithSSO,
     logout,
-    reset
+    reset,
+    handleAuthenticationSuccess,
+    isAuthenticated,
+    user
   }
 }

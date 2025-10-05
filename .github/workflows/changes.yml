@@ -3,8 +3,6 @@ name: Generate Changes
 on:
   workflow_call:
     outputs:
-      sdk-fleetmdm: 
-        value: ${{ jobs.changes.outputs.sdk-fleetmdm }}
       openframe-api: 
         value: ${{ jobs.changes.outputs.openframe-api }}
       openframe-authorization-server: 
@@ -21,8 +19,8 @@ on:
         value: ${{ jobs.changes.outputs.openframe-management }}
       openframe-stream: 
         value: ${{ jobs.changes.outputs.openframe-stream }}
-      openframe-ui: 
-        value: ${{ jobs.changes.outputs.openframe-ui }}
+      openframe-frontend: 
+        value: ${{ jobs.changes.outputs.openframe-frontend }}
       authentik-postgresql: 
         value: ${{ jobs.changes.outputs.authentik-postgresql }}
       fleetmdm: 
@@ -51,7 +49,6 @@ jobs:
     name: Changes check
     runs-on: ubuntu-latest
     outputs:
-      sdk-fleetmdm: ${{ steps.filter.outputs.sdk-fleetmdm }}
       openframe-api: ${{ steps.filter.outputs.openframe-api }}
       openframe-authorization-server: ${{ steps.filter.outputs.openframe-authorization-server }}
       openframe-external-api: ${{ steps.filter.outputs.openframe-external-api }}
@@ -60,7 +57,7 @@ jobs:
       openframe-gateway: ${{ steps.filter.outputs.openframe-gateway }}
       openframe-management: ${{ steps.filter.outputs.openframe-management }}
       openframe-stream: ${{ steps.filter.outputs.openframe-stream }}
-      openframe-ui: ${{ steps.filter.outputs.openframe-ui }}
+      openframe-frontend: ${{ steps.filter.outputs.openframe-frontend }}
       authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
       fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
       meshcentral: ${{ steps.filter.outputs.meshcentral }}
@@ -91,9 +88,6 @@ jobs:
           filters: |
             client:
               - './client/**'
-            sdk-fleetmdm:
-              - './pom.xml'
-              - './openframe/libs/sdk-fleetmdm/**'
             openframe-api:
               - './pom.xml'
               - './openframe/services/openframe-api/**'
@@ -118,9 +112,8 @@ jobs:
             openframe-stream:
               - './pom.xml'
               - './openframe/services/openframe-stream/**'
-            openframe-ui:
-              - './pom.xml'
-              - './openframe/services/openframe-ui/**'
+            openframe-frontend:
+              - './openframe/services/openframe-frontend/**'
             authentik-postgresql:
               - './integrated-tools/authentik/postgresql/**'
             fleetmdm:

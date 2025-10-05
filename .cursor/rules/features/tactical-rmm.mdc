@@ -119,9 +119,9 @@ public class TacticalRmmAuthenticationFilter implements WebFilter {
 
 The Tactical RMM UI is integrated into the OpenFrame dashboard:
 
-- `services/openframe-ui/src/views/rmm/Devices.vue`: Device management view
-- `services/openframe-ui/src/views/rmm/Monitoring.vue`: Monitoring view
-- `services/openframe-ui/src/views/rmm/Scripts.vue`: Script management view
+- `services/openframe-frontend/src/views/rmm/Devices.vue`: Device management view
+- `services/openframe-frontend/src/views/rmm/Monitoring.vue`: Monitoring view
+- `services/openframe-frontend/src/views/rmm/Scripts.vue`: Script management view
 
 Example UI component:
 

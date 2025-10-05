@@ -123,9 +123,9 @@ public class FleetMdmAuthenticationFilter implements WebFilter {
 
 The Fleet MDM UI is integrated into the OpenFrame dashboard:
 
-- `services/openframe-ui/src/views/mdm/Devices.vue`: Mobile device management view
-- `services/openframe-ui/src/views/mdm/Policies.vue`: Policy management view
-- `services/openframe-ui/src/views/mdm/Applications.vue`: Application management view
+- `services/openframe-frontend/src/views/mdm/Devices.vue`: Mobile device management view
+- `services/openframe-frontend/src/views/mdm/Policies.vue`: Policy management view
+- `services/openframe-frontend/src/views/mdm/Applications.vue`: Application management view
 
 Example UI component:
 

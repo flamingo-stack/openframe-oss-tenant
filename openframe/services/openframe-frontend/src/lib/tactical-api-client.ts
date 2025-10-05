@@ -4,13 +4,15 @@
  */
 
 import { apiClient, type ApiResponse, type ApiRequestOptions } from './api-client'
+import { runtimeEnv } from './runtime-config'
 
 class TacticalApiClient {
   private baseUrl: string
 
   constructor() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api'
-    this.baseUrl = apiUrl.replace('/api', '') + '/tools/tactical-rmm'
+    // Build base from tenant host when provided; otherwise relative paths via apiClient
+    const tenantHost = runtimeEnv.tenantHostUrl() || ''
+    this.baseUrl = `${tenantHost}/tools/tactical-rmm`
   }
 
   private buildTacticalUrl(path: string): string {
@@ -18,9 +20,8 @@ class TacticalApiClient {
       return path
     }
     
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path
-    
-    return `${this.baseUrl}/${cleanPath}`
+    const cleanPath = path.startsWith('/') ? path : `/${path}`
+    return `${this.baseUrl}${cleanPath}`
   }
 
   async request<T = any>(

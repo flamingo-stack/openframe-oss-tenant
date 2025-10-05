@@ -42,8 +42,11 @@ public class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<Unif
             logEvent.setUserId(enrichedData.getUserId());
             logEvent.setDeviceId(enrichedData.getMachineId());
             logEvent.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
+            logEvent.setDebeziumMessage(debeziumMessage.getDebeziumMessage());
+            logEvent.setMessage(debeziumMessage.getMessage() ==  null
+                    ? debeziumMessage.getUnifiedEventType().getSummary()
+                    : debeziumMessage.getMessage());
             logEvent.setDetails(debeziumMessage.getDetails());
-            logEvent.setMessage(debeziumMessage.getMessage());
 
         } catch (Exception e) {
             log.error("Error processing Kafka message", e);

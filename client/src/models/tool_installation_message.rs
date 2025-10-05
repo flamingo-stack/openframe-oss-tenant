@@ -5,10 +5,12 @@ use serde::{Serialize, Deserialize};
 pub struct ToolInstallationMessage {
     pub tool_agent_id: String,
     pub tool_id: String,
+    pub tool_type: String,
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installation_command_args: Option<Vec<String>>,
     pub run_command_args: Vec<String>,
+    pub tool_agent_id_command_args: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assets: Option<Vec<Asset>>,
 }

@@ -2,14 +2,13 @@
 
 import React, { useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Table, 
-  SearchBar, 
+import {
+  Table,
   Button,
-  ListPageContainer,
-  PageError
+  ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
-import { RefreshIcon, GridViewIcon, TableViewIcon } from "@flamingo/ui-kit/components/icons"
+import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
+import { ViewToggle } from "@flamingo/ui-kit/components/features"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { cn } from "@flamingo/ui-kit/utils"
 import { useDevices } from '../hooks/use-devices'
@@ -34,7 +33,8 @@ export function DevicesView() {
   }, [])
 
   const handleDeviceDetails = useCallback((device: Device) => {
-    router.push(`/devices/details/${device.agent_id}`)
+    const machineId = device.machineId || device.agent_id
+    router.push(`/devices/details/${machineId}`)
   }, [router])
 
   const rowActions = useMemo(
@@ -48,10 +48,6 @@ export function DevicesView() {
     }
   }, [debouncedSearchTerm, searchDevices])
 
-  const handleRefresh = useCallback(() => {
-    refreshDevices()
-  }, [refreshDevices])
-  
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
     
@@ -72,76 +68,45 @@ export function DevicesView() {
     setFilters(newFilters)
   }, [])
 
-  if (error) {
-    return <PageError message={error} />
-  }
 
   const viewToggle = (
-    <div className="flex items-center gap-2">
-      <div className="flex bg-ods-card border border-ods-border rounded-[6px] p-1">
-        <Button
-          onClick={() => setViewMode('grid')}
-          variant="ghost"
-          className={cn(
-            "p-2 rounded transition-all duration-200",
-            viewMode === 'grid' 
-              ? "bg-ods-accent-hover text-ods-text-on-accent" 
-              : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
-          )}
-          aria-label="Grid view"
-        >
-          <GridViewIcon className="w-5 h-5" />
-        </Button>
-        <Button
-          onClick={() => setViewMode('table')}
-          variant="ghost"
-          className={cn(
-            "p-2 rounded transition-all duration-200",
-            viewMode === 'table'
-              ? "bg-ods-accent-hover text-ods-text-on-accent"
-              : "text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover"
-          )}
-          aria-label="Table view"
-        >
-          <TableViewIcon className="w-5 h-5" />
-        </Button>
-      </div>
-      
+    <>
+      <ViewToggle
+        value={viewMode}
+        onValueChange={setViewMode}
+        className="bg-ods-card border border-ods-border h-12"
+      />
       <Button
-        onClick={handleRefresh}
-        leftIcon={<RefreshIcon size={20} />}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+        onClick={() => router.push('/devices/new')}
+        leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay/>}
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
       >
-        Refresh
+        Add Device
       </Button>
-    </div>
+    </>
   )
 
   return (
-    <ListPageContainer
+    <ListPageLayout
       title="Devices"
       headerActions={viewToggle}
+      searchPlaceholder="Search for Devices"
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      error={error}
       padding="sm"
     >
-
-      {/* Search */}
-      <SearchBar
-        placeholder="Search for Devices"
-        onSubmit={setSearchTerm}
-        value={searchTerm}
-        className="w-full"
-      />
-
       {/* Conditional View Rendering */}
       {viewMode === 'table' ? (
         // Table View
         <Table
           data={devices}
           columns={columns}
-          rowKey="agent_id"
+          rowKey="machineId"
           loading={isLoading}
           emptyMessage="No devices found. Try adjusting your search or filters."
           rowActions={rowActions}
+          actionsWidth={100}
           filters={tableFilters}
           onFilterChange={handleFilterChange}
           showFilters={true}
@@ -158,6 +123,6 @@ export function DevicesView() {
           onDeviceDetails={handleDeviceDetails}
         />
       )}
-    </ListPageContainer>
+    </ListPageLayout>
   )
 }

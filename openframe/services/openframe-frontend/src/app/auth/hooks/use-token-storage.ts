@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
 
 // Constants for localStorage keys
-const ACCESS_TOKEN_KEY = 'of_access_token'
-const REFRESH_TOKEN_KEY = 'of_refresh_token'
+export const ACCESS_TOKEN_KEY = 'of_access_token'
+export const REFRESH_TOKEN_KEY = 'of_refresh_token'
 
 /**
  * Hook for managing token storage in localStorage

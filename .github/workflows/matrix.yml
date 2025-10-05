@@ -23,12 +23,6 @@ jobs:
         run: |
           matrix_json='[
             {
-              "name": "sdk-fleetmdm",
-              "type": ["java"],
-              "path": "./openframe/libs/sdk/fleetmdm",
-              "artifact_name": "fleetmdm"
-            },
-            {
               "name": "openframe-api",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
@@ -85,10 +79,10 @@ jobs:
               "artifact_name": "openframe-stream"
             },
             {
-              "name": "openframe-ui",
+              "name": "openframe-frontend",
               "type": ["container"],
-              "path": "./openframe/services/openframe-ui",
-              "manifest_path": "./manifests/microservices/openframe-ui"
+              "path": "./openframe/services/openframe-frontend",
+              "manifest_path": "./manifests/microservices/openframe-frontend"
             },
             {
               "name": "authentik-postgresql",

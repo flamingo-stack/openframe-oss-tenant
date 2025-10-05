@@ -1,11 +1,15 @@
 package com.openframe.stream.deserializer;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.model.enums.MessageType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import com.openframe.stream.util.TimestampParser;
+import com.openframe.stream.mapping.FleetActivityTypeMapping;
+
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -17,7 +21,11 @@ public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
     private static final String FIELD_ID = "id";
     private static final String FIELD_DETAILS = "details";
     private static final String FIELD_CREATED_AT = "created_at";
-    
+
+    public FleetEventDeserializer(ObjectMapper mapper) {
+        super(mapper, List.of(), List.of());
+    }
+
     @Override
     protected Optional<String> getAgentId(JsonNode after) {
         // Fleet events can contain either a direct agentId or a hostId that can later be resolved to an agentId.
@@ -39,14 +47,30 @@ public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
 
     @Override
     protected Optional<String> getMessage(JsonNode after) {
-        // We consider the raw "details" JSON string as the message for now
-        return parseStringField(after, FIELD_DETAILS);
+        // Get the activity type and map it to a human-readable message
+        Optional<String> activityType = getSourceEventType(after);
+        Optional<String> message = Optional.empty();
+        if (activityType.isPresent()) {
+            message = FleetActivityTypeMapping.getMessage(activityType.get());
+            if (message.isEmpty()) {
+                log.warn("No message mapping found for Fleet activity type: {}", activityType.get());
+            }
+        }
+        if (message.isEmpty()) {
+            message = parseStringField(after, FIELD_DETAILS);
+        }
+        return message;
     }
 
     @Override
     protected Optional<Long> getSourceEventTimestamp(JsonNode afterField) {
         return parseStringField(afterField, FIELD_CREATED_AT)
                 .flatMap(TimestampParser::parseIso8601);
+    }
+
+    @Override
+    protected String getDetails(JsonNode after) {
+        return parseStringField(after, FIELD_DETAILS).orElse("{}");
     }
 
     @Override

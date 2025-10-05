@@ -1,0 +1,21 @@
+# Docker build context exclusions
+node_modules
+npm-debug.log
+.next
+out
+coverage
+.cache
+.DS_Store
+.env
+.env.*
+.git
+.gitignore
+**/.turbo
+**/.vscode
+**/*.local
+
+# Build output directory (Next configured to use dist)
+dist
+
+# Ignore any local ui-kit checkout to ensure fresh clone in Docker build
+ui-kit

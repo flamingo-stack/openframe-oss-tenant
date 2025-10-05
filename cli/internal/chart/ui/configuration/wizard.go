@@ -44,3 +44,20 @@ func (w *ConfigurationWizard) ConfigureHelmValues() (*types.ChartConfiguration, 
 
 	return w.configureInteractive(deploymentMode)
 }
+
+// ConfigureHelmValuesWithMode configures helm values with pre-selected deployment mode
+func (w *ConfigurationWizard) ConfigureHelmValuesWithMode(deploymentMode types.DeploymentMode) (*types.ChartConfiguration, error) {
+	// Skip deployment mode selection, use provided mode
+
+	// Step 1: Show configuration mode selection
+	modeChoice, err := w.showConfigurationModeSelection()
+	if err != nil {
+		return nil, err
+	}
+
+	if modeChoice == "default" {
+		return w.configureWithDefaults(deploymentMode)
+	}
+
+	return w.configureInteractive(deploymentMode)
+}

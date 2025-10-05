@@ -41,17 +41,21 @@ export function DetailsSection({ logDetails }: DetailsSectionProps) {
   const formattedJson = JSON.stringify(detailsData, null, 2)
 
   return (
-    <div className="flex flex-col gap-1 items-start w-full">
+    <div className="flex flex-col gap-3 w-full">
       {/* Section Title */}
       <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
         Details
       </div>
 
       {/* Details Card */}
-      <div className="bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3 items-start p-4 w-full">
-        <pre className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-hidden w-full whitespace-pre-wrap break-words">
-          {formattedJson}
-        </pre>
+      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full">
+        <div className="p-4 sm:p-6">
+          <div className="w-full overflow-x-auto">
+            <pre className="font-['DM_Sans'] font-medium text-[14px] sm:text-[16px] leading-[20px] sm:leading-[22px] text-ods-text-primary whitespace-pre-wrap break-words min-w-0">
+              {formattedJson}
+            </pre>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -11,7 +11,7 @@ This section provides comprehensive reference documentation for OpenFrame compon
 - **[OpenFrame Stream](services/openframe-stream.md)** - Real-time data processing
 - **[OpenFrame Management](services/openframe-management.md)** - Administrative functions
 - **[OpenFrame Config](services/openframe-config.md)** - Configuration management
-- **[OpenFrame UI](services/openframe-ui.md)** - Vue.js frontend application
+- **[OpenFrame Frontend](services/openframe-frontend.md)** - Vue.js frontend application
 
 ### Shared Libraries
 - **[OpenFrame Data](libraries/openframe-data.md)** - Data access layer
@@ -45,7 +45,7 @@ This section provides comprehensive reference documentation for OpenFrame compon
 - **[Stream Service](services/openframe-stream.md)** - Kafka-based stream processing and data pipeline
 - **[Management Service](services/openframe-management.md)** - Scheduled tasks and administration
 - **[Config Service](services/openframe-config.md)** - Spring Cloud Config Server
-- **[UI Service](services/openframe-ui.md)** - Vue.js frontend with PrimeVue
+- **[UI Service](services/openframe-frontend.md)** - Vue.js frontend with PrimeVue
 
 ### 💾 Data Reference  
 - **[MongoDB Schemas](data/mongodb.md)** - Document structures and indexes

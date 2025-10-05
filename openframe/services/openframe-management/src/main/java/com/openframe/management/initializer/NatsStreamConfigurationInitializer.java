@@ -17,11 +17,26 @@ import java.util.List;
 public class NatsStreamConfigurationInitializer {
 
     // TODO: use json file
+    // TODO: revise stream configuration
     private static final List<StreamConfiguration> CONFIGURATIONS = List.of(
             // tool installation stream
             StreamConfiguration.builder()
                     .name("TOOL_INSTALLATION")
                     .subjects(List.of("machine.*.tool-installation"))
+                    .storageType(StorageType.File)
+                    .retentionPolicy(RetentionPolicy.Limits)
+                    .build(),
+            // client update stream
+            StreamConfiguration.builder()
+                    .name("CLIENT_UPDATE")
+                    .subjects(List.of("machine.*.client-update"))
+                    .storageType(StorageType.File)
+                    .retentionPolicy(RetentionPolicy.Limits)
+                    .build(),
+            // tool agent update stream
+            StreamConfiguration.builder()
+                    .name("TOOL_UPDATE")
+                    .subjects(List.of("machine.*.tool-update"))
                     .storageType(StorageType.File)
                     .retentionPolicy(RetentionPolicy.Limits)
                     .build()

@@ -74,8 +74,7 @@ export function DevicesGrid({
                 }}
                 actions={{
                   moreButton: {
-                    visible: true,
-                    onClick: () => onDeviceMore(device)
+                    visible: false
                   },
                   detailsButton: {
                     visible: true,

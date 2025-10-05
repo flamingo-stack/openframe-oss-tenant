@@ -29,7 +29,7 @@ export function useLogDetails() {
     setError(null)
 
     try {
-      const response = await apiClient.post<GraphQLResponse<LogDetailsResponse>>('graphql', {
+      const response = await apiClient.post<GraphQLResponse<LogDetailsResponse>>('/api/graphql', {
         query: GET_LOG_DETAILS_QUERY,
         variables: {
           logId: logId,
