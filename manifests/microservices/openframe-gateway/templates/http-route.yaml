@@ -1,0 +1,43 @@
+{{- include "chart.validate" . -}}
+{{- if and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.gcp.enabled }}
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: openframe-gateway
+spec:
+  default:
+    logConfig:
+      enabled: true
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: 8101
+        requestPath: /management/v1/health
+        host: "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
+  targetRef:
+    group: ""
+    kind: Service
+    name: openframe-gateway
+
+---
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openframe-gateway
+spec:
+  parentRefs:
+    - name: internal-gateway
+      namespace: saas-tools
+  hostnames:
+    - "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: openframe-gateway
+          port: 8100
+
+{{- end }}
