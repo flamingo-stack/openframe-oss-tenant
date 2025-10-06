@@ -34,7 +34,7 @@ fn to_wide(s: &str) -> Vec<u16> {
 }
 
 #[cfg(windows)]
-fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<u32> {
+fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
     unsafe {
         let session_id = WTSGetActiveConsoleSessionId();
         if session_id == u32::MAX {
@@ -65,6 +65,10 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         let mut pi = PROCESS_INFORMATION::default();
 
         let mut cmdline_wide = to_wide(&cmdline);
+        
+        // Use DETACHED_PROCESS | CREATE_NO_WINDOW to run without visible console
+        use windows::Win32::System::Threading::{DETACHED_PROCESS, CREATE_NO_WINDOW};
+        
         let result = CreateProcessAsUserW(
             user_token,
             PCWSTR(to_wide(command_path).as_ptr()),
@@ -72,7 +76,7 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
             None,
             None,
             false,
-            CREATE_NEW_CONSOLE,
+            DETACHED_PROCESS | CREATE_NO_WINDOW,
             None,
             None,
             &si,
@@ -86,13 +90,13 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         }
 
         let pid = pi.dwProcessId;
+        let process_handle = pi.hProcess;
         
-        // Close handles as we don't need them
-        let _ = CloseHandle(pi.hProcess);
+        // Close thread handle as we don't need it
         let _ = CloseHandle(pi.hThread);
 
         info!("Process launched in user session, PID: {}", pid);
-        Ok(pid)
+        Ok((pid, process_handle))
     }
 }
 
@@ -193,10 +197,29 @@ impl ToolRunManager {
                 if is_meshcentral {
                     info!("Launching MeshCentral in user session");
                     match launch_process_in_user_session(&command_path, &processed_args) {
-                        Ok(pid) => {
+                        Ok((pid, process_handle)) => {
                             info!("MeshCentral launched successfully with PID: {}", pid);
-                            // For MeshCentral in user session, we can't capture stdout/stderr
-                            // Just wait and restart on failure
+                            
+                            // Wait for process to exit in blocking thread to avoid blocking async runtime
+                            let exit_code = tokio::task::spawn_blocking(move || {
+                                use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE};
+                                
+                                unsafe {
+                                    let _ = WaitForSingleObject(process_handle, INFINITE);
+                                    
+                                    // Get exit code
+                                    let mut exit_code: u32 = 0;
+                                    let _ = GetExitCodeProcess(process_handle, &mut exit_code);
+                                    let _ = CloseHandle(process_handle);
+                                    
+                                    exit_code
+                                }
+                            }).await.unwrap_or(1);
+                            
+                            warn!(tool_id = %tool.tool_agent_id,
+                                  "MeshCentral process exited with code {} - restarting in {} seconds",
+                                  exit_code, RETRY_DELAY_SECONDS);
+                            
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                             continue;
                         }
