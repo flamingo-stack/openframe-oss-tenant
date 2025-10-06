@@ -74,7 +74,7 @@ ENV GITHUB_TOKEN=${GITHUB_TOKEN}
 # Copy root POM
 COPY pom.xml ./
 
-# Copy all module POMs
+# Copy Service POM
 COPY openframe/services/openframe-external-api/pom.xml openframe/services/openframe-external-api/
 
 # Download dependencies (cached layer)

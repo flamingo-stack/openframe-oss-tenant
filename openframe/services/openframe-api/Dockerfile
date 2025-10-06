@@ -22,15 +22,8 @@ ENV GITHUB_TOKEN=${GITHUB_TOKEN}
 # Copy root POM
 COPY pom.xml ./
 
-# Copy all module POMs
+# Copy service POM
 COPY openframe/services/openframe-api/pom.xml openframe/services/openframe-api/
-COPY openframe/services/openframe-config/pom.xml openframe/services/openframe-config/
-COPY openframe/services/openframe-client/pom.xml openframe/services/openframe-client/
-COPY openframe/services/openframe-stream/pom.xml openframe/services/openframe-stream/
-COPY openframe/services/openframe-management/pom.xml openframe/services/openframe-management/
-COPY openframe/services/openframe-gateway/pom.xml openframe/services/openframe-gateway/
-COPY openframe/services/openframe-external-api/pom.xml openframe/services/openframe-external-api/
-COPY openframe/services/openframe-authorization-server/pom.xml openframe/services/openframe-authorization-server/
 
 # Download dependencies (cached layer)
 RUN mvn dependency:go-offline -B -pl openframe/services/openframe-api -am || true
