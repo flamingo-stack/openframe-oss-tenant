@@ -15,8 +15,11 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
 use tokio::process::Command;
+use std::path::Path;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(target_os = "windows")]
+use crate::platform::permissions::Permissions;
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
@@ -95,14 +98,8 @@ impl ToolInstallationService {
             File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
 
             // Set file permissions to executable
-            #[cfg(target_family = "unix")]
-            {
-                let mut perms = fs::metadata(&file_path).await?.permissions();
-                perms.set_mode(0o755);
-                fs::set_permissions(&file_path, perms)
-                    .await
-                    .with_context(|| format!("Failed to chmod +x {}", file_path.display()))?;
-            }
+            self.set_executable_permissions(&file_path).await
+                .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
             
             info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
         }
@@ -110,7 +107,9 @@ impl ToolInstallationService {
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
             for asset in assets {
-                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename);
+                // Use the executable field from the asset
+                let is_executable = asset.executable;
+                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename, is_executable);
                 
                 // Check if asset file already exists
                 if asset_path.exists() {
@@ -141,14 +140,10 @@ impl ToolInstallationService {
                 
                 File::create(&asset_path).await?.write_all(&asset_bytes).await?;
                 
-                // Set file permissions to executable for assets as well
-                #[cfg(target_family = "unix")]
-                {
-                    let mut asset_perms = fs::metadata(&asset_path).await?.permissions();
-                    asset_perms.set_mode(0o755);
-                    fs::set_permissions(&asset_path, asset_perms)
-                        .await
-                        .with_context(|| format!("Failed to chmod +x {}", asset_path.display()))?;
+                // Set file permissions to executable only for executable assets
+                if is_executable {
+                    self.set_executable_permissions(&asset_path).await
+                        .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
                 }
                 
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
@@ -172,19 +167,20 @@ impl ToolInstallationService {
             
             let output = cmd.output().await
                 .context("Failed to execute installation command for tool")?;
-            
+
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 return Err(anyhow::anyhow!(
-                    "Installation command failed with status: {}\nstdout: {}\nstderr: {}", 
+                    "Installation command failed with status: {}\nstdout: {}\nstderr: {}",
                     output.status, 
                     stdout, 
                     stderr
                 ));
             }
-            
-            info!("Installation command executed successfully for tool {}", tool_agent_id);
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            info!("Installation command executed successfully for tool {}\nstdout: {}", tool_agent_id, stdout);
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_agent_id);
         }
@@ -213,6 +209,18 @@ impl ToolInstallationService {
         self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
             .await
             .context("Failed to process tool connection after installation")?;
+
+        Ok(())
+    }
+
+    /// Sets executable permissions for a file on both Unix and Windows platforms
+    async fn set_executable_permissions(&self, file_path: &Path) -> Result<()> {
+        #[cfg(target_family = "unix")]
+        {
+            let mut perms = fs::metadata(file_path).await?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(file_path, perms).await?;
+        }
 
         Ok(())
     }

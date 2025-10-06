@@ -18,7 +18,7 @@ import java.io.IOException;
 public class OpenFrameClientConfigurationInitializer {
 
     private static final String DEFAULT_ID = "default";
-    private static final String CONFIG_FILE = "client-configuration.json";
+    private static final String CONFIG_FILE = "agent-configurations/client-configuration.json";
 
     private final ObjectMapper objectMapper;
     private final OpenFrameClientConfigurationService clientConfigurationService;

@@ -27,6 +27,7 @@ deployment:
         enabled: true   # Enable localhost ingress with nginx for SaaS
       gcp:
         enabled: false 
+        gkeSecurityGroup: "gke-security-groups@flamingo.cx"
         privateDomain: "internal.flamingo.cx"
         tenantID: "cluster-1001" 
     repository:

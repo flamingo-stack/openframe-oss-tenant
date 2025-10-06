@@ -780,9 +780,9 @@ impl DirectoryManager {
             .join(agent_name)
     }
 
-    /// Returns the path to an asset file for a specific tool, adding .exe extension on Windows if needed
-    pub fn get_asset_path(&self, tool_agent_id: &str, asset_filename: &str) -> PathBuf {
-        let asset_name = if cfg!(target_os = "windows") {
+    /// Returns the path to an asset file for a specific tool, adding .exe extension on Windows if executable
+    pub fn get_asset_path(&self, tool_agent_id: &str, asset_filename: &str, is_executable: bool) -> PathBuf {
+        let asset_name = if cfg!(target_os = "windows") && is_executable {
             format!("{}.exe", asset_filename)
         } else {
             asset_filename.to_string()
