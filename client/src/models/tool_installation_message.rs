@@ -22,6 +22,8 @@ pub struct Asset {
     pub local_filename: String,
     pub source: AssetSource,
     pub path: Option<String>,
+    #[serde(default)]
+    pub executable: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

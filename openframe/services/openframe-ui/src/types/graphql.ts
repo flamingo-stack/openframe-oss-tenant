@@ -10,6 +10,7 @@ export enum ToolUrlType {
     METRICS = 'METRICS',
     LOGS = 'LOGS',
     INTERNAL = 'INTERNAL'
+    NATS = 'NATS'
 }
 
 export enum APIKeyType {

@@ -41,9 +41,9 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         const response = await authApiClient.checkDomainAvailability(subdomain, orgName.trim())
         
         if (response.ok && response.data) {
-          const { isAvailable, suggestedUrl } = response.data as { isAvailable: boolean, suggestedUrl?: string[] }
+          const { available, suggestedUrl } = response.data as { available: boolean, suggestedUrl?: string[] }
           
-          if (isAvailable) {
+          if (available) {
             const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
             onCreateOrganization(orgName.trim(), fullDomain)
           } else {

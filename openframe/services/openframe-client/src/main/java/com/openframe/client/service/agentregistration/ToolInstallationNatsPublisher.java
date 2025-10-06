@@ -60,6 +60,7 @@ public class ToolInstallationNatsPublisher {
         messageAsset.setLocalFilename(asset.getLocalFilename());
         messageAsset.setSource(mapAssetSource(asset.getSource()));
         messageAsset.setPath(asset.getPath());
+        messageAsset.setExecutable(asset.isExecutable());
         return messageAsset;
     }
 

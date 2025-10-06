@@ -96,10 +96,9 @@ impl ToolRunManager {
 
                 debug!("Run tool {} with args: {:?}", tool.tool_agent_id, processed_args);
 
-                // Build executable path directly using directory manager
-                let command_path = params_processor.directory_manager.app_support_dir()
-                    .join(&tool.tool_agent_id)
-                    .join("agent")
+                // Build executable path using directory manager
+                let command_path = params_processor.directory_manager
+                    .get_agent_path(&tool.tool_agent_id)
                     .to_string_lossy()
                     .to_string();
 
@@ -148,7 +147,7 @@ impl ToolRunManager {
         sys.refresh_all();
 
         // Match processes whose command contains "/{tool_id}/agent"
-        let pattern = format!("/{}/agent", tool_id).to_lowercase();
+        let pattern = Self::build_cmd_pattern(tool_id);
 
         for (pid, process) in sys.processes() {
             let cmd_items = process.cmd();
@@ -174,5 +173,15 @@ impl ToolRunManager {
         }
 
         Ok(())
+    }
+    fn build_cmd_pattern(tool_id: &str) -> String {
+        #[cfg(target_os = "windows")]
+        {
+            format!("\\{}\\agent", tool_id).to_lowercase()
+        }
+        #[cfg(any(target_os = "macos"))]
+        {
+            format!("/{}/agent", tool_id).to_lowercase()
+        }
     }
 }

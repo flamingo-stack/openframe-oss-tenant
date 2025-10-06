@@ -101,7 +101,7 @@ generate_msh_file() {
   local mesh_server_url
   if [ "${OPENFRAME_MODE}" = "true" ]; then
     echo "[meshcentral] OpenFrame mode enabled - using OpenFrame gateway URL"
-    mesh_server_url="wss://localhost/ws/tools/agent/meshcentral-server/agent.ashx"
+    mesh_server_url="wss://${OPENFRAME_GATEWAY_URL}/ws/tools/agent/meshcentral-server/agent.ashx"
   else
     echo "[meshcentral] Standard mode - using direct MeshCentral URL"
     mesh_server_url="${MESH_PROTOCOL}://${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}/agent.ashx"
