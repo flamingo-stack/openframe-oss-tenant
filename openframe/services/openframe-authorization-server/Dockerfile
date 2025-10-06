@@ -2,6 +2,7 @@
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-alpine AS builder
 
 # Build arguments for GitHub authentication
+ARG SERVICE_NAME="openframe-authorization-server"
 ARG GITHUB_ACTOR
 ARG GITHUB_TOKEN
 
@@ -16,23 +17,17 @@ COPY .mvn/settings.xml /root/.m2/settings.xml
 # Set environment variables for Maven to use
 ENV GITHUB_ACTOR=${GITHUB_ACTOR}
 ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+ENV SERVICE_NAME=${SERVICE_NAME}
 
-# Copy root POM
+# Copy entire project structure
 COPY pom.xml ./
-
-# Copy all module POMs
-COPY openframe/services/openframe-authorization-server/pom.xml openframe/services/openframe-authorization-server/
-
-# Download dependencies (cached layer)
-RUN mvn dependency:go-offline -B -pl openframe/services/openframe-authorization-server -am || true
-
-# Copy source code
-COPY openframe/services/ openframe/services/
+COPY openframe/ openframe/
+COPY integrated-tools/ integrated-tools/
 
 # Build the application
 RUN mvn clean install \
     -U \
-    -pl openframe/services/openframe-authorization-server \
+    -pl openframe/services/$SERVICE_NAME \
     -am \
     -Dcompress \
     --batch-mode \
