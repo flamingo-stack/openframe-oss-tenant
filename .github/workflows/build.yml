@@ -112,6 +112,19 @@ jobs:
         env:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
+      - name: Set up JDK 21
+        if: contains(needs.changes.outputs[matrix.name], 'true') && matrix.language == 'java'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Maven dependencies
+        if: contains(needs.changes.outputs[matrix.name], 'true') && matrix.language == 'java'
+        run: |
+          mvn clean install -DskipTests -pl '!${{ matrix.path }}' -am
+
       - name: Build and push image
         if: contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
