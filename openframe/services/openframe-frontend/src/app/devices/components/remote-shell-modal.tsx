@@ -4,10 +4,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { Terminal } from 'xterm'
-import { FitAddon } from 'xterm-addon-fit'
-import { MeshControlClient } from '../../../lib/meshcentral/meshcentral-control'
-import { MeshTunnel, TunnelState } from '../../../lib/meshcentral/meshcentral-tunnel'
+import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
+import { MeshTunnel, TunnelState } from '@lib/meshcentral/meshcentral-tunnel'
 
 interface RemoteShellModalProps {
   isOpen: boolean
@@ -18,8 +16,8 @@ interface RemoteShellModalProps {
 
 export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: RemoteShellModalProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const termRef = useRef<Terminal | null>(null)
-  const fitRef = useRef<FitAddon | null>(null)
+  const termRef = useRef<any | null>(null)
+  const fitRef = useRef<any | null>(null)
   const tunnelRef = useRef<MeshTunnel | null>(null)
   const [state, setState] = useState<TunnelState>(0)
   const [connecting, setConnecting] = useState(false)
@@ -27,37 +25,58 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
 
   useEffect(() => {
     if (!isOpen) return
-    const term = new Terminal({
-      fontFamily: 'monospace',
-      theme: { background: '#000000' },
-      cursorBlink: true
-    })
-    const fit = new FitAddon()
-    term.loadAddon(fit)
-    term.open(containerRef.current!)
-    fit.fit()
-    term.focus()
-    termRef.current = term
-    fitRef.current = fit
 
-    const handleResize = () => {
-      try { fit.fit() } catch {}
-      if (tunnelRef.current && termRef.current) {
-        tunnelRef.current.sendCtrl({ ctrlChannel: 102938, type: 'termsize', cols: term.cols, rows: term.rows })
+    let isDisposed = false
+
+    ;(async () => {
+      const [{ Terminal }, { FitAddon }] = await Promise.all([
+        import('xterm'),
+        import('xterm-addon-fit')
+      ])
+
+      if (isDisposed) return
+
+      const term = new Terminal({
+        fontFamily: 'monospace',
+        theme: { background: '#000000' },
+        cursorBlink: true
+      })
+      const fit = new FitAddon()
+      term.loadAddon(fit)
+      term.open(containerRef.current!)
+      fit.fit()
+      term.focus()
+      termRef.current = term
+      fitRef.current = fit
+
+      const handleResize = () => {
+        try { fit.fit() } catch {}
+        if (tunnelRef.current && termRef.current) {
+          tunnelRef.current.sendCtrl({ ctrlChannel: 102938, type: 'termsize', cols: term.cols, rows: term.rows })
+        }
       }
-    }
-    window.addEventListener('resize', handleResize)
-    const disposeResize = term.onResize(() => handleResize)
-    const disposeData = term.onData((d) => tunnelRef.current?.sendText(d))
+      window.addEventListener('resize', handleResize)
+      const disposeResize = term.onResize(() => handleResize)
+      const disposeData = term.onData((d: string) => tunnelRef.current?.sendText(d))
+
+      const cleanup = () => {
+        window.removeEventListener('resize', handleResize)
+        disposeResize.dispose()
+        disposeData.dispose()
+        tunnelRef.current?.stop()
+        term.dispose()
+        termRef.current = null
+        fitRef.current = null
+      }
+
+      ;(cleanup as any).assigned = true
+      ;(termRef as any).cleanup = cleanup
+    })()
 
     return () => {
-      window.removeEventListener('resize', handleResize)
-      disposeResize.dispose()
-      disposeData.dispose()
-      tunnelRef.current?.stop()
-      term.dispose()
-      termRef.current = null
-      fitRef.current = null
+      isDisposed = true
+      const assignedCleanup = (termRef as any).cleanup as (() => void) | undefined
+      if (assignedCleanup) assignedCleanup()
     }
   }, [isOpen])
 

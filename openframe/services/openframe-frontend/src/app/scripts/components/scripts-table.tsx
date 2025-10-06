@@ -9,11 +9,9 @@ import {
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
-import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
-import { MoreHorizontal, Plus } from "lucide-react"
+import { CirclePlusIcon } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useScripts } from "../hooks/use-scripts"
-// import { EditScriptModal } from "./edit-script-modal"
 
 interface UIScriptEntry {
   id: number
@@ -34,8 +32,6 @@ export function ScriptsTable() {
   const [filters, setFilters] = useState<{ shellType?: string[], addedBy?: string[], category?: string[] }>({})
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
-  const [selectedScript, setSelectedScript] = useState<UIScriptEntry | null>(null)
-  // const [isNewScriptModalOpen, setIsNewScriptModalOpen] = useState(false)
   const prevFilterKeyRef = React.useRef<string | null>(null)
   
   const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
@@ -162,26 +158,10 @@ export function ScriptsTable() {
     }
   }, [filters, refreshScripts, isInitialized])
 
-  const handleRowClick = useCallback((script: UIScriptEntry) => {
-    setSelectedScript(script)
-  }, [])
-
-  const handleCloseModal = useCallback(() => {
-    setSelectedScript(null)
-  }, [])
-
-  const handleRefresh = useCallback(() => {
-    refreshScripts()
-  }, [refreshScripts])
-
   const handleNewScript = () => {
     router.push('/scripts/edit/new')
   }
 
-  // const handleSaveScript = () => {
-  //   refreshScripts() // Refresh the scripts list after saving
-  // }
-  
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
     
@@ -206,18 +186,10 @@ export function ScriptsTable() {
       <Button
         onClick={handleNewScript}
         variant="primary"
-        className="bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover font-['DM_Sans'] font-bold px-4 py-2.5 rounded-[6px] text-[16px] transition-colors h-12"
-        leftIcon={<Plus size={20} />}
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+        leftIcon={<CirclePlusIcon size={20} />}
       >
-        New Script
-      </Button>
-      <Button
-        onClick={handleRefresh}
-        variant="outline"
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] transition-colors h-12"
-        leftIcon={<RefreshIcon size={20} />}
-      >
-        Refresh
+        Add Script
       </Button>
     </>
   )
@@ -231,7 +203,8 @@ export function ScriptsTable() {
       onSearch={setSearchTerm}
       error={error}
       background="default"
-      padding="sm"
+      padding="none"
+      className="pt-6"
     >
       {/* Table */}
       <Table
@@ -240,7 +213,6 @@ export function ScriptsTable() {
         rowKey="id"
         loading={isLoading}
         emptyMessage="No scripts found. Try adjusting your search or filters."
-        onRowClick={handleRowClick}
         rowActions={rowActions}
         filters={tableFilters}
         onFilterChange={handleFilterChange}

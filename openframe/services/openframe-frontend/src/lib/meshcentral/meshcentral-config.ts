@@ -24,7 +24,7 @@ export function getMeshBaseHostPort(): string | null {
 
 export function getMeshWsScheme(): 'ws' | 'wss' {
   if (typeof window !== 'undefined') {
-    return window.location.protocol === 'https:' ? 'wss' : 'ws'
+    return window.location.protocol === 'https:' ? 'wss' : 'wss'
   }
 
   return 'wss'

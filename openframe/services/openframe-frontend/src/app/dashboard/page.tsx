@@ -2,18 +2,28 @@
 
 import { AppLayout } from '../components/app-layout'
 import { ContentPageContainer } from '@flamingo/ui-kit'
+import { isSaasTenantMode } from '../../lib/app-mode'
+import { DevicesOverviewSection } from './components/devices-overview'
+import { ChatsOverviewSection } from './components/chats-overview'
+import { LogsOverviewSection } from './components/logs-overview'
 
 export default function Dashboard() {
+  const showChats = isSaasTenantMode()
+
   return (
     <AppLayout>
       <ContentPageContainer
-        title="Dashboard"
-        subtitle="Welcome to the OpenFrame Dashboard"
+        showHeader={false}
         padding="none"
       >
-        {/* Dashboard content will go here */}
-        <div className="space-y-6">
-          {/* Add dashboard widgets and content here */}
+        <div className="space-y-10 pt-6">
+          <DevicesOverviewSection />
+
+          {showChats && (
+            <ChatsOverviewSection />
+          )}
+
+          <LogsOverviewSection />
         </div>
       </ContentPageContainer>
     </AppLayout>
