@@ -28,7 +28,7 @@ metadata:
 spec:
   parentRefs:
     - name: internal-gateway
-      namespace: saas-tools
+      namespace: platform
   hostnames:
     - "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
   rules:
