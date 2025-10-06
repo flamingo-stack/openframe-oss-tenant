@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar styles */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(55 65 81) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(55 65 81);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(75 85 99);
+  }
+  
+  .scrollbar-track-transparent {
+    scrollbar-color: rgb(55 65 81) transparent;
+  }
+  
+  .scrollbar-thumb-gray-700::-webkit-scrollbar-thumb {
+    background-color: rgb(55 65 81);
+  }
+  
+  .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(75 85 99);
+  }
+  
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Ensure full height for the app */
+html, body, #root {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
