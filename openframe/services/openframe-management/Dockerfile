@@ -27,7 +27,7 @@ COPY openframe/services/openframe-management/pom.xml openframe/services/openfram
 RUN mvn dependency:go-offline -B -pl openframe/services/openframe-management -am || true
 
 # Copy source code
-COPY openframe/services/openframe-management/src openframe/services/openframe-management/src
+COPY openframe/services/ openframe/services/
 
 # Build the application
 RUN mvn clean install \
