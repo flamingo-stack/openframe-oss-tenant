@@ -2,11 +2,13 @@ import {
   ChatContainer, 
   ChatHeader, 
   ChatContent, 
-  ChatFooter,
+  ChatFooter
+} from '../../../../../ui-kit/src/components/chat/chat-container'
+import {
   ChatMessageList,
   ChatInput,
   ChatQuickAction
-} from '../../../../ui-kit/src/components/chat'
+} from '../../../../../ui-kit/src/components/chat'
 import { useChat } from '../hooks/useChat'
 import faeAvatar from '../assets/fae-avatar.png'
 
@@ -21,14 +23,9 @@ export function ChatView() {
     hasMessages
   } = useChat({ useMock: true })
   
-  const handleSettingsClick = () => {
-    // Add settings functionality here
-    console.log('Settings clicked')
-  }
-  
   return (
     <ChatContainer>
-      <ChatHeader onSettingsClick={handleSettingsClick} userAvatar={faeAvatar} />
+      <ChatHeader userAvatar={faeAvatar} />
       
       <ChatContent>
         {hasMessages ? (
@@ -74,7 +71,7 @@ export function ChatView() {
           onSend={sendMessage}
           sending={isStreaming}
           placeholder="Enter your request here..."
-          className="pr-12 pl-12"
+          className="pr-12 pl-12 !mx-0 max-w-none"
           reserveAvatarOffset={false}
         />
       </ChatFooter>

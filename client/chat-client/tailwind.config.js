@@ -4,12 +4,11 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     // Include ui-kit components
-    "../../ui-kit/src/**/*.{js,ts,jsx,tsx}"
+    "../../../ui-kit/src/**/*.{js,ts,jsx,tsx}"
   ],
   theme: {
     extend: {
       colors: {
-        // Import ODS colors from ui-kit
         "ods-bg-primary": "#161616",
         "ods-bg-card": "#212121",
         "ods-bg-hover": "#2b2b2b",

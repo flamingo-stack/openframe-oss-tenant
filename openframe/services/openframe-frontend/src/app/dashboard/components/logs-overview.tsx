@@ -25,7 +25,6 @@ export function LogsOverviewSection() {
     if (!rawLogs || rawLogs.length === 0) return []
 
     return rawLogs.slice(0, 10).map((log): LogEntry => {
-      console.log(log)
       const mapToolType = (toolType: string): ToolType => {
         const typeMap: Record<string, ToolType> = {
           'TACTICAL': 'tactical',
@@ -62,7 +61,7 @@ export function LogsOverviewSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:grid-rows-[minmax(0,_1fr)] xl:overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:grid-rows-[minmax(0,_1fr)] lg:overflow-hidden">
         {/* Left column - Info Cards */}
         <div className="flex flex-col gap-4">
           <DashboardInfoCard
@@ -89,8 +88,8 @@ export function LogsOverviewSection() {
         </div>
 
         {/* Right column - Logs List */}
-        <div className="xl:relative xl:min-h-0">
-          <div className="xl:absolute xl:inset-0">
+        <div className="lg:relative lg:min-h-0">
+          <div className="lg:absolute lg:inset-0">
             <LogsList
               logs={recentLogs}
               maxHeight="100%"

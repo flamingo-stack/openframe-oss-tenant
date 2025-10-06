@@ -1,21 +1,7 @@
 'use client'
 
 import React from 'react'
-import { InfoRow } from '@flamingo/ui-kit'
-
-// Fleet MDM icon component
-const FleetMDMIcon = () => (
-  <div className="relative size-4">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1.33" y="1.33" width="3.34" height="3.34" className="fill-text-secondary"/>
-      <rect x="6.33" y="1.33" width="3.34" height="3.34" className="fill-text-secondary"/>
-      <rect x="11.33" y="1.33" width="3.34" height="3.34" className="fill-text-secondary"/>
-      <rect x="1.33" y="6.33" width="3.34" height="3.34" className="fill-text-secondary"/>
-      <rect x="6.33" y="6.33" width="3.34" height="3.34" className="fill-text-secondary"/>
-      <rect x="1.33" y="11.33" width="3.34" height="3.34" className="fill-text-secondary"/>
-    </svg>
-  </div>
-)
+import { InfoRow, ToolIcon } from '@flamingo/ui-kit'
 
 interface LogEntry {
   toolEventId: string
@@ -36,17 +22,19 @@ interface FullInformationSectionProps {
 }
 
 export function FullInformationSection({ logDetails }: FullInformationSectionProps) {
-  // Helper function to get tool icon based on toolType
   const getToolIcon = (toolType: string) => {
-    const type = toolType.toLowerCase()
-    if (type.includes('fleet') || type.includes('mdm')) {
-      return <FleetMDMIcon />
+    const mapToolType = (toolType: string) => {
+      const typeMap: Record<string, string> = {
+        'TACTICAL': 'tactical',
+        'MESHCENTRAL': 'meshcentral',
+        'FLEET': 'fleet'
+      }
+      return typeMap[toolType] || 'unknown'
     }
-    // Add more tool icons as needed
-    return undefined
+
+    return <ToolIcon toolType={mapToolType(toolType) as any} size={16} />
   }
 
-  // Helper function to format timestamp
   const formatTimestamp = (timestamp: string) => {
     try {
       return new Date(timestamp).toISOString()

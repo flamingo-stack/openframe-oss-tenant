@@ -15,7 +15,6 @@ interface AuthChoiceSectionProps {
 
 /**
  * Auth choice section with Create Organization and Sign In forms
- * Matches Figma design exactly with proper colors, spacing, and typography
  */
 export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }: AuthChoiceSectionProps) {
   const { toast } = useToast()
@@ -29,8 +28,14 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
   const [showForgotPassword, setShowForgotPassword] = useState(false)
 
+  const orgNameRegex = /^[\p{L}\p{M}0-9&\.,'"()\- ]{2,100}$/u
+  const isOrgNameValid = orgNameRegex.test(orgName.trim())
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const isEmailValid = emailRegex.test(email.trim())
+
   const handleCreateOrganization = async () => {
-    if (!orgName.trim()) return
+    if (!orgName.trim() || !isOrgNameValid) return
 
     if (isSaasShared && domain.trim()) {
       setIsCheckingDomain(true)
@@ -77,7 +82,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   }
 
   const handleSignIn = async () => {
-    if (email.trim() && !isSigningIn) {
+    if (isEmailValid && !isSigningIn) {
       setIsSigningIn(true)
       try {
         await onSignIn(email.trim())
@@ -113,6 +118,9 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
               />
+              {orgName.trim() && !isOrgNameValid && (
+                <p className="text-xs text-error mt-1">Organization Name must be 2-100 characters and may include letters, numbers, spaces, and &.,'"()-</p>
+              )}
             </div>
             <div className="flex-1 flex flex-col gap-1">
               <Label>Domain</Label>
@@ -200,6 +208,9 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               disabled={isLoading}
               className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 w-full"
             />
+            {email.trim() && !isEmailValid && (
+              <p className="text-xs text-error mt-1">Enter a valid email address</p>
+            )}
           </div>
 
           {/* Button Row with Forgot Password */}
@@ -216,7 +227,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <div className="flex-1">
               <Button
                 onClick={handleSignIn}
-                disabled={!email.trim() || isSigningIn || isLoading}
+                disabled={!isEmailValid || isSigningIn || isLoading}
                 loading={isSigningIn || isLoading}
                 variant="primary"
                 className="w-full font-body text-[18px] font-bold leading-6 tracking-[-0.36px] py-3"
