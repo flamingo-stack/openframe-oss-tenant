@@ -1654,6 +1654,7 @@ dependencies = [
  "velopack",
  "whoami",
  "winapi",
+ "windows 0.52.0",
  "windows-service",
  "winreg 0.52.0",
  "zip 0.6.6",

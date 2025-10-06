@@ -13,7 +13,88 @@ use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 
+#[cfg(windows)]
+use std::ffi::OsStr;
+#[cfg(windows)]
+use std::os::windows::ffi::OsStrExt;
+#[cfg(windows)]
+use windows::{
+    core::{PCWSTR, PWSTR},
+    Win32::Foundation::*,
+    Win32::System::Threading::*,
+    Win32::System::RemoteDesktop::*,
+};
+
 const RETRY_DELAY_SECONDS: u64 = 5;
+
+#[cfg(windows)]
+fn to_wide(s: &str) -> Vec<u16> {
+    use std::iter::once;
+    OsStr::new(s).encode_wide().chain(once(0)).collect()
+}
+
+#[cfg(windows)]
+fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<u32> {
+    unsafe {
+        let session_id = WTSGetActiveConsoleSessionId();
+        if session_id == u32::MAX {
+            anyhow::bail!("No active user session found");
+        }
+
+        let mut user_token = HANDLE(0);
+        if let Err(e) = WTSQueryUserToken(session_id, &mut user_token) {
+            anyhow::bail!("Failed to get user token for session {}: {:?}", session_id, e);
+        }
+
+        // Build command line with arguments
+        let mut cmdline = command_path.to_string();
+        for arg in args {
+            cmdline.push(' ');
+            // Quote argument if it contains spaces
+            if arg.contains(' ') {
+                cmdline.push('"');
+                cmdline.push_str(arg);
+                cmdline.push('"');
+            } else {
+                cmdline.push_str(arg);
+            }
+        }
+
+        let mut si = STARTUPINFOW::default();
+        si.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
+        let mut pi = PROCESS_INFORMATION::default();
+
+        let mut cmdline_wide = to_wide(&cmdline);
+        let result = CreateProcessAsUserW(
+            user_token,
+            PCWSTR(to_wide(command_path).as_ptr()),
+            PWSTR(cmdline_wide.as_mut_ptr()),
+            None,
+            None,
+            false,
+            CREATE_NEW_CONSOLE,
+            None,
+            None,
+            &si,
+            &mut pi,
+        );
+
+        let _ = CloseHandle(user_token);
+
+        if let Err(e) = result {
+            anyhow::bail!("Failed to launch process in user session: {:?}", e);
+        }
+
+        let pid = pi.dwProcessId;
+        
+        // Close handles as we don't need them
+        let _ = CloseHandle(pi.hProcess);
+        let _ = CloseHandle(pi.hThread);
+
+        info!("Process launched in user session, PID: {}", pid);
+        Ok(pid)
+    }
+}
 
 #[derive(Clone)]
 pub struct ToolRunManager {
@@ -104,7 +185,32 @@ impl ToolRunManager {
                     .to_string_lossy()
                     .to_string();
 
-                // spawn tool run process with piped stdout/stderr
+                // Check if this is MeshCentral on Windows - launch in user session
+                #[cfg(windows)]
+                let is_meshcentral = tool.tool_agent_id.to_lowercase().contains("meshcentral");
+                
+                #[cfg(windows)]
+                if is_meshcentral {
+                    info!("Launching MeshCentral in user session");
+                    match launch_process_in_user_session(&command_path, &processed_args) {
+                        Ok(pid) => {
+                            info!("MeshCentral launched successfully with PID: {}", pid);
+                            // For MeshCentral in user session, we can't capture stdout/stderr
+                            // Just wait and restart on failure
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+                        Err(e) => {
+                            error!(tool_id = %tool.tool_agent_id, error = %e,
+                                   "Failed to launch MeshCentral in user session - retrying in {} seconds", 
+                                   RETRY_DELAY_SECONDS);
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+                    }
+                }
+
+                // For all other tools (or non-Windows), use standard spawn
                 let mut child = match Command::new(&command_path)
                     .args(&processed_args)
                     .stdout(Stdio::piped())
