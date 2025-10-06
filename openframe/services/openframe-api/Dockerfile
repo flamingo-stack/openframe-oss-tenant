@@ -29,7 +29,7 @@ COPY openframe/services/openframe-api/pom.xml openframe/services/openframe-api/
 RUN mvn dependency:go-offline -B -pl openframe/services/openframe-api -am || true
 
 # Copy source code for openframe-api and all its dependencies
-COPY openframe/services/ openframe/services/
+COPY openframe/services/openframe-api/src openframe/services/openframe-api/src
 
 # Build only the openframe-api module and its dependencies
 RUN mvn clean install \

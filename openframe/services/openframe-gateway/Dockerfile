@@ -1,17 +1,31 @@
 # Stage 1: Build Java application
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-alpine AS builder
 
+# Build arguments for GitHub authentication
+ARG GITHUB_ACTOR
+ARG GITHUB_TOKEN
+
+# Install Maven
+RUN apk add --no-cache maven
+
 # Set working directory
 WORKDIR /build
 
-# Copy Maven wrapper and pom files first for better caching
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-COPY openframe/pom.xml openframe/pom.xml
-COPY openframe/services/openframe-gateway/pom.xml openframe/services/openframe-gateway/pom.xml
+# Copy Maven settings
+COPY .mvn/settings.xml /root/.m2/settings.xml
+
+# Set environment variables for Maven to use
+ENV GITHUB_ACTOR=${GITHUB_ACTOR}
+ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+
+# Copy root POM
+COPY pom.xml ./
+
+# Copy Service POM
+COPY openframe/services/openframe-gateway/pom.xml openframe/services/openframe-gateway/
 
 # Download dependencies (cached layer)
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B -pl openframe/services/openframe-gateway -am || true
 
 # Copy source code
 COPY openframe/services/openframe-gateway/src openframe/services/openframe-gateway/src

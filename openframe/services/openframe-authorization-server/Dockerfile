@@ -27,7 +27,7 @@ COPY openframe/services/openframe-authorization-server/pom.xml openframe/service
 RUN mvn dependency:go-offline -B -pl openframe/services/openframe-authorization-server -am || true
 
 # Copy source code
-COPY openframe/services/ openframe/services/
+COPY openframe/services/openframe-authorization/src openframe/services/openframe-authorization/src
 
 # Build the application
 RUN mvn clean install \
