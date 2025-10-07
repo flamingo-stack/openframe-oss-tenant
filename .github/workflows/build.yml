@@ -12,7 +12,6 @@ on:
   push:
     branches: 
       - main
-      - feature/reduce-windows-dir-permissions
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -54,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +107,7 @@ jobs:
     name: "Build: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -318,7 +317,7 @@ jobs:
     name: "Build Helm Chart"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
