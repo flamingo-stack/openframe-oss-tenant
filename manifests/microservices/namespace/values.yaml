@@ -4,3 +4,8 @@ registry:
     username: ""
     password: ""
     email: ""
+  ghcr:
+    server: ghcr.io
+    username: ""
+    password: ""
+    email: ""

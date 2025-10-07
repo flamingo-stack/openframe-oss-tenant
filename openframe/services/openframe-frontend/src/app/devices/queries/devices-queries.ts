@@ -150,3 +150,23 @@ export const GET_DEVICE_QUERY = `
     }
   }
 `
+
+export const GET_DEVICES_OVERVIEW_QUERY = `
+  query GetDevicesOverview($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String) {
+    devices(filter: $filter, pagination: $pagination, search: $search) {
+      edges {
+        node {
+          status
+          __typename
+        }
+        __typename
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+        __typename
+      }
+      __typename
+    }
+  }
+`
