@@ -45,14 +45,12 @@ export function useDevTicketExchange() {
               const user = {
                 id: userData.id || userData.userId || '',
                 email: userData.email || '',
-                name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || '',
+                name: userData.name || userData.displayName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || '',
                 organizationId: userData.organizationId || userData.tenantId,
                 organizationName: userData.organizationName || userData.tenantName,
                 role: userData.role || 'user'
               }
-              
-              console.log('✅ [DevTicket Exchange] User authenticated:', user.email)
-              
+
               // Store user in auth store
               storeLogin(user)
               

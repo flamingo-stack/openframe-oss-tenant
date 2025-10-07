@@ -1,6 +1,6 @@
 import React from 'react'
-import { type TableColumn, type RowAction } from "@flamingo/ui-kit/components/ui"
-import { ChevronRight, MoreHorizontal } from "lucide-react"
+import { type TableColumn, type RowAction, StatusTag } from '@flamingo/ui-kit/components/ui'
+import { ChevronRight, MoreHorizontal } from 'lucide-react'
 import { Dialog } from '../types/dialog.types'
 
 export function getDialogTableRowActions(
@@ -30,58 +30,60 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
     {
       key: 'topic',
       label: 'TOPIC',
-      width: 'w-80',
+      width: 'w-1/3',
       renderCell: (dialog) => (
-        <div className="flex flex-col justify-center w-80 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
-            {dialog.topic}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+          {dialog.topic}
+        </span>
       )
     },
     {
       key: 'source',
       label: 'SOURCE',
-      width: 'w-40',
+      width: 'w-1/6',
       renderCell: (dialog) => (
-        <div className="flex flex-col justify-center w-40 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
-            {dialog.source}
-          </span>
-        </div>
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
+          {dialog.source}
+        </span>
       )
     },
     {
       key: 'slaCountdown',
       label: 'SLA COUNTDOWN',
-      width: 'w-32',
+      width: 'w-1/6',
       renderCell: (dialog) => (
-        <div className="flex flex-col justify-center w-32 shrink-0">
-          <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-ods-text-secondary truncate">
-            {dialog.slaCountdown}
-          </span>
-        </div>
+        <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-ods-text-secondary truncate">
+          {dialog.slaCountdown}
+        </span>
       )
     },
     {
       key: 'status',
       label: 'STATUS',
-      width: 'w-40',
+      width: 'w-1/6',
       filterable: true,
       renderCell: (dialog) => {
-        const statusColors = {
-          'TECH_REQUIRED': "bg-ods-accent border-accent-primary font-['Azeret_Mono'] font-normal text-text-on-accent",
-          'ON_HOLD': "bg-error/20 border-error text-error font-['Azeret_Mono'] font-normal text-text-on-accent",
-          'ACTIVE': "bg-success border-success text-success font-['Azeret_Mono'] font-normal text-text-on-accent",
-          'RESOLVED': 'bg-success/20 text-success border-success/30'
+        const getStatusVariant = (status: string) => {
+          switch (status) {
+            case 'TECH_REQUIRED':
+              return 'info' as const
+            case 'ON_HOLD':
+              return 'error' as const
+            case 'ACTIVE':
+              return 'warning' as const
+            case 'RESOLVED':
+              return 'success' as const
+            default:
+              return 'info' as const
+          }
         }
+
         return (
-          <div className="flex flex-col items-start gap-1 w-40 shrink-0">
-            <span className={`px-2 py-1 rounded-md text-[14px] font-medium border ${
-              statusColors[dialog.status as keyof typeof statusColors] || 'bg-ods-bg-surface/20 text-ods-text-muted border-ods-border/30'
-            }`}>
-              {dialog.status.replace('_', ' ')}
-            </span>
+          <div className="shrink-0">
+            <StatusTag
+              label={dialog.status.replace('_', ' ')}
+              variant={getStatusVariant(dialog.status)}
+            />
           </div>
         )
       }

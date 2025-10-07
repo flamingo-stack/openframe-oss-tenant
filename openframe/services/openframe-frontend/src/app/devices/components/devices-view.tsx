@@ -94,7 +94,8 @@ export function DevicesView() {
       searchValue={searchTerm}
       onSearch={setSearchTerm}
       error={error}
-      padding="sm"
+      padding="none"
+      className="pt-6"
     >
       {/* Conditional View Rendering */}
       {viewMode === 'table' ? (

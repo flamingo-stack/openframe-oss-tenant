@@ -9,7 +9,7 @@ import { SettingsView } from './components/settings-view'
 export default function Settings() {
   return (
     <AppLayout>
-      <ContentPageContainer padding='none'>
+      <ContentPageContainer padding='none' showHeader={false}>
         <SettingsView />
       </ContentPageContainer>
     </AppLayout>

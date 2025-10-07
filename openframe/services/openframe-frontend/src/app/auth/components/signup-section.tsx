@@ -37,13 +37,16 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
   const [signupMethod, setSignupMethod] = useState<'form' | 'sso'>('form')
 
   const displayDomain = isSaasShared ? domain : domain
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const isEmailValid = emailRegex.test(email.trim())
   
   const getTitle = () => 'Create Organization'
   const getSubtitle = () => 'Start your journey with OpenFrame'
   const getButtonText = () => isSaasShared ? 'Start Free Trial' : 'Create Organization'
 
   const handleSubmit = () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || password !== confirmPassword) {
+    if (!firstName.trim() || !lastName.trim() || !isEmailValid || !password || password !== confirmPassword) {
       return
     }
 
@@ -66,7 +69,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
     }
   }
 
-  const isFormValid = firstName.trim() && lastName.trim() && email.trim() && 
+  const isFormValid = firstName.trim() && lastName.trim() && isEmailValid && 
                      password && confirmPassword && password === confirmPassword
 
   // SSO providers for cloud deployment
@@ -172,6 +175,9 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
               />
+              {email.trim() && !isEmailValid && (
+                <p className="text-xs text-error mt-1">Enter a valid email address</p>
+              )}
             </div>
 
             <div className="flex flex-col md:flex-row gap-6">

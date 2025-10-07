@@ -3,6 +3,7 @@
 import { useCallback, useMemo, Suspense, useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { NavigationSidebar } from '@flamingo/ui-kit/components/navigation'
+import { AppHeader } from '@flamingo/ui-kit/components/navigation'
 import type { NavigationSidebarConfig } from '@flamingo/ui-kit/types/navigation'
 import { useAuthStore } from '../auth/stores/auth-store'
 import { useAuth } from '../auth/hooks/use-auth'
@@ -11,7 +12,6 @@ import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, is
 import { UnauthorizedOverlay } from './unauthorized-overlay'
 import { PageLoader, CompactPageLoader } from '@flamingo/ui-kit/components/ui'
 
-// Loading component for content area
 function ContentLoading() {
   return <CompactPageLoader />
 }
@@ -20,25 +20,22 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { logout } = useAuth()
+  const user = useAuthStore(state => state.user)
 
-  // Memoize navigation handler to prevent recreating on every render
   const handleNavigate = useCallback((path: string) => {
     router.push(path)
   }, [router])
 
-  // Memoize logout handler to prevent recreating on every render
   const handleLogout = useCallback(async () => {
     await logout()
     router.push(getDefaultRedirectPath(false))
   }, [logout, router])
 
-  // Memoize navigation items to only update when pathname or handleLogout changes
   const navigationItems = useMemo(
     () => getNavigationItems(pathname, handleLogout),
     [pathname, handleLogout]
   )
 
-  // Memoize sidebar config to prevent recreating on every render
   const sidebarConfig: NavigationSidebarConfig = useMemo(
     () => ({
       items: navigationItems,
@@ -57,8 +54,17 @@ function AppShell({ children }: { children: React.ReactNode }) {
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* App Header */}
+        <AppHeader
+          showNotifications
+          showUser
+          userName={user?.name}
+          userEmail={user?.email}
+          onProfile={() => router.push('/settings/?tab=profile')}
+          onLogout={logout}
+        />
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 pt-0">
           <Suspense fallback={<ContentLoading />}>
             {children}
           </Suspense>
