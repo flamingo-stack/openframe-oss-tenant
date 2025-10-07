@@ -56,7 +56,7 @@ impl ToolCommandParamsResolver {
         ASSETS_PATH_REGEX.replace_all(arg, |caps: &regex::Captures| {
             let asset_name = &caps[1];
             self.directory_manager
-                .get_asset_path(tool_agent_id, asset_name)
+                .get_asset_path(tool_agent_id, asset_name, true) // Assets referenced in commands are typically executable
                 .to_string_lossy()
                 .into_owned()
         }).to_string()

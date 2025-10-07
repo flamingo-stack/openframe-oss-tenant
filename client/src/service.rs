@@ -9,9 +9,76 @@ use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::{logging, platform::DirectoryManager, Client};
 use crate::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
 
+#[cfg(windows)]
+use windows_service::{
+    define_windows_service, service_dispatcher,
+    service::{ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus, ServiceType},
+    service_control_handler::{self, ServiceControlHandlerResult},
+};
+
 const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
+
+// Define the Windows service entry point
+#[cfg(windows)]
+define_windows_service!(ffi_service_main, windows_service_main);
+
+/// Windows service main function - called by SCM
+#[cfg(windows)]
+fn windows_service_main(_args: Vec<std::ffi::OsString>) {
+    // Register the service with SCM
+    let status_handle = match service_control_handler::register("com.openframe.client", |_| {
+        ServiceControlHandlerResult::NoError
+    }) {
+        Ok(handle) => handle,
+        Err(e) => {
+            eprintln!("Failed to register service control handler: {:?}", e);
+            return;
+        }
+    };
+
+    // Report that the service is running
+    let status = ServiceStatus {
+        service_type: ServiceType::OWN_PROCESS,
+        current_state: ServiceState::Running,
+        controls_accepted: ServiceControlAccept::STOP,
+        exit_code: ServiceExitCode::Win32(0),
+        checkpoint: 0,
+        wait_hint: std::time::Duration::default(),
+        process_id: None,
+    };
+
+    if let Err(e) = status_handle.set_service_status(status) {
+        eprintln!("Failed to set service status: {:?}", e);
+        return;
+    }
+
+    // Create a Tokio runtime and run the service core
+    let rt = match Runtime::new() {
+        Ok(runtime) => runtime,
+        Err(e) => {
+            eprintln!("Failed to create Tokio runtime: {:?}", e);
+            return;
+        }
+    };
+
+    if let Err(e) = rt.block_on(Service::run()) {
+        eprintln!("Service core failed: {:?}", e);
+        
+        // Report stopped status on error
+        let stopped_status = ServiceStatus {
+            service_type: ServiceType::OWN_PROCESS,
+            current_state: ServiceState::Stopped,
+            controls_accepted: ServiceControlAccept::empty(),
+            exit_code: ServiceExitCode::Win32(1),
+            checkpoint: 0,
+            wait_hint: std::time::Duration::default(),
+            process_id: None,
+        };
+        let _ = status_handle.set_service_status(stopped_status);
+    }
+}
 
 pub struct Service;
 
@@ -162,7 +229,7 @@ impl Service {
     }
 
     /// Run as a service on the current platform
-    pub async fn run_as_service() -> Result<()> {
+    pub fn run_as_service() -> Result<()> {
         // Check if we have necessary capabilities for running as a service
         if !PermissionUtils::has_capability(Capability::ManageServices)
             && !PermissionUtils::has_capability(Capability::WriteSystemDirectories)
@@ -181,7 +248,22 @@ impl Service {
 
         info!("Running as {} service", platform);
 
-        // For all platforms, run the main service function
-        Self::run().await
+        // Windows: use service dispatcher to properly initialize as a service
+        #[cfg(windows)]
+        {
+            info!("Starting Windows service dispatcher");
+            // This call blocks and never returns while the service is running
+            // The actual service logic runs in windows_service_main()
+            service_dispatcher::start("com.openframe.client", ffi_service_main)
+                .context("Failed to start service dispatcher")?;
+            return Ok(());
+        }
+
+        // For Unix-like platforms (macOS, Linux), run directly with async runtime
+        #[cfg(not(windows))]
+        {
+            let rt = Runtime::new().context("Failed to create Tokio runtime")?;
+            rt.block_on(Self::run())
+        }
     }
 }

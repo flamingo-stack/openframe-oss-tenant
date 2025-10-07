@@ -154,7 +154,7 @@ impl Client {
 
         // Initialize HTTP client
         let http_client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(30))
+            .timeout(Duration::from_secs(120))
             // disable TLS verification for dev mode only
             .danger_accept_invalid_certs(initial_configuration_service.is_local_mode()?)
             .no_proxy()

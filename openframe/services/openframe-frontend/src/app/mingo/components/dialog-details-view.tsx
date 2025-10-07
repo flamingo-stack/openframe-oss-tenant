@@ -3,23 +3,18 @@
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import {
-  ChevronLeft,
-  MoreHorizontal,
   Clock,
   CheckCircle,
-  Pause,
-  Send,
   Monitor
 } from 'lucide-react'
-import { MessageCircleIcon } from '@flamingo/ui-kit'
+import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer } from '@flamingo/ui-kit'
 import { Button } from '@flamingo/ui-kit'
 import { DetailLoader } from '@flamingo/ui-kit/components/ui'
-import { mockDialogDetails, type DialogDetails, type DialogMessage } from '../data/mock-dialog-details'
+import { mockDialogDetails, type DialogDetails } from '../data/mock-dialog-details'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
   const [dialog, setDialog] = useState<DialogDetails | null>(null)
-  const [messageInput, setMessageInput] = useState('')
   const [isPaused, setIsPaused] = useState(false)
 
   useEffect(() => {
@@ -27,16 +22,35 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     setIsPaused(mockDialogDetails.isFaePaused)
   }, [dialogId])
 
-  const handleSendMessage = () => {
-    if (messageInput.trim() && isPaused) {
-      console.log('Sending message:', messageInput)
-      setMessageInput('')
-    }
+  const handleSendMessage = (text: string) => {
+    if (!isPaused) return
+    const message = text.trim()
+    if (!message) return
+    console.log('Sending message:', message)
   }
 
-  const handlePauseFae = () => {
-    setIsPaused(!isPaused)
-  }
+  const headerActions = (
+    <div className="flex gap-4 items-center">
+      <Button
+        variant="ghost"
+        className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+        leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
+      >
+        <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
+          Put On Hold
+        </span>
+      </Button>
+      <Button
+        variant="ghost"
+        className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+        leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
+      >
+        <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
+          Resolve
+        </span>
+      </Button>
+    </div>
+  )
 
   if (!dialog) {
     return <DetailLoader />
@@ -58,180 +72,106 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-ods-bg">
-      {/* Header */}
-      <div className="bg-ods-bg px-6 pt-6 pb-0">
-        <div className="flex gap-4 items-end justify-between">
-          {/* Title Block */}
-          <div className="flex-1 flex flex-col gap-2">
-            <Button variant="ghost"
-              onClick={() => router.push('/mingo')}
-              className="text-ods-text-secondary hover:text-ods-text-primary transition-colors py-3"
-              leftIcon={<ChevronLeft className="h-6 w-6" />}
-            >
-              <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px]">
-                Back to Chats
-              </span>
-            </Button>
-            <h1 className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] text-ods-text-primary tracking-[-0.64px]">
-              {dialog.topic}
-            </h1>
-            <p className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-secondary">
-              2 hours left
-            </p>
+    <DetailPageContainer
+      title={dialog.topic}
+      backButton={{
+        label: 'Back to Chats',
+        onClick: () => router.push('/mingo')
+      }}
+      padding="none"
+      className="h-full pt-6"
+      headerActions={headerActions}
+      contentClassName="flex flex-col min-h-0"
+    >
+      {/* Info Bar */}
+      <div className="mt-6 bg-ods-card border border-ods-border rounded-md p-4 flex items-center gap-4">
+        {/* Organization */}
+        <div className="flex items-center gap-4 flex-1">
+          <div className="w-8 h-8 bg-ods-bg-surface rounded flex items-center justify-center">
+            <span className="text-ods-text-secondary text-sm">P</span>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 items-center">
-            <Button
-              variant="ghost"
-              className="bg-ods-card border border-ods-border rounded-md p-3 hover:bg-ods-bg-hover transition-colors"
-              leftIcon={<MoreHorizontal className="h-6 w-6 text-ods-text-primary" />}
-            />
-            <Button
-              variant="ghost"
-              className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-              leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
-            >
-              <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-                Put On Hold
-              </span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-              leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
-            >
-              <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-                Resolve
-              </span>
-            </Button>
+          <div className="flex flex-col">
+            <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
+              {dialog.organization.name}
+            </span>
+            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
+              {dialog.organization.type}
+            </span>
           </div>
         </div>
 
-        {/* Info Bar */}
-        <div className="mt-6 bg-ods-card border border-ods-border rounded-md p-4 flex items-center gap-4">
-          {/* Organization */}
-          <div className="flex items-center gap-4 flex-1">
-            <div className="w-8 h-8 bg-ods-bg-surface rounded flex items-center justify-center">
-              <span className="text-ods-text-secondary text-sm">P</span>
-            </div>
-            <div className="flex flex-col">
+        {/* Device */}
+        <div className="flex items-center gap-4 flex-1">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1">
               <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-                {dialog.organization.name}
+                {dialog.device.name}
               </span>
-              <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-                {dialog.organization.type}
-              </span>
+              <Monitor className="h-4 w-4 text-ods-text-secondary" />
             </div>
-          </div>
-
-          {/* Device */}
-          <div className="flex items-center gap-4 flex-1">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1">
-                <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-                  {dialog.device.name}
-                </span>
-                <Monitor className="h-4 w-4 text-ods-text-secondary" />
-              </div>
-              <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-                Device
-              </span>
-            </div>
-          </div>
-
-          {/* SLA Countdown */}
-          <div className="flex flex-col flex-1">
-            <span className="font-['DM_Sans'] font-medium text-[18px] text-error">
-              {dialog.slaCountdown}
-            </span>
             <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-              SLA Countdown
+              Device
             </span>
           </div>
+        </div>
 
-          {/* Status */}
-          <div className="flex items-center">
-            <div className={`px-2 py-2 rounded-md ${getStatusColor(dialog.status)}`}>
-              <span className="font-['Azeret_Mono'] font-medium text-[14px] uppercase tracking-[-0.28px]">
-                {dialog.status.replace('_', ' ')}
-              </span>
-            </div>
+        {/* SLA Countdown */}
+        <div className="flex flex-col flex-1">
+          <span className="font-['DM_Sans'] font-medium text-[18px] text-error">
+            {dialog.slaCountdown}
+          </span>
+          <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
+            SLA Countdown
+          </span>
+        </div>
+
+        {/* Status */}
+        <div className="flex items-center">
+          <div className={`px-2 py-2 rounded-md ${getStatusColor(dialog.status)}`}>
+            <span className="font-['Azeret_Mono'] font-medium text-[14px] uppercase tracking-[-0.28px]">
+              {dialog.status.replace('_', ' ')}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Chat Section */}
-      <div className="flex-1 flex gap-6 p-6 overflow-hidden">
+      <div className="flex-1 flex gap-6 pt-6 min-h-0">
         {/* Client Chat */}
-        <div className="flex-1 flex flex-col gap-1">
+        <div className="flex-1 flex flex-col gap-1 min-h-0">
           <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px] mb-2">
             Client Chat
           </h2>
-          <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col">
-            {/* Messages */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-4">
-              {dialog.clientMessages.map((message) => (
-                <div key={message.id} className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <span className={`font-['Azeret_Mono'] font-medium text-[18px] ${
-                      message.sender === 'fae' ? 'text-ods-flamingo-pink-base' : 'text-ods-text-secondary'
-                    }`}>
-                      {message.senderName}:
-                    </span>
-                    <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-                      {message.timestamp}
-                    </span>
-                  </div>
-                  <p className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-                    {message.content}
-                  </p>
-                </div>
-              ))}
-            </div>
+          {/* Messages card */}
+          <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
+            <ChatMessageList
+              className=""
+              messages={dialog.clientMessages.map(m => ({
+                id: m.id,
+                role: m.sender === 'user' ? 'user' : 'assistant',
+                name: m.senderName,
+                content: m.content,
+                timestamp: new Date()
+              }))}
+              autoScroll
+              showAvatars={false}
+            />
+          </div>
 
-            {/* Pause Fae Button */}
-            {!isPaused && (
-              <div className="absolute top-4 right-4">
-                <Button variant="ghost"
-                  onClick={handlePauseFae}
-                  className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors"
-                >
-                  <Pause className="h-6 w-6 text-ods-text-primary" />
-                  <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-                    Pause Fae
-                  </span>
-                </Button>
-              </div>
-            )}
-
-            {/* Input */}
-            <div className="p-3">
-              <div className="bg-ods-bg border border-ods-border rounded-md flex items-center px-3 py-3 gap-2">
-                <input
-                  type="text"
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder={isPaused ? "Type your message..." : "You should pause Fae to Start Direct Chat"}
-                  disabled={!isPaused}
-                  className="flex-1 bg-transparent font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary placeholder:text-ods-text-disabled focus:outline-none disabled:cursor-not-allowed"
-                />
-                <Button variant="ghost" 
-                  onClick={handleSendMessage}
-                  disabled={!isPaused || !messageInput.trim()}
-                  className="text-ods-text-secondary hover:text-ods-text-primary disabled:text-ods-text-disabled disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="h-6 w-6" />
-                </Button>
-              </div>
-            </div>
+          {/* Input */}
+          <div className="mt-3">
+            <ChatInput
+              placeholder={isPaused ? 'Type your message...' : 'You should pause Fae to Start Direct Chat'}
+              sending={!isPaused}
+              onSend={handleSendMessage}
+              reserveAvatarOffset={false}
+              className="!mx-0 max-w-none"
+            />
           </div>
         </div>
 
         {/* Technician Chat */}
-        <div className="flex-1 flex flex-col gap-1">
+        <div className="flex-1 flex flex-col gap-1 min-h-0">
           <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px] mb-2">
             Technician Chat
           </h2>
@@ -245,22 +185,11 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
               </div>
               <p className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary max-w-xs">
                 This chat has not yet required technician involved.
-                <br />
-                You can still pause Fae and start a direct chat with the user.
               </p>
-              <Button variant="ghost"
-                onClick={handlePauseFae}
-                className="bg-ods-card border border-ods-border rounded-md px-4 py-3 flex items-center gap-2 hover:bg-ods-bg-hover transition-colors"
-              >
-                <MessageCircleIcon className="h-6 w-6 text-ods-text-primary" />
-                <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-                  Pause Fae and Start Direct Chat
-                </span>
-              </Button>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </DetailPageContainer>
   )
 }

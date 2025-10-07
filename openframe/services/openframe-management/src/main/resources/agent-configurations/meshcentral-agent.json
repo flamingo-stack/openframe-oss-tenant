@@ -16,13 +16,15 @@
     {
       "id": "meshcentral-core-module",
       "localFilename": "CoreModule.js",
-      "source": "ARTIFACTORY"
+      "source": "ARTIFACTORY",
+      "executable": false
     },
     {
       "id": "msh-configuration",
       "localFilename": "agent.msh",
       "source": "TOOL_API",
-      "path": "/openframe_public/meshagent.msh"
+      "path": "/openframe_public/meshagent.msh",
+      "executable": false
     }
   ]
 }

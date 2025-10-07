@@ -98,7 +98,7 @@ tests:
   # DEPLOYMENT TYPE CONSISTENCY
   # ========================================
 
-  - it: should generate saas-tools project for SaaS deployment
+  - it: should generate project for SaaS deployment
     set:
       deployment.oss.enabled: false
       deployment.saas.enabled: true
@@ -106,7 +106,7 @@ tests:
       deployment.saas.ingress.gcp.enabled: false
     asserts:
       - hasDocuments:
-          count: 6  # One additional project for SaaS
+          count: 5  # One additional project for SaaS
       - equal:
           path: metadata.name
           value: platform
@@ -127,10 +127,6 @@ tests:
           path: metadata.name
           value: client-tools
         documentIndex: 4
-      - equal:
-          path: metadata.name
-          value: saas-tools
-        documentIndex: 5
 
   # ========================================
   # PROJECT DESCRIPTIONS VALIDATION

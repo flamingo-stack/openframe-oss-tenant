@@ -116,6 +116,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           onClick: handleBack
         }}
         headerActions={headerActions}
+        padding='none'
+        className='pt-6'
       >
         {/* Status Badge */}
         <div className={`flex gap-2 items-center pl-6 ${isRemoteShellOpen || isRemoteDesktopOpen ? 'hidden' : ''}`}>

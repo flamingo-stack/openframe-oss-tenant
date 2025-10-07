@@ -22,7 +22,8 @@
     {
       "id": "osqueryd",
       "localFilename": "osqueryd",
-      "source": "ARTIFACTORY"
+      "source": "ARTIFACTORY",
+      "executable": true
     }
   ]
 }

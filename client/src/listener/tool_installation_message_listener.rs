@@ -105,7 +105,7 @@ impl ToolInstallationMessageListener {
             filter_subject,
             deliver_subject,
             durable_name: Some(durable_name),
-            ack_wait: Duration::from_secs(60),
+            ack_wait: Duration::from_secs(300),
             ..Default::default()
         }
     }

@@ -9,7 +9,7 @@ import { MingoView } from './components/mingo-view'
 export default function Mingo() {
   return (
     <AppLayout>
-      <ContentPageContainer padding="none">
+      <ContentPageContainer padding="none" showHeader={false}>
         <MingoView />
       </ContentPageContainer>
     </AppLayout>
