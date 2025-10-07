@@ -23,7 +23,7 @@ export function DevicesGrid({
   onDeviceDetails 
 }: DevicesGridProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-4">
       {(filters.statuses?.length || filters.deviceTypes?.length || filters.osTypes?.length) ? (
         <div className="flex flex-wrap gap-2">
           {filters.statuses?.map(status => (
