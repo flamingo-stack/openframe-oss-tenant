@@ -19,13 +19,13 @@ on:
       - 'client/**'
   workflow_call:
     inputs:
-      tag:
+      version:
         description: "Tag to release (e.g., v1.2.3)"
         required: true
         type: string
   workflow_dispatch:
     inputs:
-      tag:
+      version:
         description: "Tag to release (e.g., v1.2.3)"
         required: true
         type: string
