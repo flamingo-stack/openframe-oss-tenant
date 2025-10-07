@@ -68,7 +68,7 @@ jobs:
   changes:
     name: Detect Changes
     needs: [update-version]
-    if: always() && !cancelled()
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
     uses: ./.github/workflows/changes.yml
 
   matrix:
