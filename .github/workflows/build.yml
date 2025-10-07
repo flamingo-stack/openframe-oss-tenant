@@ -10,8 +10,7 @@ permissions:
 
 on:
   push:
-    branches: 
-      - main
+    branches: [main]
     paths:
       - 'manifests/**'
       - 'openframe/**'
