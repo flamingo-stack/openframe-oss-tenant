@@ -2,6 +2,7 @@
 
 import { DashboardInfoCard, LogsList } from '@flamingo/ui-kit'
 import type { LogEntry, LogSeverity, ToolType } from '@flamingo/ui-kit'
+import { toUiKitToolType } from '@lib/tool-labels'
 import { useLogsOverview } from '../hooks/use-dashboard-stats'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
@@ -25,29 +26,25 @@ export function LogsOverviewSection() {
     if (!rawLogs || rawLogs.length === 0) return []
 
     return rawLogs.slice(0, 10).map((log): LogEntry => {
-      const mapToolType = (toolType: string): ToolType => {
-        const typeMap: Record<string, ToolType> = {
-          'TACTICAL': 'tactical',
-          'MESHCENTRAL': 'meshcentral',
-          'FLEET': 'fleet'
-        }
-        return typeMap[toolType] || 'unknown'
-      }
-
       return {
         id: log.toolEventId,
         severity: (log.severity || 'INFO') as LogSeverity,
         title: log.summary || log.eventType || 'Log Entry',
         timestamp: log.timestamp,
-        toolType: mapToolType(log.toolType || ''),
-        message: log.message
+        toolType: toUiKitToolType(log.toolType || '') as ToolType,
+        message: log.message,
+        ingestDay: log.ingestDay,
+        eventType: log.eventType
       }
     })
   }, [rawLogs])
 
   const handleLogClick = (log: LogEntry) => {
-    // Navigate to log details page
-    router.push(`/log-details?id=${log.id}`)
+    router.push(`/log-details?id=${log.id}&ingestDay=${log.ingestDay}&toolType=${log.toolType?.toUpperCase()}&eventType=${log.eventType}&timestamp=${encodeURIComponent(log.timestamp.toString() || '')}`)
+  }
+
+  const handleInfoCardClick = () => {
+    router.push(`/logs-page`)
   }
 
   return (
@@ -70,6 +67,7 @@ export function LogsOverviewSection() {
             percentage={logs.infoPercentage}
             showProgress
             progressColor="#5ea62e"
+            onClick={handleInfoCardClick}
           />
           <DashboardInfoCard
             title="Warning Logs"
@@ -77,6 +75,7 @@ export function LogsOverviewSection() {
             percentage={logs.warningPercentage}
             showProgress
             progressColor="#d29b2e"
+            onClick={handleInfoCardClick}
           />
           <DashboardInfoCard
             title="Critical Logs"
@@ -84,6 +83,7 @@ export function LogsOverviewSection() {
             percentage={logs.criticalPercentage}
             showProgress
             progressColor="#b43b3b"
+            onClick={handleInfoCardClick}
           />
         </div>
 

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect, useMemo } from "react"
+import { toStandardToolLabel } from '@lib/tool-labels'
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -43,7 +44,7 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: 'Tactical',
+      addedBy: toStandardToolLabel('TACTICAL'),
       category: script.category,
       timeout: script.default_timeout
     }))
@@ -88,8 +89,8 @@ export function ScriptsTable() {
       width: 'w-1/6',
       filterable: true,
       filterOptions: [
-        { id: 'TACTICAL', label: 'Tactical RMM', value: 'TACTICAL' },
-        { id: 'FLEET', label: 'Fleet MDM', value: 'FLEET' },
+        { id: 'TACTICAL', label: toStandardToolLabel('TACTICAL'), value: 'TACTICAL' },
+        { id: 'FLEET', label: toStandardToolLabel('FLEET'), value: 'FLEET' },
       ],
       renderCell: (script) => (
         <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">

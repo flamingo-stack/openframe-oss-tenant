@@ -20,7 +20,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
     <div className="bg-ods-card border border-ods-border rounded-lg p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div>
-        <p className="text-ods-text-primary font-medium">Laptop</p>
+        <p className="text-ods-text-primary font-medium">{device.type || 'Unknown'}</p>
           <p className="text-ods-text-secondary text-sm mb-1">Type</p>
         </div>
         <div>
@@ -50,7 +50,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           <p className="text-ods-text-primary font-medium">
             {device.registeredAt ? 
               `${new Date(device.registeredAt).toLocaleDateString()} ${new Date(device.registeredAt).toLocaleTimeString()}` : 
-              '2024-11-12 09:43:00'
+              'Unknown'
             }
           </p>
           <p className="text-ods-text-secondary text-xs mt-1">Registered</p>
@@ -61,7 +61,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
               `${new Date(device.updatedAt).toLocaleDateString()} ${new Date(device.updatedAt).toLocaleTimeString()}` :
               device.lastSeen ? 
                 `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}` : 
-                '2025-07-22 14:17:05'
+                'Unknown'
             }
           </p>
           <p className="text-ods-text-secondary text-xs mt-1">Updated</p>
