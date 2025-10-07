@@ -80,7 +80,7 @@ export function useAuth() {
       const user = {
         id: userData.id || userData.userId || '',
         email: userData.email || email || '',
-        name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || '',
+        name: userData.name || userData.displayName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || '',
         organizationId: userData.organizationId || userData.tenantId || tenantInfo?.tenantId,
         organizationName: userData.organizationName || userData.tenantName || tenantInfo?.tenantName,
         role: userData.role || 'user'
