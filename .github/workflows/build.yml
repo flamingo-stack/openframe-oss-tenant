@@ -54,7 +54,7 @@ jobs:
       - name: Update root pom.xml
         run: |
           VERSION="${{ inputs.version }}"
-          sed -i "s|<openframe.version>.*</openframe.version>|<openframe.version>${VERSION}</openframe.version>|g" pom.xml
+          sed -i "s|<openframe.libs.version>.*</openframe.libs.version>|<openframe.libs.version>${VERSION}</openframe.libs.version>|g" pom.xml
           echo "Updated to version: $VERSION"
 
       - name: Commit version change
