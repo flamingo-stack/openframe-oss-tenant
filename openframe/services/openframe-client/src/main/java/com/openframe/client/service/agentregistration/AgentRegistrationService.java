@@ -79,6 +79,7 @@ public class AgentRegistrationService {
         machine.setHostname(request.getHostname());
         machine.setIp(request.getIp());
         machine.setMacAddress(request.getMacAddress());
+        machine.setOsType(request.getOsType());
         machine.setOsUuid(request.getOsUuid());
         machine.setAgentVersion(request.getAgentVersion());
         machine.setLastSeen(Instant.now());
