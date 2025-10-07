@@ -27,7 +27,7 @@ metadata:
   name: openframe-gateway
 spec:
   parentRefs:
-    - name: internal-gateway
+    - name: "{{ .Values.deployment.saas.ingress.gcp.tenantID }}-internal-gateway"
       namespace: platform
   hostnames:
     - "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
