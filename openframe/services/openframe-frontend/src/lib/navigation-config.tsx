@@ -3,7 +3,6 @@ import {
   DashboardIcon,
   DevicesIcon,
   SettingsIcon, 
-  LogOutIcon,
   LogsIcon,
   ScriptIcon,
   MingoIcon,
@@ -69,13 +68,6 @@ export const getNavigationItems = (
       icon: <SettingsIcon className="w-5 h-5" />,
       path: '/settings',
       isActive: pathname === '/settings/',
-      section: 'secondary'
-    },
-    {
-      id: 'logout',
-      label: 'Logout',
-      icon: <LogOutIcon className="w-5 h-5" />,
-      onClick: onLogout,
       section: 'secondary'
     }
   ]

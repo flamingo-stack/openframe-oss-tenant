@@ -11,6 +11,9 @@ import { OS_PLATFORMS, DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo/
 
 type Platform = OSPlatformId
 
+const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe'
+const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe.exe'
+
 export default function NewDevicePage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -38,10 +41,16 @@ export default function NewDevicePage() {
   }, [addArgument])
 
   const command = useMemo(() => {
-    const base = `sudo ./target/debug/openframe install --serverUrl localhost --initialKey ${initialKey} --localMode`
+    const baseArgs = `install --serverUrl localhost --initialKey ${initialKey} --localMode --orgId test_org`
     const extras = args.length ? ' ' + args.join(' ') : ''
-    return base + extras
-  }, [initialKey, args])
+
+    if (platform === 'windows') {
+      const argString = `${baseArgs}${extras}`
+      return `$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe.exe'; Start-Process -FilePath '.\\openframe.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
+    }
+
+    return `curl -L -o openframe '${MACOS_BINARY_URL}' && chmod +x ./openframe && sudo ./openframe ${baseArgs}${extras}`
+  }, [initialKey, args, platform])
 
   const copyCommand = useCallback(async () => {
     try {
@@ -62,6 +71,7 @@ export default function NewDevicePage() {
         title="New Device"
         backButton={{ label: 'Back to Devices', onClick: () => router.push('/devices') }}
         padding='none'
+        className='pt-6'
       >
         <div className="flex flex-col gap-6">
           {/* Top row: Organization and Platform */}

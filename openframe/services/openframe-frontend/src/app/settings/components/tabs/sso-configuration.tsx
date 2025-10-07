@@ -149,16 +149,6 @@ export function SsoConfigurationTab() {
     }
   ], [])
 
-  const headerActions = (
-    <Button
-      onClick={loadData}
-      leftIcon={<RefreshIcon size={20} />}
-      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-    >
-      Refresh
-    </Button>
-  )
-
   if (error) {
     return <PageError message={error} />
   }
@@ -166,7 +156,6 @@ export function SsoConfigurationTab() {
   return (
     <ListPageContainer
       title="SSO Configurations"
-      headerActions={headerActions}
       background="default"
       padding='none'
       className='pt-6'

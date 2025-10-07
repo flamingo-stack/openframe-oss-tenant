@@ -11,6 +11,7 @@ import {
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
+import { ToolIcon } from "@flamingo/ui-kit/components/tool-icon"
 import { MoreHorizontal } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useLogs } from '../hooks/use-logs'
@@ -26,6 +27,7 @@ interface UILogEntry {
   }
   source: {
     name: string
+    toolType: string
     icon?: React.ReactNode
   }
   device: {
@@ -54,30 +56,42 @@ export function LogsTable() {
 
   // Transform API logs to UI format
   const transformedLogs: UILogEntry[] = useMemo(() => {
-    return logs.map((log) => ({
-      id: log.toolEventId,
-      logId: log.toolEventId,
-      timestamp: new Date(log.timestamp).toLocaleString(),
-      status: {
-        label: log.severity,
-        variant: log.severity === 'ERROR' ? 'error' as const :
-                log.severity === 'WARNING' ? 'warning' as const :
-                log.severity === 'INFO' ? 'info' as const : 
-                log.severity === 'CRITICAL' ? 'critical' as const : 'success' as const
-      },
-      source: {
-        name: log.toolType
-      },
-      device: {
-        name: log.deviceId || 'Unknown Device',
-        organization: log.userId || undefined
-      },
-      description: {
-        title: log.summary || 'No summary available',
-        details: log.details
-      },
-      originalLogEntry: log
-    }))
+    return logs.map((log) => {
+      const mapToolType = (toolType: string) => {
+        const typeMap: Record<string, string> = {
+          'TACTICAL': 'tactical',
+          'MESHCENTRAL': 'meshcentral',
+          'FLEET': 'fleet'
+        }
+        return typeMap[toolType] || 'unknown'
+      }
+
+      return {
+        id: log.toolEventId,
+        logId: log.toolEventId,
+        timestamp: new Date(log.timestamp).toLocaleString(),
+        status: {
+          label: log.severity,
+          variant: log.severity === 'ERROR' ? 'error' as const :
+                  log.severity === 'WARNING' ? 'warning' as const :
+                  log.severity === 'INFO' ? 'info' as const : 
+                  log.severity === 'CRITICAL' ? 'critical' as const : 'success' as const
+        },
+        source: {
+          name: log.toolType,
+          toolType: mapToolType(log.toolType)
+        },
+        device: {
+          name: log.deviceId || 'Unknown Device',
+          organization: log.userId || undefined
+        },
+        description: {
+          title: log.summary || 'No summary available',
+          details: log.details
+        },
+        originalLogEntry: log
+      }
+    })
   }, [logs])
 
   const columns: TableColumn<UILogEntry>[] = useMemo(() => [
@@ -132,11 +146,11 @@ export function LogsTable() {
       ],
       renderCell: (log) => (
         <div className="flex flex-col justify-center shrink-0">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
               {log.source.name}
             </span>
-            {log.source.icon}
+            <ToolIcon toolType={log.source.toolType as any} size={16} />
           </div>
         </div>
       )
@@ -275,7 +289,8 @@ export function LogsTable() {
       onSearch={setSearchTerm}
       error={error}
       background="default"
-      padding="sm"
+      padding="none"
+      className="pt-6"
     >
       {/* Table */}
       <Table

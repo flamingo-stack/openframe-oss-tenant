@@ -91,24 +91,3 @@ spec:
   clusterResourceWhitelist:
   - group: '*'
     kind: '*'
-
-{{- if .Values.deployment.saas.enabled }}
----
-
-apiVersion: argoproj.io/v1alpha1
-kind: AppProject
-metadata:
-  name: saas-tools
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  description: Project for saas client-tools apps.
-  sourceRepos:
-  - '*'
-  destinations:
-  - namespace: '*'
-    server: '*'
-  clusterResourceWhitelist:
-  - group: '*'
-    kind: '*'
-{{- end }}

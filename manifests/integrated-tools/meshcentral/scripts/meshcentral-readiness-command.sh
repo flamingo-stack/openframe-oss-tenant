@@ -34,7 +34,7 @@ check_mongodb_readiness() {
     
     # Execute readiness check with timeout
     local result
-    result=$(timeout 5 mongosh "${connection_string}" --quiet --eval '
+    result=$(timeout 15 mongosh "${connection_string}" --quiet --eval '
         try {
             // First check basic connectivity
             const ping = db.adminCommand({ ping: 1 });

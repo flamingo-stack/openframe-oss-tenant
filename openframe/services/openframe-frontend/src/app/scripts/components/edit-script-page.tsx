@@ -245,9 +245,9 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         onClick: handleBack
       }}
       headerActions={headerActions}
+      padding='none'
     >
-
-        <div className="space-y-10 pt-10">
+        <div className="space-y-10">
           {/* Supported Platform Section */}
           <div className="space-y-1">
             <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</label>

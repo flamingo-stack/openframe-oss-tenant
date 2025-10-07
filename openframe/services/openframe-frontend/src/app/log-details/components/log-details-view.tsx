@@ -124,7 +124,8 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
   return (
     <DetailPageContainer
       headerContent={customHeaderContent}
-      contentClassName="px-6"
+      padding="none"
+      className="pt-6"
     >
       <div className="flex flex-col gap-6 w-full">
         {/* Status and Timestamp */}
