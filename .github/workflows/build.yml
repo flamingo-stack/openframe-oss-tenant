@@ -80,22 +80,24 @@ jobs:
     name: "Build: ${{ matrix.name }}"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
-    if: |
-      ((github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.version != '') ||
-      (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.version != ''
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
+          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Log in to GitHub Container Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
+          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -103,7 +105,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
-        if: contains(needs.changes.outputs[matrix.name], 'true')
+        if: |
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
+          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
@@ -190,7 +194,7 @@ jobs:
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: openframe
-    if: github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && contains(needs.changes.outputs.client, 'true')
     defaults:
       run:
         shell: bash
@@ -348,7 +352,7 @@ jobs:
         id: docker_images
         run: |
           MATRIX='${{ needs.matrix.outputs.matrix }}'
-          TAG="${{ github.event.inputs.tag }}"
+          TAG="${{ github.event.inputs.version }}"
 
           IMAGE_LIST=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
             --arg org "$ORGANISATION" \
@@ -378,8 +382,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: Release ${{ github.event.inputs.tag }}
+          tag_name: ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
           draft: false
           prerelease: false
           files: |
