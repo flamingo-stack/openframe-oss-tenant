@@ -171,7 +171,8 @@ fn main() -> Result<()> {
             check_capabilities_and_warn();
 
             // This command is used when started by the service manager
-            if let Err(e) = rt.block_on(Service::run_as_service()) {
+            // Note: run_as_service is now synchronous and handles its own runtime
+            if let Err(e) = Service::run_as_service() {
                 error!("Service failed: {:#}", e);
                 process::exit(1);
             }
