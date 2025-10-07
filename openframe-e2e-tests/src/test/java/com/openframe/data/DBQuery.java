@@ -2,6 +2,7 @@ package com.openframe.data;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.openframe.data.dto.TenantDocument;
 import com.openframe.data.dto.UserDocument;
 import com.openframe.tests.restapi.ApiBaseTest;
 import org.bson.Document;
@@ -77,5 +78,45 @@ public class DBQuery {
     public static long getTenantCount() {
         MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
         return tenants.countDocuments();
+    }
+
+    public static TenantDocument findTenantByDomain(String domain) {
+        MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
+        Document doc = tenants.find(new Document("domain", domain)).first();
+        return TenantDocument.fromDocument(doc);
+    }
+
+    /**
+     * Save or update tenant in MongoDB
+     * @param tenant tenant document to save
+     */
+    public static void saveTenant(TenantDocument tenant) {
+        MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
+        Document doc = tenant.toDocument();
+        
+        // Delete existing tenant with same ID if exists
+        if (tenant.getId() != null) {
+            tenants.deleteOne(new Document("_id", tenant.getId()));
+        }
+        
+        tenants.insertOne(doc);
+        System.out.println("Saved tenant: " + tenant.getId());
+    }
+
+    /**
+     * Save or update user in MongoDB
+     * @param user user document to save
+     */
+    public static void saveUser(UserDocument user) {
+        MongoCollection<Document> users = getDatabase().getCollection("users");
+        Document doc = user.toDocument();
+        
+        // Delete existing user with same ID if exists
+        if (user.getId() != null) {
+            users.deleteOne(new Document("_id", user.getId()));
+        }
+        
+        users.insertOne(doc);
+        System.out.println("Saved user: " + user.getEmail());
     }
 }
