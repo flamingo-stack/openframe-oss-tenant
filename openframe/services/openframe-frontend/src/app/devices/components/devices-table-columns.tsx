@@ -42,9 +42,6 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
           <span className="font-['DM_Sans'] font-medium text-[14px] leading-[18px] text-ods-text-secondary truncate">
             {device.organization || device.machineId}
           </span>
-          <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">
-            MAC: {device.macAddress || 'Unknown'}
-          </span>
         </div>
       )
     },
@@ -104,7 +101,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       renderCell: (device) => (
         <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-            {device.model || device.manufacturer || 'Unknown Model'}
+            {device.model || device.manufacturer || ''}
           </span>
           <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate">
             {device.serial_number || device.agent_id}

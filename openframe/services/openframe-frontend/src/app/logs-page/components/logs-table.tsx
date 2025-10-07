@@ -82,8 +82,8 @@ export function LogsTable() {
           toolType: mapToolType(log.toolType)
         },
         device: {
-          name: log.deviceId || 'Unknown Device',
-          organization: log.userId || undefined
+          name: log.deviceId ? log.deviceId === 'null' ? '' : log.deviceId : '',
+          organization: log.userId ? log.userId === 'null' ? '' : log.userId : ''
         },
         description: {
           title: log.summary || 'No summary available',
