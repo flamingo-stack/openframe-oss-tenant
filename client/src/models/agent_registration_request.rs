@@ -7,4 +7,5 @@ pub struct AgentRegistrationRequest {
     pub agent_version: String,
     #[serde(skip_serializing_if = "String::is_empty", default)]
     pub organization_id: String,
+    pub os_type: String,
 } 

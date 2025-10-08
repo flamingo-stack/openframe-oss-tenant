@@ -62,6 +62,12 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
     onSubmit(data)
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isLoading && isFormValid) {
+      handleSubmit()
+    }
+  }
+
   const handleSSOClick = async (provider: string) => {
     setSignupMethod('sso')
     if (onSSO) {
@@ -104,6 +110,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 <Input
                   value={orgName}
                   disabled
+                  onKeyDown={handleKeyDown}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3"
                 />
               </div>
@@ -112,6 +119,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 <Input
                   value={displayDomain}
                   disabled
+                  onKeyDown={handleKeyDown}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3"
                 />
               </div>
@@ -148,6 +156,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 <Input
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Your First Name"
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
@@ -158,6 +167,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 <Input
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Your Last Name"
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
@@ -171,6 +181,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="username@mail.com"
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
@@ -187,6 +198,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder={"Choose a Strong Password"}
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
@@ -201,6 +213,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Confirm your Password"
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"

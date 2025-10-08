@@ -91,6 +91,10 @@ class TacticalApiClient {
     return this.post(`/agents/${agentId}/runscript/`, scriptData)
   }
 
+  async runBulkAction(payload: any): Promise<ApiResponse<any>> {
+    return this.post('/agents/actions/bulk/', payload)
+  }
+
   async getScripts(): Promise<ApiResponse<any[]>> {
     return this.get('/scripts/')
   }
