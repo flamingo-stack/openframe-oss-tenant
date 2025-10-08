@@ -8,7 +8,7 @@ use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::{logging, platform::DirectoryManager, Client};
 use crate::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
-use crate::services::{InstalledToolsService, ToolCommandParamsResolver, ToolUninstallService, InitialConfigurationService};
+use crate::services::{InstalledToolsService, ToolCommandParamsResolver, ToolKillService, ToolUninstallService, InitialConfigurationService};
 
 #[cfg(windows)]
 use windows_service::{
@@ -221,9 +221,12 @@ impl Service {
             initial_config_service,
         );
 
+        let tool_kill_service = ToolKillService::new();
+
         let tool_uninstall_service = ToolUninstallService::new(
             installed_tools_service,
             command_params_resolver,
+            tool_kill_service,
             dir_manager.clone(),
         );
 

@@ -3,12 +3,14 @@ use tracing::{info, warn, error, debug};
 use tokio::process::Command;
 use crate::services::InstalledToolsService;
 use crate::services::ToolCommandParamsResolver;
+use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
 
 #[derive(Clone)]
 pub struct ToolUninstallService {
     installed_tools_service: InstalledToolsService,
     command_params_resolver: ToolCommandParamsResolver,
+    tool_kill_service: ToolKillService,
     directory_manager: DirectoryManager,
 }
 
@@ -16,11 +18,13 @@ impl ToolUninstallService {
     pub fn new(
         installed_tools_service: InstalledToolsService,
         command_params_resolver: ToolCommandParamsResolver,
+        tool_kill_service: ToolKillService,
         directory_manager: DirectoryManager,
     ) -> Self {
         Self {
             installed_tools_service,
             command_params_resolver,
+            tool_kill_service,
             directory_manager,
         }
     }
@@ -74,6 +78,12 @@ impl ToolUninstallService {
     /// Uninstall a single tool by running its uninstallation command
     async fn uninstall_tool(&self, tool: &crate::models::InstalledTool) -> Result<()> {
         let tool_agent_id = &tool.tool_agent_id;
+
+        // Stop the tool process before uninstalling
+        info!("Stopping tool process before uninstallation: {}", tool_agent_id);
+        if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+            warn!("Failed to stop tool process for {}: {:#}. Continuing with uninstallation...", tool_agent_id, e);
+        }
 
         // Check if uninstallation command is provided
         if tool.uninstallation_command_args.is_none() {
