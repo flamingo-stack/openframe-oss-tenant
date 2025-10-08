@@ -3,13 +3,10 @@
 # - Builds app with Next 15 (distDir set to "dist")
 # - Runs with `next start` on port 4000
 
-ARG SERVICE_NAME=openframe/services/openframe-frontend
-
 ##########
 # deps
 ##########
 FROM node:22-alpine AS deps
-ARG SERVICE_NAME
 WORKDIR /app
 
 # git is required to clone ui-kit
@@ -18,8 +15,8 @@ RUN apk add --no-cache git
 # Allow pinning the ui-kit ref for better Docker layer caching
 ARG UI_KIT_REF=main
 
-# Copy only package.json from the service directory
-COPY ${SERVICE_NAME}/package.json ./package.json
+# Copy only package.json (exclude lockfile) for better layer caching
+COPY package.json ./
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
 RUN rm -rf ui-kit \
@@ -32,15 +29,14 @@ RUN --mount=type=cache,target=/root/.npm npm install
 # build
 ##########
 FROM node:22-alpine AS builder
-ARG SERVICE_NAME
 WORKDIR /app
 
 # Reuse installed node_modules and cloned ui-kit from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
 
-# Copy the entire service directory
-COPY ${SERVICE_NAME} .
+# Now copy the rest of the source (ui-kit is ignored by .dockerignore)
+COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -57,7 +53,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Use node_modules from deps and prune dev dependencies for production
-COPY --from=builder /app/package.json ./
+COPY package.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
 RUN npm prune --omit=dev
