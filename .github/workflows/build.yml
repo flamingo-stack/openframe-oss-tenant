@@ -153,22 +153,23 @@ jobs:
         env:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-#      - name: Set up JDK 21
-#        if: |
-#          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') ||
-#          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: '21'
-#          distribution: 'temurin'
-#          cache: 'maven'
 #
-#      - name: Build Maven dependencies
-#        if: |
-#          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') ||
-#          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
-#        run: |
-#          mvn clean install -DskipTests -pl '!${{ matrix.path }}' -am
+      - name: Set up JDK 21
+        if: |
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') ||
+          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Maven dependencies
+        if: |
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') ||
+          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        run: |
+          mvn clean install -DskipTests -pl '!${{ matrix.path }}' -am
 
       - name: Build and push image
         if: |
@@ -177,7 +178,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.path }}
+          context: .
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
