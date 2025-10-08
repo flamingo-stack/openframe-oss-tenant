@@ -8,6 +8,7 @@ use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::{logging, platform::DirectoryManager, Client};
 use crate::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
+use crate::services::{InstalledToolsService, ToolCommandParamsResolver, ToolUninstallService, InitialConfigurationService};
 
 #[cfg(windows)]
 use windows_service::{
@@ -167,6 +168,19 @@ impl Service {
         // Common code for all platforms
         info!("Uninstalling OpenFrame service");
 
+        // Initialize directory manager
+        let dir_manager = DirectoryManager::new();
+
+        // Uninstall all integrated tools first
+        info!("Uninstalling integrated tools...");
+        match Self::uninstall_integrated_tools(&dir_manager).await {
+            Ok(_) => info!("Integrated tools uninstallation completed"),
+            Err(e) => {
+                warn!("Failed to uninstall some integrated tools: {:#}", e);
+                // Continue with service uninstallation even if tool uninstallation fails
+            }
+        }
+
         // Get the current executable path
         let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
 
@@ -185,11 +199,38 @@ impl Service {
         service.uninstall().context("Failed to uninstall service")?;
 
         // Clean up common directories
-        let dir_manager = DirectoryManager::new();
+        info!("Cleaning up directories...");
         let _ = std::fs::remove_dir_all(dir_manager.app_support_dir());
         let _ = std::fs::remove_dir_all(dir_manager.logs_dir());
 
         info!("OpenFrame service uninstalled successfully");
+        Ok(())
+    }
+
+    /// Uninstall all integrated tools
+    async fn uninstall_integrated_tools(dir_manager: &DirectoryManager) -> Result<()> {
+        // Initialize services needed for tool uninstallation
+        let installed_tools_service = InstalledToolsService::new(dir_manager.clone())
+            .context("Failed to initialize InstalledToolsService")?;
+
+        let initial_config_service = InitialConfigurationService::new(dir_manager.clone())
+            .context("Failed to initialize InitialConfigurationService")?;
+
+        let command_params_resolver = ToolCommandParamsResolver::new(
+            dir_manager.clone(),
+            initial_config_service,
+        );
+
+        let tool_uninstall_service = ToolUninstallService::new(
+            installed_tools_service,
+            command_params_resolver,
+            dir_manager.clone(),
+        );
+
+        // Run tool uninstallation
+        tool_uninstall_service.uninstall_all().await
+            .context("Failed to uninstall integrated tools")?;
+
         Ok(())
     }
 
