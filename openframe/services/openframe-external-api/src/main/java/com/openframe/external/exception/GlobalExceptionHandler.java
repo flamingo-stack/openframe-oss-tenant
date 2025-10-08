@@ -37,6 +37,13 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("LOG_NOT_FOUND", ex.getMessage());
     }
 
+    @ExceptionHandler(OrganizationNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleOrganizationNotFound(OrganizationNotFoundException ex) {
+        log.warn("Organization not found: {}", ex.getMessage());
+        return new ErrorResponse("ORGANIZATION_NOT_FOUND", ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidationErrors(MethodArgumentNotValidException ex) {

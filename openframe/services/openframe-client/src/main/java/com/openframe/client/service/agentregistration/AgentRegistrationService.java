@@ -7,8 +7,10 @@ import com.openframe.data.document.device.DeviceStatus;
 import com.openframe.data.document.device.DeviceType;
 import com.openframe.data.document.device.Machine;
 import com.openframe.data.document.oauth.OAuthClient;
+import com.openframe.data.document.organization.Organization;
 import com.openframe.data.repository.device.MachineRepository;
 import com.openframe.data.repository.oauth.OAuthClientRepository;
+import com.openframe.data.service.OrganizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 import static com.openframe.client.service.AgentAuthService.CLIENT_CREDENTIALS_GRANT_TYPE;
+import static com.openframe.data.service.OrganizationService.DEFAULT_ORGANIZATION_NAME;
 import static java.lang.String.format;
 
 @Service
@@ -30,6 +33,7 @@ public class AgentRegistrationService {
 
     private final OAuthClientRepository oauthClientRepository;
     private final MachineRepository machineRepository;
+    private final OrganizationService organizationService;
     private final AgentRegistrationSecretValidator secretValidator;
     private final AgentSecretGenerator agentSecretGenerator;
     private final PasswordEncoder passwordEncoder;
@@ -45,8 +49,11 @@ public class AgentRegistrationService {
         String clientId = buildClientId(machineId);
         String clientSecret = agentSecretGenerator.generate();
 
+        // Get or resolve organization
+        String resolvedOrganizationId = resolveOrganizationId(request.getOrganizationId());
+
         saveOAuthClient(machineId, clientId, clientSecret);
-        saveMachine(machineId, request);
+        saveMachine(machineId, request, resolvedOrganizationId);
 
         agentRegistrationToolService.publishInstallationMessages(machineId);
 
@@ -73,7 +80,49 @@ public class AgentRegistrationService {
         return format(CLIENT_ID_TEMPLATE, machineId);
     }
 
-    private void saveMachine(String machineId, AgentRegistrationRequest request) {
+    /**
+     * Resolve organization ID for the machine.
+     * If provided organizationId exists, use it.
+     * Otherwise, fallback to default organization.
+     * 
+     * @param requestedOrganizationId organizationId from registration request (can be null)
+     * @return resolved organizationId to use
+     */
+    private String resolveOrganizationId(String requestedOrganizationId) {
+        // If organizationId provided, check if it exists
+        if (requestedOrganizationId != null && !requestedOrganizationId.isBlank()) {
+            boolean exists = organizationService.getOrganizationByOrganizationId(requestedOrganizationId)
+                    .isPresent();
+            
+            if (exists) {
+                log.debug("Using provided organizationId: {}", requestedOrganizationId);
+                return requestedOrganizationId;
+            } else {
+                log.warn("Provided organizationId {} not found, falling back to default", requestedOrganizationId);
+            }
+        }
+        
+        // Fallback to default organization
+        String defaultOrgId = getDefaultOrganizationId();
+        log.debug("Using default organizationId: {}", defaultOrgId);
+        return defaultOrgId;
+    }
+
+    /**
+     * Get default organization ID.
+     * Returns organizationId of the organization with name {@link OrganizationService#DEFAULT_ORGANIZATION_NAME}.
+     * 
+     * @return default organization ID
+     * @throws IllegalStateException if default organization doesn't exist
+     */
+    private String getDefaultOrganizationId() {
+        return organizationService.getOrganizationByName(DEFAULT_ORGANIZATION_NAME)
+                .map(Organization::getOrganizationId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Default organization not found. Please ensure it was created during tenant registration."));
+    }
+
+    private void saveMachine(String machineId, AgentRegistrationRequest request, String organizationId) {
         Machine machine = new Machine();
         machine.setMachineId(machineId);
         machine.setHostname(request.getHostname());
@@ -84,10 +133,12 @@ public class AgentRegistrationService {
         machine.setAgentVersion(request.getAgentVersion());
         machine.setLastSeen(Instant.now());
         machine.setStatus(DeviceStatus.ACTIVE);
-        machine.setOrganizationId(request.getOrganizationId());
+        machine.setOrganizationId(organizationId);
         machine.setType(DeviceType.DESKTOP);
 
         machineRepository.save(machine);
+        
+        log.info("Saved machine {} with organizationId: {}", machineId, organizationId);
     }
 
 }
