@@ -141,13 +141,13 @@ jobs:
                 "MESH_COMPRESSION_ENABLED": "true",
                 "MESH_WEBRTC_ENABLED": "false"
               },
-              "context": "./integrated-tools/meshcentral"
+              "context": "./integrated-tools/meshcentral/server"
             },
             {
               "name": "tactical-frontend",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-frontend",
-              "context": "./integrated-tools/tactical-rmm",
+              "context": "./integrated-tools/tactical-rmm/tactical-frontend",
               "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -197,7 +197,7 @@ jobs:
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-nginx",
               "manifest_path": "./manifests/integrated-tools/tactical-rmm",
-              "context": "./integrated-tools/tactical-rmm",
+              "context": "./integrated-tools/tactical-rmm/tactical-nginx",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -246,7 +246,7 @@ jobs:
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
               "manifest_path": "./manifests/integrated-tools/tactical-rmm",
-              "context": "./integrated-tools/tactical-rmm",
+              "context": "./integrated-tools/tactical-rmm/tactical-base",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
