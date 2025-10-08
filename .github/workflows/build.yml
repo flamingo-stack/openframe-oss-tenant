@@ -41,7 +41,7 @@ env:
 
 jobs:
   update-version:
-    name: Update Library Version
+    name: Update openframe-oss-lib Version
     runs-on: ubuntu-latest
     if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.version != ''
     steps:
@@ -74,7 +74,10 @@ jobs:
   matrix:
     name: Generate Matrix
     uses: ./.github/workflows/matrix.yml
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.version != ''
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push'
 
   build_images:
     name: "Build: ${{ matrix.name }}"
