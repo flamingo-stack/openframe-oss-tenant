@@ -9,6 +9,7 @@ ARG SERVICE_NAME=openframe/services/openframe-frontend
 # deps
 ##########
 FROM node:22-alpine AS deps
+ARG SERVICE_NAME
 WORKDIR /app
 
 # git is required to clone ui-kit
@@ -18,7 +19,7 @@ RUN apk add --no-cache git
 ARG UI_KIT_REF=main
 
 # Copy only package.json from the service directory
-COPY ${SERVICE_NAME}/package.json ./
+COPY ${SERVICE_NAME}/package.json ./package.json
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
 RUN rm -rf ui-kit \
@@ -31,6 +32,7 @@ RUN --mount=type=cache,target=/root/.npm npm install
 # build
 ##########
 FROM node:22-alpine AS builder
+ARG SERVICE_NAME
 WORKDIR /app
 
 # Reuse installed node_modules and cloned ui-kit from deps stage
@@ -38,7 +40,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
 
 # Copy the entire service directory (matches Java's pattern of copying specific modules)
-COPY ${SERVICE_NAME}/ .
+COPY ${SERVICE_NAME} .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
