@@ -148,6 +148,18 @@ impl Service {
             }
             
             info!("Binary installed successfully. You can now use 'openframe' command from anywhere.");
+            
+            // Windows: добавляем bin директорию в PATH
+            #[cfg(target_os = "windows")]
+            {
+                if let Some(bin_dir) = install_path.parent() {
+                    info!("Adding {} to system PATH", bin_dir.display());
+                    Self::add_to_windows_path(bin_dir)
+                        .context("Failed to add to PATH")?;
+                    
+                    info!("⚠️  Please restart your terminal to use 'openframe-client' command");
+                }
+            }
         } else {
             info!("Binary is already in the standard location: {}", install_path.display());
         }
@@ -245,6 +257,17 @@ impl Service {
         // Remove the installed binary from the system PATH location - fail immediately if this fails
         let install_path = Self::get_install_location();
         if install_path.exists() {
+            // Windows: удаляем bin директорию из PATH перед удалением файла
+            #[cfg(target_os = "windows")]
+            {
+                if let Some(bin_dir) = install_path.parent() {
+                    info!("Removing {} from system PATH", bin_dir.display());
+                    if let Err(e) = Self::remove_from_windows_path(bin_dir) {
+                        warn!("Failed to remove from PATH: {}", e);
+                    }
+                }
+            }
+            
             info!("Removing installed binary: {}", install_path.display());
             std::fs::remove_file(&install_path)
                 .with_context(|| format!("Failed to remove installed binary: {}", install_path.display()))?;
@@ -347,7 +370,10 @@ impl Service {
         {
             let program_files = std::env::var("ProgramFiles")
                 .unwrap_or_else(|_| "C:\\Program Files".to_string());
-            PathBuf::from(program_files).join("OpenFrame").join("openframe-client.exe")
+            PathBuf::from(program_files)
+                .join("OpenFrame")
+                .join("bin")
+                .join("openframe-client.exe")
         }
     }
 
@@ -388,5 +414,102 @@ impl Service {
             let rt = Runtime::new().context("Failed to create Tokio runtime")?;
             rt.block_on(Self::run())
         }
+    }
+
+    /// Add a directory to the Windows system PATH
+    #[cfg(target_os = "windows")]
+    fn add_to_windows_path(dir: &std::path::Path) -> Result<()> {
+        use winreg::enums::*;
+        use winreg::RegKey;
+
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+        let env = hklm.open_subkey_with_flags(
+            "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+            KEY_READ | KEY_WRITE,
+        ).context("Failed to open registry key - admin rights required")?;
+
+        let current_path: String = env.get_value("Path")
+            .context("Failed to read PATH from registry")?;
+        
+        let dir_str = dir.to_string_lossy();
+
+        // Проверяем, не добавлена ли уже
+        if current_path.split(';').any(|p| p.trim().eq_ignore_ascii_case(dir_str.trim())) {
+            info!("Directory already in PATH: {}", dir_str);
+            return Ok(());
+        }
+
+        // Добавляем в PATH
+        let new_path = if current_path.ends_with(';') {
+            format!("{}{}", current_path, dir_str)
+        } else {
+            format!("{};{}", current_path, dir_str)
+        };
+
+        env.set_value("Path", &new_path)
+            .context("Failed to write PATH to registry")?;
+
+        // Уведомляем систему об изменении переменных окружения
+        Self::broadcast_environment_change()?;
+
+        info!("✓ Added {} to system PATH", dir_str);
+        Ok(())
+    }
+
+    /// Remove a directory from the Windows system PATH
+    #[cfg(target_os = "windows")]
+    fn remove_from_windows_path(dir: &std::path::Path) -> Result<()> {
+        use winreg::enums::*;
+        use winreg::RegKey;
+
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+        let env = hklm.open_subkey_with_flags(
+            "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+            KEY_READ | KEY_WRITE,
+        ).context("Failed to open registry key - admin rights required")?;
+
+        let current_path: String = env.get_value("Path")
+            .context("Failed to read PATH from registry")?;
+        
+        let dir_str = dir.to_string_lossy();
+
+        // Удаляем директорию из PATH
+        let new_path: Vec<&str> = current_path
+            .split(';')
+            .filter(|p| !p.trim().eq_ignore_ascii_case(dir_str.trim()))
+            .collect();
+
+        let new_path = new_path.join(";");
+
+        env.set_value("Path", &new_path)
+            .context("Failed to write PATH to registry")?;
+
+        Self::broadcast_environment_change()?;
+
+        info!("✓ Removed {} from system PATH", dir_str);
+        Ok(())
+    }
+
+    /// Broadcast environment change notification to Windows
+    #[cfg(target_os = "windows")]
+    fn broadcast_environment_change() -> Result<()> {
+        use windows::Win32::UI::WindowsAndMessaging::*;
+        use windows::Win32::Foundation::*;
+        use windows::core::PCWSTR;
+
+        unsafe {
+            let env_str: Vec<u16> = "Environment\0".encode_utf16().collect();
+            SendMessageTimeoutW(
+                HWND_BROADCAST,
+                WM_SETTINGCHANGE,
+                WPARAM(0),
+                LPARAM(env_str.as_ptr() as isize),
+                SMTO_ABORTIFHUNG,
+                5000,
+                None,
+            );
+        }
+
+        Ok(())
     }
 }
