@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::runtime::Runtime;
 use tokio::time::{interval, Duration};
 use tracing::{error, info, warn};
@@ -13,8 +14,8 @@ use crate::services::{InstalledToolsService, ToolCommandParamsResolver, ToolKill
 #[cfg(windows)]
 use windows_service::{
     define_windows_service, service_dispatcher,
-    service::{ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus, ServiceType},
-    service_control_handler::{self, ServiceControlHandlerResult},
+    service::{ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus, ServiceType},
+    service_control_handler::{self, ServiceControlHandlerResult, ServiceStatusHandle},
 };
 
 const SERVICE_NAME: &str = "client";
@@ -28,9 +29,31 @@ define_windows_service!(ffi_service_main, windows_service_main);
 /// Windows service main function - called by SCM
 #[cfg(windows)]
 fn windows_service_main(_args: Vec<std::ffi::OsString>) {
-    // Register the service with SCM
-    let status_handle = match service_control_handler::register("com.openframe.client", |_| {
-        ServiceControlHandlerResult::NoError
+    // Create shutdown signal channel
+    let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
+    let shutdown_tx = Arc::new(std::sync::Mutex::new(Some(shutdown_tx)));
+
+    // Register service control handler with PROPER stop handling
+    let status_handle = match service_control_handler::register("com.openframe.client", {
+        let shutdown_tx = Arc::clone(&shutdown_tx);
+        move |control_event| {
+            match control_event {
+                ServiceControl::Stop | ServiceControl::Shutdown => {
+                    info!("Received stop/shutdown signal from Windows SCM");
+                    
+                    // Send shutdown signal
+                    if let Some(tx) = shutdown_tx.lock().unwrap().take() {
+                        let _ = tx.send(());
+                    }
+                    
+                    ServiceControlHandlerResult::NoError
+                }
+                ServiceControl::Interrogate => {
+                    ServiceControlHandlerResult::NoError
+                }
+                _ => ServiceControlHandlerResult::NotImplemented
+            }
+        }
     }) {
         Ok(handle) => handle,
         Err(e) => {
@@ -40,45 +63,64 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
     };
 
     // Report that the service is running
-    let status = ServiceStatus {
-        service_type: ServiceType::OWN_PROCESS,
-        current_state: ServiceState::Running,
-        controls_accepted: ServiceControlAccept::STOP,
-        exit_code: ServiceExitCode::Win32(0),
-        checkpoint: 0,
-        wait_hint: std::time::Duration::default(),
-        process_id: None,
-    };
-
-    if let Err(e) = status_handle.set_service_status(status) {
-        eprintln!("Failed to set service status: {:?}", e);
-        return;
-    }
+    let _ = set_service_status(&status_handle, ServiceState::Running);
 
     // Create a Tokio runtime and run the service core
     let rt = match Runtime::new() {
         Ok(runtime) => runtime,
         Err(e) => {
             eprintln!("Failed to create Tokio runtime: {:?}", e);
+            let _ = set_service_status(&status_handle, ServiceState::Stopped);
             return;
         }
     };
 
-    if let Err(e) = rt.block_on(Service::run()) {
-        eprintln!("Service core failed: {:?}", e);
+    // Run service with shutdown signal
+    let result = rt.block_on(async {
+        // Spawn service core
+        let service_handle = tokio::spawn(Service::run());
         
-        // Report stopped status on error
-        let stopped_status = ServiceStatus {
-            service_type: ServiceType::OWN_PROCESS,
-            current_state: ServiceState::Stopped,
-            controls_accepted: ServiceControlAccept::empty(),
-            exit_code: ServiceExitCode::Win32(1),
-            checkpoint: 0,
-            wait_hint: std::time::Duration::default(),
-            process_id: None,
-        };
-        let _ = status_handle.set_service_status(stopped_status);
+        // Wait for either service completion or shutdown signal
+        tokio::select! {
+            result = service_handle => {
+                info!("Service core completed");
+                result.unwrap_or_else(|e| Err(anyhow::anyhow!("Service panicked: {}", e)))
+            }
+            _ = tokio::task::spawn_blocking(move || shutdown_rx.recv()) => {
+                info!("Shutdown signal received, stopping service...");
+                Ok(())
+            }
+        }
+    });
+
+    if let Err(e) = result {
+        eprintln!("Service core failed: {:?}", e);
+        let _ = set_service_status(&status_handle, ServiceState::Stopped);
+    } else {
+        info!("Service stopped gracefully");
+        let _ = set_service_status(&status_handle, ServiceState::Stopped);
     }
+}
+
+/// Helper function to set service status
+#[cfg(windows)]
+fn set_service_status(status_handle: &ServiceStatusHandle, state: ServiceState) -> Result<()> {
+    let status = ServiceStatus {
+        service_type: ServiceType::OWN_PROCESS,
+        current_state: state,
+        controls_accepted: if state == ServiceState::Running {
+            ServiceControlAccept::STOP | ServiceControlAccept::SHUTDOWN
+        } else {
+            ServiceControlAccept::empty()
+        },
+        exit_code: ServiceExitCode::Win32(0),
+        checkpoint: 0,
+        wait_hint: std::time::Duration::from_secs(5),
+        process_id: None,
+    };
+
+    status_handle.set_service_status(status)
+        .context("Failed to set service status")
 }
 
 pub struct Service;
