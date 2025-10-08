@@ -153,24 +153,6 @@ jobs:
         env:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-#
-      - name: Set up JDK 21
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') ||
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Build Maven dependencies
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') ||
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
-        run: |
-          mvn clean install -DskipTests -pl '!${{ matrix.path }}' -am
-
       - name: Build and push image
         if: |
           (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
@@ -253,7 +235,7 @@ jobs:
             done
           else
             make build TARGET="${{ matrix.target }}"
-          fi
+          fi          
 
       - name: Upload Rust Artifacts for Windows / Linux
         if: "!(runner.os == 'macOS')"
