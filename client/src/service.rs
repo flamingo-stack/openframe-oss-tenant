@@ -331,19 +331,19 @@ impl Service {
     fn get_install_location() -> PathBuf {
         #[cfg(target_os = "macos")]
         {
-            PathBuf::from("/usr/local/bin/openframe")
+            PathBuf::from("/usr/local/bin/openframe-client")
         }
         
         #[cfg(target_os = "linux")]
         {
-            PathBuf::from("/usr/local/bin/openframe")
+            PathBuf::from("/usr/local/bin/openframe-client")
         }
         
         #[cfg(target_os = "windows")]
         {
             let program_files = std::env::var("ProgramFiles")
                 .unwrap_or_else(|_| "C:\\Program Files".to_string());
-            PathBuf::from(program_files).join("OpenFrame").join("openframe.exe")
+            PathBuf::from(program_files).join("OpenFrame").join("openframe-client.exe")
         }
     }
 
