@@ -114,7 +114,42 @@ impl Service {
             .context("Failed to process initial configuration during service installation")?;
 
         // Get the current executable path
-        let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
+        let current_exe_path = std::env::current_exe().context("Failed to get current executable path")?;
+
+        // Determine the standard installation location for the binary
+        let install_path = Self::get_install_location();
+        
+        // Copy the binary to the installation location if it's not already there
+        if current_exe_path != install_path {
+            info!("Installing OpenFrame binary to: {}", install_path.display());
+            
+            // Create parent directory if it doesn't exist
+            if let Some(parent) = install_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
+            }
+            
+            // Copy the binary
+            std::fs::copy(&current_exe_path, &install_path)
+                .with_context(|| format!("Failed to copy binary to {}", install_path.display()))?;
+            
+            // Set executable permissions on Unix
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mut perms = std::fs::metadata(&install_path)?.permissions();
+                perms.set_mode(0o755); // rwxr-xr-x
+                std::fs::set_permissions(&install_path, perms)
+                    .with_context(|| format!("Failed to set executable permissions on {}", install_path.display()))?;
+            }
+            
+            info!("Binary installed successfully. You can now use 'openframe' command from anywhere.");
+        } else {
+            info!("Binary is already in the standard location: {}", install_path.display());
+        }
+        
+        // Use the installation path for the service registration
+        let exec_path = install_path;
 
         // Determine platform-specific user and group values
         let (user_name, group_name) = match std::env::consts::OS {
@@ -203,6 +238,25 @@ impl Service {
         let _ = std::fs::remove_dir_all(dir_manager.app_support_dir());
         let _ = std::fs::remove_dir_all(dir_manager.logs_dir());
 
+        // Remove the installed binary from the system PATH location
+        let install_path = Self::get_install_location();
+        if install_path.exists() {
+            info!("Removing installed binary: {}", install_path.display());
+            if let Err(e) = std::fs::remove_file(&install_path) {
+                warn!("Failed to remove installed binary: {}", e);
+            }
+            
+            // On Windows, also remove the parent directory if empty
+            #[cfg(target_os = "windows")]
+            {
+                if let Some(parent) = install_path.parent() {
+                    if parent.read_dir().map(|mut d| d.next().is_none()).unwrap_or(false) {
+                        let _ = std::fs::remove_dir(parent);
+                    }
+                }
+            }
+        }
+
         info!("OpenFrame service uninstalled successfully");
         Ok(())
     }
@@ -270,6 +324,27 @@ impl Service {
 
         // Start the client
         client.start().await
+    }
+
+    /// Get the standard installation location for the OpenFrame binary
+    /// This is a location in the system PATH where the binary will be accessible globally
+    fn get_install_location() -> PathBuf {
+        #[cfg(target_os = "macos")]
+        {
+            PathBuf::from("/usr/local/bin/openframe")
+        }
+        
+        #[cfg(target_os = "linux")]
+        {
+            PathBuf::from("/usr/local/bin/openframe")
+        }
+        
+        #[cfg(target_os = "windows")]
+        {
+            let program_files = std::env::var("ProgramFiles")
+                .unwrap_or_else(|_| "C:\\Program Files".to_string());
+            PathBuf::from(program_files).join("OpenFrame").join("openframe.exe")
+        }
     }
 
     /// Run as a service on the current platform
