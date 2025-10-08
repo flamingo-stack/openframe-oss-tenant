@@ -1,5 +1,6 @@
 package com.openframe.external.dto.organization;
 
+import com.openframe.api.dto.organization.OrganizationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

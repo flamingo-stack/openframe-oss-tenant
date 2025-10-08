@@ -1,18 +1,14 @@
 package com.openframe.external.controller;
 
-import com.openframe.api.dto.organization.CreateOrganizationRequest;
-import com.openframe.api.dto.organization.OrganizationFilterOptions;
-import com.openframe.api.dto.organization.UpdateOrganizationRequest;
+import com.openframe.api.dto.organization.*;
+import com.openframe.api.mapper.OrganizationMapper;
 import com.openframe.api.service.OrganizationCommandService;
 import com.openframe.api.service.OrganizationQueryService;
 import com.openframe.core.dto.ErrorResponse;
-import com.openframe.data.document.organization.Organization;
 import com.openframe.data.exception.OrganizationHasMachinesException;
 import com.openframe.data.service.OrganizationService;
-import com.openframe.external.dto.organization.OrganizationResponse;
 import com.openframe.external.dto.organization.OrganizationsResponse;
 import com.openframe.external.exception.OrganizationNotFoundException;
-import com.openframe.external.mapper.OrganizationMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -91,9 +87,17 @@ public class OrganizationController {
                 .hasActiveContract(hasActiveContract)
                 .build();
 
-        var result = organizationQueryService.queryOrganizations(filterOptions, search);
+        OrganizationList result = organizationQueryService.queryOrganizations(filterOptions, search);
 
-        return organizationMapper.toOrganizationsResponse(result);
+        // Convert to external API response format
+        var responses = result.getOrganizations().stream()
+                .map(organizationMapper::toResponse)
+                .toList();
+
+        return OrganizationsResponse.builder()
+                .organizations(responses)
+                .total(responses.size())
+                .build();
     }
 
     @Operation(
@@ -121,7 +125,7 @@ public class OrganizationController {
 
         log.info("Getting organization by ID: {} - userId: {}, apiKeyId: {}", id, userId, apiKeyId);
 
-        Organization organization = organizationService.getOrganizationById(id)
+        var organization = organizationService.getOrganizationById(id)
                 .orElseThrow(() -> new OrganizationNotFoundException(id));
 
         return organizationMapper.toResponse(organization);
@@ -152,7 +156,7 @@ public class OrganizationController {
 
         log.info("Getting organization by organizationId: {} - userId: {}, apiKeyId: {}", organizationId, userId, apiKeyId);
 
-        Organization organization = organizationService.getOrganizationByOrganizationId(organizationId)
+        var organization = organizationService.getOrganizationByOrganizationId(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationId));
 
         return organizationMapper.toResponse(organization);
@@ -185,7 +189,7 @@ public class OrganizationController {
 
         log.info("Creating organization: {} - userId: {}, apiKeyId: {}", request.name(), userId, apiKeyId);
 
-        Organization created = organizationCommandService.createOrganization(request);
+        var created = organizationCommandService.createOrganization(request);
         return organizationMapper.toResponse(created);
     }
 
@@ -220,7 +224,7 @@ public class OrganizationController {
         log.info("Updating organization: {} - userId: {}, apiKeyId: {}", id, userId, apiKeyId);
 
         try {
-            Organization updated = organizationCommandService.updateOrganization(id, request);
+            var updated = organizationCommandService.updateOrganization(id, request);
             return organizationMapper.toResponse(updated);
         } catch (IllegalArgumentException e) {
             throw new OrganizationNotFoundException(id);
