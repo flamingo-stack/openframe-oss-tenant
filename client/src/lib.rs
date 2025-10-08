@@ -256,7 +256,7 @@ impl Client {
         let tool_kill_service = ToolKillService::new();
 
         // Initialize tool run manager
-        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), tool_command_params_resolver.clone(), tool_kill_service);
+        let tool_run_manager = ToolRunManager::new(installed_tools_service.clone(), tool_command_params_resolver.clone(), tool_kill_service.clone());
 
         // Initialize tool connection service
         let tool_connection_service = ToolConnectionService::new(directory_manager.clone())
