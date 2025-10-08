@@ -125,14 +125,8 @@ impl ToolUninstallService {
         let stdout = String::from_utf8_lossy(&output.stdout);
         info!("Uninstallation command executed successfully for tool: {}\nstdout: {}", tool_agent_id, stdout);
 
-        // Clean up tool-specific directory - fail if we can't remove it
-        let tool_dir = self.directory_manager.app_support_dir().join(tool_agent_id);
-        if tool_dir.exists() {
-            info!("Removing tool directory: {}", tool_dir.display());
-            tokio::fs::remove_dir_all(&tool_dir).await
-                .with_context(|| format!("Failed to remove tool directory: {}", tool_dir.display()))?;
-            info!("Successfully removed tool directory: {}", tool_dir.display());
-        }
+        // Note: Tool-specific directory cleanup is handled automatically when the main
+        // OpenFrame application is uninstalled, as it's within the app support directory
 
         Ok(())
     }

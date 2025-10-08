@@ -206,15 +206,11 @@ impl Service {
         // Initialize directory manager
         let dir_manager = DirectoryManager::new();
 
-        // Uninstall all integrated tools first
+        // Uninstall all integrated tools first - fail immediately if this fails
         info!("Uninstalling integrated tools...");
-        match Self::uninstall_integrated_tools(&dir_manager).await {
-            Ok(_) => info!("Integrated tools uninstallation completed"),
-            Err(e) => {
-                warn!("Failed to uninstall some integrated tools: {:#}", e);
-                // Continue with service uninstallation even if tool uninstallation fails
-            }
-        }
+        Self::uninstall_integrated_tools(&dir_manager).await
+            .context("Failed to uninstall integrated tools")?;
+        info!("Integrated tools uninstallation completed");
 
         // Get the current executable path
         let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
@@ -230,28 +226,32 @@ impl Service {
 
         let service = CrossPlatformServiceManager::with_config(config);
 
-        // Call the cross-platform service manager to uninstall
+        // Call the cross-platform service manager to uninstall - fail immediately if this fails
         service.uninstall().context("Failed to uninstall service")?;
 
-        // Clean up common directories
-        info!("Cleaning up directories...");
-        let _ = std::fs::remove_dir_all(dir_manager.app_support_dir());
-        let _ = std::fs::remove_dir_all(dir_manager.logs_dir());
+        // Clean up common directories - fail immediately if this fails
+        info!("Cleaning up app support directory...");
+        std::fs::remove_dir_all(dir_manager.app_support_dir())
+            .with_context(|| format!("Failed to remove app support directory: {}", dir_manager.app_support_dir().display()))?;
+        
+        info!("Cleaning up logs directory...");
+        std::fs::remove_dir_all(dir_manager.logs_dir())
+            .with_context(|| format!("Failed to remove logs directory: {}", dir_manager.logs_dir().display()))?;
 
-        // Remove the installed binary from the system PATH location
+        // Remove the installed binary from the system PATH location - fail immediately if this fails
         let install_path = Self::get_install_location();
         if install_path.exists() {
             info!("Removing installed binary: {}", install_path.display());
-            if let Err(e) = std::fs::remove_file(&install_path) {
-                warn!("Failed to remove installed binary: {}", e);
-            }
+            std::fs::remove_file(&install_path)
+                .with_context(|| format!("Failed to remove installed binary: {}", install_path.display()))?;
             
             // On Windows, also remove the parent directory if empty
             #[cfg(target_os = "windows")]
             {
                 if let Some(parent) = install_path.parent() {
                     if parent.read_dir().map(|mut d| d.next().is_none()).unwrap_or(false) {
-                        let _ = std::fs::remove_dir(parent);
+                        std::fs::remove_dir(parent)
+                            .with_context(|| format!("Failed to remove parent directory: {}", parent.display()))?;
                     }
                 }
             }
