@@ -144,7 +144,7 @@ jobs:
           (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
           (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         id: format_args
-        uses: ./.github/steps/docker-format-build-args
+        uses: flamingo-stack/openframe-oss-tenant/.github/steps/docker-format-build-args@ami/ci
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
         env:
