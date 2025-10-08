@@ -11,6 +11,8 @@ import { getNavigationItems } from '../../lib/navigation-config'
 import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, isSaasTenantMode, isOssTenantMode } from '../../lib/app-mode'
 import { UnauthorizedOverlay } from './unauthorized-overlay'
 import { PageLoader, CompactPageLoader } from '@flamingo/ui-kit/components/ui'
+import { authApiClient } from '@lib/auth-api-client'
+import { runtimeEnv } from '@lib/runtime-config'
 
 function ContentLoading() {
   return <CompactPageLoader />
@@ -76,10 +78,13 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
+  const { handleAuthenticationSuccess } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
   const [isHydrated, setIsHydrated] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false)
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
 
   useEffect(() => {
     const checkHydration = () => {
@@ -112,6 +117,38 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isHydrated, isAuthenticated, pathname, router])
 
+  useEffect(() => {
+    if (!isSaasTenantMode()) return
+    if (isAuthenticated) return
+    if (hasCheckedAuth || isCheckingAuth) return
+
+    let cancelled = false
+    const check = async () => {
+      try {
+        setIsCheckingAuth(true)
+        const res = await authApiClient.me()
+        if (!cancelled && res.ok && (res as any).data?.authenticated) {
+          const userData = (res as any).data.user
+          const token = runtimeEnv.enableDevTicketObserver()
+            ? (typeof window !== 'undefined' ? (localStorage.getItem('of_access_token') || 'cookie-auth') : 'cookie-auth')
+            : 'cookie-auth'
+
+          handleAuthenticationSuccess(token, userData)
+        }
+      } catch (e) {
+        // noop: if /me fails, we'll fall back to showing UnauthorizedOverlay
+      } finally {
+        if (!cancelled) {
+          setIsCheckingAuth(false)
+          setHasCheckedAuth(true)
+        }
+      }
+    }
+
+    const t = setTimeout(check, 50)
+    return () => { cancelled = true; clearTimeout(t) }
+  }, [isAuthenticated, handleAuthenticationSuccess])
+
   if (isOssTenantMode() && !isHydrated) {
     return <PageLoader title="Initializing" description="Loading application..." />
   }
@@ -121,6 +158,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (isSaasTenantMode() && !isAuthenticated) {
+    if (!hasCheckedAuth || isCheckingAuth) {
+      return <PageLoader title="Checking session" description="Verifying your session..." />
+    }
     return <UnauthorizedOverlay />
   }
 
