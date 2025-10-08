@@ -39,7 +39,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
 
-# Copy the entire service directory (matches Java's pattern of copying specific modules)
+# Copy the entire service directory
 COPY ${SERVICE_NAME} .
 
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -57,7 +57,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Use node_modules from deps and prune dev dependencies for production
-COPY ${SERVICE_NAME}/package.json ./
+COPY --from=builder /app/package.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
 RUN npm prune --omit=dev
