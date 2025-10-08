@@ -20,13 +20,13 @@ on:
   workflow_call:
     inputs:
       version:
-        description: "Tag to release (e.g., v1.2.3)"
+        description: "version to release (e.g., v1.2.3)"
         required: true
         type: string
   workflow_dispatch:
     inputs:
       version:
-        description: "Tag to release (e.g., v1.2.3)"
+        description: "version to release (e.g., v1.2.3)"
         required: true
         type: string
 
@@ -81,9 +81,9 @@ jobs:
     needs: [matrix, changes]
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'workflow_call') ||
-      (github.event_name == 'workflow_dispatch' && inputs.version != '') ||
-      (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -91,7 +91,8 @@ jobs:
     steps:
       - name: Checkout
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
+          github.event_name == 'workflow_call' ||
+          github.event_name == 'workflow_dispatch' ||
           (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/checkout@v4
         with:
