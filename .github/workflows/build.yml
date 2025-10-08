@@ -57,11 +57,14 @@ jobs:
       - name: Update root pom.xml
         run: |
           VERSION="${{ inputs.version }}"
-          mvn versions:set-property \
-          -Dproperty=openframe.libs.version \
-          -DnewVersion="${VERSION}" \
-          -DgenerateBackupPoms=false
-          echo "Updated openframe.libs.version to: $VERSION"
+          sed -i "s|<openframe\.libs\.version>.*</openframe\.libs\.version>|<openframe.libs.version>${VERSION}</openframe.libs.version>|" pom.xml
+          
+          if grep -q "<openframe.libs.version>${VERSION}</openframe.libs.version>" pom.xml; then
+            echo "✓ Updated openframe.libs.version to: $VERSION"
+          else
+            echo "✗ Failed to update version"
+            exit 1
+          fi
 
       - name: Commit version change
         run: |
