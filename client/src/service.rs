@@ -123,10 +123,14 @@ impl Service {
         if current_exe_path != install_path {
             info!("Installing OpenFrame binary to: {}", install_path.display());
             
-            // Create parent directory if it doesn't exist
-            if let Some(parent) = install_path.parent() {
-                std::fs::create_dir_all(parent)
-                    .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
+            // On Windows, create the OpenFrame application directory
+            // On Unix, /usr/local/bin should already exist (system directory)
+            #[cfg(target_os = "windows")]
+            {
+                if let Some(parent) = install_path.parent() {
+                    std::fs::create_dir_all(parent)
+                        .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
+                }
             }
             
             // Copy the binary
