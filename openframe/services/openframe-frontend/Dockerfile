@@ -9,6 +9,9 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 
+ARG SERVICE_NAME="openframe-config"
+ENV SERVICE_NAME=${SERVICE_NAME}
+
 # git is required to clone ui-kit
 RUN apk add --no-cache git
 
@@ -16,7 +19,7 @@ RUN apk add --no-cache git
 ARG UI_KIT_REF=main
 
 # Copy only package.json (exclude lockfile) for better layer caching
-COPY package.json ./
+COPY ${SERVICE_NAME}/package.json ./
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
 RUN rm -rf ui-kit \
@@ -53,7 +56,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Use node_modules from deps and prune dev dependencies for production
-COPY package.json ./
+COPY ${SERVICE_NAME}/package.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
 RUN npm prune --omit=dev

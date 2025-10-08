@@ -6,7 +6,6 @@ ARG GITHUB_ACTOR
 ARG GITHUB_TOKEN
 ARG SERVICE_NAME="openframe-config"
 
-
 # Install Maven
 RUN apk add --no-cache maven
 

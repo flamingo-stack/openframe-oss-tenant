@@ -143,6 +143,7 @@ jobs:
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
+
       - name: Format build arguments
         if: |
           (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
