@@ -49,12 +49,7 @@
       "minify": true,
       "NewAccounts": false,
       "localSessionRecording": true,
-      "allowedOrigin": [
-        "${MESH_NGINX_HOST}",
-        "${MESH_NGINX_NAT_HOST}",
-        "${MESH_EXTERNAL_HOST}",
-        "localhost"
-      ]
+      "allowedOrigin": true
     }
   }
 }
