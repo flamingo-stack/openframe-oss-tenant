@@ -288,13 +288,22 @@ impl Service {
         service.uninstall().context("Failed to uninstall service")?;
 
         // Clean up common directories - fail immediately if this fails
-        info!("Cleaning up app support directory...");
-        std::fs::remove_dir_all(dir_manager.app_support_dir())
-            .with_context(|| format!("Failed to remove app support directory: {}", dir_manager.app_support_dir().display()))?;
+        // Note: On Windows, logs_dir is typically inside app_support_dir, so we need to be careful about order
         
-        info!("Cleaning up logs directory...");
-        std::fs::remove_dir_all(dir_manager.logs_dir())
-            .with_context(|| format!("Failed to remove logs directory: {}", dir_manager.logs_dir().display()))?;
+        // First, remove logs directory if it exists as a separate directory
+        if dir_manager.logs_dir().exists() && dir_manager.logs_dir() != dir_manager.app_support_dir() {
+            info!("Cleaning up logs directory: {}", dir_manager.logs_dir().display());
+            if let Err(e) = std::fs::remove_dir_all(dir_manager.logs_dir()) {
+                warn!("Failed to remove logs directory (may already be removed): {}", e);
+            }
+        }
+        
+        // Then remove app support directory (this will remove logs if it's a subdirectory)
+        if dir_manager.app_support_dir().exists() {
+            info!("Cleaning up app support directory: {}", dir_manager.app_support_dir().display());
+            std::fs::remove_dir_all(dir_manager.app_support_dir())
+                .with_context(|| format!("Failed to remove app support directory: {}", dir_manager.app_support_dir().display()))?;
+        }
 
         // Remove the installed binary from the system PATH location - fail immediately if this fails
         let install_path = Self::get_install_location();
