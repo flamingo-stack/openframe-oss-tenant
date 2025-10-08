@@ -80,7 +80,10 @@ jobs:
     name: "Build: ${{ matrix.name }}"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.version != ''
+    if: |
+      (github.event_name == 'workflow_call') ||
+      (github.event_name == 'workflow_dispatch' && inputs.version != '') ||
+      (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
     strategy:
       fail-fast: false
       matrix:
@@ -327,7 +330,7 @@ jobs:
     name: "Create Release"
     needs: [ build_client, build_images, matrix, changes ]
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.version != ''
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -403,7 +406,7 @@ jobs:
             final-artifacts/client/*
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
-            Release ${{ github.event.inputs.tag }}
+            Release ${{ github.event.inputs.version }}
 
             Built from commit: ${{ github.sha }}
 
