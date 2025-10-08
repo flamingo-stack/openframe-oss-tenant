@@ -51,27 +51,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          repository: flamingo-stack/openframe-oss-tenant
           ref: ami/ci
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update root pom.xml
         run: |
           VERSION="${{ inputs.version }}"
-    
-          # Debug: Show what we're looking for
-          echo "Looking for openframe.libs.version in pom.xml..."
-          grep -n "openframe.libs.version" pom.xml || echo "Property not found!"
           
-          # Update
           sed -i "s|<openframe\.libs\.version>.*</openframe\.libs\.version>|<openframe.libs.version>${VERSION}</openframe.libs.version>|" pom.xml
           
-          # Verify
           if grep -q "<openframe.libs.version>${VERSION}</openframe.libs.version>" pom.xml; then
             echo "✓ Updated openframe.libs.version to: $VERSION"
           else
             echo "✗ Failed to update version"
-            echo "Current content:"
-            grep -A2 -B2 "openframe" pom.xml || cat pom.xml
+            grep "openframe.libs.version" pom.xml || echo "Property not found in pom.xml"
             exit 1
           fi
 
