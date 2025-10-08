@@ -40,49 +40,8 @@ env:
 # =============================================================================
 
 jobs:
-  update-version:
-    name: Update openframe-oss-lib Version
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    if: |
-      github.event_name == 'workflow_call' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: flamingo-stack/openframe-oss-tenant
-          ref: ami/ci
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-
-      - name: Update root pom.xml
-        run: |
-          VERSION="${{ inputs.version }}"
-          
-          sed -i "s|<openframe\.libs\.version>.*</openframe\.libs\.version>|<openframe.libs.version>${VERSION}</openframe.libs.version>|" pom.xml
-          
-          if grep -q "<openframe.libs.version>${VERSION}</openframe.libs.version>" pom.xml; then
-            echo "✓ Updated openframe.libs.version to: $VERSION"
-          else
-            echo "✗ Failed to update version"
-            grep "openframe.libs.version" pom.xml || echo "Property not found in pom.xml"
-            exit 1
-          fi
-
-#      - name: Commit version change
-#        run: |
-#          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-#          git config --local user.name "github-actions[bot]"
-#          git add pom.xml
-#          git commit -m "chore: update openframe-oss-lib to ${{ inputs.version }}" || echo "No changes"
-#          git push
-
   changes:
     name: Detect Changes
-    needs: [update-version]
     if: always() && !cancelled() && !contains(needs.*.result, 'failure')
     uses: ./.github/workflows/changes.yml
 
@@ -119,6 +78,24 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
           fetch-depth: 1
+
+      - name: Update pom.xml with lib version
+        if: |
+          (github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch') &&
+          inputs.version != ''
+        run: |
+          VERSION="${{ inputs.version }}"
+          echo "Updating openframe.libs.version to: $VERSION"
+          
+          sed -i "s|<openframe\.libs\.version>.*</openframe\.libs\.version>|<openframe.libs.version>${VERSION}</openframe.libs.version>|" pom.xml
+          
+          if grep -q "<openframe.libs.version>${VERSION}</openframe.libs.version>" pom.xml; then
+            echo "✓ Successfully updated to: $VERSION"
+            grep "openframe.libs.version" pom.xml
+          else
+            echo "✗ Failed to update version"
+            exit 1
+          fi
 
       - name: Log in to GitHub Container Registry
         if: |
