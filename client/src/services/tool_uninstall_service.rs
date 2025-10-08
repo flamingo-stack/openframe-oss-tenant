@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use tracing::{info, warn, error, debug};
+use tracing::{info, warn, debug};
 use tokio::process::Command;
 use crate::services::InstalledToolsService;
 use crate::services::ToolCommandParamsResolver;
@@ -30,6 +30,9 @@ impl ToolUninstallService {
     }
 
     /// Uninstall all installed tools by running their uninstallation commands
+    /// 
+    /// This method will fail immediately if any tool fails to uninstall.
+    /// No partial success - either all tools are uninstalled or the operation fails.
     pub async fn uninstall_all(&self) -> Result<()> {
         info!("Starting uninstallation of all installed tools");
 
@@ -43,47 +46,30 @@ impl ToolUninstallService {
 
         info!("Found {} installed tools to uninstall", installed_tools.len());
 
-        let mut uninstall_errors = Vec::new();
-
         for tool in installed_tools {
             info!("Processing uninstallation for tool: {}", tool.tool_agent_id);
 
-            match self.uninstall_tool(&tool).await {
-                Ok(_) => {
-                    info!("Successfully uninstalled tool: {}", tool.tool_agent_id);
-                }
-                Err(e) => {
-                    error!("Failed to uninstall tool {}: {:#}", tool.tool_agent_id, e);
-                    uninstall_errors.push((tool.tool_agent_id.clone(), e));
-                }
-            }
+            // Fail immediately if uninstallation fails
+            self.uninstall_tool(&tool).await
+                .with_context(|| format!("Failed to uninstall tool: {}", tool.tool_agent_id))?;
+
+            info!("Successfully uninstalled tool: {}", tool.tool_agent_id);
         }
 
-        // Report summary
-        if uninstall_errors.is_empty() {
-            info!("All tools uninstalled successfully");
-            Ok(())
-        } else {
-            warn!("Some tools failed to uninstall: {} errors", uninstall_errors.len());
-            for (tool_id, error) in &uninstall_errors {
-                warn!("  - {}: {:#}", tool_id, error);
-            }
-            
-            // Continue with agent uninstallation even if some tools failed
-            // This ensures we don't leave the agent installed if tool uninstallation fails
-            Ok(())
-        }
+        info!("All tools uninstalled successfully");
+        Ok(())
     }
 
     /// Uninstall a single tool by running its uninstallation command
+    /// 
+    /// Fails immediately if any step fails (stop process, run uninstall command, remove files)
     async fn uninstall_tool(&self, tool: &crate::models::InstalledTool) -> Result<()> {
         let tool_agent_id = &tool.tool_agent_id;
 
-        // Stop the tool process before uninstalling
+        // Stop the tool process before uninstalling - fail if we can't stop it
         info!("Stopping tool process before uninstallation: {}", tool_agent_id);
-        if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
-            warn!("Failed to stop tool process for {}: {:#}. Continuing with uninstallation...", tool_agent_id, e);
-        }
+        self.tool_kill_service.stop_tool(tool_agent_id).await
+            .with_context(|| format!("Failed to stop tool process for: {}", tool_agent_id))?;
 
         // Check if uninstallation command is provided
         if tool.uninstallation_command_args.is_none() {
@@ -126,28 +112,26 @@ impl ToolUninstallService {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
             
-            warn!(
+            // Fail immediately if uninstall command returns non-zero exit code
+            return Err(anyhow::anyhow!(
                 "Uninstallation command for {} exited with status: {}\nstdout: {}\nstderr: {}",
                 tool_agent_id,
                 output.status,
                 stdout,
                 stderr
-            );
-
-            // Don't fail completely, just log the error
-            // We still want to clean up files even if the uninstall command fails
-        } else {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            info!("Uninstallation command executed successfully for tool: {}\nstdout: {}", tool_agent_id, stdout);
+            ));
         }
+        
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        info!("Uninstallation command executed successfully for tool: {}\nstdout: {}", tool_agent_id, stdout);
 
-        // Clean up tool-specific directory
+        // Clean up tool-specific directory - fail if we can't remove it
         let tool_dir = self.directory_manager.app_support_dir().join(tool_agent_id);
         if tool_dir.exists() {
             info!("Removing tool directory: {}", tool_dir.display());
-            if let Err(e) = tokio::fs::remove_dir_all(&tool_dir).await {
-                warn!("Failed to remove tool directory {}: {}", tool_dir.display(), e);
-            }
+            tokio::fs::remove_dir_all(&tool_dir).await
+                .with_context(|| format!("Failed to remove tool directory: {}", tool_dir.display()))?;
+            info!("Successfully removed tool directory: {}", tool_dir.display());
         }
 
         Ok(())
