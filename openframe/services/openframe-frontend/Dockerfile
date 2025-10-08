@@ -3,14 +3,13 @@
 # - Builds app with Next 15 (distDir set to "dist")
 # - Runs with `next start` on port 4000
 
+ARG SERVICE_NAME=openframe/services/openframe-frontend
+
 ##########
 # deps
 ##########
 FROM node:22-alpine AS deps
 WORKDIR /app
-
-ARG SERVICE_NAME="openframe-config"
-ENV SERVICE_NAME=${SERVICE_NAME}
 
 # git is required to clone ui-kit
 RUN apk add --no-cache git
@@ -18,7 +17,7 @@ RUN apk add --no-cache git
 # Allow pinning the ui-kit ref for better Docker layer caching
 ARG UI_KIT_REF=main
 
-# Copy only package.json (exclude lockfile) for better layer caching
+# Copy only package.json from the service directory
 COPY ${SERVICE_NAME}/package.json ./
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
@@ -38,8 +37,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/ui-kit ./ui-kit
 
-# Now copy the rest of the source (ui-kit is ignored by .dockerignore)
-COPY . .
+# Copy the entire service directory (matches Java's pattern of copying specific modules)
+COPY ${SERVICE_NAME}/ .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
