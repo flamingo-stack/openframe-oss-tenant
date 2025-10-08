@@ -43,6 +43,8 @@ jobs:
   update-version:
     name: Update openframe-oss-lib Version
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: |
       github.event_name == 'workflow_call' ||
       github.event_name == 'workflow_dispatch' ||
@@ -54,6 +56,7 @@ jobs:
           repository: flamingo-stack/openframe-oss-tenant
           ref: ami/ci
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Update root pom.xml
         run: |
