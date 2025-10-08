@@ -117,6 +117,11 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 placeholder="Your Company Name"
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isLoading && isOrgNameValid) {
+                    handleCreateOrganization()
+                  }
+                }}
               />
               {orgName.trim() && !isOrgNameValid && (
                 <p className="text-xs text-error mt-1">Organization Name must be 2-100 characters and may include letters, numbers, spaces, and &.,'"()-</p>
@@ -128,6 +133,11 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 <div className="relative">
                   <Input
                     value={domain}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isLoading) {
+                        handleCreateOrganization()
+                      }
+                    }}
                     onChange={(e) => {
                       setDomain(e.target.value)
                       setSuggestedDomains([])
@@ -204,6 +214,11 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoading && isEmailValid) {
+                  handleSignIn()
+                }
+              }}
               placeholder="username@mail.com"
               disabled={isLoading}
               className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 w-full"
