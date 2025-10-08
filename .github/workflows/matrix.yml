@@ -141,7 +141,7 @@ jobs:
                 "MESH_COMPRESSION_ENABLED": "true",
                 "MESH_WEBRTC_ENABLED": "false"
               },
-              context": "./integrated-tools/meshcentral"
+              "context": "./integrated-tools/meshcentral"
             },
             {
               "name": "tactical-frontend",
