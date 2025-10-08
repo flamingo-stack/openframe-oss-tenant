@@ -151,7 +151,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         </div>
 
         {/* Device Info Section */}
-        <DeviceInfoSection deviceId={logDetails.deviceId} userId={logDetails.userId} />
+        {logDetails.deviceId && <DeviceInfoSection deviceId={logDetails.deviceId} userId={logDetails.userId} />}
 
         {/* Full Information Section */}
         <FullInformationSection logDetails={logDetails} />

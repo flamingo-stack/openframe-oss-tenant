@@ -64,13 +64,6 @@ export function DevicesGrid({
                   status: statusConfig.cardStatus,
                   lastSeen: device.lastSeen,
                   operatingSystem: getDeviceOperatingSystem(device.osType),
-                  tags: device.tags && device.tags.length > 0 
-                    ? device.tags.map(tag => typeof tag === 'string' ? tag : tag.name)
-                    : [
-                        device.type || 'UNKNOWN',
-                        device.osType || 'UNKNOWN',
-                        ...(statusConfig.label !== 'ACTIVE' ? [statusConfig.label] : [])
-                      ].filter(Boolean)
                 }}
                 actions={{
                   moreButton: {

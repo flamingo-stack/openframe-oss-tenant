@@ -28,7 +28,9 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   }
 
   const handleRunScript = () => {
-    console.log('Run script:', scriptDetails?.id)
+    if (scriptDetails?.id) {
+      router.push(`/scripts/details/${scriptDetails.id}/run`)
+    }
   }
 
   if (isLoading) {

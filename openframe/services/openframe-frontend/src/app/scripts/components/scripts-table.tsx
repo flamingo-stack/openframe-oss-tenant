@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect, useMemo } from "react"
+import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -12,6 +13,7 @@ import {
 import { CirclePlusIcon } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useScripts } from "../hooks/use-scripts"
+import { ToolIcon } from "@flamingo/ui-kit"
 
 interface UIScriptEntry {
   id: number
@@ -43,7 +45,7 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: 'Tactical',
+      addedBy: toStandardToolLabel('TACTICAL'),
       category: script.category,
       timeout: script.default_timeout
     }))
@@ -88,12 +90,13 @@ export function ScriptsTable() {
       width: 'w-1/6',
       filterable: true,
       filterOptions: [
-        { id: 'TACTICAL', label: 'Tactical RMM', value: 'TACTICAL' },
-        { id: 'FLEET', label: 'Fleet MDM', value: 'FLEET' },
+        { id: 'TACTICAL', label: toStandardToolLabel('TACTICAL'), value: 'TACTICAL' },
+        { id: 'FLEET', label: toStandardToolLabel('FLEET'), value: 'FLEET' },
       ],
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.addedBy}
+        <span className="flex items-center gap-2 font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          { toStandardToolLabel(script.addedBy)}
+          <ToolIcon toolType={toUiKitToolType(script.addedBy) as any} size={16} />
         </span>
       )
     },

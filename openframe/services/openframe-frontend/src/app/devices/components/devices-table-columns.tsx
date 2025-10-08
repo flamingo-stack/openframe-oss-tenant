@@ -4,6 +4,7 @@ import { MoreHorizontal } from "lucide-react"
 import { WindowsIcon, MacOSIcon, LinuxIcon } from "@flamingo/ui-kit/components/icons"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
+import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 
 function getOSIcon(osType?: string) {
   if (!osType) return null
@@ -33,18 +34,17 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
     {
       key: 'device',
       label: 'DEVICE',
-      width: 'w-1/4',
+      width: 'w-1/3',
       renderCell: (device) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-            {device.displayName || device.hostname}
-          </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[18px] text-ods-text-secondary truncate">
-            {device.organization || device.machineId}
-          </span>
-          <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">
-            MAC: {device.macAddress || 'Unknown'}
-          </span>
+        <div className="bg-ods-card box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
+          <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
+            {device.type && getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, { className: 'w-5 h-5 text-ods-text-secondary' })}
+          </div>
+          <div className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+            <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
+              {device.displayName || device.hostname}
+            </p>
+          </div>
         </div>
       )
     },
@@ -98,16 +98,13 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       )
     },
     {
-      key: 'details',
-      label: 'DETAILS',
+      key: 'organization',
+      label: 'ORGANIZATION',
       width: 'w-1/6',
       renderCell: (device) => (
         <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-            {device.model || device.manufacturer || 'Unknown Model'}
-          </span>
-          <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate">
-            {device.serial_number || device.agent_id}
+            {device.organization ||''}
           </span>
         </div>
       )

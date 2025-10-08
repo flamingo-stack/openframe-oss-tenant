@@ -326,6 +326,10 @@ class ApiClient {
   async external<T = any>(url: string, options: ApiRequestOptions = {}): Promise<ApiResponse<T>> {
     return this.request<T>(url, options)
   }
+
+  me<T = any>() {
+    return this.request<T>('/api/me')
+  }
 }
 
 // Create singleton instance
