@@ -114,6 +114,10 @@ jobs:
           (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/checkout@v4
         with:
+          repository: flamingo-stack/openframe-oss-tenant
+          ref: ami/ci
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           fetch-depth: 1
 
       - name: Log in to GitHub Container Registry
