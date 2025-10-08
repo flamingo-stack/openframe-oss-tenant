@@ -2,8 +2,8 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: fleetmdm-mysql-init-privileges
-  annotations:
-    "argocd.argoproj.io/hook": PostSync
+  # annotations:
+  #   "argocd.argoproj.io/hook": PostSync
 spec:
   backoffLimit: 3
   template:
