@@ -1,8 +1,9 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ListPageContainer, Table, type TableColumn, StatusTag, Button, MoreActionsMenu } from '@flamingo/ui-kit/components/ui'
-import { EyeIcon, PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
+import { EyeIcon, PlusCircleIcon, DocumentIcon } from '@flamingo/ui-kit/components/icons'
 import { useApiKeys, type ApiKeyRecord } from '../../hooks/use-api-keys'
 import { CreateApiKeyModal } from '../../components/create-api-key-modal'
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal'
@@ -11,6 +12,7 @@ import { RegenerateApiKeyModal } from '../../components/regenerate-api-key-modal
 import { DisableApiKeyModal } from '../../components/disable-api-key-modal'
 
 export function ApiKeysTab() {
+  const router = useRouter()
   const { items, isLoading, error, fetchApiKeys, createApiKey, updateApiKey, regenerateApiKey, setApiKeyEnabled } = useApiKeys()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -121,13 +123,22 @@ export function ApiKeysTab() {
   ]
 
   const headerActions = (
-    <Button 
-      onClick={() => setIsCreateOpen(true)} 
-      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-      leftIcon={<PlusCircleIcon iconSize={20} whiteOverlay />}
-    >
-      Create API Key
-    </Button>
+    <div className="flex items-center gap-3">
+      <Button 
+        onClick={() => router.push('/swagger-ui/index.html#/')}
+        leftIcon={<DocumentIcon className="w-5 h-5" />}
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+      >
+        API Documentation
+      </Button>
+      <Button 
+        onClick={() => setIsCreateOpen(true)} 
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
+        leftIcon={<PlusCircleIcon iconSize={20} whiteOverlay />}
+      >
+        Create API Key
+      </Button>
+    </div>
   )
 
   return (
