@@ -159,7 +159,7 @@ export function useAuth() {
         }
         
         // Call auth service for /me (shared host if provided, else relative); includes cookies and header token (dev)
-        const response = await authApiClient.me()
+        const response = await apiClient.me()
         
         if (response.ok && response.data && response.data.authenticated) {
           const userData = response.data.user

@@ -11,8 +11,8 @@ import { getNavigationItems } from '../../lib/navigation-config'
 import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, isSaasTenantMode, isOssTenantMode } from '../../lib/app-mode'
 import { UnauthorizedOverlay } from './unauthorized-overlay'
 import { PageLoader, CompactPageLoader } from '@flamingo/ui-kit/components/ui'
-import { authApiClient } from '@lib/auth-api-client'
 import { runtimeEnv } from '@lib/runtime-config'
+import { apiClient } from '@/src/lib/api-client'
 
 function ContentLoading() {
   return <CompactPageLoader />
@@ -126,7 +126,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const check = async () => {
       try {
         setIsCheckingAuth(true)
-        const res = await authApiClient.me()
+        const res = await apiClient.me()
         if (!cancelled && res.ok && (res as any).data?.authenticated) {
           const userData = (res as any).data.user
           const token = runtimeEnv.enableDevTicketObserver()
