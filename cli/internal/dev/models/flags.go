@@ -26,6 +26,8 @@ type ScaffoldFlags struct {
 	ClusterName     string // Cluster name to use
 	SkipBootstrap   bool   // Skip bootstrapping cluster
 	HelmValuesFile  string // Custom Helm values file for bootstrap
+	GithubActor     string // GitHub username for Maven authentication
+	GithubToken     string // GitHub personal access token for Maven authentication
 }
 
 // AddGlobalFlags adds global flags to the dev command

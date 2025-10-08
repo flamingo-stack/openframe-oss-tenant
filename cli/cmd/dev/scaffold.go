@@ -47,6 +47,8 @@ Examples:
 	cmd.Flags().StringVar(&flags.SyncRemote, "sync-remote", "", "Remote directory to sync files to")
 	cmd.Flags().BoolVar(&flags.SkipBootstrap, "skip-bootstrap", false, "Skip bootstrapping cluster")
 	cmd.Flags().StringVar(&flags.HelmValuesFile, "helm-values", "", "Custom Helm values file for bootstrap")
+	cmd.Flags().StringVar(&flags.GithubActor, "github-actor", "", "GitHub username for Maven authentication")
+	cmd.Flags().StringVar(&flags.GithubToken, "github-token", "", "GitHub personal access token for Maven authentication")
 
 	return cmd
 }

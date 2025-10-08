@@ -57,6 +57,11 @@ func (s *Service) RunScaffoldWorkflow(ctx context.Context, args []string, flags 
 	}
 
 	pterm.Info.Printf("Using skaffold configuration: %s\n", selectedService.FilePath)
+	
+	// Step 1.5: Prompt for GitHub credentials if not provided
+	if err := s.promptForGitHubCredentials(flags); err != nil {
+		return err
+	}
 
 	// Step 2: Get cluster name (from args or interactive selection)
 	clusterName, err := s.getClusterName(args)
@@ -280,6 +285,17 @@ func (s *Service) runSkaffoldDev(ctx context.Context, selectedService *ui.Servic
 		cmd.Stdin = os.Stdin   // Allow interactive input if needed
 		cmd.Stdout = os.Stdout // Direct output to terminal
 		cmd.Stderr = os.Stderr // Direct errors to terminal
+		
+		// Inherit all environment variables from parent process
+		cmd.Env = os.Environ()
+		
+		// Add GitHub credentials as environment variables if provided
+		if flags.GithubActor != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("GITHUB_ACTOR=%s", flags.GithubActor))
+		}
+		if flags.GithubToken != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("GITHUB_TOKEN=%s", flags.GithubToken))
+		}
 
 		// Run the command (combines Start and Wait)
 		err = cmd.Run()
@@ -381,4 +397,58 @@ func (s *Service) determineNamespace(ctx context.Context, serviceName string, fl
 	}
 
 	return namespace, nil
+}
+
+// promptForGitHubCredentials prompts for GitHub credentials if not already provided
+func (s *Service) promptForGitHubCredentials(flags *models.ScaffoldFlags) error {
+	// Check if GitHub Actor is provided via flag, env var, or needs to be prompted
+	if flags.GithubActor == "" {
+		// Check environment variable first
+		if envActor := os.Getenv("GITHUB_ACTOR"); envActor != "" {
+			flags.GithubActor = envActor
+		} else {
+			// Prompt user for GitHub username
+			pterm.Println() // Add blank line for spacing
+			input := pterm.DefaultInteractiveTextInput
+			input.DefaultText = "Enter your GitHub username"
+			
+			githubActor, err := input.Show()
+			if err != nil {
+				return fmt.Errorf("failed to get GitHub username: %w", err)
+			}
+			
+			if githubActor == "" {
+				return fmt.Errorf("GitHub username is required for Maven authentication")
+			}
+			
+			flags.GithubActor = githubActor
+		}
+	}
+
+	// Check if GitHub Token is provided via flag, env var, or needs to be prompted
+	if flags.GithubToken == "" {
+		// Check environment variable first
+		if envToken := os.Getenv("GITHUB_TOKEN"); envToken != "" {
+			flags.GithubToken = envToken
+		} else {
+			// Prompt user for GitHub token (masked input)
+			input := pterm.DefaultInteractiveTextInput
+			input.DefaultText = "Enter your GitHub personal access token"
+			input.Mask = "*"
+			
+			githubToken, err := input.Show()
+			if err != nil {
+				return fmt.Errorf("failed to get GitHub token: %w", err)
+			}
+			
+			if githubToken == "" {
+				return fmt.Errorf("GitHub token is required for Maven authentication")
+			}
+			
+			flags.GithubToken = githubToken
+		}
+	}
+
+	pterm.Success.Printf("GitHub credentials configured (user: %s)\n", flags.GithubActor)
+	return nil
 }

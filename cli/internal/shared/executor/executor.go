@@ -169,3 +169,18 @@ func (e *RealCommandExecutor) buildEnvStrings(env map[string]string) []string {
 	}
 	return envStrings
 }
+
+// redactSensitiveInfo redacts sensitive information from command strings for logging
+func redactSensitiveInfo(command string) string {
+	// Redact common sensitive patterns like tokens, passwords, keys
+	sensitivePatterns := []string{"token", "password", "secret", "key", "auth"}
+	
+	for _, pattern := range sensitivePatterns {
+		if strings.Contains(strings.ToLower(command), pattern) {
+			// Simple redaction - just indicate that sensitive info was present
+			return "[REDACTED - contains sensitive information]"
+		}
+	}
+	
+	return command
+}

@@ -12,6 +12,9 @@ build:
             dest: "/app"
       docker:
         dockerfile: openframe/services/openframe-api/Dockerfile
+        buildArgs:
+          GITHUB_ACTOR: "{{.GITHUB_ACTOR}}"
+          GITHUB_TOKEN: "{{.GITHUB_TOKEN}}"
       hooks:
         before:
           - command: [ "mvn", "clean", "package", "-DskipTests"]
