@@ -1,5 +1,7 @@
 version: 2
 
+project_name: openframe-cli
+
 before:
   hooks:
     - go mod tidy
@@ -29,10 +31,10 @@ archives:
   - builds:
     - openframe-cli
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format: tar.gz
+    formats: ["zip", "tar.gz"]
     format_overrides:
       - goos: windows
-        format: zip
+        formats: ["zip"]
     files:
       - README.md
       - LICENSE
