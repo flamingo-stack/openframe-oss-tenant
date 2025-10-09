@@ -26,7 +26,8 @@ public class IntegratedToolAgentInitializer {
     private static final List<String> AGENT_CONFIGURATION_FILE_PATHS = Arrays.asList(
             "agent-configurations/fleetmdm-agent.json",
             "agent-configurations/tacticalrmm-agent.json", 
-            "agent-configurations/meshcentral-agent.json"
+            "agent-configurations/meshcentral-agent.json",
+            "agent-configurations/openframe-chat-agent.json"
     );
 
     @PostConstruct
