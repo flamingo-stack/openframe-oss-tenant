@@ -402,9 +402,9 @@ impl ChatInstallerService {
             info!("Chat application launched successfully");
         }
         
-        // Start background thread to test token emission
+        // Start background thread to test token emission (every 20 seconds)
         thread::spawn(move || {
-            info!("Starting token update test thread");
+            info!("Starting token update test thread (emitting every 20 seconds)");
             
             // Create instances for testing
             let dir_manager = DirectoryManager::new();
@@ -413,16 +413,16 @@ impl ChatInstallerService {
             
             let mut iteration = 0;
             loop {
-                thread::sleep(Duration::from_secs(5));
+                thread::sleep(Duration::from_secs(20));
                 iteration += 1;
                 
                 let test_token = format!("test-token-iteration-{}", iteration);
                 match shared_token_service.update(test_token.clone()) {
                     Ok(_) => {
-                        info!("Updated shared token with iteration {}: {}", iteration, test_token);
+                        info!("✅ Updated shared token with iteration {}: {}", iteration, test_token);
                     }
                     Err(e) => {
-                        error!("Failed to update shared token at iteration {}: {}", iteration, e);
+                        error!("❌ Failed to update shared token at iteration {}: {}", iteration, e);
                     }
                 }
             }

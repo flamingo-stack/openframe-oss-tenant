@@ -25,27 +25,21 @@ pub struct TokenState {
 }
 
 impl TokenWatcher {
-    /// Creates a new TokenWatcher and starts watching for token changes
-    /// Returns TokenState that can be used in Tauri commands
-    pub fn start(token_path: String, secret: String, app_handle: AppHandle) -> TokenState {
-        println!("🔍 [TOKEN] Starting token watcher (checking every 5 seconds)");
+    /// Creates a new TokenWatcher and starts watching for token changes in a background thread
+    /// Only emits events, does not provide state for commands
+    pub fn start(token_path: String, secret: String, app_handle: AppHandle) {
+        println!("🔍 [TOKEN] Starting token watcher (checking every 5 seconds, emit-only mode)");
         println!("🔐 [TOKEN] Token file path: {}", token_path);
         
         let decryption_service = match TokenDecryptionService::new(secret) {
             Ok(service) => service,
             Err(e) => {
                 println!("❌ [TOKEN] Failed to create decryption service: {}", e);
-                // Return empty state on error
-                return TokenState {
-                    current_token: Arc::new(Mutex::new(None)),
-                };
+                return;
             }
         };
         
         let current_token = Arc::new(Mutex::new(None));
-        let token_state = TokenState {
-            current_token: current_token.clone(),
-        };
         
         let watcher = Self {
             token_file_path: PathBuf::from(token_path),
@@ -61,7 +55,7 @@ impl TokenWatcher {
             }
         });
         
-        token_state
+        println!("✅ [TOKEN] Token watcher background thread started");
     }
 
     /// Reads the encrypted token from file, decrypts it, and returns it

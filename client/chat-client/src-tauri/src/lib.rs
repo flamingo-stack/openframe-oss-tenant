@@ -7,24 +7,11 @@ use tauri::{
 
 mod token_watcher;
 mod token_decryption_service;
-use token_watcher::{TokenWatcher, TokenState};
-use tauri::State;
+use token_watcher::TokenWatcher;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-#[tauri::command]
-fn get_token(token_state: State<TokenState>) -> Option<String> {
-    println!("📥 [COMMAND] Frontend requested token via get_token command");
-    let token = token_state.current_token.lock().unwrap();
-    if let Some(ref t) = *token {
-        println!("✅ [COMMAND] Returning token: {}...{}", &t[..4], &t[t.len()-4..]);
-    } else {
-        println!("⚠️  [COMMAND] No token available yet");
-    }
-    token.clone()
 }
 
 pub fn run() {
@@ -75,20 +62,11 @@ pub fn run() {
     builder = builder.setup(move |app| {
             // Start token watcher with app handle if parameters were provided
             if let Some((path, secret_key)) = token_params {
-                println!("✅ [SETUP] Starting token watcher and managing state");
-                let state = TokenWatcher::start(path, secret_key, app.handle().clone());
-                app.manage(state);
-                println!("✅ [SETUP] TokenState is now managed!");
+                println!("✅ [SETUP] Starting token watcher (emit-only mode)");
+                TokenWatcher::start(path, secret_key, app.handle().clone());
+                println!("✅ [SETUP] TokenWatcher started - will emit events every 5 seconds");
             } else {
                 println!("⚠️  [SETUP] Token watcher not started - parameters not provided");
-                // Still create and manage empty state so commands don't fail
-                use std::sync::{Arc, Mutex};
-                use token_watcher::TokenState;
-                let empty_state = TokenState {
-                    current_token: Arc::new(Mutex::new(None))
-                };
-                app.manage(empty_state);
-                println!("✅ [SETUP] Empty TokenState managed (no token available)");
             }
             
             println!("🚀 [SETUP] Chat application starting...");
@@ -189,7 +167,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![greet, get_token]);
+        .invoke_handler(tauri::generate_handler![greet]);
     
     builder.build(tauri::generate_context!())
         .expect("error while building tauri application")
