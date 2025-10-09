@@ -31,18 +31,25 @@ pub fn run() {
         }
     }
     
-    if let (Some(path), Some(secret_key)) = (token_path, secret) {
-        println!("🔑 [ARGS] OpenFrame token path: {}", path);
-        println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
-        
-        // Start token watcher
-        TokenWatcher::start(path, secret_key);
-    } else {
-        println!("⚠️  [ARGS] Missing required parameters:");
-        if token_path.is_none() {
+    match (token_path, secret) {
+        (Some(path), Some(secret_key)) => {
+            println!("🔑 [ARGS] OpenFrame token path: {}", path);
+            println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
+            
+            // Start token watcher
+            TokenWatcher::start(path, secret_key);
+        }
+        (None, None) => {
+            println!("⚠️  [ARGS] Missing required parameters:");
+            println!("  - openframe-token-path not provided");
+            println!("  - openframe-secret not provided");
+        }
+        (None, Some(_)) => {
+            println!("⚠️  [ARGS] Missing required parameter:");
             println!("  - openframe-token-path not provided");
         }
-        if secret.is_none() {
+        (Some(_), None) => {
+            println!("⚠️  [ARGS] Missing required parameter:");
             println!("  - openframe-secret not provided");
         }
     }
