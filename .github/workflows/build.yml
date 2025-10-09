@@ -183,7 +183,9 @@ jobs:
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: openframe
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && contains(needs.changes.outputs.client, 'true')
+    if: |
+      (github.event_name == 'workflow_dispatch') || 
+      (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true'))
     defaults:
       run:
         shell: bash
@@ -280,7 +282,7 @@ jobs:
     name: "Build Helm Chart"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.version != '')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
