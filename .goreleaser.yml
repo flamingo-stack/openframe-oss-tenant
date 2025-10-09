@@ -32,7 +32,7 @@ archives:
       - openframe-cli
     format: tar.gz
     name_template: >-
-     openframe-cli_
+      openframe-cli_
       {{- .Version }}_
       {{- .Os }}_
       {{- .Arch }}
