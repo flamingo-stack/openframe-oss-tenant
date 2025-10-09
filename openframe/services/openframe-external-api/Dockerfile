@@ -4,7 +4,6 @@ FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-alpine AS builder
 # Build arguments for GitHub authentication
 ARG SERVICE_NAME="openframe-external-api"
 ARG GITHUB_ACTOR
-ARG GITHUB_TOKEN
 
 # Install Maven
 RUN apk add --no-cache maven
@@ -16,7 +15,6 @@ COPY .mvn/settings.xml /root/.m2/settings.xml
 
 # Set environment variables for Maven to use
 ENV GITHUB_ACTOR=${GITHUB_ACTOR}
-ENV GITHUB_TOKEN=${GITHUB_TOKEN}
 ENV SERVICE_NAME=${SERVICE_NAME}
 
 # Copy entire project structure
@@ -24,8 +22,10 @@ COPY pom.xml ./
 COPY openframe/ openframe/
 COPY integrated-tools/ integrated-tools/
 
-# Build the application
-RUN mvn clean install \
+# Build the application using BuildKit secret
+RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
+    mvn clean install \
     -U \
     -pl openframe/services/$SERVICE_NAME \
     -am \
