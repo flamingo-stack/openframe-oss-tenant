@@ -4,7 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     // Include ui-kit components
-    "../../../ui-kit/src/**/*.{js,ts,jsx,tsx}"
+    "./node_modules/@flamingo/ui-kit/src/**/*.{js,ts,jsx,tsx}"
   ],
   theme: {
     extend: {

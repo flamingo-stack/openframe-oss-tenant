@@ -15,14 +15,25 @@ export interface Message {
 interface UseChatOptions {
   sseUrl?: string
   useMock?: boolean
+  useApi?: boolean
+  apiToken?: string
+  apiBaseUrl?: string
+  debugMode?: boolean
 }
 
-export function useChat({ sseUrl, useMock = true }: UseChatOptions = {}) {
+export function useChat({ sseUrl, useMock = false, useApi = true, apiToken, apiBaseUrl, debugMode = false }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const currentAssistantMessageRef = useRef<string>('')
   
-  const { streamMessage, isStreaming, error: sseError } = useSSE({ url: sseUrl, useMock })
+  const { streamMessage, isStreaming, error: sseError, reset } = useSSE({ 
+    url: sseUrl, 
+    useMock, 
+    useApi,
+    apiToken,
+    apiBaseUrl,
+    debugMode
+  })
   const { quickActions } = useChatConfig()
   
   const addMessage = useCallback((message: Message) => {
@@ -44,7 +55,6 @@ export function useChat({ sseUrl, useMock = true }: UseChatOptions = {}) {
   }, [])
   
   const sendMessage = useCallback(async (text: string) => {
-    // Add user message
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -54,7 +64,6 @@ export function useChat({ sseUrl, useMock = true }: UseChatOptions = {}) {
     }
     addMessage(userMessage)
     
-    // Start typing indicator
     setIsTyping(true)
     currentAssistantMessageRef.current = ''
 
@@ -68,14 +77,17 @@ export function useChat({ sseUrl, useMock = true }: UseChatOptions = {}) {
     }
     addMessage(assistantMessage)
     
-    
     try {
+      let receivedFirstChunk = false
       for await (const chunk of streamMessage(text)) {
+        if (!receivedFirstChunk) {
+          setIsTyping(false)
+          receivedFirstChunk = true
+        }
         currentAssistantMessageRef.current += chunk
         updateLastAssistantMessage(`${currentAssistantMessageRef.current}`)
       }
     } catch (err) {
-      // Replace assistant message with error message
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'error',
@@ -96,7 +108,8 @@ export function useChat({ sseUrl, useMock = true }: UseChatOptions = {}) {
   const clearMessages = useCallback(() => {
     setMessages([])
     setIsTyping(false)
-  }, [])
+    reset()
+  }, [reset])
   
   return {
     messages,
