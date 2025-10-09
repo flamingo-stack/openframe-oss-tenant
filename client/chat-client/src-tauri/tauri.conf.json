@@ -10,11 +10,23 @@
     "withGlobalTauri": false,
     "windows": [
       {
+        "label": "main",
         "title": "OpenFrame Chat",
         "width": 1000,
         "height": 800,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "visible": false
+      },
+      {
+        "label": "invisible",
+        "title": "",
+        "width": 1,
+        "height": 1,
+        "visible": false,
+        "decorations": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": false
       }
     ],
     "security": {

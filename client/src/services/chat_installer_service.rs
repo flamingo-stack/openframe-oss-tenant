@@ -299,20 +299,32 @@ impl ChatInstallerService {
                 cmd.arg("--minimized");
             }
             
+            // Inherit stdout/stderr to see logs in parent process
+            cmd.stdout(std::process::Stdio::inherit());
+            cmd.stderr(std::process::Stdio::inherit());
+            
             cmd.spawn()
                 .context("Failed to launch chat application")?;
         }
 
         #[cfg(target_os = "macos")]
         {
-            let mut cmd = Command::new("open");
-            cmd.arg(&app_path);
+            // On macOS, we need to run the executable directly to inherit stdout/stderr
+            // Using "open" command doesn't allow stdout/stderr inheritance
+            let executable_path = app_path.join("Contents").join("MacOS").join("openframe-chat");
+            
+            let mut cmd = Command::new(&executable_path);
             
             if minimize_to_tray {
-                // Start hidden in background on macOS
-                cmd.arg("--hide");
-                cmd.arg("--background");
+                // Add flag to start minimized to tray (app should handle this)
+                cmd.arg("--minimized");
             }
+            
+            // Inherit stdout/stderr to see logs in parent process
+            cmd.stdout(std::process::Stdio::inherit());
+            cmd.stderr(std::process::Stdio::inherit());
+            
+            info!("Launching chat executable: {:?}", executable_path);
             
             cmd.spawn()
                 .context("Failed to launch chat application")?;
@@ -326,6 +338,10 @@ impl ChatInstallerService {
                 // Add flag to start minimized to tray
                 cmd.arg("--minimized");
             }
+            
+            // Inherit stdout/stderr to see logs in parent process
+            cmd.stdout(std::process::Stdio::inherit());
+            cmd.stderr(std::process::Stdio::inherit());
             
             cmd.spawn()
                 .context("Failed to launch chat application")?;
