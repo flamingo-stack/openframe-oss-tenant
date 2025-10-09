@@ -24,6 +24,8 @@ COPY integrated-tools/ integrated-tools/
 
 # Build the application using BuildKit secret
 RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
+     echo "Using GitHub Actor: $GITHUB_ACTOR" && \
     mvn clean install \
     -U \
     -pl openframe/services/$SERVICE_NAME \
@@ -32,8 +34,8 @@ RUN --mount=type=secret,id=github_token \
     --batch-mode \
     --no-transfer-progress \
     -Dmaven.javadoc.skip=true \
-    -Dmaven.test.skip=true \
-    -Dgithub.token=$(cat /run/secrets/github_token)
+    -Dmaven.test.skip=true
+
 
 
 # Stage 2: Runtime image
