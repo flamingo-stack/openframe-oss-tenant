@@ -1,3 +1,9 @@
+registerJob:
+  enabled: true
+servicemonitor:
+  enabled: true
+
+
 
 pinot:
   cluster:
