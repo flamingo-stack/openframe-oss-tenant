@@ -361,13 +361,13 @@ impl Client {
             }
         }
 
-        // Launch chat application
+        // Launch chat application in background (minimized to tray, window won't pop up)
         if self.chat_installer_service.is_installed() {
-            info!("Launching chat application...");
-            if let Err(e) = self.chat_installer_service.launch() {
+            info!("Launching chat application in background...");
+            if let Err(e) = self.chat_installer_service.launch_minimized() {
                 error!("Failed to launch chat application: {}", e);
             } else {
-                info!("Chat application launched successfully");
+                info!("Chat application launched in background (check system tray)");
             }
         }
 

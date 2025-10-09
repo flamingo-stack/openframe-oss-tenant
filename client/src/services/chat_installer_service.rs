@@ -271,7 +271,17 @@ impl ChatInstallerService {
 
     /// Launch the chat application
     pub fn launch(&self) -> Result<()> {
-        info!("Launching chat application");
+        self.launch_with_options(false)
+    }
+
+    /// Launch the chat application in background (minimized to tray)
+    pub fn launch_minimized(&self) -> Result<()> {
+        self.launch_with_options(true)
+    }
+
+    /// Launch the chat application with options
+    fn launch_with_options(&self, minimize_to_tray: bool) -> Result<()> {
+        info!("Launching chat application (minimized: {})", minimize_to_tray);
 
         if !self.is_installed() {
             anyhow::bail!("Chat application is not installed");
@@ -281,28 +291,51 @@ impl ChatInstallerService {
 
         #[cfg(target_os = "windows")]
         {
-            Command::new(&app_path)
-                .creation_flags(0x00000008) // DETACHED_PROCESS
-                .spawn()
+            let mut cmd = Command::new(&app_path);
+            cmd.creation_flags(0x00000008); // DETACHED_PROCESS
+            
+            if minimize_to_tray {
+                // Add flag to start minimized to tray
+                cmd.arg("--minimized");
+            }
+            
+            cmd.spawn()
                 .context("Failed to launch chat application")?;
         }
 
         #[cfg(target_os = "macos")]
         {
-            Command::new("open")
-                .arg(&app_path)
-                .spawn()
+            let mut cmd = Command::new("open");
+            cmd.arg(&app_path);
+            
+            if minimize_to_tray {
+                // Start hidden in background on macOS
+                cmd.arg("--hide");
+                cmd.arg("--background");
+            }
+            
+            cmd.spawn()
                 .context("Failed to launch chat application")?;
         }
 
         #[cfg(target_os = "linux")]
         {
-            Command::new(&app_path)
-                .spawn()
+            let mut cmd = Command::new(&app_path);
+            
+            if minimize_to_tray {
+                // Add flag to start minimized to tray
+                cmd.arg("--minimized");
+            }
+            
+            cmd.spawn()
                 .context("Failed to launch chat application")?;
         }
 
-        info!("Chat application launched successfully");
+        if minimize_to_tray {
+            info!("Chat application launched in background (minimized to tray)");
+        } else {
+            info!("Chat application launched successfully");
+        }
         Ok(())
     }
 
