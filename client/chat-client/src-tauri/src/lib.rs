@@ -48,7 +48,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init());
     
     // Start token watcher and get state if both parameters are provided
-    let token_state = match (token_path, secret) {
+    let token_params = match (token_path, secret) {
         (Some(path), Some(secret_key)) => {
             println!("🔑 [ARGS] OpenFrame token path: {}", path);
             println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
@@ -74,9 +74,21 @@ pub fn run() {
     
     builder = builder.setup(move |app| {
             // Start token watcher with app handle if parameters were provided
-            if let Some((path, secret_key)) = token_state {
+            if let Some((path, secret_key)) = token_params {
+                println!("✅ [SETUP] Starting token watcher and managing state");
                 let state = TokenWatcher::start(path, secret_key, app.handle().clone());
                 app.manage(state);
+                println!("✅ [SETUP] TokenState is now managed!");
+            } else {
+                println!("⚠️  [SETUP] Token watcher not started - parameters not provided");
+                // Still create and manage empty state so commands don't fail
+                use std::sync::{Arc, Mutex};
+                use token_watcher::TokenState;
+                let empty_state = TokenState {
+                    current_token: Arc::new(Mutex::new(None))
+                };
+                app.manage(empty_state);
+                println!("✅ [SETUP] Empty TokenState managed (no token available)");
             }
             
             println!("🚀 [SETUP] Chat application starting...");

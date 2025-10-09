@@ -363,11 +363,25 @@ impl Client {
 
         // Launch chat application in background (minimized to tray, window won't pop up)
         if self.chat_installer_service.is_installed() {
-            info!("Launching chat application in background...");
-            if let Err(e) = self.chat_installer_service.launch_minimized() {
-                error!("Failed to launch chat application: {}", e);
+            // Check if debug mode is enabled via environment variable
+            let debug_mode = std::env::var("OPENFRAME_CHAT_DEBUG")
+                .map(|v| v == "1" || v.to_lowercase() == "true")
+                .unwrap_or(false);
+            
+            if debug_mode {
+                info!("🐛 Launching chat application with console (DEBUG MODE)...");
+                if let Err(e) = self.chat_installer_service.launch_with_console() {
+                    error!("Failed to launch chat application: {}", e);
+                } else {
+                    info!("Chat application launched with console visible - you can see all logs!");
+                }
             } else {
-                info!("Chat application launched in background (check system tray)");
+                info!("Launching chat application in background...");
+                if let Err(e) = self.chat_installer_service.launch_minimized() {
+                    error!("Failed to launch chat application: {}", e);
+                } else {
+                    info!("Chat application launched in background (check system tray)");
+                }
             }
         }
 

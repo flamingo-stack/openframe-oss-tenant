@@ -1,8 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::thread;
+use std::time::Duration;
 use anyhow::{Context, Result};
 use tracing::{debug, error, info, warn};
 use crate::platform::DirectoryManager;
+use crate::services::{EncryptionService, SharedTokenService};
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -276,16 +279,21 @@ impl ChatInstallerService {
 
     /// Launch the chat application
     pub fn launch(&self) -> Result<()> {
-        self.launch_with_options(false)
+        self.launch_with_options(false, false)
     }
 
     /// Launch the chat application in background (minimized to tray)
     pub fn launch_minimized(&self) -> Result<()> {
-        self.launch_with_options(true)
+        self.launch_with_options(true, false)
+    }
+
+    /// Launch the chat application with console visible (for debugging)
+    pub fn launch_with_console(&self) -> Result<()> {
+        self.launch_with_options(false, true)
     }
 
     /// Launch the chat application with options
-    fn launch_with_options(&self, minimize_to_tray: bool) -> Result<()> {
+    fn launch_with_options(&self, minimize_to_tray: bool, show_console: bool) -> Result<()> {
         info!("Launching chat application (minimized: {})", minimize_to_tray);
 
         if !self.is_installed() {
@@ -301,7 +309,11 @@ impl ChatInstallerService {
         #[cfg(target_os = "windows")]
         {
             let mut cmd = Command::new(&app_path);
-            cmd.creation_flags(0x00000008); // DETACHED_PROCESS
+            
+            // Only detach process if console should not be shown
+            if !show_console {
+                cmd.creation_flags(0x00000008); // DETACHED_PROCESS
+            }
             
             if minimize_to_tray {
                 // Add flag to start minimized to tray
@@ -319,6 +331,10 @@ impl ChatInstallerService {
             // Inherit stdout/stderr to see logs in parent process
             cmd.stdout(std::process::Stdio::inherit());
             cmd.stderr(std::process::Stdio::inherit());
+            
+            if show_console {
+                info!("🖥️  Launching with console visible for debugging");
+            }
             
             cmd.spawn()
                 .context("Failed to launch chat application")?;
@@ -385,6 +401,33 @@ impl ChatInstallerService {
         } else {
             info!("Chat application launched successfully");
         }
+        
+        // Start background thread to test token emission
+        thread::spawn(move || {
+            info!("Starting token update test thread");
+            
+            // Create instances for testing
+            let dir_manager = DirectoryManager::new();
+            let encryption_service = EncryptionService::new();
+            let shared_token_service = SharedTokenService::new(dir_manager, encryption_service);
+            
+            let mut iteration = 0;
+            loop {
+                thread::sleep(Duration::from_secs(5));
+                iteration += 1;
+                
+                let test_token = format!("test-token-iteration-{}", iteration);
+                match shared_token_service.update(test_token.clone()) {
+                    Ok(_) => {
+                        info!("Updated shared token with iteration {}: {}", iteration, test_token);
+                    }
+                    Err(e) => {
+                        error!("Failed to update shared token at iteration {}: {}", iteration, e);
+                    }
+                }
+            }
+        });
+        
         Ok(())
     }
 
