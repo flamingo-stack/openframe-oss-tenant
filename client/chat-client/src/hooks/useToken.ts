@@ -9,9 +9,19 @@ export function useToken() {
   const [token, setToken] = useState<string | null>(tokenService.getCurrentToken());
 
   useEffect(() => {
-    console.log('🎬 [useToken] Hook mounted, subscribing to token updates');
+    console.log('🎬 [useToken] Hook mounted');
     
-    // Subscribe to token updates (no initial request, just wait for events)
+    // Request token from Rust immediately on mount
+    tokenService.requestToken().then((fetchedToken) => {
+      if (fetchedToken) {
+        console.log('✅ [useToken] Initial token received:', fetchedToken.substring(0, 20) + '...');
+        setToken(fetchedToken);
+      } else {
+        console.log('⚠️  [useToken] No token available yet');
+      }
+    });
+    
+    // Subscribe to token updates
     const unsubscribe = tokenService.onTokenUpdate((newToken) => {
       console.log('🔑 [useToken] Token updated in hook:', newToken.substring(0, 20) + '...');
       setToken(newToken);
