@@ -17,7 +17,13 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn get_token(token_state: State<TokenState>) -> Option<String> {
+    println!("📥 [COMMAND] Frontend requested token via get_token command");
     let token = token_state.current_token.lock().unwrap();
+    if let Some(ref t) = *token {
+        println!("✅ [COMMAND] Returning token: {}...{}", &t[..4], &t[t.len()-4..]);
+    } else {
+        println!("⚠️  [COMMAND] No token available yet");
+    }
     token.clone()
 }
 
