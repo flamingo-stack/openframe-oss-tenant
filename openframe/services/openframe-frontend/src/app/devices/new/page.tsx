@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppLayout } from '../../components/app-layout'
-import { Button, Input } from '@flamingo/ui-kit/components/ui'
+import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@flamingo/ui-kit/components/ui'
 import { DetailPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { useRouter } from 'next/navigation'
 import { useRegistrationSecret } from '../hooks/use-registration-secret'
 import { OS_PLATFORMS, DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo/ui-kit/utils'
+import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
 
 type Platform = OSPlatformId
 
@@ -21,6 +22,12 @@ export default function NewDevicePage() {
   const { initialKey } = useRegistrationSecret()
   const [argInput, setArgInput] = useState('')
   const [args, setArgs] = useState<string[]>([])
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('')
+  const { items: orgs, fetch: fetchOrgs } = useOrganizationsMin()
+
+  useEffect(() => {
+    fetchOrgs('').catch(() => {})
+  }, [fetchOrgs])
 
   const addArgument = useCallback(() => {
     const trimmed = argInput.trim()
@@ -41,7 +48,8 @@ export default function NewDevicePage() {
   }, [addArgument])
 
   const command = useMemo(() => {
-    const baseArgs = `install --serverUrl localhost --initialKey ${initialKey} --localMode --orgId test_org`
+    const orgIdArg = selectedOrgId
+    const baseArgs = `install --serverUrl localhost --initialKey ${initialKey} --localMode --orgId ${orgIdArg}`
     const extras = args.length ? ' ' + args.join(' ') : ''
 
     if (platform === 'windows') {
@@ -50,7 +58,7 @@ export default function NewDevicePage() {
     }
 
     return `curl -L -o openframe '${MACOS_BINARY_URL}' && chmod +x ./openframe && sudo ./openframe ${baseArgs}${extras}`
-  }, [initialKey, args, platform])
+  }, [initialKey, args, platform, selectedOrgId])
 
   const copyCommand = useCallback(async () => {
     try {
@@ -76,6 +84,20 @@ export default function NewDevicePage() {
         <div className="flex flex-col gap-6">
           {/* Top row: Organization and Platform */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Select Organization */}
+            <div className="flex flex-col gap-2">
+              <div className="text-ods-text-secondary text-sm">Select Organization</div>
+              <Select value={selectedOrgId} onValueChange={(v) => setSelectedOrgId(v)}>
+                <SelectTrigger className="bg-ods-card border border-ods-border">
+                  <SelectValue placeholder="Choose organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orgs.map((o) => (
+                    <SelectItem key={o.id} value={o.organizationId}>{o.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {/* Select Platform */}
             <div className="flex flex-col gap-2">
               <div className="text-ods-text-secondary text-sm">Select Platform</div>
