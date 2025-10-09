@@ -106,7 +106,7 @@ impl ToolInstallationService {
 
             if is_application {
                 // For APPLICATION type (e.g., .app bundle), install using platform-specific method
-                self.install_application(&file_path, tool_agent_file_bytes, tool_agent_id).await?;
+                self.install_application(&file_path, tool_agent_file_bytes.to_vec(), tool_agent_id).await?;
             } else {
                 // For EXECUTABLE type, save directly and set permissions
                 File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;

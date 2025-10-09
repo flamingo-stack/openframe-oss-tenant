@@ -299,6 +299,10 @@ impl ChatInstallerService {
                 cmd.arg("--minimized");
             }
             
+            // Add openframe-token-path parameter
+            cmd.arg("--openframe-token-path");
+            cmd.arg("test-path");
+            
             // Inherit stdout/stderr to see logs in parent process
             cmd.stdout(std::process::Stdio::inherit());
             cmd.stderr(std::process::Stdio::inherit());
@@ -320,11 +324,15 @@ impl ChatInstallerService {
                 cmd.arg("--minimized");
             }
             
+            // Add openframe-token-path parameter
+            cmd.arg("--openframe-token-path");
+            cmd.arg("test-path");
+            
             // Inherit stdout/stderr to see logs in parent process
             cmd.stdout(std::process::Stdio::inherit());
             cmd.stderr(std::process::Stdio::inherit());
             
-            info!("Launching chat executable: {:?}", executable_path);
+            info!("Launching chat executable with token path: {:?}", executable_path);
             
             cmd.spawn()
                 .context("Failed to launch chat application")?;
@@ -338,6 +346,10 @@ impl ChatInstallerService {
                 // Add flag to start minimized to tray
                 cmd.arg("--minimized");
             }
+            
+            // Add openframe-token-path parameter
+            cmd.arg("--openframe-token-path");
+            cmd.arg("test-path");
             
             // Inherit stdout/stderr to see logs in parent process
             cmd.stdout(std::process::Stdio::inherit());

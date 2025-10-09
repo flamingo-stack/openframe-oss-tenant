@@ -11,6 +11,25 @@ fn greet(name: &str) -> String {
 }
 
 pub fn run() {
+    // Parse command line arguments
+    let args: Vec<String> = std::env::args().collect();
+    println!("📝 [ARGS] Command line arguments: {:?}", args);
+    
+    // Look for --openframe-token-path parameter
+    let mut token_path: Option<String> = None;
+    for i in 0..args.len() {
+        if args[i] == "--openframe-token-path" && i + 1 < args.len() {
+            token_path = Some(args[i + 1].clone());
+            break;
+        }
+    }
+    
+    if let Some(path) = &token_path {
+        println!("🔑 [ARGS] OpenFrame token path: {}", path);
+    } else {
+        println!("⚠️  [ARGS] No openframe-token-path provided");
+    }
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
