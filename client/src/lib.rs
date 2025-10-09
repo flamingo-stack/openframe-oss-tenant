@@ -55,6 +55,7 @@ use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
+use crate::services::ChatInstallerService;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -126,6 +127,7 @@ pub struct Client {
     tool_agent_update_listener: ToolAgentUpdateListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
+    chat_installer_service: ChatInstallerService,
 }
 
 impl Client {
@@ -321,6 +323,10 @@ impl Client {
             config_service.clone()
         );
 
+        // Initialize chat installer service
+        let chat_installer_service = ChatInstallerService::new()
+            .context("Failed to initialize chat installer service")?;
+
         Ok(Self {
             config,
             directory_manager,
@@ -332,6 +338,7 @@ impl Client {
             tool_agent_update_listener,
             tool_run_manager,
             tool_connection_processing_manager,
+            chat_installer_service,
         })
     }
 
@@ -341,26 +348,46 @@ impl Client {
         // Process initial registration and authentication
         // if it haven't been done yet
         // Processors retry it till success
-        self.registration_processor.process().await?;
-        self.auth_processor.process().await?;
+        // self.registration_processor.process().await?;
+        // self.auth_processor.process().await?;
+
+        // Install and launch chat application if not already installed
+        if !self.chat_installer_service.is_installed() {
+            info!("Chat application not found, installing...");
+            if let Err(e) = self.chat_installer_service.install() {
+                error!("Failed to install chat application: {}", e);
+            } else {
+                info!("Chat application installed successfully");
+            }
+        }
+
+        // Launch chat application
+        if self.chat_installer_service.is_installed() {
+            info!("Launching chat application...");
+            if let Err(e) = self.chat_installer_service.launch() {
+                error!("Failed to launch chat application: {}", e);
+            } else {
+                info!("Chat application launched successfully");
+            }
+        }
 
         // Connect to NATS
-        self.nats_connection_manager.connect().await?;
-
-        // Start tool installation message listener in background
-        self.tool_installation_message_listener.start().await?;
-
-        // Start OpenFrame client update listener in background
-        self.openframe_client_update_listener.start().await?;
-
-        // Start tool agent update listener in background
-        self.tool_agent_update_listener.start().await?;
-
-        // Start tool run manager
-        self.tool_run_manager.run().await?;
-
-        // Start tool connection processing manager
-        self.tool_connection_processing_manager.run().await?;
+        // self.nats_connection_manager.connect().await?;
+        //
+        // // Start tool installation message listener in background
+        // self.tool_installation_message_listener.start().await?;
+        //
+        // // Start OpenFrame client update listener in background
+        // self.openframe_client_update_listener.start().await?;
+        //
+        // // Start tool agent update listener in background
+        // self.tool_agent_update_listener.start().await?;
+        //
+        // // Start tool run manager
+        // self.tool_run_manager.run().await?;
+        //
+        // // Start tool connection processing manager
+        // self.tool_connection_processing_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

@@ -22,6 +22,7 @@ pub mod tool_connection_service;
 pub mod openframe_client_update_service;
 pub mod tool_agent_update_service;
 pub mod openframe_client_info_service;
+pub mod chat_installer_service;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
@@ -44,3 +45,4 @@ pub use tool_connection_service::ToolConnectionService;
 pub use openframe_client_update_service::OpenFrameClientUpdateService;
 pub use tool_agent_update_service::ToolAgentUpdateService;
 pub use openframe_client_info_service::OpenFrameClientInfoService;
+pub use chat_installer_service::ChatInstallerService;
