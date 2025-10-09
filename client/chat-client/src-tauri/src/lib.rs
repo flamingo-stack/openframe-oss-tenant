@@ -15,8 +15,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+            let menu = Menu::with_items(app, &[&show_i])?;
             
             // Load the tray icon bytes at compile time
             let tray_icon_bytes = include_bytes!("../icons/tray/icon.png");
@@ -48,9 +47,6 @@ pub fn run() {
                             let _ = window.show();
                             let _ = window.set_focus();
                         }
-                    }
-                    "quit" => {
-                        app.exit(0);
                     }
                     _ => {}
                 })
