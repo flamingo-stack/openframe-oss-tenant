@@ -28,7 +28,13 @@ public class AgentRegistrationToolService {
     private void publish(String machineId, IntegratedToolAgent toolAgent) {
         String toolId = toolAgent.getToolId();
         IntegratedTool tool = integratedToolService.getToolById(toolId)
-                .orElseThrow(() -> new IllegalStateException("No tool found for " + toolId));
+                .orElseGet(() -> {
+                    log.warn("No tool found for toolId: {}, sending with empty tool id and type", toolId);
+                    IntegratedTool emptyTool = new IntegratedTool();
+                    emptyTool.setId("");
+                    emptyTool.setType("");
+                    return emptyTool;
+                });
 
         try {
             // process params for installation command args
