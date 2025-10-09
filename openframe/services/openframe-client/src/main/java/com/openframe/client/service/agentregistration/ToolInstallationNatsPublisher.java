@@ -38,6 +38,8 @@ public class ToolInstallationNatsPublisher {
         message.setToolId(toolAgent.getToolId());
         message.setToolType(tool.getToolType());
         message.setVersion(toolAgent.getVersion());
+        message.setFileType(toolAgent.getFileType());
+        message.setRequireGui(toolAgent.isRequireGui());
         message.setAssets(mapAssets(toolAgent.getAssets()));
         message.setInstallationCommandArgs(toolAgent.getInstallationCommandArgs());
         message.setUninstallationCommandArgs(toolAgent.getUninstallationCommandArgs());

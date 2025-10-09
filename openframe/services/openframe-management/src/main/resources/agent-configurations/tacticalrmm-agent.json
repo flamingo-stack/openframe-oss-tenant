@@ -3,7 +3,8 @@
   "toolId": "tactical-rmm",
   "version": "1.0.0",
   "status": "ENABLED",
-  "mainFileType": "EXECUTABLE",
+  "fileType": "EXECUTABLE",
+  "requireGui": false,
   "installationCommandArgs": [
     "-m", "install",
     "-api", "${client.serverUrl}",

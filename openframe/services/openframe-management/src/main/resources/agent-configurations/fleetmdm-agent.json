@@ -3,7 +3,8 @@
   "toolId": "fleetmdm-server",
   "version": "1.0.0",
   "status": "ENABLED",
-  "mainFileType": "EXECUTABLE",
+  "fileType": "EXECUTABLE",
+  "requireGui": false,
   "runCommandArgs": [
     "--fleet-url", "${client.serverUrl}",
     "--enroll-secret", "${server.registrationSecret}",

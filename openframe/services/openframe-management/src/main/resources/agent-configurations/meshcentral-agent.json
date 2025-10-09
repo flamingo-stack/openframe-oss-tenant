@@ -3,7 +3,8 @@
   "toolId": "meshcentral-server",
   "version": "1.0.0",
   "status": "ENABLED",
-  "mainFileType": "EXECUTABLE",
+  "fileType": "EXECUTABLE",
+  "requireGui": true,
   "runCommandArgs": [
     "connect",
     "--openframe-mode",
