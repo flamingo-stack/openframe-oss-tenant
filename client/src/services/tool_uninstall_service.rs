@@ -71,6 +71,17 @@ impl ToolUninstallService {
         self.tool_kill_service.stop_tool(tool_agent_id).await
             .with_context(|| format!("Failed to stop tool process for: {}", tool_agent_id))?;
 
+        // TODO: make this stop from fleet orbit side or using asset path
+        // Now it's dirty solution to stop osquery manually
+        if (tool.tool_agent_id.to_lowercase().contains("fleet")) {
+            info!("Stopping osqueryd for tool: {}", tool_agent_id);
+            self.tool_kill_service.stop_asset("osqueryd", tool_agent_id).await
+                .with_context(|| format!("Failed to stop tool process for: {}", tool_agent_id))?;
+            info!("Successfully stopped osqueryd for tool: {}", tool_agent_id);
+        } else {
+            info!("Not stopping osqueryd for tool: {}", tool_agent_id);
+        }
+
         // Check if uninstallation command is provided
         if tool.uninstallation_command_args.is_none() {
             info!("No uninstallation command provided for tool: {}, skipping", tool_agent_id);
