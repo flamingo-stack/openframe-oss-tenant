@@ -24,7 +24,7 @@ COPY integrated-tools/ integrated-tools/
 
 # Build the application using BuildKit secret
 RUN --mount=type=secret,id=github_token \
-    export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
     mvn clean install \
     -U \
     -pl openframe/services/$SERVICE_NAME \

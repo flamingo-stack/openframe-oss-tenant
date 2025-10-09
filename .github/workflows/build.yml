@@ -158,7 +158,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           secrets: |
-            github_tokn=${{ secrets.GITHUB_TOKEN }}
+            github_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             GITHUB_ACTOR=${{ github.actor }}
             ${{ env.BUILD_ARGS }}
