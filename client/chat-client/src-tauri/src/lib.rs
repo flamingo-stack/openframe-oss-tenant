@@ -31,32 +31,33 @@ pub fn run() {
         }
     }
     
-    match (token_path, secret) {
-        (Some(path), Some(secret_key)) => {
-            println!("🔑 [ARGS] OpenFrame token path: {}", path);
-            println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
-            
-            // Start token watcher
-            TokenWatcher::start(path, secret_key);
-        }
-        (None, None) => {
-            println!("⚠️  [ARGS] Missing required parameters:");
-            println!("  - openframe-token-path not provided");
-            println!("  - openframe-secret not provided");
-        }
-        (None, Some(_)) => {
-            println!("⚠️  [ARGS] Missing required parameter:");
-            println!("  - openframe-token-path not provided");
-        }
-        (Some(_), None) => {
-            println!("⚠️  [ARGS] Missing required parameter:");
-            println!("  - openframe-secret not provided");
-        }
-    }
-    
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .setup(|app| {
+        .setup(move |app| {
+            // Start token watcher with app handle if both parameters are provided
+            match (token_path, secret) {
+                (Some(path), Some(secret_key)) => {
+                    println!("🔑 [ARGS] OpenFrame token path: {}", path);
+                    println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
+                    
+                    // Start token watcher with app handle
+                    TokenWatcher::start(path, secret_key, app.handle().clone());
+                }
+                (None, None) => {
+                    println!("⚠️  [ARGS] Missing required parameters:");
+                    println!("  - openframe-token-path not provided");
+                    println!("  - openframe-secret not provided");
+                }
+                (None, Some(_)) => {
+                    println!("⚠️  [ARGS] Missing required parameter:");
+                    println!("  - openframe-token-path not provided");
+                }
+                (Some(_), None) => {
+                    println!("⚠️  [ARGS] Missing required parameter:");
+                    println!("  - openframe-secret not provided");
+                }
+            }
+            
             println!("🚀 [SETUP] Chat application starting...");
             println!("🪟 [SETUP] Available windows: {:?}", app.webview_windows().keys().collect::<Vec<_>>());
             

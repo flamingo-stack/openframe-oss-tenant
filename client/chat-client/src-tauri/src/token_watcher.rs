@@ -3,18 +3,26 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use crate::token_decryption_service::TokenDecryptionService;
+use tauri::{AppHandle, Emitter};
+use serde::Serialize;
+
+#[derive(Clone, Serialize)]
+struct TokenUpdateEvent {
+    token: String,
+}
 
 /// Service that watches for token changes in the shared token file
 pub struct TokenWatcher {
     token_file_path: PathBuf,
     current_token: Arc<Mutex<Option<String>>>,
     decryption_service: TokenDecryptionService,
+    app_handle: AppHandle,
 }
 
 impl TokenWatcher {
     /// Creates a new TokenWatcher and starts watching for token changes
     /// This is the only public method - call this to start the watcher
-    pub fn start(token_path: String, secret: String) {
+    pub fn start(token_path: String, secret: String, app_handle: AppHandle) {
         println!("🔍 [TOKEN] Starting token watcher (checking every 5 seconds)");
         println!("🔐 [TOKEN] Token file path: {}", token_path);
         
@@ -30,6 +38,7 @@ impl TokenWatcher {
             token_file_path: PathBuf::from(token_path),
             current_token: Arc::new(Mutex::new(None)),
             decryption_service,
+            app_handle,
         };
         
         std::thread::spawn(move || {
@@ -73,9 +82,11 @@ impl TokenWatcher {
             match (&*current, &new_token) {
                 (None, Some(token)) => {
                     println!("✅ [TOKEN] First token received: {}", Self::mask_token(token));
+                    self.emit_token_to_frontend(token);
                 }
                 (Some(_), Some(token)) => {
                     println!("🔄 [TOKEN] Token changed: {}", Self::mask_token(token));
+                    self.emit_token_to_frontend(token);
                 }
                 (Some(_), None) => {
                     println!("⚠️  [TOKEN] Token file is now empty or unreadable");
@@ -86,6 +97,19 @@ impl TokenWatcher {
             }
             
             *current = new_token;
+        }
+    }
+    
+    /// Emits the token to the frontend via Tauri events
+    fn emit_token_to_frontend(&self, token: &str) {
+        let event = TokenUpdateEvent {
+            token: token.to_string(),
+        };
+        
+        if let Err(e) = self.app_handle.emit("token-update", event) {
+            println!("❌ [TOKEN] Failed to emit token to frontend: {}", e);
+        } else {
+            println!("📤 [TOKEN] Token emitted to frontend successfully");
         }
     }
 
