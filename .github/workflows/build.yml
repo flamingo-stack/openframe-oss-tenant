@@ -301,9 +301,54 @@ jobs:
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
 
+  build_go_cli:
+    name: "Build Go CLI"
+    needs: [changes]
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.version != '') ||
+      (github.event_name == 'push' && contains(needs.changes.outputs.cli, 'true'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+
+      - name: Run GoReleaser (snapshot)
+        if: github.event_name == 'push'
+        run: goreleaser release --snapshot --clean --skip=publish
+        working-directory: ./
+
+      - name: Run GoReleaser (release)
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag -f ${{ inputs.version }}
+          goreleaser release --clean
+        working-directory: ./
+
+      - name: Upload Go CLI artifacts
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openframe-cli-binaries
+          path: dist/*.tar.gz
+          retention-days: 30
+
   release:
     name: "Create Release"
-    needs: [ build_client, build_images, matrix, changes ]
+    needs: [ build_client, build_images, build_go_cli, matrix, changes ]
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && inputs.version != ''
     steps:
@@ -332,9 +377,13 @@ jobs:
           # Copy client binaries
           if [ -d "release-artifacts" ]; then
             find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
-              -exec cp {} final-artifacts/client/ \;
+            -exec cp {} final-artifacts/client/ \;
           fi
 
+          # Copy Go CLI binaries
+          find release-artifacts -type f -name "openframe-cli_*.tar.gz" \
+          -exec cp {} final-artifacts/cli/ \;
+      
           echo "Final artifacts to release:"
           echo "=== Client artifacts ==="
           ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
@@ -379,6 +428,7 @@ jobs:
           prerelease: false
           files: |
             final-artifacts/client/*
+            final-artifacts/cli/*
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             Release ${{ github.event.inputs.version }}
