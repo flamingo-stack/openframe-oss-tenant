@@ -1,7 +1,5 @@
 version: 2
 
-project_name: openframe-cli
-
 before:
   hooks:
     - go mod tidy
@@ -15,33 +13,31 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - darwin
       - windows
+      - darwin
     goarch:
       - amd64
+      - arm
       - arm64
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
+      - -X github.com/flamingo-stack/openframe-oss-tenant/cmd.version={{.Version}}
+      - -X github.com/flamingo-stack/openframe-oss-tenant/cmd.commit={{.Commit}}
+      - -X github.com/flamingo-stack/openframe-oss-tenant/cmd.date={{.Date}}
 
 archives:
-  - id: openframe-cli-archive
-    builds:
-      - openframe-cli
+  - builds:
+    - openframe-cli
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format: tar.gz
-    name_template: >-
-      openframe-cli_
-      {{- .Version }}_
-      {{- .Os }}_
-      {{- .Arch }}
     format_overrides:
       - goos: windows
         format: zip
     files:
       - README.md
       - LICENSE
+    wrap_in_directory: false
+
 
 checksum:
   name_template: 'checksums.txt'
