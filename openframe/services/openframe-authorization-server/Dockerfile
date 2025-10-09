@@ -22,9 +22,7 @@ COPY pom.xml ./
 COPY openframe/ openframe/
 COPY integrated-tools/ integrated-tools/
 
-# Build the application using BuildKit secret
 RUN --mount=type=secret,id=github_token \
-    GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
     mvn clean install \
     -U \
     -pl openframe/services/$SERVICE_NAME \
@@ -33,7 +31,8 @@ RUN --mount=type=secret,id=github_token \
     --batch-mode \
     --no-transfer-progress \
     -Dmaven.javadoc.skip=true \
-    -Dmaven.test.skip=true
+    -Dmaven.test.skip=true \
+    -Dgithub.token=$(cat /run/secrets/github_token)
 
 # Stage 2: Runtime image
 FROM eclipse-temurin:21-jre-alpine
