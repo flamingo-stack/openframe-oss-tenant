@@ -336,7 +336,7 @@ jobs:
         run: |
           git tag -f ${{ inputs.version }}
           goreleaser release --clean
-        working-directory: ./
+        working-directory: ./cli
 
       - name: Upload Go CLI artifacts
         if: github.event_name == 'push'
@@ -348,7 +348,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [ build_client, build_images, build_go_cli, matrix, changes ]
+    needs: [ build_client, build_images, matrix, changes ]
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && inputs.version != ''
     steps:
