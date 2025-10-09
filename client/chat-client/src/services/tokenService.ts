@@ -1,4 +1,5 @@
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 
 interface TokenUpdatePayload {
   token: string;
@@ -19,7 +20,7 @@ class TokenService {
     try {
       await listen<TokenUpdatePayload>('token-update', (event) => {
         const { token } = event.payload;
-        console.log('🔑 [TOKEN SERVICE] Token received from Rust:', this.maskToken(token));
+        console.log('🔑 [TOKEN SERVICE] Token received from Rust event:', this.maskToken(token));
         
         this.currentToken = token;
         
@@ -36,6 +37,37 @@ class TokenService {
       console.log('✅ [TOKEN SERVICE] Token listener initialized');
     } catch (error) {
       console.error('❌ [TOKEN SERVICE] Failed to initialize token listener:', error);
+    }
+  }
+  
+  /**
+   * Request token from Rust using Tauri command
+   */
+  async requestToken(): Promise<string | null> {
+    try {
+      console.log('📤 [TOKEN SERVICE] Requesting token from Rust...');
+      const token = await invoke<string | null>('get_token');
+      
+      if (token) {
+        console.log('✅ [TOKEN SERVICE] Token received from Rust command:', this.maskToken(token));
+        this.currentToken = token;
+        
+        // Notify all listeners
+        this.listeners.forEach(listener => {
+          try {
+            listener(token);
+          } catch (error) {
+            console.error('❌ [TOKEN SERVICE] Error in listener:', error);
+          }
+        });
+      } else {
+        console.log('⚠️  [TOKEN SERVICE] No token available yet');
+      }
+      
+      return token;
+    } catch (error) {
+      console.error('❌ [TOKEN SERVICE] Failed to request token:', error);
+      return null;
     }
   }
 

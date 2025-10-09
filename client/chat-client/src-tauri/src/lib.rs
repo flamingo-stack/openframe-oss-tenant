@@ -7,11 +7,18 @@ use tauri::{
 
 mod token_watcher;
 mod token_decryption_service;
-use token_watcher::TokenWatcher;
+use token_watcher::{TokenWatcher, TokenState};
+use tauri::State;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+#[tauri::command]
+fn get_token(token_state: State<TokenState>) -> Option<String> {
+    let token = token_state.current_token.lock().unwrap();
+    token.clone()
 }
 
 pub fn run() {
@@ -31,31 +38,39 @@ pub fn run() {
         }
     }
     
-    tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .setup(move |app| {
-            // Start token watcher with app handle if both parameters are provided
-            match (token_path, secret) {
-                (Some(path), Some(secret_key)) => {
-                    println!("🔑 [ARGS] OpenFrame token path: {}", path);
-                    println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
-                    
-                    // Start token watcher with app handle
-                    TokenWatcher::start(path, secret_key, app.handle().clone());
-                }
-                (None, None) => {
-                    println!("⚠️  [ARGS] Missing required parameters:");
-                    println!("  - openframe-token-path not provided");
-                    println!("  - openframe-secret not provided");
-                }
-                (None, Some(_)) => {
-                    println!("⚠️  [ARGS] Missing required parameter:");
-                    println!("  - openframe-token-path not provided");
-                }
-                (Some(_), None) => {
-                    println!("⚠️  [ARGS] Missing required parameter:");
-                    println!("  - openframe-secret not provided");
-                }
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init());
+    
+    // Start token watcher and get state if both parameters are provided
+    let token_state = match (token_path, secret) {
+        (Some(path), Some(secret_key)) => {
+            println!("🔑 [ARGS] OpenFrame token path: {}", path);
+            println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
+            Some((path, secret_key))
+        }
+        (None, None) => {
+            println!("⚠️  [ARGS] Missing required parameters:");
+            println!("  - openframe-token-path not provided");
+            println!("  - openframe-secret not provided");
+            None
+        }
+        (None, Some(_)) => {
+            println!("⚠️  [ARGS] Missing required parameter:");
+            println!("  - openframe-token-path not provided");
+            None
+        }
+        (Some(_), None) => {
+            println!("⚠️  [ARGS] Missing required parameter:");
+            println!("  - openframe-secret not provided");
+            None
+        }
+    };
+    
+    builder = builder.setup(move |app| {
+            // Start token watcher with app handle if parameters were provided
+            if let Some((path, secret_key)) = token_state {
+                let state = TokenWatcher::start(path, secret_key, app.handle().clone());
+                app.manage(state);
             }
             
             println!("🚀 [SETUP] Chat application starting...");
@@ -156,8 +171,9 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![greet])
-        .build(tauri::generate_context!())
+        .invoke_handler(tauri::generate_handler![greet, get_token]);
+    
+    builder.build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             match event {
