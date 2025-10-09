@@ -4,6 +4,7 @@ use tracing::{info, debug};
 use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
+use crate::models::MainFileType;
 use crate::services::InstalledToolsService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
@@ -15,7 +16,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
 use tokio::process::Command;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 #[cfg(target_os = "windows")]
@@ -73,16 +74,24 @@ impl ToolInstallationService {
         let version_clone = tool_installation_message.version.clone();
         let run_args_clone = tool_installation_message.run_command_args.clone();
 
-        // Create tool-specific directory
-        let base_folder_path = self.directory_manager.app_support_dir();
-        let tool_folder_path = base_folder_path.join(tool_agent_id);
-        
-        // Ensure tool-specific directory exists
-        fs::create_dir_all(&tool_folder_path)
-            .await
-            .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
+        // Determine if this is an APPLICATION type (e.g., .app bundle on macOS)
+        let is_application = tool_installation_message.file_type == Some(MainFileType::Application);
 
-        let file_path = self.directory_manager.get_agent_path(tool_agent_id);
+        // For APPLICATION type, use applications directory, otherwise use app support directory
+        let file_path = if is_application {
+            self.get_application_install_path(tool_agent_id)?
+        } else {
+            // Create tool-specific directory in app support
+            let base_folder_path = self.directory_manager.app_support_dir();
+            let tool_folder_path = base_folder_path.join(tool_agent_id);
+            
+            // Ensure tool-specific directory exists
+            fs::create_dir_all(&tool_folder_path)
+                .await
+                .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
+
+            self.directory_manager.get_agent_path(tool_agent_id)
+        };
         
         // Check if agent file already exists
         if file_path.exists() {
@@ -95,11 +104,17 @@ impl ToolInstallationService {
                 .get_tool_agent_file(tool_agent_id.clone())
                 .await?;
 
-            File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
+            if is_application {
+                // For APPLICATION type (e.g., .app bundle), install using platform-specific method
+                self.install_application(&file_path, tool_agent_file_bytes, tool_agent_id).await?;
+            } else {
+                // For EXECUTABLE type, save directly and set permissions
+                File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
 
-            // Set file permissions to executable
-            self.set_executable_permissions(&file_path).await
-                .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
+                // Set file permissions to executable
+                self.set_executable_permissions(&file_path).await
+                    .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
+            }
             
             info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
         }
@@ -224,5 +239,73 @@ impl ToolInstallationService {
         }
 
         Ok(())
+    }
+
+    /// Gets the installation path for an APPLICATION type tool
+    fn get_application_install_path(&self, tool_agent_id: &str) -> Result<PathBuf> {
+        #[cfg(target_os = "macos")]
+        {
+            // On macOS, APPLICATION files are .app bundles
+            let app_name = format!("{}.app", tool_agent_id);
+            Ok(self.directory_manager.applications_dir().join(app_name))
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            // For non-macOS platforms, fall back to regular path
+            // This shouldn't normally happen as APPLICATION type is only for macOS currently
+            Ok(self.directory_manager.get_agent_path(tool_agent_id))
+        }
+    }
+
+    /// Installs an APPLICATION type tool (e.g., .app bundle on macOS)
+    async fn install_application(&self, dest_path: &Path, app_bytes: Vec<u8>, tool_agent_id: &str) -> Result<()> {
+        #[cfg(target_os = "macos")]
+        {
+            // Create a temporary directory to extract the .app bundle
+            let temp_dir = std::env::temp_dir().join(format!("openframe-install-{}", tool_agent_id));
+            fs::create_dir_all(&temp_dir).await
+                .context("Failed to create temporary directory")?;
+
+            let temp_app_path = temp_dir.join(dest_path.file_name().unwrap());
+            
+            // Write the downloaded bytes to temporary location
+            File::create(&temp_app_path).await?.write_all(&app_bytes).await?;
+            
+            info!("Installing .app bundle from {} to {}", temp_app_path.display(), dest_path.display());
+
+            // Use ditto to copy the .app bundle to /Applications
+            let status = std::process::Command::new("ditto")
+                .arg(&temp_app_path)
+                .arg(dest_path)
+                .status()
+                .context("Failed to execute ditto command")?;
+
+            if !status.success() {
+                anyhow::bail!("Failed to copy application bundle using ditto");
+            }
+
+            // Set executable permissions on the main executable inside the bundle
+            let exe_path = dest_path.join("Contents").join("MacOS").join(tool_agent_id);
+            if exe_path.exists() {
+                self.set_executable_permissions(&exe_path).await
+                    .context("Failed to set executable permissions on app binary")?;
+            }
+
+            // Clean up temporary directory
+            let _ = fs::remove_dir_all(&temp_dir).await;
+
+            info!("Successfully installed .app bundle to {}", dest_path.display());
+            Ok(())
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            // For non-macOS platforms, just write the bytes directly
+            // This is a fallback and shouldn't normally be used for APPLICATION type
+            File::create(dest_path).await?.write_all(&app_bytes).await?;
+            self.set_executable_permissions(dest_path).await?;
+            Ok(())
+        }
     }
 }

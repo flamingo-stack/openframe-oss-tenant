@@ -8,6 +8,10 @@ pub struct ToolInstallationMessage {
     pub tool_type: String,
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_type: Option<MainFileType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_gui: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub installation_command_args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uninstallation_command_args: Option<Vec<String>>,
@@ -15,6 +19,14 @@ pub struct ToolInstallationMessage {
     pub tool_agent_id_command_args: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assets: Option<Vec<Asset>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum MainFileType {
+    #[serde(rename = "EXECUTABLE")]
+    Executable,
+    #[serde(rename = "APPLICATION")]
+    Application,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
