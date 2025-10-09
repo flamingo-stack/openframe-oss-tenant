@@ -5,6 +5,10 @@ use tauri::{
     Manager, RunEvent, WindowEvent,
 };
 
+mod token_watcher;
+mod token_decryption_service;
+use token_watcher::TokenWatcher;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -15,19 +19,32 @@ pub fn run() {
     let args: Vec<String> = std::env::args().collect();
     println!("📝 [ARGS] Command line arguments: {:?}", args);
     
-    // Look for --openframe-token-path parameter
+    // Look for --openframe-token-path and --openframe-secret parameters
     let mut token_path: Option<String> = None;
+    let mut secret: Option<String> = None;
+    
     for i in 0..args.len() {
         if args[i] == "--openframe-token-path" && i + 1 < args.len() {
             token_path = Some(args[i + 1].clone());
-            break;
+        } else if args[i] == "--openframe-secret" && i + 1 < args.len() {
+            secret = Some(args[i + 1].clone());
         }
     }
     
-    if let Some(path) = &token_path {
+    if let (Some(path), Some(secret_key)) = (token_path, secret) {
         println!("🔑 [ARGS] OpenFrame token path: {}", path);
+        println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
+        
+        // Start token watcher
+        TokenWatcher::start(path, secret_key);
     } else {
-        println!("⚠️  [ARGS] No openframe-token-path provided");
+        println!("⚠️  [ARGS] Missing required parameters:");
+        if token_path.is_none() {
+            println!("  - openframe-token-path not provided");
+        }
+        if secret.is_none() {
+            println!("  - openframe-secret not provided");
+        }
     }
     
     tauri::Builder::default()

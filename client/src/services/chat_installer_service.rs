@@ -303,6 +303,10 @@ impl ChatInstallerService {
             cmd.arg("--openframe-token-path");
             cmd.arg("test-path");
             
+            // Add openframe-secret parameter
+            cmd.arg("--openframe-secret");
+            cmd.arg("12345678901234567890123456789012");
+            
             // Inherit stdout/stderr to see logs in parent process
             cmd.stdout(std::process::Stdio::inherit());
             cmd.stderr(std::process::Stdio::inherit());
@@ -328,6 +332,10 @@ impl ChatInstallerService {
             cmd.arg("--openframe-token-path");
             cmd.arg("test-path");
             
+            // Add openframe-secret parameter
+            cmd.arg("--openframe-secret");
+            cmd.arg("12345678901234567890123456789012");
+            
             // Inherit stdout/stderr to see logs in parent process
             cmd.stdout(std::process::Stdio::inherit());
             cmd.stderr(std::process::Stdio::inherit());
@@ -350,6 +358,10 @@ impl ChatInstallerService {
             // Add openframe-token-path parameter
             cmd.arg("--openframe-token-path");
             cmd.arg("test-path");
+            
+            // Add openframe-secret parameter
+            cmd.arg("--openframe-secret");
+            cmd.arg("12345678901234567890123456789012");
             
             // Inherit stdout/stderr to see logs in parent process
             cmd.stdout(std::process::Stdio::inherit());
