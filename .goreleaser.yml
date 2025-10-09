@@ -27,7 +27,10 @@ builds:
       - -X main.date={{.Date}}
 
 archives:
-  - format: tar.gz
+  - id: openframe-cli-archive
+    builds:
+      - openframe-cli
+    format: tar.gz
     name_template: >-
      openframe-cli_
       {{- .Version }}_
