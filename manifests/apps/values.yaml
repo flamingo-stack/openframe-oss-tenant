@@ -120,7 +120,7 @@ apps:
   #   project: datasources
   #   namespace: datasources
   #   syncWave: "1"
-  pinot-test: 
+  pinot:
     enabled: true
     project: datasources
     namespace: datasources
