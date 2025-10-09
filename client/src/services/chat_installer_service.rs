@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use anyhow::{Context, Result};
 use tracing::{debug, error, info, warn};
+use crate::platform::DirectoryManager;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -10,6 +11,7 @@ use std::os::windows::process::CommandExt;
 pub struct ChatInstallerService {
     install_dir: PathBuf,
     app_name: String,
+    dir_manager: DirectoryManager,
 }
 
 impl ChatInstallerService {
@@ -23,10 +25,13 @@ impl ChatInstallerService {
         } else {
             "openframe-chat".to_string()
         };
+        
+        let dir_manager = DirectoryManager::new();
 
         Ok(Self {
             install_dir,
             app_name,
+            dir_manager,
         })
     }
 
@@ -288,6 +293,10 @@ impl ChatInstallerService {
         }
 
         let app_path = self.install_dir.join(&self.app_name);
+        
+        // Get the real path to shared token file
+        let token_path = self.dir_manager.secured_dir().join("shared_token.enc");
+        let token_path_str = token_path.to_string_lossy().to_string();
 
         #[cfg(target_os = "windows")]
         {
@@ -299,9 +308,9 @@ impl ChatInstallerService {
                 cmd.arg("--minimized");
             }
             
-            // Add openframe-token-path parameter
+            // Add openframe-token-path parameter with real path
             cmd.arg("--openframe-token-path");
-            cmd.arg("test-path");
+            cmd.arg(&token_path_str);
             
             // Add openframe-secret parameter
             cmd.arg("--openframe-secret");
@@ -328,9 +337,9 @@ impl ChatInstallerService {
                 cmd.arg("--minimized");
             }
             
-            // Add openframe-token-path parameter
+            // Add openframe-token-path parameter with real path
             cmd.arg("--openframe-token-path");
-            cmd.arg("test-path");
+            cmd.arg(&token_path_str);
             
             // Add openframe-secret parameter
             cmd.arg("--openframe-secret");
@@ -340,7 +349,7 @@ impl ChatInstallerService {
             cmd.stdout(std::process::Stdio::inherit());
             cmd.stderr(std::process::Stdio::inherit());
             
-            info!("Launching chat executable with token path: {:?}", executable_path);
+            info!("Launching chat executable with token path: {:?}", token_path_str);
             
             cmd.spawn()
                 .context("Failed to launch chat application")?;
@@ -355,9 +364,9 @@ impl ChatInstallerService {
                 cmd.arg("--minimized");
             }
             
-            // Add openframe-token-path parameter
+            // Add openframe-token-path parameter with real path
             cmd.arg("--openframe-token-path");
-            cmd.arg("test-path");
+            cmd.arg(&token_path_str);
             
             // Add openframe-secret parameter
             cmd.arg("--openframe-secret");
