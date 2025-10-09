@@ -9,7 +9,7 @@ export default function OrganizationDetailsPageWrapper() {
   const id = typeof params?.id === 'string' ? params.id : ''
   return (
     <AppLayout>
-      <OrganizationDetailsView organizationId={id} />
+      <OrganizationDetailsView id={id} />
     </AppLayout>
   )
 }

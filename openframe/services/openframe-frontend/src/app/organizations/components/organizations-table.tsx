@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Table,
   StatusTag,
@@ -17,14 +17,11 @@ interface UIOrganizationEntry {
   id: string
   name: string
   contact: string
+  websiteUrl: string
   tier: string
   industry: string
   mrrDisplay: string
   contractDueDisplay: string
-  sla: {
-    label: string
-    variant?: 'success' | 'warning' | 'error' | 'info' | 'critical'
-  }
   lastActivityDisplay: string
 }
 
@@ -33,8 +30,7 @@ export function OrganizationsTable() {
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
   const router = useRouter()
-  
-  // Important: pass a stable filters object to avoid recreating callbacks in the hook
+
   const stableFilters = useMemo(() => ({}), [])
   const { organizations, isLoading, error, searchOrganizations } = useOrganizations(stableFilters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -56,22 +52,15 @@ export function OrganizationsTable() {
       return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
     }
 
-    const slaVariantMap: Record<string, UIOrganizationEntry['sla']['variant']> = {
-      'Low': 'success',
-      'Medium': 'warning',
-      'High': 'error',
-      'Critical': 'critical',
-    }
-
     return organizations.map(org => ({
       id: org.id,
       name: org.name,
-      contact: `${org.contact.name} · ${org.contact.email}`,
+      contact: `${org.contact.email}`,
+      websiteUrl: org.websiteUrl,
       tier: org.tier,
       industry: org.industry,
       mrrDisplay: toMoney(org.mrrUsd),
       contractDueDisplay: dateFmt(org.contractDue),
-      sla: { label: org.sla, variant: slaVariantMap[org.sla] },
       lastActivityDisplay: `${new Date(org.lastActivity).toLocaleString()}\n${timeAgo(org.lastActivity)}`,
     }))
   }, [organizations])
@@ -84,7 +73,7 @@ export function OrganizationsTable() {
       renderCell: (org) => (
         <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">{org.name}</span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">{org.contact}</span>
+          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">{org.websiteUrl}</span>
         </div>
       )
     },
@@ -113,16 +102,6 @@ export function OrganizationsTable() {
       width: 'w-1/6',
       renderCell: (org) => (
         <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">{org.contractDueDisplay}</span>
-      )
-    },
-    {
-      key: 'sla',
-      label: 'SLA',
-      width: 'w-1/6',
-      renderCell: (org) => (
-        <div className="shrink-0">
-          <StatusTag label={org.sla.label} variant={org.sla.variant} />
-        </div>
       )
     },
     {

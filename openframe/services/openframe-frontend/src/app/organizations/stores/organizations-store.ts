@@ -8,7 +8,9 @@ import { immer } from 'zustand/middleware/immer'
 
 export interface OrganizationEntry {
   id: string
+  organizationId: string
   name: string
+  websiteUrl: string
   contact: {
     name: string
     email: string
@@ -16,9 +18,8 @@ export interface OrganizationEntry {
   tier: 'Basic' | 'Premium' | 'Enterprise'
   industry: 'Technology' | 'Professional Services' | 'Healthcare' | 'Financial Services' | 'Retail & Hospitality' | string
   mrrUsd: number
-  contractDue: string // ISO date string
-  sla: 'Low' | 'Medium' | 'High' | 'Critical'
-  lastActivity: string // ISO date string
+  contractDue: string
+  lastActivity: string
 }
 
 export interface OrganizationsState {
@@ -98,5 +99,3 @@ export const selectOrganizations = (state: OrganizationsState) => state.organiza
 export const selectSearch = (state: OrganizationsState) => state.search
 export const selectIsLoading = (state: OrganizationsState) => state.isLoading
 export const selectError = (state: OrganizationsState) => state.error
-
-

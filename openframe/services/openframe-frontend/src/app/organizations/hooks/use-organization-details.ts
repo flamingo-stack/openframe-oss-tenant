@@ -2,48 +2,32 @@
 
 import { useCallback, useState } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
+import { apiClient } from '@lib/api-client'
+import { GET_ORGANIZATION_BY_ID_QUERY } from '../queries/organizations-queries'
 
 export interface OrganizationDetails {
   id: string
+  organizationId: string
   name: string
-  tier: 'Basic' | 'Premium' | 'Enterprise'
   industry: string
   website: string
-  employees: number
+  employees: number | null
   updatedAt: string
   physicalAddress: string
   mailingAddress: string
   primary: { name: string; title: string; email: string; phone: string }
   billing: { name: string; title: string; email: string; phone: string }
   technical: { name: string; title: string; email: string; phone: string }
-  mrrUsd: number
-  contractStart: string
-  contractEnd: string
-  sla: 'Low' | 'Medium' | 'High' | 'Critical'
+  mrrUsd: number | null
+  contractStart: string | null
+  contractEnd: string | null
   notes: string[]
 }
 
-const MOCK_ORG: OrganizationDetails = {
-  id: '1',
-  name: 'TechFlow Solutions',
-  tier: 'Enterprise',
-  industry: 'Software Development',
-  website: 'techflow.com',
-  employees: 85,
-  updatedAt: '2025-07-22T14:17:05Z',
-  physicalAddress: '1250 Tech Boulevard, Suite 400, Austin, TX 78701, USA',
-  mailingAddress: '1250 Tech Boulevard, Suite 400, Austin, TX 78701, USA',
-  primary: { name: 'Mike Johnson', title: 'CTO', email: 'mike.johnson@techflow.com', phone: '+1 (555) 234-5678' },
-  billing: { name: 'Rachel Smith', title: 'Finance Director', email: 'rachel.smith@techflow.com', phone: '+1 (555) 234-5680' },
-  technical: { name: 'Kevin Park', title: 'IT Manager', email: 'kevin.park@techflow.com', phone: '+1 (555) 234-5682' },
-  mrrUsd: 4250,
-  contractStart: '2022-03-15',
-  contractEnd: '2025-03-15',
-  sla: 'Critical',
-  notes: [
-    'Started immediate cleanup. Cleared 8GB from temp files and IIS logs... (2025/08/27 14:45)',
-    'Found 12GB of old .pst files... (2025/08/27 15:20)'
-  ]
+function formatAddress(addr?: any): string {
+  if (!addr) return ''
+  const parts = [addr.street1, addr.street2, addr.city, addr.state, addr.postalCode, addr.country]
+  return parts.filter(Boolean).join(', ')
 }
 
 export function useOrganizationDetails() {
@@ -56,10 +40,47 @@ export function useOrganizationDetails() {
     setLoading(true)
     setError(null)
     try {
-      // TODO: replace with real API
-      const result = { ...MOCK_ORG, id }
-      setOrganization(result)
-      return result
+      const response = await apiClient.post<any>('/api/graphql', {
+        query: GET_ORGANIZATION_BY_ID_QUERY,
+        variables: { id }
+      })
+
+      if (!response.ok) {
+        throw new Error(response.error || `Request failed with status ${response.status}`)
+      }
+
+      const org = (response.data as any)?.data?.organization
+      if (!org) {
+        setOrganization(null)
+        return null
+      }
+
+      const contacts = Array.isArray(org.contactInformation?.contacts) ? org.contactInformation.contacts : []
+      const primary = contacts[0] || {}
+      const billing = contacts[1] || {}
+      const technical = contacts[2] || {}
+
+      const mapped: OrganizationDetails = {
+        id: org.id,
+        organizationId: org.organizationId,
+        name: org.name || '-',
+        industry: org.category || '-',
+        website: org.websiteUrl || '-',
+        employees: typeof org.numberOfEmployees === 'number' ? org.numberOfEmployees : null,
+        updatedAt: org.updatedAt || org.createdAt || new Date().toISOString(),
+        physicalAddress: formatAddress(org.contactInformation?.physicalAddress),
+        mailingAddress: formatAddress(org.contactInformation?.mailingAddress),
+        primary: { name: primary.contactName || '', title: primary.title || '', email: primary.email || '', phone: primary.phone || '' },
+        billing: { name: billing.contactName || '', title: billing.title || '', email: billing.email || '', phone: billing.phone || '' },
+        technical: { name: technical.contactName || '', title: technical.title || '', email: technical.email || '', phone: technical.phone || '' },
+        mrrUsd: typeof org.monthlyRevenue === 'number' ? org.monthlyRevenue : null,
+        contractStart: org.contractStartDate || null,
+        contractEnd: org.contractEndDate || null,
+        notes: (org.notes ? [org.notes] : []),
+      }
+
+      setOrganization(mapped)
+      return mapped
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to load organization'
       setError(message)
