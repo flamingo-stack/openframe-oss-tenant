@@ -47,13 +47,28 @@ checksum:
   name_template: 'checksums.txt'
 
 changelog:
+  use: github-native
   sort: asc
   filters:
     exclude:
       - '^docs:'
       - '^test:'
       - '^chore:'
-
+      - '^ci:'
+      - '^build:'
+      - '^style:'
+      - '^refactor:'
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Bug fixes
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Others
+      order: 999
 release:
   github:
     owner: flamingo-stack
