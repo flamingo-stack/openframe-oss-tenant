@@ -48,20 +48,14 @@ jobs:
   matrix:
     name: Generate Matrix
     uses: ./.github/workflows/matrix.yml
-    if: |
-      github.event_name == 'workflow_call' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
 
 
   build_images:
     name: "Build: ${{ matrix.name }}"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_call' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     strategy:
       fail-fast: false
       matrix:
@@ -69,7 +63,6 @@ jobs:
     steps:
       - name: Checkout
         if: |
-          github.event_name == 'workflow_call' ||
           github.event_name == 'workflow_dispatch' ||
           (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: actions/checkout@v4
@@ -82,8 +75,7 @@ jobs:
 
       - name: Update pom.xml with lib version
         if: |
-          (github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch') &&
-          inputs.version != ''
+          (github.event_name == 'workflow_dispatch') && inputs.version != ''
         run: |
           VERSION="${{ inputs.version }}"
           echo "Updating openframe.libs.version to: $VERSION"
@@ -100,8 +92,7 @@ jobs:
 
       - name: Log in to GitHub Container Registry
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -110,22 +101,19 @@ jobs:
 
       - name: Set up QEMU
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         uses: docker/setup-buildx-action@v3
 
       - name: Generate metadata
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -146,8 +134,7 @@ jobs:
 
       - name: Format build arguments
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         id: format_args
         uses: flamingo-stack/openframe-oss-tenant/.github/steps/docker-format-build-args@ami/ci
         with:
@@ -157,8 +144,7 @@ jobs:
 
       - name: Build and push image
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -178,7 +164,7 @@ jobs:
 
       - name: Cleanup old container versions
         if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') || 
+          (github.event_name == 'workflow_dispatch') || 
           (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true')) && 
           steps.docker_build.outcome == 'success'
         uses: dataaxiom/ghcr-cleanup-action@v1
@@ -305,7 +291,7 @@ jobs:
         uses: appany/helm-oci-chart-releaser@v0.5.0
         with:
           name: app-of-apps
-          tag: 0.1.1
+          tag: ${{ inputs.version != '' && github.event.inputs.version || 'latest' }}
           path: ./manifests/app-of-apps
           registry: ${{ env.REGISTRY }}
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
@@ -316,7 +302,7 @@ jobs:
     name: "Create Release"
     needs: [ build_client, build_images, matrix, changes ]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.version != ''
+    if: github.event_name == 'workflow_dispatch' && inputs.version != ''
     steps:
       - name: Checkout
         uses: actions/checkout@v4
