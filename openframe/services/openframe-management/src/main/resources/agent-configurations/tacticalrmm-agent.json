@@ -19,6 +19,12 @@
     "--insecure",
     "--silent"
   ],
+  "uninstallationCommandArgs": [
+    "-m", "cleanup",
+    "--openframe-mode",
+    "--openframe-secret", "${client.openframeSecret}",
+    "--openframe-token-path", "${client.openframeTokenPath}"
+  ],
   "runCommandArgs": [
     "-m", "svc",
     "-log", "INFO",

@@ -148,7 +148,7 @@ func (e *RealCommandExecutor) ExecuteWithOptions(ctx context.Context, options Ex
 			}
 		}
 		
-		return result, fmt.Errorf("command failed: %s (exit code: %d): %w", redactSensitiveInfo(fullCommand), result.ExitCode, err)
+		return result, fmt.Errorf("command failed: %s (exit code: %d): %w", fullCommand, result.ExitCode, err)
 	}
 	
 	result.ExitCode = 0

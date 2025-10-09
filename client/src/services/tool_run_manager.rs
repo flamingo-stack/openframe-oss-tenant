@@ -7,11 +7,11 @@ use std::time::Duration;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use sysinfo::{System, Signal};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use crate::models::installed_tool::{InstalledTool, ToolStatus};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
+use crate::services::tool_kill_service::ToolKillService;
 
 #[cfg(windows)]
 use std::ffi::OsStr;
@@ -104,17 +104,20 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
 pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
     params_processor: ToolCommandParamsResolver,
+    tool_kill_service: ToolKillService,
     running_tools: Arc<RwLock<HashSet<String>>>,
 }
 
 impl ToolRunManager {
     pub fn new(
         installed_tools_service: InstalledToolsService,
-        params_processor: ToolCommandParamsResolver
+        params_processor: ToolCommandParamsResolver,
+        tool_kill_service: ToolKillService,
     ) -> Self {
         Self {
             installed_tools_service,
             params_processor,
+            tool_kill_service,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
         }
     }
@@ -166,7 +169,7 @@ impl ToolRunManager {
     }
 
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
-        self.stop_previous_tool_process(&tool.tool_agent_id).await?;
+        self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
         let params_processor = self.params_processor.clone();
         tokio::spawn(async move {
@@ -296,49 +299,5 @@ impl ToolRunManager {
         });
 
         Ok(())
-    }
-
-    // TODO: make logic more smart and clean
-    async fn stop_previous_tool_process(&self, tool_id: &str) -> Result<()> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
-
-        // Match processes whose command contains "/{tool_id}/agent"
-        let pattern = Self::build_cmd_pattern(tool_id);
-
-        for (pid, process) in sys.processes() {
-            let cmd_items = process.cmd();
-            let cmdline = cmd_items.join(" ").to_lowercase();
-
-            if cmdline.contains(&pattern) {
-                info!("Found previous tool process for {} with pid {}", tool_id, pid);
-
-                if process.kill() {
-                    info!("Previous tool process terminated for {} with pid {}", tool_id, pid);
-                    continue;
-                } else {
-                    warn!("Failed to terminate previous tool process for {} with pid {}", tool_id, pid);
-                    if let Some(killed) = process.kill_with(Signal::Kill) {
-                        if killed {
-                            info!("Previous tool process terminated with kill signal for {} with pid {}", tool_id, pid);
-                        } else {
-                            error!("Failed to terminate previous tool process with kill signal for {} with pid {}", tool_id, pid);
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-    fn build_cmd_pattern(tool_id: &str) -> String {
-        #[cfg(target_os = "windows")]
-        {
-            format!("\\{}\\agent", tool_id).to_lowercase()
-        }
-        #[cfg(any(target_os = "macos"))]
-        {
-            format!("/{}/agent", tool_id).to_lowercase()
-        }
     }
 }
