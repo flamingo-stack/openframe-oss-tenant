@@ -1,0 +1,62 @@
+# Cargo configuration for OpenFrame client
+# This ensures static linking and optimal binary distribution
+
+# =============================================================================
+# Windows MSVC Target - Static CRT linking
+# =============================================================================
+[target.x86_64-pc-windows-msvc]
+rustflags = [
+    "-C", "target-feature=+crt-static",  # Static link Visual C++ Runtime
+    "-C", "link-arg=/SUBSYSTEM:CONSOLE",  # Console application
+]
+
+# =============================================================================
+# macOS Target - Universal binary support
+# =============================================================================
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-mmacosx-version-min=10.13"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-mmacosx-version-min=11.0"]
+
+# =============================================================================
+# Linux Target - Static linking where possible
+# =============================================================================
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+    "-C", "link-arg=-Wl,--as-needed",  # Only link needed libraries
+]
+
+# =============================================================================
+# Build Configuration
+# =============================================================================
+[build]
+# Use all CPU cores for faster builds
+jobs = 8
+
+# =============================================================================
+# Profile Optimization for Release Builds
+# =============================================================================
+[profile.release]
+# Enable Link-Time Optimization for smaller and faster binaries
+lto = true
+# Optimize for size while maintaining performance
+opt-level = "z"  # Optimize for size
+# Strip debug symbols from release builds
+strip = true
+# Enable more aggressive code generation optimizations
+codegen-units = 1
+# Enable panic unwinding (required for better error reporting)
+panic = "unwind"
+
+# =============================================================================
+# Profile for Distribution (even more optimized)
+# =============================================================================
+[profile.dist]
+inherits = "release"
+lto = "fat"
+opt-level = "z"
+strip = true
+codegen-units = 1
+panic = "abort"  # Smaller binary size, no unwinding
+
