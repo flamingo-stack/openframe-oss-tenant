@@ -167,7 +167,7 @@ jobs:
           fetch-depth: 1
 
       - name: Prepare Rust tools
-        uses: flamingo-stack/openframe-oss-tenant/.github/steps/rust-setup@ami/ci
+        uses: ./.github/steps/rust-setup
         with:
           toolchain: stable
           targets: ${{ matrix.target }}
