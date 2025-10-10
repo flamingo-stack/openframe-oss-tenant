@@ -1,6 +1,11 @@
 apiVersion: v2
-name: pinot
-description: A Pinot helm chart.
+name: pinot-wrapper
+description: Wrapper chart for Pinot
 type: application
 version: 0.1.0
-appVersion: "1.0.0"
+appVersion: "1.0"
+
+dependencies:
+  - name: pinot
+    version: ">=0.3.5"
+    repository: https://raw.githubusercontent.com/apache/pinot/master/helm
