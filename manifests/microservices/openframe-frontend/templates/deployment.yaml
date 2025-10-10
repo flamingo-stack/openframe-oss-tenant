@@ -29,6 +29,11 @@ spec:
             {{- end }}
             - name: NEXT_PUBLIC_AUTH_CHECK_INTERVAL
               value: "30000"
+          {{- if and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.gcp.enabled }}
+          envFrom:
+          - secretRef:
+              name: openframe-frontend
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /
