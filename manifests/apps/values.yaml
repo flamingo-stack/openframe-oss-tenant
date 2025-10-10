@@ -115,21 +115,11 @@ apps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-  # pinot: 
-  #   enabled: true
-  #   project: datasources
-  #   namespace: datasources
-  #   syncWave: "1"
   pinot:
     enabled: true
     project: datasources
     namespace: datasources
     syncWave: "1"
-  # zookeeper:
-  #   enabled: true
-  #   project: datasources
-  #   namespace: datasources
-  #   syncWave: "1"
   cassandra:
     enabled: true
     project: datasources

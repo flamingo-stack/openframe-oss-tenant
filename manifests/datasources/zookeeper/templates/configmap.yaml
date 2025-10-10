@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: zookeeper-jmx-config
-data:
-  config.yml: |
-    rules:
-    - pattern: "org.apache.ZooKeeperService<name0=(.+)><>(.+)"
-      name: zookeeper_$1_$2
