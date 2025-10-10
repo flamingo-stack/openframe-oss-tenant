@@ -10,7 +10,7 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    # Build on all branches, but only push images on main
     paths:
       - 'manifests/**'
       - 'openframe/**'
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       fail-fast: false
       matrix:
@@ -106,7 +106,7 @@ jobs:
     name: "Build: ${{ matrix.name }}"
     needs: [build_java, matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       fail-fast: false
       matrix:
@@ -316,7 +316,7 @@ jobs:
     name: "Build Helm Chart"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
