@@ -25,6 +25,9 @@ export const runtimeEnv = {
   sharedHostUrl(): string {
     return getEnvVar('NEXT_PUBLIC_SHARED_HOST_URL') || ''
   },
+  gtmContainerId(): string | undefined {
+    return getEnvVar('NEXT_PUBLIC_GTM_CONTAINER_ID')
+  },
   appMode(): string {
     const mode = getEnvVar('NEXT_PUBLIC_APP_MODE')
     return mode || 'oss-tenant'
