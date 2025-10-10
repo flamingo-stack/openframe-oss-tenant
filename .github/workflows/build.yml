@@ -36,13 +36,17 @@ env:
 jobs:
   changes:
     name: Detect Changes
-    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
     uses: ./.github/workflows/changes.yml
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'push'
 
   matrix:
     name: Generate Matrix
     uses: ./.github/workflows/matrix.yml
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'push'
 
 
   build_images:
@@ -61,10 +65,6 @@ jobs:
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
-          repository: flamingo-stack/openframe-oss-tenant
-          ref: ami/ci
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
           fetch-depth: 1
 
       - name: Log in to GitHub Container Registry
