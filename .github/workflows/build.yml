@@ -1,4 +1,4 @@
-name: OpenFrame Build and Push Latest
+name: OpenFrame Build and Release
 
 permissions:
   contents: write
@@ -17,12 +17,6 @@ on:
       - 'integrated-tools/**'
       - 'pom.xml'
       - 'client/**'
-  workflow_call:
-    inputs:
-      version:
-        description: "version to release (e.g., v1.2.3)"
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       version:
@@ -55,16 +49,16 @@ jobs:
     name: "Build: ${{ matrix.name }}"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
       - name: Checkout
-        if: |
-          github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
         with:
           repository: flamingo-stack/openframe-oss-tenant
@@ -73,26 +67,8 @@ jobs:
           persist-credentials: true
           fetch-depth: 1
 
-      - name: Update pom.xml with lib version
-        if: |
-          (github.event_name == 'workflow_dispatch') && inputs.version != ''
-        run: |
-          VERSION="${{ inputs.version }}"
-          echo "Updating openframe.libs.version to: $VERSION"
-          
-          sed -i "s|<openframe\.libs\.version>.*</openframe\.libs\.version>|<openframe.libs.version>${VERSION}</openframe.libs.version>|" pom.xml
-          
-          if grep -q "<openframe.libs.version>${VERSION}</openframe.libs.version>" pom.xml; then
-            echo "✓ Successfully updated to: $VERSION"
-            grep "openframe.libs.version" pom.xml
-          else
-            echo "✗ Failed to update version"
-            exit 1
-          fi
-
       - name: Log in to GitHub Container Registry
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -100,20 +76,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
 
       - name: Generate metadata
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -132,8 +105,7 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Format build arguments
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: format_args
         uses: ./.github/steps/docker-format-build-args
         with:
@@ -142,8 +114,7 @@ jobs:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       - name: Build and push image
-        if: |
-          (github.event_name == 'workflow_dispatch' || github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true'))
+        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -164,8 +135,7 @@ jobs:
 
       - name: Cleanup old container versions
         if: |
-          (github.event_name == 'workflow_dispatch') || 
-          (github.event_name == 'push' && contains(needs.changes.outputs[matrix.name], 'true')) && 
+          contains(needs.changes.outputs[matrix.name], 'true') && 
           steps.docker_build.outcome == 'success'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
@@ -173,7 +143,7 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+          exclude-tags: ${{ inputs.version }},latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
 
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
