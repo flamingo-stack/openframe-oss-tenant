@@ -41,7 +41,7 @@ export function normalizeDeviceListNode(node: DevicesGraphQLNode): Device {
     public_ip: '',
     cpu_model: [],
     graphics: '',
-    local_ips: node.ip || '',
+    local_ips: node.ip ? [node.ip] : [],
     make_model: [node.manufacturer, node.model].filter(Boolean).join(' '),
     physical_disks: [],
     custom_fields: [],
@@ -113,7 +113,9 @@ export function normalizeDeviceDetailNode(
     public_ip: tacticalData?.public_ip || '',
     cpu_model: tacticalData?.cpu_model || [],
     graphics: tacticalData?.graphics || '',
-    local_ips: tacticalData?.local_ips || node.ip || '',
+    local_ips: tacticalData?.wmi_detail?.local_ips ||
+      (tacticalData?.local_ips ? tacticalData.local_ips.split(',').map((ip: string) => ip.trim()).filter(Boolean) : []) ||
+      (node.ip ? [node.ip] : []),
     make_model: tacticalData?.make_model || [node.manufacturer, node.model].filter(Boolean).join(' '),
     disks: tacticalData?.disks || [],
     physical_disks: tacticalData?.physical_disks || [],
@@ -138,7 +140,7 @@ export function normalizeDeviceDetailNode(
     osUuid: node.osUuid,
     lastSeen: node.lastSeen || tacticalData?.last_seen,
     tags: node.tags || tacticalData?.custom_fields || [],
-    ip: node.ip || tacticalData?.local_ips?.split(',')[0]?.trim() || tacticalData?.public_ip,
+    ip: node.ip || tacticalData?.wmi_detail?.local_ips?.[0] || tacticalData?.local_ips?.split(',')[0]?.trim() || tacticalData?.public_ip,
     macAddress: node.macAddress,
     agentVersion: node.agentVersion || tacticalData?.version,
     serialNumber: node.serialNumber || tacticalData?.serial_number || tacticalData?.wmi_detail?.serialnumber,

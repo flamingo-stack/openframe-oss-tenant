@@ -64,7 +64,7 @@ export interface Device {
   public_ip: string
   cpu_model: string[]
   graphics: string
-  local_ips: string
+  local_ips: string[]
   make_model: string
   physical_disks: string[]
   custom_fields: any[]
