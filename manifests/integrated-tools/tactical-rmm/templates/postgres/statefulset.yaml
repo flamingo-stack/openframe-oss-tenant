@@ -26,6 +26,9 @@ spec:
           - "wal_level=logical"
         ports:
         - containerPort: 5432
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         envFrom:
         - configMapRef:
             name: tactical-postgres

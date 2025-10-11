@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { DeviceCard, Button, StatusTag } from '@flamingo/ui-kit/components/ui'
 import { cn } from '@flamingo/ui-kit/utils'
+import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { ToolIcon } from '@flamingo/ui-kit'
 
 interface LogInfoModalProps {
   isOpen: boolean
@@ -86,7 +88,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
 
       setIsLoadingDetails(true)
       setDetailedLogData(null)
-      
+
       fetchLogDetails(logEntry)
         .then((data) => {
           setDetailedLogData(data)
@@ -140,13 +142,13 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
 
   if (!isOpen || !log) return null
 
-  const rawDataDisplay = detailedLogData?.details 
-    ? (typeof detailedLogData.details === 'object' 
-        ? JSON.stringify(detailedLogData.details, null, 2)
-        : detailedLogData.details)
-    : log.rawData 
-    ? JSON.stringify(log.rawData, null, 2)
-    : '{}'
+  const rawDataDisplay = detailedLogData?.details
+    ? (typeof detailedLogData.details === 'object'
+      ? JSON.stringify(detailedLogData.details, null, 2)
+      : detailedLogData.details)
+    : log.rawData
+      ? JSON.stringify(log.rawData, null, 2)
+      : '{}'
 
   const displayData = detailedLogData || {
     toolEventId: log.logId,
@@ -162,7 +164,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className={cn(
           "fixed inset-0 bg-black/50 z-[1000] transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -224,11 +226,11 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
             <div className="p-4 bg-ods-card border border-ods-border rounded-[6px] space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <InfoField label="Log ID" value={displayData.toolEventId || log.logId} />
-                <InfoField label="User" value={displayData.userId || log.user || "null"} />
+                <InfoField label="User" value={displayData.userId || log.user} />
                 <InfoField label="Source" value={
                   <div className="flex items-center gap-1">
-                    <span>{displayData.toolType || log.source.name}</span>
-                    {log.source.icon}
+                    <span>{toStandardToolLabel(displayData.toolType) || log.source.name}</span>
+                    <ToolIcon toolType={toUiKitToolType(displayData.toolType) as any} size={16} />
                   </div>
                 } />
                 <InfoField label="Device" value={displayData.deviceId || log.device.name} />
@@ -248,7 +250,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
           </div>
 
           {/* Device Card Section */}
-          <div className="p-4 bg-ods-card">
+          {log.device.name && <div className="p-4 bg-ods-card">
             <DeviceCard
               device={{
                 name: log.device.name || "Unknown Device",
@@ -270,7 +272,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
                 }
               }}
             />
-          </div>
+          </div>}
         </div>
       </div>
     </>

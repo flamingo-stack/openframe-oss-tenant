@@ -1,19 +1,25 @@
 import { useState, useCallback, useRef } from 'react'
 import { MockChatService } from '../services/mockChatService'
 import { SSEService } from '../services/sseService'
+import { ChatApiService } from '../services/chatApiService'
 
 interface UseSSEOptions {
   url?: string
   useMock?: boolean
+  useApi?: boolean
+  apiToken?: string
+  apiBaseUrl?: string
+  debugMode?: boolean
 }
 
-export function useSSE({ url, useMock = true }: UseSSEOptions = {}) {
+export function useSSE({ url, useMock = false, useApi = true, apiToken, apiBaseUrl, debugMode = false }: UseSSEOptions = {}) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   
   const mockService = useRef(new MockChatService())
   const sseService = useRef(url ? new SSEService(url) : null)
+  const apiService = useRef(new ChatApiService(apiToken, apiBaseUrl, debugMode))
   
   const streamMessage = useCallback(async function* (
     message: string
@@ -25,15 +31,17 @@ export function useSSE({ url, useMock = true }: UseSSEOptions = {}) {
     abortControllerRef.current = new AbortController()
     
     try {
-      const service = useMock ? mockService.current : sseService.current
+      let generator: AsyncGenerator<string>
       
-      if (!service) {
-        throw new Error('No service available. Please provide SSE URL or enable mock mode.')
+      if (useMock) {
+        generator = mockService.current.streamResponse(message)
+      } else if (useApi) {
+        generator = apiService.current.streamMessage(message)
+      } else if (sseService.current) {
+        generator = sseService.current.streamMessage(message)
+      } else {
+        throw new Error('No service available. Please provide SSE URL, enable API mode, or enable mock mode.')
       }
-      
-      const generator = useMock 
-        ? mockService.current.streamResponse(message)
-        : sseService.current!.streamMessage(message)
       
       for await (const chunk of generator) {
         // Check if aborted
@@ -50,7 +58,7 @@ export function useSSE({ url, useMock = true }: UseSSEOptions = {}) {
       setIsStreaming(false)
       abortControllerRef.current = null
     }
-  }, [useMock])
+  }, [useMock, useApi])
   
   const abort = useCallback(() => {
     if (abortControllerRef.current) {
@@ -62,10 +70,17 @@ export function useSSE({ url, useMock = true }: UseSSEOptions = {}) {
     setIsStreaming(false)
   }, [])
   
+  const reset = useCallback(() => {
+    if (apiService.current) {
+      apiService.current.reset()
+    }
+  }, [])
+  
   return {
     streamMessage,
     isStreaming,
     error,
-    abort
+    abort,
+    reset
   }
 }

@@ -10,8 +10,10 @@ import com.openframe.client.service.validator.AgentRegistrationSecretValidator;
 import com.openframe.data.document.device.DeviceStatus;
 import com.openframe.data.document.device.Machine;
 import com.openframe.data.document.oauth.OAuthClient;
+import com.openframe.data.document.organization.Organization;
 import com.openframe.data.repository.device.MachineRepository;
 import com.openframe.data.repository.oauth.OAuthClientRepository;
+import com.openframe.data.service.OrganizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +22,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +37,9 @@ class AgentRegistrationServiceTest {
 
     @Mock
     private MachineRepository machineRepository;
+
+    @Mock
+    private OrganizationService organizationService;
 
     @Mock
     private AgentRegistrationSecretValidator agentRegistrationSecretValidator;
@@ -63,7 +70,8 @@ class AgentRegistrationServiceTest {
 
     @BeforeEach
     void setUp() {
-        agentRegistrationService = new AgentRegistrationService(oauthClientRepository, machineRepository, agentRegistrationSecretValidator, agentSecretGenerator, passwordEncoder, machineIdGenerator, agentRegistrationToolService);
+        agentRegistrationService = new AgentRegistrationService(oauthClientRepository, machineRepository, organizationService,
+                agentRegistrationSecretValidator, agentSecretGenerator, passwordEncoder, machineIdGenerator, agentRegistrationToolService);
         request = createTestRequest();
     }
 
@@ -72,10 +80,13 @@ class AgentRegistrationServiceTest {
         when(machineIdGenerator.generate()).thenReturn(MACHINE_ID);
         when(oauthClientRepository.existsByMachineId(MACHINE_ID)).thenReturn(false);
         when(agentSecretGenerator.generate()).thenReturn(CLIENT_SECRET);
+        when(organizationService.getOrganizationByName(OrganizationService.DEFAULT_ORGANIZATION_NAME))
+                .thenReturn(Optional.of(new Organization("id", OrganizationService.DEFAULT_ORGANIZATION_NAME, "custom-uuid", null, null, null, null, null, null, null, null, null,null, null, null)));
         when(passwordEncoder.encode(CLIENT_SECRET)).thenReturn("encoded-secret");
         when(oauthClientRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         when(machineRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
-        
+
+
         AgentRegistrationResponse response = agentRegistrationService.register(INITIAL_KEY, request);
         
         assertNotNull(response);
@@ -113,7 +124,10 @@ class AgentRegistrationServiceTest {
     void registerAgent_WithExistingMachine_ThrowsException() {
         when(machineIdGenerator.generate()).thenReturn(MACHINE_ID);
         when(oauthClientRepository.existsByMachineId(MACHINE_ID)).thenReturn(true);
-        
+        when(organizationService.getOrganizationByName(OrganizationService.DEFAULT_ORGANIZATION_NAME))
+                .thenReturn(Optional.of(new Organization("id", OrganizationService.DEFAULT_ORGANIZATION_NAME, "custom-uuid", null, null, null, null, null, null, null, null, null,null, null, null)));
+
+
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
                 () -> agentRegistrationService.register(INITIAL_KEY, request)

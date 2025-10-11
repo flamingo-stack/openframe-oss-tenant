@@ -127,8 +127,8 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
   const statusText = state === 3 ? 'Connected' : state === 2 ? 'Open' : state === 1 ? 'Connecting' : 'Idle'
 
   return (
-    <div className="absolute top-0 left-0 right-0 bottom-0 z-40 max-h-screen overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 bottom-0 bg-ods-card flex flex-col p-4 gap-4 max-h-screen">
+    <div className="absolute top-0 left-0 right-0 bottom-0 z-40 max-h-[90vh] overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 bottom-0 bg-ods-card flex flex-col p-4 gap-4 max-h-[90vh]">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <h2 className="font-['Azeret_Mono'] font-semibold text-[20px] text-ods-text-primary tracking-[-0.4px]">

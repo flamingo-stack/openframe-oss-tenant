@@ -9,7 +9,7 @@ import { PoliciesAndQueriesView } from './components/policies-and-queries-view'
 export default function PoliciesAndQueries() {
   return (
     <AppLayout>
-      <ContentPageContainer padding="none">
+      <ContentPageContainer padding="none" showHeader={false}>
         <PoliciesAndQueriesView />
       </ContentPageContainer>
     </AppLayout>

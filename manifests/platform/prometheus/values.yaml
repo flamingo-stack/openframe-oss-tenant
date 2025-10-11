@@ -20,9 +20,9 @@ kube-prometheus-stack:
       scrapeConfigSelectorNilUsesHelmValues: false
       ruleSelectorNilUsesHelmValues: false
       externalPrefixNilUsesHelmValues: false
-      scrapeInterval: 15s
+      scrapeInterval: 30s
       evaluationInterval: 15s
-      retention: 15d  
+      retention: 3d  
       
       resources:
         requests:
@@ -39,4 +39,4 @@ kube-prometheus-stack:
               - ReadWriteOnce
             resources:
               requests:
-                storage: 1Gi
+                storage: 15Gi

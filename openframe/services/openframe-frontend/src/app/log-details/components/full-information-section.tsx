@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { InfoRow, ToolIcon } from '@flamingo/ui-kit'
+import { toUiKitToolType, toStandardToolLabel } from '@lib/tool-labels'
 
 interface LogEntry {
   toolEventId: string
@@ -23,16 +24,7 @@ interface FullInformationSectionProps {
 
 export function FullInformationSection({ logDetails }: FullInformationSectionProps) {
   const getToolIcon = (toolType: string) => {
-    const mapToolType = (toolType: string) => {
-      const typeMap: Record<string, string> = {
-        'TACTICAL': 'tactical',
-        'MESHCENTRAL': 'meshcentral',
-        'FLEET': 'fleet'
-      }
-      return typeMap[toolType] || 'unknown'
-    }
-
-    return <ToolIcon toolType={mapToolType(toolType) as any} size={16} />
+    return <ToolIcon toolType={toUiKitToolType(toolType) as any} size={16} />
   }
 
   const formatTimestamp = (timestamp: string) => {
@@ -77,7 +69,7 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
           <div className="p-4 sm:p-6">
             <InfoRow
               label="toolType"
-              value={logDetails.toolType}
+              value={toStandardToolLabel(logDetails.toolType)}
               icon={getToolIcon(logDetails.toolType)}
             />
           </div>
