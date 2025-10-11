@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { tacticalApiClient } from '@lib/tactical-api-client'
+import { fleetApiClient } from '@lib/fleet-api-client'
 import { apiClient } from '@lib/api-client'
 import { Device, DeviceGraphQLNode, GraphQLResponse } from '../types/device.types'
 import { GET_DEVICE_QUERY } from '../queries/devices-queries'
@@ -56,8 +57,18 @@ export function useDeviceDetails() {
         }
       }
 
+      // 2.5) Fetch Fleet MDM details if present
+      const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM')
+      let fleetData: any | null = null
+      if (fleet?.agentToolId) {
+        const fResponse = await fleetApiClient.getHost(Number(fleet.agentToolId))
+        if (fResponse.ok && fResponse.data?.host) {
+          fleetData = fResponse.data.host
+        }
+      }
+
       // 3) Use shared normalization function for consistency
-      const merged: Device = normalizeDeviceDetailNode(node, tacticalData)
+      const merged: Device = normalizeDeviceDetailNode(node, tacticalData, fleetData)
 
       setDeviceDetails(merged)
       

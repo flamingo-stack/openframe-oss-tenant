@@ -67,11 +67,19 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           <p className="text-ods-text-secondary text-xs mt-1">Last Boot</p>
         </div>
       </div>
-      <div className="border-t border-ods-border pt-4">
-        <p className="text-ods-text-primary font-medium">
-          {device.osUuid || device.machineId || device.id}
-        </p>
-        <p className="text-ods-text-secondary text-xs mt-1">UUID</p>
+      <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <p className="text-ods-text-primary font-medium break-all">
+            {device.osUuid || device.machineId || device.id}
+          </p>
+          <p className="text-ods-text-secondary text-xs mt-1">UUID</p>
+        </div>
+        <div>
+          <p className="text-ods-text-primary font-medium break-all">
+            {device.macAddress || 'Unknown'}
+          </p>
+          <p className="text-ods-text-secondary text-xs mt-1">MAC Address</p>
+        </div>
       </div>
     </div>
   )
