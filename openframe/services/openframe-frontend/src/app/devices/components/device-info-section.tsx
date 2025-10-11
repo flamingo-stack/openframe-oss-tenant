@@ -37,34 +37,25 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
       </div>
 
-      <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div>
         <p className="text-ods-text-primary font-medium">{device.hostname || 'Unknown'}</p>
           <p className="text-ods-text-secondary text-sm mb-1">Host Name</p>
         </div>
         <div>
-          <p className="text-ods-text-primary font-medium">{device.organizationId || 'Unknown'}</p>
-          <p className="text-ods-text-secondary text-xs mt-1">Organization ID (Site)</p>
+          <p className="text-ods-text-primary font-medium">{device.organization || 'Unknown'}</p>
+          <p className="text-ods-text-secondary text-xs mt-1">Organization Name</p>
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">
-            {device.registeredAt ? 
-              `${new Date(device.registeredAt).toLocaleDateString()} ${new Date(device.registeredAt).toLocaleTimeString()}` : 
-              'Unknown'
-            }
-          </p>
-          <p className="text-ods-text-secondary text-xs mt-1">Registered</p>
-        </div>
-        <div>
-          <p className="text-ods-text-primary font-medium">
-            {device.updatedAt ? 
+            {device.updatedAt ?
               `${new Date(device.updatedAt).toLocaleDateString()} ${new Date(device.updatedAt).toLocaleTimeString()}` :
-              device.lastSeen ? 
-                `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}` : 
+              device.lastSeen ?
+                `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}` :
                 'Unknown'
             }
           </p>
-          <p className="text-ods-text-secondary text-xs mt-1">Updated</p>
+          <p className="text-ods-text-secondary text-xs mt-1">Last Seen</p>
         </div>
       </div>
       <div className="border-t border-ods-border pt-4">
