@@ -21,6 +21,8 @@ pub struct InstalledTool {
     pub version: String,
     pub run_command_args: Vec<String>,
     pub tool_agent_id_command_args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uninstallation_command_args: Option<Vec<String>>,
     pub status: ToolStatus,
 }
 
@@ -33,7 +35,8 @@ impl Default for InstalledTool {
             version: String::new(),
             run_command_args: Vec::new(),
             status: ToolStatus::default(),
-            tool_agent_id_command_args: Vec::new(),       
+            tool_agent_id_command_args: Vec::new(),
+            uninstallation_command_args: None,
         }
     }
 }

@@ -2,3 +2,11 @@ registerJob:
   enabled: true
 servicemonitor:
   enabled: true
+
+
+
+pinot:
+  cluster:
+    name: pinot 
+  server:
+    replicaCount: 2

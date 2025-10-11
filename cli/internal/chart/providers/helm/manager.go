@@ -250,8 +250,12 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 		if _, err := os.Stat(certFile); err == nil {
 			if _, err := os.Stat(keyFile); err == nil {
 				args = append(args,
+					// OSS mode certificates
 					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFile),
 					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFile),
+					// SaaS mode certificates
+					"--set-file", fmt.Sprintf("deployment.saas.ingress.localhost.tls.cert=%s", certFile),
+					"--set-file", fmt.Sprintf("deployment.saas.ingress.localhost.tls.key=%s", keyFile),
 				)
 			}
 		}

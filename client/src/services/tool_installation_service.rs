@@ -193,6 +193,7 @@ impl ToolInstallationService {
             version: version_clone,
             run_command_args: run_args_clone,
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args,
+            uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             status: ToolStatus::Installed,
         };
 

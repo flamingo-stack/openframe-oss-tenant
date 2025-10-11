@@ -139,10 +139,6 @@ class AuthApiClient {
     return requestRefresh<T>(`/oauth/refresh${query}`, { method: 'POST' })
   }
 
-  me<T = any>() {
-    return request<T>('/api/me')
-  }
-
   devExchange(ticket: string): Promise<Response> {
     const base = runtimeEnv.sharedHostUrl() || ''
     const url = `${base}/oauth/dev-exchange?ticket=${encodeURIComponent(ticket)}`

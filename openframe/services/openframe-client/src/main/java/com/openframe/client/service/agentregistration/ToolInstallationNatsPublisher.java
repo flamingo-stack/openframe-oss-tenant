@@ -40,6 +40,7 @@ public class ToolInstallationNatsPublisher {
         message.setVersion(toolAgent.getVersion());
         message.setAssets(mapAssets(toolAgent.getAssets()));
         message.setInstallationCommandArgs(toolAgent.getInstallationCommandArgs());
+        message.setUninstallationCommandArgs(toolAgent.getUninstallationCommandArgs());
         message.setRunCommandArgs(toolAgent.getRunCommandArgs());
         message.setToolAgentIdCommandArgs(toolAgent.getAgentToolIdCommandArgs());
         return message;

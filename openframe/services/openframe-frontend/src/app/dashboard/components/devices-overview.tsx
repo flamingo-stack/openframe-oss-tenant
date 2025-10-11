@@ -2,9 +2,15 @@
 
 import { DashboardInfoCard } from '@flamingo/ui-kit'
 import { useDevicesOverview } from '../hooks/use-dashboard-stats'
+import { useRouter } from 'next/navigation'
 
 export function DevicesOverviewSection() {
   const devices = useDevicesOverview()
+  const router = useRouter()
+  
+  const onClick = () => {
+    router.push('/devices')
+  }
 
   return (
     <div className="space-y-4">
@@ -22,12 +28,14 @@ export function DevicesOverviewSection() {
           percentage={devices.activePercentage}
           showProgress
           progressColor="#5ea62e"
+          onClick={onClick}
         />
         <DashboardInfoCard
           title="Inactive"
           value={devices.inactive}
           percentage={devices.inactivePercentage}
           showProgress
+          onClick={onClick}
         />
       </div>
     </div>

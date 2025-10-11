@@ -199,7 +199,19 @@ impl CrossPlatformServiceManager {
             .context("Failed to detect native service management platform")?;
 
         // First try to stop the service if it's running
-        let _ = self.stop();
+        info!("Stopping service...");
+        if let Err(e) = self.stop() {
+            warn!("Could not stop service (might already be stopped): {}", e);
+        }
+
+        // Wait for the service process to fully terminate
+        #[cfg(target_os = "windows")]
+        {
+            info!("Waiting for service process to fully terminate...");
+            if let Err(e) = self.wait_for_service_process_to_stop(30) {
+                warn!("Service process did not stop cleanly: {}", e);
+            }
+        }
 
         // Create the uninstallation context
         let ctx = ServiceUninstallCtx { label };
@@ -209,9 +221,29 @@ impl CrossPlatformServiceManager {
 
         // Uninstall the service
         info!("Uninstalling service via CrossPlatformServiceManager");
-        manager
-            .uninstall(ctx)
-            .context("Failed to uninstall service")?;
+        
+        #[cfg(target_os = "windows")]
+        {
+            match manager.uninstall(ctx) {
+                Ok(_) => {},
+                Err(e) => {
+                    let error_msg = e.to_string();
+                    // Ignore "already marked for deletion" or "doesn't exist"
+                    if error_msg.contains("1072") {
+                        info!("Service already marked for deletion, considering it uninstalled");
+                    } else if error_msg.contains("1060") {
+                        info!("Service does not exist, considering it uninstalled");
+                    } else {
+                        return Err(e).context("Failed to uninstall service");
+                    }
+                }
+            }
+        }
+        
+        #[cfg(not(target_os = "windows"))]
+        {
+            manager.uninstall(ctx).context("Failed to uninstall service")?;
+        }
 
         Ok(())
     }
@@ -519,6 +551,61 @@ impl CrossPlatformServiceManager {
         #[cfg(all(unix, not(target_os = "macos")))]
         {
             Some("root".to_string())
+        }
+    }
+
+    /// Wait for the service process to actually stop (Windows-specific)
+    #[cfg(target_os = "windows")]
+    fn wait_for_service_process_to_stop(&self, timeout_seconds: u64) -> Result<()> {
+        use std::thread::sleep;
+        use std::time::{Duration, Instant};
+        
+        let service_name = format!("com.openframe.{}", self.config.name.to_lowercase());
+        let start = Instant::now();
+        let timeout = Duration::from_secs(timeout_seconds);
+        
+        info!("Waiting up to {} seconds for service '{}' to stop...", timeout_seconds, service_name);
+        
+        // Poll the service status until it's stopped or timeout
+        while start.elapsed() < timeout {
+            // Check if the service process still exists
+            let service_running = Self::is_service_process_running(&service_name);
+            
+            if !service_running {
+                info!("Service process stopped successfully");
+                return Ok(());
+            }
+            
+            // Wait a bit before checking again
+            sleep(Duration::from_millis(500));
+        }
+        
+        Err(anyhow::anyhow!(
+            "Service process did not stop within {} seconds",
+            timeout_seconds
+        ))
+    }
+
+    /// Check if a Windows service process is still running
+    #[cfg(target_os = "windows")]
+    fn is_service_process_running(service_name: &str) -> bool {
+        use std::process::Command;
+        
+        // Use sc query to check service status
+        let output = Command::new("sc")
+            .args(&["query", service_name])
+            .output();
+        
+        match output {
+            Ok(output) => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                // If service is STOPPED or doesn't exist, it's not running
+                !stdout.contains("STOPPED") && output.status.success()
+            }
+            Err(_) => {
+                // If we can't check, assume it's not running
+                false
+            }
         }
     }
 }
