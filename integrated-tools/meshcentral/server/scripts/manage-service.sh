@@ -15,7 +15,7 @@ wait_for_meshcentral_to_start() {
 
   local max_attempts=10
   local attempt=1
-  local delay=5
+  local delay=10
 
   while [ $attempt -le $max_attempts ]; do
     echo "[meshcentral] Attempt $attempt of $max_attempts: Checking MeshCentral WebSocket readiness..."

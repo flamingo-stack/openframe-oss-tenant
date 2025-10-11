@@ -157,7 +157,11 @@ export type DevicesGraphQLNode = {
   agentVersion?: string
   status: string
   lastSeen?: string
-  organizationId?: string
+  organization?: {
+    id: string
+    organizationId: string
+    name: string
+  }
   serialNumber?: string
   manufacturer?: string
   model?: string
@@ -191,7 +195,11 @@ export type DeviceGraphQLNode = {
   agentVersion?: string
   status: string
   lastSeen?: string
-  organizationId?: string
+  organization?: {
+    id: string
+    organizationId: string
+    name: string
+  }
   serialNumber?: string
   manufacturer?: string
   model?: string

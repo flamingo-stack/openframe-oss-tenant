@@ -53,6 +53,18 @@ Complete validation: validates both deployment and ingress configuration
 
 
 {{/*
+Get TLS configuration for localhost ingress from the enabled deployment mode
+Returns the TLS object (cert and key)
+*/}}
+{{- define "chart.localhost.tls" -}}
+{{- if .Values.deployment.oss.enabled -}}
+{{- toYaml .Values.deployment.oss.ingress.localhost.tls -}}
+{{- else if .Values.deployment.saas.enabled -}}
+{{- toYaml .Values.deployment.saas.ingress.localhost.tls -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Validate TLS certificate format and structure for any deployment type
 */}}
 {{- define "chart.localhost.hasTLS" -}}

@@ -7,6 +7,7 @@ import { azeretMono, dmSans } from '@flamingo/ui-kit/fonts'
 import { Toaster } from '@flamingo/ui-kit/components/ui'
 import { DevTicketObserver } from './auth/components/dev-ticket-observer'
 import { DeploymentInitializer } from './components/deployment-initializer'
+import { GoogleTagManager } from './components/google-tag-manager'
 import { RouteGuard } from '../components/route-guard'
 import { isAuthEnabled } from '../lib/app-mode'
 
@@ -31,6 +32,7 @@ export default function RootLayout({
         className="min-h-screen antialiased font-body"
         data-app-type="openframe"
       >
+        <GoogleTagManager />
         <DeploymentInitializer />
         {isAuthEnabled() && <DevTicketObserver />}
         <RouteGuard>

@@ -28,4 +28,12 @@ impl DeviceDataFetcher {
         info!("Agent version: {}", version);
         Some(version)
     }
+
+    pub fn get_os_type(&self) -> String {
+        if cfg!(target_os = "windows") {
+            "WINDOWS".to_string()
+        } else {
+            "MAC_OS".to_string()
+        }
+    }
 } 

@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, ChevronLeft, Check, ArrowLeft } from 'lucide-react'
 import { tacticalApiClient } from '../../../lib/tactical-api-client'
 import { useScriptDetails } from '../hooks/use-script-details'
 import { Button } from '@flamingo/ui-kit/components/ui'
+import { SelectCard } from '@flamingo/ui-kit'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo/ui-kit/components/ui'
 import { Card } from '@flamingo/ui-kit/components/ui'
 import { FormLoader, FormPageContainer } from '@flamingo/ui-kit'
@@ -53,11 +54,19 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
     run_as_user: false,
     env_vars: [],
     description: '',
-    supported_platforms: ['linux'],
+    supported_platforms: ['windows'],
     category: 'System Maintenance'
   })
 
   const [isLoading, setIsLoading] = useState(false)
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const lineNumbersRef = useRef<HTMLDivElement>(null)
+  const handleTextareaScroll = useCallback((e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = (e.currentTarget as HTMLTextAreaElement).scrollTop
+    }
+  }, [])
 
   const isEditMode = !!scriptId
 
@@ -251,27 +260,17 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           {/* Supported Platform Section */}
           <div className="space-y-1">
             <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</label>
-            <div className="flex gap-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
               {OS_PLATFORMS.map((platform) => {
-                const Icon = platform.icon
                 const isSelected = scriptData.supported_platforms.includes(platform.id)
                 return (
-                  <Button
+                  <SelectCard
                     key={platform.id}
-                    onClick={() => handlePlatformToggle(platform.id)}
-                    variant="ghost"
-                    className={`flex-1 h-16 px-4 py-3 rounded-md flex items-center gap-2 transition-all justify-start ${
-                      isSelected
-                        ? 'bg-accent-active border border-accent-primary'
-                        : 'bg-ods-card border border-ods-border hover:bg-ods-bg-hover'
-                    }`}
-                    leftIcon={<Icon className="w-6 h-6 text-ods-text-primary" />}
-                    rightIcon={isSelected ? <Check className="w-6 h-6 text-ods-accent" /> : undefined}
-                  >
-                    <span className="flex-1 text-left text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
-                      {platform.name}
-                    </span>
-                  </Button>
+                    title={platform.name}
+                    icon={<platform.icon className="w-6 h-6"/>}
+                    selected={isSelected}
+                    onSelect={() => handlePlatformToggle(platform.id)}
+                  />
                 )
               })}
               <div className={`flex-1 h-16 px-4 py-3 rounded-md border border-ods-border flex items-center justify-between ${
@@ -455,18 +454,25 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
             <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Syntax</label>
             <div className="bg-ods-bg rounded-md border border-ods-border relative">
               <div className="flex">
-                <div className="w-12 bg-ods-bg py-3 px-2 overflow-hidden">
-                  <div className="text-right text-ods-text-secondary text-lg font-['DM_Sans:Medium',_sans-serif] font-medium leading-6">
-                    {scriptData.content.split('\n').map((_, i) => (
-                      <div key={i}>{i + 1}</div>
-                    ))}
+                {/* Line numbers */}
+                <div className="w-12 bg-ods-bg py-3 px-2">
+                  <div ref={lineNumbersRef} className="h-[400px] overflow-y-auto">
+                    <div className="text-right text-ods-text-secondary text-lg font-['DM_Sans:Medium',_sans-serif] font-medium leading-6">
+                      {scriptData.content.split('\n').map((_, i) => (
+                        <div key={i}>{i + 1}</div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                {/* Editable script content */}
                 <div className="flex-1 relative">
                   <textarea
+                    ref={textareaRef}
                     value={scriptData.content}
                     onChange={(e) => setScriptData(prev => ({ ...prev, content: e.target.value }))}
-                    className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none p-3 resize-none font-mono leading-6 min-h-[600px]"
+                    onScroll={handleTextareaScroll}
+                    wrap="off"
+                    className="w-full h-[400px] bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none p-3 font-mono leading-6 resize-none overflow-auto"
                     placeholder="#!/bin/bash\n\n# Your script content here..."
                     spellCheck={false}
                   />

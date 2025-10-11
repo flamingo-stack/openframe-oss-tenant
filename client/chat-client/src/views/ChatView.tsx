@@ -1,18 +1,18 @@
-import { 
-  ChatContainer, 
-  ChatHeader, 
-  ChatContent, 
-  ChatFooter
-} from '../../../../../ui-kit/src/components/chat/chat-container'
 import {
+  ChatContainer,
+  ChatHeader,
+  ChatContent,
+  ChatFooter,
   ChatMessageList,
   ChatInput,
   ChatQuickAction
-} from '../../../../../ui-kit/src/components/chat'
+} from '@flamingo/ui-kit'
 import { useChat } from '../hooks/useChat'
 import faeAvatar from '../assets/fae-avatar.png'
 
 export function ChatView() {
+  const DEBUG_MODE = false
+  
   const { 
     messages,
     isTyping,
@@ -21,7 +21,7 @@ export function ChatView() {
     handleQuickAction,
     quickActions,
     hasMessages
-  } = useChat({ useMock: true })
+  } = useChat({ useApi: true, useMock: false, debugMode: DEBUG_MODE })
   
   return (
     <ChatContainer>

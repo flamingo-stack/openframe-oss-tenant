@@ -35,7 +35,7 @@ export function useDevTicketExchange() {
         if (tokens.accessToken || tokens.refreshToken) {
           console.log('🎫 [DevTicket Exchange] Tokens stored, fetching user data...')
 
-          const meResponse = await authApiClient.me()
+          const meResponse = await apiClient.me()
           
           if (meResponse.ok && meResponse.data && meResponse.data.authenticated) {
             const userData = meResponse.data.user

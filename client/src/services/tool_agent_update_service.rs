@@ -1,9 +1,9 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
-use tracing::{info, debug, warn, error};
+use tracing::{info, debug, warn};
 use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
 use crate::services::InstalledToolsService;
-use crate::models::installed_tool::ToolStatus;
+use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -15,6 +15,7 @@ use std::os::unix::fs::PermissionsExt;
 pub struct ToolAgentUpdateService {
     tool_agent_file_client: ToolAgentFileClient,
     installed_tools_service: InstalledToolsService,
+    tool_kill_service: ToolKillService,
     directory_manager: DirectoryManager,
 }
 
@@ -22,6 +23,7 @@ impl ToolAgentUpdateService {
     pub fn new(
         tool_agent_file_client: ToolAgentFileClient,
         installed_tools_service: InstalledToolsService,
+        tool_kill_service: ToolKillService,
         directory_manager: DirectoryManager,
     ) -> Self {
         // Ensure directories exist
@@ -33,6 +35,7 @@ impl ToolAgentUpdateService {
         Self {
             tool_agent_file_client,
             installed_tools_service,
+            tool_kill_service,
             directory_manager,
         }
     }
@@ -103,7 +106,8 @@ impl ToolAgentUpdateService {
         info!("New agent binary downloaded and saved for tool: {}", tool_agent_id);
 
         // Stop running tool process before updating
-        self.stop_tool_process(tool_agent_id).await
+        info!("Stopping tool process before update: {}", tool_agent_id);
+        self.tool_kill_service.stop_tool(tool_agent_id).await
             .with_context(|| format!("Failed to stop tool process for: {}", tool_agent_id))?;
 
         // Update installed tool version and status
@@ -123,43 +127,6 @@ impl ToolAgentUpdateService {
         info!("Tool agent update completed successfully for tool: {} to version: {}", tool_agent_id, new_version);
         info!("Tool {} will be restarted by ToolRunManager after detecting process exit", tool_agent_id);
         
-        Ok(())
-    }
-
-    // TODO: This is a very dirty solution and should be revised
-    // Currently we kill the process and rely on ToolRunManager to detect the exit and restart
-    async fn stop_tool_process(&self, tool_id: &str) -> Result<()> {
-        use sysinfo::{System, Signal};
-        
-        let mut sys = System::new_all();
-        sys.refresh_all();
-
-        // Match processes whose command contains "/{tool_id}/agent"
-        let pattern = format!("/{}/agent", tool_id).to_lowercase();
-
-        for (pid, process) in sys.processes() {
-            let cmd_items = process.cmd();
-            let cmdline = cmd_items.join(" ").to_lowercase();
-
-            if cmdline.contains(&pattern) {
-                info!("Found running tool process for {} with pid {}", tool_id, pid);
-
-                if process.kill() {
-                    info!("Tool process terminated for {} with pid {}", tool_id, pid);
-                    continue;
-                } else {
-                    warn!("Failed to terminate tool process for {} with pid {}", tool_id, pid);
-                    if let Some(killed) = process.kill_with(Signal::Kill) {
-                        if killed {
-                            info!("Tool process terminated with kill signal for {} with pid {}", tool_id, pid);
-                        } else {
-                            error!("Failed to terminate tool process with kill signal for {} with pid {}", tool_id, pid);
-                        }
-                    }
-                }
-            }
-        }
-
         Ok(())
     }
 }
