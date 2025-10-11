@@ -5,6 +5,7 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { apiClient } from '@lib/api-client'
 import { Device, DeviceFilters, DeviceFilterInput, DevicesGraphQLNode, GraphQLResponse } from '../types/device.types'
 import { GET_DEVICES_QUERY, GET_DEVICE_FILTERS_QUERY } from '../queries/devices-queries'
+import { normalizeDeviceListNode } from '../utils/normalize-device'
 
 export function useDevices(filters: DeviceFilterInput = {}) {
   const { toast } = useToast()
@@ -48,69 +49,8 @@ export function useDevices(filters: DeviceFilterInput = {}) {
 
       const nodes = graphqlResponse.data.devices.edges.map(e => e.node)
 
-      const transformedDevices: Device[] = nodes.map(node => {
-        const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')
-        return {
-          // legacy/tactical fields for UI compatibility
-          agent_id: tactical?.agentToolId || node.machineId || node.id,
-          hostname: node.hostname || node.displayName || '',
-          site_name: '',
-          client_name: node.organization?.name || '',
-          monitoring_type: node.type || '',
-          description: node.displayName || node.hostname || '',
-          needs_reboot: false,
-          pending_actions_count: 0,
-          status: node.status || 'UNKNOWN',
-          overdue_text_alert: false,
-          overdue_email_alert: false,
-          overdue_dashboard_alert: false,
-          last_seen: node.lastSeen || '',
-          boot_time: 0,
-          checks: { total: 0, passing: 0, failing: 0, warning: 0, info: 0, has_failing_checks: false },
-          maintenance_mode: false,
-          logged_username: '',
-          italic: false,
-          block_policy_inheritance: false,
-          plat: node.osType || '',
-          goarch: '',
-          has_patches_pending: false,
-          version: node.agentVersion || '',
-          operating_system: node.osType || '',
-          public_ip: '',
-          cpu_model: [],
-          graphics: '',
-          local_ips: node.ip || '',
-          make_model: [node.manufacturer, node.model].filter(Boolean).join(' '),
-          physical_disks: [],
-          custom_fields: [],
-          serial_number: node.serialNumber || '',
-          total_ram: '',
-
-          // computed fields used by UI
-          id: node.id,
-          machineId: node.machineId,
-          displayName: node.displayName || node.hostname,
-          organizationId: node.organization?.organizationId,
-          organization: node.organization?.name,
-          type: node.type,
-          osType: node.osType,
-          osVersion: node.osVersion,
-          osBuild: node.osBuild,
-          registeredAt: node.registeredAt,
-          updatedAt: node.updatedAt,
-          manufacturer: node.manufacturer,
-          model: node.model,
-          osUuid: node.osUuid,
-          lastSeen: node.lastSeen,
-          tags: node.tags || [],
-          ip: node.ip,
-          macAddress: node.macAddress,
-          agentVersion: node.agentVersion,
-          serialNumber: node.serialNumber,
-          totalRam: undefined,
-          toolConnections: node.toolConnections
-        }
-      })
+      // Use shared normalization function for consistency
+      const transformedDevices: Device[] = nodes.map(normalizeDeviceListNode)
 
       setDevices(transformedDevices)
       
