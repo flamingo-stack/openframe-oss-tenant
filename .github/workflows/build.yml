@@ -143,9 +143,6 @@ jobs:
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: openframe
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true'))
     defaults:
       run:
         shell: bash
@@ -161,13 +158,21 @@ jobs:
             artifact_name: openframe-oss-client-windows-x64
 
     steps:
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')) }}" >> $GITHUB_OUTPUT
+
       - name: Checkout
         uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
         with:
           fetch-depth: 1
 
       - name: Prepare Rust tools
         uses: ./.github/steps/rust-setup
+        if: |
+          github.event_name == 'workflow_dispatch' || 
+          (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true'))
         with:
           toolchain: stable
           targets: ${{ matrix.target }}
@@ -176,6 +181,9 @@ jobs:
 
       - name: Build client
         working-directory: client
+        if: |
+          github.event_name == 'workflow_dispatch' || 
+          (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true'))
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
@@ -188,7 +196,9 @@ jobs:
           fi          
 
       - name: Upload Rust Artifacts for Windows / Linux
-        if: "!(runner.os == 'macOS')"
+        if: |
+          "!(runner.os == 'macOS')" &&
+          (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')))
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -199,6 +209,9 @@ jobs:
 
       - name: Create macOS universal package
         if: "runner.os == 'macOS'"
+        if: |
+          "runner.os == 'macOS'" &&
+          (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')))
         shell: bash
         run: |
           mkdir -p artifacts
@@ -215,7 +228,9 @@ jobs:
           file ./artifacts/${{ env.BINARY_NAME }}
 
       - name: Sign MacOS package
-        if: "runner.os == 'macOS'"
+        if: |
+          "runner.os == 'macOS'" &&
+          (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')))
         uses: ./.github/steps/sign-macos-package
         with:
           apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
@@ -227,7 +242,9 @@ jobs:
           binary_name: ${{ env.BINARY_NAME }}
 
       - name: Upload macOS client artifact
-        if: "runner.os == 'macOS'"
+        if: |
+          "runner.os == 'macOS'" &&
+          (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')))
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
