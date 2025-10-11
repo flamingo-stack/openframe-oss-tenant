@@ -37,7 +37,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
       </div>
 
-      <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div>
         <p className="text-ods-text-primary font-medium">{device.hostname || 'Unknown'}</p>
           <p className="text-ods-text-secondary text-sm mb-1">Host Name</p>
@@ -56,6 +56,15 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
             }
           </p>
           <p className="text-ods-text-secondary text-xs mt-1">Last Seen</p>
+        </div>
+        <div>
+          <p className="text-ods-text-primary font-medium">
+            {device.boot_time ?
+              `${new Date(device.boot_time * 1000).toLocaleDateString()} ${new Date(device.boot_time * 1000).toLocaleTimeString()}` :
+              'Unknown'
+            }
+          </p>
+          <p className="text-ods-text-secondary text-xs mt-1">Last Boot</p>
         </div>
       </div>
       <div className="border-t border-ods-border pt-4">

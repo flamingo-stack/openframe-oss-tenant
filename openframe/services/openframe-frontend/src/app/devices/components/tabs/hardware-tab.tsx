@@ -17,22 +17,6 @@ export function HardwareTab({ device }: HardwareTabProps) {
     )
   }
 
-  const parsePhysicalDisks = (disks: string[]) => {
-    if (!disks) return []
-
-    return disks.map(disk => {
-      const parts = disk.trim().split(' ')
-      const size = parts[parts.length - 2] + ' ' + parts[parts.length - 1]
-      const name = parts.slice(0, -2).join(' ')
-      
-      return {
-        name: name.replace(/^Apple\s+/, '').replace(/\s+SSD.*$/, ''),
-        size: size,
-        type: name.includes('SSD') ? 'SSD' : 'HDD'
-      }
-    })
-  }
-
   const parseCpuModel = (cpuArray: string[]) => {
     if (!cpuArray || cpuArray.length === 0) return []
     return cpuArray.map(cpu => ({
@@ -43,50 +27,120 @@ export function HardwareTab({ device }: HardwareTabProps) {
     }))
   }
 
-  const processDiskData = (disks: Array<{
-    free: string
-    used: string
-    total: string
-    device: string
-    fstype: string
-    percent: number
-  }>) => {
+  const processDiskData = (
+    disks: Array<{
+      free: string
+      used: string
+      total: string
+      device: string
+      fstype: string
+      percent: number
+    }>,
+    physicalDisks: string[]
+  ) => {
     if (!disks || disks.length === 0) return []
-    
-    const validDisks = disks.filter(disk => 
-      disk.total !== '0 B' && 
-      disk.device !== 'map auto_home' && 
+
+    // Filter out invalid disks
+    const validDisks = disks.filter(disk =>
+      disk.total !== '0 B' &&
+      disk.device !== 'map auto_home' &&
       disk.percent > 0
     )
-    
-    const groupedDisks = validDisks.reduce((acc, disk) => {
-      const key = `${disk.total}-${disk.percent}`
-      if (!acc[key]) {
-        acc[key] = {
-          ...disk,
-          count: 1,
-          device: disk.device
+
+    // Extract physical disk number from device path (e.g., /dev/disk3s1 -> disk3)
+    const extractPhysicalDisk = (device: string) => {
+      const match = device.match(/disk(\d+)/)
+      return match ? `disk${match[1]}` : device
+    }
+
+    // Group partitions by physical disk
+    const groupedByPhysicalDisk = validDisks.reduce((acc, disk) => {
+      const physicalDisk = extractPhysicalDisk(disk.device)
+      if (!acc[physicalDisk]) {
+        acc[physicalDisk] = []
+      }
+      acc[physicalDisk].push(disk)
+      return acc
+    }, {} as Record<string, typeof validDisks>)
+
+    // Parse physical disk info to get actual sizes and names
+    const physicalDiskInfo = (physicalDisks || []).reduce((acc, diskStr) => {
+      const parts = diskStr.trim().split(' ')
+      const size = parts[parts.length - 2] + ' ' + parts[parts.length - 1]
+      const diskMatch = diskStr.match(/disk(\d+)/)
+      if (diskMatch) {
+        const diskKey = `disk${diskMatch[1]}`
+        acc[diskKey] = {
+          size,
+          name: diskStr.includes('SSD') ? 'SSD' : 'HDD',
+          type: diskStr.includes('SSD') ? 'SSD' : 'HDD',
+          exists: true
         }
-      } else {
-        acc[key].count += 1
-        acc[key].device += `, ${disk.device}`
       }
       return acc
     }, {} as Record<string, any>)
-    
-    return Object.values(groupedDisks).map((disk: any) => ({
-      name: `Disk ${disk.device.split(',')[0]}`,
-      size: disk.total,
-      used: disk.used,
-      free: disk.free,
-      percentage: disk.percent,
-      type: disk.fstype === 'apfs' ? 'SSD' : 'HDD',
-      count: disk.count
-    }))
+
+    // Create disk objects for all physical disks (even if no partition data)
+    const allDisks = Object.keys(physicalDiskInfo).map(physicalDisk => {
+      const partitions = groupedByPhysicalDisk[physicalDisk]
+      const diskInfo = physicalDiskInfo[physicalDisk]
+
+      if (partitions && partitions.length > 0) {
+        // Has partition data - use the largest partition
+        const mainPartition = partitions.reduce((largest, current) => {
+          const currentSize = parseFloat(current.total.replace(/[^\d.]/g, ''))
+          const largestSize = parseFloat(largest.total.replace(/[^\d.]/g, ''))
+          return currentSize > largestSize ? current : largest
+        })
+
+        return {
+          name: physicalDisk,
+          size: diskInfo.size,
+          used: mainPartition.used,
+          free: mainPartition.free,
+          percentage: mainPartition.percent,
+          type: diskInfo.type,
+          count: partitions.length
+        }
+      } else {
+        // No partition data - show disk with unavailable stats
+        return {
+          name: physicalDisk,
+          size: diskInfo.size,
+          used: 'N/A',
+          free: 'N/A',
+          percentage: 0,
+          type: diskInfo.type,
+          count: 0
+        }
+      }
+    })
+
+    return allDisks.sort((a, b) => {
+      // Parse size strings to numeric values for comparison
+      const parseSize = (sizeStr: string): number => {
+        const match = sizeStr.match(/([0-9.]+)\s*(GB|MB|TB)/i)
+        if (!match) return 0
+
+        const value = parseFloat(match[1])
+        const unit = match[2].toUpperCase()
+
+        // Convert everything to GB for comparison
+        if (unit === 'TB') return value * 1024
+        if (unit === 'MB') return value / 1024
+        return value // GB
+      }
+
+      const aSize = parseSize(a.size)
+      const bSize = parseSize(b.size)
+
+      // Sort by capacity descending (biggest to smallest)
+      return bSize - aSize
+    })
   }
 
   const cpuModels = parseCpuModel(device.cpu_model || [])
-  const diskData = processDiskData(device.disks || [])
+  const diskData = processDiskData(device.disks || [], device.physical_disks || [])
 
   return (
     <div className="">
@@ -96,16 +150,15 @@ export function HardwareTab({ device }: HardwareTabProps) {
           DISK INFO
         </h3>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {diskData.slice(0, 3).map((disk, index) => {
-            const progressColor = disk.percentage > 80 ? 'red' : disk.percentage > 60 ? 'yellow' : 'green'
-            
-            return (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {diskData.map((disk, index) => (
               <InfoCard
                 key={index}
                 data={{
-                  title: `${disk.name}${index === 0 ? ':' : ''}`,
-                  subtitle: `${disk.type} Drive${disk.count > 1 ? ` (${disk.count} partitions)` : ''}`,
+                  title: disk.name,
+                  subtitle: disk.count === 0
+                    ? `${disk.type} Drive (No partition data)`
+                    : `${disk.type} Drive (${disk.count} partition${disk.count > 1 ? 's' : ''})`,
                   items: [
                     {
                       label: 'Current Usage',
@@ -129,8 +182,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
                   }
                 }}
               />
-            )
-          })}
+          ))}
         </div>
       </div>
 
