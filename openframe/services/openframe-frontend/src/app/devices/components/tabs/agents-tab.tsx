@@ -1,7 +1,8 @@
 'use client'
 
 import React from 'react'
-import { InfoCard, ToolBadge } from '@flamingo/ui-kit'
+import { InfoCard } from '@flamingo/ui-kit'
+import { ToolBadge } from '@flamingo/ui-kit/components/platform'
 import { toUiKitToolType } from '@lib/tool-labels'
 
 interface AgentsTabProps {
@@ -17,15 +18,19 @@ export function AgentsTab({ device }: AgentsTabProps) {
         toolConnections.map((tc: any, idx: number) => {
           const toolType = toUiKitToolType(tc?.toolType)
           return (
-            <InfoCard
-              key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`}
-              data={{
-                icon: <ToolBadge toolType={toolType} />,
-                items: [
-                  { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
-                ]
-              }}
-            />
+            <div key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`} className="relative">
+              <div className="absolute top-4 left-4 z-10">
+                <ToolBadge toolType={toolType} />
+              </div>
+              <InfoCard
+                data={{
+                  items: [
+                    { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
+                  ]
+                }}
+                className="pt-16"
+              />
+            </div>
           )
         })
       ) : (
