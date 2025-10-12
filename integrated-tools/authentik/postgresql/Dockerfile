@@ -5,7 +5,6 @@ ARG POSTGRES_USER
 ARG POSTGRES_PASSWORD
 ARG POSTGRES_MULTIPLE_DATABASES
 ARG POSTGRES_DB
-ARG SERVICE_NAME=integrated-tools/authentik/postgresql
 
 # Install required packages
 RUN apt-get update && apt-get install -y \

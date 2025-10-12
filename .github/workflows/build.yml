@@ -52,7 +52,7 @@ jobs:
 
   build_images:
     name: "Build: ${{ matrix.name }}"
-    needs: [matrix, changes]
+    needs: [changes, matrix]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -147,7 +147,7 @@ jobs:
 
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
-    needs: [changes]
+    needs: [changes, matrix]
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: 0

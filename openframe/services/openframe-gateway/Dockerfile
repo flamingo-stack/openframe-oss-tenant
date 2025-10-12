@@ -2,7 +2,6 @@
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-alpine AS builder
 
 # Build arguments for GitHub authentication
-ARG SERVICE_NAME="openframe-gateway"
 ARG GITHUB_ACTOR
 
 # Install Maven
@@ -13,10 +12,6 @@ WORKDIR /build
 # Copy Maven settings
 COPY .mvn/settings.xml /root/.m2/settings.xml
 
-# Set environment variables for Maven to use
-ENV GITHUB_ACTOR=${GITHUB_ACTOR}
-ENV SERVICE_NAME=${SERVICE_NAME}
-
 # Copy entire project structure
 COPY pom.xml ./
 COPY openframe/ openframe/
@@ -26,7 +21,7 @@ RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
     mvn clean install \
     -U \
-    -pl openframe/services/$SERVICE_NAME \
+    -pl openframe/services/openframe-gateway \
     -am \
     -Dcompress \
     --batch-mode \
