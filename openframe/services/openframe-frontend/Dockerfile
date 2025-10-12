@@ -19,6 +19,7 @@ ARG UI_KIT_REF=main
 COPY package.json ./
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
+# Updated: 2025-01-12 - Force cache bust for shell types and tool types update
 RUN rm -rf ui-kit \
  && git clone --depth=1 --branch ${UI_KIT_REF} https://github.com/flamingo-stack/ui-kit.git ui-kit
 
