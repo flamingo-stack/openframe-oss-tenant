@@ -10,14 +10,13 @@ permissions:
 
 on:
   push:
-    branches: [main, ami/ci]
+    branches: [main]
     paths:
       - 'manifests/**'
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
       - 'client/**'
-      - '.github/**'
   workflow_dispatch:
     inputs:
       version:
@@ -303,32 +302,21 @@ jobs:
           echo "Final artifacts to release:"
           ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
 
-      - name: Generate Image list
-        id: release_images
-        env:
-          REGISTRY: ${{ env.REGISTRY }}
-          ORGANISATION: ${{ env.ORGANISATION }}
-          REPOSITORY: ${{ env.REPOSITORY }}
+      - name: Generate release body
+        id: release_body
         run: |
-          MATRIX='${{ needs.matrix.outputs.matrix }}'
-          TAG="${{ inputs.version }}"
-
-          IMAGE_LIST=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
-            --arg org "$ORGANISATION" --arg repo "$REPOSITORY" --arg tag "$TAG" \
-            '.[] | "- `\($registry)/\($org)/\($repo)/\(.name):\($tag)`"' | tr '\n' '\n')
-          IMAGE_LIST="${IMAGE_LIST}"$'\n'"- \`${REGISTRY}/${ORGANISATION}/${REPOSITORY}/app-of-apps:${TAG}\` (Helm Chart)"
-
-          PULL_COMMANDS=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
-            --arg org "$ORGANISATION" --arg repo "$REPOSITORY" --arg tag "$TAG" \
-            '.[] | "docker pull \($registry)/\($org)/\($repo)/\(.name):\($tag)"' | tr '\n' '\n')
-          PULL_COMMANDS="${PULL_COMMANDS}"$'\n'"helm pull oci://${REGISTRY}/${ORGANISATION}/${REPOSITORY}/app-of-apps --version ${TAG}"
-
+          IMAGES=$(echo '${{ needs.matrix.outputs.matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
           {
-            echo "images<<EOF"
-            echo "$IMAGE_LIST"
-            echo "EOF"
-            echo "pull_commands<<EOF"
-            echo "$PULL_COMMANDS"
+            echo "body<<EOF"
+            echo "## Client"
+            echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
+            echo "- **Windows** (x64): \`openframe.exe\`"
+            echo ""
+            echo "## Images"
+            echo "$IMAGES"
+            echo ""
+            echo "## Helm Chart"
+            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -342,20 +330,4 @@ jobs:
           files: |
             final-artifacts/client/*
           token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            Release ${{ inputs.version }}
-
-            Built from commit: ${{ github.sha }}
-
-            ## 🦀 Client Binaries
-            - **macOS** (Universal): `openframe` (ARM64 + x86_64)
-            - **Windows** (x64): `openframe.exe`
-
-            ## 🐳 Docker Images & Helm Chart
-            **Available images:**
-            ${{ steps.release_images.outputs.images }}
-
-            **Pull commands:**
-            ```bash
-            ${{ steps.release_images.outputs.pull_commands }}
-            ```
+          body: ${{ steps.release_body.outputs.body }}

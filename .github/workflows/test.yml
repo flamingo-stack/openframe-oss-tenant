@@ -41,6 +41,64 @@ env:
 # =============================================================================
 
 jobs:
+  release:
+    name: "Create Release"
+    needs: [changes, matrix]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+        continue-on-error: true
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p final-artifacts/client
+          if [ -d "release-artifacts" ]; then
+            find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
+            -exec cp {} final-artifacts/client/ \;
+          fi
+
+          echo "Final artifacts to release:"
+          ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
+
+      - name: Generate release body
+        id: release_body
+        run: |
+          IMAGES=$(echo '${{ needs.matrix.outputs.matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):1.22.7`"')
+          {
+            echo "body<<EOF"
+            echo "## Client"
+            echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
+            echo "- **Windows** (x64): \`openframe.exe\`"
+            echo ""
+            echo "## Images"
+            echo "$IMAGES"
+            echo ""
+            echo "## Helm Chart"
+            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:1.22.7\`"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "1.22.7"
+          name: Release 1.22.7
+          draft: false
+          prerelease: false
+          files: |
+            final-artifacts/client/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: ${{ steps.release_body.outputs.body }}
+
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
