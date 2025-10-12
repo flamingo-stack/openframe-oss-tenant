@@ -25,7 +25,8 @@ interface CursorPaginationInput {
 interface LogFilterInput {
   severities?: string[]
   toolTypes?: string[]
-  deviceId?: string[]
+  // Note: deviceId is not supported by backend GraphQL API
+  // userId is supported but not currently used
   userId?: string[]
 }
 
