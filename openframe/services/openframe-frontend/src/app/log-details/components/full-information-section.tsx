@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
-import { InfoRow, ToolIcon } from '@flamingo/ui-kit'
-import { toUiKitToolType, toStandardToolLabel } from '@lib/tool-labels'
+import { InfoRow } from '@flamingo/ui-kit'
+import { ToolBadge } from '@flamingo/ui-kit/components/platform'
+import { toUiKitToolType } from '@lib/tool-labels'
 
 interface LogEntry {
   toolEventId: string
@@ -23,8 +24,8 @@ interface FullInformationSectionProps {
 }
 
 export function FullInformationSection({ logDetails }: FullInformationSectionProps) {
-  const getToolIcon = (toolType: string) => {
-    return <ToolIcon toolType={toUiKitToolType(toolType) as any} size={16} />
+  const getToolBadge = (toolType: string) => {
+    return <ToolBadge toolType={toUiKitToolType(toolType) as any} />
   }
 
   const formatTimestamp = (timestamp: string) => {
@@ -69,8 +70,7 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
           <div className="p-4 sm:p-6">
             <InfoRow
               label="toolType"
-              value={toStandardToolLabel(logDetails.toolType)}
-              icon={getToolIcon(logDetails.toolType)}
+              value={getToolBadge(logDetails.toolType)}
             />
           </div>
           <div className="p-4 sm:p-6">

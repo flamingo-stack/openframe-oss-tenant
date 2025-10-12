@@ -1,6 +1,8 @@
 'use client'
 
 import React from 'react'
+import { ShellTypeBadge } from '@flamingo/ui-kit/components/platform'
+import type { ShellType } from '@flamingo/ui-kit'
 
 interface ScriptInfoSectionProps {
   script: any | null
@@ -29,8 +31,8 @@ export function ScriptInfoSection({ script }: ScriptInfoSectionProps) {
       <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6">
         {script.shell && (
           <div>
-            <p className="text-ods-text-primary font-medium">{script.shell}</p>
-            <p className="text-ods-text-secondary text-sm mb-1">Shell Type</p>
+            <ShellTypeBadge shellType={script.shell as ShellType} />
+            <p className="text-ods-text-secondary text-sm mb-1 mt-2">Shell Type</p>
           </div>
         )}
         {script.supported_platforms && (

@@ -3,9 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { DeviceCard, Button, StatusTag } from '@flamingo/ui-kit/components/ui'
+import { ToolBadge } from '@flamingo/ui-kit/components/platform'
 import { cn } from '@flamingo/ui-kit/utils'
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
-import { ToolIcon } from '@flamingo/ui-kit'
+import { toUiKitToolType } from '@lib/tool-labels'
 
 interface LogInfoModalProps {
   isOpen: boolean
@@ -228,10 +228,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
                 <InfoField label="Log ID" value={displayData.toolEventId || log.logId} />
                 <InfoField label="User" value={displayData.userId || log.user} />
                 <InfoField label="Source" value={
-                  <div className="flex items-center gap-1">
-                    <span>{toStandardToolLabel(displayData.toolType) || log.source.name}</span>
-                    <ToolIcon toolType={toUiKitToolType(displayData.toolType) as any} size={16} />
-                  </div>
+                  <ToolBadge toolType={toUiKitToolType(displayData.toolType) as any} />
                 } />
                 <InfoField label="Device" value={displayData.deviceId || log.device.name} />
                 {detailedLogData?.eventType && (

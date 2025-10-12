@@ -83,6 +83,15 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
       )
     },
     {
+      key: 'software_source',
+      label: 'SOURCE',
+      width: 'w-[15%]',
+      sortable: true,
+      renderCell: (item: VulnerabilityWithSoftware) => (
+        <SoftwareSourceBadge source={item.software_source as SoftwareSource} />
+      )
+    },
+    {
       key: 'severity',
       label: 'SEVERITY',
       width: 'w-[15%]',
@@ -106,15 +115,6 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
           />
         )
       }
-    },
-    {
-      key: 'software_source',
-      label: 'SOURCE',
-      width: 'w-[15%]',
-      sortable: true,
-      renderCell: (item: VulnerabilityWithSoftware) => (
-        <SoftwareSourceBadge source={item.software_source as SoftwareSource} />
-      )
     },
     {
       key: 'created_at',
