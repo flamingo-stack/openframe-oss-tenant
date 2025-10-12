@@ -52,26 +52,27 @@ interface LogsTableProps {
 export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState<{ severities?: string[], toolTypes?: string[] }>({})
+  const [filters, setFilters] = useState<{ severities?: string[], toolTypes?: string[], deviceId?: string }>({})
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
   const [selectedLog, setSelectedLog] = useState<UILogEntry | null>(null)
   const prevFilterKeyRef = React.useRef<string | null>(null)
 
-  // Note: deviceId filtering is done client-side since the GraphQL API doesn't support it in LogFilterInput
-  const { logs, isLoading, error, searchLogs, refreshLogs, fetchLogDetails } = useLogs(filters)
+  // Include deviceId in backend filters
+  const backendFilters = useMemo(() => {
+    const f = { ...filters }
+    if (deviceId) {
+      f.deviceId = deviceId
+    }
+    return f
+  }, [filters, deviceId])
+
+  const { logs, isLoading, error, searchLogs, refreshLogs, fetchLogDetails } = useLogs(backendFilters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
-  // Transform API logs to UI format and apply client-side deviceId filtering
+  // Transform API logs to UI format
   const transformedLogs: UILogEntry[] = useMemo(() => {
-    let filteredLogs = logs
-
-    // Client-side filter by deviceId if provided (backend doesn't support this in LogFilterInput)
-    if (deviceId) {
-      filteredLogs = logs.filter(log => log.deviceId === deviceId)
-    }
-
-    return filteredLogs.map((log) => {
+    return logs.map((log) => {
       return {
         id: log.toolEventId,
         logId: log.toolEventId,
@@ -98,7 +99,7 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
         originalLogEntry: log
       }
     })
-  }, [logs, deviceId])
+  }, [logs])
 
   const columns: TableColumn<UILogEntry>[] = useMemo(() => {
     const allColumns: TableColumn<UILogEntry>[] = [
@@ -217,15 +218,16 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
     if (isInitialized) {
       const filterKey = JSON.stringify({
         severities: filters.severities?.sort() || [],
-        toolTypes: filters.toolTypes?.sort() || []
+        toolTypes: filters.toolTypes?.sort() || [],
+        deviceId: deviceId || null
       })
-      
+
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
         refreshLogs()
       }
       prevFilterKeyRef.current = filterKey
     }
-  }, [filters, refreshLogs, isInitialized])
+  }, [filters, deviceId, refreshLogs, isInitialized])
 
   const handleRowClick = useCallback((log: UILogEntry) => {
     setSelectedLog(log)
