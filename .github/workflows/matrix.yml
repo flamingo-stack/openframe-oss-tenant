@@ -147,7 +147,8 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              }
+              },
+                "context": "./integrated-tools/tactical-rmm"
             },
             {
               "name": "tactical-nginx",
@@ -193,7 +194,8 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              }
+              },
+              "context": "./integrated-tools/tactical-rmm"
             },
             {
               "name": "tactical-base",
@@ -239,7 +241,8 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              }
+              },
+              "context": "./integrated-tools/tactical-rmm"
             }
           ]'
 
