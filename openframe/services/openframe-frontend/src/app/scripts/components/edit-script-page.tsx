@@ -6,12 +6,12 @@ import { Plus, ChevronLeft, Check, ArrowLeft } from 'lucide-react'
 import { tacticalApiClient } from '../../../lib/tactical-api-client'
 import { useScriptDetails } from '../hooks/use-script-details'
 import { Button } from '@flamingo/ui-kit/components/ui'
-import { SelectCard } from '@flamingo/ui-kit'
+import { PushButtonSelector } from '@flamingo/ui-kit/components/features'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo/ui-kit/components/ui'
 import { Card } from '@flamingo/ui-kit/components/ui'
 import { FormLoader, FormPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { OS_PLATFORMS } from '@flamingo/ui-kit/utils'
+import { OS_TYPES, type OSType } from '@flamingo/ui-kit'
 import { SHELL_TYPES } from '@flamingo/ui-kit/types/shell.types'
 
 interface ScriptData {
@@ -87,7 +87,9 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
     router.push('/scripts')
   }
 
-  const handlePlatformToggle = (platformId: string) => {
+  const handlePlatformToggle = (osType: OSType) => {
+    // Convert OSType to lowercase for API compatibility
+    const platformId = osType.toLowerCase()
     setScriptData(prev => ({
       ...prev,
       supported_platforms: prev.supported_platforms.includes(platformId)
@@ -138,12 +140,13 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       const filteredArgs = scriptData.args.filter(arg => arg.name.trim() !== '')
       const filteredEnvVars = scriptData.env_vars.filter(envVar => envVar.name.trim() !== '')
 
-      const mapPlatformIdToTactical = (id: string) => {
-        const n = id.toLowerCase()
-        if (n.includes('mac') || n.includes('darwin') || n.includes('osx')) return 'darwin'
-        if (n.includes('win')) return 'windows'
-        if (n.includes('linux')) return 'linux'
-        return id
+      // Convert UI platform values to Tactical RMM platformId format using centralized OS_TYPES
+      // UI uses lowercase (from onSelectionChange: id.toLowerCase())
+      // We need to convert to platformId for API ('darwin', 'windows', 'linux')
+      const convertToPlatformId = (uiValue: string): string => {
+        // Find the OS type by matching the UI value (which is lowercase OSType)
+        const osType = OS_TYPES.find(os => os.id.toLowerCase() === uiValue.toLowerCase())
+        return osType?.platformId || uiValue  // Return platformId or fallback to original value
       }
 
       const payload = {
@@ -155,7 +158,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         run_as_user: scriptData.run_as_user,
         env_vars: filteredEnvVars.map(envVar => `${envVar.name}=${envVar.value}`),
         description: scriptData.description,
-        supported_platforms: Array.from(new Set(scriptData.supported_platforms.map(mapPlatformIdToTactical))),
+        supported_platforms: Array.from(new Set(scriptData.supported_platforms.map(convertToPlatformId))),
         category: scriptData.category
       }
 
@@ -253,22 +256,28 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           {/* Supported Platform Section */}
           <div className="space-y-1">
             <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-              {OS_PLATFORMS.map((platform) => {
-                const isSelected = scriptData.supported_platforms.includes(platform.id)
-                return (
-                  <SelectCard
-                    key={platform.id}
-                    title={platform.name}
-                    icon={<platform.icon className="w-6 h-6"/>}
-                    selected={isSelected}
-                    onSelect={() => handlePlatformToggle(platform.id)}
-                  />
-                )
-              })}
-              <div className={`flex-1 h-16 px-4 py-3 rounded-md border border-ods-border flex items-center justify-between ${
-                scriptData.run_as_user ? 'bg-ods-card' : 'bg-ods-card'
-              }`}>
+            <div className="flex flex-col gap-4 pt-2">
+              <PushButtonSelector
+                options={OS_TYPES.map(os => ({
+                  id: os.id,
+                  name: os.label,
+                  icon: <os.icon className="w-5 h-5" />
+                }))}
+                selectedIds={scriptData.supported_platforms.map(p => {
+                  // Normalize stored platform IDs to OSType format
+                  const normalized = p.toUpperCase()
+                  return OS_TYPES.find(os => os.id === normalized)?.id || 'WINDOWS'
+                })}
+                onSelectionChange={(selectedIds) => {
+                  // Convert OSType IDs back to lowercase for API
+                  setScriptData(prev => ({
+                    ...prev,
+                    supported_platforms: selectedIds.map(id => id.toLowerCase())
+                  }))
+                }}
+                multiSelect={true}
+              />
+              <div className={`h-16 px-4 py-3 rounded-md border border-ods-border flex items-center justify-between bg-ods-card`}>
                 <input
                   type="checkbox"
                   checked={scriptData.run_as_user}

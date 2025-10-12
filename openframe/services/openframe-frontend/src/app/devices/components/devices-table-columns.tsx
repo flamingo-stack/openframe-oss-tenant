@@ -1,19 +1,10 @@
 import React from 'react'
 import { StatusTag, type TableColumn, type RowAction } from "@flamingo/ui-kit/components/ui"
 import { MoreHorizontal } from "lucide-react"
-import { WindowsIcon, MacOSIcon, LinuxIcon } from "@flamingo/ui-kit/components/icons"
+import { OSTypeBadge } from "@flamingo/ui-kit/components/features"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
-
-function getOSIcon(osType?: string) {
-  if (!osType) return null
-  const os = osType.toLowerCase()
-  if (os.includes('windows')) return <WindowsIcon className="w-4 h-4 text-ods-text-secondary" />
-  if (os.includes('mac') || os.includes('darwin')) return <MacOSIcon className="w-4 h-4 text-ods-text-secondary" />
-  if (os.includes('linux') || os.includes('ubuntu') || os.includes('pop')) return <LinuxIcon className="w-4 h-4 text-ods-text-secondary" />
-  return null
-}
 
 export function getDeviceTableRowActions(
   onMore: (device: Device) => void,
@@ -88,12 +79,9 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       })) || [],
       renderCell: (device) => (
         <div className="flex items-start gap-2 shrink-0">
-          <div className="flex items-center gap-1">
-            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary">
-              {device.osType}
-            </span>
-            {getOSIcon(device.osType)}
-          </div>
+          <OSTypeBadge
+            osType={device.osType}
+          />
         </div>
       )
     },

@@ -3,7 +3,8 @@
 import React, { useEffect } from 'react'
 import { MoreHorizontal } from 'lucide-react'
 import { Button, StatusTag } from '@flamingo/ui-kit/components/ui'
-import { WindowsIcon, MacOSIcon, LinuxIcon, DevicesIcon } from '@flamingo/ui-kit/components/icons'
+import { DevicesIcon } from '@flamingo/ui-kit/components/icons'
+import { OSTypeBadge } from '@flamingo/ui-kit/components/features'
 import { useDeviceDetails } from '../../devices/hooks/use-device-details'
 import { CardLoader } from '@flamingo/ui-kit/components/ui'
 
@@ -23,15 +24,6 @@ export function DeviceInfoSection({ deviceId, userId }: DeviceInfoSectionProps) 
 
   const handleMoreClick = () => {
     console.log('More options clicked')
-  }
-
-  // Helper function to get OS icon
-  const getOSIcon = (osType: string) => {
-    const os = osType.toLowerCase()
-    if (os.includes('windows')) return <WindowsIcon />
-    if (os.includes('mac') || os.includes('darwin')) return <MacOSIcon />
-    if (os.includes('linux')) return <LinuxIcon />
-    return <WindowsIcon /> // Default fallback
   }
 
   // Helper function to get status variant
@@ -124,12 +116,11 @@ export function DeviceInfoSection({ deviceId, userId }: DeviceInfoSectionProps) 
 
             {/* OS */}
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="font-['DM_Sans'] font-medium text-[16px] leading-[22px] text-ods-text-primary truncate">
-                  {deviceDetails?.osType || 'Unknown OS'}
-                </div>
-                {deviceDetails?.osType && getOSIcon(deviceDetails.osType)}
-              </div>
+              <OSTypeBadge
+                osType={deviceDetails?.osType}
+                className="font-['DM_Sans'] font-medium text-[16px] leading-[22px]"
+                iconSize="w-4 h-4"
+              />
               <div className="font-['DM_Sans'] font-medium text-[12px] leading-[18px] text-ods-text-secondary truncate">
                 {deviceDetails?.osVersion || 'Version unknown'}
               </div>
@@ -196,10 +187,11 @@ export function DeviceInfoSection({ deviceId, userId }: DeviceInfoSectionProps) 
           <div className="flex-1 flex gap-2 items-center h-20 min-w-0 overflow-hidden">
             <div className="flex flex-col flex-1 justify-center min-w-0">
               <div className="flex gap-1 items-center w-full">
-                <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
-                  {deviceDetails?.osType || 'Unknown OS'}
-                </div>
-                {deviceDetails?.osType && getOSIcon(deviceDetails.osType)}
+                <OSTypeBadge
+                  osType={deviceDetails?.osType}
+                  className="font-['DM_Sans'] font-medium text-[18px] leading-[24px]"
+                  iconSize="w-4 h-4"
+                />
               </div>
               <div className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary h-5 w-full overflow-hidden text-ellipsis whitespace-nowrap">
                 {deviceDetails?.osVersion || 'Version unknown'}

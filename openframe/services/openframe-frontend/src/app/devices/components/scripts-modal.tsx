@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Search, Check } from 'lucide-react'
 import { Button } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
+import { getOSPlatformId, OS_TYPES } from '@flamingo/ui-kit'
 import { useScripts } from '../../scripts/hooks/use-scripts'
 import { ScriptEntry } from '../../scripts/stores/scripts-store'
 import { Device } from '../types/device.types'
@@ -36,28 +37,25 @@ const getCategoriesFromScripts = (scripts: ScriptEntry[]): string[] => {
 }
 
 // Filter scripts based on device platform compatibility
+// Uses centralized OS type system from ui-kit
 const filterScriptsByPlatform = (scripts: ScriptEntry[], devicePlatform: string): ScriptEntry[] => {
   if (!devicePlatform) return scripts
-  
-  const platformMapping: Record<string, string[]> = {
-    'windows': ['windows', 'win32', 'win64'],
-    'darwin': ['darwin', 'macos', 'mac'],
-    'linux': ['linux', 'ubuntu', 'debian', 'centos', 'redhat'],
-    'freebsd': ['freebsd', 'bsd'],
-    'openbsd': ['openbsd', 'bsd'],
-    'netbsd': ['netbsd', 'bsd']
-  }
-  
-  const devicePlatformLower = devicePlatform.toLowerCase()
-  const compatiblePlatforms = platformMapping[devicePlatformLower] || [devicePlatformLower]
-  
+
+  // Get the normalized platform ID using centralized OS types
+  const platformId = getOSPlatformId(devicePlatform)
+  if (!platformId) return scripts
+
+  // Get all aliases for this platform from centralized OS_TYPES
+  const osTypeDef = OS_TYPES.find(os => os.platformId === platformId)
+  const compatiblePlatforms = osTypeDef ? osTypeDef.aliases : []
+
   return scripts.filter(script => {
     if (!script.supported_platforms || script.supported_platforms.length === 0) {
       return true
     }
-    
-    return script.supported_platforms.some(platform => 
-      compatiblePlatforms.some(compatiblePlatform => 
+
+    return script.supported_platforms.some(platform =>
+      compatiblePlatforms.some(compatiblePlatform =>
         platform.toLowerCase().includes(compatiblePlatform) ||
         compatiblePlatform.includes(platform.toLowerCase())
       )

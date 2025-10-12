@@ -56,7 +56,7 @@ export function DevicesGrid({
             const statusConfig = getDeviceStatusConfig(device.status)
             return (
               <DeviceCard
-                key={device.agent_id}
+                key={device.id || device.machineId}
                 device={{
                   id: device.id,
                   name: device.displayName || device.hostname,
