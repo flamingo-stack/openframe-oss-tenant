@@ -22,7 +22,7 @@ export function UsersTab({ device }: UsersTabProps) {
   const loggedUsername = loggedInUser?.username || device.logged_in_username || device.logged_username || 'Unknown'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-6">
       {/* Logged In User */}
       <div>
         <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
