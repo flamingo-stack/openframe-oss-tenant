@@ -19,7 +19,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
             key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`}
             data={{
               title: `${toStandardToolLabel(tc?.toolType) || 'Unknown'}`,
-              icon: <ToolIcon toolType={toUiKitToolType(tc?.toolType)} size={18} />,
+              icon: <ToolIcon toolType={toUiKitToolType(tc?.toolType) as any} size={18} />,
               items: [
                 { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
               ]
