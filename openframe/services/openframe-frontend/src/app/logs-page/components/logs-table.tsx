@@ -58,14 +58,15 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
   const [selectedLog, setSelectedLog] = useState<UILogEntry | null>(null)
   const prevFilterKeyRef = React.useRef<string | null>(null)
 
-  // Include deviceId in backend filters
+  // TEMPORARY: Don't pass deviceId to backend (not supported yet in GraphQL)
+  // Only pass severities and toolTypes to backend
   const backendFilters = useMemo(() => {
-    const f = { ...filters }
-    if (deviceId) {
-      f.deviceId = deviceId
+    return {
+      severities: filters.severities,
+      toolTypes: filters.toolTypes
+      // deviceId NOT included - backend doesn't support it yet
     }
-    return f
-  }, [filters, deviceId])
+  }, [filters])
 
   const { logs, isLoading, error, searchLogs, refreshLogs, fetchLogDetails } = useLogs(backendFilters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
