@@ -7,6 +7,7 @@ import {
   Table,
   Button,
   ListPageLayout,
+  TableDescriptionCell,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -14,6 +15,7 @@ import { CirclePlusIcon } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useScripts } from "../hooks/use-scripts"
 import { ToolBadge, ShellTypeBadge } from "@flamingo/ui-kit/components/platform"
+import { OSTypeBadgeGroup } from "@flamingo/ui-kit/components/features"
 import type { ShellType } from "@flamingo/ui-kit"
 import { SHELL_TYPES } from "@flamingo/ui-kit/types/shell.types"
 
@@ -23,8 +25,7 @@ interface UIScriptEntry {
   description: string
   shellType: string
   addedBy: string
-  category: string
-  timeout: number
+  supportedPlatforms: string[]
 }
 
 /**
@@ -48,8 +49,7 @@ export function ScriptsTable() {
       description: script.description,
       shellType: script.shell,
       addedBy: toUiKitToolType('tactical'),
-      category: script.category,
-      timeout: script.default_timeout
+      supportedPlatforms: script.supported_platforms || []
     }))
   }, [scripts])
 
@@ -60,11 +60,8 @@ export function ScriptsTable() {
       width: 'w-1/3',
       renderCell: (script) => (
         <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary line-clamp-2 break-words">
             {script.name}
-          </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-            {script.description}
           </span>
         </div>
       )
@@ -72,7 +69,7 @@ export function ScriptsTable() {
     {
       key: 'shellType',
       label: 'Shell Type',
-      width: 'w-1/6',
+      width: 'w-[15%]',
       filterable: true,
       filterOptions: SHELL_TYPES,
       renderCell: (script) => (
@@ -80,9 +77,19 @@ export function ScriptsTable() {
       )
     },
     {
+      key: 'supportedPlatforms',
+      label: 'OS',
+      width: 'w-[15%]',
+      renderCell: (script) => (
+        <OSTypeBadgeGroup
+          osTypes={script.supportedPlatforms}
+        />
+      )
+    },
+    {
       key: 'addedBy',
       label: 'Added By',
-      width: 'w-1/6',
+      width: 'w-[15%]',
       filterable: true,
       filterOptions: [
         { id: 'tactical', label: toStandardToolLabel('TACTICAL'), value: 'tactical' },
@@ -93,23 +100,11 @@ export function ScriptsTable() {
       )
     },
     {
-      key: 'category',
-      label: 'Category',
-      width: 'w-1/6',
+      key: 'description',
+      label: 'Description',
+      width: 'w-1/2',
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.category}
-        </span>
-      )
-    },
-    {
-      key: 'timeout',
-      label: 'Timeout',
-      width: 'w-1/6',
-      renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.timeout}
-        </span>
+        <TableDescriptionCell text={script.description} />
       )
     }
   ], [])

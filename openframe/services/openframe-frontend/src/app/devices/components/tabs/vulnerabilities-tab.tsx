@@ -129,6 +129,15 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
     }
   ], [])
 
+  // Count by severity - must be called before early returns
+  const severityCounts = useMemo(() => {
+    return vulnerabilities.reduce((acc, vuln) => {
+      const severity = getSeverity(vuln.cve)
+      acc[severity] = (acc[severity] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+  }, [vulnerabilities])
+
   if (!device) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -151,15 +160,6 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
       </div>
     )
   }
-
-  // Count by severity
-  const severityCounts = useMemo(() => {
-    return vulnerabilities.reduce((acc, vuln) => {
-      const severity = getSeverity(vuln.cve)
-      acc[severity] = (acc[severity] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
-  }, [vulnerabilities])
 
   return (
     <div className="space-y-4 mt-6">

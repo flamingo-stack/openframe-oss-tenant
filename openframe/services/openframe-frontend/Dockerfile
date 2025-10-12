@@ -14,7 +14,7 @@ RUN apk add --no-cache git
 
 # Allow pinning the ui-kit ref for better Docker layer caching
 ARG UI_KIT_REF=main
-ARG CACHE_BUST=2025-10-12-v2
+ARG CACHE_BUST=2025-10-12-v3
 
 # Copy only package.json (exclude lockfile) for better layer caching
 COPY package.json ./
@@ -42,8 +42,9 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the Next.js app (distDir is configured as "dist") with Next cache mounted
-RUN --mount=type=cache,target=/app/.next/cache npm run build
+# Build the Next.js app (distDir is configured as "dist")
+# Note: Cache mount temporarily removed to prevent stale build artifacts
+RUN npm run build
 
 ##########
 # runtime

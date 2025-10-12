@@ -76,7 +76,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
   const { handleAuthenticationSuccess } = useAuth()
   const router = useRouter()
@@ -169,4 +169,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return <AppShell>{children}</AppShell>
+}
+
+export function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<PageLoader title="Loading" description="Initializing application..." />}>
+      <AppLayoutInner>{children}</AppLayoutInner>
+    </Suspense>
+  )
 }

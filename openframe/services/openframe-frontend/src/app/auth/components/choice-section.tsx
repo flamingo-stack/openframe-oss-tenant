@@ -124,7 +124,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 }}
               />
               {orgName.trim() && !isOrgNameValid && (
-                <p className="text-xs text-error mt-1">Organization Name must be 2-100 characters and may include letters, numbers, spaces, and &.,'"()-</p>
+                <p className="text-xs text-error mt-1">Organization Name must be 2-100 characters and may include letters, numbers, spaces, and &.,&apos;&quot;()-</p>
               )}
             </div>
             <div className="flex-1 flex flex-col gap-1">

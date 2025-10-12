@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { ShellTypeBadge } from '@flamingo/ui-kit/components/platform'
+import { OSTypeBadgeGroup } from '@flamingo/ui-kit/components/features'
 import type { ShellType } from '@flamingo/ui-kit'
 
 interface ScriptInfoSectionProps {
@@ -26,20 +27,18 @@ export function ScriptInfoSection({ script }: ScriptInfoSectionProps) {
           <p className="text-ods-text-secondary text-sm mb-1">Description</p>
         </div>
       )}
-      
+
       {/* Script Properties */}
       <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6">
         {script.shell && (
           <div>
             <ShellTypeBadge shellType={script.shell as ShellType} />
-            <p className="text-ods-text-secondary text-sm mb-1 mt-2">Shell Type</p>
+            <p className="text-ods-text-secondary text-sm mb-1">Shell Type</p>
           </div>
         )}
-        {script.supported_platforms && (
+        {script.supported_platforms && script.supported_platforms.length > 0 && (
           <div>
-            <p className="text-ods-text-primary font-medium">
-              {script.supported_platforms.join(', ')}
-            </p>
+            <OSTypeBadgeGroup osTypes={script.supported_platforms} />
             <p className="text-ods-text-secondary text-xs mt-1">Supported Platforms</p>
           </div>
         )}

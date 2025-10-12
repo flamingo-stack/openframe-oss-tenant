@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { OSTypeLabel } from '@flamingo/ui-kit/components/features'
 import { Device } from '../types/device.types'
 
 interface DeviceInfoSectionProps {
@@ -73,7 +74,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
       <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6">
         <div>
           <p className="text-ods-text-primary font-medium">
-            {device.platform || device.operating_system || device.osType || 'Unknown'}
+            <OSTypeLabel osType={device.platform || device.operating_system || device.osType} />
             {device.os_version && ` ${device.os_version}`}
             {device.build && ` (${device.build})`}
           </p>

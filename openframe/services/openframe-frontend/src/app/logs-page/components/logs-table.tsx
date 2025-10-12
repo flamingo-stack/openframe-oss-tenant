@@ -7,6 +7,7 @@ import {
   StatusTag,
   Button,
   ListPageLayout,
+  TableDescriptionCell,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -141,17 +142,16 @@ export function LogsTable() {
     },
     {
       key: 'device',
-      label: 'Device',
+      label: 'DEVICE',
       width: 'w-1/6',
       renderCell: (log) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {log.device.name}
-          </span>
-          {log.device.organization && (
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-              {log.device.organization}
-            </span>
+        <div className="bg-ods-card box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
+          {log.device.name && (
+            <div className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+              <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
+                {log.device.name}
+              </p>
+            </div>
           )}
         </div>
       )
@@ -161,13 +161,7 @@ export function LogsTable() {
       label: 'Log Details',
       width: 'w-1/2',
       renderCell: (log) => (
-        <div className="flex-1">
-          <div className="flex flex-col justify-center">
-            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 break-words">
-              {log.description.title}
-            </span>
-          </div>
-        </div>
+        <TableDescriptionCell text={log.description.title} />
       )
     }
   ], [])

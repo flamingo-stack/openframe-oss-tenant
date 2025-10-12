@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+
+// Force dynamic rendering for this page due to useSearchParams in AppLayout
+export const dynamic = 'force-dynamic'
 import { AppLayout } from '../../components/app-layout'
 import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@flamingo/ui-kit/components/ui'
 import { DetailPageContainer } from '@flamingo/ui-kit'
