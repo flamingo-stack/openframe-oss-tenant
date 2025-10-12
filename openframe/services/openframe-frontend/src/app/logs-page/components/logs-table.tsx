@@ -314,7 +314,14 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
   // Embedded mode: return table without ListPageLayout
   if (embedded) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 mt-6">
+        {/* Title */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
+            Logs ({transformedLogs.length})
+          </h3>
+        </div>
+
         {/* Embedded header with search and refresh */}
         <div className="flex items-center gap-4">
           <div className="flex-1">

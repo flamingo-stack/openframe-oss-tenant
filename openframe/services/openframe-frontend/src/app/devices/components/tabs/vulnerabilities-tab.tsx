@@ -214,7 +214,7 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
         data={vulnerabilities}
         columns={columns}
         rowKey="unique_key"
-        className="bg-ods-card border border-ods-border rounded-lg"
+        rowClassName="mb-1"
       />
     </div>
   )
