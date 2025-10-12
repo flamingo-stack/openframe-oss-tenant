@@ -1,8 +1,7 @@
 'use client'
 
 import React from 'react'
-import { InfoRow } from '@flamingo/ui-kit'
-import { ToolBadge } from '@flamingo/ui-kit/components/platform'
+import { InfoRow, ToolBadge } from '@flamingo/ui-kit'
 import { toUiKitToolType } from '@lib/tool-labels'
 
 interface LogEntry {
@@ -24,10 +23,6 @@ interface FullInformationSectionProps {
 }
 
 export function FullInformationSection({ logDetails }: FullInformationSectionProps) {
-  const getToolBadge = (toolType: string) => {
-    return <ToolBadge toolType={toUiKitToolType(toolType) as any} />
-  }
-
   const formatTimestamp = (timestamp: string) => {
     try {
       return new Date(timestamp).toISOString()
@@ -70,7 +65,8 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
           <div className="p-4 sm:p-6">
             <InfoRow
               label="toolType"
-              value={getToolBadge(logDetails.toolType)}
+              value=""
+              icon={<ToolBadge toolType={toUiKitToolType(logDetails.toolType)} />}
             />
           </div>
           <div className="p-4 sm:p-6">
