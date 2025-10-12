@@ -32,7 +32,7 @@ RUN --mount=type=secret,id=github_token \
 
 
 # Stage 2: Runtime image
-FROM eclipse-temurin:21-jre-alpine
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
 
 LABEL org.opencontainers.image.description="OpenFrame Config Server Microservice"
 
