@@ -42,6 +42,9 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Clear Next.js cache before building to ensure fresh build
+RUN rm -rf .next/cache
+
 # Build the Next.js app (distDir is configured as "dist") with Next cache mounted
 RUN --mount=type=cache,target=/app/.next/cache npm run build
 
