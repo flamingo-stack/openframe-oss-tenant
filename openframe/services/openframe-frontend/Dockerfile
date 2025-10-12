@@ -14,7 +14,7 @@ RUN apk add --no-cache git
 
 # Allow pinning the ui-kit ref for better Docker layer caching
 ARG UI_KIT_REF=main
-ARG CACHE_BUST=2025-10-12
+ARG CACHE_BUST=2025-10-12-v2
 
 # Copy only package.json (exclude lockfile) for better layer caching
 COPY package.json ./

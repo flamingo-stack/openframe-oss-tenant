@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardInfoCard, LogsList } from '@flamingo/ui-kit'
-import type { LogEntry, LogSeverity, ToolType } from '@flamingo/ui-kit'
+import type { LogEntry, LogSeverity } from '@flamingo/ui-kit'
 import { toUiKitToolType } from '@lib/tool-labels'
 import { useLogsOverview } from '../hooks/use-dashboard-stats'
 import { useRouter } from 'next/navigation'
@@ -14,13 +14,12 @@ export function LogsOverviewSection() {
   const {
     logs: rawLogs,
     isLoading,
-    fetchLogs,
-    error
+    fetchLogs
   } = useLogs()
 
   useEffect(() => {
     fetchLogs('', {}, null, false)
-  }, [])
+  }, [fetchLogs])
 
   const recentLogs = useMemo(() => {
     if (!rawLogs || rawLogs.length === 0) return []
@@ -31,7 +30,7 @@ export function LogsOverviewSection() {
         severity: (log.severity || 'INFO') as LogSeverity,
         title: log.summary || log.eventType || 'Log Entry',
         timestamp: log.timestamp,
-        toolType: toUiKitToolType(log.toolType || '') as ToolType,
+        toolType: toUiKitToolType(log.toolType || ''),
         message: log.message,
         ingestDay: log.ingestDay,
         eventType: log.eventType
