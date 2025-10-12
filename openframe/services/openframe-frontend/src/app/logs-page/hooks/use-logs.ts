@@ -25,7 +25,7 @@ interface CursorPaginationInput {
 interface LogFilterInput {
   severities?: string[]
   toolTypes?: string[]
-  deviceId?: string[]
+  deviceId?: string
   userId?: string[]
 }
 

@@ -9,6 +9,9 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import { useLogs } from '../../logs-page/hooks/use-logs'
 
+// Extend LogEntry to include originalLogEntry for navigation
+type ExtendedLogEntry = LogEntry & { originalLogEntry?: any }
+
 export function LogsOverviewSection() {
   const logs = useLogsOverview()
   const router = useRouter()
@@ -22,10 +25,10 @@ export function LogsOverviewSection() {
     fetchLogs('', {}, null, false)
   }, [fetchLogs])
 
-  const recentLogs = useMemo(() => {
+  const recentLogs = useMemo((): ExtendedLogEntry[] => {
     if (!rawLogs || rawLogs.length === 0) return []
 
-    return rawLogs.slice(0, 10).map((log): LogEntry => {
+    return rawLogs.slice(0, 10).map((log) => {
       return {
         id: log.toolEventId,
         severity: (log.severity || 'INFO') as LogSeverity,

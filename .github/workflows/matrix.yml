@@ -6,17 +6,13 @@ on:
       matrix:
         description: "Matrix configuration for all components"
         value: ${{ jobs.matrix.outputs.matrix }}
-      matrix_java:
-        description: "Matrix configuration for Java components"
-        value: ${{ jobs.matrix.outputs.matrix_java }}
 
 jobs:
   matrix:
     name: Generate matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.filter.outputs.matrix }}
-      matrix_java: ${{ steps.filter.outputs.matrix_java }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: Define Matrix
         id: matrix
@@ -24,79 +20,51 @@ jobs:
           matrix_json='[
             {
               "name": "openframe-api",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
-              "manifest_path": "./manifests/microservices/openframe-api",
-              "artifact_name": "openframe-api",
               "context": "."
             },
             {
               "name": "openframe-authorization-server",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-authorization-server",
-              "manifest_path": "./manifests/microservices/openframe-authorization-server",
-              "artifact_name": "openframe-authorization-server",
               "context": "."
             },
             {
               "name": "openframe-external-api",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-external-api",
-              "manifest_path": "./manifests/microservices/openframe-external-api",
-              "artifact_name": "openframe-external-api",
               "context": "."
             },
             {
               "name": "openframe-client",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-client",
-              "manifest_path": "./manifests/microservices/openframe-client",
-              "artifact_name": "openframe-client",
               "context": "."
             },
             {
               "name": "openframe-config",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-config",
-              "manifest_path": "./manifests/microservices/openframe-config",
-              "artifact_name": "openframe-config",
               "context": "."
             },
             {
               "name": "openframe-gateway",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-gateway",
-              "manifest_path": "./manifests/microservices/openframe-gateway",
-              "artifact_name": "openframe-gateway",
               "context": "."
             },
             {
               "name": "openframe-management",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-management",
-              "manifest_path": "./manifests/microservices/openframe-management",
-              "artifact_name": "openframe-management",
               "context": "."
             },
             {
               "name": "openframe-stream",
-              "type": ["java", "container"],
               "path": "./openframe/services/openframe-stream",
-              "manifest_path": "./manifests/microservices/openframe-stream",
-              "artifact_name": "openframe-stream",
               "context": "."
             },
             {
               "name": "openframe-frontend",
-              "type": ["container"],
-              "path": "./openframe/services/openframe-frontend",
-              "manifest_path": "./manifests/microservices/openframe-frontend"
+              "path": "./openframe/services/openframe-frontend"
             },
             {
               "name": "authentik-postgresql",
-              "type": ["container"],
               "path": "./integrated-tools/authentik/postgresql",
-              "manifest_path": "./manifests/integrated-tools/authentik/",
               "build_args": {
                 "POSTGRES_USER": "authentik-user",
                 "POSTGRES_PASSWORD": "authentik-password-1234",
@@ -105,15 +73,11 @@ jobs:
             },
             { 
               "name": "fleetmdm",
-              "type": ["container"],
-              "path": "./integrated-tools/fleetmdm",
-              "manifest_path": "./manifests/integrated-tools/fleetmdm"
+              "path": "./integrated-tools/fleetmdm"
             },
             {
               "name": "meshcentral",
-              "type": ["container"],
               "path": "./integrated-tools/meshcentral/server",
-              "manifest_path": "./manifests/integrated-tools/meshcentral",
               "build_args": {
                 "MESH_DIR": "/opt/mesh",
                 "MESH_TEMP_DIR": "/tmp/mesh",
@@ -141,10 +105,8 @@ jobs:
             },
             {
               "name": "tactical-frontend",
-              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-frontend",
-              "context": "./integrated-tools/tactical-rmm/tactical-frontend",
-              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -190,10 +152,8 @@ jobs:
             },
             {
               "name": "tactical-nginx",
-              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-nginx",
-              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
-              "context": "./integrated-tools/tactical-rmm/tactical-nginx",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -239,10 +199,8 @@ jobs:
             },
             {
               "name": "tactical-base",
-              "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
-              "manifest_path": "./manifests/integrated-tools/tactical-rmm",
-              "context": "./integrated-tools/tactical-rmm/tactical-base",
+              "context": "./integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -294,17 +252,3 @@ jobs:
             echo "$matrix_json"
             echo EOF
           } >> $GITHUB_OUTPUT
-
-      - name: Filter Java Projects
-        id: filter
-        run: |
-          {
-            echo 'matrix_java<<EOF'
-            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | any(. == "java"))]'
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
-          {
-            echo 'matrix<<EOF'
-            echo '${{ steps.matrix.outputs.matrix }}' | jq '[.[] | select(.type | any(. == "container"))]'
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
