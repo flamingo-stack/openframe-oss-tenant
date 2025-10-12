@@ -7,6 +7,7 @@ import {
   StatusTag,
   Button,
   ListPageLayout,
+  TableDescriptionCell,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -160,13 +161,7 @@ export function LogsTable() {
       label: 'Log Details',
       width: 'w-1/2',
       renderCell: (log) => (
-        <div className="flex-1">
-          <div className="flex flex-col justify-center">
-            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 break-words">
-              {log.description.title}
-            </span>
-          </div>
-        </div>
+        <TableDescriptionCell text={log.description.title} />
       )
     }
   ], [])

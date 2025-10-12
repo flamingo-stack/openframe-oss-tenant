@@ -7,6 +7,7 @@ import {
   Table,
   Button,
   ListPageLayout,
+  TableDescriptionCell,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -24,8 +25,6 @@ interface UIScriptEntry {
   description: string
   shellType: string
   addedBy: string
-  category: string
-  timeout: number
   supportedPlatforms: string[]
 }
 
@@ -50,8 +49,6 @@ export function ScriptsTable() {
       description: script.description,
       shellType: script.shell,
       addedBy: toUiKitToolType('tactical'),
-      category: script.category,
-      timeout: script.default_timeout,
       supportedPlatforms: script.supported_platforms || []
     }))
   }, [scripts])
@@ -60,14 +57,11 @@ export function ScriptsTable() {
     {
       key: 'name',
       label: 'Name',
-      width: 'w-1/4',
+      width: 'w-1/3',
       renderCell: (script) => (
         <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary line-clamp-2 break-words">
             {script.name}
-          </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-            {script.description}
           </span>
         </div>
       )
@@ -106,23 +100,11 @@ export function ScriptsTable() {
       )
     },
     {
-      key: 'category',
-      label: 'Category',
-      width: 'w-[15%]',
+      key: 'description',
+      label: 'Description',
+      width: 'w-1/2',
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.category}
-        </span>
-      )
-    },
-    {
-      key: 'timeout',
-      label: 'Timeout',
-      width: 'w-[15%]',
-      renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.timeout}
-        </span>
+        <TableDescriptionCell text={script.description} />
       )
     }
   ], [])
