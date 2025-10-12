@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { InfoCard } from '@flamingo/ui-kit'
-import { ToolBadge } from '@flamingo/ui-kit/components/platform'
+import { getToolLabel } from '@flamingo/ui-kit/types/tool.types'
 import { toUiKitToolType } from '@lib/tool-labels'
 
 interface AgentsTabProps {
@@ -15,17 +15,20 @@ export function AgentsTab({ device }: AgentsTabProps) {
   return (
     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {toolConnections.length > 0 ? (
-        toolConnections.map((tc: any, idx: number) => (
-          <InfoCard
-            key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`}
-            data={{
-              title: <ToolBadge toolType={toUiKitToolType(tc?.toolType) as any} />,
-              items: [
-                { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
-              ]
-            }}
-          />
-        ))
+        toolConnections.map((tc: any, idx: number) => {
+          const toolType = toUiKitToolType(tc?.toolType)
+          return (
+            <InfoCard
+              key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`}
+              data={{
+                title: getToolLabel(toolType),
+                items: [
+                  { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
+                ]
+              }}
+            />
+          )
+        })
       ) : (
         <InfoCard
           data={{
