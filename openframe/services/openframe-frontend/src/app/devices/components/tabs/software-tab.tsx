@@ -107,7 +107,7 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
         data={software}
         columns={columns}
         rowKey="id"
-        className="bg-ods-card border border-ods-border rounded-lg"
+        rowClassName="mb-1"
       />
     </div>
   )
