@@ -251,7 +251,7 @@ jobs:
 
   build_helm:
     name: "Build Helm Chart"
-    needs: [matrix, changes]
+    needs: [changes]
     runs-on: ubuntu-latest
     steps:
       - name: Check if build should run
@@ -280,7 +280,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [ build_client, build_images, matrix, changes ]
+    needs: [changes, matrix, build_images, build_client, build_helm]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' && 
