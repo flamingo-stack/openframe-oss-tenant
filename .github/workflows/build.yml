@@ -17,6 +17,7 @@ on:
       - 'integrated-tools/**'
       - 'pom.xml'
       - 'client/**'
+      - '.github/**'
   workflow_dispatch:
     inputs:
       version:
