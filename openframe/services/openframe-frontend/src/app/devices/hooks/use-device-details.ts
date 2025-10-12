@@ -3,9 +3,11 @@
 import { useState, useCallback } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { tacticalApiClient } from '@lib/tactical-api-client'
+import { fleetApiClient } from '@lib/fleet-api-client'
 import { apiClient } from '@lib/api-client'
 import { Device, DeviceGraphQLNode, GraphQLResponse } from '../types/device.types'
 import { GET_DEVICE_QUERY } from '../queries/devices-queries'
+import { normalizeDeviceDetailNode } from '../utils/normalize-device'
 
 export function useDeviceDetails() {
   const { toast } = useToast()
@@ -55,68 +57,18 @@ export function useDeviceDetails() {
         }
       }
 
-      // 3) Merge details giving precedence to GraphQL canonical fields
-      const merged: Device = {
-        // legacy/tactical fields
-        agent_id: tactical?.agentToolId || node.machineId || node.id,
-        hostname: node.hostname || tacticalData?.hostname || node.displayName || '',
-        site_name: tacticalData?.site_name || '',
-        client_name: tacticalData?.client_name || '',
-        monitoring_type: node.type || tacticalData?.monitoring_type || '',
-        description: node.displayName || tacticalData?.description || node.hostname || '',
-        needs_reboot: !!tacticalData?.needs_reboot,
-        pending_actions_count: tacticalData?.pending_actions_count || 0,
-        status: node.status || tacticalData?.status || 'UNKNOWN',
-        overdue_text_alert: !!tacticalData?.overdue_text_alert,
-        overdue_email_alert: !!tacticalData?.overdue_email_alert,
-        overdue_dashboard_alert: !!tacticalData?.overdue_dashboard_alert,
-        last_seen: node.lastSeen || tacticalData?.last_seen || '',
-        boot_time: tacticalData?.boot_time || 0,
-        checks: tacticalData?.checks || { total: 0, passing: 0, failing: 0, warning: 0, info: 0, has_failing_checks: false },
-        maintenance_mode: !!tacticalData?.maintenance_mode,
-        logged_username: tacticalData?.logged_username || '',
-        italic: !!tacticalData?.italic,
-        block_policy_inheritance: !!tacticalData?.block_policy_inheritance,
-        plat: node.osType || tacticalData?.operating_system || '',
-        goarch: tacticalData?.goarch || '',
-        has_patches_pending: !!tacticalData?.has_patches_pending,
-        version: node.agentVersion || tacticalData?.version || '',
-        operating_system: node.osType || tacticalData?.operating_system || '',
-        public_ip: tacticalData?.public_ip || '',
-        cpu_model: tacticalData?.cpu_model || [],
-        graphics: tacticalData?.graphics || '',
-        local_ips: tacticalData?.local_ips || node.ip || '',
-        make_model: tacticalData?.make_model || [node.manufacturer, node.model].filter(Boolean).join(' '),
-        disks: tacticalData?.disks || [],
-        physical_disks: tacticalData?.physical_disks || [],
-        custom_fields: tacticalData?.custom_fields || [],
-        serial_number: node.serialNumber || tacticalData?.serial_number || '',
-        total_ram: tacticalData?.total_ram || '',
-
-        // computed fields
-        id: node.id,
-        machineId: node.machineId,
-        displayName: node.displayName || node.hostname || tacticalData?.description || tacticalData?.hostname,
-        organizationId: node.organization?.organizationId,
-        organization: node.organization?.name || tacticalData?.client_name,
-        type: node.type,
-        osType: node.osType || tacticalData?.operating_system,
-        osVersion: node.osVersion || tacticalData?.version,
-        osBuild: node.osBuild || tacticalData?.version,
-        registeredAt: node.registeredAt || tacticalData?.last_seen,
-        updatedAt: node.updatedAt || tacticalData?.last_seen,
-        manufacturer: node.manufacturer || (tacticalData?.make_model?.split('\n')[0] || undefined),
-        model: node.model || tacticalData?.make_model?.trim(),
-        osUuid: node.osUuid,
-        lastSeen: node.lastSeen || tacticalData?.last_seen,
-        tags: node.tags || tacticalData?.custom_fields || [],
-        ip: node.ip || tacticalData?.local_ips?.split(',')[0]?.trim() || tacticalData?.public_ip,
-        macAddress: node.macAddress,
-        agentVersion: node.agentVersion || tacticalData?.version,
-        serialNumber: node.serialNumber || tacticalData?.serial_number || tacticalData?.wmi_detail?.serialnumber,
-        totalRam: undefined,
-        toolConnections: node.toolConnections
+      // 2.5) Fetch Fleet MDM details if present
+      const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM')
+      let fleetData: any | null = null
+      if (fleet?.agentToolId) {
+        const fResponse = await fleetApiClient.getHost(Number(fleet.agentToolId))
+        if (fResponse.ok && fResponse.data?.host) {
+          fleetData = fResponse.data.host
+        }
       }
+
+      // 3) Use shared normalization function for consistency
+      const merged: Device = normalizeDeviceDetailNode(node, tacticalData, fleetData)
 
       setDeviceDetails(merged)
       

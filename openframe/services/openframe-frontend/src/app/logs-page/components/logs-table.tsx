@@ -170,7 +170,7 @@ export function LogsTable() {
       renderCell: (log) => (
         <div className="flex-1">
           <div className="flex flex-col justify-center">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary whitespace-pre-wrap break-words">
+            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 break-words">
               {log.description.title}
             </span>
           </div>

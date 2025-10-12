@@ -10,7 +10,6 @@ import {
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
-import { cn } from "@flamingo/ui-kit/utils"
 import { useDevices } from '../hooks/use-devices'
 import { Device } from '../types/device.types'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'

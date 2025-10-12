@@ -2,6 +2,28 @@
  * Shared Device types for the devices module
  */
 
+import {
+  FleetSoftware,
+  FleetUser,
+  FleetBattery,
+  FleetLabel,
+  FleetMDMInfo,
+  FleetIssues
+} from './fleet.types'
+
+/**
+ * Unified User type compatible with both Fleet and Tactical
+ */
+export interface UnifiedUser {
+  username: string
+  uid?: number          // From Fleet
+  type?: string         // From Fleet (person, service, etc.)
+  groupname?: string    // From Fleet
+  shell?: string        // From Fleet
+  isLoggedIn?: boolean  // Computed field
+  source: 'fleet' | 'tactical' | 'unknown'
+}
+
 export interface DeviceTag {
   id: string
   name: string
@@ -54,6 +76,7 @@ export interface Device {
   }
   maintenance_mode: boolean
   logged_username: string
+  logged_in_username?: string  // Alias for logged_username
   italic: boolean
   block_policy_inheritance: boolean
   plat: string
@@ -64,7 +87,7 @@ export interface Device {
   public_ip: string
   cpu_model: string[]
   graphics: string
-  local_ips: string
+  local_ips: string[]
   make_model: string
   physical_disks: string[]
   custom_fields: any[]
@@ -80,7 +103,72 @@ export interface Device {
     fstype: string
     percent: number
   }>
-  
+
+  // Fleet MDM specific fields
+  fleet?: {
+    // Hardware - CPU
+    cpu_type?: string
+    cpu_subtype?: string
+    cpu_brand?: string
+    cpu_physical_cores?: number
+    cpu_logical_cores?: number
+
+    // Hardware - Memory
+    memory?: number  // in bytes
+
+    // Network
+    primary_ip?: string
+    primary_mac?: string
+
+    // Storage
+    gigs_disk_space_available?: number
+    percent_disk_space_available?: number
+    gigs_total_disk_space?: number
+    disk_encryption_enabled?: boolean
+
+    // System status
+    uptime?: number  // in seconds
+    last_restarted_at?: string
+    last_enrolled_at?: string
+
+    // Software & Versions
+    osquery_version?: string
+    orbit_version?: string
+    fleet_desktop_version?: string
+    scripts_enabled?: boolean
+    software?: FleetSoftware[]
+    software_updated_at?: string
+
+    // Users & Access
+    users?: FleetUser[]
+
+    // Batteries
+    batteries?: FleetBattery[]
+
+    // MDM
+    mdm?: FleetMDMInfo
+
+    // Labels
+    labels?: FleetLabel[]
+
+    // Issues
+    issues?: FleetIssues
+
+    // Platform & OS
+    platform?: string
+    platform_like?: string
+    build?: string
+    code_name?: string
+
+    // Identifiers
+    uuid?: string
+    computer_name?: string
+    hardware_serial?: string
+    hardware_vendor?: string
+    hardware_model?: string
+    hardware_version?: string
+  }
+
   // Computed fields for display compatibility
   displayName?: string
   organizationId?: string
@@ -104,6 +192,9 @@ export interface Device {
   serialNumber?: string
   totalRam?: string
   toolConnections?: ToolConnection[]
+
+  // Unified users array (normalized from Fleet and Tactical)
+  users?: UnifiedUser[]
 }
 
 // Additional types for device filtering

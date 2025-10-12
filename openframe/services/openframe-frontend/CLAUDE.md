@@ -62,14 +62,42 @@ NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true
 - **TypeScript 5.8** - Type safety
 - **Zustand 5.0.8** - State management
 - **Apollo Client 3.8** - GraphQL
-- **@flamingo/ui-kit** - Design system (328+ components)
+- **@flamingo/ui-kit** - **EXTERNAL** unified design system (328+ components)
 - **Tailwind CSS 3.4** - Styling with ODS tokens
 - **xterm.js 5.3** - Terminal interface
+
+### IMPORTANT: UI-Kit is an External Library
+
+`@flamingo/ui-kit` is **NOT part of OpenFrame** - it is a **separate, external design system library**:
+
+**Key Facts:**
+- **Repository**: Separate git repo at `/Users/michaelassraf/Documents/GitHub/ui-kit`
+- **Ownership**: Shared across Flamingo Stack (OpenFrame, Flamingo, TMCG)
+- **Connection**: Symlinked to `./ui-kit` for local development convenience only
+- **Production**: Installed as `@flamingo/ui-kit` npm package
+- **Updates**: Changes to ui-kit affect ALL Flamingo Stack projects
+
+**Symlink Structure:**
+```bash
+openframe-frontend/ui-kit -> ../../../../ui-kit  # Points to external repo
+```
+
+**Development Workflow:**
+1. ui-kit changes are made in `/Users/michaelassraf/Documents/GitHub/ui-kit`
+2. Test changes immediately via symlink in OpenFrame
+3. Commit ui-kit changes to ui-kit repo
+4. Commit OpenFrame changes to openframe repo
+5. In production, OpenFrame uses published `@flamingo/ui-kit` npm package
+
+**NEVER:**
+- Treat ui-kit as part of OpenFrame codebase
+- Make breaking changes without coordinating across projects
+- Assume ui-kit changes only affect OpenFrame
 
 ### Application Modules
 - **Authentication** - Multi-provider SSO, organization setup
 - **Dashboard** - System overview, real-time metrics
-- **Device Management** - Monitoring, terminal access, actions
+- **Device Management** - Fleet MDM + Tactical RMM monitoring, terminal access
 - **Log Analysis** - Streaming, search, filtering, export
 - **Mingo Query Interface** - MongoDB-like query builder
 
@@ -79,13 +107,24 @@ src/
 ├── app/                 # Next.js App Router
 │   ├── auth/           # Authentication module
 │   ├── dashboard/      # Main dashboard
-│   ├── devices/        # Device management
+│   ├── devices/        # Device management (Fleet MDM + Tactical RMM)
+│   │   ├── components/
+│   │   │   ├── tabs/
+│   │   │   │   ├── hardware-tab.tsx       # CPU, disk, RAM, battery
+│   │   │   │   ├── network-tab.tsx        # Unified IPs
+│   │   │   │   └── users-tab.tsx          # Unified users
+│   │   ├── types/
+│   │   │   ├── fleet.types.ts             # Fleet MDM types
+│   │   │   └── device.types.ts            # Unified device types
+│   │   ├── utils/
+│   │   │   └── normalize-device.ts        # Multi-source normalization
+│   │   └── hooks/
 │   ├── logs-page/      # Log analysis
 │   ├── mingo/          # Query interface
 │   └── components/     # Shared components
 ├── stores/             # Zustand state stores
 ├── lib/                # Utilities & config
-ui-kit/                 # Design system (symlink)
+ui-kit/                 # EXTERNAL design system (symlinked)
 ```
 
 ## UI-Kit Integration
@@ -295,6 +334,218 @@ export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
 }
 ```
 
+## Fleet MDM Integration
+
+OpenFrame integrates comprehensive device monitoring data from multiple sources with proper normalization and prioritization.
+
+### Multi-Source Data Architecture
+
+**Data Sources:**
+1. **GraphQL** - Primary device registry and agent information
+2. **Fleet MDM** - Accurate hardware specs, battery health, users
+3. **Tactical RMM** - Legacy device monitoring data
+
+**Normalization Strategy:**
+```typescript
+// Data prioritization in normalize-device.ts
+Core Hardware/System:  Fleet MDM → GraphQL → Tactical RMM
+Agent Version:         GraphQL → Tactical RMM → Fleet MDM
+IP Addresses:          Unified array with Fleet first
+Users:                 Unified type (Fleet + Tactical)
+Public IP:             Filtered (excludes private IPs)
+```
+
+### Type System
+
+**Complete Fleet Types** - `src/app/devices/types/fleet.types.ts`:
+```typescript
+export interface FleetHost {
+  // Hardware
+  cpu_brand: string              // "Apple M3 Max"
+  cpu_physical_cores: number     // 14
+  cpu_logical_cores: number      // 16
+  memory: number                 // bytes
+
+  // Network
+  primary_ip: string             // Local IP
+  primary_mac: string
+  public_ip: string              // May be private, filter it!
+
+  // Nested objects
+  users: FleetUser[]             // System users
+  batteries: FleetBattery[]      // macOS battery health
+  software: FleetSoftware[]      // Installed software
+  mdm: FleetMDMInfo              // MDM enrollment
+  labels: FleetLabel[]           // Fleet labels
+  issues: FleetIssues            // Security issues
+}
+
+export interface FleetBattery {
+  cycle_count: number
+  health: string  // "Normal (99%)" or "Fair" or "Poor"
+}
+```
+
+**Unified Types** - `src/app/devices/types/device.types.ts`:
+```typescript
+// Compatible with both Fleet and Tactical
+export interface UnifiedUser {
+  username: string
+  uid?: number          // From Fleet
+  type?: string         // From Fleet: "person" | "service"
+  groupname?: string    // From Fleet
+  shell?: string        // From Fleet
+  isLoggedIn?: boolean  // Computed
+  source: 'fleet' | 'tactical' | 'unknown'  // Internal only
+}
+
+// Extended Device interface
+export interface Device {
+  // ... existing fields
+
+  // Unified fields
+  users?: UnifiedUser[]       // Merged Fleet + Tactical
+  local_ips: string[]         // Merged, Fleet first
+  public_ip: string           // Filtered actual public IP
+
+  // Complete Fleet MDM data
+  fleet?: {
+    cpu_physical_cores?: number
+    cpu_logical_cores?: number
+    batteries?: FleetBattery[]
+    users?: FleetUser[]
+    // ... all Fleet fields
+  }
+}
+```
+
+### Data Normalization
+
+**File:** `src/app/devices/utils/normalize-device.ts`
+
+Key functions:
+- `normalizeDeviceListNode()` - List view (lighter data)
+- `normalizeDeviceDetailNode()` - Detail view (complete data)
+- `isPrivateIP()` - Filter private IPs (10.x, 192.168.x, etc.)
+
+**Private IP Detection:**
+```typescript
+const isPrivateIP = (ip: string): boolean => {
+  if (ip.startsWith('10.')) return true
+  if (ip.startsWith('172.')) {
+    const second = parseInt(ip.split('.')[1])
+    if (second >= 16 && second <= 31) return true
+  }
+  if (ip.startsWith('192.168.')) return true
+  if (ip.startsWith('127.')) return true        // Loopback
+  if (ip.startsWith('169.254.')) return true    // Link-local
+  if (ip.startsWith('fe80:')) return true       // IPv6 link-local
+  if (ip.startsWith('fc00:') || ip.startsWith('fd00:')) return true
+  return false
+}
+```
+
+### Hardware Tab Components
+
+**Battery Health** - macOS devices only:
+```typescript
+// hardware-tab.tsx
+const batteries = device.fleet?.batteries || []
+
+{batteries.length > 0 && (
+  <InfoCard
+    data={{
+      title: `Battery ${index + 1}`,
+      subtitle: "Normal (99%)",  // Fleet format
+      items: [
+        { label: 'Cycle Count', value: '156' },
+        { label: 'Health', value: '99%' }
+      ],
+      progress: {
+        value: 99,
+        warningThreshold: 60,
+        criticalThreshold: 80,
+        inverted: true  // High = good (green), low = bad (red)
+      }
+    }}
+  />
+)}
+```
+
+**CPU Cores** - From Fleet:
+```typescript
+const parseCpuModel = (cpuArray: string[], fleetData?: Device['fleet']) => {
+  const physicalCores = fleetData?.cpu_physical_cores  // 14
+  const logicalCores = fleetData?.cpu_logical_cores    // 16
+
+  return [{
+    model: "Apple M3 Max",  // From cpu_brand
+    items: [
+      { label: 'Physical Cores', value: '14' },
+      { label: 'Logical Cores', value: '16' }
+    ]
+  }]
+}
+```
+
+### Inverted Progress Bar
+
+**Usage:**
+```typescript
+// Disk usage: high = bad (red)
+<ProgressBar
+  progress={diskUsage}
+  inverted={false}  // Default
+/>
+
+// Battery health: high = good (green)
+<ProgressBar
+  progress={batteryHealth}
+  inverted={true}  // Inverted
+/>
+```
+
+**Color Logic** - Uses ODS tokens:
+```typescript
+// Normal mode (inverted=false): Disk usage
+progress >= 90: var(--ods-attention-red-error)     // Red
+progress >= 75: var(--color-warning)               // Yellow
+else:           var(--ods-attention-green-success) // Green
+
+// Inverted mode (inverted=true): Battery health
+progress >= 80: var(--ods-attention-green-success) // Green
+progress >= 60: var(--color-warning)               // Yellow
+else:           var(--ods-attention-red-error)     // Red
+```
+
+### ODS Color Tokens
+
+**MANDATORY:** Always use ODS tokens, never hardcoded colors:
+```typescript
+// Status colors
+--ods-attention-green-success: #5ea62e
+--ods-attention-red-error: #f36666
+--color-warning: #f59e0b
+
+// UI colors
+--ods-system-greys-soft-grey-action: #4e4e4e
+--ods-card: #212121
+--ods-border: #3a3a3a
+--ods-text-primary: #fafafa
+--ods-text-secondary: #888888
+```
+
+### Key Files
+
+- `src/app/devices/types/fleet.types.ts` - Complete Fleet MDM types (170 lines)
+- `src/app/devices/types/device.types.ts` - Unified device + user types
+- `src/app/devices/utils/normalize-device.ts` - Multi-source normalization (355 lines)
+- `src/app/devices/components/tabs/hardware-tab.tsx` - Battery, CPU, disk, RAM
+- `src/app/devices/components/tabs/network-tab.tsx` - Unified IPs
+- `src/app/devices/components/tabs/users-tab.tsx` - Unified users
+- `src/lib/fleet-api-client.ts` - Fleet API integration
+- `FLEET_MDM_INTEGRATION.md` - Complete documentation
+
 ## Accessibility Standards
 
 ### Required Practices
@@ -399,10 +650,21 @@ localStorage.removeItem('auth-store')
 - **Authentication** - `/api/oauth/*` - OAuth2/OpenID Connect
 
 ### External Dependencies
-- **UI-Kit** - Local symlink with OpenFrame theming
-- **Terminal Libraries** - xterm.js integration
-- **Query Libraries** - Apollo + TanStack for GraphQL + REST
+- **UI-Kit** - **EXTERNAL** design system (symlinked from `/Users/michaelassraf/Documents/GitHub/ui-kit`)
+  - Separate git repository
+  - Shared across Flamingo Stack projects
+  - Published as `@flamingo/ui-kit` npm package
+  - Changes affect multiple projects
+- **Terminal Libraries** - xterm.js 5.3 integration
+- **Query Libraries** - Apollo Client 3.8 + TanStack for GraphQL + REST
+- **Fleet MDM** - Device monitoring integration
+- **Tactical RMM** - Legacy device monitoring
 
 ---
 
-**Remember: Always use UI-Kit components and follow the mandatory useToast pattern for all API operations!**
+**Remember:**
+1. **UI-Kit is EXTERNAL** - It's a separate repo, not part of OpenFrame
+2. **Always use UI-Kit components** - No custom UI components allowed
+3. **Follow the mandatory useToast pattern** for all API operations
+4. **Use ODS design tokens** - Never hardcode colors or styles
+5. **Normalize multi-source data** - Fleet → GraphQL → Tactical priority

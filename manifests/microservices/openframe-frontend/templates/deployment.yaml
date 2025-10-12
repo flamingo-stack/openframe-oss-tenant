@@ -25,7 +25,7 @@ spec:
             - name: NEXT_PUBLIC_APP_MODE
               value: "saas-tenant"
             - name: NEXT_PUBLIC_SHARED_HOST_URL
-              value: "{{ .Values.deployment.saas.ingress.gcp.publicDomain }}"
+              value: "https://{{ .Values.deployment.saas.ingress.gcp.publicDomain }}"
             {{- end }}
             - name: NEXT_PUBLIC_AUTH_CHECK_INTERVAL
               value: "30000"
