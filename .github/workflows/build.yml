@@ -271,7 +271,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           name: app-of-apps
-          tag: ${{ inputs.version || 'latest' }}
+          tag: ${{ inputs.version || '0.0.1' }}
           path: ./manifests/app-of-apps
           registry: ${{ env.REGISTRY }}
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
@@ -318,23 +318,25 @@ jobs:
           echo "=== Client artifacts ==="
           ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
 
-      - name: Generate Docker image list
-        id: docker_images
+      - name: Generate Image list
+        id: release_images
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          ORGANISATION: ${{ env.ORGANISATION }}
+          REPOSITORY: ${{ env.REPOSITORY }}
         run: |
           MATRIX='${{ needs.matrix.outputs.matrix }}'
           TAG="${{ inputs.version }}"
 
           IMAGE_LIST=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
-            --arg org "$ORGANISATION" \
-            --arg repo "$REPOSITORY" \
-            --arg tag "$TAG" \
+            --arg org "$ORGANISATION" --arg repo "$REPOSITORY" --arg tag "$TAG" \
             '.[] | "- `\($registry)/\($org)/\($repo)/\(.name):\($tag)`"' | tr '\n' '\n')
+          IMAGE_LIST="${IMAGE_LIST}"$'\n'"- \`${REGISTRY}/${ORGANISATION}/${REPOSITORY}/app-of-apps:${TAG}\` (Helm Chart)"
 
           PULL_COMMANDS=$(echo "$MATRIX" | jq -r --arg registry "$REGISTRY" \
-            --arg org "$ORGANISATION" \
-            --arg repo "$REPOSITORY" \
-            --arg tag "$TAG" \
+            --arg org "$ORGANISATION" --arg repo "$REPOSITORY" --arg tag "$TAG" \
             '.[] | "docker pull \($registry)/\($org)/\($repo)/\(.name):\($tag)"' | tr '\n' '\n')
+          PULL_COMMANDS="${PULL_COMMANDS}"$'\n'"helm pull oci://${REGISTRY}/${ORGANISATION}/${REPOSITORY}/app-of-apps --version ${TAG}"
 
           {
             echo "images<<EOF"
@@ -344,10 +346,6 @@ jobs:
             echo "$PULL_COMMANDS"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-        env:
-          REGISTRY: ${{ env.REGISTRY }}
-          ORGANISATION: ${{ env.ORGANISATION }}
-          REPOSITORY: ${{ env.REPOSITORY }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -358,7 +356,6 @@ jobs:
           prerelease: false
           files: |
             final-artifacts/client/*
-            final-artifacts/cli/*
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             Release ${{ inputs.version }}
@@ -369,12 +366,11 @@ jobs:
             - **macOS** (Universal): `openframe` (ARM64 + x86_64)
             - **Windows** (x64): `openframe.exe`
 
-            ## 🐳 Docker Images
-
+            ## 🐳 Docker Images & Helm Chart
             **Available images:**
-            ${{ steps.docker_images.outputs.images }}
+            ${{ steps.release_images.outputs.images }}
 
             **Pull commands:**
             ```bash
-            ${{ steps.docker_images.outputs.pull_commands }}
+            ${{ steps.release_images.outputs.pull_commands }}
             ```
