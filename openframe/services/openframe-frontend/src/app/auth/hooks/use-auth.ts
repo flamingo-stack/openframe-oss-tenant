@@ -34,19 +34,12 @@ interface RegisterRequest {
 }
 
 export function useAuth() {
+  // All hooks must be called unconditionally at the top
   const { toast } = useToast()
   const router = useRouter()
   const pathname = usePathname()
-  
-  // Use try-catch to handle static generation
-  let searchParams
-  try {
-    searchParams = useSearchParams()
-  } catch {
-    // During static generation, create empty URLSearchParams
-    searchParams = new URLSearchParams()
-  }
-  
+  const searchParams = useSearchParams()
+
   // Auth store for managing authentication state
   const { login: storeLogin, user, isAuthenticated, setTenantId } = useAuthStore()
   
