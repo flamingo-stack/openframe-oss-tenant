@@ -81,9 +81,18 @@ export function ArchitectureTab() {
                 const formattedType = (u.type || 'Link')
                   .replace(/_/g, ' ')
                   .replace(/\b\w/g, (c) => c.toUpperCase())
-                rows.push({ label: formattedType, value: u.url, href: u.url, actions: { copy: true, open: true } })
+
+                // Concatenate port to URL if port exists
+                const fullUrl = u.port ? `${u.url}:${u.port}` : u.url
+
+                rows.push({ label: formattedType, value: fullUrl, href: fullUrl, actions: { copy: true, open: true } })
+
+                // Display port as a separate row if it exists
+                if (u.port) {
+                  rows.push({ label: 'Port', value: String(u.port), actions: { copy: true } })
+                }
               })
-        if (tool.credentials?.username) rows.push({ label: 'User', value: tool.credentials.username })
+        if (tool.credentials?.username) rows.push({ label: 'User', value: tool.credentials.username, actions: { copy: true } })
         if (tool.credentials?.password) rows.push({ label: 'Pass', value: tool.credentials.password, isSecret: true, actions: { reveal: true, copy: true } })
         if (tool.credentials?.apiKey?.key) rows.push({ label: tool.credentials.apiKey.keyName || 'API Key', value: tool.credentials.apiKey.key, isSecret: true, actions: { reveal: true, copy: true } })
 

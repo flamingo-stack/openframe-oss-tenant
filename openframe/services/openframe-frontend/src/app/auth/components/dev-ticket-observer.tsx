@@ -16,38 +16,28 @@ import { runtimeEnv } from '@/src/lib/runtime-config'
  * Enable/disable via NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER environment variable
  */
 export function DevTicketObserver() {
+  // All hooks must be called unconditionally at the top
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const lastTicket = useRef<string | null>(null)
+  const { isAuthenticated } = useAuthStore()
+  const { exchangeTicket } = useDevTicketExchange()
+
   // Check if DevTicketObserver should be enabled
   const isEnabled = runtimeEnv.enableDevTicketObserver();
 
-  const pathname = usePathname()
-  
-  // Use try-catch to handle static generation
-  let searchParams
-  try {
-    searchParams = useSearchParams()
-  } catch {
-    // During static generation, return null
-    return null
-  }
-  const lastTicket = useRef<string | null>(null)
-  
-  // Access auth store for state information
-  const { isAuthenticated } = useAuthStore()
-  
-  // Use the exchange hook for API operations
-  const { exchangeTicket } = useDevTicketExchange()
-  
-  // Return early if not enabled
-  if (!isEnabled) {
-    return null
-  }
-  
   // Log initialization on mount
   useEffect(() => {
-    console.log('🎫 [DevTicket Observer] Initialized and monitoring for devTicket parameters')
-  }, [])
+    if (isEnabled) {
+      console.log('🎫 [DevTicket Observer] Initialized and monitoring for devTicket parameters')
+    }
+  }, [isEnabled])
 
   useEffect(() => {
+    // Return early if not enabled
+    if (!isEnabled) {
+      return
+    }
     // Check if devTicket exists in URL
     const devTicket = searchParams?.get('devTicket')
     
@@ -76,7 +66,7 @@ export function DevTicketObserver() {
       exchangeTicket(devTicket)
     }
 
-  }, [pathname, searchParams, isAuthenticated, exchangeTicket])
+  }, [pathname, searchParams, isAuthenticated, exchangeTicket, isEnabled])
 
   // This component doesn't render anything
   return null

@@ -8,7 +8,7 @@ interface LogsTabProps {
 
 export function LogsTab({ device }: LogsTabProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-6">
     </div>
   )
 }

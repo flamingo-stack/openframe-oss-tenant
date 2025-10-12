@@ -8,7 +8,7 @@ interface ComplianceTabProps {
 
 export function ComplianceTab({ device }: ComplianceTabProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-6">
     </div>
   )
 }

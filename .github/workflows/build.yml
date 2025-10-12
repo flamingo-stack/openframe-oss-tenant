@@ -1,4 +1,4 @@
-name: OpenFrame Build and Push Latest
+name: OpenFrame Build and Release
 
 permissions:
   contents: write
@@ -19,8 +19,8 @@ on:
       - 'client/**'
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Tag to release (e.g., v1.2.3)"
+      version:
+        description: "version to release (e.g., v1.2.3)"
         required: true
         type: string
 
@@ -34,130 +34,68 @@ env:
 # =============================================================================
 
 jobs:
-  # Keep original separate jobs structure for reusable workflows
   changes:
     name: Detect Changes
     uses: ./.github/workflows/changes.yml
-    if: github.event_name == 'push'
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'push'
 
   matrix:
     name: Generate Matrix
     uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'push'
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'push'
 
-  # Optimized Java build with better caching and parallel execution
-  build_java:
-    name: "Build Java: ${{ matrix.name }}"
-    needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    env:
-      MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
-    if: github.event_name == 'push'
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
-    steps:
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Set up JDK 21 with Maven Central
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-          cache-dependency-path: '**/pom.xml'
-          check-latest: true
-
-      - name: Build with Maven
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: |
-          mvn clean install \
-            -U \
-            -pl ${{ matrix.path }} \
-            -am \
-            -Dcompress \
-            --threads 2C \
-            --batch-mode \
-            --no-transfer-progress \
-            -Dmaven.javadoc.skip=true \
-            -s .mvn/settings.xml
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Java artifacts
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            ${{ matrix.path }}/target/*.jar
-            !${{ matrix.path }}/target/original-*.jar
-            !${{ matrix.path }}/target/*-sources.jar
-            !${{ matrix.path }}/target/*-javadoc.jar
-          retention-days: 1
 
   build_images:
     name: "Build: ${{ matrix.name }}"
-    needs: [build_java, matrix, changes]
+    needs: [changes, matrix]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+
       - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
         with:
           fetch-depth: 1
 
-      - name: Download Java artifacts
-        if: |
-          contains(fromJSON(toJSON(matrix.type)), 'java') && 
-          matrix.artifact_name != '' && 
-          contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.path }}/target
-
       - name: Log in to GitHub Container Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
+        if: steps.should_run.outputs.run == 'true'
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Set up QEMU
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
+        if: steps.should_run.outputs.run == 'true'
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-      
+
       - name: Set up Docker Buildx
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
+        if: steps.should_run.outputs.run == 'true'
 
       - name: Generate metadata
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
+        if: steps.should_run.outputs.run == 'true'
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
-            type=sha,prefix={{branch}}-
-            type=raw,value=${{ needs.changes.outputs.commit_sha }}
-            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
@@ -165,19 +103,20 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Format build arguments
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: format_args
         uses: ./.github/steps/docker-format-build-args
+        if: steps.should_run.outputs.run == 'true'
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
         env:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       - name: Build and push image
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
+        if: steps.should_run.outputs.run == 'true'
         with:
+          # need to copy the pom.xml from the root so it builds with the lib version correctly
           context: ${{ matrix.context || matrix.path }}
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
@@ -186,37 +125,29 @@ jobs:
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
             ${{ env.BUILD_ARGS }}
-#          cache-from: |
-#            type=gha,scope=${{ matrix.name }}
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-#          cache-to: |
-#            type=gha,scope=${{ matrix.name }},mode=max
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
 
       - name: Cleanup old container versions
-        if: |
-          contains(needs.changes.outputs[matrix.name], 'true') && 
-          steps.docker_build.outcome == 'success'
+        if: steps.docker_build.outcome == 'success'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
+          exclude-tags: ${{ inputs.version }},latest,test-*,${{ needs.changes.outputs.commit_sha }},${{ needs.changes.outputs.timestamp_tag }}
 
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
-    needs: [changes]
+    needs: [changes, matrix]
     runs-on: ${{ matrix.os }}
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: openframe
-    if: |
-      github.event_name == 'push' && 
-      contains(needs.changes.outputs.client, 'true')
     defaults:
       run:
         shell: bash
@@ -230,18 +161,21 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: openframe-oss-client-windows-x64
-#          - os: ubuntu-latest
-#            target: x86_64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-x64
 
     steps:
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')) }}" >> $GITHUB_OUTPUT
+
       - name: Checkout
         uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
         with:
           fetch-depth: 1
 
       - name: Prepare Rust tools
         uses: ./.github/steps/rust-setup
+        if: steps.should_run.outputs.run == 'true'
         with:
           toolchain: stable
           targets: ${{ matrix.target }}
@@ -250,20 +184,20 @@ jobs:
 
       - name: Build client
         working-directory: client
+        if: steps.should_run.outputs.run == 'true'
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
-              # Trim whitespace
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET"
             done
           else
             make build TARGET="${{ matrix.target }}"
-          fi
+          fi          
 
       - name: Upload Rust Artifacts for Windows / Linux
-        if: "!(runner.os == 'macOS')"
+        if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -273,7 +207,7 @@ jobs:
           compression-level: 9
 
       - name: Create macOS universal package
-        if: "runner.os == 'macOS'"
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
         shell: bash
         run: |
           mkdir -p artifacts
@@ -281,7 +215,6 @@ jobs:
           IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
           RUST_TARGET_ARM64=${ARCHITECTURES[0]}
           RUST_TARGET_x64=${ARCHITECTURES[1]}
-          # Trim whitespace
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
           lipo -create ./client/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ./client/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
@@ -291,7 +224,7 @@ jobs:
           file ./artifacts/${{ env.BINARY_NAME }}
 
       - name: Sign MacOS package
-        if: "runner.os == 'macOS'"
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
         uses: ./.github/steps/sign-macos-package
         with:
           apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
@@ -303,7 +236,7 @@ jobs:
           binary_name: ${{ env.BINARY_NAME }}
 
       - name: Upload macOS client artifact
-        if: "runner.os == 'macOS'"
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -311,26 +244,90 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
-  
+
   build_helm:
     name: "Build Helm Chart"
-    needs: [matrix, changes]
+    needs: [changes]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     steps:
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs.helm, 'true') }}" >> $GITHUB_OUTPUT
+
       - name: Checkout
         uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
 
       - name: Install Helm
         uses: azure/setup-helm@v4.3.0
+        if: steps.should_run.outputs.run == 'true'
 
       - name: Push Chart
         uses: appany/helm-oci-chart-releaser@v0.5.0
+        if: steps.should_run.outputs.run == 'true'
         with:
           name: app-of-apps
-          tag: 0.1.1
-          path: ./manifests/app-of-apps 
+          tag: ${{ inputs.version || '0.0.1' }}
+          path: ./manifests/app-of-apps
           registry: ${{ env.REGISTRY }}
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: "Create Release"
+    needs: [changes, matrix, build_images, build_client, build_helm]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      inputs.version != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+        continue-on-error: true
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p final-artifacts/client
+          if [ -d "release-artifacts" ]; then
+            find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
+            -exec cp {} final-artifacts/client/ \;
+          fi
+
+          echo "Final artifacts to release:"
+          ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
+
+      - name: Generate release body
+        id: release_body
+        run: |
+          IMAGES=$(echo '${{ needs.matrix.outputs.matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
+          {
+            echo "body<<EOF"
+            echo "## Images"
+            echo "$IMAGES"
+            echo ""
+            echo "## Client"
+            echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
+            echo "- **Windows** (x64): \`openframe.exe\`"
+            echo ""
+            echo "## Chart"
+            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            final-artifacts/client/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: ${{ steps.release_body.outputs.body }}

@@ -1,4 +1,4 @@
-name: OpenFrame Integration Tests
+name: OpenFrame Build and Test
 
 # =============================================================================
 # WORKFLOW CONFIGURATION
@@ -44,162 +44,101 @@ jobs:
   changes:
     name: Changes
     uses: ./.github/workflows/changes.yml
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
+    if: |
+      github.event_name == 'pull_request' && 
+      !github.event.pull_request.draft
 
   matrix:
     name: Matrix
     uses: ./.github/workflows/matrix.yml
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
-
-  build_java:
-    name: "Build Java: ${{ matrix.name }}"
-    needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    env:
-      MAVEN_OPTS: "-Xmx4g -Xms2g -XX:+UseG1GC"
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix_java) }}
-    steps:
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
-      - name: Set up Maven Central Repository with JDK 21
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-          cache-dependency-path: '**/pom.xml'
-          check-latest: true
-
-      - name: Build with Maven
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        run: |
-          mvn clean install \
-            -U \
-            -pl ${{ matrix.path }} \
-            -am \
-            -Dcompress \
-            --threads 2C \
-            --batch-mode \
-            --no-transfer-progress \
-            -Dmaven.javadoc.skip=true \
-            -s .mvn/settings.xml
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Java artifacts
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            ${{ matrix.path }}/target/*.jar
-            !${{ matrix.path }}/target/original-*.jar
-            !${{ matrix.path }}/target/*-sources.jar
-            !${{ matrix.path }}/target/*-javadoc.jar
-          retention-days: 1
 
   build_images:
-    name: "Build image: ${{ matrix.name }}"
-    needs: [build_java, matrix, changes]
+    name: "Build: ${{ matrix.name }}"
+    needs: [changes, matrix]
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' && 
-      !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.matrix) }}
     steps:
-      - name: Checkout
-        if: contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
-      - name: Download Java artifacts
-        if: |
-          contains(fromJSON(toJSON(matrix.type)), 'java') && 
-          matrix.artifact_name != '' && 
-          contains(needs.changes.outputs[matrix.name], 'true')
-        uses: actions/download-artifact@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.path }}/target
+          fetch-depth: 1
 
       - name: Log in to GitHub Container Registry
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/login-action@v3
+        if: steps.should_run.outputs.run == 'true'
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-qemu-action@v3
+        if: steps.should_run.outputs.run == 'true'
         with:
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
 
       - name: Set up Docker Buildx
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: docker/setup-buildx-action@v3
+        if: steps.should_run.outputs.run == 'true'
 
       - name: Generate metadata
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: meta
         uses: docker/metadata-action@v5
+        if: steps.should_run.outputs.run == 'true'
         with:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
             type=raw,value=${{ needs.changes.outputs.test_commit_sha }}
-            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
           labels: |
             org.opencontainers.image.vendor=${{ env.ORGANISATION }}
             org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
             org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
+ 
       - name: Format build arguments
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: format_args
         uses: ./.github/steps/docker-format-build-args
+        if: steps.should_run.outputs.run == 'true'
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
         env:
           BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
       - name: Build and push image
-        if: contains(needs.changes.outputs[matrix.name], 'true')
         id: docker_build
         uses: docker/build-push-action@v6
+        if: steps.should_run.outputs.run == 'true'
         with:
+          # need to copy the pom.xml from the root so it builds with the lib version correctly
           context: ${{ matrix.context || matrix.path }}
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
           provenance: false
+          sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
             ${{ env.BUILD_ARGS }}
-#          cache-from: |
-#            type=gha,scope=${{ matrix.name }}
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache
-#          cache-to: |
-#            type=gha,scope=${{ matrix.name }},mode=max
-#            type=registry,ref=${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}:buildcache,mode=max
+
 
   test:
     name: Run Tests
@@ -248,6 +187,7 @@ jobs:
           TERM: dumb
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
+
 
   test_client:
     name: "Test Client: ${{ matrix.os }}"
@@ -311,13 +251,15 @@ jobs:
             make build TARGET="${{ matrix.target }}"
           fi
   
+  
   test_helm:
     name: "Test Helm Chart"
     needs: [matrix, changes]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' && 
-      !github.event.pull_request.draft
+      !github.event.pull_request.draft && 
+      contains(needs.changes.outputs.helm, 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -332,6 +274,7 @@ jobs:
         run: |
           helm template app ./manifests/app-of-apps 
           helm unittest ./manifests/app-of-apps 
+
 
   cleanup:
     name: "Cleanup ${{ matrix.name }}"
@@ -362,7 +305,7 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
-          exclude-tags: latest
+
 
   final-checks:
     name: Final tests

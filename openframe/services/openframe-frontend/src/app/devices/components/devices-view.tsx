@@ -10,7 +10,6 @@ import {
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
-import { cn } from "@flamingo/ui-kit/utils"
 import { useDevices } from '../hooks/use-devices'
 import { Device } from '../types/device.types'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
@@ -28,18 +27,9 @@ export function DevicesView() {
 
   const columns = useMemo(() => getDeviceTableColumns(deviceFilters), [deviceFilters])
 
-  const handleDeviceMore = useCallback((device: Device) => {
-    console.log('More clicked for device:', device.agent_id)
-  }, [])
-
-  const handleDeviceDetails = useCallback((device: Device) => {
-    const machineId = device.machineId || device.agent_id
-    router.push(`/devices/details/${machineId}`)
-  }, [router])
-
-  const rowActions = useMemo(
-    () => getDeviceTableRowActions(handleDeviceMore, handleDeviceDetails),
-    [handleDeviceMore, handleDeviceDetails]
+  const renderRowActions = useMemo(
+    () => getDeviceTableRowActions(),
+    []
   )
 
   React.useEffect(() => {
@@ -106,7 +96,7 @@ export function DevicesView() {
           rowKey="machineId"
           loading={isLoading}
           emptyMessage="No devices found. Try adjusting your search or filters."
-          rowActions={rowActions}
+          renderRowActions={renderRowActions}
           actionsWidth={100}
           filters={tableFilters}
           onFilterChange={handleFilterChange}
@@ -120,8 +110,6 @@ export function DevicesView() {
           devices={devices}
           isLoading={isLoading}
           filters={filters}
-          onDeviceMore={handleDeviceMore}
-          onDeviceDetails={handleDeviceDetails}
         />
       )}
     </ListPageLayout>

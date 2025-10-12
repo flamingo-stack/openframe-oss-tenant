@@ -7,7 +7,7 @@ import {
   CheckCircle,
   Monitor
 } from 'lucide-react'
-import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer } from '@flamingo/ui-kit'
+import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo/ui-kit'
 import { Button } from '@flamingo/ui-kit'
 import { DetailLoader } from '@flamingo/ui-kit/components/ui'
 import { mockDialogDetails, type DialogDetails } from '../data/mock-dialog-details'
@@ -54,21 +54,6 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
   if (!dialog) {
     return <DetailLoader />
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'bg-success text-success'
-      case 'ON_HOLD':
-        return 'bg-warning/20 text-warning'
-      case 'TECH_REQUIRED':
-        return 'bg-error/20 text-error'
-      case 'RESOLVED':
-        return 'bg-success/20 text-success'
-      default:
-        return 'bg-ods-bg-surface/20 text-ods-text-muted'
-    }
   }
 
   return (
@@ -127,11 +112,14 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
         {/* Status */}
         <div className="flex items-center">
-          <div className={`px-2 py-2 rounded-md ${getStatusColor(dialog.status)}`}>
-            <span className="font-['Azeret_Mono'] font-medium text-[14px] uppercase tracking-[-0.28px]">
-              {dialog.status.replace('_', ' ')}
-            </span>
-          </div>
+          <StatusTag
+            label={dialog.status.replace('_', ' ')}
+            variant={
+              dialog.status === 'ACTIVE' || dialog.status === 'RESOLVED' ? 'success' :
+              dialog.status === 'ON_HOLD' ? 'warning' :
+              dialog.status === 'TECH_REQUIRED' ? 'error' : 'info'
+            }
+          />
         </div>
       </div>
 

@@ -7,13 +7,15 @@ import {
   StatusTag,
   Button,
   ListPageLayout,
+  TableDescriptionCell,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
-import { ToolIcon } from "@flamingo/ui-kit/components/tool-icon"
+import { ToolBadge } from "@flamingo/ui-kit"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { navigateToLogDetails } from '@lib/log-navigation'
 import { useLogs } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
 
@@ -128,37 +130,29 @@ export function LogsTable() {
       width: 'w-1/6',
       filterable: true,
       filterOptions: [
-        { id: 'TACTICAL', label: 'Tactical', value: 'TACTICAL' },
-        { id: 'MESHCENTRAL', label: 'MeshCentral', value: 'MESHCENTRAL' },
-        { id: 'FLEET', label: 'Fleet', value: 'FLEET' },
-        { id: 'AUTHENTIK', label: 'Authentik', value: 'AUTHENTIK' },
-        { id: 'OPENFRAME', label: 'OpenFrame', value: 'OPENFRAME' },
-        { id: 'SYSTEM', label: 'System', value: 'SYSTEM' }
+        { id: 'tactical', label: 'Tactical', value: 'tactical' },
+        { id: 'meshcentral', label: 'MeshCentral', value: 'meshcentral' },
+        { id: 'fleet', label: 'Fleet', value: 'fleet' },
+        { id: 'authentik', label: 'Authentik', value: 'authentik' },
+        { id: 'openframe', label: 'OpenFrame', value: 'openframe' },
+        { id: 'system', label: 'System', value: 'system' }
       ],
       renderCell: (log) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-              {log.source.name}
-            </span>
-            <ToolIcon toolType={log.source.toolType as any} size={16} />
-          </div>
-        </div>
+        <ToolBadge toolType={log.source.toolType as any} />
       )
     },
     {
       key: 'device',
-      label: 'Device',
+      label: 'DEVICE',
       width: 'w-1/6',
       renderCell: (log) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {log.device.name}
-          </span>
-          {log.device.organization && (
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-              {log.device.organization}
-            </span>
+        <div className="bg-ods-card box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
+          {log.device.name && (
+            <div className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+              <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
+                {log.device.name}
+              </p>
+            </div>
           )}
         </div>
       )
@@ -168,13 +162,7 @@ export function LogsTable() {
       label: 'Log Details',
       width: 'w-1/2',
       renderCell: (log) => (
-        <div className="flex-1">
-          <div className="flex flex-col justify-center">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary whitespace-pre-wrap break-words">
-              {log.description.title}
-            </span>
-          </div>
-        </div>
+        <TableDescriptionCell text={log.description.title} />
       )
     }
   ], [])
@@ -183,11 +171,7 @@ export function LogsTable() {
     {
       label: 'Details',
       onClick: (log) => {
-        const ingestDay = log.originalLogEntry?.ingestDay
-        const toolType = log.originalLogEntry?.toolType
-        const eventType = log.originalLogEntry?.eventType
-        const timestamp = log.originalLogEntry?.timestamp
-        router.push(`/log-details?id=${log.id}&ingestDay=${ingestDay}&toolType=${toolType}&eventType=${eventType}&timestamp=${encodeURIComponent(timestamp || '')}`)
+        navigateToLogDetails(router, log)
       },
       variant: 'outline',
       className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"

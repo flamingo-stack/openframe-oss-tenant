@@ -1,8 +1,9 @@
 'use client'
 
 import { DashboardInfoCard, LogsList } from '@flamingo/ui-kit'
-import type { LogEntry, LogSeverity, ToolType } from '@flamingo/ui-kit'
+import type { LogEntry, LogSeverity } from '@flamingo/ui-kit'
 import { toUiKitToolType } from '@lib/tool-labels'
+import { navigateToLogDetails } from '@lib/log-navigation'
 import { useLogsOverview } from '../hooks/use-dashboard-stats'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
@@ -14,13 +15,12 @@ export function LogsOverviewSection() {
   const {
     logs: rawLogs,
     isLoading,
-    fetchLogs,
-    error
+    fetchLogs
   } = useLogs()
 
   useEffect(() => {
     fetchLogs('', {}, null, false)
-  }, [])
+  }, [fetchLogs])
 
   const recentLogs = useMemo(() => {
     if (!rawLogs || rawLogs.length === 0) return []
@@ -31,16 +31,17 @@ export function LogsOverviewSection() {
         severity: (log.severity || 'INFO') as LogSeverity,
         title: log.summary || log.eventType || 'Log Entry',
         timestamp: log.timestamp,
-        toolType: toUiKitToolType(log.toolType || '') as ToolType,
+        toolType: toUiKitToolType(log.toolType || ''),
         message: log.message,
         ingestDay: log.ingestDay,
-        eventType: log.eventType
+        eventType: log.eventType,
+        originalLogEntry: log  // Store original log for navigation
       }
     })
   }, [rawLogs])
 
   const handleLogClick = (log: LogEntry) => {
-    router.push(`/log-details?id=${log.id}&ingestDay=${log.ingestDay}&toolType=${log.toolType?.toUpperCase()}&eventType=${log.eventType}&timestamp=${encodeURIComponent(log.timestamp.toString() || '')}`)
+    navigateToLogDetails(router, log)
   }
 
   const handleInfoCardClick = () => {

@@ -2,27 +2,24 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, RemoteControlIcon, ShellIcon } from '@flamingo/ui-kit'
+import { Button, RemoteControlIcon, ShellIcon, StatusTag } from '@flamingo/ui-kit'
 import { RemoteShellModal } from './remote-shell-modal'
 import { RemoteDesktopModal } from './remote-desktop-modal'
 import { ScriptIcon, DetailPageContainer } from '@flamingo/ui-kit'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
 import { CardLoader, LoadError, NotFoundError } from '@flamingo/ui-kit'
-import { DeviceStatusBadge } from './device-status-badge'
 import { ScriptsModal } from './scripts-modal'
 import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
 import { DEVICE_TABS } from './tabs/device-tabs'
+import { getDeviceStatusConfig } from '../utils/device-status'
 
 interface DeviceDetailsViewProps {
   deviceId: string
 }
 
-type TabId = 'hardware' | 'network' | 'security' | 'compliance' | 'agents' | 'users' | 'software' | 'vulnerabilities' | 'logs'
-
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabId>('hardware')
 
   const { deviceDetails, isLoading, error, fetchDeviceById } = useDeviceDetails()
 
@@ -43,8 +40,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
     || normalizedDevice?.agent_id
-
-  const TabComponent = getTabComponent(DEVICE_TABS, activeTab)
 
   const handleBack = () => {
     router.push('/devices')
@@ -115,14 +110,24 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           label: 'Back to Devices',
           onClick: handleBack
         }}
+        subtitle={
+          <div className={`flex gap-2 items-center ${isRemoteShellOpen || isRemoteDesktopOpen ? 'hidden' : ''}`}>
+            {normalizedDevice?.status && (() => {
+              const statusConfig = getDeviceStatusConfig(normalizedDevice.status)
+              return (
+                <StatusTag
+                  label={statusConfig.label}
+                  variant={statusConfig.variant}
+                  className="px-2 py-1 text-[12px] leading-[16px]"
+                />
+              )
+            })()}
+          </div>}
         headerActions={headerActions}
         padding='none'
         className='pt-6'
       >
-        {/* Status Badge */}
-        <div className={`flex gap-2 items-center pl-6 ${isRemoteShellOpen || isRemoteDesktopOpen ? 'hidden' : ''}`}>
-          <DeviceStatusBadge status={normalizedDevice?.status || 'unknown'} />
-        </div>
+
 
         {/* Main Content */}
         <div className={`${isRemoteShellOpen || isRemoteDesktopOpen ? 'invisible pointer-events-none' : 'flex-1 overflow-auto'}`}>
@@ -131,18 +136,19 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           {/* Tab Navigation */}
           <div className="mt-6">
             <TabNavigation
-              activeTab={activeTab}
-              onTabChange={(tabId) => setActiveTab(tabId as TabId)}
               tabs={DEVICE_TABS}
-            />
+              defaultTab="hardware"
+              urlSync={true}
+            >
+              {(activeTab) => (
+                <TabContent
+                  activeTab={activeTab}
+                  TabComponent={getTabComponent(DEVICE_TABS, activeTab)}
+                  componentProps={{ device: normalizedDevice }}
+                />
+              )}
+            </TabNavigation>
           </div>
-
-          {/* Tab Content */}
-          <TabContent
-            activeTab={activeTab}
-            TabComponent={TabComponent}
-            componentProps={{ device: normalizedDevice }}
-          />
         </div>
 
         {/* Scripts Modal */}
@@ -152,7 +158,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           deviceId={tacticalAgentId || deviceId}
           device={normalizedDevice}
           onRunScripts={handleRunScripts}
-        />        
+        />
       </DetailPageContainer>
 
       <RemoteShellModal
@@ -162,11 +168,11 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
       />
       <RemoteDesktopModal
-          isOpen={isRemoteDesktopOpen}
-          onClose={() => setIsRemoteDesktopOpen(false)}
-          deviceId={meshcentralAgentId || deviceId}
-          deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
-        />
+        isOpen={isRemoteDesktopOpen}
+        onClose={() => setIsRemoteDesktopOpen(false)}
+        deviceId={meshcentralAgentId || deviceId}
+        deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
+      />
     </div>
   )
 }

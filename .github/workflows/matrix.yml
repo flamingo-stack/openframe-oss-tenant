@@ -27,56 +27,64 @@ jobs:
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-api",
               "manifest_path": "./manifests/microservices/openframe-api",
-              "artifact_name": "openframe-api"
+              "artifact_name": "openframe-api",
+              "context": "."
             },
             {
               "name": "openframe-authorization-server",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-authorization-server",
               "manifest_path": "./manifests/microservices/openframe-authorization-server",
-              "artifact_name": "openframe-authorization-server"
+              "artifact_name": "openframe-authorization-server",
+              "context": "."
             },
             {
               "name": "openframe-external-api",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-external-api",
               "manifest_path": "./manifests/microservices/openframe-external-api",
-              "artifact_name": "openframe-external-api"
+              "artifact_name": "openframe-external-api",
+              "context": "."
             },
             {
               "name": "openframe-client",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-client",
               "manifest_path": "./manifests/microservices/openframe-client",
-              "artifact_name": "openframe-client"
+              "artifact_name": "openframe-client",
+              "context": "."
             },
             {
               "name": "openframe-config",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-config",
               "manifest_path": "./manifests/microservices/openframe-config",
-              "artifact_name": "openframe-config"
+              "artifact_name": "openframe-config",
+              "context": "."
             },
             {
               "name": "openframe-gateway",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-gateway",
               "manifest_path": "./manifests/microservices/openframe-gateway",
-              "artifact_name": "openframe-gateway"
+              "artifact_name": "openframe-gateway",
+              "context": "."
             },
             {
               "name": "openframe-management",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-management",
               "manifest_path": "./manifests/microservices/openframe-management",
-              "artifact_name": "openframe-management"
+              "artifact_name": "openframe-management",
+              "context": "."
             },
             {
               "name": "openframe-stream",
               "type": ["java", "container"],
               "path": "./openframe/services/openframe-stream",
               "manifest_path": "./manifests/microservices/openframe-stream",
-              "artifact_name": "openframe-stream"
+              "artifact_name": "openframe-stream",
+              "context": "."
             },
             {
               "name": "openframe-frontend",
@@ -135,7 +143,7 @@ jobs:
               "name": "tactical-frontend",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-frontend",
-              "context": "./integrated-tools/tactical-rmm",
+              "context": "./integrated-tools/tactical-rmm/tactical-frontend",
               "manifest_path": "./manifests/integrated-tools/tactical-rmm",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
@@ -177,14 +185,15 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              }
+              },
+                "context": "./integrated-tools/tactical-rmm"
             },
             {
               "name": "tactical-nginx",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-nginx",
               "manifest_path": "./manifests/integrated-tools/tactical-rmm",
-              "context": "./integrated-tools/tactical-rmm",
+              "context": "./integrated-tools/tactical-rmm/tactical-nginx",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -225,14 +234,15 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              }
+              },
+              "context": "./integrated-tools/tactical-rmm"
             },
             {
               "name": "tactical-base",
               "type": ["container"],
               "path": "./integrated-tools/tactical-rmm/tactical-base",
               "manifest_path": "./manifests/integrated-tools/tactical-rmm",
-              "context": "./integrated-tools/tactical-rmm",
+              "context": "./integrated-tools/tactical-rmm/tactical-base",
               "build_args": {
                 "POSTGRES_DB": "tacticalrmm",
                 "POSTGRES_USER": "postgres",
@@ -273,7 +283,8 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              }
+              },
+              "context": "./integrated-tools/tactical-rmm"
             }
           ]'
 
