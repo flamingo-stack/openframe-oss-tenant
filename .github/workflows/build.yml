@@ -316,7 +316,7 @@ jobs:
             echo "- **Windows** (x64): \`openframe.exe\`"
             echo ""
             echo "## Chart"
-            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:1.22.7\`"
+            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
