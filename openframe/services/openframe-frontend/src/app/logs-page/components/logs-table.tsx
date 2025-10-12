@@ -15,6 +15,7 @@ import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { ToolBadge } from "@flamingo/ui-kit"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { navigateToLogDetails } from '@lib/log-navigation'
 import { useLogs } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
 
@@ -170,11 +171,7 @@ export function LogsTable() {
     {
       label: 'Details',
       onClick: (log) => {
-        const ingestDay = log.originalLogEntry?.ingestDay
-        const toolType = log.originalLogEntry?.toolType
-        const eventType = log.originalLogEntry?.eventType
-        const timestamp = log.originalLogEntry?.timestamp
-        router.push(`/log-details?id=${log.id}&ingestDay=${ingestDay}&toolType=${toolType}&eventType=${eventType}&timestamp=${encodeURIComponent(timestamp || '')}`)
+        navigateToLogDetails(router, log)
       },
       variant: 'outline',
       className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
