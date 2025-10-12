@@ -21,7 +21,7 @@ export function RouteGuard({ children }: RouteGuardProps) {
             Access restricted
           </h1>
           <p className="text-ods-text-secondary">
-            You don't have access to this page.
+            You don&apos;t have access to this page.
           </p>
         </div>
       </div>
