@@ -1,23 +1,20 @@
 import React from 'react'
-import { StatusTag, type TableColumn, type RowAction } from "@flamingo/ui-kit/components/ui"
-import { MoreHorizontal } from "lucide-react"
+import { StatusTag, type TableColumn } from "@flamingo/ui-kit/components/ui"
 import { OSTypeBadge } from "@flamingo/ui-kit/components/features"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
+import { DeviceDetailsButton } from './device-details-button'
 
-export function getDeviceTableRowActions(
-  onMore: (device: Device) => void,
-  onDetails: (device: Device) => void
-): RowAction<Device>[] {
-  return [
-    {
-      label: 'Details',
-      onClick: onDetails,
-      variant: 'outline',
-      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
-    }
-  ]
+// Returns render function for custom actions area
+export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode) {
+  return (device: Device) => (
+    <DeviceDetailsButton
+      deviceId={device.id}
+      machineId={device.machineId}
+      className="h-12"
+    />
+  )
 }
 
 export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[] {

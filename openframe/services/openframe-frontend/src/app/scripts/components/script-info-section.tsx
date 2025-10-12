@@ -33,7 +33,7 @@ export function ScriptInfoSection({ script }: ScriptInfoSectionProps) {
         {script.shell && (
           <div>
             <ShellTypeBadge shellType={script.shell as ShellType} />
-            <p className="text-ods-text-secondary text-sm mb-1 mt-2">Shell Type</p>
+            <p className="text-ods-text-secondary text-sm mb-1">Shell Type</p>
           </div>
         )}
         {script.supported_platforms && script.supported_platforms.length > 0 && (

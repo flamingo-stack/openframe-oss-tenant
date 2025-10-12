@@ -6,6 +6,9 @@ import { DeviceCard, Button, StatusTag } from '@flamingo/ui-kit/components/ui'
 import { ToolBadge } from '@flamingo/ui-kit/components/platform'
 import { cn } from '@flamingo/ui-kit/utils'
 import { toUiKitToolType } from '@lib/tool-labels'
+import { useDeviceDetails } from '../../devices/hooks/use-device-details'
+import { getDeviceStatusConfig, getDeviceOperatingSystem } from '../../devices/utils/device-status'
+import { DeviceDetailsButton } from '../../devices/components/device-details-button'
 
 interface LogInfoModalProps {
   isOpen: boolean
@@ -69,6 +72,18 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
   const modalRef = useRef<HTMLDivElement>(null)
   const [detailedLogData, setDetailedLogData] = useState<DetailedLogData | null>(null)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+
+  // Device details hook
+  const { deviceDetails, isLoading: isLoadingDevice, fetchDeviceById, clearDeviceDetails } = useDeviceDetails()
+
+  // Fetch device details when modal opens with a deviceId
+  useEffect(() => {
+    if (isOpen && log?.device.name && log.device.name !== 'null' && log.device.name !== '') {
+      fetchDeviceById(log.device.name)
+    } else if (!isOpen) {
+      clearDeviceDetails()
+    }
+  }, [isOpen, log?.device.name, fetchDeviceById, clearDeviceDetails])
 
   useEffect(() => {
     if (isOpen && log && log.originalLogEntry) {
@@ -247,29 +262,56 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
           </div>
 
           {/* Device Card Section */}
-          {log.device.name && <div className="p-4 bg-ods-card">
-            <DeviceCard
-              device={{
-                name: log.device.name || "Unknown Device",
-                organization: log.device.organization || "Unknown Organization",
-                status: 'active',
-                lastSeen: log.timestamp,
-                operatingSystem: 'windows',
-                tags: ['REMOTE', 'WINDOWS', 'TEST-DEVICE']
-              }}
-              actions={{
-                moreButton: {
-                  visible: true,
-                  onClick: () => console.log('Device more clicked')
-                },
-                detailsButton: {
-                  visible: true,
-                  label: 'Details',
-                  onClick: () => console.log('Device details clicked')
-                }
-              }}
-            />
-          </div>}
+          {log.device.name && log.device.name !== 'null' && log.device.name !== '' && (
+            <div className="p-4 bg-ods-card">
+              {isLoadingDevice ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="w-6 h-6 border-2 border-ods-border border-t-ods-accent rounded-full animate-spin" />
+                </div>
+              ) : deviceDetails ? (
+                <DeviceCard
+                  device={{
+                    id: deviceDetails.id,
+                    machineId: deviceDetails.machineId,
+                    name: deviceDetails.displayName || deviceDetails.hostname || deviceDetails.description || '',
+                    organization: deviceDetails.organization || deviceDetails.machineId,
+                    lastSeen: deviceDetails.lastSeen,
+                    operatingSystem: getDeviceOperatingSystem(deviceDetails.osType),
+                  }}
+                  statusBadgeComponent={
+                    deviceDetails.status && (() => {
+                      const statusConfig = getDeviceStatusConfig(deviceDetails.status)
+                      return (
+                        <StatusTag
+                          label={statusConfig.label}
+                          variant={statusConfig.variant}
+                        />
+                      )
+                    })()
+                  }
+                  actions={{
+                    moreButton: {
+                      visible: false
+                    },
+                    detailsButton: {
+                      visible: true,
+                      component: (
+                        <DeviceDetailsButton
+                          deviceId={deviceDetails.id}
+                          machineId={deviceDetails.machineId}
+                          className="shrink-0"
+                        />
+                      )
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-32 text-ods-text-secondary">
+                  <p>Device information not available</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>
