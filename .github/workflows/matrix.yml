@@ -90,8 +90,7 @@ jobs:
               "name": "openframe-frontend",
               "type": ["container"],
               "path": "./openframe/services/openframe-frontend",
-              "manifest_path": "./manifests/microservices/openframe-frontend",
-              "context": "./openframe/services/openframe-frontend"
+              "manifest_path": "./manifests/microservices/openframe-frontend"
             },
             {
               "name": "authentik-postgresql",
@@ -102,15 +101,13 @@ jobs:
                 "POSTGRES_USER": "authentik-user",
                 "POSTGRES_PASSWORD": "authentik-password-1234",
                 "POSTGRES_MULTIPLE_DATABASES": "authentik-database,authentik-database-authentik"
-              },
-              "context": "./integrated-tools/authentik/postgresql"
+              }
             },
             { 
               "name": "fleetmdm",
               "type": ["container"],
               "path": "./integrated-tools/fleetmdm",
-              "manifest_path": "./manifests/integrated-tools/fleetmdm",
-              "context": "./integrated-tools/fleetmdm"
+              "manifest_path": "./manifests/integrated-tools/fleetmdm"
             },
             {
               "name": "meshcentral",
@@ -140,8 +137,7 @@ jobs:
                 "MESH_DISABLE_SSL": "1",
                 "MESH_COMPRESSION_ENABLED": "true",
                 "MESH_WEBRTC_ENABLED": "false"
-              },
-              "context": "./integrated-tools/meshcentral/server"
+              }
             },
             {
               "name": "tactical-frontend",
@@ -189,8 +185,7 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              },
-                "context": "./integrated-tools/tactical-rmm"
+              }
             },
             {
               "name": "tactical-nginx",
@@ -238,8 +233,7 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              },
-              "context": "./integrated-tools/tactical-rmm"
+              }
             },
             {
               "name": "tactical-base",
@@ -287,8 +281,7 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              },
-              "context": "./integrated-tools/tactical-rmm"
+              }
             }
           ]'
 

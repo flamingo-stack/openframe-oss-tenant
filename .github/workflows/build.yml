@@ -95,9 +95,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
           tags: |
             type=ref,event=tag
-            type=sha,prefix={{branch}}-
-            type=raw,value=${{ needs.changes.outputs.commit_sha }}
-            type=raw,value=${{ needs.changes.outputs.timestamp_tag }}
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
           labels: |
@@ -121,7 +118,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           # need to copy the pom.xml from the root so it builds with the lib version correctly
-          context: ${{ matrix.context }}
+          context: ${{ matrix.context || matrix.path }}
           file: ${{ matrix.path }}/Dockerfile
           platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: true
