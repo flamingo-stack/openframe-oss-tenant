@@ -71,8 +71,16 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   // Transform API logs to UI format
+  // TEMPORARY: Client-side filter as workaround until backend supports deviceId in LogFilterInput
   const transformedLogs: UILogEntry[] = useMemo(() => {
-    return logs.map((log) => {
+    let filteredLogs = logs
+
+    // Temporary client-side deviceId filter (remove when backend adds support)
+    if (deviceId) {
+      filteredLogs = logs.filter(log => log.deviceId === deviceId)
+    }
+
+    return filteredLogs.map((log) => {
       return {
         id: log.toolEventId,
         logId: log.toolEventId,
@@ -99,7 +107,7 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
         originalLogEntry: log
       }
     })
-  }, [logs])
+  }, [logs, deviceId])
 
   const columns: TableColumn<UILogEntry>[] = useMemo(() => {
     const allColumns: TableColumn<UILogEntry>[] = [
