@@ -11,6 +11,9 @@ import { GoogleTagManager } from './components/google-tag-manager'
 import { RouteGuard } from '../components/route-guard'
 import { isAuthEnabled } from '../lib/app-mode'
 
+// Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'OpenFrame',
   description: 'Open-source application framework for device management',
