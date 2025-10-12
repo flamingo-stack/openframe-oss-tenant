@@ -12,6 +12,7 @@ import { Card } from '@flamingo/ui-kit/components/ui'
 import { FormLoader, FormPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { OS_PLATFORMS } from '@flamingo/ui-kit/utils'
+import { SHELL_TYPES } from '@flamingo/ui-kit/types/shell.types'
 
 interface ScriptData {
   name: string
@@ -30,14 +31,6 @@ interface EditScriptPageProps {
   scriptId: string | null
 }
 
-const SHELL_TYPES: { label: string, value: string }[] = [
-  { label: 'Powershell', value: 'powershell' },
-  { label: 'Batch', value: 'batch' },
-  { label: 'Python', value: 'python' },
-  { label: 'Shell', value: 'shell' },
-  { label: 'Nushell', value: 'nushell' },
-  { label: 'Deno', value: 'deno' },
-]
 const CATEGORIES = ['System Maintenance', 'Security', 'Network', 'Monitoring', 'Backup', 'Custom']
 
 export function EditScriptPage({ scriptId }: EditScriptPageProps) {
@@ -316,7 +309,12 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {SHELL_TYPES.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    <SelectItem key={s.value} value={s.value}>
+                      <div className="flex items-center gap-2">
+                        {s.icon}
+                        <span>{s.label}</span>
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

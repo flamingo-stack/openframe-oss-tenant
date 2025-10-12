@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
-import { InfoCard, ToolIcon } from '@flamingo/ui-kit'
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { InfoCard } from '@flamingo/ui-kit'
+import { ToolBadge } from '@flamingo/ui-kit/components/platform'
+import { toUiKitToolType } from '@lib/tool-labels'
 
 interface AgentsTabProps {
   device: any
@@ -12,20 +13,26 @@ export function AgentsTab({ device }: AgentsTabProps) {
   const toolConnections = Array.isArray(device?.toolConnections) ? device.toolConnections : []
 
   return (
-    <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {toolConnections.length > 0 ? (
-        toolConnections.map((tc: any, idx: number) => (
-          <InfoCard
-            key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`}
-            data={{
-              title: `${toStandardToolLabel(tc?.toolType) || 'Unknown'}`,
-              icon: <ToolIcon toolType={toUiKitToolType(tc?.toolType) as any} size={18} />,
-              items: [
-                { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
-              ]
-            }}
-          />
-        ))
+        toolConnections.map((tc: any, idx: number) => {
+          const toolType = toUiKitToolType(tc?.toolType)
+          return (
+            <div key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`} className="relative">
+              <div className="absolute top-4 left-4 z-10">
+                <ToolBadge toolType={toolType} />
+              </div>
+              <InfoCard
+                data={{
+                  items: [
+                    { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
+                  ]
+                }}
+                className="pt-16"
+              />
+            </div>
+          )
+        })
       ) : (
         <InfoCard
           data={{

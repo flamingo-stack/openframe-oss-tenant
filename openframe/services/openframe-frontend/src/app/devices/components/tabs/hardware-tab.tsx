@@ -17,12 +17,12 @@ export function HardwareTab({ device }: HardwareTabProps) {
     )
   }
 
-  const parseCpuModel = (cpuArray: string[], fleetData?: Device['fleet']) => {
+  const parseCpuModel = (cpuArray: string[], device?: Device) => {
     if (!cpuArray || cpuArray.length === 0) return []
 
-    // Use Fleet data for accurate CPU information
-    const physicalCores = fleetData?.cpu_physical_cores
-    const logicalCores = fleetData?.cpu_logical_cores
+    // Use device data for accurate CPU information
+    const physicalCores = device?.cpu_physical_cores
+    const logicalCores = device?.cpu_logical_cores
 
     return cpuArray.map(cpu => {
       const items: Array<{ label: string; value: string }> = []
@@ -45,10 +45,10 @@ export function HardwareTab({ device }: HardwareTabProps) {
       }
 
       // Add CPU type info if available
-      if (fleetData?.cpu_type) {
+      if (device?.cpu_type) {
         items.push({
           label: 'Type',
-          value: fleetData.cpu_type
+          value: device.cpu_type
         })
       }
 
@@ -171,18 +171,22 @@ export function HardwareTab({ device }: HardwareTabProps) {
     })
   }
 
-  const cpuModels = parseCpuModel(device.cpu_model || [], device.fleet)
+  // Use cpu_brand as single CPU model, wrapped in array for compatibility
+  const cpuModels = parseCpuModel(device.cpu_brand ? [device.cpu_brand] : (device.cpu_model || []), device)
+
+  // Use both disks and physical_disks from device
   const diskData = processDiskData(device.disks || [], device.physical_disks || [])
-  const batteries = device.fleet?.batteries || []
+
+  const batteries = device.batteries || []
 
   return (
-    <div className="">
+    <div className="mt-6">
       {/* Disk Info Section */}
-      <div className="pt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
+      <div>
+        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
           DISK INFO
         </h3>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {diskData.map((disk, index) => (
               <InfoCard
@@ -221,10 +225,10 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
       {/* RAM Info Section */}
       <div className="pt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
+        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
           RAM INFO
         </h3>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <InfoCard
             data={{
@@ -233,7 +237,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
               items: [
                   {
                     label: 'Total Memory',
-                    value: device.totalRam || device.total_ram || 'Unknown'
+                    value: device.totalRam || 'Unknown'
                   }
               ],
             }}
@@ -243,7 +247,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
       {/* CPU Section */}
       <div className="pt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
+        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
           CPU
         </h3>
 
@@ -269,7 +273,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
       {/* Battery Health Section (macOS) */}
       {batteries.length > 0 && (
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
+          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
             BATTERY HEALTH
           </h3>
 

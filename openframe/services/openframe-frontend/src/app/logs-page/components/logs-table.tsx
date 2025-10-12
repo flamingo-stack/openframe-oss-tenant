@@ -11,7 +11,7 @@ import {
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
-import { ToolIcon } from "@flamingo/ui-kit/components/tool-icon"
+import { ToolBadge } from "@flamingo/ui-kit"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { useLogs } from '../hooks/use-logs'
@@ -128,22 +128,15 @@ export function LogsTable() {
       width: 'w-1/6',
       filterable: true,
       filterOptions: [
-        { id: 'TACTICAL', label: 'Tactical', value: 'TACTICAL' },
-        { id: 'MESHCENTRAL', label: 'MeshCentral', value: 'MESHCENTRAL' },
-        { id: 'FLEET', label: 'Fleet', value: 'FLEET' },
-        { id: 'AUTHENTIK', label: 'Authentik', value: 'AUTHENTIK' },
-        { id: 'OPENFRAME', label: 'OpenFrame', value: 'OPENFRAME' },
-        { id: 'SYSTEM', label: 'System', value: 'SYSTEM' }
+        { id: 'tactical', label: 'Tactical', value: 'tactical' },
+        { id: 'meshcentral', label: 'MeshCentral', value: 'meshcentral' },
+        { id: 'fleet', label: 'Fleet', value: 'fleet' },
+        { id: 'authentik', label: 'Authentik', value: 'authentik' },
+        { id: 'openframe', label: 'OpenFrame', value: 'openframe' },
+        { id: 'system', label: 'System', value: 'system' }
       ],
       renderCell: (log) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-              {log.source.name}
-            </span>
-            <ToolIcon toolType={log.source.toolType as any} size={16} />
-          </div>
-        </div>
+        <ToolBadge toolType={log.source.toolType as any} />
       )
     },
     {

@@ -4,11 +4,13 @@ import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { Button, StatusTag, DetailPageContainer, DetailLoader } from '@flamingo/ui-kit/components/ui'
+import { ToolBadge } from '@flamingo/ui-kit/components/platform'
 import { CopyIcon } from '@flamingo/ui-kit/components/icons'
 import { DeviceInfoSection } from './device-info-section'
 import { FullInformationSection } from './full-information-section'
 import { DetailsSection } from './details-section'
 import { useLogDetails } from '../hooks/use-log-details'
+import { toUiKitToolType } from '@lib/tool-labels'
 
 interface LogDetailsViewProps {
   logId: string
@@ -143,8 +145,10 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
               <div className="font-['DM_Sans'] font-medium text-[16px] sm:text-[18px] leading-[22px] sm:leading-[24px] text-ods-text-primary break-words">
                 {logDetails.message || 'No message available'}
               </div>
-              <div className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
-                {logDetails.toolType} • {logDetails.eventType}
+              <div className="flex items-center gap-2 font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
+                <ToolBadge toolType={toUiKitToolType(logDetails.toolType) as any} />
+                <span>•</span>
+                <span>{logDetails.eventType}</span>
               </div>
             </div>
           </div>

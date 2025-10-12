@@ -70,7 +70,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
               />
             </div>
             <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary">
-              {new Date(device.last_seen).toLocaleDateString()} {new Date(device.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {device.last_seen ? `${new Date(device.last_seen).toLocaleDateString()} ${new Date(device.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Never'}
             </span>
           </div>
         )

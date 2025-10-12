@@ -14,12 +14,14 @@ RUN apk add --no-cache git
 
 # Allow pinning the ui-kit ref for better Docker layer caching
 ARG UI_KIT_REF=main
+ARG CACHE_BUST=2025-10-12-v2
 
 # Copy only package.json (exclude lockfile) for better layer caching
 COPY package.json ./
 
 # Always use a fresh clone of the ui-kit into /app/ui-kit
-RUN rm -rf ui-kit \
+RUN echo "Cache bust: ${CACHE_BUST}" \
+ && rm -rf ui-kit \
  && git clone --depth=1 --branch ${UI_KIT_REF} https://github.com/flamingo-stack/ui-kit.git ui-kit
 
 # Install dependencies without using package-lock.json (cache npm directory)
