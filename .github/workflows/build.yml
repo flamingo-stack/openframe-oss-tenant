@@ -80,7 +80,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
         if: steps.should_run.outputs.run == 'true'
         with:
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          platforms: linux/amd64,linux/arm64
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -119,7 +119,7 @@ jobs:
           # need to copy the pom.xml from the root so it builds with the lib version correctly
           context: ${{ matrix.context || matrix.path }}
           file: ${{ matrix.path }}/Dockerfile
-          platforms: ${{ matrix.name == 'fleetmdm' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          platforms: linux/amd64,linux/arm64
           push: true
           provenance: false
           sbom: true
