@@ -27,14 +27,18 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <PublicEnvScript />
       </head>
-      <body 
-        suppressHydrationWarning 
+      <body
+        suppressHydrationWarning
         className="min-h-screen antialiased font-body"
         data-app-type="openframe"
       >
         <GoogleTagManager />
         <DeploymentInitializer />
-        {isAuthEnabled() && <DevTicketObserver />}
+        {isAuthEnabled() && (
+          <Suspense fallback={null}>
+            <DevTicketObserver />
+          </Suspense>
+        )}
         <RouteGuard>
           <div className="relative flex min-h-screen flex-col">
             <Suspense fallback={

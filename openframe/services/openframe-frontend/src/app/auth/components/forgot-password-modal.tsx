@@ -75,7 +75,7 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = '' }: F
             Reset Your Password
           </AlertDialogTitle>
           <AlertDialogDescription className="font-body text-[16px] font-medium text-ods-text-secondary leading-6 mt-2">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </AlertDialogDescription>
         </AlertDialogHeader>
         
