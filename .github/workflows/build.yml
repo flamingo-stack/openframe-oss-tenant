@@ -308,15 +308,15 @@ jobs:
           IMAGES=$(echo '${{ needs.matrix.outputs.matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
           {
             echo "body<<EOF"
+            echo "## Images"
+            echo "$IMAGES"
+            echo ""
             echo "## Client"
             echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
             echo "- **Windows** (x64): \`openframe.exe\`"
             echo ""
-            echo "## Images"
-            echo "$IMAGES"
-            echo ""
-            echo "## Helm Chart"
-            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
+            echo "## Chart"
+            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:1.22.7\`"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
