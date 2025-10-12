@@ -18,11 +18,8 @@ interface DeviceDetailsViewProps {
   deviceId: string
 }
 
-type TabId = 'hardware' | 'network' | 'security' | 'compliance' | 'agents' | 'users' | 'software' | 'vulnerabilities' | 'logs'
-
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabId>('hardware')
 
   const { deviceDetails, isLoading, error, fetchDeviceById } = useDeviceDetails()
 
@@ -43,8 +40,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
     || normalizedDevice?.agent_id
-
-  const TabComponent = getTabComponent(DEVICE_TABS, activeTab)
 
   const handleBack = () => {
     router.push('/devices')
@@ -141,18 +136,19 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           {/* Tab Navigation */}
           <div className="mt-6">
             <TabNavigation
-              activeTab={activeTab}
-              onTabChange={(tabId) => setActiveTab(tabId as TabId)}
               tabs={DEVICE_TABS}
-            />
+              defaultTab="hardware"
+              urlSync={true}
+            >
+              {(activeTab) => (
+                <TabContent
+                  activeTab={activeTab}
+                  TabComponent={getTabComponent(DEVICE_TABS, activeTab)}
+                  componentProps={{ device: normalizedDevice }}
+                />
+              )}
+            </TabNavigation>
           </div>
-
-          {/* Tab Content */}
-          <TabContent
-            activeTab={activeTab}
-            TabComponent={TabComponent}
-            componentProps={{ device: normalizedDevice }}
-          />
         </div>
 
         {/* Scripts Modal */}
