@@ -295,27 +295,15 @@ jobs:
           path: release-artifacts
         continue-on-error: true
 
-      - name: Display artifact structure
-        run: |
-          if [ -d "release-artifacts" ]; then
-            echo "Downloaded artifacts:"
-            ls -R release-artifacts/
-          else
-            echo "No artifacts directory found"
-          fi
-
       - name: Prepare release artifacts
         run: |
           mkdir -p final-artifacts/client
-
-          # Copy client binaries
           if [ -d "release-artifacts" ]; then
             find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
             -exec cp {} final-artifacts/client/ \;
           fi
 
           echo "Final artifacts to release:"
-          echo "=== Client artifacts ==="
           ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
 
       - name: Generate Image list
