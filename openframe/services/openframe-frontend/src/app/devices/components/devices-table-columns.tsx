@@ -8,13 +8,15 @@ import { DeviceDetailsButton } from './device-details-button'
 
 // Returns render function for custom actions area
 export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode) {
-  return (device: Device) => (
+  const DeviceRowActions = (device: Device) => (
     <DeviceDetailsButton
       deviceId={device.id}
       machineId={device.machineId}
       className="h-12"
     />
   )
+  DeviceRowActions.displayName = 'DeviceRowActions'
+  return DeviceRowActions
 }
 
 export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[] {
