@@ -8,8 +8,6 @@ export function OrganizationsOverviewSection() {
   const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(10)
   const router = useRouter()
 
-  console.log('rows', rows)
-
   return (
     <div className="space-y-4">
       <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">

@@ -37,7 +37,6 @@ export async function forceLogout(options: ForceLogoutOptions = {}): Promise<voi
   }
   
   if (shouldRedirect && !isAuthPage) {
-    // In SaaS tenant mode, avoid redirect loops. Let the UI show UnauthorizedOverlay.
     if (isSaasTenantMode()) {
       return
     }
