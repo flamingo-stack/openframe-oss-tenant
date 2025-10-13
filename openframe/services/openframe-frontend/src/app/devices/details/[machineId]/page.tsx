@@ -1,5 +1,8 @@
 'use client'
 
+
+// Force dynamic rendering due to useSearchParams in AppLayout
+export const dynamic = 'force-dynamic'
 import { useParams } from 'next/navigation'
 import { AppLayout } from '../../../components/app-layout'
 import { DeviceDetailsView } from '../../components/device-details-view'

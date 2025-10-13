@@ -27,10 +27,10 @@ public class AgentRegistrationToolService {
 
     private void publish(String machineId, IntegratedToolAgent toolAgent) {
         String toolId = toolAgent.getToolId();
-        IntegratedTool tool = integratedToolService.getToolById(toolId)
-                .orElseThrow(() -> new IllegalStateException("No tool found for " + toolId));
-
         try {
+            IntegratedTool tool = integratedToolService.getToolById(toolId)
+                    .orElseThrow(() -> new IllegalStateException("No tool found for " + toolId));
+
             // process params for installation command args
             List<String> installationCommandArgs = toolAgent.getInstallationCommandArgs();
             toolAgent.setInstallationCommandArgs(toolCommandParamsResolver.process(toolId, installationCommandArgs));
@@ -44,10 +44,8 @@ public class AgentRegistrationToolService {
             log.info("Published {} agent installation message for machine {}", toolId, machineId);
         } catch (Exception e) {
             // TODO: add fallback mechanism
-            log.error("Failed to publish {} agent installation message for machine {}", toolId, machineId);
+            log.error("Failed to publish {} agent installation message for machine {}", toolId, machineId, e);
         }
     }
-
-
 
 }

@@ -56,7 +56,21 @@ export function useUsers() {
     }
   }, [page, size])
 
-  return { users, page, size, totalPages, totalElements, isLoading, error, setPage, setSize, fetchUsers }
+  const deleteUser = useCallback(async (userId: string) => {
+    try {
+      const res = await apiClient.delete(`/api/users/${encodeURIComponent(userId)}`)
+      if (!res.ok) {
+        throw new Error(res.error || `Failed to delete user (${res.status})`)
+      }
+      return true
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to delete user'
+      setError(msg)
+      throw e
+    }
+  }, [])
+
+  return { users, page, size, totalPages, totalElements, isLoading, error, setPage, setSize, fetchUsers, deleteUser }
 }
 
 

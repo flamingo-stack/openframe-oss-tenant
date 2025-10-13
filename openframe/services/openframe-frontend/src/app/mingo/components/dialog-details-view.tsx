@@ -1,26 +1,21 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Clock,
   CheckCircle,
   Monitor
 } from 'lucide-react'
-import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer } from '@flamingo/ui-kit'
+import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo/ui-kit'
 import { Button } from '@flamingo/ui-kit'
 import { DetailLoader } from '@flamingo/ui-kit/components/ui'
-import { mockDialogDetails, type DialogDetails } from '../data/mock-dialog-details'
+import { useDialogDetails } from '../hooks/use-dialog-details'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
-  const [dialog, setDialog] = useState<DialogDetails | null>(null)
+  const { dialog, isLoading } = useDialogDetails(dialogId)
   const [isPaused, setIsPaused] = useState(false)
-
-  useEffect(() => {
-    setDialog(mockDialogDetails)
-    setIsPaused(mockDialogDetails.isFaePaused)
-  }, [dialogId])
 
   const handleSendMessage = (text: string) => {
     if (!isPaused) return
@@ -52,28 +47,13 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     </div>
   )
 
-  if (!dialog) {
+  if (isLoading || !dialog) {
     return <DetailLoader />
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'bg-success text-success'
-      case 'ON_HOLD':
-        return 'bg-warning/20 text-warning'
-      case 'TECH_REQUIRED':
-        return 'bg-error/20 text-error'
-      case 'RESOLVED':
-        return 'bg-success/20 text-success'
-      default:
-        return 'bg-ods-bg-surface/20 text-ods-text-muted'
-    }
   }
 
   return (
     <DetailPageContainer
-      title={dialog.topic}
+      title={dialog.title}
       backButton={{
         label: 'Back to Chats',
         onClick: () => router.push('/mingo')
@@ -92,10 +72,11 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
           </div>
           <div className="flex flex-col">
             <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-              {dialog.organization.name}
+              {/* Organization name not in schema; placeholder */}
+              {'Organization'}
             </span>
             <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-              {dialog.organization.type}
+              {'Type'}
             </span>
           </div>
         </div>
@@ -105,7 +86,8 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
           <div className="flex flex-col">
             <div className="flex items-center gap-1">
               <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-                {dialog.device.name}
+                {/* Device name not in schema; show owner machineId if present */}
+                {'device'}
               </span>
               <Monitor className="h-4 w-4 text-ods-text-secondary" />
             </div>
@@ -118,7 +100,8 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
         {/* SLA Countdown */}
         <div className="flex flex-col flex-1">
           <span className="font-['DM_Sans'] font-medium text-[18px] text-error">
-            {dialog.slaCountdown}
+            {/* SLA countdown not in schema; placeholder */}
+            {'--:--:--'}
           </span>
           <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
             SLA Countdown
@@ -127,11 +110,14 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
         {/* Status */}
         <div className="flex items-center">
-          <div className={`px-2 py-2 rounded-md ${getStatusColor(dialog.status)}`}>
-            <span className="font-['Azeret_Mono'] font-medium text-[14px] uppercase tracking-[-0.28px]">
-              {dialog.status.replace('_', ' ')}
-            </span>
-          </div>
+          <StatusTag
+            label={dialog.status.replace('_', ' ')}
+            variant={
+              dialog.status === 'ACTIVE' || dialog.status === 'RESOLVED' ? 'success' :
+              dialog.status === 'ON_HOLD' ? 'warning' :
+              dialog.status === 'ACTION_REQUIRED' ? 'error' : 'info'
+            }
+          />
         </div>
       </div>
 
@@ -146,13 +132,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
           <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
             <ChatMessageList
               className=""
-              messages={dialog.clientMessages.map(m => ({
-                id: m.id,
-                role: m.sender === 'user' ? 'user' : 'assistant',
-                name: m.senderName,
-                content: m.content,
-                timestamp: new Date()
-              }))}
+              messages={[]}
               autoScroll
               showAvatars={false}
             />

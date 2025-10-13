@@ -65,7 +65,7 @@ export function CurrentChats() {
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}
-        mobileColumns={['topic', 'status', 'countdown']}
+        mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
         actionsWidth={100}
       />

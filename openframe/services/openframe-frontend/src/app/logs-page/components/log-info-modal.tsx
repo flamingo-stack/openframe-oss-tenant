@@ -3,9 +3,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { DeviceCard, Button, StatusTag } from '@flamingo/ui-kit/components/ui'
+import { ToolBadge } from '@flamingo/ui-kit/components/platform'
 import { cn } from '@flamingo/ui-kit/utils'
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
-import { ToolIcon } from '@flamingo/ui-kit'
+import { toUiKitToolType } from '@lib/tool-labels'
+import { useDeviceDetails } from '../../devices/hooks/use-device-details'
+import { getDeviceStatusConfig, getDeviceOperatingSystem } from '../../devices/utils/device-status'
+import { DeviceDetailsButton } from '../../devices/components/device-details-button'
 
 interface LogInfoModalProps {
   isOpen: boolean
@@ -69,6 +72,27 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
   const modalRef = useRef<HTMLDivElement>(null)
   const [detailedLogData, setDetailedLogData] = useState<DetailedLogData | null>(null)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+
+  // Device details hook
+  const { deviceDetails, isLoading: isLoadingDevice, fetchDeviceById, clearDeviceDetails } = useDeviceDetails()
+
+  // Fetch device details when modal opens with a deviceId
+  // ALWAYS fetch the full device object - log data only has partial info (hostname, org)
+  useEffect(() => {
+    if (isOpen && log?.originalLogEntry) {
+      const deviceId = log.originalLogEntry.deviceId
+
+      // Always fetch the full device object if we have a deviceId
+      if (deviceId && deviceId !== 'null' && deviceId !== '') {
+        fetchDeviceById(deviceId)
+      }
+    }
+
+    // Clear device details when modal closes
+    if (!isOpen) {
+      clearDeviceDetails()
+    }
+  }, [isOpen, log?.originalLogEntry, fetchDeviceById, clearDeviceDetails])
 
   useEffect(() => {
     if (isOpen && log && log.originalLogEntry) {
@@ -228,10 +252,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
                 <InfoField label="Log ID" value={displayData.toolEventId || log.logId} />
                 <InfoField label="User" value={displayData.userId || log.user} />
                 <InfoField label="Source" value={
-                  <div className="flex items-center gap-1">
-                    <span>{toStandardToolLabel(displayData.toolType) || log.source.name}</span>
-                    <ToolIcon toolType={toUiKitToolType(displayData.toolType) as any} size={16} />
-                  </div>
+                  <ToolBadge toolType={toUiKitToolType(displayData.toolType) as any} />
                 } />
                 <InfoField label="Device" value={displayData.deviceId || log.device.name} />
                 {detailedLogData?.eventType && (
@@ -250,29 +271,65 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
           </div>
 
           {/* Device Card Section */}
-          {log.device.name && <div className="p-4 bg-ods-card">
-            <DeviceCard
-              device={{
-                name: log.device.name || "Unknown Device",
-                organization: log.device.organization || "Unknown Organization",
-                status: 'active',
-                lastSeen: log.timestamp,
-                operatingSystem: 'windows',
-                tags: ['REMOTE', 'WINDOWS', 'TEST-DEVICE']
-              }}
-              actions={{
-                moreButton: {
-                  visible: true,
-                  onClick: () => console.log('Device more clicked')
-                },
-                detailsButton: {
-                  visible: true,
-                  label: 'Details',
-                  onClick: () => console.log('Device details clicked')
-                }
-              }}
-            />
-          </div>}
+          {(() => {
+            const deviceId = log?.originalLogEntry?.deviceId
+
+            // Only show device section if we have a deviceId
+            if (!deviceId || deviceId === 'null' || deviceId === '') {
+              return null
+            }
+
+            return (
+              <div className="p-4 bg-ods-card">
+                {isLoadingDevice ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="w-6 h-6 border-2 border-ods-border border-t-ods-accent rounded-full animate-spin" />
+                  </div>
+                ) : deviceDetails ? (
+                  <DeviceCard
+                    device={{
+                      id: deviceDetails.id,
+                      machineId: deviceDetails.machineId,
+                      name: deviceDetails.displayName || deviceDetails.hostname || deviceDetails.description || '',
+                      organization: deviceDetails.organization || deviceDetails.machineId,
+                      lastSeen: deviceDetails.lastSeen,
+                      operatingSystem: getDeviceOperatingSystem(deviceDetails.osType),
+                    }}
+                    statusBadgeComponent={
+                      deviceDetails.status && (() => {
+                        const statusConfig = getDeviceStatusConfig(deviceDetails.status)
+                        return (
+                          <StatusTag
+                            label={statusConfig.label}
+                            variant={statusConfig.variant}
+                          />
+                        )
+                      })()
+                    }
+                    actions={{
+                      moreButton: {
+                        visible: false
+                      },
+                      detailsButton: {
+                        visible: true,
+                        component: (
+                          <DeviceDetailsButton
+                            deviceId={deviceDetails.id}
+                            machineId={deviceDetails.machineId}
+                            className="shrink-0"
+                          />
+                        )
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-32 text-ods-text-secondary">
+                    <p>Device information not available</p>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       </div>
     </>

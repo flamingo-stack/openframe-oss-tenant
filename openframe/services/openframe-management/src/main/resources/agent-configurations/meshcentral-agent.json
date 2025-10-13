@@ -23,7 +23,7 @@
       "id": "msh-configuration",
       "localFilename": "agent.msh",
       "source": "TOOL_API",
-      "path": "/openframe_public/meshagent.msh",
+      "path": "/generate-msh?host=${client.serverUrl}",
       "executable": false
     }
   ]
