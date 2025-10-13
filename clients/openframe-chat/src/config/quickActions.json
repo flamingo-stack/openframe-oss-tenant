@@ -1,0 +1,16 @@
+{
+  "actions": [
+    {
+      "id": "1",
+      "text": "My computer is running slow"
+    },
+    {
+      "id": "2", 
+      "text": "Check if I have updates available"
+    },
+    {
+      "id": "3",
+      "text": "I'm having internet issues"
+    }
+  ]
+}
