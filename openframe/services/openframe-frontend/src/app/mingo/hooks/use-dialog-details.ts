@@ -24,7 +24,7 @@ export function useDialogDetails(dialogId: string) {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await apiClient.post<GraphQLResponse<DialogResponse>>('/api/graphql', {
+      const res = await apiClient.post<GraphQLResponse<DialogResponse>>('/chat/graphql', {
         query: GET_DIALOG_QUERY,
         variables: { id: dialogId }
       })

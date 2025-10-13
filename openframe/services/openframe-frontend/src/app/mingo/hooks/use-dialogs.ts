@@ -30,12 +30,12 @@ export function useDialogs(archived: boolean = false) {
     setError(null)
 
     try {
-      const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('/api/graphql', {
+      const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('/chat/graphql', {
         query: GET_DIALOGS_QUERY,
         variables: {
           filter: archived ? { statuses: ['ARCHIVED'] } : undefined,
           pagination: { limit: 50 },
-          search: searchParam || searchTerm || undefined,
+          search: searchParam || undefined,
           slaSort: 'ASC'
         }
       })
@@ -73,7 +73,7 @@ export function useDialogs(archived: boolean = false) {
     } finally {
       setIsLoading(false)
     }
-  }, [archived, searchTerm, toast])
+  }, [archived, toast])
 
   const searchDialogs = useCallback(async (term: string) => {
     setSearchTerm(term)
@@ -82,7 +82,7 @@ export function useDialogs(archived: boolean = false) {
 
   const refreshDialogs = useCallback(async () => {
     try {
-      await fetchDialogs()
+      await fetchDialogs(searchTerm)
       toast({
         title: 'Success',
         description: `${archived ? 'Archived' : 'Current'} chats refreshed successfully`,
@@ -96,7 +96,7 @@ export function useDialogs(archived: boolean = false) {
         variant: 'destructive'
       })
     }
-  }, [fetchDialogs, archived, toast])
+  }, [fetchDialogs, archived, toast, searchTerm])
 
   return {
     dialogs,
