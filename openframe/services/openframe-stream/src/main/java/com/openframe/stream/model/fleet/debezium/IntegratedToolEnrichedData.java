@@ -6,6 +6,9 @@ import lombok.Data;
 public class IntegratedToolEnrichedData {
 
     private String machineId;
+    private String hostname;
+    private String organizationId;
+    private String organizationName;
     private String userId;
 
 }

@@ -18,11 +18,8 @@ interface DeviceDetailsViewProps {
   deviceId: string
 }
 
-type TabId = 'hardware' | 'network' | 'security' | 'compliance' | 'agents' | 'users' | 'software' | 'vulnerabilities' | 'logs'
-
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabId>('hardware')
 
   const { deviceDetails, isLoading, error, fetchDeviceById } = useDeviceDetails()
 
@@ -44,8 +41,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
     || normalizedDevice?.agent_id
 
-  const TabComponent = getTabComponent(DEVICE_TABS, activeTab)
-
   const handleBack = () => {
     router.push('/devices')
   }
@@ -64,6 +59,14 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const handleRemoteShell = () => {
     setIsRemoteShellOpen(true)
+  }
+
+  const handleDeviceLogs = () => {
+    const params = new URLSearchParams(window.location.search)
+    params.set('tab', 'logs')
+    // Add timestamp to force logs refresh
+    params.set('refresh', Date.now().toString())
+    router.push(`${window.location.pathname}?${params.toString()}`)
   }
 
   if (isLoading) {
@@ -141,18 +144,19 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           {/* Tab Navigation */}
           <div className="mt-6">
             <TabNavigation
-              activeTab={activeTab}
-              onTabChange={(tabId) => setActiveTab(tabId as TabId)}
               tabs={DEVICE_TABS}
-            />
+              defaultTab="hardware"
+              urlSync={true}
+            >
+              {(activeTab) => (
+                <TabContent
+                  activeTab={activeTab}
+                  TabComponent={getTabComponent(DEVICE_TABS, activeTab)}
+                  componentProps={{ device: normalizedDevice }}
+                />
+              )}
+            </TabNavigation>
           </div>
-
-          {/* Tab Content */}
-          <TabContent
-            activeTab={activeTab}
-            TabComponent={TabComponent}
-            componentProps={{ device: normalizedDevice }}
-          />
         </div>
 
         {/* Scripts Modal */}
@@ -162,6 +166,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           deviceId={tacticalAgentId || deviceId}
           device={normalizedDevice}
           onRunScripts={handleRunScripts}
+          onDeviceLogs={handleDeviceLogs}
         />
       </DetailPageContainer>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { apiClient } from '@lib/api-client'
-import { GET_DEVICES_OVERVIEW_QUERY } from '../../devices/queries/devices-queries'
+import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
 import type { GraphQLResponse } from '../../devices/types/device.types'
 import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries'
 
@@ -20,52 +20,23 @@ export function useDevicesOverview() {
 
     const fetchStatusCounts = async () => {
       try {
-        const normalize = (v: string) => v?.toUpperCase?.() || v
-        const isActive = (v: string) => ['ACTIVE', 'ONLINE'].includes(normalize(v))
-        const isInactive = (v: string) => ['INACTIVE', 'OFFLINE'].includes(normalize(v))
+        type DeviceFiltersResponse = { deviceFilters: { filteredCount: number, statuses?: Array<{ value: string, count: number }> } }
 
-        type DeviceEdge = { node: { status?: string } }
-        type PageInfo = { hasNextPage: boolean, endCursor?: string | null }
-        type DevicesResponse = { devices: { edges: DeviceEdge[], pageInfo: PageInfo } }
+        const devRes: { ok: boolean, status: number, error?: string, data?: GraphQLResponse<DeviceFiltersResponse> } = await apiClient.post<GraphQLResponse<DeviceFiltersResponse>>('/api/graphql', {
+          query: GET_DEVICE_FILTERS_QUERY,
+          variables: { filter: {} }
+        })
 
-        const pageLimit = 50
-        let cursor: string | null | undefined = null
-        let hasNext = true
-        let total = 0
-        let active = 0
-        let inactive = 0
-        let safetyPages = 50
-
-        while (hasNext && safetyPages > 0) {
-          const devRes: { ok: boolean, status: number, error?: string, data?: GraphQLResponse<DevicesResponse> } = await apiClient.post<GraphQLResponse<DevicesResponse>>('/api/graphql', {
-            query: GET_DEVICES_OVERVIEW_QUERY,
-            variables: {
-              filter: {},
-              pagination: { limit: pageLimit, cursor },
-              search: ''
-            }
-          })
-
-          if (!devRes.ok) {
-            throw new Error(devRes.error || `Request failed with status ${devRes.status}`)
-          }
-
-          const data = devRes.data?.data
-          if (!data) break
-
-          const edges: DeviceEdge[] = data.devices.edges || []
-          total += edges.length
-
-          for (const e of edges) {
-            const st = normalize(e?.node?.status || '')
-            if (isActive(st)) active += 1
-            else if (isInactive(st)) inactive += 1
-          }
-
-          hasNext = !!data.devices.pageInfo?.hasNextPage
-          cursor = data.devices.pageInfo?.endCursor || null
-          safetyPages -= 1
+        if (!devRes.ok) {
+          throw new Error(devRes.error || `Request failed with status ${devRes.status}`)
         }
+
+        const total = devRes.data?.data?.deviceFilters?.filteredCount || 0
+        const statuses = devRes.data?.data?.deviceFilters?.statuses || []
+        const active = statuses
+          .filter(s => ['ACTIVE', 'ONLINE'].includes((s.value || '').toUpperCase()))
+          .reduce((sum, s) => sum + (s.count || 0), 0)
+        const inactive = Math.max(0, total - active)
 
         if (!isMounted) return
 

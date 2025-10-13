@@ -41,6 +41,9 @@ public class DebeziumCassandraMessageHandler extends DebeziumMessageHandler<Unif
             logEvent.setKey(key);
             logEvent.setUserId(enrichedData.getUserId());
             logEvent.setDeviceId(enrichedData.getMachineId());
+            logEvent.setHostname(enrichedData.getHostname());
+            logEvent.setOrganizationId(enrichedData.getOrganizationId());
+            logEvent.setOrganizationName(enrichedData.getOrganizationName());
             logEvent.setSeverity(debeziumMessage.getUnifiedEventType().getSeverity().name());
             logEvent.setDebeziumMessage(debeziumMessage.getDebeziumMessage());
             logEvent.setMessage(debeziumMessage.getMessage() ==  null

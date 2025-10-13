@@ -14,6 +14,9 @@ export const GET_LOGS_QUERY = `
           severity
           userId
           deviceId
+          hostname
+          organizationName
+          organizationId
           summary
           timestamp
           __typename
@@ -48,6 +51,9 @@ export const GET_LOG_DETAILS_QUERY = `
       severity
       userId
       deviceId
+      hostname
+      organizationName
+      organizationId
       message
       timestamp
       details

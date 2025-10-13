@@ -2,7 +2,8 @@
 
 import React from 'react'
 import { Device } from '../../types/device.types'
-import { InfoCard } from '@flamingo/ui-kit'
+import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo/ui-kit'
+import { Info as InfoIcon } from 'lucide-react'
 
 interface HardwareTabProps {
   device: Device | null
@@ -180,6 +181,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
   const batteries = device.batteries || []
 
   return (
+    <TooltipProvider delayDuration={0}>
     <div className="mt-6">
       {/* Disk Info Section */}
       <div>
@@ -196,6 +198,16 @@ export function HardwareTab({ device }: HardwareTabProps) {
                   subtitle: disk.count === 0
                     ? `${disk.type} Drive (No partition data)`
                     : `${disk.type} Drive (${disk.count} partition${disk.count > 1 ? 's' : ''})`,
+                  icon: (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[500px] min-w-[400px]">
+                        <p>Physical storage device information from Fleet MDM. Shows disk usage, capacity, and partition details for monitoring storage health.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ),
                   items: [
                     {
                       label: 'Current Usage',
@@ -234,6 +246,16 @@ export function HardwareTab({ device }: HardwareTabProps) {
             data={{
               title: 'System Memory',
               subtitle: 'RAM',
+              icon: (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[500px] min-w-[400px]">
+                    <p>Total system memory (RAM) installed on the device from Fleet MDM. Shows the physical memory capacity available for applications and processes.</p>
+                  </TooltipContent>
+                </Tooltip>
+              ),
               items: [
                   {
                     label: 'Total Memory',
@@ -258,6 +280,16 @@ export function HardwareTab({ device }: HardwareTabProps) {
               data={{
                 title: cpu.model,
                 subtitle: cpu.items.length > 0 ? undefined : 'No detailed information available',
+                icon: (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[500px] min-w-[400px]">
+                      <p>Central Processing Unit (CPU) details from Fleet MDM. Shows processor model, core count, and architecture for performance monitoring.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ),
                 items: cpu.items.length > 0 ? cpu.items : [
                   {
                     label: 'Status',
@@ -305,6 +337,16 @@ export function HardwareTab({ device }: HardwareTabProps) {
                   data={{
                     title: `Battery ${index + 1}`,
                     subtitle: healthStatus,
+                    icon: (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[500px] min-w-[400px]">
+                          <p>Battery health information from Fleet MDM (macOS devices only). Shows cycle count, health status, and capacity degradation for battery lifecycle monitoring.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ),
                     items: [
                       {
                         label: 'Cycle Count',
@@ -329,5 +371,6 @@ export function HardwareTab({ device }: HardwareTabProps) {
         </div>
       )}
     </div>
+    </TooltipProvider>
   )
 }

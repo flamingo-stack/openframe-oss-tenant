@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import { ListPageContainer, Table, type TableColumn, StatusTag, MoreActionsMenu } from '@flamingo/ui-kit/components/ui'
 import { useUsers, type UserRecord } from '../../hooks/use-users'
-import { apiClient } from '../../../../lib/api-client'
 import { ConfirmDeleteUserModal } from '../confirm-delete-user-modal'
 import { AddUsersModal } from '../add-users-modal'
 import { Button } from '@flamingo/ui-kit'
@@ -12,7 +11,7 @@ import { useAuthStore } from '../../../auth/stores/auth-store'
 import { useInvitations } from '../../hooks/use-invitations'
 
 export function CompanyAndUsersTab() {
-  const { users, size, isLoading, error, fetchUsers } = useUsers()
+  const { users, size, isLoading, error, fetchUsers, deleteUser } = useUsers()
   const { user: currentUser } = useAuthStore()
   const [isAddOpen, setIsAddOpen] = useState(false)
   const { inviteUsers } = useInvitations()
@@ -65,7 +64,7 @@ export function CompanyAndUsersTab() {
   const handleConfirmDelete = async () => {
     if (!selectedUser) return
     try {
-      await apiClient.delete(`users/${encodeURIComponent(selectedUser.id)}`)
+      await deleteUser(selectedUser.id)
       await fetchUsers(0, size)
     } catch {}
     setIsConfirmOpen(false)

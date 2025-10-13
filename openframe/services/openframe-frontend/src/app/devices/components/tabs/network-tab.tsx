@@ -1,7 +1,8 @@
 'use client'
 
 import React from 'react'
-import { InfoCard } from '@flamingo/ui-kit'
+import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo/ui-kit'
+import { Info as InfoIcon } from 'lucide-react'
 
 interface NetworkTabProps {
   device: any
@@ -66,35 +67,70 @@ export function NetworkTab({ device }: NetworkTabProps) {
   ipv6Addresses.sort()
 
   return (
+    <TooltipProvider delayDuration={0}>
     <div className="space-y-4 mt-6">
       <InfoCard
         data={{
           title: "Public IP",
+          icon: (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[500px] min-w-[400px]">
+                <p>Public internet-facing IP address from Fleet MDM. This is the external IP used for internet communication, useful for network troubleshooting and remote access configuration.</p>
+              </TooltipContent>
+            </Tooltip>
+          ),
           items: [
             { label: 'IP Address', value: device?.public_ip || 'Unknown', copyable: true }
           ]
         }}
       />
-      {ipv4Addresses.length > 0 && (
-        <InfoCard
-          data={{
-            title: "Local IPv4 Addresses",
-            items: [
-              {  value: ipv4Addresses, copyable: true }
-            ]
-          }}
-        />
-      )}
-      {ipv6Addresses.length > 0 && (
-        <InfoCard
-          data={{
-            title: "Local IPv6 Addresses",
-            items: [
-              { value: ipv6Addresses, copyable: true }
-            ]
-          }}
-        />
-      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {ipv4Addresses.length > 0 && (
+          <InfoCard
+            data={{
+              title: "Local IPv4 Addresses",
+              icon: (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[500px] min-w-[400px]">
+                    <p>Local network IPv4 addresses from Fleet MDM. Shows all private network IPs assigned to device interfaces for local network communication.</p>
+                  </TooltipContent>
+                </Tooltip>
+              ),
+              items: [
+                {  value: ipv4Addresses, copyable: true }
+              ]
+            }}
+          />
+        )}
+        {ipv6Addresses.length > 0 && (
+          <InfoCard
+            data={{
+              title: "Local IPv6 Addresses",
+              icon: (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[500px] min-w-[400px]">
+                    <p>Local network IPv6 addresses from Fleet MDM. Shows modern IPv6 addresses assigned to device interfaces for next-generation network communication.</p>
+                  </TooltipContent>
+                </Tooltip>
+              ),
+              items: [
+                { value: ipv6Addresses, copyable: true }
+              ]
+            }}
+          />
+        )}
+      </div>
     </div>
+    </TooltipProvider>
   )
 }
