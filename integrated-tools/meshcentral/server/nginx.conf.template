@@ -10,6 +10,7 @@ env MESH_PASS;
 env MESH_PROTOCOL;
 env MESH_NGINX_HOST;
 env MESH_EXTERNAL_PORT;
+env MESH_DEVICE_GROUP;
 
 http {
     include       /etc/nginx/mime.types;
@@ -66,6 +67,23 @@ http {
         location /openframe_public {
             root ${MESH_DIR}/nginx-api;
             autoindex on;
+        }
+
+        # Custom MSH file generator endpoint
+        location /generate-msh {
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME ${MESH_DIR}/nginx-api/generate-custom-msh.sh;
+            fastcgi_param SCRIPT_NAME /generate-msh;
+            fastcgi_param PATH_INFO $uri;
+            fastcgi_param DOCUMENT_ROOT ${MESH_DIR}/nginx-api;
+            
+            # Pass environment variables
+            fastcgi_param MESH_DIR ${MESH_DIR};
+            fastcgi_param MESH_DEVICE_GROUP ${MESH_DEVICE_GROUP};
+            
+            fastcgi_pass unix:/var/run/fcgiwrap.socket;
+            fastcgi_buffering off;
+            fastcgi_request_buffering off;
         }
 
         # WebSocket endpoint

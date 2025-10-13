@@ -39,6 +39,13 @@ public class NatsStreamConfigurationInitializer {
                     .subjects(List.of("machine.*.tool-update"))
                     .storageType(StorageType.File)
                     .retentionPolicy(RetentionPolicy.Limits)
+                    .build(),
+            // tool connection stream
+            StreamConfiguration.builder()
+                    .name("TOOL_CONNECTIONS")
+                    .subjects(List.of("machine.*.tool-connection"))
+                    .storageType(StorageType.File)
+                    .retentionPolicy(RetentionPolicy.Limits)
                     .build()
     );
 

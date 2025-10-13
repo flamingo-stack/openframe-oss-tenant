@@ -1,4 +1,4 @@
-import { runtimeEnv } from './runtime-config'
+import { isSaasTenantMode, getDefaultRedirectPath } from './app-mode'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@app/auth/hooks/use-token-storage'
 
 export interface ForceLogoutOptions {
@@ -37,14 +37,11 @@ export async function forceLogout(options: ForceLogoutOptions = {}): Promise<voi
   }
   
   if (shouldRedirect && !isAuthPage) {
+    if (isSaasTenantMode()) {
+      return
+    }
     try {
-      let targetPath = redirectPath
-      
-      if (!targetPath) {
-        const { getDefaultRedirectPath } = await import('./app-mode')
-        targetPath = getDefaultRedirectPath(false)
-      }
-      
+      const targetPath = redirectPath || getDefaultRedirectPath(false)
       window.location.href = targetPath
     } catch (error) {
       window.location.href = '/auth'

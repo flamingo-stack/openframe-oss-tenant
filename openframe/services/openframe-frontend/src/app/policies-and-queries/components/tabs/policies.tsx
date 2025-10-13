@@ -7,7 +7,7 @@ import {
   Button,
   ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
-import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
+import { PlusCircleIcon, RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { usePolicies } from '../../hooks/use-policies'
 import { Policy } from '../../types/policies.types'
@@ -57,17 +57,11 @@ export function Policies() {
   const headerActions = (
     <>
       <Button
-        onClick={handleRefresh}
-        leftIcon={<RefreshIcon size={20} />}
+        leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay/>}
+        onClick={handleCreatePolicy}
         className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
       >
-        Refresh
-      </Button>
-      <Button
-        onClick={handleCreatePolicy}
-        className="bg-ods-accent hover:bg-ods-accent-hover text-text-on-accent px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
-      >
-        New Policy
+        Add Policy
       </Button>
     </>
   )
@@ -80,7 +74,8 @@ export function Policies() {
       searchValue={searchTerm}
       onSearch={setSearchTerm}
       error={error}
-      padding="sm"
+      padding="none"
+      className="pt-4"
     >
       <Table
         data={policies}

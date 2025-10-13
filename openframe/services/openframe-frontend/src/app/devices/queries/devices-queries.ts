@@ -52,7 +52,11 @@ export const GET_DEVICES_QUERY = `
           agentVersion
           status
           lastSeen
-          organizationId
+          organization {
+            id
+            organizationId
+            name
+          }
           serialNumber
           manufacturer
           model
@@ -116,7 +120,11 @@ export const GET_DEVICE_QUERY = `
       agentVersion
       status
       lastSeen
-      organizationId
+      organization {
+        id
+        organizationId
+        name
+      }
       serialNumber
       manufacturer
       model

@@ -32,6 +32,9 @@ public class DebeziumKafkaMessageHandler extends DebeziumMessageHandler<Integrat
             message.setToolEventId(debeziumMessage.getToolEventId());
             message.setUserId(enrichedData.getUserId());
             message.setDeviceId(enrichedData.getMachineId());
+            message.setHostname(enrichedData.getHostname());
+            message.setOrganizationId(enrichedData.getOrganizationId());
+            message.setOrganizationName(enrichedData.getOrganizationName());
             message.setIngestDay(debeziumMessage.getIngestDay());
             message.setToolType(debeziumMessage.getIntegratedToolType().name());
             message.setEventType(debeziumMessage.getUnifiedEventType().name());

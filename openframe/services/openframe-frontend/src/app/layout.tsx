@@ -7,8 +7,12 @@ import { azeretMono, dmSans } from '@flamingo/ui-kit/fonts'
 import { Toaster } from '@flamingo/ui-kit/components/ui'
 import { DevTicketObserver } from './auth/components/dev-ticket-observer'
 import { DeploymentInitializer } from './components/deployment-initializer'
+import { GoogleTagManager } from './components/google-tag-manager'
 import { RouteGuard } from '../components/route-guard'
 import { isAuthEnabled } from '../lib/app-mode'
+
+// Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'OpenFrame',
@@ -26,13 +30,18 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <PublicEnvScript />
       </head>
-      <body 
-        suppressHydrationWarning 
+      <body
+        suppressHydrationWarning
         className="min-h-screen antialiased font-body"
         data-app-type="openframe"
       >
+        <GoogleTagManager />
         <DeploymentInitializer />
-        {isAuthEnabled() && <DevTicketObserver />}
+        {isAuthEnabled() && (
+          <Suspense fallback={null}>
+            <DevTicketObserver />
+          </Suspense>
+        )}
         <RouteGuard>
           <div className="relative flex min-h-screen flex-col">
             <Suspense fallback={

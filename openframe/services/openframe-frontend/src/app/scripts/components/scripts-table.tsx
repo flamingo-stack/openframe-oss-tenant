@@ -7,13 +7,17 @@ import {
   Table,
   Button,
   ListPageLayout,
+  TableDescriptionCell,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
 import { CirclePlusIcon } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useScripts } from "../hooks/use-scripts"
-import { ToolIcon } from "@flamingo/ui-kit"
+import { ToolBadge, ShellTypeBadge } from "@flamingo/ui-kit/components/platform"
+import { OSTypeBadgeGroup } from "@flamingo/ui-kit/components/features"
+import type { ShellType } from "@flamingo/ui-kit"
+import { SHELL_TYPES } from "@flamingo/ui-kit/types/shell.types"
 
 interface UIScriptEntry {
   id: number
@@ -21,8 +25,7 @@ interface UIScriptEntry {
   description: string
   shellType: string
   addedBy: string
-  category: string
-  timeout: number
+  supportedPlatforms: string[]
 }
 
 /**
@@ -45,9 +48,8 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: toStandardToolLabel('TACTICAL'),
-      category: script.category,
-      timeout: script.default_timeout
+      addedBy: toUiKitToolType('tactical'),
+      supportedPlatforms: script.supported_platforms || []
     }))
   }, [scripts])
 
@@ -58,11 +60,8 @@ export function ScriptsTable() {
       width: 'w-1/3',
       renderCell: (script) => (
         <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary line-clamp-2 break-words">
             {script.name}
-          </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-            {script.description}
           </span>
         </div>
       )
@@ -70,54 +69,42 @@ export function ScriptsTable() {
     {
       key: 'shellType',
       label: 'Shell Type',
-      width: 'w-1/6',
+      width: 'w-[15%]',
       filterable: true,
-      filterOptions: [
-        { id: 'BASH', label: 'bash', value: 'BASH' },
-        { id: 'POWERSHELL', label: 'powershell', value: 'POWERSHELL' },
-        { id: 'PYTHON', label: 'python', value: 'PYTHON' },
-        { id: 'CMD', label: 'cmd', value: 'CMD' },
-      ],
+      filterOptions: SHELL_TYPES,
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.shellType}
-        </span>
+        <ShellTypeBadge shellType={script.shellType as ShellType} />
+      )
+    },
+    {
+      key: 'supportedPlatforms',
+      label: 'OS',
+      width: 'w-[15%]',
+      renderCell: (script) => (
+        <OSTypeBadgeGroup
+          osTypes={script.supportedPlatforms}
+        />
       )
     },
     {
       key: 'addedBy',
       label: 'Added By',
-      width: 'w-1/6',
+      width: 'w-[15%]',
       filterable: true,
       filterOptions: [
-        { id: 'TACTICAL', label: toStandardToolLabel('TACTICAL'), value: 'TACTICAL' },
-        { id: 'FLEET', label: toStandardToolLabel('FLEET'), value: 'FLEET' },
+        { id: 'tactical', label: toStandardToolLabel('TACTICAL'), value: 'tactical' },
+        { id: 'fleet', label: toStandardToolLabel('FLEET'), value: 'fleet' },
       ],
       renderCell: (script) => (
-        <span className="flex items-center gap-2 font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          { toStandardToolLabel(script.addedBy)}
-          <ToolIcon toolType={toUiKitToolType(script.addedBy) as any} size={16} />
-        </span>
+        <ToolBadge toolType={script.addedBy as any} />
       )
     },
     {
-      key: 'category',
-      label: 'Category',
-      width: 'w-1/6',
+      key: 'description',
+      label: 'Description',
+      width: 'w-1/2',
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.category}
-        </span>
-      )
-    },
-    {
-      key: 'timeout',
-      label: 'Timeout',
-      width: 'w-1/6',
-      renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {script.timeout}
-        </span>
+        <TableDescriptionCell text={script.description} />
       )
     }
   ], [])

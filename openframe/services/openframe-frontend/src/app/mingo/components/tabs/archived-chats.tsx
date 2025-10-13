@@ -70,7 +70,7 @@ export function ArchivedChats() {
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}
-        mobileColumns={['topic', 'status', 'countdown']}
+        mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
       />
     </ListPageLayout>

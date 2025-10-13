@@ -30,3 +30,14 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* Hide number input arrows (spinners) across browsers */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}

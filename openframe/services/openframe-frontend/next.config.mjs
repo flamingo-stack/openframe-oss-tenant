@@ -15,6 +15,8 @@ const nextConfig = {
     // Hosts for API routing
     NEXT_PUBLIC_TENANT_HOST_URL: process.env.NEXT_PUBLIC_TENANT_HOST_URL,
     NEXT_PUBLIC_SHARED_HOST_URL: process.env.NEXT_PUBLIC_SHARED_HOST_URL,
+    // Google Tag Manager container
+    NEXT_PUBLIC_GTM_CONTAINER_ID: process.env.NEXT_PUBLIC_GTM_CONTAINER_ID,
   },
   // Disable server-side features
   poweredByHeader: false,
