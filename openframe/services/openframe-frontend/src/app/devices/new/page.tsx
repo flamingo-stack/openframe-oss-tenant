@@ -32,6 +32,19 @@ export default function NewDevicePage() {
     fetchOrgs('').catch(() => {})
   }, [fetchOrgs])
 
+  // Auto-select first or "Default" organization when orgs load
+  useEffect(() => {
+    if (orgs.length > 0 && !selectedOrgId) {
+      // Try to find "Default" organization first
+      const defaultOrg = orgs.find(o => o.name.toLowerCase() === 'default')
+      const orgToSelect = defaultOrg || orgs[0]
+
+      if (orgToSelect) {
+        setSelectedOrgId(orgToSelect.organizationId)
+      }
+    }
+  }, [orgs, selectedOrgId])
+
   const addArgument = useCallback(() => {
     const trimmed = argInput.trim()
     if (!trimmed) return
@@ -104,7 +117,7 @@ export default function NewDevicePage() {
             {/* Select Platform */}
             <div className="flex flex-col gap-2">
               <div className="text-ods-text-secondary text-sm">Select Platform</div>
-              <div className="flex w-full bg-ods-card border border-ods-border rounded-[6px] p-1 gap-1">
+              <div className="flex w-full gap-2">
                 {OS_PLATFORMS.filter(p => p.id !== 'linux').map((p) => {
                   const Icon = p.icon
                   const selected = platform === p.id
@@ -114,8 +127,8 @@ export default function NewDevicePage() {
                       onClick={() => setPlatform(p.id)}
                       variant="ghost"
                       className={(selected
-                        ? 'bg-ods-accent-hover text-ods-text-on-accent '
-                        : 'text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover ') + 'flex-1 basis-0 justify-center px-4 py-2 rounded-[4px]'}
+                        ? 'bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover border-ods-accent '
+                        : 'bg-ods-card text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover border-ods-border ') + 'flex-1 basis-0 justify-center px-4 py-2.5 rounded-[6px] border transition-colors'}
                       leftIcon={<Icon className="w-4 h-4" />}
                     >
                       {p.name}
