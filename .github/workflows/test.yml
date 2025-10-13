@@ -301,7 +301,7 @@ jobs:
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: *
+          delete-tags: "*"
           exclude-tags: latest
 
 
