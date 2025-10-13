@@ -34,7 +34,7 @@ export function ChatsOverviewSection() {
           value={chats.avgResolveTime}
         />
         <DashboardInfoCard
-          title="Avg. FAE Rate"
+          title="Avg. Fae Rate"
           value={`${chats.avgFaeRate}/5`}
         />
       </div>
