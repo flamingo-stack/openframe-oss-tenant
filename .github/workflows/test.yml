@@ -304,7 +304,9 @@ jobs:
         with:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
-          delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
+          # delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
+          exclude-tags: "^[0-9]+\\.[0-9]+\\.[0-9]+$|^latest$|^test-.*$"
+          use-regex: true
 
 
   final-checks:
