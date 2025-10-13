@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 // Force dynamic rendering for this page due to useSearchParams in AppLayout
 export const dynamic = 'force-dynamic'
 import { AppLayout } from '../../components/app-layout'
-import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, StatusBadge } from '@flamingo/ui-kit/components/ui'
+import { Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, StatusBadge } from '@flamingo/ui-kit/components/ui'
 import { DetailPageContainer } from '@flamingo/ui-kit'
 import { OSTypeBadge } from '@flamingo/ui-kit/components/features'
 import { useToast } from '@flamingo/ui-kit/hooks'
