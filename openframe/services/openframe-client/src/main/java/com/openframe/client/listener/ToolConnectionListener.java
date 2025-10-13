@@ -5,6 +5,7 @@ import com.openframe.client.service.NatsTopicMachineIdExtractor;
 import com.openframe.client.service.ToolConnectionService;
 import com.openframe.data.model.nats.ToolConnectionMessage;
 import io.nats.client.Connection;
+import io.nats.client.Dispatcher;
 import io.nats.client.JetStream;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Message;
@@ -14,10 +15,8 @@ import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.DeliverPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
@@ -34,9 +33,6 @@ public class ToolConnectionListener {
     private final ObjectMapper objectMapper;
     private final ToolConnectionService toolConnectionService;
     private final NatsTopicMachineIdExtractor machineIdExtractor;
-    
-    @Qualifier("natsMessageExecutor")
-    private final TaskExecutor taskExecutor;
 
     private static final String STREAM_NAME = "TOOL_CONNECTIONS";
     private static final String SUBJECT = "machine.*.tool-connection";
@@ -44,13 +40,16 @@ public class ToolConnectionListener {
     private static final int MAX_DELIVER = 10;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
     
-    private volatile JetStreamSubscription subscription;
-    private volatile boolean running = false;
+    private Dispatcher dispatcher;
+    private JetStreamSubscription subscription;
 
     @EventListener(ApplicationReadyEvent.class)
     public void subscribeToToolConnections() {
         try {
             JetStream js = natsConnection.jetStream();
+            
+            // NATS Dispatcher manages threads internally
+            dispatcher = natsConnection.createDispatcher();
 
             // Create consumer configuration with retry policy
             ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
@@ -67,41 +66,21 @@ public class ToolConnectionListener {
                     .configuration(consumerConfig)
                     .build();
 
-            subscription = js.subscribe(SUBJECT, pushOptions);
-            running = true;
+            // Subscribe with callback - NATS will invoke handleMessage in its own thread
+            subscription = js.subscribe(
+                SUBJECT,
+                dispatcher,
+                this::handleMessage,
+                false,  // manual ack
+                pushOptions
+            );
 
-            taskExecutor.execute(this::processMessages);
-
-            log.info("Subscribed to JetStream subject: {} with consumer: {} (maxDeliver={}, ackWait={})", 
-                    SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
+            log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} (maxDeliver={}, ackWait={})", SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
 
         } catch (Exception e) {
             log.error("Failed to subscribe to JetStream", e);
             throw new RuntimeException("Failed to subscribe to JetStream", e);
         }
-    }
-
-    private void processMessages() {
-        log.info("Started processing JetStream messages");
-        
-        while (running && subscription != null && subscription.isActive()) {
-            try {
-                Message message = subscription.nextMessage(Duration.ofSeconds(1));
-                
-                if (message != null) {
-                    handleMessage(message);
-                }
-                
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.info("Message processing interrupted");
-                break;
-            } catch (Exception e) {
-                log.error("Error in message processing loop", e);
-            }
-        }
-        
-        log.info("Stopped processing JetStream messages");
     }
 
     private void handleMessage(Message message) {
@@ -133,14 +112,21 @@ public class ToolConnectionListener {
 
     @PreDestroy
     public void cleanup() {
-        running = false;
-        
         if (subscription != null) {
             try {
                 subscription.unsubscribe();
                 log.info("Unsubscribed from JetStream");
             } catch (Exception e) {
                 log.error("Error unsubscribing from JetStream", e);
+            }
+        }
+        
+        if (dispatcher != null) {
+            try {
+                dispatcher.drain(Duration.ofSeconds(5));
+                log.info("Dispatcher drained successfully");
+            } catch (Exception e) {
+                log.error("Error draining dispatcher", e);
             }
         }
     }
