@@ -139,9 +139,9 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: "*"
-          exclude-tags: "^[0-9]+\\.[0-9]+\\.[0-9]+$|^latest$|^test-.*$"
+          exclude-tags: '^(?:[0-9]+\.[0-9]+\.[0-9]+|latest|test-.*)$'
           use-regex: true
-
+      
 
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
