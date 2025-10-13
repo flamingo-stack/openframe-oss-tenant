@@ -5,12 +5,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 // Force dynamic rendering for this page due to useSearchParams in AppLayout
 export const dynamic = 'force-dynamic'
 import { AppLayout } from '../../components/app-layout'
-import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@flamingo/ui-kit/components/ui'
+import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, StatusBadge } from '@flamingo/ui-kit/components/ui'
 import { DetailPageContainer } from '@flamingo/ui-kit'
+import { OSTypeBadge } from '@flamingo/ui-kit/components/features'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { useRouter } from 'next/navigation'
 import { useRegistrationSecret } from '../hooks/use-registration-secret'
-import { OS_PLATFORMS, DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo/ui-kit/utils'
+import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo/ui-kit/utils'
+import { OS_TYPES } from '@flamingo/ui-kit/types'
 import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
 
 type Platform = OSPlatformId
@@ -29,7 +31,7 @@ export default function NewDevicePage() {
   const { items: orgs, fetch: fetchOrgs } = useOrganizationsMin()
 
   useEffect(() => {
-    fetchOrgs('').catch(() => {})
+    fetchOrgs('').catch(() => { })
   }, [fetchOrgs])
 
   // Auto-select first or "Default" organization when orgs load
@@ -70,7 +72,7 @@ export default function NewDevicePage() {
 
     if (platform === 'windows') {
       const argString = `${baseArgs}${extras}`
-      return `$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe.exe'; Start-Process -FilePath '.\\openframe.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
+      return `Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe.exe'; Start-Process -FilePath '.\\openframe.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
     }
 
     return `curl -L -o openframe '${MACOS_BINARY_URL}' && chmod +x ./openframe && sudo ./openframe ${baseArgs}${extras}`
@@ -118,29 +120,41 @@ export default function NewDevicePage() {
             <div className="flex flex-col gap-2">
               <div className="text-ods-text-secondary text-sm">Select Platform</div>
               <div className="flex w-full gap-2">
-                {OS_PLATFORMS.filter(p => p.id !== 'linux').map((p) => {
-                  const Icon = p.icon
-                  const selected = platform === p.id
+                {OS_TYPES.map((os) => {
+                  const selected = platform === os.platformId
+                  const isDisabled = os.platformId === 'linux'
+                  const label = isDisabled ? <StatusBadge
+                          text="Coming Soon"
+                          variant="button"
+                          colorScheme="cyan"
+                        /> : undefined;
                   return (
-                    <Button
-                      key={p.id}
-                      onClick={() => setPlatform(p.id)}
-                      variant="ghost"
-                      className={(selected
-                        ? 'bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover border-ods-accent '
-                        : 'bg-ods-card text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover border-ods-border ') + 'flex-1 basis-0 justify-center px-4 py-2.5 rounded-[6px] border transition-colors'}
-                      leftIcon={<Icon className="w-4 h-4" />}
+                    <div
+                      key={os.id}
+                      onClick={() => !isDisabled && setPlatform(os.platformId)}
+                      className="flex-1 relative"
                     >
-                      {p.name}
-                    </Button>
+                      <OSTypeBadge
+                        osType={os.value}
+                        iconSize="w-5 h-5"
+                        rigntIcon={label}
+                        variant='ghost'
+                        alignment='center'
+                        className={(isDisabled
+                          ? 'bg-ods-card text-ods-text-secondary opacity-50 cursor-not-allowed border-ods-border '
+                          : selected
+                            ? 'bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover border-ods-accent cursor-pointer '
+                            : 'bg-ods-card text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover border-ods-border cursor-pointer ') + 'w-full min-h-[60px] items-center justify-center rounded-lg border p-2 text-[14px] md:text-[18px] font-medium transition-colors pointer-events-auto'}
+                      />
+                    </div>
                   )
                 })}
               </div>
             </div>
           </div>
 
-          {/* Additional Arguments */}
-          <div className="flex flex-col gap-2">
+          {/* Additional Arguments - Hidden but not deleted */}
+          <div className="hidden flex-col gap-2">
             <div className="text-ods-text-secondary text-sm">Additional Arguments</div>
             <Input
               className="w-full bg-ods-card border border-ods-border rounded-[6px] px-3 py-2 text-ods-text-primary"
@@ -173,7 +187,7 @@ export default function NewDevicePage() {
           {/* Command box */}
           <div className="flex flex-col">
             <div
-              className="w-full bg-ods-card border border-ods-border rounded-[6px] px-3 py-3 text-ods-text-primary font-mono text-[14px] select-none cursor-pointer"
+              className="w-full bg-ods-card border border-ods-border rounded-[6px] px-4 py-4 text-ods-text-primary font-mono text-[16px] md:text-[18px] select-none cursor-pointer leading-relaxed"
               onClick={copyCommand}
             >
               {command}
