@@ -12,10 +12,8 @@ pinot:
     replicaCount: 2
   
   controller:
-    service:
-      external:
-        enabled: false
+    external:
+      enabled: false
   broker:
-    service:
-      external:
-        enabled: false
+    external:
+      enabled: false
