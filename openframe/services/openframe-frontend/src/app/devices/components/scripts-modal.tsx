@@ -9,7 +9,6 @@ import { useScripts } from '../../scripts/hooks/use-scripts'
 import { ScriptEntry } from '../../scripts/stores/scripts-store'
 import { Device } from '../types/device.types'
 import { tacticalApiClient } from '../../../lib/tactical-api-client'
-import { ScriptsConfirmationModal } from './scripts-confirmation-modal'
 import { ListLoader, PageError } from '@flamingo/ui-kit/components/ui'
 
 const scrollbarStyles = {
@@ -93,7 +92,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedScripts, setSelectedScripts] = useState<string[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
-  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   const { scripts, isLoading, error, fetchScripts } = useScripts()
   const { toast } = useToast()
@@ -202,33 +201,33 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
 
       onRunScripts(selectedScripts)
 
-      setShowConfirmation(true)
+      // Show loading state and wait 3 seconds before redirecting
+      setIsRedirecting(true)
+
+      setTimeout(() => {
+        // Redirect to logs tab and close modal
+        if (onDeviceLogs) {
+          onDeviceLogs()
+        }
+        onClose()
+        setIsRedirecting(false)
+      }, 3000)
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to submit scripts'
       console.error('Script submission error:', error)
-      
+
       toast({
         title: 'Script submission failed',
         description: errorMessage,
         variant: 'destructive'
       })
+
+      // Reset states on error
+      setIsRedirecting(false)
     } finally {
       setIsExecuting(false)
     }
-  }
-
-  const handleDeviceLogs = () => {
-    if (onDeviceLogs) {
-      onDeviceLogs()
-    }
-    setShowConfirmation(false)
-    onClose()
-  }
-
-  const handleCloseConfirmation = () => {
-    setShowConfirmation(false)
-    onClose()
   }
 
   const handleCategoryFilter = (category: string) => {
@@ -241,35 +240,56 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
 
   if (!isOpen) return null
 
-  if (showConfirmation) {
-    return (
-      <ScriptsConfirmationModal
-        isOpen={showConfirmation}
-        onClose={handleCloseConfirmation}
-        onDeviceLogs={handleDeviceLogs}
-      />
-    )
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[600px] h-[90vh] max-h-[800px] flex flex-col p-10 gap-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] text-ods-text-primary tracking-[-0.64px] leading-[40px]">
-            Select Script
+            {isRedirecting ? 'Scripts Running' : 'Select Script'}
           </h2>
           <Button
             onClick={onClose}
             variant="ghost"
             className="text-ods-text-secondary hover:text-white transition-colors p-1"
+            disabled={isRedirecting}
           >
             <X className="h-6 w-6" />
           </Button>
         </div>
 
-        {/* Search Input */}
-        <div className="flex flex-col gap-1">
+        {isRedirecting ? (
+          /* Loading State with Skeletons */
+          <>
+            {/* Search Input Skeleton */}
+            <div className="flex flex-col gap-1">
+              <div className="bg-ods-card border border-ods-border rounded-[6px] h-[52px] animate-pulse"></div>
+            </div>
+
+            {/* Script List Skeleton */}
+            <div className="flex flex-col gap-2 flex-1 min-h-0">
+              <div className="bg-ods-card border border-ods-border rounded-[6px] flex-1 min-h-0 p-4">
+                <ListLoader />
+              </div>
+            </div>
+
+            {/* Footer Skeleton */}
+            <div className="flex gap-6">
+              <div className="flex-1 bg-ods-card border border-ods-border rounded-[6px] h-[48px] animate-pulse"></div>
+              <div className="flex-1 bg-ods-accent/20 rounded-[6px] h-[48px] animate-pulse"></div>
+            </div>
+
+            {/* Redirecting Message */}
+            <div className="text-center">
+              <p className="font-['DM_Sans'] text-[16px] text-ods-text-secondary leading-[20px]">
+                Redirecting to device logs...
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Search Input */}
+            <div className="flex flex-col gap-1">
           <div className="bg-ods-card border border-ods-border rounded-[6px] flex items-center gap-2 p-3">
             <Search className="h-6 w-6 text-ods-text-secondary" />
             <input
@@ -384,6 +404,8 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
             Run Script{selectedScripts.length !== 1 ? 's' : ''}
           </Button>
         </div>
+          </>
+        )}
       </div>
     </div>
   )

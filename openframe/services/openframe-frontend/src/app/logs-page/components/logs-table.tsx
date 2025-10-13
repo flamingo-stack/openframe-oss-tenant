@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useMemo } from "react"
+import React, { useState, useCallback, useEffect, useMemo, useImperativeHandle, forwardRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -49,7 +49,11 @@ interface LogsTableProps {
   embedded?: boolean
 }
 
-export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
+export interface LogsTableRef {
+  refresh: () => void
+}
+
+export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}, ref) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState<{ severities?: string[], toolTypes?: string[], deviceId?: string }>({})
@@ -250,6 +254,11 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
     refreshLogs()
   }, [refreshLogs])
 
+  // Expose refresh method via ref
+  useImperativeHandle(ref, () => ({
+    refresh: handleRefresh
+  }), [handleRefresh])
+
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
 
@@ -364,4 +373,4 @@ export function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}) {
       {tableContent}
     </ListPageLayout>
   )
-}
+})

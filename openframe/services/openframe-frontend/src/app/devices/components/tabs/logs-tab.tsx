@@ -1,15 +1,31 @@
 'use client'
 
-import React from 'react'
-import { LogsTable } from '../../../logs-page/components/logs-table'
+import React, { useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { LogsTable, type LogsTableRef } from '../../../logs-page/components/logs-table'
 
 interface LogsTabProps {
   device: any
 }
 
 export function LogsTab({ device }: LogsTabProps) {
+  const searchParams = useSearchParams()
+  const refreshParam = searchParams?.get('refresh')
+  const logsTableRef = useRef<LogsTableRef>(null)
+
   // Use machineId as the primary device identifier for filtering logs
   const deviceId = device?.machineId || device?.id
+
+  // Trigger refresh when refresh param changes
+  useEffect(() => {
+    if (refreshParam && logsTableRef.current) {
+      // Small delay to ensure tab is fully rendered
+      const timer = setTimeout(() => {
+        logsTableRef.current?.refresh()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [refreshParam])
 
   if (!deviceId) {
     return (
@@ -23,7 +39,7 @@ export function LogsTab({ device }: LogsTabProps) {
 
   return (
     <div className="mt-6">
-      <LogsTable deviceId={deviceId} embedded={true} />
+      <LogsTable deviceId={deviceId} embedded={true} ref={logsTableRef} />
     </div>
   )
 }

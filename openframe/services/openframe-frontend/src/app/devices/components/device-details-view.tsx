@@ -61,6 +61,14 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     setIsRemoteShellOpen(true)
   }
 
+  const handleDeviceLogs = () => {
+    const params = new URLSearchParams(window.location.search)
+    params.set('tab', 'logs')
+    // Add timestamp to force logs refresh
+    params.set('refresh', Date.now().toString())
+    router.push(`${window.location.pathname}?${params.toString()}`)
+  }
+
   if (isLoading) {
     return <CardLoader items={4} />
   }
@@ -158,6 +166,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           deviceId={tacticalAgentId || deviceId}
           device={normalizedDevice}
           onRunScripts={handleRunScripts}
+          onDeviceLogs={handleDeviceLogs}
         />
       </DetailPageContainer>
 
