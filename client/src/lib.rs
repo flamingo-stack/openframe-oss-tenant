@@ -34,7 +34,7 @@ pub mod installation_initial_config_service;
 
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolKillService, ToolRunManager, ToolConnectionProcessingManager};
+use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolUrlParamsResolver, ToolKillService, ToolRunManager, ToolConnectionProcessingManager};
 use crate::services::InstalledToolsService;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
@@ -252,6 +252,9 @@ impl Client {
         // Initialize tool command params resolver
         let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone(), initial_configuration_service.clone());
 
+        // Initialize tool URL params resolver
+        let tool_url_params_resolver = ToolUrlParamsResolver::new(initial_configuration_service.clone());
+
         // Initialize tool kill service
         let tool_kill_service = ToolKillService::new();
 
@@ -276,6 +279,7 @@ impl Client {
             tool_agent_file_client.clone(),
             tool_api_client,
             tool_command_params_resolver.clone(),
+            tool_url_params_resolver.clone(),
             installed_tools_service.clone(),
             directory_manager.clone(),
             tool_run_manager.clone(),
