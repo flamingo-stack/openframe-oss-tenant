@@ -8,6 +8,7 @@ import {
   Button,
   ListPageLayout,
   TableDescriptionCell,
+  DeviceCardCompact,
   type TableColumn,
   type RowAction
 } from "@flamingo/ui-kit/components/ui"
@@ -102,8 +103,10 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
           toolType: toUiKitToolType(log.toolType)
         },
         device: {
-          name: log.deviceId ? log.deviceId === 'null' ? '' : log.deviceId : '',
-          organization: log.userId ? log.userId === 'null' ? '' : log.userId : ''
+          // Use device.hostname if available, fallback to deviceId
+          name: log.device?.hostname || log.hostname || log.deviceId || '-',
+          // Use device.organization (string) if available, fallback to organizationName or userId
+          organization: log.device?.organization || log.organizationName || log.userId || '-'
         },
         description: {
           title: log.summary || 'No summary available',
@@ -119,7 +122,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       {
         key: 'logId',
         label: 'Log ID',
-        width: 'w-1/3',
+        width: 'w-[200px]',
         renderCell: (log) => (
           <div className="flex flex-col justify-center shrink-0">
             <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
@@ -134,7 +137,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       {
         key: 'status',
         label: 'Status',
-        width: 'w-1/6',
+        width: 'w-[120px]',
         filterable: true,
         filterOptions: [
           { id: 'ERROR', label: 'Error', value: 'ERROR' },
@@ -155,7 +158,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       {
         key: 'tool',
         label: 'Tool',
-        width: 'w-1/6',
+        width: 'w-[160px]',
         filterable: true,
         filterOptions: [
           { id: 'tactical', label: 'Tactical', value: 'tactical' },
@@ -172,23 +175,18 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       {
         key: 'device',
         label: 'DEVICE',
-        width: 'w-1/6',
+        width: 'w-[240px]',
         renderCell: (log) => (
-          <div className="bg-ods-card box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
-            {log.device.name && (
-              <div className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
-                <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
-                  {log.device.name}
-                </p>
-              </div>
-            )}
-          </div>
+          <DeviceCardCompact
+            deviceName={log.device.name}
+            organization={log.device.organization}
+          />
         )
       },
       {
         key: 'description',
         label: 'Log Details',
-        width: 'w-1/2',
+        width: 'flex-1',
         renderCell: (log) => (
           <TableDescriptionCell text={log.description.title} />
         )

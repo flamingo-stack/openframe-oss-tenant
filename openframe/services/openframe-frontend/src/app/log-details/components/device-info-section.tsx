@@ -5,23 +5,29 @@ import { DeviceCard, CardLoader, StatusTag } from '@flamingo/ui-kit/components/u
 import { useDeviceDetails } from '../../devices/hooks/use-device-details'
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status'
 import { DeviceDetailsButton } from '../../devices/components/device-details-button'
+import type { Device } from '../../devices/types/device.types'
 
 interface DeviceInfoSectionProps {
   deviceId?: string
   userId?: string
+  device?: Partial<Device>  // Accept device data from log
 }
 
-export function DeviceInfoSection({ deviceId, userId }: DeviceInfoSectionProps) {
+export function DeviceInfoSection({ deviceId, userId, device: deviceFromLog }: DeviceInfoSectionProps) {
   const { deviceDetails, isLoading, fetchDeviceById } = useDeviceDetails()
 
   useEffect(() => {
-    if (deviceId) {
+    // Only fetch if we don't already have device data and we have a deviceId
+    if (deviceId && !deviceFromLog) {
       fetchDeviceById(deviceId)
     }
-  }, [deviceId, fetchDeviceById])
+  }, [deviceId, deviceFromLog, fetchDeviceById])
 
-  // Show loading state
-  if (isLoading) {
+  // Use device from log if available, otherwise use fetched deviceDetails
+  const device = deviceFromLog || deviceDetails
+
+  // Show loading state only if we're fetching and don't have data from log
+  if (isLoading && !deviceFromLog) {
     return (
       <div className="flex flex-col gap-1 w-full">
         <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
@@ -33,7 +39,7 @@ export function DeviceInfoSection({ deviceId, userId }: DeviceInfoSectionProps) 
   }
 
   // If no device details available, don't show anything
-  if (!deviceDetails && !deviceId) {
+  if (!device && !deviceId) {
     return null
   }
 
@@ -45,19 +51,19 @@ export function DeviceInfoSection({ deviceId, userId }: DeviceInfoSectionProps) 
       </div>
 
       {/* Use DeviceCard component - matching devices-grid.tsx pattern */}
-      {deviceDetails && (
+      {device && (
         <DeviceCard
           device={{
-            id: deviceDetails.id,
-            machineId: deviceDetails.machineId,
-            name: deviceDetails.displayName || deviceDetails.hostname || deviceDetails.description || '',
-            organization: deviceDetails.organization || deviceDetails.machineId,
-            lastSeen: deviceDetails.lastSeen,
-            operatingSystem: getDeviceOperatingSystem(deviceDetails.osType),
+            id: device.id || deviceId || '',
+            machineId: device.machineId || deviceId || '',
+            name: device.displayName || device.hostname || device.description || device.machineId || deviceId || '',
+            organization: device.organization || device.machineId || deviceId || '',
+            lastSeen: device.lastSeen || device.last_seen,
+            operatingSystem: getDeviceOperatingSystem(device.osType),
           }}
           statusBadgeComponent={
-            deviceDetails.status && (() => {
-              const statusConfig = getDeviceStatusConfig(deviceDetails.status)
+            device.status && (() => {
+              const statusConfig = getDeviceStatusConfig(device.status)
               return (
                 <StatusTag
                   label={statusConfig.label}
@@ -74,8 +80,8 @@ export function DeviceInfoSection({ deviceId, userId }: DeviceInfoSectionProps) 
               visible: true,
               component: (
                 <DeviceDetailsButton
-                  deviceId={deviceDetails.id}
-                  machineId={deviceDetails.machineId}
+                  deviceId={device.id || deviceId || ''}
+                  machineId={device.machineId || deviceId || ''}
                   className="shrink-0"
                 />
               )

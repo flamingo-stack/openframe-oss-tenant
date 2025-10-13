@@ -58,6 +58,28 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     reset
   } = useLogsStore()
 
+  /**
+   * Transform backend log data to include Device structure
+   * Maps flat fields (hostname, organizationName, organizationId) to partial Device object
+   */
+  const transformLogEntry = (logEntry: LogEntry): LogEntry => {
+    // If we have device-related fields, create a partial Device object
+    if (logEntry.deviceId || logEntry.hostname || logEntry.organizationName) {
+      return {
+        ...logEntry,
+        device: {
+          id: logEntry.deviceId || '',
+          machineId: logEntry.deviceId || '',
+          hostname: logEntry.hostname || logEntry.deviceId || '',
+          displayName: logEntry.hostname || '',
+          organizationId: logEntry.organizationId,
+          organization: logEntry.organizationName || logEntry.organizationId || ''
+        }
+      }
+    }
+    return logEntry
+  }
+
   const fetchLogs = useCallback(async (
     searchTerm: string,
     filters: LogFilterInput = {},
@@ -87,7 +109,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
       }
 
       const graphqlResponse = response.data
-      
+
       if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
         throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
       }
@@ -97,27 +119,33 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
       }
 
       const logsData = graphqlResponse.data
-      
+
+      // Transform log entries to include device structure
+      const transformedEdges = logsData.logs.edges.map(edge => ({
+        ...edge,
+        node: transformLogEntry(edge.node)
+      }))
+
       if (append) {
-        appendEdges(logsData.logs.edges)
+        appendEdges(transformedEdges)
       } else {
-        setEdges(logsData.logs.edges)
+        setEdges(transformedEdges)
       }
-      
+
       setPageInfo(logsData.logs.pageInfo)
-      
+
       return logsData
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch logs'
       console.error('Failed to fetch logs:', error)
       setError(errorMessage)
-      
+
       toast({
         title: 'Error fetching logs',
         description: errorMessage,
         variant: 'destructive'
       })
-      
+
       throw error
     } finally {
       setLoading(false)
@@ -158,7 +186,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
       }
 
       const graphqlResponse = response.data
-      
+
       if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
         throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
       }
@@ -167,17 +195,20 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
         throw new Error('No data received from server')
       }
 
-      return graphqlResponse.data.logDetails
+      // Transform log details to include device structure
+      const logDetails = transformLogEntry(graphqlResponse.data.logDetails)
+
+      return logDetails
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch log details'
       console.error('Failed to fetch log details:', error)
-      
+
       toast({
         title: 'Error fetching log details',
         description: errorMessage,
         variant: 'destructive'
       })
-      
+
       throw error
     }
   }, [toast])

@@ -77,13 +77,22 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
   const { deviceDetails, isLoading: isLoadingDevice, fetchDeviceById, clearDeviceDetails } = useDeviceDetails()
 
   // Fetch device details when modal opens with a deviceId
+  // ALWAYS fetch the full device object - log data only has partial info (hostname, org)
   useEffect(() => {
-    if (isOpen && log?.device.name && log.device.name !== 'null' && log.device.name !== '') {
-      fetchDeviceById(log.device.name)
-    } else if (!isOpen) {
+    if (isOpen && log?.originalLogEntry) {
+      const deviceId = log.originalLogEntry.deviceId
+
+      // Always fetch the full device object if we have a deviceId
+      if (deviceId && deviceId !== 'null' && deviceId !== '') {
+        fetchDeviceById(deviceId)
+      }
+    }
+
+    // Clear device details when modal closes
+    if (!isOpen) {
       clearDeviceDetails()
     }
-  }, [isOpen, log?.device.name, fetchDeviceById, clearDeviceDetails])
+  }, [isOpen, log?.originalLogEntry, fetchDeviceById, clearDeviceDetails])
 
   useEffect(() => {
     if (isOpen && log && log.originalLogEntry) {
@@ -262,56 +271,65 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
           </div>
 
           {/* Device Card Section */}
-          {log.device.name && log.device.name !== 'null' && log.device.name !== '' && (
-            <div className="p-4 bg-ods-card">
-              {isLoadingDevice ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="w-6 h-6 border-2 border-ods-border border-t-ods-accent rounded-full animate-spin" />
-                </div>
-              ) : deviceDetails ? (
-                <DeviceCard
-                  device={{
-                    id: deviceDetails.id,
-                    machineId: deviceDetails.machineId,
-                    name: deviceDetails.displayName || deviceDetails.hostname || deviceDetails.description || '',
-                    organization: deviceDetails.organization || deviceDetails.machineId,
-                    lastSeen: deviceDetails.lastSeen,
-                    operatingSystem: getDeviceOperatingSystem(deviceDetails.osType),
-                  }}
-                  statusBadgeComponent={
-                    deviceDetails.status && (() => {
-                      const statusConfig = getDeviceStatusConfig(deviceDetails.status)
-                      return (
-                        <StatusTag
-                          label={statusConfig.label}
-                          variant={statusConfig.variant}
-                        />
-                      )
-                    })()
-                  }
-                  actions={{
-                    moreButton: {
-                      visible: false
-                    },
-                    detailsButton: {
-                      visible: true,
-                      component: (
-                        <DeviceDetailsButton
-                          deviceId={deviceDetails.id}
-                          machineId={deviceDetails.machineId}
-                          className="shrink-0"
-                        />
-                      )
+          {(() => {
+            const deviceId = log?.originalLogEntry?.deviceId
+
+            // Only show device section if we have a deviceId
+            if (!deviceId || deviceId === 'null' || deviceId === '') {
+              return null
+            }
+
+            return (
+              <div className="p-4 bg-ods-card">
+                {isLoadingDevice ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="w-6 h-6 border-2 border-ods-border border-t-ods-accent rounded-full animate-spin" />
+                  </div>
+                ) : deviceDetails ? (
+                  <DeviceCard
+                    device={{
+                      id: deviceDetails.id,
+                      machineId: deviceDetails.machineId,
+                      name: deviceDetails.displayName || deviceDetails.hostname || deviceDetails.description || '',
+                      organization: deviceDetails.organization || deviceDetails.machineId,
+                      lastSeen: deviceDetails.lastSeen,
+                      operatingSystem: getDeviceOperatingSystem(deviceDetails.osType),
+                    }}
+                    statusBadgeComponent={
+                      deviceDetails.status && (() => {
+                        const statusConfig = getDeviceStatusConfig(deviceDetails.status)
+                        return (
+                          <StatusTag
+                            label={statusConfig.label}
+                            variant={statusConfig.variant}
+                          />
+                        )
+                      })()
                     }
-                  }}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-32 text-ods-text-secondary">
-                  <p>Device information not available</p>
-                </div>
-              )}
-            </div>
-          )}
+                    actions={{
+                      moreButton: {
+                        visible: false
+                      },
+                      detailsButton: {
+                        visible: true,
+                        component: (
+                          <DeviceDetailsButton
+                            deviceId={deviceDetails.id}
+                            machineId={deviceDetails.machineId}
+                            className="shrink-0"
+                          />
+                        )
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-32 text-ods-text-secondary">
+                    <p>Device information not available</p>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       </div>
     </>
