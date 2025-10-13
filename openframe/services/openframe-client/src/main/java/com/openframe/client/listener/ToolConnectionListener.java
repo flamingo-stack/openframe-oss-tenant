@@ -1,6 +1,7 @@
 package com.openframe.client.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openframe.client.service.NatsTopicMachineIdExtractor;
 import com.openframe.client.service.ToolConnectionService;
 import com.openframe.data.model.nats.ToolConnectionMessage;
 import io.nats.client.Connection;
@@ -13,15 +14,15 @@ import io.nats.client.api.ConsumerConfiguration;
 import io.nats.client.api.DeliverPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Component
 @RequiredArgsConstructor
@@ -32,6 +33,10 @@ public class ToolConnectionListener {
     private final Connection natsConnection;
     private final ObjectMapper objectMapper;
     private final ToolConnectionService toolConnectionService;
+    private final NatsTopicMachineIdExtractor machineIdExtractor;
+    
+    @Qualifier("natsMessageExecutor")
+    private final TaskExecutor taskExecutor;
 
     private static final String STREAM_NAME = "TOOL_CONNECTIONS";
     private static final String SUBJECT = "machine.*.tool-connection";
@@ -39,7 +44,8 @@ public class ToolConnectionListener {
     private static final int MAX_DELIVER = 10;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
     
-    private JetStreamSubscription subscription;
+    private volatile JetStreamSubscription subscription;
+    private volatile boolean running = false;
 
     @EventListener(ApplicationReadyEvent.class)
     public void subscribeToToolConnections() {
@@ -62,11 +68,9 @@ public class ToolConnectionListener {
                     .build();
 
             subscription = js.subscribe(SUBJECT, pushOptions);
+            running = true;
 
-            // Start message handler in separate thread
-            Thread handlerThread = new Thread(this::processMessages, "tool-connection-handler");
-            handlerThread.setDaemon(true);
-            handlerThread.start();
+            taskExecutor.execute(this::processMessages);
 
             log.info("Subscribed to JetStream subject: {} with consumer: {} (maxDeliver={}, ackWait={})", 
                     SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
@@ -80,7 +84,7 @@ public class ToolConnectionListener {
     private void processMessages() {
         log.info("Started processing JetStream messages");
         
-        while (!Thread.currentThread().isInterrupted() && subscription != null && subscription.isActive()) {
+        while (running && subscription != null && subscription.isActive()) {
             try {
                 Message message = subscription.nextMessage(Duration.ofSeconds(1));
                 
@@ -105,16 +109,14 @@ public class ToolConnectionListener {
         String subject = message.getSubject();
         
         try {
-            String machineId = extractMachineId(subject);
-            ToolConnectionMessage toolConnectionMessage = objectMapper.readValue(
-                messagePayload, ToolConnectionMessage.class);
+            String machineId = machineIdExtractor.extract(subject);
+            ToolConnectionMessage toolConnectionMessage = objectMapper.readValue(messagePayload, ToolConnectionMessage.class);
 
             String toolType = toolConnectionMessage.getToolType();
             String agentToolId = toolConnectionMessage.getAgentToolId();
+            long deliveredCount = message.metaData().deliveredCount();
 
-            log.info("Processing tool connection: machineId={} toolType={} agentToolId={} (delivery={})", 
-                    machineId, toolType, agentToolId, 
-                    message.metaData() != null ? message.metaData().deliveredCount() : "?");
+            log.info("Processing tool connection: machineId={} toolType={} agentToolId={} (delivery={})", machineId, toolType, agentToolId, deliveredCount);
 
             // Process the tool connection
             toolConnectionService.addToolConnection(machineId, toolType, agentToolId);
@@ -129,22 +131,10 @@ public class ToolConnectionListener {
         }
     }
 
-    private String extractMachineId(String subject) {
-        if (isEmpty(subject)) {
-            throw new IllegalStateException("Tool connection subject is empty");
-        }
-        
-        // subject format: machine.{machineId}.tool-connection
-        String[] parts = subject.split("\\.");
-        if (parts.length < 3) {
-            throw new IllegalStateException("Invalid tool connection subject format: " + subject);
-        }
-        
-        return parts[1];
-    }
-
     @PreDestroy
     public void cleanup() {
+        running = false;
+        
         if (subscription != null) {
             try {
                 subscription.unsubscribe();
