@@ -74,7 +74,7 @@ To add a new helper:
 {{- $vals := index . 2 -}}
 
 {{/* Apps with helpers - update this list when adding new helper files */}}
-{{- $availableHelpers := list "cassandra" "grafana" "kafka" "kafka-ui" "loki" "mongodb-exporter" "ngrok-operator" "prometheus" "promtail" "redis" "redis-exporter" -}}
+{{- $availableHelpers := list "cassandra" "grafana" "kafka" "kafka-ui" "loki" "mongodb-exporter" "ngrok-operator" "prometheus" "promtail" "redis" "redis-exporter" "pinot" -}}
 
 {{- if has $name $availableHelpers -}}
   {{- $helper := printf "app-helpers.%s" $name -}}
