@@ -3,7 +3,7 @@ package configuration
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )

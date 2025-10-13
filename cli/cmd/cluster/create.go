@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/cluster/ui"
-	"github.com/flamingo/openframe/internal/cluster/utils"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -66,7 +66,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 	if !globalFlags.Create.SkipWizard {
 		// Use UI layer to handle cluster configuration
 		configHandler := ui.NewConfigurationHandler()
-		
+
 		// Get cluster name from args if provided
 		var clusterName string
 		if len(args) > 0 {
@@ -75,7 +75,7 @@ func runCreateCluster(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		}
-		
+
 		// Let UI handle the entire configuration flow
 		var err error
 		config, err = configHandler.GetClusterConfig(clusterName)

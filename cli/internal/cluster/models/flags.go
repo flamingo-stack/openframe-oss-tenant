@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	
+
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/flags"
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe/internal/shared/flags"
 )
 
 // Use CommonFlags from internal/common as the single source of truth
@@ -37,13 +37,13 @@ type StatusFlags struct {
 // DeleteFlags contains flags specific to delete command
 type DeleteFlags struct {
 	GlobalFlags
-	Force bool  // Delete-specific force flag
+	Force bool // Delete-specific force flag
 }
 
 // CleanupFlags contains flags specific to cleanup command
 type CleanupFlags struct {
 	GlobalFlags
-	Force bool  // Cleanup-specific force flag
+	Force bool // Cleanup-specific force flag
 }
 
 // Flag setup functions
@@ -90,17 +90,17 @@ func ValidateClusterName(name string) error {
 	if trimmed == "" {
 		return fmt.Errorf("cluster name cannot be empty or contain only whitespace")
 	}
-	
+
 	// Check length (DNS-1123 subdomain: max 253 characters, but k3d has stricter limits)
 	if len(trimmed) > 63 {
 		return fmt.Errorf("cluster name is too long: %d characters (max 63)", len(trimmed))
 	}
-	
+
 	// Check minimum length
 	if len(trimmed) < 1 {
 		return fmt.Errorf("cluster name must be at least 1 character")
 	}
-	
+
 	// Check for invalid characters (DNS-1123 subdomain rules, but allow uppercase)
 	// Must contain only alphanumeric characters or '-'
 	// Must start and end with an alphanumeric character
@@ -114,7 +114,7 @@ func ValidateClusterName(name string) error {
 			return fmt.Errorf("cluster name '%s' is invalid: must contain only letters, numbers, and hyphens, and must start and end with an alphanumeric character", trimmed)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -130,13 +130,13 @@ func ValidateCreateFlags(flags *CreateFlags) error {
 	if err := ValidateGlobalFlags(&flags.GlobalFlags); err != nil {
 		return err
 	}
-	
+
 	// Validate node count - this validation is now handled at command level
 	// to distinguish between explicitly set values and defaults
 	if flags.NodeCount <= 0 {
 		return fmt.Errorf("node count must be at least 1: %d", flags.NodeCount)
 	}
-	
+
 	return nil
 }
 

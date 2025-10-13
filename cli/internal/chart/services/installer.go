@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/utils/config"
-	"github.com/flamingo/openframe/internal/chart/utils/errors"
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/errors"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
+	sharedErrors "github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
 )
 
 // Installer orchestrates the chart installation process

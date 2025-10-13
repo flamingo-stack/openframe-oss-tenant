@@ -2,10 +2,10 @@ package prerequisites
 
 import (
 	"strings"
-	
-	"github.com/flamingo/openframe/internal/dev/prerequisites/jq"
-	"github.com/flamingo/openframe/internal/dev/prerequisites/scaffold"
-	"github.com/flamingo/openframe/internal/dev/prerequisites/telepresence"
+
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/prerequisites/jq"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/prerequisites/scaffold"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/prerequisites/telepresence"
 )
 
 type PrerequisiteChecker struct {

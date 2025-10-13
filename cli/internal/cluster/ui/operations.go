@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/shared/errors"
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -26,7 +26,7 @@ func (ui *OperationsUI) SelectClusterForOperation(clusters []models.ClusterInfo,
 		if clusterName == "" {
 			return "", fmt.Errorf("cluster name cannot be empty")
 		}
-		
+
 		// Validate that the cluster exists in the available clusters
 		found := false
 		for _, cluster := range clusters {
@@ -38,7 +38,7 @@ func (ui *OperationsUI) SelectClusterForOperation(clusters []models.ClusterInfo,
 		if !found {
 			return "", fmt.Errorf("cluster '%s' not found", clusterName)
 		}
-		
+
 		return clusterName, nil
 	}
 
@@ -65,7 +65,7 @@ func (ui *OperationsUI) SelectClusterForDelete(clusters []models.ClusterInfo, ar
 		if clusterName == "" {
 			return "", fmt.Errorf("cluster name cannot be empty")
 		}
-		
+
 		// Validate that the cluster exists in the available clusters
 		found := false
 		for _, cluster := range clusters {
@@ -77,7 +77,7 @@ func (ui *OperationsUI) SelectClusterForDelete(clusters []models.ClusterInfo, ar
 		if !found {
 			return "", fmt.Errorf("cluster '%s' not found", clusterName)
 		}
-		
+
 		// Ask for confirmation unless forced
 		if !force {
 			confirmed, err := ui.confirmDeletion(clusterName)
@@ -89,7 +89,7 @@ func (ui *OperationsUI) SelectClusterForDelete(clusters []models.ClusterInfo, ar
 				return "", nil
 			}
 		}
-		
+
 		return clusterName, nil
 	}
 
@@ -104,11 +104,11 @@ func (ui *OperationsUI) SelectClusterForDelete(clusters []models.ClusterInfo, ar
 	if err != nil {
 		return "", fmt.Errorf("cluster selection failed: %w", err)
 	}
-	
+
 	if clusterName == "" {
 		return "", nil
 	}
-	
+
 	// Ask for confirmation unless forced
 	if !force {
 		confirmed, err := ui.confirmDeletion(clusterName)
@@ -132,7 +132,7 @@ func (ui *OperationsUI) SelectClusterForCleanup(clusters []models.ClusterInfo, a
 		if clusterName == "" {
 			return "", fmt.Errorf("cluster name cannot be empty")
 		}
-		
+
 		// Validate that the cluster exists in the available clusters
 		found := false
 		for _, cluster := range clusters {
@@ -144,7 +144,7 @@ func (ui *OperationsUI) SelectClusterForCleanup(clusters []models.ClusterInfo, a
 		if !found {
 			return "", fmt.Errorf("cluster '%s' not found", clusterName)
 		}
-		
+
 		// Always ask for confirmation
 		confirmed, err := ui.confirmCleanup(clusterName, force)
 		if err != nil {
@@ -154,7 +154,7 @@ func (ui *OperationsUI) SelectClusterForCleanup(clusters []models.ClusterInfo, a
 			pterm.Info.Println("Cleanup cancelled.")
 			return "", nil
 		}
-		
+
 		return clusterName, nil
 	}
 
@@ -169,11 +169,11 @@ func (ui *OperationsUI) SelectClusterForCleanup(clusters []models.ClusterInfo, a
 	if err != nil {
 		return "", fmt.Errorf("cluster selection failed: %w", err)
 	}
-	
+
 	if clusterName == "" {
 		return "", nil
 	}
-	
+
 	// Always ask for confirmation
 	confirmed, err := ui.confirmCleanup(clusterName, force)
 	if err != nil {
@@ -191,11 +191,11 @@ func (ui *OperationsUI) SelectClusterForCleanup(clusters []models.ClusterInfo, a
 func (ui *OperationsUI) confirmCleanup(clusterName string, force bool) (bool, error) {
 	prompt := fmt.Sprintf("Are you sure you want to cleanup cluster '%s'?", pterm.Cyan(clusterName))
 	if force {
-		prompt = fmt.Sprintf("Are you sure you want to perform AGGRESSIVE cleanup on cluster '%s'?\n%s", 
+		prompt = fmt.Sprintf("Are you sure you want to perform AGGRESSIVE cleanup on cluster '%s'?\n%s",
 			pterm.Cyan(clusterName),
 			pterm.Gray("This will remove ALL images, volumes, networks, and system resources."))
 	}
-	
+
 	return pterm.DefaultInteractiveConfirm.
 		WithDefaultText(prompt).
 		WithDefaultValue(false).
@@ -224,37 +224,37 @@ func (ui *OperationsUI) ShowOperationSuccess(operation, clusterName string) {
 	switch strings.ToLower(operation) {
 	case "cleanup":
 		pterm.Success.Printf("Cluster '%s' cleanup completed\n", pterm.Cyan(clusterName))
-		
+
 		// Show cleanup summary
 		fmt.Println()
 		pterm.Info.Printf("Cleanup Summary:\n")
 		pterm.Printf("  Removed unused Docker images\n")
 		pterm.Printf("  Freed up disk space\n")
 		pterm.Printf("  Optimized cluster performance\n")
-		
+
 	case "delete":
 		pterm.Success.Printf("Cluster '%s' deleted successfully\n", pterm.Cyan(clusterName))
-		
+
 		// Show detailed deletion box
 		fmt.Println()
 		boxContent := fmt.Sprintf(
 			"NAME:         %s\n"+
-			"TYPE:         %s\n"+
-			"STATUS:       %s\n"+
-			"NETWORK:      %s\n"+
-			"RESOURCES:    %s",
+				"TYPE:         %s\n"+
+				"STATUS:       %s\n"+
+				"NETWORK:      %s\n"+
+				"RESOURCES:    %s",
 			pterm.Bold.Sprint(clusterName),
 			"k3d",
 			pterm.Red("Deleted"),
 			pterm.Gray("Removed"),
 			pterm.Gray("Cleaned up"),
 		)
-		
+
 		pterm.DefaultBox.
 			WithTitle(" Cluster Deleted ").
 			WithTitleTopCenter().
 			Println(boxContent)
-		
+
 		// Show deletion summary
 		fmt.Println()
 		pterm.Info.Printf("Deletion Summary:\n")
@@ -262,8 +262,7 @@ func (ui *OperationsUI) ShowOperationSuccess(operation, clusterName string) {
 		pterm.Printf("  Docker containers cleaned up\n")
 		pterm.Printf("  Network configuration removed\n")
 		pterm.Printf("  Kubeconfig entries cleaned\n")
-		
-		
+
 	default:
 		pterm.Success.Printf("Operation '%s' completed for cluster '%s'\n", operation, pterm.Cyan(clusterName))
 	}
@@ -277,27 +276,25 @@ func (ui *OperationsUI) ShowOperationError(operation, clusterName string, err er
 		{Description: "Check cluster status:", Command: "openframe cluster status " + clusterName},
 		{Description: "Try with verbose output:", Command: "openframe cluster " + operation + " " + clusterName + " --verbose"},
 	}
-	
+
 	sharedUI.ShowOperationError(operation, clusterName, err, troubleshootingTips)
 }
-
-
 
 // ShowConfigurationSummary displays the cluster configuration summary
 func (ui *OperationsUI) ShowConfigurationSummary(config models.ClusterConfig, dryRun bool, skipWizard bool) {
 	pterm.Info.Printf("Configuration Summary\n")
-	
+
 	// Clean, simple format without heavy table styling
 	fmt.Printf("   Name: %s\n", pterm.Cyan(config.Name))
 	fmt.Printf("   Type: %s\n", string(config.Type))
 	fmt.Printf("  Nodes: %d\n", config.NodeCount)
-	
+
 	if config.K8sVersion != "" {
 		fmt.Printf("Version: %s\n", config.K8sVersion)
 	}
-	
+
 	fmt.Println()
-	
+
 	if dryRun {
 		pterm.Warning.Println("DRY RUN MODE - No cluster will be created")
 	} else if skipWizard {
@@ -314,4 +311,3 @@ func (ui *OperationsUI) ShowNoResourcesMessage(resourceType, operation string) {
 		"openframe cluster list",
 	)
 }
-

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	"github.com/flamingo/openframe/internal/chart/ui/templates"
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -22,38 +22,38 @@ func NewDockerConfigurator(modifier *templates.HelmValuesModifier) *DockerConfig
 	}
 }
 
-// Configure asks user about Docker registry configuration  
+// Configure asks user about Docker registry configuration
 func (d *DockerConfigurator) Configure(config *types.ChartConfiguration) error {
 	// Get current Docker settings from existing values
 	currentDocker := d.modifier.GetCurrentDockerSettings(config.ExistingValues)
-	
+
 	pterm.Info.Printf("Docker Registry Configuration (current: %s)", currentDocker.Username)
-	
+
 	options := []string{
 		"No Docker credentials",
 		"Input custom Docker credentials",
 	}
-	
+
 	_, choice, err := sharedUI.SelectFromList("Docker credentials", options)
 	if err != nil {
 		return fmt.Errorf("docker choice failed: %w", err)
 	}
-	
+
 	if strings.Contains(choice, "custom") {
 		dockerConfig, err := d.promptForDockerSettings(currentDocker)
 		if err != nil {
 			return err
 		}
-		
+
 		// Only set if values actually changed
-		if dockerConfig.Username != currentDocker.Username || 
-		   dockerConfig.Password != currentDocker.Password || 
-		   dockerConfig.Email != currentDocker.Email {
+		if dockerConfig.Username != currentDocker.Username ||
+			dockerConfig.Password != currentDocker.Password ||
+			dockerConfig.Email != currentDocker.Email {
 			config.DockerRegistry = dockerConfig
 			config.ModifiedSections = append(config.ModifiedSections, "docker")
 		}
 	}
-	
+
 	return nil
 }
 

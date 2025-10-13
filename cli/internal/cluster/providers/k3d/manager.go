@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 )
 
 // Constants for configuration
@@ -280,7 +280,7 @@ image: %s`, config.Name, servers, agents, image)
 	if err != nil || len(ports) < 3 {
 		return "", fmt.Errorf("failed to allocate available ports: %w", err)
 	}
-	
+
 	apiPort := strconv.Itoa(ports[0])
 	httpPort := strconv.Itoa(ports[1])
 	httpsPort := strconv.Itoa(ports[2])
@@ -346,13 +346,13 @@ func (m *K3dManager) isTestCluster(name string) bool {
 func (m *K3dManager) findAvailablePorts(count int) ([]int, error) {
 	// Get ports used by existing k3d clusters
 	usedPorts := m.getUsedPortsByExistingClusters()
-	
+
 	// Start with default ports and increment if busy (matching script behavior)
 	defaultPorts := []int{6550, 80, 443} // API, HTTP, HTTPS
 	alternatePorts := []int{6551, 8080, 8443}
-	
+
 	var ports []int
-	
+
 	for i := 0; i < count && i < len(defaultPorts); i++ {
 		// Check if default port is available and not used by existing clusters
 		if m.isPortAvailable(defaultPorts[i]) && !m.isPortInUse(defaultPorts[i], usedPorts) {
@@ -362,7 +362,7 @@ func (m *K3dManager) findAvailablePorts(count int) ([]int, error) {
 		} else {
 			// Find next available port that's not used by k3d clusters
 			found := false
-			for port := alternatePorts[i] + 1; port < alternatePorts[i] + 1000; port++ {
+			for port := alternatePorts[i] + 1; port < alternatePorts[i]+1000; port++ {
 				if m.isPortAvailable(port) && !m.isPortInUse(port, usedPorts) {
 					ports = append(ports, port)
 					found = true
@@ -385,18 +385,18 @@ func (m *K3dManager) findAvailablePorts(count int) ([]int, error) {
 // getUsedPortsByExistingClusters returns a map of ports used by existing k3d clusters
 func (m *K3dManager) getUsedPortsByExistingClusters() map[int]bool {
 	usedPorts := make(map[int]bool)
-	
+
 	ctx := context.Background()
 	result, err := m.executor.Execute(ctx, "k3d", "cluster", "list", "--output", "json")
 	if err != nil {
 		return usedPorts // Return empty map on error, will rely on port availability check
 	}
-	
+
 	var k3dClusters []k3dClusterInfo
 	if err := json.Unmarshal([]byte(result.Stdout), &k3dClusters); err != nil {
 		return usedPorts // Return empty map on error
 	}
-	
+
 	// Extract ports from all existing clusters
 	for _, cluster := range k3dClusters {
 		for _, node := range cluster.Nodes {
@@ -407,7 +407,7 @@ func (m *K3dManager) getUsedPortsByExistingClusters() map[int]bool {
 						usedPorts[port] = true
 					}
 				}
-				
+
 				// Parse port mappings from the load balancer
 				for _, mappings := range node.PortMappings {
 					for _, mapping := range mappings {
@@ -421,7 +421,7 @@ func (m *K3dManager) getUsedPortsByExistingClusters() map[int]bool {
 			}
 		}
 	}
-	
+
 	return usedPorts
 }
 
@@ -454,11 +454,11 @@ type k3dClusterInfo struct {
 
 // k3dNode represents a node in the k3d cluster
 type k3dNode struct {
-	Name           string                    `json:"name"`
-	Role           string                    `json:"role"`
-	Created        time.Time                 `json:"created"`
-	RuntimeLabels  map[string]string         `json:"runtimeLabels,omitempty"`
-	PortMappings   map[string][]PortMapping  `json:"portMappings,omitempty"`
+	Name          string                   `json:"name"`
+	Role          string                   `json:"role"`
+	Created       time.Time                `json:"created"`
+	RuntimeLabels map[string]string        `json:"runtimeLabels,omitempty"`
+	PortMappings  map[string][]PortMapping `json:"portMappings,omitempty"`
 }
 
 // PortMapping represents a port mapping for k3d nodes

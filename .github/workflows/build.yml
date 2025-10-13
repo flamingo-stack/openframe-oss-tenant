@@ -44,14 +44,12 @@ jobs:
   matrix:
     name: Generate Matrix
     uses: ./.github/workflows/matrix.yml
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      github.event_name == 'push'
-
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
 
   build_images:
     name: "Build: ${{ matrix.name }}"
     needs: [changes, matrix]
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -148,6 +146,9 @@ jobs:
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: openframe
+    if: |
+      (github.event_name == 'workflow_dispatch') || 
+      (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true'))
     defaults:
       run:
         shell: bash
@@ -194,7 +195,7 @@ jobs:
             done
           else
             make build TARGET="${{ matrix.target }}"
-          fi          
+          fi
 
       - name: Upload Rust Artifacts for Windows / Linux
         if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
@@ -274,60 +275,109 @@ jobs:
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
 
-  release:
-    name: "Create Release"
-    needs: [changes, matrix, build_images, build_client, build_helm]
+  build_openframe_cli:
+    name: "Build OpenFrame Go CLI"
+    needs: [ changes, build_client ]
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'workflow_dispatch' && 
-      inputs.version != ''
+      (github.event_name == 'workflow_dispatch' && inputs.version != '') ||
+      (github.event_name == 'push' && contains(needs.changes.outputs.cli, 'true'))
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Download all artifacts
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      # Download (& extract) Rust client artifacts
+      - name: Download macOS client
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
         uses: actions/download-artifact@v4
         with:
-          path: release-artifacts
-        continue-on-error: true
+          name: openframe-oss-client-macos-universal
+          path: artifacts/openframe-macos/
 
-      - name: Prepare release artifacts
+      - name: Download Windows client
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: openframe-oss-client-windows-x64
+          path: artifacts/openframe-windows/
+
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+
+      - name: Run GoReleaser (release)
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ inputs.version }}
         run: |
-          mkdir -p final-artifacts/client
-          if [ -d "release-artifacts" ]; then
-            find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
-            -exec cp {} final-artifacts/client/ \;
-          fi
+          git tag -f ${{ inputs.version }}
+          goreleaser release --clean --skip=validate --release-header="" --release-footer="" --release-notes=""
 
-          echo "Final artifacts to release:"
-          ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
-
-      - name: Generate release body
-        id: release_body
+      - name: Package Rust Client binaries
         run: |
-          IMAGES=$(echo '${{ needs.matrix.outputs.matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
-          {
-            echo "body<<EOF"
-            echo "## Images"
-            echo "$IMAGES"
-            echo ""
-            echo "## Client"
-            echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
-            echo "- **Windows** (x64): \`openframe.exe\`"
-            echo ""
-            echo "## Chart"
-            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          tar -czf artifacts/openframe-client-macos_${{ inputs.version }}.tar.gz -C artifacts/openframe-macos openframe
+          zip -j artifacts/openframe-client-windows_${{ inputs.version }}.zip artifacts/openframe-windows/openframe.exe
+
+      - name: Upload Go CLI artifacts
+        if: (github.event_name == 'workflow_dispatch' && inputs.version != '' || github.event_name == 'push')
+        uses: actions/upload-artifact@v4
+        with:
+          name: openframe-cli-binaries
+          path: dist/*.tar.gz
 
       - name: Create Release
+        if: (github.event_name == 'workflow_dispatch' && inputs.version != '' || github.event_name == 'push')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
           name: Release ${{ inputs.version }}
           draft: false
           prerelease: false
+          make_latest: true
           files: |
-            final-artifacts/client/*
+            artifacts/openframe-client-macos_${{ inputs.version }}.tar.gz
+            artifacts/openframe-client-windows_${{ inputs.version }}.zip
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
           token: ${{ secrets.GITHUB_TOKEN }}
-          body: ${{ steps.release_body.outputs.body }}
+          body: |
+            ## OpenFrame Release  ${{ inputs.version }}
+
+            ### 🐹 Go CLI Binaries
+            Cross-platform CLI tool for OpenFrame management.
+
+            ### 🦀 Rust Client Binaries
+            - **macOS Universal** (ARM64 + x86_64): `openframe-client-macos_${{ inputs.version }}.tar.gz`
+            - **Windows x64**: `openframe-client-windows_${{ inputs.version }}.zip`
+
+            ### 📦 Installation
+
+            **macOS:**
+            Latest version:
+            ```bash
+            curl -L https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client_macOS_universal.tar.gz | tar xz
+            curl -L https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/latest/openframe-client_macOS_universal.tar.gz | tar xz
+            chmod +x openframe
+            sudo mv openframe /usr/local/bin/
+            ```
+            
+            This version:
+            ```bash
+            curl -L https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/${{ inputs.version }}/openframe-client_macOS_universal.tar.gz | tar xz
+            chmod +x openframe
+            sudo mv openframe /usr/local/bin/
+            ```
+
+            **Windows:**
+            Download `openframe-client-windows_${{ inputs.version }}.zip` and extract to your PATH.

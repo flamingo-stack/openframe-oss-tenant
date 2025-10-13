@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	
-	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/flamingo/openframe/internal/dev/providers/kubectl"
-	"github.com/flamingo/openframe/internal/dev/services/intercept"
-	"github.com/flamingo/openframe/internal/shared/executor"
+
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/providers/kubectl"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/services/intercept"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 
@@ -60,10 +60,10 @@ func (s *Service) InteractiveInterceptSetup(ctx context.Context) (*InterceptSetu
 	}
 
 	return &InterceptSetup{
-		ServiceName:     service.Name,
-		Namespace:       service.Namespace,
-		LocalPort:       localPort,
-		KubernetesPort:  kubernetesPort,
+		ServiceName:    service.Name,
+		Namespace:      service.Namespace,
+		LocalPort:      localPort,
+		KubernetesPort: kubernetesPort,
 	}, nil
 }
 
@@ -86,7 +86,7 @@ func (s *Service) RunFullInteractiveIntercept(ctx context.Context) error {
 		pterm.Info.Println("Creating kubectl provider...")
 	}
 	kubectlProvider := kubectl.NewProvider(s.executor, s.verbose)
-	
+
 	if s.verbose {
 		pterm.Info.Println("Checking cluster connection...")
 	}
@@ -99,7 +99,7 @@ func (s *Service) RunFullInteractiveIntercept(ctx context.Context) error {
 		pterm.Info.Println("Setting up interactive UI...")
 	}
 	s.interceptUI = NewInterceptUI(kubectlProvider, kubectlProvider)
-	
+
 	if s.verbose {
 		pterm.Info.Println("Starting interactive setup...")
 	}
@@ -111,7 +111,7 @@ func (s *Service) RunFullInteractiveIntercept(ctx context.Context) error {
 	// Step 4: Convert to flags and start intercept
 	flags := s.convertSetupToFlags(setup)
 	interceptService := intercept.NewService(s.executor, s.verbose)
-	
+
 	return interceptService.StartIntercept(setup.ServiceName, flags)
 }
 
@@ -126,29 +126,28 @@ func (s *Service) checkKubectlContexts(ctx context.Context) error {
 			pterm.Error.Println("kubectl not found. Please install kubectl to use intercept functionality.")
 			return fmt.Errorf("kubectl not available")
 		}
-		
+
 		// Check if no context is set
 		if strings.Contains(errMsg, "current-context is not set") || strings.Contains(errMsg, "no current context") {
 			pterm.Error.Println("No active kubectl context found. Please set a context with: kubectl config use-context <context-name>")
 			return fmt.Errorf("no active kubectl context")
 		}
-		
+
 		return fmt.Errorf("failed to get kubectl context: %w", err)
 	}
-	
+
 	currentContext := strings.TrimSpace(result.Stdout)
 	if currentContext == "" {
 		pterm.Error.Println("No active kubectl context found. Please set a context with: kubectl config use-context <context-name>")
 		return fmt.Errorf("no active kubectl context")
 	}
-	
+
 	if s.verbose {
 		pterm.Info.Printf("Using kubectl context: %s\n", currentContext)
 	}
-	
+
 	return nil
 }
-
 
 // convertSetupToFlags converts UI setup to intercept flags
 func (s *Service) convertSetupToFlags(setup *InterceptSetup) *models.InterceptFlags {
@@ -156,7 +155,7 @@ func (s *Service) convertSetupToFlags(setup *InterceptSetup) *models.InterceptFl
 	if remotePortName == "" {
 		remotePortName = fmt.Sprintf("%d", setup.KubernetesPort.Port)
 	}
-	
+
 	return &models.InterceptFlags{
 		Port:           setup.LocalPort,
 		Namespace:      setup.Namespace,
@@ -166,8 +165,8 @@ func (s *Service) convertSetupToFlags(setup *InterceptSetup) *models.InterceptFl
 
 // InterceptSetup contains the intercept configuration
 type InterceptSetup struct {
-	ServiceName     string
-	Namespace       string
-	LocalPort       int
-	KubernetesPort  *intercept.ServicePort
+	ServiceName    string
+	Namespace      string
+	LocalPort      int
+	KubernetesPort *intercept.ServicePort
 }

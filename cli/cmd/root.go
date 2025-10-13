@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flamingo/openframe/cmd/bootstrap"
-	"github.com/flamingo/openframe/cmd/chart"
-	"github.com/flamingo/openframe/cmd/cluster"
-	"github.com/flamingo/openframe/cmd/dev"
-	"github.com/flamingo/openframe/internal/shared/config"
-	"github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/cmd/bootstrap"
+	"github.com/flamingo-stack/openframe/openframe/cmd/chart"
+	"github.com/flamingo-stack/openframe/openframe/cmd/cluster"
+	"github.com/flamingo-stack/openframe/openframe/cmd/dev"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ type VersionInfo struct {
 // DefaultVersionInfo provides default version information
 var DefaultVersionInfo = VersionInfo{
 	Version: "dev",
-	Commit:  "none", 
+	Commit:  "none",
 	Date:    "unknown",
 }
 
@@ -113,13 +113,13 @@ func Execute() error {
 // ExecuteWithVersion runs the root command with specified version info
 func ExecuteWithVersion(versionInfo VersionInfo) error {
 	rootCmd := GetRootCmd(versionInfo)
-	
+
 	// Initialize configuration using service layer
 	service := config.NewSystemService()
 	if err := service.Initialize(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: initialization failed: %v\n", err)
 	}
-	
+
 	return rootCmd.Execute()
 }
 
@@ -142,5 +142,3 @@ func getBootstrapCmd() *cobra.Command {
 func getDevCmd() *cobra.Command {
 	return dev.GetDevCmd()
 }
-
-

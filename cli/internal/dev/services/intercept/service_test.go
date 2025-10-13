@@ -3,8 +3,8 @@ package intercept
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -91,7 +91,7 @@ func TestService_ValidateInputs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := service.validateInputs(tt.serviceName, tt.flags)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorContains != "" {
@@ -151,27 +151,27 @@ func TestService_StopIntercept(t *testing.T) {
 	service := NewService(mockExecutor, false)
 
 	tests := []struct {
-		name            string
-		serviceName     string
-		isIntercepting  bool
-		currentService  string
-		expectError     bool
-		errorContains   string
+		name           string
+		serviceName    string
+		isIntercepting bool
+		currentService string
+		expectError    bool
+		errorContains  string
 	}{
 		{
-			name:          "no active intercept",
-			serviceName:   "test-service",
+			name:           "no active intercept",
+			serviceName:    "test-service",
 			isIntercepting: false,
-			expectError:   true,
-			errorContains: "no active intercept",
+			expectError:    true,
+			errorContains:  "no active intercept",
 		},
 		{
-			name:            "wrong service name",
-			serviceName:     "wrong-service",
-			isIntercepting:  true,
-			currentService:  "test-service",
-			expectError:     true,
-			errorContains:   "active intercept is for service",
+			name:           "wrong service name",
+			serviceName:    "wrong-service",
+			isIntercepting: true,
+			currentService: "test-service",
+			expectError:    true,
+			errorContains:  "active intercept is for service",
 		},
 	}
 
@@ -181,7 +181,7 @@ func TestService_StopIntercept(t *testing.T) {
 			service.currentService = tt.currentService
 
 			err := service.StopIntercept(tt.serviceName)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorContains != "" {

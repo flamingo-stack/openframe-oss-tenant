@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
 	"github.com/pterm/pterm"
 )
 
@@ -19,12 +19,12 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	if config.DryRun {
 		return nil
 	}
-	
+
 	// Check if already cancelled before starting
 	if ctx.Err() != nil {
 		return fmt.Errorf("operation already cancelled: %w", ctx.Err())
 	}
-	
+
 	// Early exit if context has a short deadline (indicates timeout scenario)
 	if deadline, ok := ctx.Deadline(); ok {
 		if time.Until(deadline) < 5*time.Second {
@@ -32,36 +32,35 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			return nil
 		}
 	}
-	
+
 	// Create a derived context that responds to both parent cancellation AND direct signals
 	// This ensures immediate response to Ctrl+C even if parent context isn't propagating fast enough
 	localCtx, localCancel := context.WithCancel(ctx)
 	defer localCancel()
-	
+
 	// Handle direct interrupt signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(sigChan)
-	
+
 	go func() {
 		<-sigChan
 		localCancel() // Cancel our local context immediately
 	}()
-	
-	
+
 	// Check if we should start the spinner (skip if context is cancelled or expiring soon)
 	shouldSkipSpinner := false
-	
+
 	// Check if context is cancelled
 	if localCtx.Err() != nil {
 		shouldSkipSpinner = true
 	}
-	
+
 	// Check if original context is cancelled
 	if ctx.Err() != nil {
 		shouldSkipSpinner = true
 	}
-	
+
 	// Check if context deadline is very close (less than 10 seconds)
 	if deadline, ok := ctx.Deadline(); ok {
 		timeLeft := time.Until(deadline)
@@ -69,12 +68,12 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			shouldSkipSpinner = true
 		}
 	}
-	
+
 	if shouldSkipSpinner {
 		// Context is cancelled or expiring soon - skip ArgoCD applications wait entirely
 		return nil
 	}
-	
+
 	// Show initial verbose info if enabled
 	if config.Verbose {
 		pterm.Info.Println("Starting ArgoCD application synchronization...")
@@ -94,10 +93,10 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		// In non-interactive mode, just show a simple info message
 		pterm.Info.Println("Installing ArgoCD applications...")
 	}
-	
+
 	var spinnerMutex sync.Mutex
 	spinnerStopped := false
-	
+
 	// Function to stop spinner safely
 	stopSpinner := func() {
 		spinnerMutex.Lock()
@@ -107,23 +106,23 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			spinnerStopped = true
 		}
 	}
-	
+
 	// Monitor for context cancellation (includes interrupt signals from parent or direct signals)
 	go func() {
 		<-localCtx.Done()
 		stopSpinner()
 	}()
-	
+
 	// Ensure spinner is stopped when function exits
 	defer stopSpinner()
-	
+
 	// Bootstrap wait (30 seconds)
 	bootstrapEnd := time.Now().Add(30 * time.Second)
-	
+
 	// Check every 10ms for immediate response
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
-	
+
 	// Bootstrap phase
 	for time.Now().Before(bootstrapEnd) {
 		select {
@@ -133,26 +132,26 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			// Continue waiting
 		}
 	}
-	
+
 	// Main monitoring phase
 	startTime := time.Now()
 	timeout := 60 * time.Minute
 	checkInterval := 2 * time.Second
 	lastCheck := time.Now()
-	
+
 	// Get expected applications count
 	totalAppsExpected := m.getTotalExpectedApplications(localCtx, config)
 	if totalAppsExpected == 0 {
 		totalAppsExpected = -1
 	}
-	
+
 	maxAppsSeenTotal := 0
 	maxAppsSeenReady := 0
-	
+
 	// Track applications that have ever been ready (healthy + synced) during this session
 	// Once an app is ready, it stays counted even if it temporarily goes out of sync
 	everReadyApps := make(map[string]bool)
-	
+
 	// Main loop
 	for {
 		select {
@@ -169,13 +168,13 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 				spinnerMutex.Unlock()
 				return fmt.Errorf("timeout waiting for ArgoCD applications after %v", timeout)
 			}
-			
+
 			// Check applications every 2 seconds
 			if time.Since(lastCheck) < checkInterval {
 				continue
 			}
 			lastCheck = time.Now()
-			
+
 			// Parse applications
 			apps, err := m.parseApplications(localCtx, config.Verbose)
 			if err != nil {
@@ -282,14 +281,14 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 					}
 				}
 			}
-			
+
 			// Use the high water mark of applications that have ever been ready
 			readyCount := len(everReadyApps)
 
 			if readyCount > maxAppsSeenReady {
 				maxAppsSeenReady = readyCount
 			}
-			
+
 			// Check if deployment is complete - ALL currently detected apps must be healthy and synced
 			// All apps must be currently ready (not just "ever ready")
 			allReady := false
@@ -301,7 +300,7 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			if currentlyReady > maxAppsSeenReady {
 				maxAppsSeenReady = currentlyReady
 			}
-			
+
 			if allReady {
 				spinnerMutex.Lock()
 				if !spinnerStopped && spinner != nil && spinner.IsActive {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -71,7 +71,7 @@ some-other-container`,
 		t.Run(tt.name, func(t *testing.T) {
 			// Create mock executor
 			mockExec := executor.NewMockCommandExecutor()
-			
+
 			if tt.shouldFail {
 				mockExec.SetShouldFail(true, "docker command failed")
 			} else if tt.clusterName != "" {
@@ -80,11 +80,11 @@ some-other-container`,
 					Stdout: tt.dockerOutput,
 				})
 			}
-			
+
 			service := NewClusterService(mockExec)
-			
+
 			result, err := service.getK3dClusterNodes(context.Background(), tt.clusterName)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -97,7 +97,7 @@ some-other-container`,
 
 func TestClusterService_filterK3dNodes(t *testing.T) {
 	service := NewClusterService(executor.NewMockCommandExecutor())
-	
+
 	tests := []struct {
 		name        string
 		output      string
@@ -146,7 +146,7 @@ func TestClusterService_filterK3dNodes(t *testing.T) {
 
 func TestClusterService_isK3dWorkerNode(t *testing.T) {
 	service := NewClusterService(executor.NewMockCommandExecutor())
-	
+
 	tests := []struct {
 		name        string
 		nodeName    string
@@ -172,7 +172,7 @@ func TestClusterService_isK3dWorkerNode(t *testing.T) {
 			clusterName: "test-cluster",
 			expected:    true,
 		},
-		
+
 		// Invalid nodes (infrastructure containers)
 		{
 			name:        "load balancer",
@@ -186,7 +186,7 @@ func TestClusterService_isK3dWorkerNode(t *testing.T) {
 			clusterName: "test-cluster",
 			expected:    false,
 		},
-		
+
 		// Wrong cluster or format
 		{
 			name:        "wrong cluster prefix",
@@ -206,7 +206,7 @@ func TestClusterService_isK3dWorkerNode(t *testing.T) {
 			clusterName: "test-cluster",
 			expected:    false,
 		},
-		
+
 		// Edge cases
 		{
 			name:        "empty node name",
@@ -233,31 +233,31 @@ func TestClusterService_isK3dWorkerNode(t *testing.T) {
 func TestClusterService_cleanupDockerResources_Integration(t *testing.T) {
 	// Integration test to verify the full flow works
 	mockExec := executor.NewMockCommandExecutor()
-	
+
 	// Mock the node discovery
 	mockExec.SetResponse("docker ps --filter label=k3d.cluster=test-cluster --filter status=running --format {{.Names}}", &executor.CommandResult{
 		Stdout: "k3d-test-cluster-server-0\nk3d-test-cluster-agent-0\nk3d-test-cluster-serverlb",
 	})
-	
+
 	// Mock the cleanup commands for each valid node
 	mockExec.SetResponse("docker exec k3d-test-cluster-server-0 docker image prune -f", &executor.CommandResult{})
 	mockExec.SetResponse("docker exec k3d-test-cluster-server-0 docker container prune -f", &executor.CommandResult{})
 	mockExec.SetResponse("docker exec k3d-test-cluster-agent-0 docker image prune -f", &executor.CommandResult{})
 	mockExec.SetResponse("docker exec k3d-test-cluster-agent-0 docker container prune -f", &executor.CommandResult{})
-	
+
 	service := NewClusterService(mockExec)
-	
+
 	err := service.cleanupDockerResources(context.Background(), "test-cluster", true, false)
-	
+
 	require.NoError(t, err, "cleanupDockerResources should succeed")
-	
+
 	// Verify all expected commands were called
 	assert.True(t, mockExec.WasCommandExecuted("docker ps"))
 	assert.True(t, mockExec.WasCommandExecuted("docker exec k3d-test-cluster-server-0 docker image prune -f"))
 	assert.True(t, mockExec.WasCommandExecuted("docker exec k3d-test-cluster-server-0 docker container prune -f"))
 	assert.True(t, mockExec.WasCommandExecuted("docker exec k3d-test-cluster-agent-0 docker image prune -f"))
 	assert.True(t, mockExec.WasCommandExecuted("docker exec k3d-test-cluster-agent-0 docker container prune -f"))
-	
+
 	// Verify serverlb commands were NOT called (filtered out)
 	assert.False(t, mockExec.WasCommandExecuted("docker exec k3d-test-cluster-serverlb docker image prune -f"))
 	assert.False(t, mockExec.WasCommandExecuted("docker exec k3d-test-cluster-serverlb docker container prune -f"))

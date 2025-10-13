@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/ui/templates"
-	"github.com/flamingo/openframe/internal/chart/utils/types"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

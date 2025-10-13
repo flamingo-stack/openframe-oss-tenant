@@ -3,8 +3,8 @@ package ui
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -20,8 +20,6 @@ const (
 
 // UI should not depend on business logic interfaces
 // Business logic functions will be injected as simple parameters
-
-
 
 // SelectClusterByName allows user to interactively select from available clusters by name
 // Takes pre-fetched cluster list instead of manager to separate UI from business logic
@@ -57,7 +55,7 @@ func HandleClusterSelection(clusters []ClusterInfo, args []string, prompt string
 	for i, cluster := range clusters {
 		clusterNames[i] = cluster.Name
 	}
-	
+
 	// Use common UI function
 	return sharedUI.HandleResourceSelection(args, clusterNames, prompt)
 }
@@ -73,9 +71,9 @@ func ConfirmClusterDeletion(clusterName string, force bool) (bool, error) {
 	if force {
 		return true, nil
 	}
-	
+
 	return confirmAction(fmt.Sprintf(
-		"Are you sure you want to delete cluster '%s'? This action cannot be undone", 
+		"Are you sure you want to delete cluster '%s'? This action cannot be undone",
 		clusterName,
 	))
 }
@@ -87,9 +85,9 @@ func ShowClusterOperationCancelled() {
 
 // FormatClusterSuccessMessage formats a success message with cluster info
 func FormatClusterSuccessMessage(clusterName string, clusterType string, status string) string {
-	return pterm.Sprintf("Cluster: %s\nType: %s\nStatus: %s", 
-		pterm.Green(clusterName), 
-		pterm.Blue(clusterType), 
+	return pterm.Sprintf("Cluster: %s\nType: %s\nStatus: %s",
+		pterm.Green(clusterName),
+		pterm.Blue(clusterType),
 		pterm.Green(status))
 }
 
