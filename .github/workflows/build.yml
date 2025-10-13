@@ -142,6 +142,7 @@ jobs:
           exclude-tags: "^[0-9]+\\.[0-9]+\\.[0-9]+$|^latest$|^test-.*$"
           use-regex: true
 
+
   build_client:
     name: "Build Rust Client (${{ matrix.os }})"
     needs: [changes, matrix]
@@ -246,6 +247,7 @@ jobs:
           retention-days: 30
           compression-level: 9
 
+
   build_helm:
     name: "Build Helm Chart"
     needs: [changes]
@@ -274,6 +276,7 @@ jobs:
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
+
 
   release:
     name: "Create Release"
