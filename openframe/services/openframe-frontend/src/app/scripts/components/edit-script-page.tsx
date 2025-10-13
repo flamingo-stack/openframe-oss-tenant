@@ -2,14 +2,12 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ChevronLeft, Check, ArrowLeft } from 'lucide-react'
-import { tacticalApiClient } from '../../../lib/tactical-api-client'
+import { Plus, ArrowLeft } from 'lucide-react'
+import { tacticalApiClient } from '@lib/tactical-api-client'
 import { useScriptDetails } from '../hooks/use-script-details'
-import { Button } from '@flamingo/ui-kit/components/ui'
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, FormLoader, FormPageContainer, Label, Textarea } from '@flamingo/ui-kit'
 import { PushButtonSelector } from '@flamingo/ui-kit/components/features'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo/ui-kit/components/ui'
 import { Card } from '@flamingo/ui-kit/components/ui'
-import { FormLoader, FormPageContainer } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { OS_TYPES, type OSType } from '@flamingo/ui-kit'
 import { SHELL_TYPES } from '@flamingo/ui-kit/types/shell.types'
@@ -252,241 +250,241 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       headerActions={headerActions}
       padding='none'
     >
-        <div className="space-y-10">
-          {/* Supported Platform Section */}
-          <div className="space-y-1">
-            <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</label>
-            <div className="flex flex-col gap-4 pt-2">
-              <PushButtonSelector
-                options={OS_TYPES.map(os => ({
-                  id: os.id,
-                  name: os.label,
-                  icon: <os.icon className="w-5 h-5" />
-                }))}
-                selectedIds={scriptData.supported_platforms.map(p => {
-                  // Normalize stored platform IDs to OSType format
-                  const normalized = p.toUpperCase()
-                  return OS_TYPES.find(os => os.id === normalized)?.id || 'WINDOWS'
-                })}
-                onSelectionChange={(selectedIds) => {
-                  // Convert OSType IDs back to lowercase for API
-                  setScriptData(prev => ({
-                    ...prev,
-                    supported_platforms: selectedIds.map(id => id.toLowerCase())
-                  }))
-                }}
-                multiSelect={true}
+      <div className="space-y-10">
+        {/* Supported Platform Section */}
+        <div className="space-y-1">
+          <Label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</Label>
+          <div className="flex flex-col gap-4 pt-2">
+            <PushButtonSelector
+              options={OS_TYPES.map(os => ({
+                id: os.id,
+                name: os.label,
+                icon: <os.icon className="w-5 h-5" />
+              }))}
+              selectedIds={scriptData.supported_platforms.map(p => {
+                // Normalize stored platform IDs to OSType format
+                const normalized = p.toUpperCase()
+                return OS_TYPES.find(os => os.id === normalized)?.id || 'WINDOWS'
+              })}
+              onSelectionChange={(selectedIds) => {
+                // Convert OSType IDs back to lowercase for API
+                setScriptData(prev => ({
+                  ...prev,
+                  supported_platforms: selectedIds.map(id => id.toLowerCase())
+                }))
+              }}
+              multiSelect={true}
+            />
+            <div className={`h-16 px-4 py-3 rounded-md border border-ods-border flex items-center justify-between bg-ods-card`}>
+              <input
+                type="checkbox"
+                checked={scriptData.run_as_user}
+                onChange={(e) => setScriptData(prev => ({ ...prev, run_as_user: e.target.checked }))}
+                className="w-6 h-6 rounded border-2 border-ods-border bg-ods-card checked:bg-ods-accent checked:border-accent-primary focus:ring-0 focus:ring-offset-0"
               />
-              <div className={`h-16 px-4 py-3 rounded-md border border-ods-border flex items-center justify-between bg-ods-card`}>
-                <input
-                  type="checkbox"
-                  checked={scriptData.run_as_user}
-                  onChange={(e) => setScriptData(prev => ({ ...prev, run_as_user: e.target.checked }))}
-                  className="w-6 h-6 rounded border-2 border-ods-border bg-ods-card checked:bg-ods-accent checked:border-accent-primary focus:ring-0 focus:ring-offset-0"
-                />
-                <div className="flex-1 ml-3">
-                  <div className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-disabled">Run as User</div>
-                  <div className="text-sm font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-disabled">Windows Only</div>
-                </div>
+              <div className="flex-1 ml-3">
+                <div className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-disabled">Run as User</div>
+                <div className="text-sm font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-disabled">Windows Only</div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Form Fields Row 1 */}
-          <div className="flex gap-6">
-            <div className="flex-1 space-y-1">
-              <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
-              <div className="bg-ods-card rounded-md border border-ods-border px-3 py-3 h-[60px] flex items-center">
-                <input
-                  type="text"
-                  value={scriptData.name}
-                  onChange={(e) => setScriptData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-                  placeholder="Enter Script Name Here"
-                />
-              </div>
-            </div>
-            
-            <div className="flex-1 space-y-1">
-              <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Shell Type</label>
-              <Select
-                value={scriptData.type}
-                onValueChange={(value) => setScriptData(prev => ({ ...prev, type: value }))}
-              >
-                <SelectTrigger className="w-full bg-ods-card border border-ods-border px-3 py-3 font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary hover:bg-ods-bg-hover focus:ring-0 rounded-md">
-                  <SelectValue placeholder="Select Shell Type"/>
-                </SelectTrigger>
-                <SelectContent>
-                  {SHELL_TYPES.map(s => (
-                    <SelectItem key={s.value} value={s.value}>
-                      <div className="flex items-center gap-2">
-                        {s.icon}
-                        <span>{s.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex-1 space-y-1">
-              <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Category</label>
-              <Select
-                value={scriptData.category}
-                onValueChange={(value) => setScriptData(prev => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger className="w-full bg-ods-card border border-ods-border px-3 py-3 font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary hover:bg-ods-bg-hover focus:ring-0 rounded-md">
-                  <SelectValue placeholder="Select Category"/>
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex-1 space-y-1">
-              <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Timeout</label>
-              <div className="bg-ods-card rounded-md border border-ods-border px-3 py-3 h-[60px] flex items-center gap-2">
-                <input
-                  type="number"
-                  value={scriptData.default_timeout}
-                  onChange={(e) => setScriptData(prev => ({ ...prev, default_timeout: parseInt(e.target.value) || 90 }))}
-                  className="flex-1 bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-                  placeholder="90"
-                />
-                <span className="text-sm font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-secondary">Seconds</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-1">
-            <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Description</label>
-            <div className="bg-ods-card rounded-md border border-ods-border relative">
-              <textarea
-                value={scriptData.description}
-                onChange={(e) => setScriptData(prev => ({ ...prev, description: e.target.value }))}
-                rows={4}
-                className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary p-3 resize-none"
-                placeholder="Enter Script Description"
+        {/* Form Fields Row 1 */}
+        <div className="flex gap-6">
+          <div className="flex-1 space-y-1">
+            <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
+            <div className="bg-ods-card rounded-md border border-ods-border px-3 py-3 h-[60px] flex items-center">
+              <input
+                type="text"
+                value={scriptData.name}
+                onChange={(e) => setScriptData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
+                placeholder="Enter Script Name Here"
               />
             </div>
           </div>
 
-          {/* Script Arguments and Environment Variables Row */}
-          <div className="flex gap-6">
-            {/* Script Arguments */}
-            <div className="flex-1">
-              <div className="space-y-2">
-                <div className="space-y-2">
-                  <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Script Arguments</label>
-                  {scriptData.args.map((arg, index) => (
-                    <div key={index} className="flex gap-2">
-                      <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
-                        <input
-                          type="text"
-                          value={arg.name}
-                          onChange={(e) => updateScriptArgument(index, 'name', e.target.value)}
-                          className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-                          placeholder="Enter Argument"
-                        />
-                      </div>
-                      <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
-                        <input
-                          type="text"
-                          value={arg.value}
-                          onChange={(e) => updateScriptArgument(index, 'value', e.target.value)}
-                          className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-                          placeholder="Enter Value (empty=flag)"
-                        />
-                      </div>
+          <div className="flex-1 space-y-1">
+            <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Shell Type</label>
+            <Select
+              value={scriptData.type}
+              onValueChange={(value) => setScriptData(prev => ({ ...prev, type: value }))}
+            >
+              <SelectTrigger className="w-full bg-ods-card border border-ods-border px-3 py-3 font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary hover:bg-ods-bg-hover focus:ring-0 rounded-md">
+                <SelectValue placeholder="Select Shell Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {SHELL_TYPES.map(s => (
+                  <SelectItem key={s.value} value={s.value}>
+                    <div className="flex items-center gap-2">
+                      {s.icon}
+                      <span>{s.label}</span>
                     </div>
-                  ))}
-                </div>
-                <Button
-                  onClick={addScriptArgument}
-                  variant="ghost"
-                  className="flex items-center gap-2 text-ods-text-primary hover:text-ods-accent transition-colors py-3 px-0 font-['DM_Sans:Bold',_sans-serif] font-bold text-lg justify-start"
-                  leftIcon={<Plus className="w-6 h-6" />}
-                >
-                  Add Script Argument
-                </Button>
-              </div>
-            </div>
-
-            {/* Environment Variables */}
-            <div className="flex-1">
-              <div className="space-y-2">
-                <div className="space-y-2">
-                  <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Environment Vars</label>
-                  {scriptData.env_vars.map((envVar, index) => (
-                    <div key={index} className="flex gap-2">
-                      <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
-                        <input
-                          type="text"
-                          value={envVar.name}
-                          onChange={(e) => updateEnvironmentVar(index, 'name', e.target.value)}
-                          className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-                          placeholder="Enter Environment Var"
-                        />
-                      </div>
-                      <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
-                        <input
-                          type="text"
-                          value={envVar.value}
-                          onChange={(e) => updateEnvironmentVar(index, 'value', e.target.value)}
-                          className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-                          placeholder="Enter Value"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  onClick={addEnvironmentVar}
-                  variant="ghost"
-                  className="flex items-center gap-2 text-ods-text-primary hover:text-ods-accent transition-colors py-3 px-0 font-['DM_Sans:Bold',_sans-serif] font-bold text-lg justify-start"
-                  leftIcon={<Plus className="w-6 h-6" />}
-                >
-                  Add Environment Vars
-                </Button>
-              </div>
-            </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Syntax/Script Content */}
-          <div className="space-y-1">
-            <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Syntax</label>
-            <div className="bg-ods-bg rounded-md border border-ods-border relative">
-              <div className="flex">
-                {/* Line numbers */}
-                <div className="w-12 bg-ods-bg py-3 px-2">
-                  <div ref={lineNumbersRef} className="h-[400px] overflow-y-auto">
-                    <div className="text-right text-ods-text-secondary text-lg font-['DM_Sans:Medium',_sans-serif] font-medium leading-6">
-                      {scriptData.content.split('\n').map((_, i) => (
-                        <div key={i}>{i + 1}</div>
-                      ))}
+          <div className="flex-1 space-y-1">
+            <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Category</label>
+            <Select
+              value={scriptData.category}
+              onValueChange={(value) => setScriptData(prev => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger className="w-full bg-ods-card border border-ods-border px-3 py-3 font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary hover:bg-ods-bg-hover focus:ring-0 rounded-md">
+                <SelectValue placeholder="Select Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-1 space-y-1">
+            <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Timeout</label>
+            <div className="bg-ods-card rounded-md border border-ods-border px-3 py-3 h-[60px] flex items-center gap-2">
+              <input
+                type="number"
+                value={scriptData.default_timeout}
+                onChange={(e) => setScriptData(prev => ({ ...prev, default_timeout: parseInt(e.target.value) || 90 }))}
+                className="flex-1 bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
+                placeholder="90"
+              />
+              <span className="text-sm font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-secondary">Seconds</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-1">
+          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Description</label>
+          <div className="bg-ods-card rounded-md border border-ods-border relative">
+            <textarea
+              value={scriptData.description}
+              onChange={(e) => setScriptData(prev => ({ ...prev, description: e.target.value }))}
+              rows={4}
+              className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary p-3 resize-none"
+              placeholder="Enter Script Description"
+            />
+          </div>
+        </div>
+
+        {/* Script Arguments and Environment Variables Row */}
+        <div className="flex gap-6">
+          {/* Script Arguments */}
+          <div className="flex-1">
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Script Arguments</label>
+                {scriptData.args.map((arg, index) => (
+                  <div key={index} className="flex gap-2">
+                    <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
+                      <input
+                        type="text"
+                        value={arg.name}
+                        onChange={(e) => updateScriptArgument(index, 'name', e.target.value)}
+                        className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
+                        placeholder="Enter Argument"
+                      />
+                    </div>
+                    <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
+                      <input
+                        type="text"
+                        value={arg.value}
+                        onChange={(e) => updateScriptArgument(index, 'value', e.target.value)}
+                        className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
+                        placeholder="Enter Value (empty=flag)"
+                      />
                     </div>
                   </div>
+                ))}
+              </div>
+              <Button
+                onClick={addScriptArgument}
+                variant="ghost"
+                className="flex items-center gap-2 text-ods-text-primary hover:text-ods-accent transition-colors py-3 px-0 font-['DM_Sans:Bold',_sans-serif] font-bold text-lg justify-start"
+                leftIcon={<Plus className="w-6 h-6" />}
+              >
+                Add Script Argument
+              </Button>
+            </div>
+          </div>
+
+          {/* Environment Variables */}
+          <div className="flex-1">
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Environment Vars</label>
+                {scriptData.env_vars.map((envVar, index) => (
+                  <div key={index} className="flex gap-2">
+                    <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
+                      <input
+                        type="text"
+                        value={envVar.name}
+                        onChange={(e) => updateEnvironmentVar(index, 'name', e.target.value)}
+                        className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
+                        placeholder="Enter Environment Var"
+                      />
+                    </div>
+                    <div className="flex-1 bg-ods-card rounded-md border border-ods-border p-3">
+                      <input
+                        type="text"
+                        value={envVar.value}
+                        onChange={(e) => updateEnvironmentVar(index, 'value', e.target.value)}
+                        className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
+                        placeholder="Enter Value"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button
+                onClick={addEnvironmentVar}
+                variant="ghost"
+                className="flex items-center gap-2 text-ods-text-primary hover:text-ods-accent transition-colors py-3 px-0 font-['DM_Sans:Bold',_sans-serif] font-bold text-lg justify-start"
+                leftIcon={<Plus className="w-6 h-6" />}
+              >
+                Add Environment Vars
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Syntax/Script Content */}
+        <div className="space-y-1">
+          <Label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Syntax</Label>
+          <div className="bg-ods-bg rounded-md border border-ods-border relative">
+            <div className="flex">
+              {/* Line numbers */}
+              <div className="w-12 bg-ods-bg py-3 px-2">
+                <div ref={lineNumbersRef} className="h-[400px] overflow-y-auto">
+                  <div className="text-right text-ods-text-secondary text-lg font-['DM_Sans:Medium',_sans-serif] font-medium leading-6">
+                    {scriptData.content.split('\n').map((_, i) => (
+                      <div key={i}>{i + 1}</div>
+                    ))}
+                  </div>
                 </div>
-                {/* Editable script content */}
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={scriptData.content}
-                    onChange={(e) => setScriptData(prev => ({ ...prev, content: e.target.value }))}
-                    onScroll={handleTextareaScroll}
-                    wrap="off"
-                    className="w-full h-[400px] bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none p-3 font-mono leading-6 resize-none overflow-auto"
-                    placeholder="#!/bin/bash\n\n# Your script content here..."
-                    spellCheck={false}
-                  />
-                </div>
+              </div>
+              {/* Editable script content */}
+              <div className="flex-1 relative">
+                <Textarea
+                  ref={textareaRef}
+                  value={scriptData.content}
+                  onChange={(e) => setScriptData(prev => ({ ...prev, content: e.target.value }))}
+                  onScroll={handleTextareaScroll}
+                  wrap="off"
+                  className="w-full h-[400px] border-none focus-visible:ring-0 bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none p-3 font-mono leading-6 resize-none overflow-auto"
+                  placeholder="#!/bin/bash\n\n# Your script content here..."
+                  spellCheck={false}
+                />
               </div>
             </div>
           </div>
+        </div>
 
       </div>
     </FormPageContainer>

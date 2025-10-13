@@ -28,32 +28,32 @@ export function getDialogTableRowActions(
 export function getDialogTableColumns(): TableColumn<Dialog>[] {
   return [
     {
-      key: 'topic',
-      label: 'TOPIC',
+      key: 'title',
+      label: 'TITLE',
       width: 'w-1/3',
       renderCell: (dialog) => (
         <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
-          {dialog.topic}
+          {dialog.title}
         </span>
       )
     },
     {
-      key: 'source',
-      label: 'SOURCE',
+      key: 'owner',
+      label: 'OWNER',
       width: 'w-1/6',
       renderCell: (dialog) => (
         <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
-          {dialog.source}
+          {'machineId' in (dialog.owner || {}) ? (dialog.owner as any).machineId : dialog.owner?.type}
         </span>
       )
     },
     {
-      key: 'slaCountdown',
-      label: 'SLA COUNTDOWN',
+      key: 'createdAt',
+      label: 'CREATED',
       width: 'w-1/6',
       renderCell: (dialog) => (
         <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-ods-text-secondary truncate">
-          {dialog.slaCountdown}
+          {dialog.createdAt}
         </span>
       )
     },
@@ -65,14 +65,16 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
       renderCell: (dialog) => {
         const getStatusVariant = (status: string) => {
           switch (status) {
-            case 'TECH_REQUIRED':
-              return 'info' as const
+            case 'ACTION_REQUIRED':
+              return 'warning' as const
             case 'ON_HOLD':
               return 'error' as const
             case 'ACTIVE':
               return 'warning' as const
             case 'RESOLVED':
               return 'success' as const
+            case 'ARCHIVED':
+              return 'info' as const
             default:
               return 'info' as const
           }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, Suspense, useEffect, useState } from 'react'
+import { useCallback, useMemo, Suspense, useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { NavigationSidebar } from '@flamingo/ui-kit/components/navigation'
 import { AppHeader } from '@flamingo/ui-kit/components/navigation'
@@ -79,6 +79,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
   const { handleAuthenticationSuccess } = useAuth()
+  const handleAuthSuccessRef = useRef(handleAuthenticationSuccess)
+  useEffect(() => { handleAuthSuccessRef.current = handleAuthenticationSuccess }, [handleAuthenticationSuccess])
   const router = useRouter()
   const pathname = usePathname()
 
@@ -133,7 +135,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             ? (typeof window !== 'undefined' ? (localStorage.getItem('of_access_token') || 'cookie-auth') : 'cookie-auth')
             : 'cookie-auth'
 
-          handleAuthenticationSuccess(token, userData)
+          handleAuthSuccessRef.current(token, userData)
         }
       } catch (e) {
         // noop: if /me fails, we'll fall back to showing UnauthorizedOverlay
@@ -147,7 +149,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
     const t = setTimeout(check, 50)
     return () => { cancelled = true; clearTimeout(t) }
-  }, [isAuthenticated, handleAuthenticationSuccess])
+  }, [isAuthenticated])
 
   if (isOssTenantMode() && !isHydrated) {
     return <PageLoader title="Initializing" description="Loading application..." />

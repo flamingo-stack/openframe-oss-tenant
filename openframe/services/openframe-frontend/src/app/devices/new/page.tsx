@@ -30,6 +30,13 @@ export default function NewDevicePage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('')
   const { items: orgs, fetch: fetchOrgs } = useOrganizationsMin()
 
+  const serverUrl = useMemo(() => {
+    if (typeof window === 'undefined') return 'localhost'
+    const { protocol, hostname } = window.location
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return 'localhost'
+    return `${protocol}//${hostname}`
+  }, [])
+
   useEffect(() => {
     fetchOrgs('').catch(() => { })
   }, [fetchOrgs])
@@ -67,7 +74,7 @@ export default function NewDevicePage() {
 
   const command = useMemo(() => {
     const orgIdArg = selectedOrgId
-    const baseArgs = `install --serverUrl localhost --initialKey ${initialKey} --localMode --orgId ${orgIdArg}`
+    const baseArgs = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgIdArg}`
     const extras = args.length ? ' ' + args.join(' ') : ''
 
     if (platform === 'windows') {
@@ -76,7 +83,7 @@ export default function NewDevicePage() {
     }
 
     return `curl -L -o openframe '${MACOS_BINARY_URL}' && chmod +x ./openframe && sudo ./openframe ${baseArgs}${extras}`
-  }, [initialKey, args, platform, selectedOrgId])
+  }, [initialKey, args, platform, selectedOrgId, serverUrl])
 
   const copyCommand = useCallback(async () => {
     try {

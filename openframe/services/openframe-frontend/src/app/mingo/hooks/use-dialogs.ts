@@ -2,16 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { GET_DIALOGS_QUERY } from '../queries/dialogs-queries'
-import { Dialog } from '../types/dialog.types'
+import { Dialog, DialogConnection } from '../types/dialog.types'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { apiClient } from '../../../lib/api-client'
-import { getMockDialogs } from '../data/mock-dialogs'
-
-// Toggle between mock data and actual API calls
-const USE_MOCK_DATA = true
+import { apiClient } from '@lib/api-client'
 
 interface DialogsResponse {
-  dialogs: Dialog[]
+  dialogs: DialogConnection
 }
 
 interface GraphQLResponse<T> {
@@ -34,50 +30,45 @@ export function useDialogs(archived: boolean = false) {
     setError(null)
 
     try {
-      if (USE_MOCK_DATA) {
-        // Mock data simulation with delay
-        await new Promise(resolve => setTimeout(resolve, 800))
-        
-        const mockDialogs = getMockDialogs(archived, searchParam || searchTerm)
-        setDialogs(mockDialogs)
-        return { dialogs: mockDialogs }
-      } else {
-        const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('/api/graphql', {
-          query: GET_DIALOGS_QUERY,
-          variables: {
-            archived,
-            search: searchParam || searchTerm || undefined
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(response.error || `Request failed with status ${response.status}`)
+      const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('/api/graphql', {
+        query: GET_DIALOGS_QUERY,
+        variables: {
+          filter: archived ? { statuses: ['ARCHIVED'] } : undefined,
+          pagination: { limit: 50 },
+          search: searchParam || searchTerm || undefined,
+          slaSort: 'ASC'
         }
+      })
 
-        const graphqlResponse = response.data
-        
-        if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
-        }
-
-        if (!graphqlResponse?.data) {
-          throw new Error('No data received from server')
-        }
-
-        setDialogs(graphqlResponse.data.dialogs || [])
-        return graphqlResponse.data
+      if (!response.ok) {
+        throw new Error(response.error || `Request failed with status ${response.status}`)
       }
+
+      const graphqlResponse = response.data
+
+      if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
+        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
+      }
+
+      if (!graphqlResponse?.data) {
+        throw new Error('No data received from server')
+      }
+
+      const connection = graphqlResponse.data.dialogs
+      const nodes = (connection?.edges || []).map(edge => edge.node)
+      setDialogs(nodes)
+      return graphqlResponse.data
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dialogs'
       console.error('Failed to fetch dialogs:', error)
       setError(errorMessage)
-      
+
       toast({
         title: 'Error',
         description: `Failed to fetch ${archived ? 'archived' : 'current'} chats: ${errorMessage}`,
         variant: 'destructive'
       })
-      
+
       throw error
     } finally {
       setIsLoading(false)
