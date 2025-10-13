@@ -1,7 +1,8 @@
 'use client'
 
 import React from 'react'
-import { InfoCard } from '@flamingo/ui-kit'
+import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo/ui-kit'
+import { Info as InfoIcon } from 'lucide-react'
 import { Device } from '../../types/device.types'
 
 interface UsersTabProps {
@@ -22,6 +23,7 @@ export function UsersTab({ device }: UsersTabProps) {
   const loggedUsername = loggedInUser?.username || device.logged_in_username || device.logged_username || 'Unknown'
 
   return (
+    <TooltipProvider delayDuration={0}>
     <div className="space-y-6 mt-6">
       {/* Logged In User */}
       <div>
@@ -32,6 +34,16 @@ export function UsersTab({ device }: UsersTabProps) {
           data={{
             title: loggedUsername,
             subtitle: "Active Session",
+            icon: (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[500px] min-w-[400px]">
+                  <p>Currently logged in user from Fleet MDM and Tactical RMM. Shows the active user session with UID, group membership, and shell information.</p>
+                </TooltipContent>
+              </Tooltip>
+            ),
             items: (() => {
               const items = []
               if (loggedInUser?.uid !== undefined) {
@@ -83,6 +95,16 @@ export function UsersTab({ device }: UsersTabProps) {
                     subtitle: user.isLoggedIn ? '● Active' :
                              user.type === 'person' ? 'User Account' :
                              user.type || 'System User',
+                    icon: (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[500px] min-w-[400px]">
+                          <p>System user account from Fleet MDM. Shows user type (person or service), UID, group, and shell information for access control monitoring.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ),
                     items: items.length > 0 ? items : [{ label: 'Username', value: user.username }]
                   }}
                 />
@@ -92,5 +114,6 @@ export function UsersTab({ device }: UsersTabProps) {
         </div>
       )}
     </div>
+    </TooltipProvider>
   )
 }
