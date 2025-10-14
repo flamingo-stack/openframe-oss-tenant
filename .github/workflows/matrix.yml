@@ -3,21 +3,25 @@ name: Generate Matrix
 on:
   workflow_call:
     outputs:
-      matrix:
-        description: "Matrix configuration for all components"
-        value: ${{ jobs.matrix.outputs.matrix }}
+      images_matrix:
+        description: "Images Matrix configuration for all components"
+        value: ${{ jobs.matrix.outputs.images_matrix }}
+      clients_matrix:
+        description: "Clients Matrix configuration for all components"
+        value: ${{ jobs.matrix.outputs.clients_matrix }}
 
 jobs:
   matrix:
     name: Generate matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
+      images_matrix: ${{ steps.matrix.outputs.images_matrix }}
+      clients_matrix: ${{ steps.matrix.outputs.clients_matrix }}
     steps:
       - name: Define Matrix
         id: matrix
         run: |
-          matrix_json='[
+          images_matrix_json='[
             {
               "name": "openframe-api",
               "path": "./openframe/services/openframe-api",
@@ -245,10 +249,39 @@ jobs:
               "context": "./integrated-tools/tactical-rmm"
             }
           ]'
+          clients_matrix_json='[
+            {  
+              "name": "openframe-client",
+              "os": "macos-latest",
+              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
+              "artifact_name": "macos-universal"
+            },
+            {
+              "name": "openframe-client",
+              "os": "windows-latest",
+              "target": "x86_64-pc-windows-msvc",
+              "artifact_name": "windows-x64"
+            },
+            {  
+              "name": "openframe-chat",
+              "os": "macos-latest",
+              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
+              "artifact_name": "macos-universal"
+            },
+            {
+              "name": "openframe-chat",
+              "os": "windows-latest",
+              "target": "x86_64-pc-windows-msvc",
+              "artifact_name": "windows-x64"
+            }
+          ]'
 
           # Write the matrix to the output
           {
-            echo 'matrix<<EOF'
-            echo "$matrix_json"
+            echo 'images_matrix<<EOF'
+            echo "$images_matrix_json"
+            echo EOF
+            echo 'clients_matrix<<EOF'
+            echo "$clients_matrix_json"
             echo EOF
           } >> $GITHUB_OUTPUT
