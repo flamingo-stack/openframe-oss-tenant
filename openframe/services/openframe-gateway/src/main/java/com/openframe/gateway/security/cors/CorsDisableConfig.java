@@ -1,4 +1,4 @@
-package com.openframe.gateway.config;
+package com.openframe.gateway.security.cors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
