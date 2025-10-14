@@ -5,7 +5,7 @@ metadata:
   name: tactical-rmm
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
 spec:
   backoffLimit: 3
   template:
@@ -36,8 +36,11 @@ spec:
           - -c
           - |
             echo "Getting Tactical RMM API key..."
-            sleep 10
             POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
+            until kubectl exec -n integrated-tools $POD -c tactical-base -- test -f /opt/tactical/api_key.txt 2>/dev/null; do
+              echo "Waiting for /opt/tactical/api_key.txt to be available..."
+              sleep 5
+            done
             TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -c tactical-base -- cat /opt/tactical/api_key.txt)
 
             echo "Registering Tactical RMM..."

@@ -52,11 +52,11 @@ export const metadata: Metadata = {
 
   icons: {
     icon: [
-      { url: '/assets/openframe/favicon.ico', type: 'image/x-icon' },
-      { url: '/assets/openframe/favicon.svg', type: 'image/svg+xml' }
+      { url: '/assets/openframe/openframe-app-icon.png', type: 'image/png' },
+      { url: '/assets/openframe/favicon.ico', type: 'image/x-icon' }
     ],
     apple: [
-      { url: '/assets/openframe/og-image.png' }
+      { url: '/assets/openframe/openframe-app-icon.png' }
     ],
   },
 

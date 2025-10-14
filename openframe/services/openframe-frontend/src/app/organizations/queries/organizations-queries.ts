@@ -81,5 +81,3 @@ export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
     }
   }
 `
-
-
