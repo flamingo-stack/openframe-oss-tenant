@@ -207,7 +207,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.id] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
