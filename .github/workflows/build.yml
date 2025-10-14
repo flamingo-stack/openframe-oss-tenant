@@ -16,7 +16,7 @@ on:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
-      - 'client/**'
+      - 'clients/**'
   workflow_dispatch:
     inputs:
       version:
@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.matrix.outputs.matrix) }}
+        include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
     steps:
       - name: Check if build should run
         id: should_run
@@ -143,31 +143,25 @@ jobs:
           use-regex: true
       
 
-  build_client:
-    name: "Build Rust Client (${{ matrix.os }})"
+  build_clients:
+    name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes, matrix]
-    runs-on: ${{ matrix.os }}
+    runs-on: "${{ matrix.os }}-latest"
     env:
       CARGO_INCREMENTAL: 0
-      BINARY_NAME: openframe
+      BINARY_NAME: ${{ matrix.name }}
     defaults:
       run:
         shell: bash
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-latest
-            target: "aarch64-apple-darwin,x86_64-apple-darwin"
-            artifact_name: openframe-oss-client-macos-universal
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact_name: openframe-oss-client-windows-x64
+        include: ${{ fromJson(needs.matrix.outputs.clients_matrix) }}
 
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(needs.changes.outputs.client, 'true')) }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -179,16 +173,17 @@ jobs:
         uses: ./.github/steps/rust-setup
         if: steps.should_run.outputs.run == 'true'
         with:
+          path: ${{ matrix.path }}
           toolchain: stable
           targets: ${{ matrix.target }}
           components: clippy, rustfmt
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
       - name: Build client
-        working-directory: client
+        working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
@@ -202,8 +197,8 @@ jobs:
         if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: "client/target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          name: "${{ matrix.name }}-${{ matrix.os }}"
+          path: "${{ matrix.path }}/target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
@@ -213,13 +208,12 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts
-          echo "Create ${{ matrix.artifact_name }}"
           IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
           RUST_TARGET_ARM64=${ARCHITECTURES[0]}
           RUST_TARGET_x64=${ARCHITECTURES[1]}
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
-          lipo -create ./client/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ./client/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
+          lipo -create ${{ matrix.path }}/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.path }}/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
           
           echo "Verify macOS openframe universal package"
           lipo -info ./artifacts/${{ env.BINARY_NAME }}
@@ -241,7 +235,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
+          name: "${{ matrix.name }}-${{ matrix.os }}"
           path: artifacts/
           if-no-files-found: warn
           retention-days: 30
@@ -280,7 +274,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [changes, matrix, build_images, build_client, build_helm]
+    needs: [changes, matrix, build_images, build_clients, build_helm]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' && 
@@ -297,25 +291,25 @@ jobs:
 
       - name: Prepare release artifacts
         run: |
-          mkdir -p final-artifacts/client
+          mkdir -p final-artifacts/clients
           if [ -d "release-artifacts" ]; then
             find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
-            -exec cp {} final-artifacts/client/ \;
+            -exec cp {} final-artifacts/clients/ \;
           fi
 
           echo "Final artifacts to release:"
-          ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
+          ls -lh final-artifacts/clients/ 2>/dev/null || echo "No client artifacts"
 
       - name: Generate release body
         id: release_body
         run: |
-          IMAGES=$(echo '${{ needs.matrix.outputs.matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
+          IMAGES=$(echo '${{ needs.matrix.outputs.image_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
           {
             echo "body<<EOF"
             echo "## Images"
             echo "$IMAGES"
             echo ""
-            echo "## Client"
+            echo "## Clients"
             echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
             echo "- **Windows** (x64): \`openframe.exe\`"
             echo ""
@@ -332,6 +326,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            final-artifacts/client/*
+            final-artifacts/clients/*
           token: ${{ secrets.GITHUB_TOKEN }}
           body: ${{ steps.release_body.outputs.body }}
