@@ -1,0 +1,6 @@
+# Cargo configuration for OpenFrame client
+# Fix C++ linker issues on Windows by statically linking the Visual C++ Runtime
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+

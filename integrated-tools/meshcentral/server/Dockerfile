@@ -21,9 +21,10 @@ RUN chmod -R +x /scripts/
 COPY nginx.conf.template /
 COPY config.json ${MESH_TEMP_DIR}
  
-# Copy API file and make it executable
+# Copy API files and make them executable
 COPY nginx-api/meshcentral-api.sh /nginx-api/
-RUN chmod +x /nginx-api/meshcentral-api.sh
+COPY nginx-api/generate-custom-msh.sh /nginx-api/
+RUN chmod +x /nginx-api/meshcentral-api.sh /nginx-api/generate-custom-msh.sh
 
 # Copy and set up entrypoint
 COPY entrypoint.sh /

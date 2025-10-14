@@ -10,7 +10,9 @@ echo "Creating log directory"
 mkdir -p ${MESH_DIR}/logs
 mkdir -p ${MESH_DIR}/nginx-api
 touch ${MESH_DIR}/nginx-api/api.log
+touch ${MESH_DIR}/nginx-api/custom-msh.log
 chmod 666 ${MESH_DIR}/nginx-api/api.log
+chmod 666 ${MESH_DIR}/nginx-api/custom-msh.log
 
 echo "Setting up directory permissions..."
 chmod -R 755 ${MESH_DIR}  # Make all folders readable and executable
@@ -33,9 +35,11 @@ sleep 5
 # Setup mesh components
 setup_mesh_user
 
-# Copy and setup API script
+# Copy and setup API scripts
 cp /nginx-api/meshcentral-api.sh ${MESH_DIR}/nginx-api/
 chmod +x ${MESH_DIR}/nginx-api/meshcentral-api.sh
+cp /nginx-api/generate-custom-msh.sh ${MESH_DIR}/nginx-api/
+chmod +x ${MESH_DIR}/nginx-api/generate-custom-msh.sh
 
 # Start MeshCentral temporarily to setup device group
 start_meshcentral &

@@ -1,6 +1,5 @@
 package com.openframe.gateway.security;
 
-import com.openframe.gateway.config.prop.CorsProperties;
 import com.openframe.gateway.security.filter.AddAuthorizationHeaderFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,15 +15,16 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity.CorsSpec;
+import org.springframework.security.config.web.server.ServerHttpSecurity.CsrfSpec;
+import org.springframework.security.config.web.server.ServerHttpSecurity.FormLoginSpec;
+import org.springframework.security.config.web.server.ServerHttpSecurity.HttpBasicSpec;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsConfigurationSource;
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 
@@ -35,7 +35,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @Configuration
 @EnableWebFluxSecurity
-@EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class, CorsProperties.class})
+@EnableConfigurationProperties({ManagementServerProperties.class, ServerProperties.class})
 @RequiredArgsConstructor
 @Slf4j
 public class GatewaySecurityConfig {
@@ -70,7 +70,6 @@ public class GatewaySecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(
             ServerHttpSecurity http,
             @Value("${management.endpoints.web.base-path}") String managementBasePath,
-            CorsProperties corsProperties,
             ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver,
             AddAuthorizationHeaderFilter addAuthorizationHeaderFilter
     ) {
@@ -78,10 +77,10 @@ public class GatewaySecurityConfig {
                 ? managementBasePath: "/actuator";
 
         return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource(corsProperties)))
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .csrf(CsrfSpec::disable)
+                .cors(CorsSpec::disable)
+                .httpBasic(HttpBasicSpec::disable)
+                .formLogin(FormLoginSpec::disable)
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .authenticationManagerResolver(issuerResolver)
                 )
@@ -115,27 +114,6 @@ public class GatewaySecurityConfig {
                         .pathMatchers("/**").permitAll()
                 )
                 .build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(Boolean.TRUE.equals(corsProperties.getAllowCredentials()));
-
-        if (!corsProperties.getAllowedOrigins().isEmpty()) {
-            configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
-        }
-        if (!corsProperties.getAllowedOriginPatterns().isEmpty()) {
-            configuration.setAllowedOriginPatterns(corsProperties.getAllowedOriginPatterns());
-        }
-        configuration.setAllowedHeaders(corsProperties.getAllowedHeaders());
-        configuration.setAllowedMethods(corsProperties.getAllowedMethods());
-        configuration.setExposedHeaders(corsProperties.getExposedHeaders());
-        configuration.setMaxAge(corsProperties.getMaxAge());
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 
     @Bean

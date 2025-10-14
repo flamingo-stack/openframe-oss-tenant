@@ -1,21 +1,47 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Clock,
   CheckCircle,
-  Monitor
+  Monitor,
+  Check
 } from 'lucide-react'
 import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo/ui-kit'
 import { Button } from '@flamingo/ui-kit'
 import { DetailLoader } from '@flamingo/ui-kit/components/ui'
-import { useDialogDetails } from '../hooks/use-dialog-details'
+import { useDialogDetailsStore } from '../stores/dialog-details-store'
+import { useDialogStatus } from '../hooks/use-dialog-status'
+import type { Message, TextData } from '../types/dialog.types'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
-  const { dialog, isLoading } = useDialogDetails(dialogId)
+  const {
+    currentDialog: dialog,
+    currentMessages: messages,
+    isLoadingDialog: isLoading,
+    isLoadingMessages: messagesLoading,
+    hasMoreMessages: hasMore,
+    fetchDialog,
+    fetchMessages,
+    loadMore,
+    clearCurrent,
+    updateDialogStatus
+  } = useDialogDetailsStore()
+  const { putOnHold, resolve, isUpdating } = useDialogStatus()
   const [isPaused, setIsPaused] = useState(false)
+
+  useEffect(() => {
+    if (dialogId) {
+      fetchDialog(dialogId)
+      fetchMessages(dialogId)
+    }
+    
+    return () => {
+      clearCurrent()
+    }
+  }, [dialogId])
 
   const handleSendMessage = (text: string) => {
     if (!isPaused) return
@@ -24,26 +50,85 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     console.log('Sending message:', message)
   }
 
-  const headerActions = (
+  const handlePutOnHold = async () => {
+    if (!dialog || isUpdating) return
+    
+    const success = await putOnHold(dialogId)
+    if (success) {
+      updateDialogStatus('ON_HOLD')
+    }
+  }
+
+  const handleResolve = async () => {
+    if (!dialog || isUpdating) return
+    
+    const success = await resolve(dialogId)
+    if (success) {
+      updateDialogStatus('RESOLVED')
+    }
+  }
+
+  const chatMessages = useMemo(() => {
+    const reversedMessages = [...messages].reverse()
+    
+    return reversedMessages.filter((msg: Message) => {
+      const messageDataArray = msg.messageData as any
+      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
+        return messageDataArray[0].type === 'TEXT'
+      }
+      return (msg.messageData as any)?.type === 'TEXT'
+    }).map((msg: Message) => {
+      let content = ''
+      
+      const messageDataArray = msg.messageData as any
+      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
+        const firstData = messageDataArray[0]
+        if (firstData.type === 'TEXT') {
+          content = firstData.text || ''
+        }
+      } else if ((msg.messageData as any)?.type === 'TEXT') {
+        content = (msg.messageData as TextData).text || ''
+      }
+
+      return {
+        id: msg.id,
+        content,
+        role: msg.owner?.type === 'CLIENT' ? 'user' as const : 
+              msg.owner?.type === 'ASSISTANT' ? 'assistant' as const : 
+              'assistant' as const,
+        timestamp: new Date(msg.createdAt)
+      }
+    })
+  }, [messages])
+
+  const headerActions = dialog && (
     <div className="flex gap-4 items-center">
-      <Button
-        variant="ghost"
-        className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-        leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
-      >
-        <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-          Put On Hold
-        </span>
-      </Button>
-      <Button
-        variant="ghost"
-        className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-        leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
-      >
-        <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-          Resolve
-        </span>
-      </Button>
+      {dialog.status !== 'ON_HOLD' && dialog.status !== 'RESOLVED' && (
+        <Button
+          variant="ghost"
+          className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+          leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
+          onClick={handlePutOnHold}
+          disabled={isUpdating}
+        >
+          <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
+            {isUpdating ? 'Updating...' : 'Put On Hold'}
+          </span>
+        </Button>
+      )}
+      {dialog.status !== 'RESOLVED' && (
+        <Button
+          variant="ghost"
+          className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+          leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
+          onClick={handleResolve}
+          disabled={isUpdating}
+        >
+          <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
+            {isUpdating ? 'Updating...' : 'Resolve'}
+          </span>
+        </Button>
+      )}
     </div>
   )
 
@@ -110,14 +195,20 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
         {/* Status */}
         <div className="flex items-center">
-          <StatusTag
-            label={dialog.status.replace('_', ' ')}
-            variant={
-              dialog.status === 'ACTIVE' || dialog.status === 'RESOLVED' ? 'success' :
-              dialog.status === 'ON_HOLD' ? 'warning' :
-              dialog.status === 'ACTION_REQUIRED' ? 'error' : 'info'
-            }
-          />
+          {dialog.status === 'RESOLVED' ? (
+            <StatusTag
+              label="RESOLVED"
+            />
+          ) : (
+            <StatusTag
+              label={dialog.status.replace('_', ' ')}
+              variant={
+                dialog.status === 'ACTIVE' ? 'success' :
+                dialog.status === 'ACTION_REQUIRED' ? 'warning' :
+                dialog.status === 'ON_HOLD' ? 'error' : 'info'
+              }
+            />
+          )}
         </div>
       </div>
 
@@ -132,10 +223,23 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
           <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
             <ChatMessageList
               className=""
-              messages={[]}
+              messages={chatMessages}
               autoScroll
               showAvatars={false}
+              isTyping={messagesLoading}
             />
+            {hasMore && !messagesLoading && (
+              <div className="p-2 text-center border-t border-ods-border">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => loadMore()}
+                  className="text-ods-text-secondary hover:text-ods-text-primary"
+                >
+                  Load More Messages
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Input */}

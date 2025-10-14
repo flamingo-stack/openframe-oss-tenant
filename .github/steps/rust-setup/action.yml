@@ -1,6 +1,9 @@
 name: Prepare Rust tools
 description: Set up Rust toolchain and Cargo cache
 inputs:
+  path:
+    description: Rust client path 
+    required: true
   toolchain:
     description: Rust toolchain (e.g. stable, 1.79.0, nightly)
     required: false
@@ -33,7 +36,7 @@ runs:
     - name: Cache Rust dependencies
       uses: Swatinem/rust-cache@v2
       with:
-        workspaces: client
+        workspaces: ${{ inputs.path }}
         prefix-key: "v1-rust"
         shared-key: ${{ inputs.shared-key }}
         cache-targets: true
@@ -44,7 +47,6 @@ runs:
       run: |
         IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
         for RUST_TARGET in "${ARCHITECTURES[@]}"; do
-          # Trim whitespace
           RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
           rustup target list --installed | grep -q "^${RUST_TARGET}$" || (echo "Adding $RUST_TARGET" && rustup target add "$RUST_TARGET")
         done
