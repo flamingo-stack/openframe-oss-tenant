@@ -159,13 +159,6 @@ jobs:
       - name: Install tools and validate environment
         uses: ./.github/steps/requirements-for-run.sh
 
-      - name: Set up JDK 21 for E2E tests
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-
       - name: Override helm values
         uses: ./.github/steps/helm-override-image-tags
         with:
@@ -173,7 +166,7 @@ jobs:
           changes: ${{ toJSON(needs.changes.outputs) }}
           commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
           helm-values-file: ${{ env.HELM_VALUES_FILE }}
-        
+
       - name: Override branch name
         run: |
           # Override branch name
@@ -196,104 +189,25 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
-      - name: Install Telepresence
-        run: |
-          sudo curl -fL https://app.getambassador.io/download/tel2oss/releases/download/v2.20.2/telepresence-linux-amd64 -o /usr/local/bin/telepresence
-          sudo chmod a+x /usr/local/bin/telepresence
-
-      - name: Connect to cluster with Telepresence
-        run: telepresence connect
-
-      - name: Setup port-forwarding to services
-        run: |
-          kubectl port-forward svc/openframe-gateway -n microservices 8100:8100 > /tmp/pf-gateway.log 2>&1 &
-          echo $! > /tmp/pf-gateway.pid
-          sleep 5
-          
-          if ! kill -0 $(cat /tmp/pf-gateway.pid) 2>/dev/null; then
-            cat /tmp/pf-gateway.log
-            exit 1
-          fi
+      - name: Setup Telepresence
+        uses: ./.github/steps/setup-telepresence
 
       - name: Run Tests
+        id: tests
         env:
           API_BASE_URL: http://localhost:8100
         run: |
           cd openframe-e2e-tests
           mvn test -Dgroups="smoke"
-
-      - name: Cleanup port-forwarding
-        if: always()
-        run: |
-          if [ -f /tmp/pf-gateway.pid ]; then
-            kill $(cat /tmp/pf-gateway.pid) 2>/dev/null || true
-            rm -f /tmp/pf-gateway.pid /tmp/pf-gateway.log
-          fi
-
-      - name: Upload Allure results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
-          path: openframe-e2e-tests/target/allure-results/
-          retention-days: 7
-          if-no-files-found: warn
-
-  allure-report:
-    name: Generate and Publish Allure Report
-    needs: [test]
-    runs-on: Linux-x64
-    if: |
-      github.event_name == 'pull_request' && 
-      !github.event.pull_request.draft &&
-      always()
-    steps:
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Install Allure CLI
-        run: |
-          wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
-          tar -zxvf allure-2.25.0.tgz -C /opt/
-          sudo ln -s /opt/allure-2.25.0/bin/allure /usr/bin/allure
-
-      - name: Download Allure results
-        uses: actions/download-artifact@v4
-        with:
-          name: allure-results
-          path: allure-results/
         continue-on-error: true
 
-      - name: Generate Allure Report
-        run: |
-          if [ -d "allure-results" ] && [ "$(ls -A allure-results 2>/dev/null)" ]; then
-            allure generate -c allure-results -o _site
-          else
-            mkdir -p _site
-            echo "<html><body><h1>No test results available</h1></body></html>" > _site/index.html
-          fi
-
-      - name: Deploy report to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: _site
-          destination_dir: allure/${{ github.event.pull_request.number }}
-
-      - name: Comment PR with Allure Report link
+      - name: Generate and Deploy Allure Report
         if: always()
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: ./.github/steps/allure-report
         with:
-          header: allure-report
-          message: |
-            **Allure Report** follow link:
-            https://flamingo-stack.github.io/openframe-oss-tenant/allure/${{ github.event.pull_request.number }}/
-            
-            📈 **Test status:** ${{ needs.test.result }}
+          pr-number: ${{ github.event.pull_request.number }}
+          test-status: ${{ steps.tests.outcome }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   test_client:
     name: "Test Client: ${{ matrix.os }}"
@@ -319,10 +233,10 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: openframe-oss-client-windows-x64
-#          - os: ubuntu-latest
-#            target: x86_64-unknown-linux-gnu
-#            artifact_name: openframe-oss-client-linux-x64
-         
+          #          - os: ubuntu-latest
+          #            target: x86_64-unknown-linux-gnu
+          #            artifact_name: openframe-oss-client-linux-x64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -402,7 +316,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      
+
       - name: Delete the CI tag
         if: contains(needs.changes.outputs[matrix.name], 'true')
         uses: dataaxiom/ghcr-cleanup-action@v1

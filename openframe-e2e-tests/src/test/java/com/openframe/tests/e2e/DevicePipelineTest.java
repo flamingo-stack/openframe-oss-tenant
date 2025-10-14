@@ -33,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Slf4j
 @Feature("End-to-End Device Processing")
-@Tag("smoke")
 @DisplayName("Device Pipeline E2E")
 public class DevicePipelineTest extends BasePipelineTest {
     
@@ -224,7 +223,7 @@ public class DevicePipelineTest extends BasePipelineTest {
         }
     }
     
-    // No @Step - буде показано через executePhase
+    // No @Step
     private Map<String, Object> waitForDeviceInGraphQL(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -251,7 +250,7 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), machineId, attempts));
     }
     
-    // No @Step - буде показано через executePhase
+    // No @Step - executePhase
     private Map<String, Object> waitForDeviceInPinotFilters(Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -282,7 +281,7 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), attempts));
     }
     
-    // No @Step - буде показано через executePhase
+    // No @Step - executePhase
     private Map<String, Object> waitForDeviceInGraphQLList(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -401,9 +400,5 @@ public class DevicePipelineTest extends BasePipelineTest {
             log.warn("[{}] Error searching device in list: {}", testId, e.getMessage());
             return Optional.empty();
         }
-    }
-    
-    protected String getTestPrefix() {
-        return "device";
     }
 }

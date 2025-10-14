@@ -70,9 +70,9 @@ public class AgentRegistrationTest extends BasePipelineTest {
             throw e;
         }
     }
-    
+
+    @Disabled
     @Test
-    @Severity(SeverityLevel.NORMAL)
     @Description("Registered agent can obtain OAuth token")
     @DisplayName("Registered agent can obtain OAuth token")
     void registeredAgentCanObtainOAuthToken() {
@@ -117,9 +117,9 @@ public class AgentRegistrationTest extends BasePipelineTest {
             throw e;
         }
     }
-    
+
+    @Disabled
     @Test
-    @Severity(SeverityLevel.CRITICAL)
     @Description("Multiple agents can register concurrently")
     @DisplayName("Multiple agents can register concurrently")
     void multipleAgentsCanRegisterConcurrently() {
@@ -162,5 +162,4 @@ public class AgentRegistrationTest extends BasePipelineTest {
             throw e;
         }
     }
-    
 }

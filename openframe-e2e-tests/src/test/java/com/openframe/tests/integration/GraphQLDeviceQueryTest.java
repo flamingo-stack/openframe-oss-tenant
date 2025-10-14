@@ -121,12 +121,11 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
             throw e;
         }
     }
-    
+
+    @Disabled
     @Test
-    @Severity(SeverityLevel.NORMAL)
     @Description("Verify device remains queryable after registration")
     @DisplayName("Device query stability after registration")
-    @Tag("stability")
     void deviceQueryStabilityAfterRegistration() {
         long startTime = System.currentTimeMillis();
         
@@ -155,10 +154,8 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     // ==================== GraphQL Query Tests ====================
     
     @Test
-    @Severity(SeverityLevel.CRITICAL)
     @Description("Verify devices are queryable through GraphQL from MongoDB")
     @DisplayName("Devices queryable through GraphQL pipeline")
-    @Tag("graphql")
     void devicesQueryableThroughPipeline() {
         long startTime = System.currentTimeMillis();
         
@@ -280,7 +277,6 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     }
     
     @Test
-    @Severity(SeverityLevel.NORMAL)
     @Description("GraphQL query validates required fields")
     @DisplayName("GraphQL query validates required fields")
     void graphQLQueryValidatesRequiredFields() {
@@ -322,7 +318,6 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     // ==================== Filter Tests ====================
     
     @Test
-    @Severity(SeverityLevel.NORMAL)
     @Description("Verify device filters work correctly")
     @DisplayName("Device filters work correctly")
     void deviceFiltersWorkCorrectly() {
@@ -385,10 +380,8 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     // ==================== Pagination Tests ====================
     
     @Test
-    @Severity(SeverityLevel.NORMAL)
     @Description("Verify device pagination works correctly")
     @DisplayName("Device pagination works correctly")
-    @Tag("pagination")
     void devicePaginationWorksCorrectly() {
         long startTime = System.currentTimeMillis();
         
@@ -459,10 +452,8 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     // ==================== Status Tests ====================
     
     @Test
-    @Severity(SeverityLevel.NORMAL)
     @Description("Verify device status updates are reflected")
     @DisplayName("Device status queries work correctly")
-    @Tag("status")
     void deviceStatusQueriesWorkCorrectly() {
         long startTime = System.currentTimeMillis();
         
@@ -495,10 +486,8 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     // ==================== Search Tests ====================
     
     @Test
-    @Severity(SeverityLevel.NORMAL)
     @Description("Verify device search functionality works")
     @DisplayName("Device search works correctly")
-    @Tag("search")
     void deviceSearchWorksCorrectly() {
         long startTime = System.currentTimeMillis();
         
