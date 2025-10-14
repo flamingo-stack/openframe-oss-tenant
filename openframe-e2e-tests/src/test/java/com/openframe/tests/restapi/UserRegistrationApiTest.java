@@ -34,7 +34,6 @@ public class UserRegistrationApiTest extends ApiBaseTest {
     @Order(1)
     @DisplayName("Should successfully register user with valid data")
     void shouldRegisterUserWithValidData() {
-        // Prepare test environment
         executePhase(TestPhase.ARRANGE, "Clear test data in MongoDB", this::clearDataInMongo);
 
         // Generate test user data
