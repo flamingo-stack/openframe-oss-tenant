@@ -195,7 +195,7 @@ jobs:
       - name: Run Tests
         id: tests
         env:
-          API_BASE_URL: http://localhost:8100
+          API_BASE_URL: http://openframe-gateway.microservices.svc.cluster.local:8100
         run: |
           cd openframe-e2e-tests
           mvn test -Dgroups="smoke"

@@ -3,12 +3,18 @@ package com.openframe.data;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.openframe.data.dto.UserDocument;
-import com.openframe.tests.restapi.ApiBaseTest;
+import com.openframe.support.infrastructure.MongoDBTestInfrastructure;
 import org.bson.Document;
 
 /**
- * Database query utility for API tests
- * Uses shared MongoDB connection from ApiBaseTest (thread-safe)
+ * Database query utility for all test types
+ * Uses shared MongoDB infrastructure (thread-safe)
+ * 
+ * Can be used in:
+ * - API tests (REST API)
+ * - E2E tests (End-to-end)
+ * - Integration tests
+ * - Any test that needs direct database access
  */
 public class DBQuery {
 
@@ -17,7 +23,7 @@ public class DBQuery {
      * Thread-safe: MongoDB Java Driver connection pool handles concurrency
      */
     private static MongoDatabase getDatabase() {
-        return ApiBaseTest.getMongoConnection().getDatabase();
+        return MongoDBTestInfrastructure.getDatabase();
     }
 
     public static UserDocument findUserByEmail(String email) {
