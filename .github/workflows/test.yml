@@ -189,7 +189,7 @@ jobs:
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
 
-  test_client:
+  test_clients:
     name: "Test Client: ${{ matrix.os }}"
     needs: [changes, matrix]
     runs-on: ${{ matrix.os }}
@@ -238,7 +238,7 @@ jobs:
         continue-on-error: true
 
       - name: Test client
-        working-directory: client
+        working-directory: clients/openframe-client
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"

@@ -143,7 +143,7 @@ jobs:
           use-regex: true
       
 
-  build_client:
+  build_clients:
     name: "Build Rust Client (${{ matrix.os }})"
     needs: [changes, matrix]
     runs-on: ${{ matrix.os }}
@@ -185,7 +185,7 @@ jobs:
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
       - name: Build client
-        working-directory: client
+        working-directory: clients/openframe-client
         if: steps.should_run.outputs.run == 'true'
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
