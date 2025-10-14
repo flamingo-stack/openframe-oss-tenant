@@ -9,31 +9,24 @@ endif
 .PHONY: lint build test fmt fmt-check clippy clean crossinstall crossbuild
 
 fmt:
-	$(CARGO) fmt --all
+	cd src-tauri && $(CARGO) fmt --all
 
 fmt-check:
-	$(CARGO) fmt --all -- --check
+	cd src-tauri && $(CARGO) fmt --all -- --check
 
 clippy:
-	$(CARGO) clippy --all-targets -- -D warnings
+	cd src-tauri && $(CARGO) clippy --all-targets -- -D warnings
 
 lint: fmt-check clippy
 
 build:
-	npm install 
+	npm install
 	npm run prebuild
 	cargo install tauri-cli
-	$(CARGO) tauri build --release --locked $(TARGET_FLAG)
+	$(CARGO) tauri build $(TARGET_FLAG) -- --locked
 
 test: build
-	$(CARGO) test --release --locked
+	$(CARGO) tauri test -- --locked
 
 clean:
-	$(CARGO) clean
-
-# install cross tool
-crossinstall:
-	$(CARGO) install cross --git https://github.com/cross-rs/cross
-
-crossbuild:
-	cross build --release $(TARGET_FLAG)
+	$(CARGO) tauri clean
