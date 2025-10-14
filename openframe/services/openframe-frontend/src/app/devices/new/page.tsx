@@ -37,7 +37,7 @@ export default function NewDevicePage() {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'localhost --localMode'
     }
-    return `{hostname}`
+    return hostname
   }, [])
 
   useEffect(() => {
