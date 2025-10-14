@@ -20,7 +20,7 @@ clippy:
 lint: fmt-check clippy
 
 build:
-    npm install 
+	npm install 
 	npm run prebuild
 	cargo install tauri-cli
 	$(CARGO) tauri build --release --locked $(TARGET_FLAG)
