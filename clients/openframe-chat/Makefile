@@ -6,7 +6,7 @@ ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
 
-.PHONY: lint build test fmt fmt-check clippy clean crossinstall crossbuild
+.PHONY: lint build test fmt fmt-check clippy clean
 
 fmt:
 	cd src-tauri && $(CARGO) fmt --all
@@ -20,9 +20,6 @@ clippy:
 lint: fmt-check clippy
 
 build:
-	npm install
-	npm run prebuild
-	cargo install tauri-cli
 	$(CARGO) tauri build $(TARGET_FLAG) -- --locked
 
 test: build
