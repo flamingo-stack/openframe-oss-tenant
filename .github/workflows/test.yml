@@ -23,7 +23,7 @@ on:
       - '.github/**'
       - 'manifests/**'
       - 'scripts/**'
-      - 'client/**'
+      - 'clients/**'
       - 'cli/**'
 
 concurrency:

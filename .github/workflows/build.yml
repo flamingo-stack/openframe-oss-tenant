@@ -16,7 +16,7 @@ on:
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
-      - 'client/**'
+      - 'clients/**'
   workflow_dispatch:
     inputs:
       version:
@@ -213,7 +213,7 @@ jobs:
           RUST_TARGET_x64=${ARCHITECTURES[1]}
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
-          lipo -create ${{ matrix.path }}/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ./client/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
+          lipo -create ${{ matrix.path }}/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.path }}/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
           
           echo "Verify macOS openframe universal package"
           lipo -info ./artifacts/${{ env.BINARY_NAME }}
@@ -291,14 +291,14 @@ jobs:
 
       - name: Prepare release artifacts
         run: |
-          mkdir -p final-artifacts/client
+          mkdir -p final-artifacts/clients
           if [ -d "release-artifacts" ]; then
             find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
-            -exec cp {} final-artifacts/client/ \;
+            -exec cp {} final-artifacts/clients/ \;
           fi
 
           echo "Final artifacts to release:"
-          ls -lh final-artifacts/client/ 2>/dev/null || echo "No client artifacts"
+          ls -lh final-artifacts/clients/ 2>/dev/null || echo "No client artifacts"
 
       - name: Generate release body
         id: release_body
@@ -309,7 +309,7 @@ jobs:
             echo "## Images"
             echo "$IMAGES"
             echo ""
-            echo "## Client"
+            echo "## Clients"
             echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
             echo "- **Windows** (x64): \`openframe.exe\`"
             echo ""
@@ -326,6 +326,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            final-artifacts/client/*
+            final-artifacts/clients/*
           token: ${{ secrets.GITHUB_TOKEN }}
           body: ${{ steps.release_body.outputs.body }}
