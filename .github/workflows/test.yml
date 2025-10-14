@@ -220,23 +220,24 @@ jobs:
         uses: ./.github/steps/rust-setup
         if: steps.should_run.outputs.run == 'true'
         with:
+          path: ${{ matrix.path }}
           toolchain: stable
           targets: ${{ matrix.target }}
           components: clippy, rustfmt
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
       - name: Run lint
-        working-directory: clients/${{ matrix.name }}
+        working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
           make lint
         continue-on-error: true
 
       - name: Test client
-        working-directory: clients/${{ matrix.name }}
+        working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')

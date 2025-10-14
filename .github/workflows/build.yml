@@ -146,7 +146,7 @@ jobs:
   build_clients:
     name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes, matrix]
-    runs-on: ${{ matrix.os }}
+    runs-on: "${{ matrix.os }}-latest"
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: ${{ matrix.name }}
@@ -173,16 +173,17 @@ jobs:
         uses: ./.github/steps/rust-setup
         if: steps.should_run.outputs.run == 'true'
         with:
+          path: ${{ matrix.path }}
           toolchain: stable
           targets: ${{ matrix.target }}
           components: clippy, rustfmt
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
       - name: Build client
-        working-directory: clients/${{ matrix.name }}
+        working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
@@ -196,8 +197,8 @@ jobs:
         if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ matrix.name }}-${{ matrix.artifact_name }}"
-          path: "client/target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          name: "${{ matrix.name }}-${{ matrix.os }}"
+          path: "client/target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
@@ -234,7 +235,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ matrix.name }}-${{ matrix.artifact_name }}"
+          name: "${{ matrix.name }}-${{ matrix.os }}"
           path: artifacts/
           if-no-files-found: warn
           retention-days: 30

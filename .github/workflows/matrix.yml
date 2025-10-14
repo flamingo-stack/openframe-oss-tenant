@@ -151,8 +151,7 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              },
-                "context": "./integrated-tools/tactical-rmm"
+              }
             },
             {
               "name": "tactical-nginx",
@@ -198,8 +197,7 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              },
-              "context": "./integrated-tools/tactical-rmm"
+              }
             },
             {
               "name": "tactical-base",
@@ -245,34 +243,33 @@ jobs:
                 "NATS_WEBSOCKET_PORT": "4222",
                 "WEBSOCKET_PORT": "8383",
                 "WEBSOCKETS_BIND_HOST": "tactical-websockets"
-              },
-              "context": "./integrated-tools/tactical-rmm"
+              }
             }
           ]'
           clients_matrix_json='[
             {  
               "name": "openframe-client",
-              "os": "macos-latest",
-              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
-              "artifact_name": "macos-universal"
+              "path": "./clients/openframe-client",
+              "os": "macos",
+              "target": "aarch64-apple-darwin,x86_64-apple-darwin"
             },
             {
               "name": "openframe-client",
-              "os": "windows-latest",
-              "target": "x86_64-pc-windows-msvc",
-              "artifact_name": "windows-x64"
+              "path": "./clients/openframe-client",
+              "os": "windows",
+              "target": "x86_64-pc-windows-msvc"
             },
             {  
               "name": "openframe-chat",
-              "os": "macos-latest",
-              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
-              "artifact_name": "macos-universal"
+              "path": "./clients/openframe-chat",
+              "os": "macos",
+              "target": "aarch64-apple-darwin,x86_64-apple-darwin"
             },
             {
               "name": "openframe-chat",
-              "os": "windows-latest",
-              "target": "x86_64-pc-windows-msvc",
-              "artifact_name": "windows-x64"
+              "path": "./clients/openframe-chat",
+              "os": "windows",
+              "target": "x86_64-pc-windows-msvc"
             }
           ]'
 
