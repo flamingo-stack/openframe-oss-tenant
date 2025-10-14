@@ -9,7 +9,7 @@ import {
   PoliciesIcon,
   OrganizationsIcon
 } from '@flamingo/ui-kit/components/icons'
-import { isAuthOnlyMode } from './app-mode'
+import { isAuthOnlyMode, isSaasTenantMode } from './app-mode'
 
 export const getNavigationItems = (
   pathname: string,
@@ -19,7 +19,7 @@ export const getNavigationItems = (
     return []
   }
 
-  return [
+  const baseItems: NavigationSidebarItem[] = [
     {
       id: 'dashboard',
       label: 'Dashboard',
@@ -54,30 +54,37 @@ export const getNavigationItems = (
       icon: <LogsIcon className="w-5 h-5" />,
       path: '/logs-page',
       isActive: pathname === '/logs-page/'
-    },
-    {
+    }
+  ]
+
+  if (isSaasTenantMode()) {
+    baseItems.push({
       id: 'mingo',
       label: 'Mingo AI',
       icon: <MingoIcon className="w-5 h-5" />,
       path: '/mingo',
       isActive: pathname === '/mingo/'
-    },
-    // Secondary section items
+    })
+  }
+
+  baseItems.push(
     {
       id: 'organizations',
       label: 'Organizations',
       icon: <OrganizationsIcon className="w-6 h-6" />,
       path: '/organizations',
-      isActive: pathname === '/organizations/',
-      section: 'secondary'
+      section: 'secondary',
+      isActive: pathname === '/organizations/'
     },
     {
       id: 'settings',
       label: 'Settings',
       icon: <SettingsIcon className="w-5 h-5" />,
       path: '/settings',
-      isActive: pathname === '/settings/',
-      section: 'secondary'
+      section: 'secondary',
+      isActive: pathname === '/settings/'
     }
-  ]
+  )
+
+  return baseItems
 }
