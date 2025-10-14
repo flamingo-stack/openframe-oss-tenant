@@ -202,9 +202,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          include: ${{ fromJson(needs.matrix.outputs.clients_matrix) }}
-         
+        include: ${{ fromJson(needs.matrix.outputs.clients_matrix) }}
+
     steps:
       - name: Check if build should run
         id: should_run
