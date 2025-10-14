@@ -10,7 +10,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "OpenFrame Chat",
+        "title": "Fae Chat",
         "width": 1000,
         "height": 800,
         "resizable": true,
@@ -32,6 +32,6 @@
       "icons/icon.ico"
     ]
   },
-  "productName": "OpenFrame Chat",
+  "productName": "Fae Chat",
   "version": "0.1.0"
 }

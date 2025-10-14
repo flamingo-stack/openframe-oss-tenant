@@ -1,9 +1,9 @@
 {
-  "name": "openframe-chat-client",
+  "name": "fae-chat-client",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "OpenFrame Chat Desktop Client - Tauri + React",
+  "description": "Fae Chat Desktop Client - Tauri + React",
   "scripts": {
     "postinstall": "node scripts/ensure-ui-kit-built.cjs",
     "predev": "node scripts/ensure-ui-kit-built.cjs",
