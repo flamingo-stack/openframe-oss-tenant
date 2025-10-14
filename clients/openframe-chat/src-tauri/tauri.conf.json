@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "fae-chat-client",
+  "productName": "Fae Chat",
   "version": "0.1.0",
   "identifier": "com.openframe.chat",
   "build": {
@@ -12,11 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "fae-chat-client",
-        "width": 800,
-        "height": 600,
+        "title": "Fae Chat",
+        "width": 1000,
+        "height": 800,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "closable": true
       }
     ],
     "security": {
