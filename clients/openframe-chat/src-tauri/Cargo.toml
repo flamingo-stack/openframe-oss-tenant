@@ -1,8 +1,8 @@
 [package]
-name = "app"
+name = "openframe-chat"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "OpenFrame Chat Desktop Client"
+authors = ["OpenFrame"]
 license = ""
 repository = ""
 edition = "2021"
