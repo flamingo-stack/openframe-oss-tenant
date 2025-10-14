@@ -31,10 +31,13 @@ export default function NewDevicePage() {
   const { items: orgs, fetch: fetchOrgs } = useOrganizationsMin()
 
   const serverUrl = useMemo(() => {
-    if (typeof window === 'undefined') return 'localhost'
+    if (typeof window === 'undefined')
+      return 'localhost'
     const { protocol, hostname } = window.location
-    if (hostname === 'localhost' || hostname === '127.0.0.1') return 'localhost'
-    return `${protocol}//${hostname}`
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'localhost --localMode'
+    }
+    return `{hostname}`
   }, [])
 
   useEffect(() => {
@@ -131,10 +134,10 @@ export default function NewDevicePage() {
                   const selected = platform === os.platformId
                   const isDisabled = os.platformId === 'linux'
                   const label = isDisabled ? <StatusBadge
-                          text="Coming Soon"
-                          variant="button"
-                          colorScheme="cyan"
-                        /> : undefined;
+                    text="Coming Soon"
+                    variant="button"
+                    colorScheme="cyan"
+                  /> : undefined;
                   return (
                     <div
                       key={os.id}

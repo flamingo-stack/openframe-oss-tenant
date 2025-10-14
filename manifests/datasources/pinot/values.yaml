@@ -10,3 +10,10 @@ pinot:
     name: pinot 
   server:
     replicaCount: 2
+  
+  controller:
+    external:
+      enabled: false
+  broker:
+    external:
+      enabled: false

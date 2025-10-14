@@ -44,7 +44,7 @@ spec:
           httpGet:
             path: /setup
             port: 8070
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
         volumeMounts:
         - name: fleet-logs
