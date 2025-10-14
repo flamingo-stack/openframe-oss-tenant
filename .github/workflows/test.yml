@@ -199,7 +199,7 @@ jobs:
     if: |
       github.event_name == 'pull_request' && 
       !github.event.pull_request.draft && 
-      contains(needs.changes.outputs.client, 'true')
+      fromJSON(toJSON(needs.changes.outputs))['openframe-client'] == 'true'
     defaults:
       run:
         shell: bash
