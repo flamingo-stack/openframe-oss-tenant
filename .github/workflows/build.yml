@@ -161,7 +161,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.id] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -293,8 +293,9 @@ jobs:
         run: |
           mkdir -p final-artifacts/clients
           if [ -d "release-artifacts" ]; then
-            find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
-            -exec cp {} final-artifacts/clients/ \;
+            for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
+              find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
+            done
           fi
 
           echo "Final artifacts to release:"
@@ -303,7 +304,7 @@ jobs:
       - name: Generate release body
         id: release_body
         run: |
-          IMAGES=$(echo '${{ needs.matrix.outputs.image_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
+          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
           {
             echo "body<<EOF"
             echo "## Images"

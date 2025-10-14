@@ -248,14 +248,16 @@ jobs:
           ]'
           clients_matrix_json='[
             {  
-              "name": "client",
+              "id": "client",
+              "name": "openframe-client",
               "path": "./clients/openframe-client",
               "os": "macos",
               "target": "aarch64-apple-darwin,x86_64-apple-darwin",
               "target_path": "./clients/openframe-client/target"
             },
             {
-              "name": "client",
+              "id": "client",
+              "name": "openframe-client",
               "path": "./clients/openframe-client",
               "os": "windows",
               "target": "x86_64-pc-windows-msvc",
