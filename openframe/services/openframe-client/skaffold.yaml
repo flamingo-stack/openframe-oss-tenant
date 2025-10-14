@@ -5,13 +5,16 @@ metadata:
 build:
   artifacts:
     - image: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-client
-      context: .
+      context: ../../../
       sync: 
         manual:
           - src: "**/*"
             dest: "/app"
       docker:
-        dockerfile: Dockerfile
+        dockerfile: openframe/services/openframe-client/Dockerfile
+        buildArgs:
+          GITHUB_ACTOR: "{{.GITHUB_ACTOR}}"
+          GITHUB_TOKEN: "{{.GITHUB_TOKEN}}"
       hooks:
         before:
           - command: [ "mvn", "clean", "package", "-DskipTests"]

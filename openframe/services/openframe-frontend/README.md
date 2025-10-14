@@ -15,10 +15,13 @@ This pure client-side application provides a responsive, user-friendly interface
 
 - **Pure Client-Side Architecture**: No server-side rendering, optimized for performance
 - **UI-Kit Design System**: 100% component consistency using @flamingo/ui-kit
+- **Fleet MDM Integration**: Comprehensive device monitoring with Fleet MDM data
+- **Multi-Tool Support**: Unified data from Fleet MDM, Tactical RMM, and GraphQL
 - **GraphQL Integration**: Seamless communication with OpenFrame API
 - **Real-time Updates**: WebSocket support for live data
 - **OAuth/SSO Support**: Integration with Google, Microsoft, and other providers
 - **Responsive Design**: Mobile-first approach with adaptive layouts
+- **ODS Design System**: WCAG 2.1 AA compliant color tokens and theming
 
 ## Quick Start
 
@@ -75,14 +78,42 @@ npm run preview
 
 ### Technology Stack
 
-- **Framework**: Next.js 15 with React 18 and TypeScript
+- **Framework**: Next.js 15 with React 19 and TypeScript 5.8
 - **Build Tool**: Next.js (pure client-side export)
 - **Routing**: Next.js App Router (file-based routing)
-- **State Management**: Zustand
-- **API Client**: Apollo Client (GraphQL)
-- **UI Components**: @flamingo/ui-kit
-- **Styling**: Tailwind CSS + UI-Kit design tokens
+- **State Management**: Zustand 5.0.8
+- **API Client**: Apollo Client 3.8 (GraphQL)
+- **UI Components**: @flamingo/ui-kit (external unified library - see below)
+- **Styling**: Tailwind CSS 3.4 + ODS design tokens
 - **Authentication**: JWT with HTTP-only cookies
+- **Terminal**: xterm.js 5.3 for device terminal access
+
+### UI-Kit: External Unified Library
+
+**IMPORTANT:** `@flamingo/ui-kit` is an **external, standalone design system library** maintained separately from OpenFrame. It is:
+
+- **Repository**: Separate git repository at `/Users/michaelassraf/Documents/GitHub/ui-kit`
+- **Connection**: Symlinked to this project at `./ui-kit` for development convenience
+- **Purpose**: Shared across multiple Flamingo Stack projects (OpenFrame, Flamingo, TMCG)
+- **Components**: 328+ production-ready UI components
+- **Theming**: ODS (Open Design System) color tokens with multi-app support
+- **Updates**: Changes to ui-kit affect all projects that depend on it
+
+**Symlink Structure:**
+```bash
+openframe-frontend/ui-kit -> ../../../../ui-kit  # Symlink to external repo
+```
+
+**Why Symlink?**
+- Enables immediate testing of ui-kit changes in OpenFrame context
+- Avoids npm publish/install cycle during development
+- Maintains single source of truth for design system
+- Ensures consistency across all Flamingo Stack applications
+
+**Production Deployment:**
+- ui-kit is published as `@flamingo/ui-kit` npm package
+- OpenFrame installs it as a regular dependency
+- Symlink is only for local development convenience
 
 ### Multi-Platform Project Structure
 
@@ -202,6 +233,90 @@ function MyComponent() {
   )
 }
 ```
+
+## Fleet MDM Integration
+
+OpenFrame features comprehensive Fleet MDM integration for device monitoring and management.
+
+### Features
+
+- **Complete Type System**: Full TypeScript types for Fleet MDM API (`fleet.types.ts`)
+- **Data Normalization**: Unified data from Fleet MDM, Tactical RMM, and GraphQL with proper prioritization
+- **Hardware Monitoring**: CPU cores, disk usage, RAM, and battery health (macOS)
+- **Network Information**: Unified IP addresses with private/public filtering
+- **User Management**: Unified user display across Fleet and Tactical sources
+- **ODS Design Tokens**: All components use Open Design System color tokens
+
+### Data Prioritization Strategy
+
+```
+Core Hardware/System:  Fleet MDM → GraphQL → Tactical RMM
+Agent Version:         GraphQL → Tactical RMM → Fleet MDM
+IP Addresses:          Unified array with Fleet IPs prioritized first
+Users:                 Unified type (Fleet users + Tactical logged_username)
+Public IP:             Filtered to exclude private IPs (10.x, 192.168.x, etc.)
+```
+
+### Hardware Tab Components
+
+```typescript
+// Battery Health (macOS devices)
+- Cycle count display
+- Health status with smart parsing ("Normal (99%)" → 99%)
+- Inverted progress bar (high % = green/good, low % = red/bad)
+- Thresholds: >80% green, 60-80% yellow, <60% red
+
+// CPU Information
+- Physical cores and logical cores from Fleet
+- Normalized CPU model names (e.g., "Apple M3 Max")
+- CPU type information
+
+// Disk Information
+- Physical disk grouping with partition details
+- Usage percentages with visual progress bars
+- Capacity and free space information
+
+// RAM Information
+- Total memory from Fleet (converted from bytes to GB)
+```
+
+### Inverted Progress Bar
+
+The progress bar component supports two semantic modes:
+
+**Normal Mode (inverted=false)** - For usage metrics
+```typescript
+// Disk usage: high values = bad (red), low values = good (green)
+<ProgressBar progress={diskUsage} inverted={false} />
+```
+
+**Inverted Mode (inverted=true)** - For health metrics
+```typescript
+// Battery health: high values = good (green), low values = bad (red)
+<ProgressBar progress={batteryHealth} inverted={true} />
+```
+
+### ODS Color Tokens
+
+All components use ODS design tokens instead of hardcoded colors:
+
+```typescript
+// Success (Green)
+--ods-attention-green-success: #5ea62e
+
+// Error (Red)
+--ods-attention-red-error: #f36666
+
+// Warning (Yellow/Amber)
+--color-warning: #f59e0b
+
+// Unfilled segments (Gray)
+--ods-system-greys-soft-grey-action: #4e4e4e
+```
+
+### Documentation
+
+See [FLEET_MDM_INTEGRATION.md](./FLEET_MDM_INTEGRATION.md) for complete implementation details.
 
 ## MANDATORY Development Patterns
 
@@ -387,6 +502,7 @@ See the main OpenFrame repository for license information.
 
 ## Related Documentation
 
-- [CLAUDE.md](./CLAUDE.md) - AI assistant guidelines
-- [UI-Kit README](./ui-kit/README.md) - Component library documentation
+- [CLAUDE.md](./CLAUDE.md) - AI assistant guidelines and development patterns
+- [FLEET_MDM_INTEGRATION.md](./FLEET_MDM_INTEGRATION.md) - Fleet MDM integration details
+- [UI-Kit README](./ui-kit/README.md) - External design system documentation (symlinked)
 - [Main OpenFrame Docs](../../../docs/README.md) - Platform documentation

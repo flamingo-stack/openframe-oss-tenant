@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 export function DevicesOverviewSection() {
   const devices = useDevicesOverview()
   const router = useRouter()
-  
+
   const onClick = () => {
     router.push('/devices')
   }
@@ -29,6 +29,7 @@ export function DevicesOverviewSection() {
           showProgress
           progressColor="#5ea62e"
           onClick={onClick}
+          className="cursor-pointer hover:bg-ods-bg-hover"
         />
         <DashboardInfoCard
           title="Inactive"
@@ -36,6 +37,7 @@ export function DevicesOverviewSection() {
           percentage={devices.inactivePercentage}
           showProgress
           onClick={onClick}
+          className="cursor-pointer hover:bg-ods-bg-hover"
         />
       </div>
     </div>
@@ -43,5 +45,3 @@ export function DevicesOverviewSection() {
 }
 
 export default DevicesOverviewSection
-
-

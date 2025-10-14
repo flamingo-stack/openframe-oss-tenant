@@ -6,6 +6,7 @@
 import { apiClient, type ApiResponse, type ApiRequestOptions } from './api-client'
 import { runtimeEnv } from './runtime-config'
 import { Policy } from '../app/policies-and-queries/types/policies.types'
+import { FleetHost, FleetHostResponse } from '../app/devices/types/fleet.types'
 
 interface Query {
   id: number
@@ -269,7 +270,7 @@ class FleetApiClient {
     return this.get(path)
   }
 
-  async getHost(hostId: number): Promise<ApiResponse<Host>> {
+  async getHost(hostId: number): Promise<ApiResponse<FleetHostResponse>> {
     return this.get(`/api/latest/fleet/hosts/${hostId}`)
   }
 

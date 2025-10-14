@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
-import { InfoRow, ToolIcon } from '@flamingo/ui-kit'
-import { toUiKitToolType, toStandardToolLabel } from '@lib/tool-labels'
+import { InfoRow } from '@flamingo/ui-kit'
+import { ToolBadge } from '@flamingo/ui-kit/components/platform'
+import { toUiKitToolType } from '@lib/tool-labels'
 
 interface LogEntry {
   toolEventId: string
@@ -23,10 +24,6 @@ interface FullInformationSectionProps {
 }
 
 export function FullInformationSection({ logDetails }: FullInformationSectionProps) {
-  const getToolIcon = (toolType: string) => {
-    return <ToolIcon toolType={toUiKitToolType(toolType) as any} size={16} />
-  }
-
   const formatTimestamp = (timestamp: string) => {
     try {
       return new Date(timestamp).toISOString()
@@ -67,11 +64,15 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
             <InfoRow label="ingestDay" value={logDetails.ingestDay} />
           </div>
           <div className="p-4 sm:p-6">
-            <InfoRow
-              label="toolType"
-              value={toStandardToolLabel(logDetails.toolType)}
-              icon={getToolIcon(logDetails.toolType)}
-            />
+            <div className="flex gap-2 items-center w-full">
+              <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap">
+                toolType
+              </div>
+              <div className="flex-1 bg-[#3a3a3a] h-px min-h-px min-w-px" />
+              <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1">
+                <ToolBadge toolType={toUiKitToolType(logDetails.toolType)} />
+              </div>
+            </div>
           </div>
           <div className="p-4 sm:p-6">
             <InfoRow label="eventType" value={logDetails.eventType} />

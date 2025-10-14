@@ -33,9 +33,13 @@ on:
         value: ${{ jobs.changes.outputs.tactical-nginx }}
       tactical-base: 
         value: ${{ jobs.changes.outputs.tactical-base }}
-      client: 
+      client:
         value: ${{ jobs.changes.outputs.client }}
-      timestamp: 
+      openframe-chat:
+        value: ${{ jobs.changes.outputs.openframe-chat }}
+      helm:
+        value: ${{ jobs.changes.outputs.helm }}
+      timestamp:
         value: ${{ jobs.changes.outputs.timestamp }}
       timestamp_tag: 
         value: ${{ jobs.changes.outputs.timestamp_tag }}
@@ -64,7 +68,9 @@ jobs:
       tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
       tactical-base: ${{ steps.filter.outputs.tactical-base }}
+      openframe-chat: ${{ steps.filter.outputs.openframe-chat }}
       client: ${{ steps.filter.outputs.client }}
+      helm: ${{ steps.filter.outputs.helm }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
       commit_sha: ${{ steps.setup_env.outputs.commit_sha }}
@@ -86,8 +92,6 @@ jobs:
         id: filter
         with:
           filters: |
-            client:
-              - './client/**'
             openframe-api:
               - './pom.xml'
               - './openframe/services/openframe-api/**'
@@ -129,3 +133,9 @@ jobs:
             tactical-base:
               - './integrated-tools/tactical-rmm/tactical-base/**'
               - './integrated-tools/tactical-rmm/shared/**'
+            openframe-chat:
+              - './clients/openframe-chat/**'
+            client:
+              - './clients/client/**'
+            helm:
+              - './manifests/app-of-apps/**'

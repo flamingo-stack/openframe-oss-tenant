@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -32,7 +34,8 @@ public class FleetMdmAgentIdTransformer implements ToolAgentIdTransformer {
         return ToolType.FLEET_MDM;
     }
 
-    // TODO: have normal fleet mdm openframe sdk that get url and api key from the box. Use it here and at other places.
+    // TODO: have normal fleetmdm-agent mdm openframe sdk that get url and api key from the box.
+    //  Use it here and at other places.
     @Override
     public String transform(String agentToolId) {
         if (isBlank(agentToolId)) {
@@ -58,16 +61,16 @@ public class FleetMdmAgentIdTransformer implements ToolAgentIdTransformer {
             List<Host> hosts = fleetClient.searchHosts(agentToolId, 0, 2);
             
             if (hosts.isEmpty()) {
-                log.warn("No hosts found in Fleet MDM for UUID: {}", agentToolId);
-                return agentToolId;
+                throw new IllegalStateException("No hosts found in Fleet MDM for UUID: " + agentToolId);
             }
-            
+            logHosts(hosts);
+
             // Filter hosts: exact UUID match and non-empty osquery version
             Host matchingHost = hosts.stream()
                 .filter(host -> agentToolId.equals(host.getUuid()))
-                .filter(host -> isNotBlank(host.getOsVersion())) // osquery version is not empty
+                .filter(host -> isNotBlank(host.getOsVersion())) // 0s version is not empty
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No valid fleet mdm host found with uuid=" + agentToolId));
+                .orElseThrow(() -> new IllegalStateException("No valid fleetmdm-agent mdm host found with uuid=" + agentToolId));
             
             String transformedAgentToolId = String.valueOf(matchingHost.getId());
             log.info("Transformed Fleet MDM agent tool ID from UUID {} to host ID {}", agentToolId, transformedAgentToolId);
@@ -77,5 +80,20 @@ public class FleetMdmAgentIdTransformer implements ToolAgentIdTransformer {
             log.error("Failed to transform Fleet MDM agent tool ID: {}", agentToolId, e);
             throw new IllegalStateException("Failed to transform Fleet MDM agent tool ID", e);
         }
+    }
+
+    private void logHosts(List<Host> hosts) {
+        String hostsInfo = buildHostInfo(hosts);
+        log.info("Hosts: {}", hostsInfo);
+    }
+
+    private String buildHostInfo(List<Host> hosts) {
+        return hosts.stream()
+                .map(host -> String.format(
+                        "Uuid: %s, Id: %s, OS: %s",
+                        host.getUuid(),
+                        host.getId(),
+                        host.getOsVersion()))
+                .collect(Collectors.joining("\n"));
     }
 }

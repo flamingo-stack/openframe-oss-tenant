@@ -4,7 +4,7 @@
   "segmentsConfig": {
     "timeColumnName": "eventTimestamp",
     "timeType": "MILLISECONDS",
-    "replication": "1",
+    "replication": "2",
     "segmentAssignmentStrategy": "BalanceNumSegmentAssignmentStrategy",
     "realtimeSegmentConfig": {
       "flushThresholdRows": "10000",
@@ -18,18 +18,22 @@
     "noDictionaryColumns": [
       "summary",
       "userId",
-      "deviceId"
+      "deviceId",
+      "hostname",
+      "organizationName"
     ],
     "invertedIndexColumns": [
       "ingestDay",
-      "toolType", 
+      "toolType",
       "eventType",
-      "severity"
+      "severity",
+      "organizationId"
     ],
     "textIndexColumns": [
       "summary",
       "userId",
-      "deviceId"
+      "deviceId",
+      "organizationName"
     ],
     "rangeIndexColumns": [
       "eventTimestamp"
@@ -64,9 +68,31 @@
       }
     },
     {
+      "name": "organizationName",
+      "encodingType": "RAW",
+      "indexTypes": [
+        "TEXT"
+      ],
+      "properties": {
+        "enableQueryCache": "true",
+        "caseSensitive": "false"
+      }
+    },
+    {
       "name": "deviceId",
       "encodingType": "RAW",
       "indexTypes": ["TEXT"],
+      "properties": {
+        "enableQueryCache": "true",
+        "caseSensitive": "false"
+      }
+    },
+    {
+      "name": "hostname",
+      "encodingType": "RAW",
+      "indexTypes": [
+        "TEXT"
+      ],
       "properties": {
         "enableQueryCache": "true",
         "caseSensitive": "false"

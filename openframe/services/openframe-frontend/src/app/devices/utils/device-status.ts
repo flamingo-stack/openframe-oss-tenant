@@ -3,6 +3,8 @@
  * Provides consistent status mapping across the application
  */
 
+import { normalizeOSType, getOSPlatformId, type OSPlatformId } from '@flamingo/ui-kit'
+
 export type DeviceStatusVariant = 'success' | 'error' | 'warning' | 'info' | 'critical'
 export type DeviceCardStatus = 'active' | 'inactive' | 'offline' | 'warning' | 'error'
 
@@ -56,13 +58,10 @@ export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
 
 /**
  * Get operating system type for DeviceCard component
- * Normalizes OS type strings to expected values
+ * Uses centralized OS type system from ui-kit
  */
-export function getDeviceOperatingSystem(osType?: string): 'windows' | 'macos' | 'linux' | undefined {
-  if (!osType) return undefined
-  const os = osType.toLowerCase()
-  if (os.includes('windows')) return 'windows'
-  if (os.includes('mac') || os.includes('darwin')) return 'macos'
-  if (os.includes('linux') || os.includes('ubuntu') || os.includes('pop')) return 'linux'
-  return undefined
+export function getDeviceOperatingSystem(osType?: string): OSPlatformId | undefined {
+  // Uses centralized getOSPlatformId from ui-kit
+  // Returns: 'darwin' | 'windows' | 'linux' | undefined
+  return getOSPlatformId(osType)
 }

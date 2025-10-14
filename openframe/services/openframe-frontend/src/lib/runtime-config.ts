@@ -50,6 +50,6 @@ export const runtimeEnv = {
     return Number.isFinite(parsed) ? parsed : 300000
   },
   authLoginUrl(): string {
-    return getEnvVar('NEXT_PUBLIC_AUTH_LOGIN_URL') || ''
+    return getEnvVar('NEXT_PUBLIC_SHARED_HOST_URL') || ''
   },
 }

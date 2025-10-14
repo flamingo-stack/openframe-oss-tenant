@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
+import type { Device } from '../../devices/types/device.types'
 
 /**
  * Logs Store
@@ -20,6 +21,15 @@ export interface LogEntry {
   timestamp: string
   details?: string
   metadata?: Record<string, any>
+
+  // New device-related fields from backend
+  hostname?: string
+  organizationName?: string
+  organizationId?: string
+
+  // Transformed device object (follows Device type pattern)
+  device?: Partial<Device>
+
   __typename?: string
 }
 
