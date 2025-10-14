@@ -37,6 +37,7 @@ public class ToolConnectionListener {
     private static final String STREAM_NAME = "TOOL_CONNECTIONS";
     private static final String SUBJECT = "machine.*.tool-connection";
     private static final String CONSUMER_NAME = "tool-connection-processor";
+    private static final String QUEUE_GROUP = "tool-connection-workers";
     private static final int MAX_DELIVER = 10;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
     
@@ -51,9 +52,10 @@ public class ToolConnectionListener {
             // NATS Dispatcher manages threads internally
             dispatcher = natsConnection.createDispatcher();
 
-            // Create consumer configuration with retry policy
+            // Create consumer configuration with retry policy and queue group
             ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
                     .durable(CONSUMER_NAME)
+                    .deliverGroup(QUEUE_GROUP)  // Enable load balancing across multiple instances
                     .ackPolicy(AckPolicy.Explicit)
                     .deliverPolicy(DeliverPolicy.All)
                     .ackWait(ACK_WAIT)
@@ -75,7 +77,8 @@ public class ToolConnectionListener {
                 pushOptions
             );
 
-            log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} (maxDeliver={}, ackWait={})", SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
+            log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} queueGroup={} (maxDeliver={}, ackWait={})", 
+                    SUBJECT, CONSUMER_NAME, QUEUE_GROUP, MAX_DELIVER, ACK_WAIT);
 
         } catch (Exception e) {
             log.error("Failed to subscribe to JetStream", e);
