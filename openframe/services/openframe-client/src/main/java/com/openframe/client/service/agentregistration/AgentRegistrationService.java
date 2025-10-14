@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 import static com.openframe.client.service.AgentAuthService.CLIENT_CREDENTIALS_GRANT_TYPE;
-import static com.openframe.data.service.OrganizationService.DEFAULT_ORGANIZATION_NAME;
 import static java.lang.String.format;
 
 @Service
@@ -116,7 +115,7 @@ public class AgentRegistrationService {
      * @throws IllegalStateException if default organization doesn't exist
      */
     private String getDefaultOrganizationId() {
-        return organizationService.getOrganizationByName(DEFAULT_ORGANIZATION_NAME)
+        return organizationService.getDefaultOrganization()
                 .map(Organization::getOrganizationId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Default organization not found. Please ensure it was created during tenant registration."));
