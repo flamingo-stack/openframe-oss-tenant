@@ -23,10 +23,10 @@ build:
 	npm install
 	npm run prebuild
 	cargo install tauri-cli
-	$(CARGO) tauri build $(TARGET_FLAG) -- --locked
+	$(CARGO) tauri build $(TARGET_FLAG)
 
 test: build
-	$(CARGO) tauri test -- --locked
+	$(CARGO) tauri test
 
 clean:
 	$(CARGO) tauri clean
