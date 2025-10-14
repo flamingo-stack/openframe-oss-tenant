@@ -32,10 +32,10 @@ const keyToLabel: Record<StandardToolKey, string> = {
   MESHCENTRAL: 'MeshCentral',
 }
 
-const keyToUiKitType: Record<StandardToolKey, 'tactical' | 'fleet' | 'meshcentral'> = {
-  TACTICAL: 'tactical',
-  FLEET: 'fleet',
-  MESHCENTRAL: 'meshcentral',
+const keyToUiKitType: Record<StandardToolKey, 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL'> = {
+  TACTICAL: 'TACTICAL_RMM',
+  FLEET: 'FLEET_MDM',
+  MESHCENTRAL: 'MESHCENTRAL',
 }
 
 export function normalizeToolKey(input?: string): StandardToolKey | undefined {
@@ -59,9 +59,17 @@ export function toStandardToolLabel(input?: string): string {
   return key ? keyToLabel[key] : input || ''
 }
 
-export function toUiKitToolType(input?: string): 'tactical' | 'fleet' | 'meshcentral' | 'unknown' {
+export function toUiKitToolType(input?: string): 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'AUTHENTIK' | 'OPENFRAME' | 'SYSTEM' {
   const key = normalizeToolKey(input)
-  return key ? keyToUiKitType[key] : 'unknown'
+  if (key) return keyToUiKitType[key]
+
+  // Handle other tool types that don't need normalization
+  const upper = input?.toUpperCase()
+  if (upper === 'AUTHENTIK') return 'AUTHENTIK'
+  if (upper === 'OPENFRAME') return 'OPENFRAME'
+  if (upper === 'SYSTEM') return 'SYSTEM'
+
+  return 'SYSTEM' // Default fallback
 }
 
 

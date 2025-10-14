@@ -12,6 +12,7 @@ interface RegisterRequest {
   lastName: string
   email: string
   password: string
+  accessCode: string
 }
 
 interface AuthSignupSectionProps {
@@ -28,26 +29,35 @@ interface AuthSignupSectionProps {
  */
 export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, isLoading }: AuthSignupSectionProps) {
   const isSaasShared = isSaasSharedMode()
-  
+
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [accessCode, setAccessCode] = useState('')
+  const [accessCodeError, setAccessCodeError] = useState<string | null>(null)
   const [signupMethod, setSignupMethod] = useState<'form' | 'sso'>('form')
 
   const displayDomain = isSaasShared ? domain : domain
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const isEmailValid = emailRegex.test(email.trim())
-  
+
   const getTitle = () => 'Create Organization'
   const getSubtitle = () => 'Start your journey with OpenFrame'
   const getButtonText = () => isSaasShared ? 'Start Free Trial' : 'Create Organization'
 
   const handleSubmit = () => {
+    setAccessCodeError(null)
     if (!firstName.trim() || !lastName.trim() || !isEmailValid || !password || password !== confirmPassword) {
       return
+    }
+    if (isSaasShared) {
+      if (!accessCode.trim()) {
+        setAccessCodeError('Access code is required')
+        return
+      }
     }
 
     const data: RegisterRequest = {
@@ -56,7 +66,8 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      password
+      password,
+      accessCode: isSaasShared ? accessCode.trim() : ''
     }
 
     onSubmit(data)
@@ -75,8 +86,8 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
     }
   }
 
-  const isFormValid = firstName.trim() && lastName.trim() && isEmailValid && 
-                     password && confirmPassword && password === confirmPassword
+  const isFormValid = firstName.trim() && lastName.trim() && isEmailValid &&
+    password && confirmPassword && password === confirmPassword && (!isSaasShared || accessCode.trim())
 
   // SSO providers for cloud deployment
   const ssoProviders = [
@@ -88,7 +99,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
   return (
     <div className="w-full">
       <div className="w-full space-y-6 lg:space-y-10">
-        
+
         {/* Complete Your Registration Section */}
         <div className="bg-ods-card border border-ods-border rounded-sm p-10">
           <div className="mb-6">
@@ -102,7 +113,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
 
           <div className="space-y-6"
             onClick={() => setSignupMethod('form')}>
-            
+
             {/* Organization details (disabled) */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1 flex flex-col gap-1">
@@ -124,30 +135,6 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 />
               </div>
             </div>
-
-            {isSaasShared && onSSO && (
-              <div className="space-y-6 mb-8">
-                <AuthProvidersList
-                  enabledProviders={ssoProviders}
-                  onProviderClick={handleSSOClick}
-                  loading={isLoading && signupMethod === 'sso'}
-                  orientation="vertical"
-                  showDivider={false}
-                />
-              
-                {/* Divider with OR */}
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-ods-border"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="bg-ods-card px-4 text-ods-text-secondary">
-                      or register manually
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Personal details */}
             <div className="flex flex-col md:flex-row gap-6">
@@ -224,6 +211,23 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
               </div>
             </div>
 
+            {isSaasShared && (
+              <div className="flex flex-col gap-1">
+                <Label>Access Code</Label>
+                <Input
+                  value={accessCode}
+                  onChange={(e) => { setAccessCode(e.target.value); if (accessCodeError) setAccessCodeError(null) }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Enter your access code"
+                  disabled={isLoading}
+                  className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-error' : ''}`}
+                />
+                {accessCodeError && (
+                  <p className="text-xs text-error mt-1">{accessCodeError}</p>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center">
               <Button
                 onClick={onBack}
@@ -245,7 +249,6 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
             </div>
           </div>
         </div>
-
       </div>
     </div>
   )

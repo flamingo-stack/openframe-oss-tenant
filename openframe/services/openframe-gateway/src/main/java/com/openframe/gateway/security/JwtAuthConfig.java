@@ -1,4 +1,4 @@
-package com.openframe.gateway.config;
+package com.openframe.gateway.security;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;

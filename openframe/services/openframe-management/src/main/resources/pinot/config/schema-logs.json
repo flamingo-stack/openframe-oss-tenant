@@ -2,14 +2,17 @@
   "schemaName": "logs",
   "primaryKeyColumns": ["toolEventId"],
   "dimensionFieldSpecs": [
-    { "name": "toolEventId", "dataType": "STRING", "singleValueField": true },
-    { "name": "userId", "dataType": "STRING", "singleValueField": true },
-    { "name": "deviceId", "dataType": "STRING", "singleValueField": true },
-    { "name": "ingestDay", "dataType": "STRING", "singleValueField": true },
-    { "name": "toolType", "dataType": "STRING", "singleValueField": true },
-    { "name": "eventType", "dataType": "STRING", "singleValueField": true },
-    { "name": "severity", "dataType": "STRING", "singleValueField": true },
-    { "name": "summary", "dataType": "STRING", "singleValueField": true }
+    { "name": "toolEventId",        "dataType": "STRING", "singleValueField": true },
+    { "name": "userId",             "dataType": "STRING", "singleValueField": true },
+    { "name": "deviceId",           "dataType": "STRING", "singleValueField": true },
+    { "name": "hostname",           "dataType": "STRING", "singleValueField": true },
+    { "name": "organizationId",     "dataType": "STRING", "singleValueField": true },
+    { "name": "organizationName",   "dataType": "STRING", "singleValueField": true },
+    { "name": "ingestDay",          "dataType": "STRING", "singleValueField": true },
+    { "name": "toolType",           "dataType": "STRING", "singleValueField": true },
+    { "name": "eventType",          "dataType": "STRING", "singleValueField": true },
+    { "name": "severity",           "dataType": "STRING", "singleValueField": true },
+    { "name": "summary",            "dataType": "STRING", "singleValueField": true }
   ],
   "dateTimeFieldSpecs": [
     {
@@ -19,4 +22,4 @@
       "granularity": "1:MILLISECONDS"
     }
   ]
-} 
+}

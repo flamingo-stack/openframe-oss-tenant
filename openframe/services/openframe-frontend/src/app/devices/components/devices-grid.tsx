@@ -1,7 +1,8 @@
 import React from 'react'
-import { DeviceCard, ListLoader } from "@flamingo/ui-kit/components/ui"
+import { useRouter } from 'next/navigation'
+import { DeviceCard, ListLoader, StatusTag } from "@flamingo/ui-kit/components/ui"
 import { type Device } from '../types/device.types'
-import { getDeviceStatusConfig, getDeviceOperatingSystem } from '../utils/device-status'
+import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device-status'
 
 interface DevicesGridProps {
   devices: Device[]
@@ -11,17 +12,22 @@ interface DevicesGridProps {
     deviceTypes?: string[]
     osTypes?: string[]
   }
-  onDeviceMore: (device: Device) => void
-  onDeviceDetails: (device: Device) => void
 }
 
-export function DevicesGrid({ 
-  devices, 
-  isLoading, 
-  filters,
-  onDeviceMore,
-  onDeviceDetails 
+export function DevicesGrid({
+  devices,
+  isLoading,
+  filters
 }: DevicesGridProps) {
+  const router = useRouter()
+
+  const handleDeviceClick = (device: Device) => {
+    const id = device.machineId || device.id
+    if (id) {
+      router.push(`/devices/details/${id}`)
+    }
+  }
+
   return (
     <div className="space-y-4 pt-4">
       {(filters.statuses?.length || filters.deviceTypes?.length || filters.osTypes?.length) ? (
@@ -56,23 +62,27 @@ export function DevicesGrid({
             const statusConfig = getDeviceStatusConfig(device.status)
             return (
               <DeviceCard
-                key={device.agent_id}
+                key={device.id || device.machineId}
                 device={{
                   id: device.id,
-                  name: device.displayName || device.hostname,
+                  machineId: device.machineId,
+                  name: device.displayName || device.hostname || device.description || '',
                   organization: device.organization || device.machineId,
-                  status: statusConfig.cardStatus,
                   lastSeen: device.lastSeen,
                   operatingSystem: getDeviceOperatingSystem(device.osType),
                 }}
+                statusBadgeComponent={
+                  device.status && (
+                    <StatusTag
+                      label={statusConfig.label}
+                      variant={statusConfig.variant}
+                    />
+                  )
+                }
+                onDeviceClick={() => handleDeviceClick(device)}
                 actions={{
                   moreButton: {
                     visible: false
-                  },
-                  detailsButton: {
-                    visible: true,
-                    label: 'Details',
-                    onClick: () => onDeviceDetails(device)
                   }
                 }}
                 className="h-full"

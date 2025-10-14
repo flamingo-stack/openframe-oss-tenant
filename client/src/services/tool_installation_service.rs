@@ -9,6 +9,7 @@ use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
 use crate::services::ToolCommandParamsResolver;
+use crate::services::ToolUrlParamsResolver;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::tool_connection_processing_manager::ToolConnectionProcessingManager;
 use tokio::fs::File;
@@ -26,6 +27,7 @@ pub struct ToolInstallationService {
     tool_agent_file_client: ToolAgentFileClient,
     tool_api_client: ToolApiClient,
     command_params_resolver: ToolCommandParamsResolver,
+    url_params_resolver: ToolUrlParamsResolver,
     installed_tools_service: InstalledToolsService,
     directory_manager: DirectoryManager,
     tool_run_manager: ToolRunManager,
@@ -37,6 +39,7 @@ impl ToolInstallationService {
         tool_agent_file_client: ToolAgentFileClient,
         tool_api_client: ToolApiClient,
         command_params_resolver: ToolCommandParamsResolver,
+        url_params_resolver: ToolUrlParamsResolver,
         installed_tools_service: InstalledToolsService,
         directory_manager: DirectoryManager,
         tool_run_manager: ToolRunManager,
@@ -52,6 +55,7 @@ impl ToolInstallationService {
             tool_agent_file_client,
             tool_api_client,
             command_params_resolver,
+            url_params_resolver,
             installed_tools_service,
             directory_manager,
             tool_run_manager,
@@ -129,10 +133,16 @@ impl ToolInstallationService {
                     AssetSource::ToolApi => {
                         let path = asset.path.as_deref()
                             .with_context(|| format!("No uri path for tool {} asset {}", tool_agent_id, asset.id))?;
-                        info!("Downloading tool API asset: {} with path: {}", asset.id, path);
+                        info!("Downloading tool API asset: {} with original path: {}", asset.id, path);
+                        
+                        // Resolve URL parameters in the path
+                        let resolved_path = self.url_params_resolver.process(path)
+                            .with_context(|| format!("Failed to resolve URL parameters for asset: {}", asset.id))?;
+                        info!("Resolved path: {}", resolved_path);
+                        
                         let tool_id = tool_installation_message.tool_id.clone();
                         self.tool_api_client
-                            .get_tool_asset(tool_id, asset.path.clone().unwrap_or_default())
+                            .get_tool_asset(tool_id, resolved_path)
                             .await
                             .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
                     }

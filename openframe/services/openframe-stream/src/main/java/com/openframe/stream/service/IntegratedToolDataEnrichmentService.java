@@ -1,9 +1,11 @@
 package com.openframe.stream.service;
 
+import com.openframe.data.model.redis.CachedMachineInfo;
+import com.openframe.data.model.redis.CachedOrganizationInfo;
 import com.openframe.stream.model.fleet.debezium.DeserializedDebeziumMessage;
 import com.openframe.stream.model.fleet.debezium.IntegratedToolEnrichedData;
 import com.openframe.data.model.enums.DataEnrichmentServiceType;
-import com.openframe.data.service.MachineIdCacheService;
+import com.openframe.data.repository.redis.MachineIdCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -25,11 +27,16 @@ public class IntegratedToolDataEnrichmentService implements DataEnrichmentServic
         }
 
         String agentId = message.getAgentId();
-        String machineId = machineIdCacheService.getMachineId(agentId);
-        
-        if (machineId != null) {
-            log.debug("Found machine ID {} for agent {}", machineId, agentId);
-            integratedToolEnrichedData.setMachineId(machineId);
+        CachedMachineInfo machine = machineIdCacheService.getMachine(agentId);
+        if (machine != null) {
+            CachedOrganizationInfo organization = machineIdCacheService.getOrganization(machine.getOrganizationId());
+            log.debug("Found machine ID {} for agent {} (organization {})", machine.getMachineId(), agentId, machine.getOrganizationId());
+            integratedToolEnrichedData.setMachineId(machine.getMachineId());
+            integratedToolEnrichedData.setHostname(machine.getHostname());
+            if (organization != null) {
+                integratedToolEnrichedData.setOrganizationId(organization.getOrganizationId());
+                integratedToolEnrichedData.setOrganizationName(organization.getName());
+            }
             return integratedToolEnrichedData;
         } else {
             log.warn("Machine ID not found for agent: {}", agentId);

@@ -9,6 +9,7 @@ import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
 import { authApiClient } from '@lib/auth-api-client'
 import { runtimeEnv } from '@lib/runtime-config'
+import { isSaasSharedMode } from '@lib/app-mode'
 import { clearStoredTokens } from '@lib/force-logout'
 
 interface TenantInfo {
@@ -31,22 +32,16 @@ interface RegisterRequest {
   lastName: string
   email: string
   password: string
+  accessCode: string
 }
 
 export function useAuth() {
+  // All hooks must be called unconditionally at the top
   const { toast } = useToast()
   const router = useRouter()
   const pathname = usePathname()
-  
-  // Use try-catch to handle static generation
-  let searchParams
-  try {
-    searchParams = useSearchParams()
-  } catch {
-    // During static generation, create empty URLSearchParams
-    searchParams = new URLSearchParams()
-  }
-  
+  const searchParams = useSearchParams()
+
   // Auth store for managing authentication state
   const { login: storeLogin, user, isAuthenticated, setTenantId } = useAuthStore()
   
@@ -81,8 +76,8 @@ export function useAuth() {
         id: userData.id || userData.userId || '',
         email: userData.email || email || '',
         name: userData.name || userData.displayName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || '',
-        organizationId: userData.organizationId || userData.tenantId || tenantInfo?.tenantId,
-        organizationName: userData.organizationName || userData.tenantName || tenantInfo?.tenantName,
+        tenantId: userData.tenantId || tenantInfo?.tenantId,
+        tenantName: userData.tenantName || tenantInfo?.tenantName,
         role: userData.role || 'user'
       }
       
@@ -315,12 +310,41 @@ export function useAuth() {
         lastName: data.lastName,
         password: data.password,
         tenantName: data.tenantName,
-        tenantDomain: data.tenantDomain || 'localhost'
+        tenantDomain: data.tenantDomain || 'localhost',
+        accessCode: isSaasSharedMode() ? data.accessCode : undefined
       })
 
       if (!response.ok) {
-        const errorMessage = response.data?.message || response.error || 'Registration failed'
-        throw new Error(errorMessage)
+        const code = (response.data as any)?.code
+        const message = (response.data as any)?.message || response.error || 'Registration failed'
+        let userMessage = 'Registration failed'
+        let title = 'Registration Failed'
+        let variant: any = 'destructive'
+
+        switch (code) {
+          case 'INVALID_ARGUMENT':
+            userMessage = 'Access code is required'
+            break
+          case 'INVALID_ACCESS_CODE':
+            userMessage = 'The access code you entered is invalid. Please check and try again.'
+            break
+          case 'ACCESS_CODE_ALREADY_USED':
+            userMessage = 'This access code has already been used. Please contact support for a new code.'
+            break
+          case 'ACCESS_CODE_VALIDATION_FAILED':
+            userMessage = 'Unable to verify access code. Please try again in a moment.'
+            console.error('[Auth] Access code validation failed:', message)
+            break
+          case 'TENANT_REGISTRATION_BLOCKED':
+            title = 'Service Unavailable'
+            userMessage = 'Registration is temporarily unavailable. Please try again later.'
+            break
+          default:
+            userMessage = message
+        }
+
+        toast({ title, description: userMessage, variant })
+        throw new Error(userMessage)
       }
 
       const result = response.data

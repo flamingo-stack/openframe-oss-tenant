@@ -2,10 +2,10 @@
 
 import { AppLayout } from '../components/app-layout'
 import { ContentPageContainer } from '@flamingo/ui-kit'
-import { isSaasTenantMode } from '../../lib/app-mode'
+import { isSaasTenantMode } from '@lib/app-mode'
 import { DevicesOverviewSection } from './components/devices-overview'
+import { OrganizationsOverviewSection } from './components/organizations-overview'
 import { ChatsOverviewSection } from './components/chats-overview'
-import { LogsOverviewSection } from './components/logs-overview'
 
 export default function Dashboard() {
   const showChats = isSaasTenantMode()
@@ -23,7 +23,7 @@ export default function Dashboard() {
             <ChatsOverviewSection />
           )}
 
-          <LogsOverviewSection />
+          <OrganizationsOverviewSection />
         </div>
       </ContentPageContainer>
     </AppLayout>

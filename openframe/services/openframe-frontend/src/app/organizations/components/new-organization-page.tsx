@@ -17,8 +17,6 @@ interface NewOrganizationPageProps {
 import { GeneralInformationTab, type GeneralInfoState } from './tabs/general-information'
 import { ContactInformationTab, type ContactInfoState } from './tabs/contact-information'
 
-type TabId = 'general' | 'contact'
-
 const DEFAULT_GENERAL: GeneralInfoState = {
   name: '',
   category: '',
@@ -38,7 +36,6 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   const { createOrganization } = useCreateOrganization()
   const { organization, fetchOrganizationById } = useOrganizationDetails()
   const { updateOrganization } = useUpdateOrganization()
-  const [activeTab, setActiveTab] = useState<TabId>('general')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [general, setGeneral] = useState<GeneralInfoState>(DEFAULT_GENERAL)
@@ -185,15 +182,19 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
       )}
     >
       <div className="flex flex-col w-full">
-        <TabNavigation activeTab={activeTab} onTabChange={(t) => setActiveTab(t as TabId)} tabs={tabs} />
+        <TabNavigation tabs={tabs} defaultTab="general" urlSync={true}>
+          {(activeTab) => (
+            <>
+              {activeTab === 'general' && (
+                <GeneralInformationTab value={general} onChange={setGeneral} />
+              )}
 
-        {activeTab === 'general' && (
-          <GeneralInformationTab value={general} onChange={setGeneral} />
-        )}
-
-        {activeTab === 'contact' && (
-          <ContactInformationTab value={contact} onChange={setContact} />
-        )}
+              {activeTab === 'contact' && (
+                <ContactInformationTab value={contact} onChange={setContact} />
+              )}
+            </>
+          )}
+        </TabNavigation>
       </div>
     </DetailPageContainer>
   )
