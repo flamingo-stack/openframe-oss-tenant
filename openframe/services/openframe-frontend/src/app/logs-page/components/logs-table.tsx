@@ -10,7 +10,8 @@ import {
   TableDescriptionCell,
   DeviceCardCompact,
   type TableColumn,
-  type RowAction
+  type RowAction,
+  type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { ToolBadge } from "@flamingo/ui-kit"
@@ -61,6 +62,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
   const [selectedLog, setSelectedLog] = useState<UILogEntry | null>(null)
+  const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
   const prevFilterKeyRef = React.useRef<string | null>(null)
 
   // TEMPORARY: Don't pass deviceId to backend (not supported yet in GraphQL)
@@ -73,7 +75,18 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     }
   }, [filters])
 
-  const { logs, isLoading, error, searchLogs, refreshLogs, fetchLogDetails } = useLogs(backendFilters)
+  const { 
+    logs, 
+    pageInfo,
+    isLoading, 
+    error, 
+    searchLogs, 
+    refreshLogs, 
+    fetchLogDetails,
+    fetchNextPage,
+    fetchFirstPage,
+    hasNextPage
+  } = useLogs(backendFilters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   // Transform API logs to UI format
@@ -222,6 +235,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   useEffect(() => {
     if (isInitialized && debouncedSearchTerm !== undefined) {
       searchLogs(debouncedSearchTerm)
+      setHasLoadedBeyondFirst(false)
     }
   }, [debouncedSearchTerm, searchLogs, isInitialized])
   
@@ -235,6 +249,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
         refreshLogs()
+        setHasLoadedBeyondFirst(false)
       }
       prevFilterKeyRef.current = filterKey
     }
@@ -250,6 +265,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   const handleRefresh = useCallback(() => {
     refreshLogs()
+    setHasLoadedBeyondFirst(false)
   }, [refreshLogs])
 
   // Expose refresh method via ref
@@ -279,6 +295,31 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     })
   }, [])
 
+  const handleNextPage = useCallback(async () => {
+    if (hasNextPage && pageInfo?.endCursor) {
+      await fetchNextPage()
+      setHasLoadedBeyondFirst(true)
+    }
+  }, [hasNextPage, pageInfo, fetchNextPage])
+
+  const handleResetToFirstPage = useCallback(async () => {
+    await fetchFirstPage()
+    setHasLoadedBeyondFirst(false)
+  }, [fetchFirstPage])
+
+  const cursorPagination: CursorPaginationProps | undefined = pageInfo ? {
+    hasNextPage: hasNextPage,
+    isFirstPage: !hasLoadedBeyondFirst,
+    startCursor: pageInfo.startCursor,
+    endCursor: pageInfo.endCursor,
+    currentCount: logs.length,
+    itemName: 'logs',
+    onNext: () => handleNextPage(),
+    onReset: handleResetToFirstPage,
+    showInfo: true,
+    resetButtonLabel: 'First',
+    resetButtonIcon: 'home'
+  } : undefined
 
   const headerActions = (
     <Button
@@ -306,6 +347,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         mobileColumns={embedded ? ['logId', 'status'] : ['logId', 'status', 'device']}
         rowClassName="mb-1"
         actionsWidth={100}
+        cursorPagination={!embedded ? cursorPagination : undefined}
       />
 
       {/* Log Info Modal - Side Menu */}

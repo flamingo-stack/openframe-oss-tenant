@@ -157,16 +157,12 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
       return
     }
     
-    return fetchLogs(search, activeFilters, pageInfo.endCursor, true)
+    return fetchLogs(search, activeFilters, pageInfo.endCursor, false)
   }, [pageInfo, fetchLogs, search, activeFilters])
 
-  const fetchPreviousPage = useCallback(async () => {
-    if (!pageInfo?.hasPreviousPage || !pageInfo?.startCursor) {
-      return
-    }
-    
-    return fetchLogs(search, activeFilters, pageInfo.startCursor, false)
-  }, [pageInfo, fetchLogs, search, activeFilters])
+  const fetchFirstPage = useCallback(async () => {
+    return fetchLogs(search, activeFilters, null, false)
+  }, [fetchLogs, search, activeFilters])
 
   const fetchLogDetails = useCallback(async (logEntry: LogEntry) => {
     try {
@@ -242,7 +238,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     // Actions
     fetchLogs,
     fetchNextPage,
-    fetchPreviousPage,
+    fetchFirstPage,
     fetchLogDetails,
     searchLogs,
     changePageSize,
