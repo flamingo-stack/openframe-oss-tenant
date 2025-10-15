@@ -63,7 +63,7 @@ export interface DialogConnection {
 export type MessageOwnerType = 'CLIENT' | 'ASSISTANT' | 'ADMIN'
 export type ChatType = string
 export type DialogMode = string
-export type MessageDataType = 'TEXT' | 'ERROR'
+export type MessageDataType = 'TEXT' | 'ERROR' | 'EXECUTING_TOOL' | 'EXECUTED_TOOL'
 
 export interface MessageOwner {
   type: MessageOwnerType
@@ -97,6 +97,25 @@ export interface ErrorData extends MessageData {
   details?: string
 }
 
+export interface ExecutingToolData extends MessageData {
+  type: 'EXECUTING_TOOL'
+  integratedToolType: string
+  toolFunction: string
+  parameters?: Record<string, any>
+  requiresApproval?: boolean
+  approvalStatus?: string
+}
+
+export interface ExecutedToolData extends MessageData {
+  type: 'EXECUTED_TOOL'
+  integratedToolType: string
+  toolFunction: string
+  result?: string
+  success?: boolean
+  requiredApproval?: boolean
+  approvalStatus?: string
+}
+
 export interface Message {
   id: string
   dialogId: string
@@ -104,7 +123,7 @@ export interface Message {
   dialogMode: DialogMode
   createdAt: string
   owner: ClientOwner | AssistantOwner | AdminOwner | MessageOwner
-  messageData: TextData | ErrorData | MessageData
+  messageData: TextData | ErrorData | ExecutingToolData | ExecutedToolData | MessageData
 }
 
 export interface MessageEdge {

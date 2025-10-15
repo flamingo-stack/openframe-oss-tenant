@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { MockChatService } from '../services/mockChatService'
 import { SSEService } from '../services/sseService'
 import { ChatApiService } from '../services/chatApiService'
+import { MessageSegment } from '../types/chat.types'
 
 interface UseSSEOptions {
   url?: string
@@ -23,7 +24,7 @@ export function useSSE({ url, useMock = false, useApi = true, apiToken, apiBaseU
   
   const streamMessage = useCallback(async function* (
     message: string
-  ): AsyncGenerator<string> {
+  ): AsyncGenerator<MessageSegment> {
     setIsStreaming(true)
     setError(null)
     
@@ -31,7 +32,7 @@ export function useSSE({ url, useMock = false, useApi = true, apiToken, apiBaseU
     abortControllerRef.current = new AbortController()
     
     try {
-      let generator: AsyncGenerator<string>
+      let generator: AsyncGenerator<MessageSegment>
       
       if (useMock) {
         generator = mockService.current.streamResponse(message)
@@ -54,7 +55,7 @@ export function useSSE({ url, useMock = false, useApi = true, apiToken, apiBaseU
       const errorMessage = err instanceof Error ? err.message : 'An error occurred'
       setError(errorMessage)
       throw err
-    } finally {
+  } finally {
       setIsStreaming(false)
       abortControllerRef.current = null
     }
