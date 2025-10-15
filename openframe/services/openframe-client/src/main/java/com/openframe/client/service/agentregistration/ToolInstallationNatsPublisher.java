@@ -35,7 +35,7 @@ public class ToolInstallationNatsPublisher {
     private ToolInstallationMessage buildMessage(IntegratedToolAgent toolAgent, IntegratedTool tool) {
         ToolInstallationMessage message = new ToolInstallationMessage();
         message.setToolAgentId(toolAgent.getId());
-        // TODO: need refactoring
+        // TODO: need refactoringg
         message.setToolId(toolAgent.getToolId() == null ? "" : toolAgent.getToolId());
         message.setToolType(tool.getToolType() == null ? "" : tool.getToolType() );
 
