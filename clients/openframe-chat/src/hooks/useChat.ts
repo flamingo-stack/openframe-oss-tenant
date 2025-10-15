@@ -58,7 +58,7 @@ export function useChat({ sseUrl, useMock = false, useApi = true, apiToken, apiB
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      name: 'John Smith',
+      name: 'You',
       content: text,
       timestamp: new Date()
     }

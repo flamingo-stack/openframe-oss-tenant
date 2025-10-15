@@ -28,7 +28,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   const handleEdit = () => router.push(`/organizations/edit/${id}`)
   const handleDelete = async () => {
     if (!organization) return
-    if (organization.name === 'Default') {
+    if (organization.isDefault) {
       return
     }
     try {
@@ -54,7 +54,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       <Button
         onClick={handleDelete}
         variant="outline"
-        disabled={organization?.name === 'Default'}
+        disabled={organization?.isDefault}
         className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px]"
       >
         Delete

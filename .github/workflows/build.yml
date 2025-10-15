@@ -141,7 +141,7 @@ jobs:
           delete-tags: '.*'
           exclude-tags: '^(?:[0-9]+\.[0-9]+\.[0-9]+|latest|test-.*)$'
           use-regex: true
-
+      
 
   build_clients:
     name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
@@ -161,7 +161,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -198,7 +198,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: "${{ matrix.name }}-${{ matrix.os }}"
-          path: "${{ matrix.path }}/target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+          path: "${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9
@@ -213,7 +213,7 @@ jobs:
           RUST_TARGET_x64=${ARCHITECTURES[1]}
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
-          lipo -create ${{ matrix.path }}/target/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.path }}/target/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
+          lipo -create ${{ matrix.target_path }}/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.target_path }}/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
           
           echo "Verify macOS openframe universal package"
           lipo -info ./artifacts/${{ env.BINARY_NAME }}
@@ -298,7 +298,6 @@ jobs:
           path: release-artifacts
         continue-on-error: true
 
-
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -310,13 +309,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ inputs.version }}
         run: |
-          mkdir -p final-artifacts/clients
-          if [ -d "release-artifacts" ]; then
-            find release-artifacts -type f \( -name "openframe" -o -name "openframe.exe" \) \
-            -exec cp {} final-artifacts/clients/ \;
-          fi
           git tag -f ${{ inputs.version }}
           goreleaser release --clean --skip=validate --release-header="" --release-footer="" --release-notes=""
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p final-artifacts/clients
+          if [ -d "release-artifacts" ]; then
+            for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
+              find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
+            done
+          fi
+          
+          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz -C artifacts/openframe-macos openframe
+          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip artifacts/openframe-windows/openframe.exe
 
           echo "Final artifacts to release:"
           ls -lh final-artifacts/clients/ 2>/dev/null || echo "No client artifacts"
@@ -324,13 +330,16 @@ jobs:
       - name: Generate release body
         id: release_body
         run: |
-          IMAGES=$(echo '${{ needs.matrix.outputs.image_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
+          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
           {
             echo "body<<EOF"
             echo "## Images"
             echo "$IMAGES"
             echo ""
             echo "## Clients"
+            echo "- **macOS** (Universal): \`openframe-client\` and \`openframe-chat\`"
+            echo "- **Windows** (x64): \`openframe-client.exe\` and \`openframe-cha.exe\`"
+            echo ""
             echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
             echo "Latest version:"
             echo "```bash"
@@ -346,17 +355,6 @@ jobs:
             echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-      - name: Package Rust Client binaries
-        run: |
-          tar -czf artifacts/openframe-client-macos_${{ inputs.version }}.tar.gz -C artifacts/openframe-macos openframe
-          zip -j artifacts/openframe-client-windows_${{ inputs.version }}.zip artifacts/openframe-windows/openframe.exe
-
-      - name: Upload Go CLI artifacts
-        if: (github.event_name == 'workflow_dispatch' && inputs.version != '' || github.event_name == 'push')
-        uses: actions/upload-artifact@v4
-        with:
-          name: openframe-cli-binaries
-          path: dist/*.tar.gz
 
       - name: Create Release
         if: (github.event_name == 'workflow_dispatch' && inputs.version != '' || github.event_name == 'push')
@@ -368,8 +366,7 @@ jobs:
           prerelease: false
           make_latest: true
           files: |
-            artifacts/openframe-client-macos_${{ inputs.version }}.tar.gz
-            artifacts/openframe-client-windows_${{ inputs.version }}.zip
+            final-artifacts/clients/*
             dist/*.tar.gz
             dist/*.zip
             dist/checksums.txt

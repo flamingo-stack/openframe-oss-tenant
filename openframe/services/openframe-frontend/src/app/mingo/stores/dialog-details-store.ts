@@ -38,10 +38,11 @@ interface DialogDetailsStore {
   // Pagination
   hasMoreMessages: boolean
   messagesCursor: string | null
+  newestMessageCursor: string | null
   
   // Actions
   fetchDialog: (dialogId: string) => Promise<Dialog | null>
-  fetchMessages: (dialogId: string, append?: boolean) => Promise<void>
+  fetchMessages: (dialogId: string, append?: boolean, pollNew?: boolean) => Promise<void>
   loadMore: () => Promise<void>
   clearCurrent: () => void
   updateDialogStatus: (status: string) => void
@@ -62,20 +63,19 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
   
   hasMoreMessages: false,
   messagesCursor: null,
+  newestMessageCursor: null,
   
   fetchDialog: async (dialogId: string) => {
     const state = get()
 
-    if (state.isLoadingDialog && state.loadingDialogId === dialogId) {
-      return null
+    if (state.currentDialogId !== dialogId || state.currentDialog === null) {
+      set({ 
+        isLoadingDialog: true, 
+        loadingDialogId: dialogId,
+        dialogError: null,
+        currentDialogId: dialogId 
+      })
     }
-    
-    set({ 
-      isLoadingDialog: true, 
-      loadingDialogId: dialogId,
-      dialogError: null,
-      currentDialogId: dialogId 
-    })
     
     try {
       const response = await apiClient.post<GraphQLResponse<DialogResponse>>('/chat/graphql', {
@@ -89,12 +89,12 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
       
       const dialog = response.data?.data?.dialog || null
       
-      set({ 
+      set((s) => ({ 
         currentDialog: dialog,
-        isLoadingDialog: false,
-        loadingDialogId: null,
+        isLoadingDialog: s.currentDialogId !== dialogId ? s.isLoadingDialog : false,
+        loadingDialogId: s.currentDialogId !== dialogId ? s.loadingDialogId : null,
         dialogError: dialog ? null : 'Dialog not found'
-      })
+      }))
       
       return dialog
     } catch (error) {
@@ -109,26 +109,38 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     }
   },
   
-  fetchMessages: async (dialogId: string, append = false) => {
+  fetchMessages: async (dialogId: string, append = false, pollNew = false) => {
     const state = get()
     
     if (state.isLoadingMessages && state.loadingMessagesId === dialogId) {
       return
     }
     
-    set({ 
-      isLoadingMessages: true, 
-      loadingMessagesId: dialogId,
-      messagesError: null 
-    })
+    if (!append && !pollNew) {
+      set({ 
+        isLoadingMessages: true, 
+        loadingMessagesId: dialogId,
+        messagesError: null 
+      })
+    }
     
     try {
+      let cursor: string | null = null
+      let limit = 50
+      
+      if (append) {
+        cursor = state.messagesCursor
+      } else if (pollNew) {
+        cursor = state.newestMessageCursor
+        limit = 10 
+      }
+      
       const response = await apiClient.post<GraphQLResponse<MessagesResponse>>('/chat/graphql', {
         query: GET_DIALOG_MESSAGES_QUERY,
         variables: {
           dialogId,
-          cursor: append ? state.messagesCursor : null,
-          limit: 50
+          cursor,
+          limit
         }
       })
       
@@ -144,20 +156,45 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
       
       const connection = graphqlResponse?.data?.messages
       const newMessages = (connection?.edges || []).map(edge => edge.node)
-      
-      let updatedMessages: Message[]
-      if (append) {
-        updatedMessages = [...state.currentMessages, ...newMessages]
-      } else {
-        updatedMessages = newMessages
-      }
-      
-      set({
-        currentMessages: updatedMessages,
-        hasMoreMessages: connection?.pageInfo?.hasNextPage || false,
-        messagesCursor: connection?.pageInfo?.endCursor || null,
-        isLoadingMessages: false,
-        loadingMessagesId: null
+      const hasNew = newMessages.length > 0
+
+      set(s => {
+        let updatedMessages: Message[]
+        let newNewestCursor = s.newestMessageCursor
+        
+        if (append) {
+          const existingIds = new Set(s.currentMessages.map(m => m.id))
+          const uniqueNew = newMessages.filter(m => !existingIds.has(m.id))
+          updatedMessages = uniqueNew.length ? [...s.currentMessages, ...uniqueNew] : s.currentMessages
+        } else if (pollNew) {
+          const existingIds = new Set(s.currentMessages.map(m => m.id))
+          const uniqueNew = newMessages.filter(m => !existingIds.has(m.id))
+          
+          if (uniqueNew.length > 0) {
+            updatedMessages = [...s.currentMessages, ...uniqueNew]
+            
+            if (connection?.edges && connection.edges.length > 0) {
+              newNewestCursor = connection.edges[connection.edges.length - 1].cursor
+            }
+          } else {
+            updatedMessages = s.currentMessages
+          }
+        } else {
+          updatedMessages = newMessages
+          
+          if (connection?.edges && connection.edges.length > 0) {
+            newNewestCursor = connection.edges[connection.edges.length - 1].cursor
+          }
+        }
+        
+        return {
+          currentMessages: updatedMessages,
+          hasMoreMessages: connection?.pageInfo?.hasNextPage || false,
+          messagesCursor: connection?.pageInfo?.endCursor || s.messagesCursor,
+          newestMessageCursor: newNewestCursor,
+          isLoadingMessages: (append || pollNew) ? s.isLoadingMessages : false,
+          loadingMessagesId: (append || pollNew) ? s.loadingMessagesId : null
+        }
       })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch messages'
@@ -182,6 +219,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     currentDialog: null,
     currentMessages: [],
     messagesCursor: null,
+    newestMessageCursor: null,
     hasMoreMessages: false,
     dialogError: null,
     messagesError: null,

@@ -10,14 +10,15 @@ import {
   TableDescriptionCell,
   DeviceCardCompact,
   type TableColumn,
-  type RowAction
+  type RowAction,
+  type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { ToolBadge } from "@flamingo/ui-kit"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { navigateToLogDetails } from '@lib/log-navigation'
-import { useLogs } from '../hooks/use-logs'
+import { useLogs, useLogFilters } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
 
 interface UILogEntry {
@@ -61,7 +62,10 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
   const [selectedLog, setSelectedLog] = useState<UILogEntry | null>(null)
+  const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
   const prevFilterKeyRef = React.useRef<string | null>(null)
+
+  const { logFilters, fetchLogFilters } = useLogFilters()
 
   // TEMPORARY: Don't pass deviceId to backend (not supported yet in GraphQL)
   // Only pass severities and toolTypes to backend
@@ -73,7 +77,18 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     }
   }, [filters])
 
-  const { logs, isLoading, error, searchLogs, refreshLogs, fetchLogDetails } = useLogs(backendFilters)
+  const { 
+    logs, 
+    pageInfo,
+    isLoading, 
+    error, 
+    searchLogs, 
+    refreshLogs, 
+    fetchLogDetails,
+    fetchNextPage,
+    fetchFirstPage,
+    hasNextPage
+  } = useLogs(backendFilters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   // Transform API logs to UI format
@@ -139,13 +154,11 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         label: 'Status',
         width: 'w-[120px]',
         filterable: true,
-        filterOptions: [
-          { id: 'ERROR', label: 'Error', value: 'ERROR' },
-          { id: 'WARNING', label: 'Warning', value: 'WARNING' },
-          { id: 'INFO', label: 'Info', value: 'INFO' },
-          { id: 'SUCCESS', label: 'Success', value: 'SUCCESS' },
-          { id: 'CRITICAL', label: 'Critical', value: 'CRITICAL' }
-        ],
+        filterOptions: logFilters?.severities?.map((severity: string) => ({
+          id: severity,
+          label: severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase(),
+          value: severity
+        })) || [],
         renderCell: (log) => (
           <div className="shrink-0">
             <StatusTag
@@ -160,14 +173,11 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         label: 'Tool',
         width: 'w-[160px]',
         filterable: true,
-        filterOptions: [
-          { id: 'tactical', label: 'Tactical', value: 'tactical' },
-          { id: 'meshcentral', label: 'MeshCentral', value: 'meshcentral' },
-          { id: 'fleet', label: 'Fleet', value: 'fleet' },
-          { id: 'authentik', label: 'Authentik', value: 'authentik' },
-          { id: 'openframe', label: 'OpenFrame', value: 'openframe' },
-          { id: 'system', label: 'System', value: 'system' }
-        ],
+        filterOptions: logFilters?.toolTypes?.map((toolType: string) => ({
+          id: toolType,
+          label: toStandardToolLabel(toolType),
+          value: toolType
+        })) || [],
         renderCell: (log) => (
           <ToolBadge toolType={log.source.toolType as any} />
         )
@@ -199,7 +209,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     }
 
     return allColumns
-  }, [embedded])
+  }, [embedded, logFilters])
 
   const rowActions: RowAction<UILogEntry>[] = useMemo(() => [
     {
@@ -215,13 +225,15 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   useEffect(() => {
     if (!isInitialized) {
       searchLogs('')
+      fetchLogFilters()
       setIsInitialized(true)
     }
-  }, [isInitialized, searchLogs])
+  }, [isInitialized, searchLogs, fetchLogFilters])
 
   useEffect(() => {
     if (isInitialized && debouncedSearchTerm !== undefined) {
       searchLogs(debouncedSearchTerm)
+      setHasLoadedBeyondFirst(false)
     }
   }, [debouncedSearchTerm, searchLogs, isInitialized])
   
@@ -235,10 +247,12 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
         refreshLogs()
+        fetchLogFilters(filters)
+        setHasLoadedBeyondFirst(false)
       }
       prevFilterKeyRef.current = filterKey
     }
-  }, [filters, deviceId, refreshLogs, isInitialized])
+  }, [filters, deviceId, refreshLogs, fetchLogFilters, isInitialized])
 
   const handleRowClick = useCallback((log: UILogEntry) => {
     setSelectedLog(log)
@@ -250,7 +264,9 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   const handleRefresh = useCallback(() => {
     refreshLogs()
-  }, [refreshLogs])
+    fetchLogFilters()
+    setHasLoadedBeyondFirst(false)
+  }, [refreshLogs, fetchLogFilters])
 
   // Expose refresh method via ref
   useImperativeHandle(ref, () => ({
@@ -279,6 +295,31 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     })
   }, [])
 
+  const handleNextPage = useCallback(async () => {
+    if (hasNextPage && pageInfo?.endCursor) {
+      await fetchNextPage()
+      setHasLoadedBeyondFirst(true)
+    }
+  }, [hasNextPage, pageInfo, fetchNextPage])
+
+  const handleResetToFirstPage = useCallback(async () => {
+    await fetchFirstPage()
+    setHasLoadedBeyondFirst(false)
+  }, [fetchFirstPage])
+
+  const cursorPagination: CursorPaginationProps | undefined = pageInfo ? {
+    hasNextPage: hasNextPage,
+    isFirstPage: !hasLoadedBeyondFirst,
+    startCursor: pageInfo.startCursor,
+    endCursor: pageInfo.endCursor,
+    currentCount: logs.length,
+    itemName: 'logs',
+    onNext: () => handleNextPage(),
+    onReset: handleResetToFirstPage,
+    showInfo: true,
+    resetButtonLabel: 'First',
+    resetButtonIcon: 'home'
+  } : undefined
 
   const headerActions = (
     <Button
@@ -306,6 +347,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         mobileColumns={embedded ? ['logId', 'status'] : ['logId', 'status', 'device']}
         rowClassName="mb-1"
         actionsWidth={100}
+        cursorPagination={!embedded ? cursorPagination : undefined}
       />
 
       {/* Log Info Modal - Side Menu */}

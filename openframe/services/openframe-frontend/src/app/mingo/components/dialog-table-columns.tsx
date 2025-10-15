@@ -28,12 +28,12 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
       )
     },
     {
-      key: 'owner',
-      label: 'OWNER',
+      key: 'source',
+      label: 'SOURCE',
       width: 'w-1/6',
       renderCell: (dialog) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
-          {'machineId' in (dialog.owner || {}) ? (dialog.owner as any).machineId : dialog.owner?.type}
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+          {'machine' in (dialog.owner || {}) ? (dialog.owner as any).machine?.hostname : dialog.owner?.type }
         </span>
       )
     },

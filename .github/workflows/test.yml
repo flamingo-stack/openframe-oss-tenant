@@ -192,7 +192,7 @@ jobs:
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes, matrix]
-    runs-on: ${{ matrix.os }}
+    runs-on: "${{ matrix.os }}-latest"
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: ${{ matrix.name }}
@@ -207,7 +207,7 @@ jobs:
     steps:
       - name: Check if build should run
         id: should_run
-        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+        run: echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -245,7 +245,7 @@ jobs:
           else
             make build TARGET="${{ matrix.target }}"
           fi
-  
+
   
   test_helm:
     name: "Test Helm Chart"

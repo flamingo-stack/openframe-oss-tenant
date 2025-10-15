@@ -1,73 +1,100 @@
 use tauri::{
-    image::Image,
-    menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
+    Manager, Runtime, WindowEvent,
 };
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
-            
-            // Load the tray icon bytes at compile time
-            let tray_icon_bytes = include_bytes!("../icons/tray/icon.png");
-            let tray_icon = Image::from_bytes(tray_icon_bytes)
-                .expect("failed to load tray icon");
+            if cfg!(debug_assertions) {
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::default()
+                        .level(log::LevelFilter::Info)
+                        .build(),
+                )?;
+            }
 
-            let _tray = TrayIconBuilder::new()
-                .icon(tray_icon)
-                .menu(&menu)
-                .show_menu_on_left_click(false)
-                .tooltip("OpenFrame Chat")
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                })
-                .on_menu_event(move |app, event| match event.id.as_ref() {
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    _ => {}
-                })
-                .build(app)?;
-            
+            // Create the system tray
+            let _ = create_tray(app)?;
+
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Intercept the close event and hide the window instead
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                // Prevent the default close behavior
-                api.prevent_close();
-                // Hide the window instead
-                let _ = window.hide();
+            // Handle window close event
+            match event {
+                WindowEvent::CloseRequested { api, .. } => {
+                    // Prevent the window from closing
+                    api.prevent_close();
+                    // Hide the window instead
+                    let _ = window.hide();
+                }
+                _ => {}
             }
         })
-        .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn create_tray<R: Runtime>(app: &tauri::App<R>) -> Result<(), Box<dyn std::error::Error>> {
+    let tray_menu = tauri::menu::MenuBuilder::new(app)
+        .item(
+            &tauri::menu::MenuItemBuilder::with_id("show", "Show")
+                .build(app)?,
+        )
+        .separator()
+        .item(
+            &tauri::menu::MenuItemBuilder::with_id("quit", "Quit")
+                .build(app)?,
+        )
+        .build()?;
+
+    // Get the path to the icon relative to the resources directory
+    let icon_path = app.path().resource_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from(""))
+        .join("icons")
+        .join("32x32.png");
+    
+    let icon = if icon_path.exists() {
+        tauri::image::Image::from_path(&icon_path)?
+    } else {
+        // Fallback to embedded icon
+        tauri::image::Image::from_bytes(include_bytes!("../icons/32x32.png"))?
+    };
+
+    let _tray = TrayIconBuilder::new()
+        .menu(&tray_menu)
+        .icon(icon)
+        .tooltip("Fae Chat")
+        .on_menu_event(move |app, event| match event.id.as_ref() {
+            "show" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            match event {
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } => {
+                    // Show window on left click
+                    if let Some(window) = tray.app_handle().get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+                _ => {}
+            }
+        })
+        .build(app)?;
+
+    Ok(())
 }

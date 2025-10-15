@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import {
   Table,
   Button,
-  ListPageLayout
+  ListPageLayout,
+  type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
 import { useDebounce, useToast } from "@flamingo/ui-kit/hooks"
 import { useDialogsStore } from '../../stores/dialogs-store'
@@ -20,9 +21,13 @@ export function ArchivedChats() {
   
   const { 
     archivedDialogs: dialogs, 
+    archivedPageInfo,
+    archivedHasLoadedBeyondFirst,
     isLoadingArchived: isLoading, 
     archivedError: error,
-    fetchDialogs
+    fetchDialogs,
+    goToNextPage,
+    goToFirstPage
   } = useDialogsStore()
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -39,7 +44,7 @@ export function ArchivedChats() {
   )
 
   React.useEffect(() => {
-    fetchDialogs(true) 
+    fetchDialogs(true, undefined, true) 
   }, [])
 
   React.useEffect(() => {
@@ -51,6 +56,28 @@ export function ArchivedChats() {
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
   }, [])
+  
+  const handleNextPage = useCallback(() => {
+    goToNextPage(true)
+  }, [goToNextPage])
+  
+  const handleResetToFirstPage = useCallback(() => {
+    goToFirstPage(true)
+  }, [goToFirstPage])
+  
+  const cursorPagination: CursorPaginationProps | undefined = archivedPageInfo ? {
+    hasNextPage: archivedPageInfo.hasNextPage,
+    isFirstPage: !archivedHasLoadedBeyondFirst,
+    startCursor: archivedPageInfo.startCursor,
+    endCursor: archivedPageInfo.endCursor,
+    currentCount: dialogs.length,
+    itemName: 'chats',
+    onNext: () => handleNextPage(),
+    onReset: handleResetToFirstPage,
+    showInfo: true,
+    resetButtonLabel: 'First',
+    resetButtonIcon: 'home'
+  } : undefined
 
   return (
     <ListPageLayout
@@ -74,6 +101,7 @@ export function ArchivedChats() {
         showFilters={true}
         mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
+        cursorPagination={cursorPagination}
       />
     </ListPageLayout>
   )
