@@ -271,7 +271,6 @@ jobs:
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
 
-
   release:
     name: "Create Release"
 #    needs: [changes, matrix, build_images, build_clients, build_helm]
@@ -311,7 +310,7 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ inputs.version }}
         run: |
           git tag -f ${{ inputs.version }}
-          goreleaser release --clean --skip=validate --release-header="" --release-footer="" --release-notes=""
+          goreleaser release --clean --skip=validate --skip=release --skip=publish 
 
       - name: Prepare release artifacts
         run: |
