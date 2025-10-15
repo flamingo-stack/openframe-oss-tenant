@@ -4,7 +4,7 @@ use aes_gcm::{
 };
 use base64::{Engine as _, engine::general_purpose};
 
-/// Service for decrypting tokens encrypted with AES-256-GCM
+/// Service for decrypting tokens encrypted with AES-256-GCM alg
 #[derive(Clone)]
 pub struct TokenDecryptionService {
     key: [u8; 32],

@@ -48,7 +48,7 @@ impl ToolInstallationService {
         tool_run_manager: ToolRunManager,
         tool_connection_processing_manager: ToolConnectionProcessingManager,
     ) -> Self {
-        // Ensure directories exist
+        // Ensure directories exists
         directory_manager
             .ensure_directories()
             .with_context(|| "Failed to ensure secured directory exists")
