@@ -274,7 +274,8 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [changes, matrix, build_images, build_clients, build_helm]
+#    needs: [changes, matrix, build_images, build_clients, build_helm]
+    needs: [changes, matrix, build_clients, build_helm]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' && 
