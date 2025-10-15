@@ -52,8 +52,25 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         
         info!("Successfully obtained user token for session {}", session_id);
 
-        // Build command line with arguments
-        let mut cmdline = command_path.to_string();
+        // Duplicate token to get primary token (required for CreateProcessAsUserW)
+        let mut primary_token = HANDLE(0);
+        if let Err(e) = DuplicateTokenEx(
+            user_token,
+            TOKEN_ALL_ACCESS,
+            None,
+            SECURITY_IMPERSONATION_LEVEL(2), // SecurityImpersonation
+            TokenPrimary,
+            &mut primary_token,
+        ) {
+            let _ = CloseHandle(user_token);
+            anyhow::bail!("Failed to duplicate token for session {}: {:?}", session_id, e);
+        }
+        
+        let _ = CloseHandle(user_token);
+        info!("Successfully duplicated token to primary token");
+
+        // Build command line with full path in quotes + arguments
+        let mut cmdline = format!("\"{}\"", command_path);
         for arg in args {
             cmdline.push(' ');
             // Quote argument if it contains spaces
@@ -85,9 +102,10 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         // For GUI applications, use CREATE_NEW_PROCESS_GROUP for proper process isolation
         use windows::Win32::System::Threading::CREATE_NEW_PROCESS_GROUP;
         
+        // Try with lpApplicationName = NULL and full command line
         let result = CreateProcessAsUserW(
-            user_token,
-            PCWSTR(to_wide(command_path).as_ptr()),
+            primary_token,
+            PCWSTR::null(), // lpApplicationName = NULL
             PWSTR(cmdline_wide.as_mut_ptr()),
             None,
             None,
@@ -99,11 +117,35 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
             &mut pi,
         );
 
-        let _ = CloseHandle(user_token);
-
         if let Err(e) = result {
-            error!("CreateProcessAsUserW failed: {:?}", e);
-            anyhow::bail!("Failed to launch process in user session: {:?}", e);
+            // Fallback: try without desktop specification
+            warn!("Failed to launch with desktop specification, trying without: {:?}", e);
+            
+            si.lpDesktop = PWSTR::null();
+            let mut cmdline_wide_retry = to_wide(&cmdline);
+            
+            let result_retry = CreateProcessAsUserW(
+                primary_token,
+                PCWSTR::null(),
+                PWSTR(cmdline_wide_retry.as_mut_ptr()),
+                None,
+                None,
+                false,
+                CREATE_NEW_PROCESS_GROUP,
+                None,
+                None,
+                &si,
+                &mut pi,
+            );
+            
+            let _ = CloseHandle(primary_token);
+            
+            if let Err(e2) = result_retry {
+                error!("CreateProcessAsUserW failed even without desktop: {:?}", e2);
+                anyhow::bail!("Failed to launch process in user session: {:?}", e2);
+            }
+        } else {
+            let _ = CloseHandle(primary_token);
         }
 
         let pid = pi.dwProcessId;
