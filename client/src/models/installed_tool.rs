@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::models::MainFileType;
 
 /// Installation status of the tool on the endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -24,6 +25,7 @@ pub struct InstalledTool {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uninstallation_command_args: Option<Vec<String>>,
     pub status: ToolStatus,
+    pub file_type: MainFileType,
 }
 
 impl Default for InstalledTool {
@@ -37,6 +39,7 @@ impl Default for InstalledTool {
             status: ToolStatus::default(),
             tool_agent_id_command_args: Vec::new(),
             uninstallation_command_args: None,
+            file_type: MainFileType::Executable,
         }
     }
 }
