@@ -102,7 +102,7 @@ public class AgentRegistrationService {
         }
         
         // Fallback to default organization
-        String defaultOrgId = getDefaultOrganizationId();
+        String defaultOrgId = "";
         log.debug("Using default organizationId: {}", defaultOrgId);
         return defaultOrgId;
     }
@@ -114,12 +114,12 @@ public class AgentRegistrationService {
      * @return default organization ID
      * @throws IllegalStateException if default organization doesn't exist
      */
-    private String getDefaultOrganizationId() {
-        return organizationService.getDefaultOrganization()
-                .map(Organization::getOrganizationId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Default organization not found. Please ensure it was created during tenant registration."));
-    }
+//    private String getDefaultOrganizationId() {
+//        return organizationService.getDefaultOrganization()
+//                .map(Organization::getOrganizationId)
+//                .orElseThrow(() -> new IllegalStateException(
+//                        "Default organization not found. Please ensure it was created during tenant registration."));
+//    }
 
     private void saveMachine(String machineId, AgentRegistrationRequest request, String organizationId) {
         Machine machine = new Machine();

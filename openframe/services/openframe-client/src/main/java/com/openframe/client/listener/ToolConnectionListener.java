@@ -50,6 +50,15 @@ public class ToolConnectionListener {
         try {
             JetStream js = natsConnection.jetStream();
             
+            // Remove existing consumer if it exists to ensure clean state
+            try {
+                natsConnection.jetStreamManagement().deleteConsumer(STREAM_NAME, CONSUMER_NAME);
+                log.info("Deleted existing consumer: stream={} consumer={}", STREAM_NAME, CONSUMER_NAME);
+            } catch (Exception e) {
+                // Consumer doesn't exist or error deleting - this is fine, continue
+                log.debug("Consumer doesn't exist or couldn't be deleted (this is ok): {}", e.getMessage());
+            }
+            
             // NATS Dispatcher manages threads internally
             dispatcher = natsConnection.createDispatcher();
 
