@@ -88,6 +88,12 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       key: 'organization',
       label: 'ORGANIZATION',
       width: 'w-1/6',
+      filterable: true,
+      filterOptions: deviceFilters?.organizationIds?.map((org: any) => ({
+        id: org.value,
+        label: org.label,
+        value: org.value
+      })) || [],
       renderCell: (device) => (
         <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">

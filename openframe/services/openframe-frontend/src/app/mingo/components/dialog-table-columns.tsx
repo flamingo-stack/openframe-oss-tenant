@@ -1,23 +1,13 @@
 import React from 'react'
 import { type TableColumn, type RowAction, StatusTag } from '@flamingo/ui-kit/components/ui'
-import { ChevronRight, MoreHorizontal } from 'lucide-react'
 import { Dialog } from '../types/dialog.types'
 
 export function getDialogTableRowActions(
-  onMore: (dialog: Dialog) => void,
   onDetails: (dialog: Dialog) => void
 ): RowAction<Dialog>[] {
   return [
     {
-      label: '',
-      icon: <MoreHorizontal className="h-6 w-6 text-ods-text-primary" />,
-      onClick: onMore,
-      variant: 'outline',
-      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
-    },
-    {
-      label: '',
-      icon: <ChevronRight className="h-6 w-6 text-ods-text-primary" />,
+      label: 'Details',
       onClick: onDetails,
       variant: 'outline',
       className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
@@ -38,12 +28,12 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
       )
     },
     {
-      key: 'owner',
-      label: 'OWNER',
+      key: 'source',
+      label: 'SOURCE',
       width: 'w-1/6',
       renderCell: (dialog) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-secondary truncate">
-          {'machineId' in (dialog.owner || {}) ? (dialog.owner as any).machineId : dialog.owner?.type}
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+          {'machine' in (dialog.owner || {}) ? (dialog.owner as any).machine?.hostname : dialog.owner?.type }
         </span>
       )
     },
@@ -65,12 +55,12 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
       renderCell: (dialog) => {
         const getStatusVariant = (status: string) => {
           switch (status) {
+            case 'ACTIVE':
+              return 'success' as const
             case 'ACTION_REQUIRED':
               return 'warning' as const
             case 'ON_HOLD':
               return 'error' as const
-            case 'ACTIVE':
-              return 'warning' as const
             case 'RESOLVED':
               return 'success' as const
             case 'ARCHIVED':
@@ -78,6 +68,16 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
             default:
               return 'info' as const
           }
+        }
+
+        if (dialog.status === 'RESOLVED') {
+          return (
+            <div className="shrink-0">
+              <StatusTag
+                label="RESOLVED"
+              />
+            </div>
+          )
         }
 
         return (

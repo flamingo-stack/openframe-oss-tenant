@@ -5,6 +5,7 @@ import { apiClient } from '@lib/api-client'
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
 import type { GraphQLResponse } from '../../devices/types/device.types'
 import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries'
+import { GET_DIALOG_STATISTICS_QUERY } from '../../mingo/queries/dialogs-queries'
 
 export function useDevicesOverview() {
   const [stats, setStats] = useState(() => ({
@@ -60,27 +61,70 @@ export function useDevicesOverview() {
 }
 
 export function useChatsOverview() {
-  return useMemo(() => {
-    // Mock data for saas-tenant mode until
-    const total = 1250
-    const active = 136
-    const resolved = 825
-    const avgResolveTime = '00:38:00'
-    const avgFaeRate = 3.6
+  const [stats, setStats] = useState(() => ({
+    total: 0,
+    active: 0,
+    resolved: 0,
+    avgResolveTime: '—',
+    avgFaeRate: 0,
+    activePercentage: 0,
+    resolvedPercentage: 0
+  }))
 
-    const activePercentage = Math.round((active / total) * 100)
-    const resolvedPercentage = Math.round((resolved / total) * 100)
+  useEffect(() => {
+    let isMounted = true
 
-    return {
-      total,
-      active,
-      resolved,
-      avgResolveTime,
-      avgFaeRate,
-      activePercentage,
-      resolvedPercentage
+    type DialogStatistics = {
+      dialogStatistics: {
+        totalCount: number
+        statusCounts: Array<{ status: string; count: number }>
+        averageResolutionTimeFormatted: string
+        averageRating: number
+      }
     }
+
+    const fetchStats = async () => {
+      try {
+        const res: { ok: boolean, status: number, error?: string, data?: GraphQLResponse<DialogStatistics> } = await apiClient.post<GraphQLResponse<DialogStatistics>>('/chat/graphql', {
+          query: GET_DIALOG_STATISTICS_QUERY
+        })
+
+        if (!res.ok) {
+          throw new Error(res.error || `Request failed with status ${res.status}`)
+        }
+
+        const data = res.data?.data?.dialogStatistics
+        if (!data) return
+
+        const total = data.totalCount || 0
+        const active = (data.statusCounts || [])
+          .filter(s => (s.status || '').toUpperCase() === 'ACTIVE')
+          .reduce((sum, s) => sum + (s.count || 0), 0)
+        const resolved = (data.statusCounts || [])
+          .filter(s => (s.status || '').toUpperCase() === 'RESOLVED')
+          .reduce((sum, s) => sum + (s.count || 0), 0)
+
+        if (!isMounted) return
+
+        setStats({
+          total,
+          active,
+          resolved,
+          avgResolveTime: data.averageResolutionTimeFormatted || '—',
+          avgFaeRate: typeof data.averageRating === 'number' ? Number(data.averageRating.toFixed(1)) : 0,
+          activePercentage: total > 0 ? Math.round((active / total) * 100) : 0,
+          resolvedPercentage: total > 0 ? Math.round((resolved / total) * 100) : 0,
+        })
+      } catch (_) {
+        // keep defaults on error
+      }
+    }
+
+    fetchStats()
+    return () => { isMounted = false }
   }, [])
+
+  return stats
 }
 
 export function useLogsOverview() {

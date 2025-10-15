@@ -1,21 +1,60 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Clock,
   CheckCircle,
-  Monitor
+  Monitor,
+  Check
 } from 'lucide-react'
 import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo/ui-kit'
 import { Button } from '@flamingo/ui-kit'
 import { DetailLoader } from '@flamingo/ui-kit/components/ui'
-import { useDialogDetails } from '../hooks/use-dialog-details'
+import { DeviceInfoSection } from '../../components/shared'
+import { useDialogDetailsStore } from '../stores/dialog-details-store'
+import { useDialogStatus } from '../hooks/use-dialog-status'
+import type { Message, TextData, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
-  const { dialog, isLoading } = useDialogDetails(dialogId)
+  const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
+    return owner != null && typeof owner === 'object' && 'machineId' in owner
+  }
+  const {
+    currentDialog: dialog,
+    currentMessages: messages,
+    isLoadingDialog: isLoading,
+    isLoadingMessages: messagesLoading,
+    hasMoreMessages: hasMore,
+    fetchDialog,
+    fetchMessages,
+    loadMore,
+    clearCurrent,
+    updateDialogStatus
+  } = useDialogDetailsStore()
+  const { putOnHold, resolve, isUpdating } = useDialogStatus()
   const [isPaused, setIsPaused] = useState(false)
+
+  useEffect(() => {
+    if (dialogId) {
+      fetchDialog(dialogId)
+      fetchMessages(dialogId)
+    }
+    
+    return () => {
+      clearCurrent()
+    }
+  }, [dialogId])
+
+  useEffect(() => {
+    if (!dialogId) return
+    const interval = setInterval(() => {
+      fetchDialog(dialogId)
+      fetchMessages(dialogId, false, true)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [dialogId, fetchDialog, fetchMessages])
 
   const handleSendMessage = (text: string) => {
     if (!isPaused) return
@@ -24,26 +63,89 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     console.log('Sending message:', message)
   }
 
-  const headerActions = (
+  const handlePutOnHold = async () => {
+    if (!dialog || isUpdating) return
+    
+    const success = await putOnHold(dialogId)
+    if (success) {
+      updateDialogStatus('ON_HOLD')
+    }
+  }
+
+  const handleResolve = async () => {
+    if (!dialog || isUpdating) return
+    
+    const success = await resolve(dialogId)
+    if (success) {
+      updateDialogStatus('RESOLVED')
+    }
+  }
+
+  const chatMessages = useMemo(() => {
+    return messages.filter((msg: Message) => {
+      const messageDataArray = msg.messageData as any
+      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
+        return messageDataArray[0].type === 'TEXT'
+      }
+      return (msg.messageData as any)?.type === 'TEXT'
+    }).map((msg: Message) => {
+      let content = ''
+      
+      const messageDataArray = msg.messageData as any
+      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
+        const firstData = messageDataArray[0]
+        if (firstData.type === 'TEXT') {
+          content = firstData.text || ''
+        }
+      } else if ((msg.messageData as any)?.type === 'TEXT') {
+        content = (msg.messageData as TextData).text || ''
+      }
+
+      return {
+        id: msg.id,
+        content,
+        role: msg.owner?.type === 'CLIENT' ? 'user' as const : 
+              msg.owner?.type === 'ASSISTANT' ? 'assistant' as const : 
+              'assistant' as const,
+        timestamp: new Date(msg.createdAt)
+      }
+    })
+  }, [messages])
+
+  const prevLenRef = useRef<number>(messages.length)
+  const shouldAutoScroll = messages.length > prevLenRef.current
+  useEffect(() => {
+    prevLenRef.current = messages.length
+  }, [messages.length])
+
+  const headerActions = dialog && (
     <div className="flex gap-4 items-center">
-      <Button
-        variant="ghost"
-        className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-        leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
-      >
-        <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-          Put On Hold
-        </span>
-      </Button>
-      <Button
-        variant="ghost"
-        className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-        leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
-      >
-        <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-          Resolve
-        </span>
-      </Button>
+      {dialog.status !== 'ON_HOLD' && dialog.status !== 'RESOLVED' && (
+        <Button
+          variant="ghost"
+          className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+          leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
+          onClick={handlePutOnHold}
+          disabled={isUpdating}
+        >
+          <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
+            {isUpdating ? 'Updating...' : 'Put On Hold'}
+          </span>
+        </Button>
+      )}
+      {dialog.status !== 'RESOLVED' && (
+        <Button
+          variant="ghost"
+          className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+          leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
+          onClick={handleResolve}
+          disabled={isUpdating}
+        >
+          <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
+            {isUpdating ? 'Updating...' : 'Resolve'}
+          </span>
+        </Button>
+      )}
     </div>
   )
 
@@ -63,63 +165,18 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >
-      {/* Info Bar */}
-      <div className="mt-6 bg-ods-card border border-ods-border rounded-md p-4 flex items-center gap-4">
-        {/* Organization */}
-        <div className="flex items-center gap-4 flex-1">
-          <div className="w-8 h-8 bg-ods-bg-surface rounded flex items-center justify-center">
-            <span className="text-ods-text-secondary text-sm">P</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-              {/* Organization name not in schema; placeholder */}
-              {'Organization'}
-            </span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-              {'Type'}
-            </span>
-          </div>
-        </div>
-
-        {/* Device */}
-        <div className="flex items-center gap-4 flex-1">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1">
-              <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-                {/* Device name not in schema; show owner machineId if present */}
-                {'device'}
-              </span>
-              <Monitor className="h-4 w-4 text-ods-text-secondary" />
-            </div>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-              Device
-            </span>
-          </div>
-        </div>
-
-        {/* SLA Countdown */}
-        <div className="flex flex-col flex-1">
-          <span className="font-['DM_Sans'] font-medium text-[18px] text-error">
-            {/* SLA countdown not in schema; placeholder */}
-            {'--:--:--'}
-          </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-            SLA Countdown
-          </span>
-        </div>
-
-        {/* Status */}
-        <div className="flex items-center">
-          <StatusTag
-            label={dialog.status.replace('_', ' ')}
-            variant={
-              dialog.status === 'ACTIVE' || dialog.status === 'RESOLVED' ? 'success' :
-              dialog.status === 'ON_HOLD' ? 'warning' :
-              dialog.status === 'ACTION_REQUIRED' ? 'error' : 'info'
-            }
-          />
-        </div>
-      </div>
+      {/* Device Info Section */}
+      {isClientOwner(dialog.owner) && dialog.owner.machineId && (
+        <DeviceInfoSection
+          deviceId={dialog.owner.machineId}
+          device={dialog.owner.machine ? {
+            id: dialog.owner.machine.id,
+            machineId: dialog.owner.machine.machineId,
+            hostname: dialog.owner.machine.hostname,
+            displayName: dialog.owner.machine.hostname,
+          } : undefined}
+        />
+      )}
 
       {/* Chat Section */}
       <div className="flex-1 flex gap-6 pt-6 min-h-0">
@@ -132,10 +189,22 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
           <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
             <ChatMessageList
               className=""
-              messages={[]}
-              autoScroll
+              messages={chatMessages}
+              autoScroll={shouldAutoScroll}
               showAvatars={false}
             />
+            {hasMore && !messagesLoading && (
+              <div className="p-2 text-center border-t border-ods-border">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => loadMore()}
+                  className="text-ods-text-secondary hover:text-ods-text-primary"
+                >
+                  Load More Messages
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Input */}

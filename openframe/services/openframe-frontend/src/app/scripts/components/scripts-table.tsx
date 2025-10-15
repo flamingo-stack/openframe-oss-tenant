@@ -9,7 +9,8 @@ import {
   ListPageLayout,
   TableDescriptionCell,
   type TableColumn,
-  type RowAction
+  type RowAction,
+  type PagePagination
 } from "@flamingo/ui-kit/components/ui"
 import { CirclePlusIcon } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
@@ -17,7 +18,6 @@ import { useScripts } from "../hooks/use-scripts"
 import { ToolBadge, ShellTypeBadge } from "@flamingo/ui-kit/components/platform"
 import { OSTypeBadgeGroup } from "@flamingo/ui-kit/components/features"
 import type { ShellType } from "@flamingo/ui-kit"
-import { SHELL_TYPES } from "@flamingo/ui-kit/types/shell.types"
 
 interface UIScriptEntry {
   id: number
@@ -37,6 +37,8 @@ export function ScriptsTable() {
   const [filters, setFilters] = useState<{ shellType?: string[], addedBy?: string[], category?: string[] }>({})
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize] = useState(20)
   const prevFilterKeyRef = React.useRef<string | null>(null)
   
   const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
@@ -52,6 +54,60 @@ export function ScriptsTable() {
       supportedPlatforms: script.supported_platforms || []
     }))
   }, [scripts])
+
+  const uniqueShellTypes = useMemo(() => {
+    const shellTypesSet = new Set(transformedScripts.map(script => script.shellType))
+    return Array.from(shellTypesSet).sort().map(shellType => ({
+      id: shellType,
+      label: shellType,
+      value: shellType
+    }))
+  }, [transformedScripts])
+
+  const uniqueAddedBy = useMemo(() => {
+    const addedBySet = new Set(transformedScripts.map(script => script.addedBy))
+    return Array.from(addedBySet).sort().map(toolType => ({
+      id: toolType,
+      label: toStandardToolLabel(toolType.toUpperCase()),
+      value: toolType
+    }))
+  }, [transformedScripts])
+
+  const filteredScripts = useMemo(() => {
+    let filtered = transformedScripts
+    
+    if (debouncedSearchTerm && debouncedSearchTerm.trim() !== '') {
+      const searchLower = debouncedSearchTerm.toLowerCase().trim()
+      filtered = filtered.filter(script => 
+        script.name.toLowerCase().includes(searchLower) ||
+        script.description.toLowerCase().includes(searchLower)
+      )
+    }
+    
+    if (tableFilters.shellType && tableFilters.shellType.length > 0) {
+      filtered = filtered.filter(script => 
+        tableFilters.shellType.includes(script.shellType)
+      )
+    }
+    
+    if (tableFilters.addedBy && tableFilters.addedBy.length > 0) {
+      filtered = filtered.filter(script => 
+        tableFilters.addedBy.includes(script.addedBy)
+      )
+    }
+    
+    return filtered
+  }, [transformedScripts, debouncedSearchTerm, tableFilters])
+
+  const paginatedScripts = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    const endIndex = startIndex + pageSize
+    return filteredScripts.slice(startIndex, endIndex)
+  }, [filteredScripts, currentPage, pageSize])
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredScripts.length / pageSize)
+  }, [filteredScripts.length, pageSize])
 
   const columns: TableColumn<UIScriptEntry>[] = useMemo(() => [
     {
@@ -71,7 +127,7 @@ export function ScriptsTable() {
       label: 'Shell Type',
       width: 'w-[15%]',
       filterable: true,
-      filterOptions: SHELL_TYPES,
+      filterOptions: uniqueShellTypes,
       renderCell: (script) => (
         <ShellTypeBadge shellType={script.shellType as ShellType} />
       )
@@ -91,10 +147,7 @@ export function ScriptsTable() {
       label: 'Added By',
       width: 'w-[15%]',
       filterable: true,
-      filterOptions: [
-        { id: 'tactical', label: toStandardToolLabel('TACTICAL'), value: 'tactical' },
-        { id: 'fleet', label: toStandardToolLabel('FLEET'), value: 'fleet' },
-      ],
+      filterOptions: uniqueAddedBy,
       renderCell: (script) => (
         <ToolBadge toolType={script.addedBy as any} />
       )
@@ -107,7 +160,7 @@ export function ScriptsTable() {
         <TableDescriptionCell text={script.description} />
       )
     }
-  ], [])
+  ], [uniqueShellTypes, uniqueAddedBy])
 
   const rowActions: RowAction<UIScriptEntry>[] = useMemo(() => [
     {
@@ -129,9 +182,9 @@ export function ScriptsTable() {
 
   useEffect(() => {
     if (isInitialized && debouncedSearchTerm !== undefined) {
-      searchScripts(debouncedSearchTerm)
+      setCurrentPage(1)
     }
-  }, [debouncedSearchTerm, searchScripts, isInitialized])
+  }, [debouncedSearchTerm, isInitialized])
   
   useEffect(() => {
     if (isInitialized) {
@@ -143,6 +196,7 @@ export function ScriptsTable() {
       
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
         refreshScripts()
+        setCurrentPage(1)
       }
       prevFilterKeyRef.current = filterKey
     }
@@ -154,21 +208,20 @@ export function ScriptsTable() {
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
-    
-    const newFilters: any = {}
-    
-    if (columnFilters.status?.length > 0) {
-      newFilters.severities = columnFilters.status
-    }
-    
-    if (columnFilters.tool?.length > 0) {
-      newFilters.toolTypes = columnFilters.tool
-    }
-    
-    setFilters(prev => {
-      return prev;
-    })
+    setCurrentPage(1)
   }, [])
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page)
+  }, [])
+
+  const pagePagination: PagePagination | undefined = totalPages > 1 ? {
+    currentPage,
+    totalPages,
+    pageSize,
+    totalItems: filteredScripts.length,
+    onPageChange: handlePageChange
+  } : undefined
 
 
   const headerActions = (
@@ -198,11 +251,15 @@ export function ScriptsTable() {
     >
       {/* Table */}
       <Table
-        data={transformedScripts}
+        data={paginatedScripts}
         columns={columns}
         rowKey="id"
         loading={isLoading}
-        emptyMessage="No scripts found. Try adjusting your search or filters."
+        emptyMessage={
+          debouncedSearchTerm 
+            ? `No scripts found matching "${debouncedSearchTerm}". Try adjusting your search.`
+            : "No scripts found. Try adjusting your filters or add a new script."
+        }
         rowActions={rowActions}
         filters={tableFilters}
         onFilterChange={handleFilterChange}
@@ -210,6 +267,7 @@ export function ScriptsTable() {
         mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
         actionsWidth={100}
+        pagePagination={pagePagination}
       />
 
       {/* New Script Modal - Now handled by routing */}

@@ -5,50 +5,79 @@ import { useRouter } from "next/navigation"
 import {
   Table,
   Button,
-  ListPageLayout
+  ListPageLayout,
+  type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
-import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
-import { useDebounce } from "@flamingo/ui-kit/hooks"
-import { useDialogs } from '../../hooks/use-dialogs'
+import { useDebounce, useToast } from "@flamingo/ui-kit/hooks"
+import { useDialogsStore } from '../../stores/dialogs-store'
 import { Dialog } from '../../types/dialog.types'
 import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table-columns'
 
 export function ArchivedChats() {
   const router = useRouter()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   
-  const { dialogs, isLoading, error, searchDialogs, refreshDialogs } = useDialogs(true) // true for archived chats
+  const { 
+    archivedDialogs: dialogs, 
+    archivedPageInfo,
+    archivedHasLoadedBeyondFirst,
+    isLoadingArchived: isLoading, 
+    archivedError: error,
+    fetchDialogs,
+    goToNextPage,
+    goToFirstPage
+  } = useDialogsStore()
+  
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const columns = useMemo(() => getDialogTableColumns(), [])
 
-  const handleDialogMore = useCallback((dialog: Dialog) => {
-    console.log('More clicked for dialog:', dialog.id)
-  }, [])
-
   const handleDialogDetails = useCallback((dialog: Dialog) => {
-    router.push(`/mingo/chat/${dialog.id}`)
+    router.push(`/mingo/dialog?id=${dialog.id}`)
   }, [router])
 
   const rowActions = useMemo(
-    () => getDialogTableRowActions(handleDialogMore, handleDialogDetails),
-    [handleDialogMore, handleDialogDetails]
+    () => getDialogTableRowActions(handleDialogDetails),
+    [handleDialogDetails]
   )
 
   React.useEffect(() => {
-    if (debouncedSearchTerm !== undefined) {
-      searchDialogs(debouncedSearchTerm)
-    }
-  }, [debouncedSearchTerm, searchDialogs])
+    fetchDialogs(true, undefined, true) 
+  }, [])
 
-  const handleRefresh = useCallback(() => {
-    refreshDialogs()
-  }, [refreshDialogs])
+  React.useEffect(() => {
+    if (debouncedSearchTerm !== undefined) {
+      fetchDialogs(true, debouncedSearchTerm)
+    }
+  }, [debouncedSearchTerm])
   
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setTableFilters(columnFilters)
   }, [])
+  
+  const handleNextPage = useCallback(() => {
+    goToNextPage(true)
+  }, [goToNextPage])
+  
+  const handleResetToFirstPage = useCallback(() => {
+    goToFirstPage(true)
+  }, [goToFirstPage])
+  
+  const cursorPagination: CursorPaginationProps | undefined = archivedPageInfo ? {
+    hasNextPage: archivedPageInfo.hasNextPage,
+    isFirstPage: !archivedHasLoadedBeyondFirst,
+    startCursor: archivedPageInfo.startCursor,
+    endCursor: archivedPageInfo.endCursor,
+    currentCount: dialogs.length,
+    itemName: 'chats',
+    onNext: () => handleNextPage(),
+    onReset: handleResetToFirstPage,
+    showInfo: true,
+    resetButtonLabel: 'First',
+    resetButtonIcon: 'home'
+  } : undefined
 
   return (
     <ListPageLayout
@@ -72,6 +101,7 @@ export function ArchivedChats() {
         showFilters={true}
         mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
+        cursorPagination={cursorPagination}
       />
     </ListPageLayout>
   )

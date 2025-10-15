@@ -7,11 +7,11 @@ import {
   Button,
   ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
+import type { CursorPaginationProps } from "@flamingo/ui-kit/components/ui"
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useDevices } from '../hooks/use-devices'
-import { Device } from '../types/device.types'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
 
@@ -22,7 +22,7 @@ export function DevicesView() {
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
   
-  const { devices, deviceFilters, isLoading, error, searchDevices, refreshDevices } = useDevices(filters)
+  const { devices, deviceFilters, isLoading, error, searchDevices, pageInfo, fetchNextPage, fetchFirstPage, hasLoadedBeyondFirst } = useDevices(filters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const columns = useMemo(() => getDeviceTableColumns(deviceFilters), [deviceFilters])
@@ -47,16 +47,40 @@ export function DevicesView() {
       newFilters.statuses = columnFilters.status
     }
     
-    if (columnFilters.type?.length > 0) {
-      newFilters.deviceTypes = columnFilters.type
-    }
-    
     if (columnFilters.os?.length > 0) {
       newFilters.osTypes = columnFilters.os
     }
     
+    if (columnFilters.organization?.length > 0) {
+      newFilters.organizationIds = columnFilters.organization
+    }
+    
     setFilters(newFilters)
   }, [])
+
+  const handleNextPage = useCallback(async () => {
+    if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
+      await fetchNextPage(searchTerm)
+    }
+  }, [pageInfo, fetchNextPage])
+
+  const handleResetToFirstPage = useCallback(async () => {
+    await fetchFirstPage(searchTerm)
+  }, [fetchFirstPage])
+
+  const cursorPagination: CursorPaginationProps | undefined = pageInfo ? {
+    hasNextPage: pageInfo.hasNextPage,
+    isFirstPage: !hasLoadedBeyondFirst,
+    startCursor: pageInfo.startCursor,
+    endCursor: pageInfo.endCursor,
+    currentCount: devices.length,
+    itemName: 'devices',
+    onNext: () => handleNextPage(),
+    onReset: handleResetToFirstPage,
+    showInfo: true,
+    resetButtonLabel: 'First',
+    resetButtonIcon: 'home'
+  } : undefined
 
 
   const viewToggle = (
@@ -103,6 +127,7 @@ export function DevicesView() {
           showFilters={true}
           mobileColumns={['device', 'status', 'lastSeen']}
           rowClassName="mb-1"
+          cursorPagination={cursorPagination}
         />
       ) : (
         // Grid View

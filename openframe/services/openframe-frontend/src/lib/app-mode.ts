@@ -89,7 +89,12 @@ export function isRouteAllowedInCurrentMode(pathname: string): boolean {
     return !pathname.startsWith('/auth')
   }
 
-  // oss-tenant: everything allowed
+  if (mode === 'oss-tenant') {
+    if (pathname.startsWith('/mingo')) {
+      return false
+    }
+  }
+
   return true
 }
 
