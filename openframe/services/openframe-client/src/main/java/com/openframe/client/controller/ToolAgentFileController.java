@@ -18,10 +18,15 @@ public class ToolAgentFileController {
         }
 
         String path = "/";
-//        if (assetId.contains("chat")) {
-//            path += "openframe-chat.zip";
-//        } else
-        if (os.equals("mac") || assetId.equals("meshcentral-core-module")) {
+        if (assetId.equals("openframe-chat")) {
+            if (os.equals("mac")) {
+                path += "openframe-chat.zip";
+            } else if (os.equals("windows")) {
+                path += "openframe-chat.exe";
+            } else {
+                throw new IllegalArgumentException("Unknown os: " + os);
+            }
+        } else if (os.equals("mac") || assetId.equals("meshcentral-core-module")) {
             path += assetId;
         } else if (os.equals("windows")) {
             path += assetId + ".exe";
