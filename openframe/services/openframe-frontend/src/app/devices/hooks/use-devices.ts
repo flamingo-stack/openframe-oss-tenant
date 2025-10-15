@@ -119,11 +119,13 @@ export function useDevices(filters: DeviceFilterInput = {}) {
   const [deviceFilters, setDeviceFilters] = useState<DeviceFilters | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+  const [pageInfo, setPageInfo] = useState<any>(null)
+  const [filteredCount, setFilteredCount] = useState(0)
+  const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
   const filtersRef = useRef(filters)
   filtersRef.current = filters
 
-  const fetchDevices = useCallback(async (searchTerm?: string) => {
+  const fetchDevices = useCallback(async (searchTerm?: string, cursor?: string | null) => {
     setIsLoading(true)
     setError(null)
 
@@ -136,7 +138,7 @@ export function useDevices(filters: DeviceFilterInput = {}) {
         query: GET_DEVICES_QUERY,
         variables: {
           filter: filtersRef.current,
-          pagination: { limit: 100, cursor: null },
+          pagination: { limit: 20, cursor: cursor || null },
           search: searchTerm || ''
         }
       })
@@ -159,7 +161,8 @@ export function useDevices(filters: DeviceFilterInput = {}) {
       const transformedDevices: Device[] = nodes.map(createDeviceListItem)
 
       setDevices(transformedDevices)
-      
+      setPageInfo(graphqlResponse.data.devices.pageInfo)
+      setFilteredCount(graphqlResponse.data.devices.filteredCount)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch devices'
       setError(errorMessage)
@@ -220,6 +223,26 @@ export function useDevices(filters: DeviceFilterInput = {}) {
     }
   }, [])
 
+  const fetchNextPage = useCallback(async (searchTerm: string) => {
+    if (!pageInfo?.hasNextPage || !pageInfo?.endCursor) {
+      return
+    }
+    setHasLoadedBeyondFirst(true)
+    return fetchDevices(searchTerm, pageInfo.endCursor)
+  }, [pageInfo, fetchDevices])
+
+  const fetchFirstPage = useCallback(async (searchTerm: string) => {
+    setHasLoadedBeyondFirst(false)
+    return fetchDevices(searchTerm)
+  }, [fetchDevices])
+
+  useEffect(() => {
+    if (initialLoadDone.current) {
+      fetchDevices()
+      fetchDeviceFilters()
+    }
+  }, [filters])
+
   return {
     devices,
     deviceFilters,
@@ -227,6 +250,11 @@ export function useDevices(filters: DeviceFilterInput = {}) {
     error,
     searchDevices,
     refreshDevices,
-    fetchDevices
+    fetchDevices,
+    pageInfo,
+    filteredCount,
+    fetchNextPage,
+    fetchFirstPage,
+    hasLoadedBeyondFirst
   }
 }

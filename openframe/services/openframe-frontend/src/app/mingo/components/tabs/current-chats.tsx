@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import {
   Table,
   Button,
-  ListPageLayout
+  ListPageLayout,
+  type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
 import { useDebounce, useToast } from "@flamingo/ui-kit/hooks"
 import { useDialogsStore } from '../../stores/dialogs-store'
@@ -22,9 +23,13 @@ export function CurrentChats() {
   
   const { 
     currentDialogs: dialogs, 
+    currentPageInfo,
+    currentHasLoadedBeyondFirst,
     isLoadingCurrent: isLoading, 
     currentError: error,
-    fetchDialogs
+    fetchDialogs,
+    goToNextPage,
+    goToFirstPage
   } = useDialogsStore()
   
   const { archiveResolvedDialogs, isArchiving } = useArchiveResolved()
@@ -42,7 +47,7 @@ export function CurrentChats() {
   )
 
   React.useEffect(() => {
-    fetchDialogs(false)
+    fetchDialogs(false, undefined, true)
   }, [])
 
   React.useEffect(() => {
@@ -65,6 +70,28 @@ export function CurrentChats() {
   const hasResolvedDialogs = useMemo(() => {
     return dialogs.some(d => d.status === 'RESOLVED')
   }, [dialogs])
+  
+  const handleNextPage = useCallback(() => {
+    goToNextPage(false)
+  }, [goToNextPage])
+  
+  const handleResetToFirstPage = useCallback(() => {
+    goToFirstPage(false)
+  }, [goToFirstPage])
+  
+  const cursorPagination: CursorPaginationProps | undefined = currentPageInfo ? {
+    hasNextPage: currentPageInfo.hasNextPage,
+    isFirstPage: !currentHasLoadedBeyondFirst,
+    startCursor: currentPageInfo.startCursor,
+    endCursor: currentPageInfo.endCursor,
+    currentCount: dialogs.length,
+    itemName: 'chats',
+    onNext: () => handleNextPage(),
+    onReset: handleResetToFirstPage,
+    showInfo: true,
+    resetButtonLabel: 'First',
+    resetButtonIcon: 'home'
+  } : undefined
 
   return (
     <ListPageLayout
@@ -101,6 +128,7 @@ export function CurrentChats() {
         mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
         actionsWidth={100}
+        cursorPagination={cursorPagination}
       />
     </ListPageLayout>
   )

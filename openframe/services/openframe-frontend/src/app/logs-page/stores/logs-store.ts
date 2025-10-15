@@ -46,6 +46,13 @@ export interface PageInfo {
   __typename?: string
 }
 
+export interface LogFilters {
+  toolTypes: string[]
+  eventTypes: string[]
+  severities: string[]
+  __typename?: string
+}
+
 export interface LogsState {
   // State
   logs: LogEntry[]

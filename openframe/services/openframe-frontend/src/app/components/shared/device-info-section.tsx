@@ -10,24 +10,24 @@ import type { Device } from '../../devices/types/device.types'
 interface DeviceInfoSectionProps {
   deviceId?: string
   userId?: string
-  device?: Partial<Device>  // Accept device data from log
+  device?: Partial<Device>  // Accept device data from log or dialog
 }
 
-export function DeviceInfoSection({ deviceId, userId, device: deviceFromLog }: DeviceInfoSectionProps) {
+export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }: DeviceInfoSectionProps) {
   const { deviceDetails, isLoading, fetchDeviceById } = useDeviceDetails()
 
   useEffect(() => {
     // Only fetch if we don't already have device data and we have a deviceId
-    if (deviceId && !deviceFromLog) {
+    if (deviceId && !deviceFromProps) {
       fetchDeviceById(deviceId)
     }
-  }, [deviceId, deviceFromLog, fetchDeviceById])
+  }, [deviceId, deviceFromProps, fetchDeviceById])
 
-  // Use device from log if available, otherwise use fetched deviceDetails
-  const device = deviceFromLog || deviceDetails
+  // Use device from props if available, otherwise use fetched deviceDetails
+  const device = deviceFromProps || deviceDetails
 
-  // Show loading state only if we're fetching and don't have data from log
-  if (isLoading && !deviceFromLog) {
+  // Show loading state only if we're fetching and don't have data from props
+  if (isLoading && !deviceFromProps) {
     return (
       <div className="flex flex-col gap-1 w-full">
         <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
