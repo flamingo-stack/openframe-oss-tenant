@@ -366,9 +366,9 @@ jobs:
         with:
           tag_name: ${{ inputs.version }}
           name: Release ${{ inputs.version }}
-          draft: false
-          prerelease: false
-          make_latest: true
+          draft: true
+          prerelease: true
+#          make_latest: true
           files: |
             final-artifacts/clients/*
             dist/*.tar.gz
