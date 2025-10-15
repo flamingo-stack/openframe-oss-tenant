@@ -23,6 +23,7 @@ use windows::{
     Win32::Foundation::*,
     Win32::System::Threading::*,
     Win32::System::RemoteDesktop::*,
+    Win32::UI::WindowsAndMessaging::SW_SHOW,
 };
 
 const RETRY_DELAY_SECONDS: u64 = 5;
@@ -62,12 +63,19 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
 
         let mut si = STARTUPINFOW::default();
         si.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
+        
+        // For GUI applications, set the desktop to winsta0\default
+        let desktop = to_wide("winsta0\\default");
+        si.lpDesktop = PWSTR(desktop.as_ptr() as *mut u16);
+        si.dwFlags = windows::Win32::System::Threading::STARTF_USESHOWWINDOW;
+        si.wShowWindow = SW_SHOW.0 as u16;
+        
         let mut pi = PROCESS_INFORMATION::default();
 
         let mut cmdline_wide = to_wide(&cmdline);
         
-        // Use DETACHED_PROCESS | CREATE_NO_WINDOW to run without visible console
-        use windows::Win32::System::Threading::{DETACHED_PROCESS, CREATE_NO_WINDOW};
+        // For GUI applications, use CREATE_NEW_PROCESS_GROUP for proper process isolation
+        use windows::Win32::System::Threading::CREATE_NEW_PROCESS_GROUP;
         
         let result = CreateProcessAsUserW(
             user_token,
@@ -76,7 +84,7 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
             None,
             None,
             false,
-            DETACHED_PROCESS | CREATE_NO_WINDOW,
+            CREATE_NEW_PROCESS_GROUP,
             None,
             None,
             &si,
