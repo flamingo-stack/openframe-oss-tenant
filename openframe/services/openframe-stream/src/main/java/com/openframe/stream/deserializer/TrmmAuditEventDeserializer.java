@@ -69,6 +69,6 @@ public class TrmmAuditEventDeserializer extends IntegratedToolEventDeserializer 
 
     @Override
     protected String getDetails(JsonNode after) {
-        return parseStringField(after, FIELD_AFTER_VALUE).orElse("{}");
+        return parseStringField(after, FIELD_AFTER_VALUE).orElse(null);
     }
 }
