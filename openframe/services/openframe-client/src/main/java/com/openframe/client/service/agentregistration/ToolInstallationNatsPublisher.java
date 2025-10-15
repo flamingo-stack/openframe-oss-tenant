@@ -37,7 +37,7 @@ public class ToolInstallationNatsPublisher {
         message.setToolAgentId(toolAgent.getId());
         // TODO: need refactoring
         message.setToolId(toolAgent.getToolId() == null ? "" : toolAgent.getToolId());
-        message.setToolType(tool.getToolType() == null ? "" : toolAgent.getToolId() );
+        message.setToolType(tool.getToolType() == null ? "" : tool.getToolType() );
 
         message.setVersion(toolAgent.getVersion());
         message.setFileType(toolAgent.getFileType());
