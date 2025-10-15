@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.openframe.support.constants.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,8 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class DevicePipelineTest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
-    private static final Duration PINOT_INDEXING_TIMEOUT = Duration.ofSeconds(45);
-    private static final Duration MONGODB_TIMEOUT = Duration.ofSeconds(10);
     
     @BeforeEach
     protected void setupTest(TestInfo testInfo) {

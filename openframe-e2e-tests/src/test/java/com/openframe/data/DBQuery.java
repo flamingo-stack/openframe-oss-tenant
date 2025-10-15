@@ -2,15 +2,16 @@ package com.openframe.data;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.openframe.data.dto.TenantDocument;
-import com.openframe.data.dto.UserDocument;
+import com.openframe.data.testData.UserDocument;
 import com.openframe.tests.restapi.ApiBaseTest;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 
 /**
  * Database query utility for API tests
  * Uses shared MongoDB connection from ApiBaseTest (thread-safe)
  */
+@Slf4j
 public class DBQuery {
 
     /**
@@ -60,47 +61,24 @@ public class DBQuery {
     public static void clearAllUsers() {
         MongoCollection<Document> users = getDatabase().getCollection("users");
         long deletedCount = users.deleteMany(new Document()).getDeletedCount();
-        System.out.println("Cleared " + deletedCount + " users from database");
+        log.info("Cleared {} users from database", deletedCount);
     }
 
     public static void clearAllTenants() {
         MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
         long deletedCount = tenants.deleteMany(new Document()).getDeletedCount();
-        System.out.println("Cleared " + deletedCount + " tenants from database");
+        log.info("Cleared {} tenants from database", deletedCount);
     }
 
     public static void clearAllData() {
         clearAllUsers();
         clearAllTenants();
-        System.out.println("Database cleared - all users and tenants removed");
+        log.info("Database cleared - all users and tenants removed");
     }
 
     public static long getTenantCount() {
         MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
         return tenants.countDocuments();
-    }
-
-    public static TenantDocument findTenantByDomain(String domain) {
-        MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
-        Document doc = tenants.find(new Document("domain", domain)).first();
-        return TenantDocument.fromDocument(doc);
-    }
-
-    /**
-     * Save or update tenant in MongoDB
-     * @param tenant tenant document to save
-     */
-    public static void saveTenant(TenantDocument tenant) {
-        MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
-        Document doc = tenant.toDocument();
-        
-        // Delete existing tenant with same ID if exists
-        if (tenant.getId() != null) {
-            tenants.deleteOne(new Document("_id", tenant.getId()));
-        }
-        
-        tenants.insertOne(doc);
-        System.out.println("Saved tenant: " + tenant.getId());
     }
 
     /**
@@ -117,6 +95,6 @@ public class DBQuery {
         }
         
         users.insertOne(doc);
-        System.out.println("Saved user: " + user.getEmail());
+        log.info("Saved user: {}", user.getEmail());
     }
 }

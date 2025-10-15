@@ -1,7 +1,6 @@
-package com.openframe.data;
+package com.openframe.data.testData;
 
 import net.datafaker.Faker;
-import com.openframe.data.dto.OrganizationRegistrationData;
 
 import java.util.Locale;
 

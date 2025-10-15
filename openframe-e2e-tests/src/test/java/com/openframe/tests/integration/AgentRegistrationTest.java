@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
+
+import static com.openframe.support.constants.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -131,7 +133,7 @@ public class AgentRegistrationTest extends BasePipelineTest {
             executePhase(TestPhase.ACT, "Register multiple agents concurrently", () -> {
                 String managementKey = ApiHelpers.getActiveManagementKey();
                 
-                List<CompletableFuture<String>> futures = IntStream.range(0, 5)
+                List<CompletableFuture<String>> futures = IntStream.range(0, CONCURRENT_AGENTS_COUNT)
                     .mapToObj(i -> CompletableFuture.supplyAsync(() -> {
                         String host = "concurrent-host-" + i + "-" + testId;
                         Map<String, Object> data = ApiHelpers.createAgentData(host);
@@ -145,7 +147,7 @@ public class AgentRegistrationTest extends BasePipelineTest {
                 
                 assertThat(machineIds)
                     .as("All agents should be registered")
-                    .hasSize(5)
+                    .hasSize(CONCURRENT_AGENTS_COUNT)
                     .doesNotContainNull()
                     .doesNotHaveDuplicates();
                 

@@ -1,10 +1,11 @@
 package com.openframe.tests.restapi;
 
-import com.openframe.data.UserRegistrationBuilder;
 import com.openframe.data.DBQuery;
+import com.openframe.data.dto.request.UserRegistrationRequest;
+import com.openframe.data.testData.UserRegistrationDataGenerator;
 import com.openframe.data.dto.response.RegistrationResponse;
 import com.openframe.data.dto.response.ErrorResponse;
-import com.openframe.data.dto.UserDocument;
+import com.openframe.data.testData.UserDocument;
 import com.openframe.support.enums.ApiEndpoints;
 import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.ApiCalls;
@@ -14,7 +15,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junitpioneer.jupiter.RetryingTest;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -38,23 +38,23 @@ public class UserRegistrationApiTest extends ApiBaseTest {
         executePhase(TestPhase.ARRANGE, "Clear test data in MongoDB", this::clearDataInMongo);
 
         // Generate test user data
-        UserRegistrationBuilder userData = executePhase(TestPhase.ARRANGE, "Generate test user data", 
-            UserRegistrationBuilder::random);
+        UserRegistrationRequest userData = executePhase(TestPhase.ARRANGE, "Generate test user data",
+            UserRegistrationDataGenerator::createOrganization);
 
         // Send registration request
-        Response response = executePhase(TestPhase.ACT, "Send registration request", () -> 
+        Response response = executePhase(TestPhase.ACT, "Send registration request", () ->
             ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData));
 
         // Parse registration response
-        RegistrationResponse registrationResponse = executePhase(TestPhase.ACT, "Parse registration response", () -> 
+        RegistrationResponse registrationResponse = executePhase(TestPhase.ACT, "Parse registration response", () ->
             response.as(RegistrationResponse.class));
 
         // Verify HTTP status code
-        executePhase(TestPhase.ASSERT, "Verify HTTP status code", () -> 
+        executePhase(TestPhase.ASSERT, "Verify HTTP status code", () ->
             assertEquals(HTTP_OK, response.getStatusCode()));
 
         // Verify registration response data
-        executePhase(TestPhase.ASSERT, "Verify registration response data", () -> 
+        executePhase(TestPhase.ASSERT, "Verify registration response data", () ->
             assertSoftly(softAssertions -> {
                 softAssertions.assertThat(registrationResponse.getId()).isNotNull();
                 softAssertions.assertThat(registrationResponse.getName()).isEqualTo(userData.getTenantName());
@@ -66,14 +66,14 @@ public class UserRegistrationApiTest extends ApiBaseTest {
             }));
 
         // Wait for user data in MongoDB
-        UserDocument userInDb = executePhase(TestPhase.ASSERT, "Wait for user data in MongoDB", () -> 
+        UserDocument userInDb = executePhase(TestPhase.ASSERT, "Wait for user data in MongoDB", () ->
             Awaitility.await()
                 .atMost(Duration.ofSeconds(10))
                 .pollInterval(Duration.ofMillis(500))
                 .until(() -> DBQuery.findUserByEmail(userData.getEmail()), Objects::nonNull));
 
         // Verify persisted user data in MongoDB
-        executePhase(TestPhase.ASSERT, "Verify persisted user data in MongoDB", () -> 
+        executePhase(TestPhase.ASSERT, "Verify persisted user data in MongoDB", () ->
             assertSoftly(softAssertions -> {
                 softAssertions.assertThat(userInDb.getEmail()).isEqualTo(userData.getEmail());
                 softAssertions.assertThat(userInDb.getFirstName()).isEqualTo(userData.getFirstName());
@@ -96,32 +96,32 @@ public class UserRegistrationApiTest extends ApiBaseTest {
     @DisplayName("Should fail registration when organization registration is closed")
     void shouldFailRegistrationWhenOrganizationRegistrationIsClosed() {
         String existingTenantName = "ExistingOrganization";
-        
+
         // Generate test user for existing tenant
-        UserRegistrationBuilder newUser = executePhase(TestPhase.ARRANGE, "Generate user for existing tenant", () -> 
-            UserRegistrationBuilder.forTenant(existingTenantName));
+        UserRegistrationRequest newUser = executePhase(TestPhase.ARRANGE, "Generate user for existing tenant", () ->
+            UserRegistrationDataGenerator.forTenant(existingTenantName));
 
         // Get user counts before registration attempt
         long[] countsBefore = executePhase(TestPhase.ARRANGE, "Get user counts before test", () -> {
             long userCountBefore = DBQuery.getUserCount();
             long tenantUserCountBefore = DBQuery.getUserCountByTenant(existingTenantName);
-            log.info("Users before test: total={}, for tenant '{}'={}", 
+            log.info("Users before test: total={}, for tenant '{}'={}",
                 userCountBefore, existingTenantName, tenantUserCountBefore);
             return new long[]{userCountBefore, tenantUserCountBefore};
         });
 
         // Attempt registration on existing organization
-        executePhase(TestPhase.ACT, "Attempt registration on existing tenant", () -> 
+        executePhase(TestPhase.ACT, "Attempt registration on existing tenant", () ->
             ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, newUser));
 
         // Verify user counts did not change
         executePhase(TestPhase.ASSERT, "Verify user counts did not change", () -> {
             long userCountAfter = DBQuery.getUserCount();
             long tenantUserCountAfter = DBQuery.getUserCountByTenant(existingTenantName);
-            
-            log.info("Users after test: total={}, for tenant '{}'={}", 
+
+            log.info("Users after test: total={}, for tenant '{}'={}",
                 userCountAfter, existingTenantName, tenantUserCountAfter);
-            
+
             Assertions.assertEquals(countsBefore[0], userCountAfter,
                 "User count should not change after failed registration");
             Assertions.assertEquals(countsBefore[1], tenantUserCountAfter,
@@ -139,26 +139,27 @@ public class UserRegistrationApiTest extends ApiBaseTest {
         executePhase(TestPhase.ARRANGE, "Clear test data in MongoDB", this::clearDataInMongo);
 
         // Register first user successfully
-        UserRegistrationBuilder firstUser = executePhase(TestPhase.ARRANGE, "Generate first user data", 
-            UserRegistrationBuilder::random);
-        
+        UserRegistrationRequest firstUser = executePhase(TestPhase.ARRANGE, "Generate first user data",
+            UserRegistrationDataGenerator::createOrganization);
+
         executePhase(TestPhase.ARRANGE, "Register first user", () -> {
             Response firstResponse = ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, firstUser);
             assertEquals(HTTP_OK, firstResponse.getStatusCode());
         });
 
         // Attempt to register duplicate user
-        UserRegistrationBuilder duplicateUser = executePhase(TestPhase.ACT, "Generate duplicate user with same email", () -> {
-            UserRegistrationBuilder user = UserRegistrationBuilder.random();
-            user.setEmail(firstUser.getEmail());
-            return user;
+        UserRegistrationRequest duplicateUser = executePhase(TestPhase.ACT, "Generate duplicate user with same email", () -> {
+            return UserRegistrationDataGenerator.createOrganization()
+                    .toBuilder()
+                    .email(firstUser.getEmail())
+                    .build();
         });
 
-        Response response = executePhase(TestPhase.ACT, "Attempt registration with duplicate email", () -> 
+        Response response = executePhase(TestPhase.ACT, "Attempt registration with duplicate email", () ->
             ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, duplicateUser));
 
         // Verify registration failed
-        executePhase(TestPhase.ASSERT, "Verify registration failed with 400 status", () -> 
+        executePhase(TestPhase.ASSERT, "Verify registration failed with 400 status", () ->
             assertEquals(HTTP_BAD_REQUEST, response.getStatusCode()));
 
         executePhase(TestPhase.ASSERT, "Verify error response contains validation error", () -> {

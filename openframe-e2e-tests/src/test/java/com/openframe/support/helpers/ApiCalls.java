@@ -6,6 +6,8 @@ import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
+
 import static com.openframe.support.constants.TestConstants.CONTENT_TYPE_JSON;
 import static io.restassured.RestAssured.given;
 
@@ -33,7 +35,7 @@ public class ApiCalls {
     }
     
     @Step("GET {endpoint}")
-    public static Response get(ApiEndpoints endpoint, java.util.Map<String, Object> queryParams) {
+    public static Response get(ApiEndpoints endpoint, Map<String, Object> queryParams) {
         String path = endpoint.getPath();
             
         logRequest("GET", path, queryParams);
@@ -43,6 +45,102 @@ public class ApiCalls {
             .queryParams(queryParams)
             .when()
                 .get(path);
+                
+        logResponse(response);
+        
+        return response;
+    }
+    
+    @Step("GET {endpoint} with cookies")
+    public static Response getWithCookies(ApiEndpoints endpoint, String cookies) {
+        String path = endpoint.getPath();
+            
+        logRequest("GET", path, null);
+        
+        Response response = given()
+            .filter(new AllureRestAssured())
+            .header("Cookie", cookies)
+            .when()
+                .get(path);
+                
+        logResponse(response);
+        
+        return response;
+    }
+    
+    @Step("GET {endpoint} with cookies and query params (no redirects)")
+    public static Response getWithCookiesAndQueryParams(ApiEndpoints endpoint, String cookies, 
+                                                        Map<String, Object> queryParams,
+                                                        Object... pathParams) {
+        String path = pathParams.length > 0 ? 
+            endpoint.getPathWithParams(pathParams) : 
+            endpoint.getPath();
+            
+        logRequest("GET", path, queryParams);
+        
+        Response response = given()
+            .filter(new AllureRestAssured())
+            .header("Cookie", cookies)
+            .queryParams(queryParams)
+            .redirects().follow(false)
+            .when()
+                .get(path);
+                
+        logResponse(response);
+        
+        return response;
+    }
+    
+    @Step("GET {endpoint} with query params (no redirects)")
+    public static Response getWithQueryParams(ApiEndpoints endpoint, 
+                                              Map<String, Object> queryParams) {
+        String path = endpoint.getPath();
+            
+        logRequest("GET", path, queryParams);
+        
+        Response response = given()
+            .filter(new AllureRestAssured())
+            .queryParams(queryParams)
+            .redirects().follow(false)
+            .when()
+                .get(path);
+                
+        logResponse(response);
+        
+        return response;
+    }
+    
+    @Step("GET {endpoint} with cookies (no redirects, no URL encoding)")
+    public static Response getWithCookiesNoEncoding(String url, String cookies) {
+        logRequest("GET", url, null);
+        
+        Response response = given()
+            .filter(new AllureRestAssured())
+            .header("Cookie", cookies)
+            .redirects().follow(false)
+            .urlEncodingEnabled(false)
+            .when()
+                .get(url);
+                
+        logResponse(response);
+        
+        return response;
+    }
+    
+    @Step("POST {endpoint} form data with cookies (no redirects)")
+    public static Response postFormWithCookies(ApiEndpoints endpoint, String cookies, 
+                                               Map<String, Object> formParams) {
+        String path = endpoint.getPath();
+        
+        logRequest("POST", path, formParams);
+        
+        Response response = given()
+            .filter(new AllureRestAssured())
+            .header("Cookie", cookies)
+            .formParams(formParams)
+            .redirects().follow(false)
+            .when()
+                .post(path);
                 
         logResponse(response);
         
