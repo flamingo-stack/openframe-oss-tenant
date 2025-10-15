@@ -322,8 +322,11 @@ jobs:
             done
           fi
           
-          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz -C artifacts/openframe-macos openframe
-          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip artifacts/openframe-windows/openframe.exe
+          echo "Final client artifacts:"
+          ls -la final-artifacts/clients/ 
+          
+          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz -C artifacts/clients/openframe-macos openframe
+          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip artifacts/clients/openframe-windows/openframe.exe
 
           echo "Final artifacts to release:"
           ls -lh final-artifacts/clients/ 2>/dev/null || echo "No client artifacts"
