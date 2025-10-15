@@ -38,7 +38,7 @@ export function ChatView() {
           <div className="flex-1 flex flex-col justify-center items-center px-4">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-light text-white mb-2">
-                Hey John! How can I help?
+                Hey! How can I help?
               </h1>
               <p className="text-gray-400">
                 Describe what's happening and I'll take a look.

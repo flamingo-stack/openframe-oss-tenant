@@ -8,6 +8,7 @@
     "postinstall": "node scripts/ensure-ui-kit-built.cjs",
     "predev": "node scripts/ensure-ui-kit-built.cjs",
     "dev": "tauri dev",
+    "frontend:dev": "vite",
     "prebuild": "node scripts/ensure-ui-kit-built.cjs",
     "build": "vite build",
     "preview": "vite preview",
