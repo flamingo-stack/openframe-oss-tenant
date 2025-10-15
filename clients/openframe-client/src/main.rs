@@ -20,7 +20,7 @@ fn ensure_admin_privileges() {
 fn ensure_admin_privileges() {
     // On Windows we rely on PermissionUtils which internally calls Windows APIs.
     if !PermissionUtils::is_admin() {
-        eprintln!("Please run application with administrator privileges");
+        eprintln!("Please run application with administrator privilege");
         process::exit(1);
     }
 }
