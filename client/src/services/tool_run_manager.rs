@@ -186,11 +186,55 @@ impl ToolRunManager {
 
                 debug!("Run tool {} with args: {:?}", tool.tool_agent_id, processed_args);
 
-                // Build executable path using directory manager
-                let command_path = params_processor.directory_manager
-                    .get_agent_path(&tool.tool_agent_id)
-                    .to_string_lossy()
-                    .to_string();
+                // Build executable path based on file type
+                use crate::models::MainFileType;
+                let mut command_path = match tool.file_type {
+                    MainFileType::Application => {
+                        // For APPLICATION type, use applications directory
+                        #[cfg(target_os = "macos")]
+                        {
+                            params_processor.directory_manager
+                                .applications_dir()
+                                .join(format!("{}.app", tool.tool_agent_id))
+                        }
+                        
+                        #[cfg(not(target_os = "macos"))]
+                        {
+                            // Fallback to regular path for non-macOS
+                            params_processor.directory_manager
+                                .get_agent_path(&tool.tool_agent_id)
+                        }
+                    },
+                    MainFileType::Executable => {
+                        // For EXECUTABLE type, use app support directory
+                        params_processor.directory_manager
+                            .get_agent_path(&tool.tool_agent_id)
+                    }
+                }.to_string_lossy().to_string();
+
+                // For .app bundles on macOS, find the actual executable inside
+                #[cfg(target_os = "macos")]
+                if command_path.ends_with(".app") {
+                    use std::path::PathBuf;
+                    let app_bundle = PathBuf::from(&command_path);
+                    
+                    // Try to find the executable inside Contents/MacOS
+                    let macos_dir = app_bundle.join("Contents").join("MacOS");
+                    if macos_dir.exists() {
+                        // Look for an executable file in the MacOS directory
+                        if let Ok(mut entries) = std::fs::read_dir(&macos_dir) {
+                            if let Some(Ok(entry)) = entries.next() {
+                                let executable_path = entry.path();
+                                debug!("Found executable for .app bundle: {}", executable_path.display());
+                                command_path = executable_path.to_string_lossy().to_string();
+                            } else {
+                                error!("No executable found in .app bundle MacOS directory: {}", macos_dir.display());
+                            }
+                        }
+                    } else {
+                        error!(".app bundle MacOS directory does not exist: {}", macos_dir.display());
+                    }
+                }
 
                 // Check if this is MeshCentral on Windows - launch in user session
                 #[cfg(windows)]
