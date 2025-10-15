@@ -352,60 +352,59 @@ impl Client {
         // Process initial registration and authentication
         // if it haven't been done yet
         // Processors retry it till success
-        // self.registration_processor.process().await?;
-        // self.auth_processor.process().await?;
+        self.registration_processor.process().await?;
+        self.auth_processor.process().await?;
 
         // Install and launch chat application if not already installed
-        if !self.chat_installer_service.is_installed() {
-            info!("Chat application not found, installing...");
-            if let Err(e) = self.chat_installer_service.install() {
-                error!("Failed to install chat application: {}", e);
-            } else {
-                info!("Chat application installed successfully");
-            }
-        }
+        // if !self.chat_installer_service.is_installed() {
+        //     info!("Chat application not found, installing...");
+        //     if let Err(e) = self.chat_installer_service.install() {
+        //         error!("Failed to install chat application: {}", e);
+        //     } else {
+        //         info!("Chat application installed successfully");
+        //     }
+        // }
 
         // Launch chat application in background (minimized to tray, window won't pop up)
-        if self.chat_installer_service.is_installed() {
-            // Check if debug mode is enabled via environment variable
-            let debug_mode = std::env::var("OPENFRAME_CHAT_DEBUG")
-                .map(|v| v == "1" || v.to_lowercase() == "true")
-                .unwrap_or(false);
-            
-            if debug_mode {
-                info!("🐛 Launching chat application with console (DEBUG MODE)...");
-                if let Err(e) = self.chat_installer_service.launch_with_console() {
-                    error!("Failed to launch chat application: {}", e);
-                } else {
-                    info!("Chat application launched with console visible - you can see all logs!");
-                }
-            } else {
-                info!("Launching chat application in background...");
-                if let Err(e) = self.chat_installer_service.launch_minimized() {
-                    error!("Failed to launch chat application: {}", e);
-                } else {
-                    info!("Chat application launched in background (check system tray)");
-                }
-            }
-        }
+        // if self.chat_installer_service.is_installed() {
+        //     // Check if debug mode is enabled via environment variable
+        //     let debug_mode = std::env::var("OPENFRAME_CHAT_DEBUG")
+        //         .map(|v| v == "1" || v.to_lowercase() == "true")
+        //         .unwrap_or(false);
+        //
+        //     if debug_mode {
+        //         info!("🐛 Launching chat application with console (DEBUG MODE)...");
+        //         if let Err(e) = self.chat_installer_service.launch_with_console() {
+        //             error!("Failed to launch chat application: {}", e);
+        //         } else {
+        //             info!("Chat application launched with console visible - you can see all logs!");
+        //         }
+        //     } else {
+        //         info!("Launching chat application in background...");
+        //         if let Err(e) = self.chat_installer_service.launch_minimized() {
+        //             error!("Failed to launch chat application: {}", e);
+        //         } else {
+        //             info!("Chat application launched in background (check system tray)");
+        //         }
+        //     }
+        // }
 
-        // Connect to NATS
-        // self.nats_connection_manager.connect().await?;
-        //
-        // // Start tool installation message listener in background
-        // self.tool_installation_message_listener.start().await?;
-        //
-        // // Start OpenFrame client update listener in background
-        // self.openframe_client_update_listener.start().await?;
-        //
-        // // Start tool agent update listener in background
-        // self.tool_agent_update_listener.start().await?;
-        //
-        // // Start tool run manager
-        // self.tool_run_manager.run().await?;
-        //
-        // // Start tool connection processing manager
-        // self.tool_connection_processing_manager.run().await?;
+        self.nats_connection_manager.connect().await?;
+
+        // Start tool installation message listener in background
+        self.tool_installation_message_listener.start().await?;
+
+        // Start OpenFrame client update listener in background
+        self.openframe_client_update_listener.start().await?;
+
+        // Start tool agent update listener in background
+        self.tool_agent_update_listener.start().await?;
+
+        // Start tool run manager
+        self.tool_run_manager.run().await?;
+
+        // Start tool connection processing manager
+        self.tool_connection_processing_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;

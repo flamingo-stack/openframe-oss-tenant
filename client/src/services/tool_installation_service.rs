@@ -1,6 +1,6 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::clients::tool_api_client::ToolApiClient;
-use tracing::{info, debug};
+use tracing::{info, debug, warn};
 use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
@@ -22,6 +22,8 @@ use std::path::{Path, PathBuf};
 use std::os::unix::fs::PermissionsExt;
 #[cfg(target_os = "windows")]
 use crate::platform::permissions::Permissions;
+use std::pin::Pin;
+use std::future::Future;
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
@@ -272,21 +274,85 @@ impl ToolInstallationService {
     async fn install_application(&self, dest_path: &Path, app_bytes: Vec<u8>, tool_agent_id: &str) -> Result<()> {
         #[cfg(target_os = "macos")]
         {
-            // Create a temporary directory to extract the .app bundle
+            info!("Starting installation of .app bundle for {}", tool_agent_id);
+            
+            // Create a temporary directory to extract the ZIP archive
             let temp_dir = std::env::temp_dir().join(format!("openframe-install-{}", tool_agent_id));
             fs::create_dir_all(&temp_dir).await
                 .context("Failed to create temporary directory")?;
 
-            let temp_app_path = temp_dir.join(dest_path.file_name().unwrap());
+            let temp_zip_path = temp_dir.join(format!("{}.zip", tool_agent_id));
             
-            // Write the downloaded bytes to temporary location
-            File::create(&temp_app_path).await?.write_all(&app_bytes).await?;
+            // Write the downloaded ZIP bytes to temporary location
+            let mut temp_zip_file = File::create(&temp_zip_path).await
+                .context("Failed to create temporary ZIP file")?;
+            temp_zip_file.write_all(&app_bytes).await
+                .context("Failed to write ZIP data")?;
             
-            info!("Installing .app bundle from {} to {}", temp_app_path.display(), dest_path.display());
+            info!("ZIP archive saved to {}, starting extraction", temp_zip_path.display());
+
+            // Extract ZIP archive using zip crate
+            let zip_file = std::fs::File::open(&temp_zip_path)
+                .context("Failed to open ZIP file for extraction")?;
+            let mut archive = zip::ZipArchive::new(zip_file)
+                .context("Failed to read ZIP archive")?;
+
+            // Extract all files from ZIP
+            for i in 0..archive.len() {
+                let mut file = archive.by_index(i)
+                    .context("Failed to get file from ZIP archive")?;
+                let outpath = temp_dir.join(file.name());
+
+                if file.name().ends_with('/') {
+                    // This is a directory
+                    std::fs::create_dir_all(&outpath)
+                        .with_context(|| format!("Failed to create directory: {}", outpath.display()))?;
+                } else {
+                    // This is a file
+                    if let Some(parent) = outpath.parent() {
+                        std::fs::create_dir_all(parent)
+                            .with_context(|| format!("Failed to create parent directory: {}", parent.display()))?;
+                    }
+                    let mut outfile = std::fs::File::create(&outpath)
+                        .with_context(|| format!("Failed to create file: {}", outpath.display()))?;
+                    std::io::copy(&mut file, &mut outfile)
+                        .context("Failed to extract file from ZIP")?;
+
+                    // Preserve Unix permissions if present
+                    #[cfg(unix)]
+                    if let Some(mode) = file.unix_mode() {
+                        use std::os::unix::fs::PermissionsExt;
+                        std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))
+                            .with_context(|| format!("Failed to set permissions for: {}", outpath.display()))?;
+                    }
+                }
+            }
+
+            info!("ZIP extraction completed, searching for .app bundle");
+
+            // Find the .app bundle in the extracted files
+            let app_bundle = self.find_app_bundle(&temp_dir).await
+                .with_context(|| format!("Failed to find .app bundle in extracted files at {}", temp_dir.display()))?;
+
+            info!("Found .app bundle at: {}", app_bundle.display());
+
+            // Remove existing app if present
+            if dest_path.exists() {
+                warn!("Removing existing app at {}", dest_path.display());
+                fs::remove_dir_all(dest_path).await
+                    .with_context(|| format!("Failed to remove existing app at {}", dest_path.display()))?;
+            }
+
+            // Ensure Applications directory exists
+            if let Some(parent) = dest_path.parent() {
+                fs::create_dir_all(parent).await
+                    .context("Failed to create Applications directory")?;
+            }
 
             // Use ditto to copy the .app bundle to /Applications
+            info!("Copying .app bundle from {} to {}", app_bundle.display(), dest_path.display());
             let status = std::process::Command::new("ditto")
-                .arg(&temp_app_path)
+                .arg(&app_bundle)
                 .arg(dest_path)
                 .status()
                 .context("Failed to execute ditto command")?;
@@ -295,12 +361,9 @@ impl ToolInstallationService {
                 anyhow::bail!("Failed to copy application bundle using ditto");
             }
 
-            // Set executable permissions on the main executable inside the bundle
-            let exe_path = dest_path.join("Contents").join("MacOS").join(tool_agent_id);
-            if exe_path.exists() {
-                self.set_executable_permissions(&exe_path).await
-                    .context("Failed to set executable permissions on app binary")?;
-            }
+            // Set executable permissions on all executables inside the bundle
+            self.set_bundle_permissions(dest_path).await
+                .context("Failed to set permissions on app bundle")?;
 
             // Clean up temporary directory
             let _ = fs::remove_dir_all(&temp_dir).await;
@@ -317,5 +380,57 @@ impl ToolInstallationService {
             self.set_executable_permissions(dest_path).await?;
             Ok(())
         }
+    }
+
+    /// Find the .app bundle in the extracted directory
+    #[cfg(target_os = "macos")]
+    fn find_app_bundle<'a>(&'a self, dir: &'a Path) -> Pin<Box<dyn Future<Output = Result<PathBuf>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut entries = fs::read_dir(dir).await
+                .context("Failed to read directory")?;
+
+            while let Some(entry) = entries.next_entry().await? {
+                let path = entry.path();
+                if path.is_dir() {
+                    if let Some(name) = path.file_name() {
+                        if name.to_string_lossy().ends_with(".app") {
+                            return Ok(path);
+                        }
+                    }
+                    // Recursively search subdirectories
+                    if let Ok(app_path) = self.find_app_bundle(&path).await {
+                        return Ok(app_path);
+                    }
+                }
+            }
+
+            anyhow::bail!("No .app bundle found in directory: {}", dir.display())
+        })
+    }
+
+    /// Set executable permissions on the app bundle
+    #[cfg(target_os = "macos")]
+    async fn set_bundle_permissions(&self, bundle_path: &Path) -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+        
+        // Set permissions on MacOS directory inside Contents
+        let macos_dir = bundle_path.join("Contents").join("MacOS");
+        if macos_dir.exists() {
+            let mut entries = fs::read_dir(&macos_dir).await
+                .context("Failed to read MacOS directory")?;
+
+            while let Some(entry) = entries.next_entry().await? {
+                let path = entry.path();
+                if path.is_file() {
+                    let mut perms = fs::metadata(&path).await?.permissions();
+                    perms.set_mode(0o755);
+                    fs::set_permissions(&path, perms).await
+                        .with_context(|| format!("Failed to set permissions on {}", path.display()))?;
+                    info!("Set executable permissions on {}", path.display());
+                }
+            }
+        }
+
+        Ok(())
     }
 }

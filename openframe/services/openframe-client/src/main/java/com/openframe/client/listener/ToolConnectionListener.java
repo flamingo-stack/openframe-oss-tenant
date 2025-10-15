@@ -27,6 +27,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 // TODO: remove spring cloud stream configs as deprecated
+// TODO: use consumer update method to update consumer(necessary to support dynamic changes)
 public class ToolConnectionListener {
 
     private final Connection natsConnection;
