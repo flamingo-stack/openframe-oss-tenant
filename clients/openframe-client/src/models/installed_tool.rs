@@ -26,6 +26,8 @@ pub struct InstalledTool {
     pub uninstallation_command_args: Option<Vec<String>>,
     pub status: ToolStatus,
     pub file_type: MainFileType,
+    #[serde(default)]
+    pub require_gui: bool,
 }
 
 impl Default for InstalledTool {
@@ -40,6 +42,7 @@ impl Default for InstalledTool {
             tool_agent_id_command_args: Vec::new(),
             uninstallation_command_args: None,
             file_type: MainFileType::Executable,
+            require_gui: false,
         }
     }
 }

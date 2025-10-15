@@ -223,6 +223,7 @@ impl ToolInstallationService {
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             status: ToolStatus::Installed,
             file_type: tool_installation_message.file_type.clone().unwrap_or(MainFileType::Executable),
+            require_gui: tool_installation_message.require_gui.unwrap_or(false),
         };
 
         self.installed_tools_service.save(installed_tool.clone()).await

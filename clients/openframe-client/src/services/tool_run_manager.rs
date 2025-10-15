@@ -236,16 +236,13 @@ impl ToolRunManager {
                     }
                 }
 
-                // Check if this is MeshCentral on Windows - launch in user session
+                // Check if this tool requires GUI on Windows - launch in user session
                 #[cfg(windows)]
-                let is_meshcentral = tool.tool_agent_id.to_lowercase().contains("meshcentral");
-                
-                #[cfg(windows)]
-                if is_meshcentral {
-                    info!("Launching MeshCentral in user session");
+                if tool.require_gui {
+                    info!("Launching GUI tool {} in user session", tool.tool_agent_id);
                     match launch_process_in_user_session(&command_path, &processed_args) {
                         Ok((pid, process_handle)) => {
-                            info!("MeshCentral launched successfully with PID: {}", pid);
+                            info!("GUI tool {} launched successfully with PID: {}", tool.tool_agent_id, pid);
                             
                             // Wait for process to exit in blocking thread to avoid blocking async runtime
                             let exit_code = tokio::task::spawn_blocking(move || {
@@ -264,7 +261,7 @@ impl ToolRunManager {
                             }).await.unwrap_or(1);
                             
                             warn!(tool_id = %tool.tool_agent_id,
-                                  "MeshCentral process exited with code {} - restarting in {} seconds",
+                                  "GUI tool process exited with code {} - restarting in {} seconds",
                                   exit_code, RETRY_DELAY_SECONDS);
                             
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
@@ -272,7 +269,7 @@ impl ToolRunManager {
                         }
                         Err(e) => {
                             error!(tool_id = %tool.tool_agent_id, error = %e,
-                                   "Failed to launch MeshCentral in user session - retrying in {} seconds", 
+                                   "Failed to launch GUI tool in user session - retrying in {} seconds", 
                                    RETRY_DELAY_SECONDS);
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                             continue;
