@@ -8,10 +8,12 @@ import {
   ChatQuickAction
 } from '@flamingo/ui-kit'
 import { useChat } from '../hooks/useChat'
+import { useToken } from '../hooks/useToken'
 import faeAvatar from '../assets/fae-avatar.png'
 
 export function ChatView() {
   const DEBUG_MODE = false
+  const token = useToken()
   
   const { 
     messages,
@@ -25,6 +27,28 @@ export function ChatView() {
   
   return (
     <ChatContainer>
+      {/* Token Display Banner */}
+      {token && (
+        <div className="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-xs text-gray-400 font-medium whitespace-nowrap">Token:</span>
+            <code className="text-xs text-green-400 font-mono bg-gray-800 px-2 py-1 rounded overflow-x-auto whitespace-nowrap flex-1">
+              {token}
+            </code>
+          </div>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(token)
+              console.log('✅ Token copied to clipboard')
+            }}
+            className="ml-2 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-gray-800"
+            title="Copy token to clipboard"
+          >
+            Copy
+          </button>
+        </div>
+      )}
+      
       <ChatHeader userAvatar={faeAvatar} />
       
       <ChatContent>

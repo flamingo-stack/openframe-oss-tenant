@@ -28,13 +28,10 @@ impl TokenWatcher {
     /// Creates a new TokenWatcher and starts watching for token changes in a background thread
     /// Returns TokenState that can be used in Tauri commands
     pub fn start(token_path: String, secret: String, app_handle: AppHandle) -> TokenState {
-        println!("🔍 [TOKEN] Starting token watcher (checking every 5 seconds)");
-        println!("🔐 [TOKEN] Token file path: {}", token_path);
-        
         let decryption_service = match TokenDecryptionService::new(secret) {
             Ok(service) => service,
             Err(e) => {
-                println!("❌ [TOKEN] Failed to create decryption service: {}", e);
+                eprintln!("[ERROR] Failed to create decryption service: {}", e);
                 // Return empty state on error
                 return TokenState {
                     current_token: Arc::new(Mutex::new(None)),
@@ -61,7 +58,6 @@ impl TokenWatcher {
             }
         });
         
-        println!("✅ [TOKEN] Token watcher background thread started");
         token_state
     }
 
@@ -76,15 +72,12 @@ impl TokenWatcher {
                 match self.decryption_service.decrypt(encrypted_content.trim()) {
                     Ok(decrypted) => Some(decrypted),
                     Err(e) => {
-                        println!("❌ [TOKEN] Failed to decrypt token: {}", e);
+                        eprintln!("[ERROR] Failed to decrypt token: {}", e);
                         None
                     }
                 }
             }
-            Err(e) => {
-                println!("⚠️  [TOKEN] Failed to read token file: {}", e);
-                None
-            }
+            Err(_) => None
         }
     }
 
@@ -97,21 +90,15 @@ impl TokenWatcher {
         if *current != new_token {
             match (&*current, &new_token) {
                 (None, Some(token)) => {
-                    println!("✅ [TOKEN] First token received: {}", Self::mask_token(token));
+                    println!("[INFO] Token received");
                     self.emit_token_to_frontend(token);
                 }
                 (Some(_), Some(token)) => {
-                    println!("🔄 [TOKEN] Token changed: {}", Self::mask_token(token));
+                    println!("[INFO] Token updated");
                     self.emit_token_to_frontend(token);
                 }
-                (Some(_), None) => {
-                    println!("⚠️  [TOKEN] Token file is now empty or unreadable");
-                }
-                (None, None) => {
-                    // Both None, no change
-                }
+                _ => {}
             }
-            
             *current = new_token;
         }
     }
@@ -122,21 +109,9 @@ impl TokenWatcher {
             token: token.to_string(),
         };
         
-        if let Err(e) = self.app_handle.emit("token-update", event) {
-            println!("❌ [TOKEN] Failed to emit token to frontend: {}", e);
-        } else {
-            println!("📤 [TOKEN] Token emitted to frontend successfully");
+        match self.app_handle.emit("token-update", event) {
+            Ok(_) => println!("[INFO] Token emitted to frontend"),
+            Err(e) => eprintln!("[ERROR] Failed to emit token to frontend: {}", e),
         }
-    }
-
-    /// Masks a token for logging (shows first and last 4 characters)
-    fn mask_token(token: &str) -> String {
-        if token.len() <= 8 {
-            return "****".to_string();
-        }
-        
-        let first = &token[..4];
-        let last = &token[token.len()-4..];
-        format!("{}...{}", first, last)
     }
 }

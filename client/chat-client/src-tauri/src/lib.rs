@@ -18,18 +18,19 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn get_token(token_state: State<TokenState>) -> Option<String> {
     let token = token_state.current_token.lock().unwrap();
-    if let Some(ref t) = *token {
-        println!("✅ [COMMAND] Returning current token: {}...{}", &t[..4.min(t.len())], &t[t.len().saturating_sub(4)..]);
+    if token.is_some() {
+        println!("[INFO] Token requested from frontend");
     } else {
-        println!("⚠️  [COMMAND] No token available yet");
+        println!("[ERROR] Token requested but not available");
     }
     token.clone()
 }
 
 pub fn run() {
+    println!("[INFO] OpenFrame Chat starting...");
+    
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
-    println!("📝 [ARGS] Command line arguments: {:?}", args);
     
     // Look for --openframe-token-path and --openframe-secret parameters
     let mut token_path: Option<String> = None;
@@ -49,24 +50,10 @@ pub fn run() {
     // Start token watcher and get state if both parameters are provided
     let token_params = match (token_path, secret) {
         (Some(path), Some(secret_key)) => {
-            println!("🔑 [ARGS] OpenFrame token path: {}", path);
-            println!("🔐 [ARGS] Secret key provided (length: {})", secret_key.len());
             Some((path, secret_key))
         }
-        (None, None) => {
-            println!("⚠️  [ARGS] Missing required parameters:");
-            println!("  - openframe-token-path not provided");
-            println!("  - openframe-secret not provided");
-            None
-        }
-        (None, Some(_)) => {
-            println!("⚠️  [ARGS] Missing required parameter:");
-            println!("  - openframe-token-path not provided");
-            None
-        }
-        (Some(_), None) => {
-            println!("⚠️  [ARGS] Missing required parameter:");
-            println!("  - openframe-secret not provided");
+        _ => {
+            eprintln!("[ERROR] Missing required parameters: --openframe-token-path and --openframe-secret");
             None
         }
     };
@@ -74,29 +61,21 @@ pub fn run() {
     builder = builder.setup(move |app| {
             // Start token watcher with app handle if parameters were provided
             if let Some((path, secret_key)) = token_params {
-                println!("✅ [SETUP] Starting token watcher");
                 let state = TokenWatcher::start(path, secret_key, app.handle().clone());
                 app.manage(state);
-                println!("✅ [SETUP] TokenWatcher started and state managed");
+                println!("[INFO] Token watcher initialized");
             } else {
-                println!("⚠️  [SETUP] Token watcher not started - parameters not provided");
                 // Still create and manage empty state so commands don't fail
                 use std::sync::{Arc, Mutex};
                 let empty_state = TokenState {
                     current_token: Arc::new(Mutex::new(None))
                 };
                 app.manage(empty_state);
-                println!("✅ [SETUP] Empty TokenState managed (no token available)");
             }
-            
-            println!("🚀 [SETUP] Chat application starting...");
-            println!("🪟 [SETUP] Available windows: {:?}", app.webview_windows().keys().collect::<Vec<_>>());
             
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
-            
-            println!("📋 [SETUP] Tray menu created with Show and Quit items");
             
             // Load the tray icon bytes at compile time
             let tray_icon_bytes = include_bytes!("../icons/tray/icon.png");
@@ -109,82 +88,49 @@ pub fn run() {
                 .show_menu_on_left_click(false)
                 .tooltip("OpenFrame Chat")
                 .on_tray_icon_event(|tray, event| {
-                    println!("🖱️  [TRAY EVENT] Received tray icon event: {:?}", event);
-                    
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
                         ..
                     } = event
                     {
-                        println!("👆 [TRAY CLICK] Left click detected, showing main window");
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
-                            println!("✅ [TRAY CLICK] Main window found, showing it");
                             let _ = window.show();
                             let _ = window.set_focus();
-                        } else {
-                            println!("❌ [TRAY CLICK] Main window not found!");
                         }
                     }
                 })
                 .on_menu_event(move |app, event| {
-                    println!("📋 [MENU EVENT] Tray menu item clicked: {}", event.id.as_ref());
-                    
                     match event.id.as_ref() {
                         "show" => {
-                            println!("👁️  [MENU SHOW] Show menu item clicked");
                             if let Some(window) = app.get_webview_window("main") {
-                                println!("✅ [MENU SHOW] Main window found, showing it");
                                 let _ = window.show();
                                 let _ = window.set_focus();
-                            } else {
-                                println!("❌ [MENU SHOW] Main window not found!");
                             }
                         }
                         "quit" => {
-                            println!("🛑 [MENU QUIT] Quit menu item clicked - forcing exit with std::process::exit(0)");
                             // Force quit using std::process::exit to bypass ExitRequested event
                             // This ensures the tray menu Quit button actually closes the app
                             std::process::exit(0);
                         }
-                        other => {
-                            println!("❓ [MENU UNKNOWN] Unknown menu item: {}", other);
-                        }
+                        _ => {}
                     }
                 })
                 .build(app)?;
             
-            println!("✅ [SETUP] Tray icon created successfully");
-            println!("✅ [SETUP] Chat application setup complete");
-            
             Ok(())
         })
         .on_window_event(|window, event| {
-            let window_label = window.label();
-            
             match event {
                 WindowEvent::CloseRequested { api, .. } => {
-                    println!("❌ [WINDOW CLOSE] Close requested for window: {}", window_label);
-                    println!("🛡️  [WINDOW CLOSE] Preventing default close behavior");
-                    
                     // Prevent the default close behavior
                     api.prevent_close();
                     
                     // Hide the window instead
                     let _ = window.hide();
-                    
-                    println!("👻 [WINDOW CLOSE] Window hidden instead of closed: {}", window_label);
                 }
-                WindowEvent::Focused(focused) => {
-                    println!("🔍 [WINDOW FOCUS] Window {} focus changed: {}", window_label, focused);
-                }
-                WindowEvent::Destroyed => {
-                    println!("💥 [WINDOW DESTROY] Window destroyed: {}", window_label);
-                }
-                _ => {
-                    // Other events are too noisy, skip them
-                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![greet, get_token]);
@@ -193,33 +139,19 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             match event {
+                RunEvent::Ready => {
+                    println!("[INFO] Application ready");
+                }
                 RunEvent::ExitRequested { api, .. } => {
-                    println!("🚪 [EXIT REQUESTED] System requested app exit (Cmd+Q, Dock Quit, etc.)");
-                    println!("🛡️  [EXIT REQUESTED] Preventing exit to keep tray icon alive");
-                    
                     // Prevent the app from exiting via system shortcuts
                     api.prevent_exit();
                     
                     // Hide all windows instead of closing
-                    let windows: Vec<_> = app_handle.webview_windows().keys().cloned().collect();
-                    println!("👻 [EXIT REQUESTED] Hiding {} windows: {:?}", windows.len(), windows);
-                    
-                    for (label, window) in app_handle.webview_windows() {
-                        println!("   - Hiding window: {}", label);
+                    for (_, window) in app_handle.webview_windows() {
                         let _ = window.hide();
                     }
-                    
-                    println!("✅ [EXIT REQUESTED] All windows hidden, app stays in tray");
                 }
-                RunEvent::Ready => {
-                    println!("✨ [APP READY] Application is ready and running");
-                }
-                RunEvent::Reopen { .. } => {
-                    println!("🔄 [APP REOPEN] Application reopened (macOS dock icon clicked)");
-                }
-                _ => {
-                    // Other events - don't log to avoid noise
-                }
+                _ => {}
             }
         });
 }
