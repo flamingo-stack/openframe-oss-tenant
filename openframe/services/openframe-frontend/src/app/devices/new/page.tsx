@@ -48,7 +48,7 @@ export default function NewDevicePage() {
   useEffect(() => {
     if (orgs.length > 0 && !selectedOrgId) {
       // Try to find "Default" organization first
-      const defaultOrg = orgs.find(o => o.name.toLowerCase() === 'default')
+      const defaultOrg = orgs.find(o => o.isDefault)
       const orgToSelect = defaultOrg || orgs[0]
 
       if (orgToSelect) {

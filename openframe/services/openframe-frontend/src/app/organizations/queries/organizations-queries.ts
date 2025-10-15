@@ -31,6 +31,7 @@ export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
         id
         organizationId
         name
+        isDefault
       }
     }
   }
@@ -74,6 +75,7 @@ export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
       monthlyRevenue
       contractStartDate
       contractEndDate
+      isDefault
       createdAt
       updatedAt
       deleted
