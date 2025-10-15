@@ -24,6 +24,7 @@ use windows::{
     Win32::System::Threading::*,
     Win32::System::RemoteDesktop::*,
     Win32::UI::WindowsAndMessaging::SW_SHOW,
+    Win32::Security::*,
 };
 
 const RETRY_DELAY_SECONDS: u64 = 5;
@@ -38,6 +39,8 @@ fn to_wide(s: &str) -> Vec<u16> {
 fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
     unsafe {
         let session_id = WTSGetActiveConsoleSessionId();
+        info!("Active console session ID: {}", session_id);
+        
         if session_id == u32::MAX {
             anyhow::bail!("No active user session found");
         }
@@ -46,6 +49,8 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         if let Err(e) = WTSQueryUserToken(session_id, &mut user_token) {
             anyhow::bail!("Failed to get user token for session {}: {:?}", session_id, e);
         }
+        
+        info!("Successfully obtained user token for session {}", session_id);
 
         // Build command line with arguments
         let mut cmdline = command_path.to_string();
@@ -74,6 +79,9 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
 
         let mut cmdline_wide = to_wide(&cmdline);
         
+        info!("Launching process with command line: {}", cmdline);
+        info!("Desktop: winsta0\\default, Show window: SW_SHOW");
+        
         // For GUI applications, use CREATE_NEW_PROCESS_GROUP for proper process isolation
         use windows::Win32::System::Threading::CREATE_NEW_PROCESS_GROUP;
         
@@ -94,6 +102,7 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         let _ = CloseHandle(user_token);
 
         if let Err(e) = result {
+            error!("CreateProcessAsUserW failed: {:?}", e);
             anyhow::bail!("Failed to launch process in user session: {:?}", e);
         }
 
@@ -103,7 +112,7 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         // Close thread handle as we don't need it
         let _ = CloseHandle(pi.hThread);
 
-        info!("Process launched in user session, PID: {}", pid);
+        info!("✓ Process launched successfully in user session {}, PID: {}", session_id, pid);
         Ok((pid, process_handle))
     }
 }
@@ -244,13 +253,17 @@ impl ToolRunManager {
                     }
                 }
 
-                // Check if this tool requires GUI on Windows - launch in user session
+                // Check if this is MeshCentral or openframe-chat on Windows - launch in user session
                 #[cfg(windows)]
-                if tool.require_gui {
-                    info!("Launching GUI tool {} in user session", tool.tool_agent_id);
+                let needs_user_session = tool.tool_agent_id.to_lowercase().contains("meshcentral") 
+                    || tool.tool_agent_id.to_lowercase().contains("openframe-chat");
+                
+                #[cfg(windows)]
+                if needs_user_session {
+                    info!("Launching {} in user session", tool.tool_agent_id);
                     match launch_process_in_user_session(&command_path, &processed_args) {
                         Ok((pid, process_handle)) => {
-                            info!("GUI tool {} launched successfully with PID: {}", tool.tool_agent_id, pid);
+                            info!("{} launched successfully with PID: {}", tool.tool_agent_id, pid);
                             
                             // Wait for process to exit in blocking thread to avoid blocking async runtime
                             let exit_code = tokio::task::spawn_blocking(move || {
@@ -269,16 +282,16 @@ impl ToolRunManager {
                             }).await.unwrap_or(1);
                             
                             warn!(tool_id = %tool.tool_agent_id,
-                                  "GUI tool process exited with code {} - restarting in {} seconds",
-                                  exit_code, RETRY_DELAY_SECONDS);
+                                  "{} process exited with code {} - restarting in {} seconds",
+                                  tool.tool_agent_id, exit_code, RETRY_DELAY_SECONDS);
                             
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                             continue;
                         }
                         Err(e) => {
                             error!(tool_id = %tool.tool_agent_id, error = %e,
-                                   "Failed to launch GUI tool in user session - retrying in {} seconds", 
-                                   RETRY_DELAY_SECONDS);
+                                   "Failed to launch {} in user session - retrying in {} seconds", 
+                                   tool.tool_agent_id, RETRY_DELAY_SECONDS);
                             sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                             continue;
                         }
