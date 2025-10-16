@@ -368,7 +368,8 @@ jobs:
           prerelease: true
           make_latest: false
           files: |
-            final-artifacts/clients/*
+            final-artifacts/clients/*.tar.gz
+            final-artifacts/clients/*.zip
             dist/*.tar.gz
             dist/*.zip
             dist/checksums.txt
