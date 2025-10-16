@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { apiClient } from '@lib/api-client'
 import { Device, DeviceFilters, DeviceFilterInput, DevicesGraphQLNode, GraphQLResponse } from '../types/device.types'
@@ -122,8 +122,10 @@ export function useDevices(filters: DeviceFilterInput = {}) {
   const [pageInfo, setPageInfo] = useState<any>(null)
   const [filteredCount, setFilteredCount] = useState(0)
   const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
-  const filtersRef = useRef(filters)
-  filtersRef.current = filters
+  
+  const stableFilters = useMemo(() => filters, [JSON.stringify(filters)])
+  const filtersRef = useRef(stableFilters)
+  filtersRef.current = stableFilters
 
   const fetchDevices = useCallback(async (searchTerm?: string, cursor?: string | null) => {
     setIsLoading(true)
@@ -241,7 +243,7 @@ export function useDevices(filters: DeviceFilterInput = {}) {
       fetchDevices()
       fetchDeviceFilters()
     }
-  }, [filters])
+  }, [stableFilters, fetchDevices, fetchDeviceFilters])
 
   return {
     devices,
