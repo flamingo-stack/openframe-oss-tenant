@@ -4,7 +4,7 @@ apps:
   openframe-config:
     values:
       image:
-        tag: latest
+        tag: 0.0.3
   # openframe-management:
   #   values:
   #     image:
