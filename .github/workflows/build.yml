@@ -60,91 +60,90 @@ jobs:
     steps:
       - name: bypass
         run: echo "This job is currently disabled."
-        # Uncomment the following lines to enable the job again
-        # continue-on-error: true
-#      - name: Check if build should run
-#        id: should_run
-#        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
-#
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          fetch-depth: 1
-#
-#      - name: Log in to GitHub Container Registry
-#        uses: docker/login-action@v3
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          registry: ${{ env.REGISTRY }}
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Set up QEMU
-#        uses: docker/setup-qemu-action@v3
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          platforms: linux/amd64,linux/arm64
-#
-#      - name: Set up Docker Buildx
-#        uses: docker/setup-buildx-action@v3
-#        if: steps.should_run.outputs.run == 'true'
-#
-#      - name: Generate metadata
-#        id: meta
-#        uses: docker/metadata-action@v5
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
-#          tags: |
-#            type=ref,event=tag
-#            type=raw,value=latest,enable={{is_default_branch}}
-#            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
-#          labels: |
-#            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
-#            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-#            org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
-#            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-#
-#      - name: Format build arguments
-#        id: format_args
-#        uses: ./.github/steps/docker-format-build-args
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          build_args: ${{ toJSON(matrix.build_args) }}
-#        env:
-#          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
-#
-#      - name: Build and push image
-#        id: docker_build
-#        uses: docker/build-push-action@v6
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          # need to copy the pom.xml from the root so it builds with the lib version correctly
-#          context: ${{ matrix.context || matrix.path }}
-#          file: ${{ matrix.path }}/Dockerfile
-#          platforms: linux/amd64,linux/arm64
-#          push: true
-#          provenance: false
-#          sbom: true
-#          tags: ${{ steps.meta.outputs.tags }}
-#          labels: ${{ steps.meta.outputs.labels }}
-#          secrets: |
-#            github_token=${{ secrets.GITHUB_TOKEN }}
-#          build-args: |
-#            GITHUB_ACTOR=${{ github.actor }}
-#            ${{ env.BUILD_ARGS }}
-#
-#      - name: Cleanup old container versions
-#        if: steps.docker_build.outcome == 'success'
-#        uses: dataaxiom/ghcr-cleanup-action@v1
-#        continue-on-error: true
-#        with:
-#          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
-#          delete-ghost-images: true
-#          delete-tags: '.*'
-#          exclude-tags: '^(?:[0-9]+\.[0-9]+\.[0-9]+|latest|test-.*)$'
-#          use-regex: true
+        continue-on-error: true
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          fetch-depth: 1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        if: steps.should_run.outputs.run == 'true'
+
+      - name: Generate metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
+          labels: |
+            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
+            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+            org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Format build arguments
+        id: format_args
+        uses: ./.github/steps/docker-format-build-args
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          build_args: ${{ toJSON(matrix.build_args) }}
+        env:
+          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+
+      - name: Build and push image
+        id: docker_build
+        uses: docker/build-push-action@v6
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          # need to copy the pom.xml from the root so it builds with the lib version correctly
+          context: ${{ matrix.context || matrix.path }}
+          file: ${{ matrix.path }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: false
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
+          build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
+            ${{ env.BUILD_ARGS }}
+
+      - name: Cleanup old container versions
+        if: steps.docker_build.outcome == 'success'
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        continue-on-error: true
+        with:
+          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
+          delete-ghost-images: true
+          delete-tags: '.*'
+          exclude-tags: '^(?:[0-9]+\.[0-9]+\.[0-9]+|latest|test-.*)$'
+          use-regex: true
       
 
   build_clients:
@@ -163,89 +162,87 @@ jobs:
         include: ${{ fromJson(needs.matrix.outputs.clients_matrix) }}
 
     steps:
-      - name: bypass
-        run: echo "This job is currently disabled."
-#      - name: Check if build should run
-#        id: should_run
-#        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
-#
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          fetch-depth: 1
-#
-#      - name: Prepare Rust tools
-#        uses: ./.github/steps/rust-setup
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          path: ${{ matrix.path }}
-#          toolchain: stable
-#          targets: ${{ matrix.target }}
-#          components: clippy, rustfmt
-#          shared-key: ${{ runner.os }}-${{ runner.arch }}
-#
-#      - name: Build client
-#        working-directory: ${{ matrix.path }}
-#        if: steps.should_run.outputs.run == 'true'
-#        run: |
-#          if [[ "${{ matrix.os }}" == "macos" ]]; then
-#            IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
-#            for RUST_TARGET in "${ARCHITECTURES[@]}"; do
-#              RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
-#              make build TARGET="$RUST_TARGET"
-#            done
-#          else
-#            make build TARGET="${{ matrix.target }}"
-#          fi
-#
-#      - name: Upload Rust Artifacts for Windows / Linux
-#        if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: "${{ matrix.name }}-${{ matrix.os }}"
-#          path: "${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
-#          if-no-files-found: warn
-#          retention-days: 30
-#          compression-level: 9
-#
-#      - name: Create macOS universal package
-#        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
-#        shell: bash
-#        run: |
-#          mkdir -p artifacts
-#          IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
-#          RUST_TARGET_ARM64=${ARCHITECTURES[0]}
-#          RUST_TARGET_x64=${ARCHITECTURES[1]}
-#          RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
-#          RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
-#          lipo -create ${{ matrix.target_path }}/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.target_path }}/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
-#
-#          echo "Verify macOS openframe universal package"
-#          lipo -info ./artifacts/${{ env.BINARY_NAME }}
-#          file ./artifacts/${{ env.BINARY_NAME }}
-#
-#      - name: Sign MacOS package
-#        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
-#        uses: ./.github/steps/sign-macos-package
-#        with:
-#          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-#          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-#          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
-#          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
-#          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
-#          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-#          binary_name: ${{ env.BINARY_NAME }}
-#
-#      - name: Upload macOS client artifact
-#        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: "${{ matrix.name }}-${{ matrix.os }}"
-#          path: artifacts/
-#          if-no-files-found: warn
-#          retention-days: 30
-#          compression-level: 9
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.id || matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          fetch-depth: 1
+
+      - name: Prepare Rust tools
+        uses: ./.github/steps/rust-setup
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          path: ${{ matrix.path }}
+          toolchain: stable
+          targets: ${{ matrix.target }}
+          components: clippy, rustfmt
+          shared-key: ${{ runner.os }}-${{ runner.arch }}
+
+      - name: Build client
+        working-directory: ${{ matrix.path }}
+        if: steps.should_run.outputs.run == 'true'
+        run: |
+          if [[ "${{ matrix.os }}" == "macos" ]]; then
+            IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+            for RUST_TARGET in "${ARCHITECTURES[@]}"; do
+              RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
+              make build TARGET="$RUST_TARGET"
+            done
+          else
+            make build TARGET="${{ matrix.target }}"
+          fi          
+
+      - name: Upload Rust Artifacts for Windows / Linux
+        if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ matrix.name }}-${{ matrix.os }}"
+          path: "${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
+
+      - name: Create macOS universal package
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+          RUST_TARGET_ARM64=${ARCHITECTURES[0]}
+          RUST_TARGET_x64=${ARCHITECTURES[1]}
+          RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
+          RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
+          lipo -create ${{ matrix.target_path }}/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.target_path }}/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
+          
+          echo "Verify macOS openframe universal package"
+          lipo -info ./artifacts/${{ env.BINARY_NAME }}
+          file ./artifacts/${{ env.BINARY_NAME }}
+
+      - name: Sign MacOS package
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
+        uses: ./.github/steps/sign-macos-package
+        with:
+          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
+          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+          binary_name: ${{ env.BINARY_NAME }}
+
+      - name: Upload macOS client artifact
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ matrix.name }}-${{ matrix.os }}"
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 9
 
 
   build_helm:
@@ -253,32 +250,29 @@ jobs:
     needs: [changes]
     runs-on: ubuntu-latest
     steps:
-      - name: bypass
-        run: echo "This job is currently disabled."
+      - name: Check if build should run
+        id: should_run
+        run: echo "run=${{ github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs.helm, 'true') }}" >> $GITHUB_OUTPUT
 
-#      - name: Check if build should run
-#        id: should_run
-#        run: echo "run=${{ github.event_name == 'workflow_dispatch' || contains(needs.changes.outputs.helm, 'true') }}" >> $GITHUB_OUTPUT
-#
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#        if: steps.should_run.outputs.run == 'true'
-#
-#      - name: Install Helm
-#        uses: azure/setup-helm@v4.3.0
-#        if: steps.should_run.outputs.run == 'true'
-#
-#      - name: Push Chart
-#        uses: appany/helm-oci-chart-releaser@v0.5.0
-#        if: steps.should_run.outputs.run == 'true'
-#        with:
-#          name: app-of-apps
-#          tag: ${{ inputs.version || '0.0.1' }}
-#          path: ./manifests/app-of-apps
-#          registry: ${{ env.REGISTRY }}
-#          repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
-#          registry_username: ${{ github.actor }}
-#          registry_password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: steps.should_run.outputs.run == 'true'
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+        if: steps.should_run.outputs.run == 'true'
+
+      - name: Push Chart
+        uses: appany/helm-oci-chart-releaser@v0.5.0
+        if: steps.should_run.outputs.run == 'true'
+        with:
+          name: app-of-apps
+          tag: ${{ inputs.version || '0.0.1' }}
+          path: ./manifests/app-of-apps
+          registry: ${{ env.REGISTRY }}
+          repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     name: "Create Release"
@@ -299,13 +293,13 @@ jobs:
         with:
           go-version: '1.23'
 
-#      # Download (& extract) Rust client artifacts
-#      - name: Download macOS client
-#        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
-#        uses: actions/download-artifact@v4
-#        with:
-#          path: release-artifacts
-#        continue-on-error: true
+      # Download (& extract) Rust client artifacts
+      - name: Download macOS client
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+        continue-on-error: true
 
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -324,21 +318,14 @@ jobs:
       - name: Prepare release artifacts
         run: |
           mkdir -p final-artifacts/clients
-          touch final-artifacts/clients/1.tar.gz
-          touch final-artifacts/clients/2.tar.gz
-        
-
-#      - name: Prepare release artifacts
-#        run: |
-#          mkdir -p final-artifacts/clients
-#          if [ -d "release-artifacts" ]; then
-#            for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
-#              find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
-#            done
-#          fi
-#
-#          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz -C final-artifacts/clients/openframe-macos openframe
-#          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-windows/openframe.exe
+          if [ -d "release-artifacts" ]; then
+            for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
+              find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
+            done
+          fi
+          
+          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz -C final-artifacts/clients/openframe-macos openframe
+          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-windows/openframe.exe
 
       - name: Generate release body
         id: release_body
