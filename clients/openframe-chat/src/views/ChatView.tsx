@@ -71,7 +71,7 @@ export function ChatView() {
           onSend={sendMessage}
           sending={isStreaming}
           placeholder="Enter your request here..."
-          className="pr-12 pl-12 !mx-0 max-w-none"
+          className="px-12"
           reserveAvatarOffset={false}
         />
       </ChatFooter>
