@@ -21,7 +21,7 @@ jobs:
       - name: Define Matrix
         id: matrix
         run: |
-          images_matrix_json='[]',
+          images_matrix_json='[]'
           images_matrix_json2='[
             {
               "name": "openframe-api",
@@ -263,7 +263,7 @@ jobs:
               "os": "windows",
               "target": "x86_64-pc-windows-msvc",
               "target_path": "./clients/openframe-client/target"
-            }]',
+            }]'
           clients_matrix_json2='[
             {  
               "id": "client",
