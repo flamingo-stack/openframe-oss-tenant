@@ -1,5 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://openframe-saas-ai-agent.microservices.svc.cluster.local:8085'
-const API_TOKEN = import.meta.env.VITE_API_TOKEN || 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZ2VudF83ZWNhZjI2NC1lZTMxLTRiN2YtYWI4YS04NmI4ODlhZTg2YTkiLCJncmFudF90eXBlIjoiY2xpZW50X2NyZWRlbnRpYWxzIiwicm9sZXMiOlsiQUdFTlQiXSwiaXNzIjoiaHR0cHM6Ly9hdXRoLm9wZW5mcmFtZS5jb20iLCJtYWNoaW5lX2lkIjoiN2VjYWYyNjQtZWUzMS00YjdmLWFiOGEtODZiODg5YWU4NmE5IiwiZXhwIjoxNzU5OTU0NzAzLCJpYXQiOjE3NTk5NTExMDN9.e313Nf-KLZQ6Ol6C6UMZKRHsXBkj1T45Snuco4cmax3zKr_BsZ4EfNcGcbvgwUybubjabZxBw2kQLajlhmggn8iZ8GNS60eDY22UBCHNqeGGXYWXH1zMBYBhhkNEcIEbOOLwCiOQDX0IxyqwzFkW02NqX8x0ttaow896yqIWZdCTi-8O66VOE1nGtwVxW3KGSNdY0YCslXo5JvvCOueIvJytm1YFxlIrKlECFuk7jipy_D-Ip2KYnQwG3kvucaki7EWnFDwlBZW6DciozmIyv_L7mKYICOWfhLilkObeWTrrhzj0IpyYFFLoMZ_APKcUU1peP6oIGKFjKHI5-o8ERw' // Set via environment variable
+import { tokenService } from './tokenService'
 
 interface DialogCreatedEventData {
   dialogId: string
@@ -12,19 +11,28 @@ interface MessageEventData {
 
 export class ChatApiService {
   private dialogId: string | null = null
-  private apiToken: string
-  private apiBaseUrl: string
   private debugMode: boolean
+  private tokenUnsubscribe?: () => void
+  private apiUrlUnsubscribe?: () => void
   
-  constructor(token?: string, baseUrl?: string, debug: boolean = false) {
-    this.apiToken = token || API_TOKEN
-    this.apiBaseUrl = baseUrl || API_BASE_URL
+  constructor(debug: boolean = false) {
     this.debugMode = debug
+    
+    this.tokenUnsubscribe = tokenService.onTokenUpdate((token) => {})
+    this.apiUrlUnsubscribe = tokenService.onApiUrlUpdate((apiUrl) => {})
+
+    tokenService.requestToken()
   }
   
+  private getApiBaseUrl(): string {
+    return tokenService.getCurrentApiBaseUrl() || ''
+  }
+
   private getHeaders(): HeadersInit {
+    const token = tokenService.getCurrentToken()
+
     return {
-      'Authorization': `Bearer ${this.apiToken}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   }
@@ -61,8 +69,8 @@ export class ChatApiService {
     }
     
     details.push(`Endpoint: ${this.dialogId ? '/messages/process' : '/dialogs'}`)
-    details.push(`Base URL: ${this.apiBaseUrl}`)
-    details.push(`Token configured: ${this.apiToken !== 'YOUR_API_TOKEN_HERE'}`)
+    details.push(`Base URL: ${this.getApiBaseUrl()}`)
+    details.push(`Token available: ${tokenService.getCurrentToken() !== null}`)
     details.push(`Dialog ID: ${this.dialogId || 'Not set'}`)
     
     return details.join('\n')
@@ -124,16 +132,16 @@ export class ChatApiService {
   private async *createDialogAndStream(initialMessage: string): AsyncGenerator<string> {
     if (this.debugMode) {
       yield `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"`
-      yield `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/dialogs`
+      yield `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/dialogs`
     }
     
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/dialogs`, {
+    const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/dialogs`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ initialMessage })
     }).catch(err => {
       if (this.debugMode) {
-        throw new Error(`Network error creating dialog: ${err.message}\nURL: ${this.apiBaseUrl}/api/v1/dialogs`)
+        throw new Error(`Network error creating dialog: ${err.message}\nURL: ${this.getApiBaseUrl()}/chat/api/v1/dialogs`)
       }
       throw err
     })
@@ -144,8 +152,8 @@ export class ChatApiService {
         yield `[DEBUG] Dialog creation failed:`
         yield `  Status: ${response.status} ${response.statusText}`
         yield `  Response: ${errorText}`
-        yield `  URL: ${this.apiBaseUrl}/api/v1/dialogs`
-        yield `  Token present: ${this.apiToken !== 'YOUR_API_TOKEN_HERE'}`
+        yield `  URL: ${this.getApiBaseUrl()}/chat/api/v1/dialogs`
+        yield `  Token available: ${tokenService.getCurrentToken() !== null}`
       }
       throw new Error(`Failed to create dialog: ${response.status} ${response.statusText}\n${errorText}`)
     }
@@ -202,10 +210,10 @@ export class ChatApiService {
     if (this.debugMode) {
       yield `[DEBUG] Processing message with dialog ID: ${this.dialogId}`
       yield `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`
-      yield `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/messages/process`
+      yield `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/messages/process`
     }
     
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/messages/process`, {
+    const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/messages/process`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({
@@ -214,7 +222,7 @@ export class ChatApiService {
       })
     }).catch(err => {
       if (this.debugMode) {
-        throw new Error(`Network error processing message: ${err.message}\nURL: ${this.apiBaseUrl}/api/v1/messages/process\nDialog ID: ${this.dialogId}`)
+        throw new Error(`Network error processing message: ${err.message}\nURL: ${this.getApiBaseUrl()}/chat/api/v1/messages/process\nDialog ID: ${this.dialogId}`)
       }
       throw err
     })
@@ -226,7 +234,7 @@ export class ChatApiService {
         yield `  Status: ${response.status} ${response.statusText}`
         yield `  Response: ${errorText}`
         yield `  Dialog ID: ${this.dialogId}`
-        yield `  URL: ${this.apiBaseUrl}/api/v1/messages/process`
+        yield `  URL: ${this.getApiBaseUrl()}/chat/api/v1/messages/process`
       }
       throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
     }
@@ -269,5 +277,14 @@ export class ChatApiService {
   
   getDialogId(): string | null {
     return this.dialogId
+  }
+  
+  destroy() {
+    if (this.tokenUnsubscribe) {
+      this.tokenUnsubscribe()
+    }
+    if (this.apiUrlUnsubscribe) {
+      this.apiUrlUnsubscribe()
+    }
   }
 }

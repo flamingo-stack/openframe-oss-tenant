@@ -7,10 +7,13 @@ interface TokenUpdatePayload {
 
 class TokenService {
   private currentToken: string | null = null;
+  private currentApiBaseUrl: string | null = null;
   private listeners: Set<(token: string) => void> = new Set();
+  private apiUrlListeners: Set<(apiUrl: string) => void> = new Set();
 
   constructor() {
     this.initTokenListener();
+    this.initApiUrl();
   }
 
   /**
@@ -98,6 +101,57 @@ class TokenService {
     // Return unsubscribe function
     return () => {
       this.listeners.delete(callback);
+    };
+  }
+
+  /**
+   * Initialize API base URL from Tauri
+   */
+  private async initApiUrl() {
+    try {
+      const apiUrl = await invoke<string>('get_api_base_url');
+      
+      if (apiUrl) {
+        this.currentApiBaseUrl = apiUrl;
+        
+        this.apiUrlListeners.forEach(listener => {
+          try {
+            listener(apiUrl);
+          } catch (error) {
+            console.error('[TOKEN SERVICE] Error in API URL listener:', error);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('[TOKEN SERVICE] Failed to get API base URL:', error);
+    }
+  }
+
+  /**
+   * Get the current API base URL
+   */
+  getCurrentApiBaseUrl(): string | null {
+    return this.currentApiBaseUrl;
+  }
+
+  /**
+   * Subscribe to API base URL updates
+   * @param callback Function to call when API URL updates
+   * @returns Unsubscribe function
+   */
+  onApiUrlUpdate(callback: (apiUrl: string) => void): () => void {
+    this.apiUrlListeners.add(callback);
+    
+    if (this.currentApiBaseUrl) {
+      try {
+        callback(this.currentApiBaseUrl);
+      } catch (error) {
+        console.error('[TOKEN SERVICE] Error in immediate API URL callback:', error);
+      }
+    }
+    
+    return () => {
+      this.apiUrlListeners.delete(callback);
     };
   }
 

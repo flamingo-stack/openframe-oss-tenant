@@ -26,6 +26,14 @@ fn get_token(token_state: State<TokenState>) -> Option<String> {
     token.clone()
 }
 
+#[tauri::command]
+fn get_api_base_url() -> String {
+    // TODO: change to an actual service URL
+    let base_url = "http://localhost".to_string();
+    println!("[INFO] API base URL requested from frontend: {}", base_url);
+    base_url
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     println!("[INFO] OpenFrame Chat starting...");
@@ -149,7 +157,7 @@ pub fn run() {
                 _ => {}
             }
         })
-        .invoke_handler(tauri::generate_handler![greet, get_token]);
+        .invoke_handler(tauri::generate_handler![greet, get_token, get_api_base_url]);
     
     builder.build(tauri::generate_context!())
         .expect("error while building tauri application")
