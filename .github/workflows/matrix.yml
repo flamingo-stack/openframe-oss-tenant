@@ -21,8 +21,7 @@ jobs:
       - name: Define Matrix
         id: matrix
         run: |
-          images_matrix_json='[]'
-          images_matrix_json2='[
+          images_matrix_json='[
             {
               "name": "openframe-api",
               "path": "./openframe/services/openframe-api",
@@ -264,39 +263,6 @@ jobs:
               "target": "x86_64-pc-windows-msvc",
               "target_path": "./clients/openframe-client/target"
             }]'
-          clients_matrix_json2='[
-            {  
-              "id": "client",
-              "name": "openframe-client",
-              "path": "./clients/openframe-client",
-              "os": "macos",
-              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
-              "target_path": "./clients/openframe-client/target"
-            },
-            {
-              "id": "client",
-              "name": "openframe-client",
-              "path": "./clients/openframe-client",
-              "os": "windows",
-              "target": "x86_64-pc-windows-msvc",
-              "target_path": "./clients/openframe-client/target"
-            },
-            {  
-              "name": "openframe-chat",
-              "path": "./clients/openframe-chat",
-              "os": "macos",
-              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
-              "target_path": "./clients/openframe-chat/src-tauri/target"
-            },
-            {
-              "name": "openframe-chat",
-              "path": "./clients/openframe-chat",
-              "os": "windows",
-              "target": "x86_64-pc-windows-msvc",
-              "target_path": "./clients/openframe-chat/src-tauri/target"
-            }
-          ]'
-
           # Write the matrix to the output
           {
             echo 'images_matrix<<EOF'
