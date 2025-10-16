@@ -9,6 +9,11 @@ mod token_watcher;
 mod token_decryption_service;
 use token_watcher::{TokenWatcher, TokenState};
 use tauri::State;
+use std::sync::{Arc, Mutex};
+
+pub struct ServerUrlState {
+    pub url: Arc<Mutex<Option<String>>>,
+}
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -27,11 +32,14 @@ fn get_token(token_state: State<TokenState>) -> Option<String> {
 }
 
 #[tauri::command]
-fn get_api_base_url() -> String {
-    // TODO: change to an actual service URL
-    let base_url = "http://localhost".to_string();
-    println!("[INFO] API base URL requested from frontend: {}", base_url);
-    base_url
+fn get_server_url(server_url_state: State<ServerUrlState>) -> Option<String> {
+    let url = server_url_state.url.lock().unwrap();
+    if url.is_some() {
+        println!("[INFO] Server URL requested from frontend");
+    } else {
+        println!("[WARN] Server URL requested but not available");
+    }
+    url.clone()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -41,15 +49,18 @@ pub fn run() {
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
     
-    // Look for --openframe-token-path and --openframe-secret parameters
+    // Look for --openframe-token-path, --openframe-secret, and --serverUrl parameters
     let mut token_path: Option<String> = None;
     let mut secret: Option<String> = None;
-    
+    let mut server_url: Option<String> = None;
+
     for i in 0..args.len() {
         if args[i] == "--openframe-token-path" && i + 1 < args.len() {
             token_path = Some(args[i + 1].clone());
         } else if args[i] == "--openframe-secret" && i + 1 < args.len() {
             secret = Some(args[i + 1].clone());
+        } else if args[i] == "--serverUrl" && i + 1 < args.len() {
+            server_url = Some(args[i + 1].clone());
         }
     }
     
@@ -66,6 +77,8 @@ pub fn run() {
         }
     };
     
+    let server_url_clone = server_url.clone();
+
     builder = builder.setup(move |app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -75,6 +88,18 @@ pub fn run() {
                 )?;
             }
             
+            // Manage server URL state
+            let url_state = ServerUrlState {
+                url: Arc::new(Mutex::new(server_url_clone.clone()))
+            };
+            app.manage(url_state);
+
+            if let Some(url) = &server_url_clone {
+                println!("[INFO] Server URL configured: {}", url);
+            } else {
+                println!("[WARN] No server URL provided");
+            }
+
             // Start token watcher with app handle if parameters were provided
             if let Some((path, secret_key)) = token_params {
                 let state = TokenWatcher::start(path, secret_key, app.handle().clone());
@@ -82,7 +107,6 @@ pub fn run() {
                 println!("[INFO] Token watcher initialized");
             } else {
                 // Still create and manage empty state so commands don't fail
-                use std::sync::{Arc, Mutex};
                 let empty_state = TokenState {
                     current_token: Arc::new(Mutex::new(None))
                 };
@@ -157,7 +181,7 @@ pub fn run() {
                 _ => {}
             }
         })
-        .invoke_handler(tauri::generate_handler![greet, get_token, get_api_base_url]);
+        .invoke_handler(tauri::generate_handler![greet, get_token, get_server_url]);
     
     builder.build(tauri::generate_context!())
         .expect("error while building tauri application")
