@@ -7,9 +7,38 @@ import {
   ChatInput,
   ChatQuickAction
 } from '@flamingo/ui-kit'
-import { useChat } from '../hooks/useChat'
+import { useChat, type Message } from '../hooks/useChat'
 import { useToken } from '../hooks/useToken'
+import { useMemo } from 'react'
+import { MessageSegment } from '../types/chat.types'
 import faeAvatar from '../assets/fae-avatar.png'
+
+/**
+ * Transform messages to ensure content is always a string for ChatMessageList
+ */
+function transformMessagesForDisplay(messages: Message[]): Message[] {
+  return messages.map(message => {
+    // If content is already a string, return as-is
+    if (typeof message.content === 'string') {
+      return message
+    }
+    
+    // If content is an array of segments, extract text
+    if (Array.isArray(message.content)) {
+      const textContent = message.content
+        .filter((segment: MessageSegment) => segment.type === 'text')
+        .map((segment: MessageSegment) => segment.type === 'text' ? segment.text : '')
+        .join('')
+      
+      return {
+        ...message,
+        content: textContent
+      }
+    }
+    
+    return message
+  })
+}
 
 export function ChatView() {
   const DEBUG_MODE = false
@@ -25,36 +54,17 @@ export function ChatView() {
     hasMessages
   } = useChat({ useApi: true, useMock: false, debugMode: DEBUG_MODE })
   
+  // Transform messages to ensure content is strings for ChatMessageList
+  const displayMessages = useMemo(() => transformMessagesForDisplay(messages), [messages])
+  
   return (
     <ChatContainer>
-      {/* Token Display Banner */}
-      {token && (
-        <div className="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-xs text-gray-400 font-medium whitespace-nowrap">Token:</span>
-            <code className="text-xs text-green-400 font-mono bg-gray-800 px-2 py-1 rounded overflow-x-auto whitespace-nowrap flex-1">
-              {token}
-            </code>
-          </div>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(token)
-              console.log('✅ Token copied to clipboard')
-            }}
-            className="ml-2 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-gray-800"
-            title="Copy token to clipboard"
-          >
-            Copy
-          </button>
-        </div>
-      )}
-      
       <ChatHeader userAvatar={faeAvatar} />
       
       <ChatContent>
         {hasMessages ? (
           <ChatMessageList
-            messages={messages}
+            messages={displayMessages}
             isTyping={isTyping}
             autoScroll={true}
           />
