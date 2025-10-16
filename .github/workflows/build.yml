@@ -320,18 +320,11 @@ jobs:
           mkdir -p final-artifacts/clients
           if [ -d "release-artifacts" ]; then
             for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
-              find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
+              #find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
+              find release-artifacts -type f -name "$client" -exec tar -czf "final-artifacts/clients/$client_macos_${{ inputs.version }}.tar.gz" -C release-artifacts/ {} \;
+              find release-artifacts -type f -name "$client.exe" -exec zip -j "final-artifacts/clients/$client_windows_${{ inputs.version }}.zip" {} \;
             done
           fi
-          
-          echo "Contents of final-artifacts/clients/:"
-          ls -la final-artifacts/clients/
-          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/openframe-client-macos/openframe-client
-          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-client-windows/
-          
-          tar -czf final-artifacts/clients/openframe-chat-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/
-          
-          openframe-client.exe
 
       - name: Generate release body
         id: release_body
