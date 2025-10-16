@@ -118,6 +118,6 @@ public class MeshCentralEventDeserializer extends IntegratedToolEventDeserialize
 
     @Override
     protected String getDetails(JsonNode after) {
-        return "{}";
+        return null;
     }
 }

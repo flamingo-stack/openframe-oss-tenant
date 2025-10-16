@@ -117,6 +117,25 @@ export const GET_DIALOG_MESSAGES_QUERY = `
               text
             }
 
+            ... on ExecutingToolData {
+              type
+              integratedToolType
+              toolFunction
+              parameters
+              requiresApproval
+              approvalStatus
+            }
+
+            ... on ExecutedToolData {
+              type
+              integratedToolType
+              toolFunction
+              result
+              success
+              requiredApproval
+              approvalStatus
+            }
+
             ... on ErrorData {
               error
               details

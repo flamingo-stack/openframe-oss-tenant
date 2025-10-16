@@ -5,8 +5,8 @@
   "identifier": "com.openframe.chat",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:3003",
-    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:3003",
+    "beforeDevCommand": "npm run frontend:dev",
     "beforeBuildCommand": "npm run build"
   },
   "app": {

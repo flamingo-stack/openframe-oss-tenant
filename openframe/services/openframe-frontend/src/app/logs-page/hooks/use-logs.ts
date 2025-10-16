@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { apiClient } from '../../../lib/api-client'
-import { useLogsStore, LogEntry, LogEdge, PageInfo } from '../stores/logs-store'
-import { GET_LOGS_QUERY, GET_LOG_DETAILS_QUERY } from '../queries/logs-queries'
+import { apiClient } from '@lib/api-client'
+import { useLogsStore, LogEntry, LogEdge, PageInfo, LogFilters } from '../stores/logs-store'
+import { GET_LOGS_QUERY, GET_LOG_DETAILS_QUERY, GET_LOG_FILTERS_QUERY } from '../queries/logs-queries'
 
 interface LogsResponse {
   logs: {
@@ -245,5 +245,67 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     refreshLogs,
     clearLogs,
     reset
+  }
+}
+
+/**
+ * Hook for fetching log filter options
+ */
+export function useLogFilters() {
+  const { toast } = useToast()
+  const [logFilters, setLogFilters] = useState<LogFilters | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchLogFilters = useCallback(async (filter?: LogFilterInput) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await apiClient.post<GraphQLResponse<{ logFilters: LogFilters }>>('/api/graphql', {
+        query: GET_LOG_FILTERS_QUERY,
+        variables: {
+          filter: filter || {}
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(response.error || `Request failed with status ${response.status}`)
+      }
+
+      const graphqlResponse = response.data
+
+      if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
+        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
+      }
+
+      if (!graphqlResponse?.data) {
+        throw new Error('No data received from server')
+      }
+
+      setLogFilters(graphqlResponse.data.logFilters)
+      return graphqlResponse.data.logFilters
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch log filters'
+      console.error('Failed to fetch log filters:', error)
+      setError(errorMessage)
+
+      toast({
+        title: 'Error fetching log filters',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }, [toast])
+
+  return {
+    logFilters,
+    isLoading,
+    error,
+    fetchLogFilters
   }
 }
