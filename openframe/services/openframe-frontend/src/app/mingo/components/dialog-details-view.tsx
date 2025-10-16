@@ -14,7 +14,7 @@ import { DetailLoader } from '@flamingo/ui-kit/components/ui'
 import { DeviceInfoSection } from '../../components/shared'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
-import type { Message, TextData, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
+import type { Message, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
@@ -82,34 +82,121 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   }
 
   const chatMessages = useMemo(() => {
-    return messages.filter((msg: Message) => {
-      const messageDataArray = msg.messageData as any
-      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
-        return messageDataArray[0].type === 'TEXT'
-      }
-      return (msg.messageData as any)?.type === 'TEXT'
-    }).map((msg: Message) => {
-      let content = ''
-      
-      const messageDataArray = msg.messageData as any
-      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
-        const firstData = messageDataArray[0]
-        if (firstData.type === 'TEXT') {
-          content = firstData.text || ''
+    const processedMessages: Array<{
+      id: string
+      content: Array<{
+        type: 'text'
+        text: string
+      } | {
+        type: 'tool_execution'
+        data: {
+          type: 'EXECUTING_TOOL' | 'EXECUTED_TOOL'
+          integratedToolType: string
+          toolFunction: string
+          parameters?: Record<string, any>
+          result?: string
+          success?: boolean
         }
-      } else if ((msg.messageData as any)?.type === 'TEXT') {
-        content = (msg.messageData as TextData).text || ''
-      }
+      }>
+      role: 'user' | 'assistant'
+      timestamp: Date
+    }> = []
 
-      return {
-        id: msg.id,
-        content,
-        role: msg.owner?.type === 'CLIENT' ? 'user' as const : 
-              msg.owner?.type === 'ASSISTANT' ? 'assistant' as const : 
-              'assistant' as const,
-        timestamp: new Date(msg.createdAt)
+    const executingTools = new Map<string, {
+      integratedToolType: string
+      toolFunction: string
+      parameters?: Record<string, any>
+    }>()
+
+    let currentAssistantMessage: {
+      id: string
+      segments: any[]
+      timestamp: Date
+    } | null = null
+
+    messages.forEach((msg: Message, index: number) => {
+      const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData]
+      const role = msg.owner?.type === 'CLIENT' ? 'user' as const : 'assistant' as const
+      
+      messageDataArray.forEach((data: any) => {
+        if (role === 'user' && data.type === 'TEXT') {
+          processedMessages.push({
+            id: msg.id,
+            content: [{
+              type: 'text',
+              text: data.text || ''
+            }],
+            role: 'user',
+            timestamp: new Date(msg.createdAt)
+          })
+        } else if (role === 'assistant') {
+          if (data.type === 'EXECUTING_TOOL') {
+            const toolKey = `${data.integratedToolType}-${data.toolFunction}`
+            executingTools.set(toolKey, {
+              integratedToolType: data.integratedToolType,
+              toolFunction: data.toolFunction,
+              parameters: data.parameters
+            })
+          } else if (data.type === 'EXECUTED_TOOL') {
+            const toolKey = `${data.integratedToolType}-${data.toolFunction}`
+            const executingTool = executingTools.get(toolKey)
+            
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id,
+                segments: [],
+                timestamp: new Date(msg.createdAt)
+              }
+            }
+            
+            currentAssistantMessage.segments.push({
+              type: 'tool_execution',
+              data: {
+                type: 'EXECUTED_TOOL',
+                integratedToolType: data.integratedToolType,
+                toolFunction: data.toolFunction,
+                parameters: executingTool?.parameters || data.parameters,
+                result: data.result,
+                success: data.success
+              }
+            })
+            
+            executingTools.delete(toolKey)
+          } else if (data.type === 'TEXT') {
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id,
+                segments: [],
+                timestamp: new Date(msg.createdAt)
+              }
+            }
+            
+            currentAssistantMessage.segments.push({
+              type: 'text',
+              text: data.text || ''
+            })
+          }
+        }
+      })
+
+      const nextMsg = messages[index + 1]
+      const isLastMessage = index === messages.length - 1
+      const nextIsFromDifferentOwner = nextMsg && nextMsg.owner?.type !== msg.owner?.type
+      
+      if (currentAssistantMessage && (isLastMessage || nextIsFromDifferentOwner || role === 'user')) {
+        if (currentAssistantMessage.segments.length > 0) {
+          processedMessages.push({
+            id: currentAssistantMessage.id,
+            content: currentAssistantMessage.segments,
+            role: 'assistant',
+            timestamp: currentAssistantMessage.timestamp
+          })
+        }
+        currentAssistantMessage = null
       }
     })
+
+    return processedMessages
   }, [messages])
 
   const prevLenRef = useRef<number>(messages.length)

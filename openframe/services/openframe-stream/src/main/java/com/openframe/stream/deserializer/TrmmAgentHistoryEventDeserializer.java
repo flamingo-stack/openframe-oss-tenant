@@ -23,6 +23,13 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
     private static final String FIELD_SCRIPT_RESULTS = "script_results";
     private static final String FIELD_ID = "id";
     private static final String FIELD_TIME = "time";
+    
+    // Details field constants for LogDetails JSON structure
+    private static final String DETAILS_OUTPUT = "output";
+    private static final String DETAILS_EXECUTION_TIME = "execution_time";
+    private static final String DETAILS_STDERR = "stderr";
+    private static final String DETAILS_STDOUT = "stdout";
+    
     private final TacticalRmmCacheService tacticalRmmCacheService;
 
     protected TrmmAgentHistoryEventDeserializer(ObjectMapper mapper, TacticalRmmCacheService tacticalRmmCacheService) {
@@ -124,39 +131,72 @@ public class TrmmAgentHistoryEventDeserializer extends IntegratedToolEventDeseri
     }
 
     @Override
-    protected String getDetails(JsonNode after) {
-        try {
-            ObjectNode details = mapper.createObjectNode();
-            
-            // Add results or script_results if they are not empty
-            addResultsToDetails(after, details);
-            
-            return mapper.writeValueAsString(details);
-        } catch (Exception e) {
-            log.error("Error creating details JSON for TRMM agent history event", e);
-            return "{}";
-        }
-    }
-
-    /**
-     * Adds results or script_results to the details JSON if they are not empty.
-     * For script_run events, script_results takes precedence over results.
-     */
-    private void addResultsToDetails(JsonNode after, ObjectNode details) {
+    protected String getError(JsonNode after) {
+        // Parse script_results and extract error if stderr is present
         Optional<String> scriptResults = parseStringField(after, FIELD_SCRIPT_RESULTS);
-        Optional<String> results = parseStringField(after, FIELD_RESULTS);
         
         if (scriptResults.isPresent()) {
-            // Try to parse script_results as JSON, otherwise add as string
             try {
-                JsonNode scriptResultsJson = mapper.readTree(scriptResults.get());
-                details.set("script_results", scriptResultsJson);
+                JsonNode scriptResultsNode = mapper.readTree(scriptResults.get());
+                
+                // Check if stderr exists and is not empty
+                if (scriptResultsNode.has(DETAILS_STDERR)) {
+                    String stderr = scriptResultsNode.get(DETAILS_STDERR).asText();
+                    if (stderr != null && !stderr.trim().isEmpty()) {
+                        ObjectNode errorNode = mapper.createObjectNode();
+                        errorNode.put(DETAILS_OUTPUT, stderr);
+                        return mapper.writeValueAsString(errorNode);
+                    }
+                }
             } catch (Exception e) {
-                // If parsing fails, add as string
-                details.put("script_results", scriptResults.get());
+                log.error("Failed to parse script_results for error extraction", e);
             }
-        } else if (results.isPresent()) {
-            details.put("results", results.get());
         }
+        
+        return null;
+    }
+    
+    @Override
+    protected String getResult(JsonNode after) {
+        // For script_run events, use script_results
+        Optional<String> scriptResults = parseStringField(after, FIELD_SCRIPT_RESULTS);
+        if (scriptResults.isPresent()) {
+            try {
+                JsonNode scriptResultsNode = mapper.readTree(scriptResults.get());
+                ObjectNode resultNode = mapper.createObjectNode();
+
+                if (scriptResultsNode.has(DETAILS_STDOUT)) {
+                    resultNode.put(DETAILS_OUTPUT, scriptResultsNode.get(DETAILS_STDOUT).asText());
+                }
+                if (scriptResultsNode.has(DETAILS_EXECUTION_TIME)) {
+                    resultNode.put(DETAILS_EXECUTION_TIME, scriptResultsNode.get(DETAILS_EXECUTION_TIME).asDouble());
+                }
+                
+                return mapper.writeValueAsString(resultNode);
+            } catch (Exception e) {
+                log.error("Failed to parse script_results for result extraction", e);
+                // Return original script_results as is
+                return scriptResults.get();
+            }
+        }
+        
+        // For cmd_run events, use results field
+        Optional<String> results = parseStringField(after, FIELD_RESULTS);
+        if (results.isPresent()) {
+            try {
+                ObjectNode resultNode = mapper.createObjectNode();
+                resultNode.put(DETAILS_OUTPUT, results.get());
+                return mapper.writeValueAsString(resultNode);
+            } catch (Exception e) {
+                log.error("Failed to create result from results field", e);
+            }
+        }
+        
+        return null;
+    }
+
+    @Override
+    protected String getDetails(JsonNode after) {
+        return null;
     }
 }

@@ -17,8 +17,8 @@ import { useOrganizationsMin } from '../../organizations/hooks/use-organizations
 
 type Platform = OSPlatformId
 
-const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe'
-const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe.exe'
+const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client'
+const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client.exe'
 
 export default function NewDevicePage() {
   const router = useRouter()

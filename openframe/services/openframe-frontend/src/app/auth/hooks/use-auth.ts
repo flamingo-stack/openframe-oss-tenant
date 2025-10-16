@@ -356,8 +356,7 @@ export function useAuth() {
         variant: "success"
       })
       
-      // Redirect to login after successful registration
-      window.location.href = '/auth/login'
+      window.location.href = '/auth'
     } catch (error: any) {
       console.error('❌ [Auth] Registration failed:', error)
       toast({
