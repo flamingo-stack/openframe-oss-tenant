@@ -1,3 +1,5 @@
+environment: dev
+
 deployment:
   oss:
     enabled: true    
