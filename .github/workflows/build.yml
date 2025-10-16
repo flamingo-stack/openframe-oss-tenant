@@ -313,7 +313,19 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ inputs.version }}
         run: |
           git tag -f ${{ inputs.version }}
-          goreleaser release --clean --skip=validate --skip=publish 
+          goreleaser release --clean --skip=validate --skip=publish --release-notes=dist/CHANGELOG.md
+
+      - name: Verify GoReleaser artifacts
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        run: |
+          echo "=== GoReleaser Artifacts ==="
+          ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt 2>/dev/null || echo "Warning: Some artifacts may be missing"
+          echo ""
+          echo "=== Archive count ==="
+          find dist -name "*.tar.gz" -o -name "*.zip" | wc -l
+          echo ""
+          echo "=== All archives ==="
+          find dist -name "*.tar.gz" -o -name "*.zip"
 
       - name: Prepare release artifacts
         run: |
@@ -332,25 +344,33 @@ jobs:
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
           {
             echo "body<<EOF"
+
+            # Include GoReleaser changelog if it exists
+            if [ -f "dist/CHANGELOG.md" ]; then
+              cat dist/CHANGELOG.md
+              echo ""
+              echo "---"
+              echo ""
+            fi
+
             echo "## Images"
             echo "$IMAGES"
             echo ""
-            echo "## Clients"
+            echo "## CLI Binaries"
+            echo "Download the appropriate archive for your platform:"
+            echo ""
+            echo "- **Linux (x64)**: \`openframe-cli_${{ inputs.version }}_linux_amd64.tar.gz\`"
+            echo "- **Linux (ARM64)**: \`openframe-cli_${{ inputs.version }}_linux_arm64.tar.gz\`"
+            echo "- **macOS (x64)**: \`openframe-cli_${{ inputs.version }}_darwin_amd64.tar.gz\`"
+            echo "- **macOS (ARM64)**: \`openframe-cli_${{ inputs.version }}_darwin_arm64.tar.gz\`"
+            echo "- **Windows (x64)**: \`openframe-cli_${{ inputs.version }}_windows_amd64.zip\`"
+            echo "- **Windows (ARM64)**: \`openframe-cli_${{ inputs.version }}_windows_arm64.zip\`"
+            echo ""
+            echo "## Rust Clients"
             echo "- **macOS** (Universal): \`openframe-client\` and \`openframe-chat\`"
             echo "- **Windows** (x64): \`openframe-client.exe\` and \`openframe-chat.exe\`"
             echo ""
-            echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
-            echo "Latest version:"
-            echo "```bash"
-            echo "curl -L https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client_macOS_universal.tar.gz | tar xz"
-            echo "chmod +x openframe"
-            echo "sudo mv openframe /usr/local/bin/"
-            echo "```"
-          
-            echo "- **Windows** (x64): \`openframe.exe\`"
-            echo "Download `openframe-client-windows_${{ inputs.version }}.zip` and extract to your PATH."
-
-            echo "## Chart"
+            echo "## Helm Chart"
             echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
