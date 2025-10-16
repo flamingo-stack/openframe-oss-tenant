@@ -358,19 +358,19 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-#      - name: Create Release
-#        if: (github.event_name == 'workflow_dispatch' && inputs.version != '' || github.event_name == 'push')
-#        uses: softprops/action-gh-release@v2
-#        with:
-#          tag_name: ${{ inputs.version }}
-#          name: Release ${{ inputs.version }}
-#          draft: true
-#          prerelease: true
-#          make_latest: false
-#          files: |
-#            final-artifacts/clients/*
-#            dist/*.tar.gz
-#            dist/*.zip
-#            dist/checksums.txt
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          body: ${{ steps.release_body.outputs.body }}
+      - name: Create Release
+        if: (github.event_name == 'workflow_dispatch' && inputs.version != '' || github.event_name == 'push')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
+          draft: true
+          prerelease: true
+          make_latest: false
+          files: |
+            final-artifacts/clients/*
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: ${{ steps.release_body.outputs.body }}
