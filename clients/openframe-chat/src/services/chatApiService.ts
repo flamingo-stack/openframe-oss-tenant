@@ -1,5 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://openframe-saas-ai-agent.microservices.svc.cluster.local:8085'
-const API_TOKEN = import.meta.env.VITE_API_TOKEN || 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZ2VudF83ZWNhZjI2NC1lZTMxLTRiN2YtYWI4YS04NmI4ODlhZTg2YTkiLCJncmFudF90eXBlIjoiY2xpZW50X2NyZWRlbnRpYWxzIiwicm9sZXMiOlsiQUdFTlQiXSwiaXNzIjoiaHR0cHM6Ly9hdXRoLm9wZW5mcmFtZS5jb20iLCJtYWNoaW5lX2lkIjoiN2VjYWYyNjQtZWUzMS00YjdmLWFiOGEtODZiODg5YWU4NmE5IiwiZXhwIjoxNzU5OTU0NzAzLCJpYXQiOjE3NTk5NTExMDN9.e313Nf-KLZQ6Ol6C6UMZKRHsXBkj1T45Snuco4cmax3zKr_BsZ4EfNcGcbvgwUybubjabZxBw2kQLajlhmggn8iZ8GNS60eDY22UBCHNqeGGXYWXH1zMBYBhhkNEcIEbOOLwCiOQDX0IxyqwzFkW02NqX8x0ttaow896yqIWZdCTi-8O66VOE1nGtwVxW3KGSNdY0YCslXo5JvvCOueIvJytm1YFxlIrKlECFuk7jipy_D-Ip2KYnQwG3kvucaki7EWnFDwlBZW6DciozmIyv_L7mKYICOWfhLilkObeWTrrhzj0IpyYFFLoMZ_APKcUU1peP6oIGKFjKHI5-o8ERw' // Set via environment variable
+import { MessageSegment } from '../types/chat.types'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_TOKEN = import.meta.env.VITE_API_TOKEN
 
 interface DialogCreatedEventData {
   dialogId: string
@@ -8,6 +10,11 @@ interface DialogCreatedEventData {
 interface MessageEventData {
   type?: string
   text?: string
+  integratedToolType?: string
+  toolFunction?: string
+  parameters?: Record<string, any>
+  result?: string
+  success?: boolean
 }
 
 export class ChatApiService {
@@ -29,7 +36,7 @@ export class ChatApiService {
     }
   }
   
-  async *streamMessage(message: string): AsyncGenerator<string> {
+  async *streamMessage(message: string): AsyncGenerator<MessageSegment> {
     try {
       if (!this.dialogId) {
         yield* this.createDialogAndStream(message)
@@ -39,7 +46,7 @@ export class ChatApiService {
     } catch (error) {
       if (this.debugMode) {
         const errorDetails = this.formatError(error)
-        yield `[DEBUG] API Error:\n${errorDetails}`
+        yield { type: 'text', text: `[DEBUG] API Error:\n${errorDetails}` }
       }
       throw error
     }
@@ -121,10 +128,10 @@ export class ChatApiService {
     }
   }
 
-  private async *createDialogAndStream(initialMessage: string): AsyncGenerator<string> {
+  private async *createDialogAndStream(initialMessage: string): AsyncGenerator<MessageSegment> {
     if (this.debugMode) {
-      yield `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"`
-      yield `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/dialogs`
+      yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/dialogs` }
     }
     
     const response = await fetch(`${this.apiBaseUrl}/api/v1/dialogs`, {
@@ -141,15 +148,59 @@ export class ChatApiService {
     if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText)
       if (this.debugMode) {
-        yield `[DEBUG] Dialog creation failed:`
-        yield `  Status: ${response.status} ${response.statusText}`
-        yield `  Response: ${errorText}`
-        yield `  URL: ${this.apiBaseUrl}/api/v1/dialogs`
-        yield `  Token present: ${this.apiToken !== 'YOUR_API_TOKEN_HERE'}`
+        yield { type: 'text', text: `[DEBUG] Dialog creation failed:` }
+        yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
+        yield { type: 'text', text: `  Response: ${errorText}` }
+        yield { type: 'text', text: `  URL: ${this.apiBaseUrl}/api/v1/dialogs` }
+        yield { type: 'text', text: `  Token present: ${this.apiToken !== 'YOUR_API_TOKEN_HERE'}` }
       }
       throw new Error(`Failed to create dialog: ${response.status} ${response.statusText}\n${errorText}`)
     }
     
+    yield* this.consumeSSE(response)
+  }
+  
+  private async *processMessage(content: string): AsyncGenerator<MessageSegment> {
+    if (!this.dialogId) {
+      throw new Error('Dialog ID is not set')
+    }
+    
+    if (this.debugMode) {
+      yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}` }
+      yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/messages/process` }
+    }
+    
+    const response = await fetch(`${this.apiBaseUrl}/api/v1/messages/process`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({
+        dialogId: this.dialogId,
+        content
+      })
+    }).catch(err => {
+      if (this.debugMode) {
+        throw new Error(`Network error processing message: ${err.message}\nURL: ${this.apiBaseUrl}/api/v1/messages/process\nDialog ID: ${this.dialogId}`)
+      }
+      throw err
+    })
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText)
+      if (this.debugMode) {
+        yield { type: 'text', text: `[DEBUG] Message processing failed:` }
+        yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
+        yield { type: 'text', text: `  Response: ${errorText}` }
+        yield { type: 'text', text: `  Dialog ID: ${this.dialogId}` }
+        yield { type: 'text', text: `  URL: ${this.apiBaseUrl}/api/v1/messages/process` }
+      }
+      throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
+    }
+    
+    yield* this.consumeSSE(response)
+  }
+
+  private async *consumeSSE(response: Response): AsyncGenerator<MessageSegment> {
     for await (const { event, data } of this.parseSSE(response)) {
       if (data === '[DONE]') {
         return
@@ -170,77 +221,22 @@ export class ChatApiService {
       if (event === 'message') {
         try {
           const msg = JSON.parse(data) as MessageEventData
-          if ((msg as any)?.type === 'TEXT' && typeof msg.text === 'string') {
-            yield msg.text
+
+          if (msg.type === 'TEXT' && typeof msg.text === 'string') {
+            yield { type: 'text', text: msg.text }
             continue
-          }
-        } catch {
-          // not json; fall through to yielding raw data
-        }
-      }
-
-      try {
-        const maybe = JSON.parse(data)
-        if (typeof maybe?.text === 'string') {
-          yield maybe.text
-        } else if (typeof maybe?.data === 'string') {
-          yield maybe.data
-        } else {
-          yield data
-        }
-      } catch {
-        yield data
-      }
-    }
-  }
-  
-  private async *processMessage(content: string): AsyncGenerator<string> {
-    if (!this.dialogId) {
-      throw new Error('Dialog ID is not set')
-    }
-    
-    if (this.debugMode) {
-      yield `[DEBUG] Processing message with dialog ID: ${this.dialogId}`
-      yield `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`
-      yield `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/messages/process`
-    }
-    
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/messages/process`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({
-        dialogId: this.dialogId,
-        content
-      })
-    }).catch(err => {
-      if (this.debugMode) {
-        throw new Error(`Network error processing message: ${err.message}\nURL: ${this.apiBaseUrl}/api/v1/messages/process\nDialog ID: ${this.dialogId}`)
-      }
-      throw err
-    })
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => response.statusText)
-      if (this.debugMode) {
-        yield `[DEBUG] Message processing failed:`
-        yield `  Status: ${response.status} ${response.statusText}`
-        yield `  Response: ${errorText}`
-        yield `  Dialog ID: ${this.dialogId}`
-        yield `  URL: ${this.apiBaseUrl}/api/v1/messages/process`
-      }
-      throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
-    }
-    
-    for await (const { event, data } of this.parseSSE(response)) {
-      if (data === '[DONE]') {
-        return
-      }
-
-      if (event === 'message') {
-        try {
-          const msg = JSON.parse(data) as MessageEventData
-          if ((msg as any)?.type === 'TEXT' && typeof msg.text === 'string') {
-            yield msg.text
+          } else if (msg.type === 'EXECUTING_TOOL' || msg.type === 'EXECUTED_TOOL') {
+            yield {
+              type: 'tool_execution',
+              data: {
+                type: msg.type,
+                integratedToolType: msg.integratedToolType || '',
+                toolFunction: msg.toolFunction || '',
+                parameters: msg.parameters,
+                result: msg.result,
+                success: msg.success
+              }
+            }
             continue
           }
         } catch {
@@ -250,15 +246,26 @@ export class ChatApiService {
 
       try {
         const maybe = JSON.parse(data)
-        if (typeof maybe?.text === 'string') {
-          yield maybe.text
-        } else if (typeof maybe?.data === 'string') {
-          yield maybe.data
+
+        if (maybe.type === 'EXECUTING_TOOL' || maybe.type === 'EXECUTED_TOOL') {
+          yield {
+            type: 'tool_execution',
+            data: {
+              type: maybe.type,
+              integratedToolType: maybe.integratedToolType || '',
+              toolFunction: maybe.toolFunction || '',
+              parameters: maybe.parameters,
+              result: maybe.result,
+              success: maybe.success
+            }
+          }
+        } else if (typeof maybe?.text === 'string') {
+          yield { type: 'text', text: maybe.text }
         } else {
-          yield data
+          yield { type: 'text', text: data }
         }
       } catch {
-        yield data
+        yield { type: 'text', text: data }
       }
     }
   }
