@@ -326,8 +326,8 @@ jobs:
           
           echo "Contents of final-artifacts/clients/:"
           ls -la final-artifacts/clients/
-          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/openframe-client
-          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-client.exe
+          tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/openframe-client-macos/openframe-client
+          zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-client-windows/openframe-client.exe
 
       - name: Generate release body
         id: release_body
