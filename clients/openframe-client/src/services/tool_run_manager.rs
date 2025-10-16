@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use crate::models::installed_tool::{InstalledTool, ToolStatus};
+use crate::models::installed_tool::InstalledTool;
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_kill_service::ToolKillService;
@@ -36,23 +36,148 @@ fn to_wide(s: &str) -> Vec<u16> {
 }
 
 #[cfg(windows)]
-fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
+fn get_active_user_session() -> Option<u32> {
     unsafe {
-        let session_id = WTSGetActiveConsoleSessionId();
-        info!("Active console session ID: {}", session_id);
+        info!("=== Starting active user session detection ===");
         
-        if session_id == u32::MAX {
-            anyhow::bail!("No active user session found");
+        // 1. Try to get SessionId of current process
+        let current_pid = GetCurrentProcessId();
+        info!("Current process PID: {}", current_pid);
+        
+        let mut session_id = 0;
+        if ProcessIdToSessionId(current_pid, &mut session_id).is_ok() {
+            info!("Current process session ID: {}", session_id);
+            if session_id != 0 {
+                info!("✓ Not running as service - using current process session ID: {}", session_id);
+                return Some(session_id);
+            }
+            info!("Session ID is 0 - running as service, need to find active user session");
+        } else {
+            warn!("Failed to get current process session ID");
         }
 
+        // 2. If session_id == 0 (service), enumerate all sessions to find active user
+        info!("Enumerating all Windows Terminal Services sessions...");
+        let mut pp_session_info: *mut WTS_SESSION_INFOW = std::ptr::null_mut();
+        let mut count: u32 = 0;
+
+        if WTSEnumerateSessionsW(
+            WTS_CURRENT_SERVER_HANDLE,
+            0,
+            1,
+            &mut pp_session_info,
+            &mut count,
+        ).is_ok()
+        {
+            info!("Found {} total sessions", count);
+            let sessions = std::slice::from_raw_parts(pp_session_info, count as usize);
+
+            // First, log ALL sessions for visibility
+            let mut active_sessions = Vec::new();
+            
+            for (idx, session) in sessions.iter().enumerate() {
+                let session_name = if session.pWinStationName.is_null() {
+                    String::from("(null)")
+                } else {
+                    String::from_utf16_lossy(
+                        std::slice::from_raw_parts(
+                            session.pWinStationName.0,
+                            wcslen(session.pWinStationName.0)
+                        )
+                    )
+                };
+                
+                info!("  Session {}: ID={}, Name='{}', State={:?}", 
+                      idx, session.SessionId, session_name, session.State);
+
+                // Collect all active sessions (State == 0 = WTSActive)
+                if session.State == WTSActive {
+                    active_sessions.push((session.SessionId, session_name.clone()));
+                    info!("    → Active session detected");
+                }
+            }
+
+            // Choose the best active session
+            if !active_sessions.is_empty() {
+                info!("Found {} active session(s)", active_sessions.len());
+                
+                // Strategy: Prefer RDP sessions over Console, or use the highest session ID (most recent)
+                let best_session = active_sessions.iter()
+                    .filter(|(id, name)| {
+                        // Filter out session 0 (Services) and listen sessions
+                        *id > 0 && !name.to_lowercase().contains("listen")
+                    })
+                    .max_by_key(|(id, name)| {
+                        // Prefer RDP sessions (rdp-tcp) over Console, then by highest ID
+                        let is_rdp = name.to_lowercase().contains("rdp-tcp");
+                        let is_console = name.to_lowercase().contains("console");
+                        
+                        // Priority: RDP > Console, then by session ID
+                        if is_rdp && !name.to_lowercase().contains("listen") {
+                            (2, *id) // Highest priority for active RDP sessions
+                        } else if is_console {
+                            (1, *id) // Medium priority for console
+                        } else {
+                            (0, *id) // Lowest priority for others
+                        }
+                    });
+
+                if let Some((id, name)) = best_session {
+                    info!("✓ Selected active user session: ID={}, Name='{}'", id, name);
+                    WTSFreeMemory(pp_session_info as _);
+                    return Some(*id);
+                } else {
+                    warn!("Active sessions found but none suitable (filtered out session 0 and listen sessions)");
+                }
+            } else {
+                warn!("No active (WTSActive) session found among {} sessions", count);
+            }
+
+            WTSFreeMemory(pp_session_info as _);
+        } else {
+            error!("Failed to enumerate Windows Terminal Services sessions");
+        }
+
+        error!("=== Failed to find any active user session ===");
+        None
+    }
+}
+
+#[cfg(windows)]
+fn wcslen(ptr: *const u16) -> usize {
+    let mut len = 0;
+    unsafe {
+        while *ptr.add(len) != 0 {
+            len += 1;
+        }
+    }
+    len
+}
+
+#[cfg(windows)]
+fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
+    unsafe {
+        let session_id = match get_active_user_session() {
+            Some(id) => {
+                info!("✓ Successfully obtained active user session ID: {}", id);
+                id
+            }
+            None => {
+                anyhow::bail!("No active user session found");
+            }
+        };
+
+        info!("Step 1: Querying user token for session {}", session_id);
         let mut user_token = HANDLE(0);
         if let Err(e) = WTSQueryUserToken(session_id, &mut user_token) {
+            error!("Failed to get user token for session {}: {:?}", session_id, e);
             anyhow::bail!("Failed to get user token for session {}: {:?}", session_id, e);
         }
         
-        info!("Successfully obtained user token for session {}", session_id);
+        info!("✓ Successfully obtained user token for session {} (handle: {:?})", session_id, user_token);
 
         // Duplicate token to get primary token (required for CreateProcessAsUserW)
+        info!("Step 2: Duplicating token to get primary token (required for CreateProcessAsUserW)");
         let mut primary_token = HANDLE(0);
         if let Err(e) = DuplicateTokenEx(
             user_token,
@@ -62,14 +187,16 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
             TokenPrimary,
             &mut primary_token,
         ) {
+            error!("Failed to duplicate token: {:?}", e);
             let _ = CloseHandle(user_token);
             anyhow::bail!("Failed to duplicate token for session {}: {:?}", session_id, e);
         }
         
         let _ = CloseHandle(user_token);
-        info!("Successfully duplicated token to primary token");
+        info!("✓ Successfully duplicated token to primary token (handle: {:?})", primary_token);
 
         // Build command line with full path in quotes + arguments
+        info!("Step 3: Building command line");
         let mut cmdline = format!("\"{}\"", command_path);
         for arg in args {
             cmdline.push(' ');
@@ -82,7 +209,9 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
                 cmdline.push_str(arg);
             }
         }
+        info!("Command line: {}", cmdline);
 
+        info!("Step 4: Setting up STARTUPINFOW structure");
         let mut si = STARTUPINFOW::default();
         si.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
         
@@ -91,13 +220,18 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         si.lpDesktop = PWSTR(desktop.as_ptr() as *mut u16);
         si.dwFlags = windows::Win32::System::Threading::STARTF_USESHOWWINDOW;
         si.wShowWindow = SW_SHOW.0 as u16;
+        info!("  Desktop: winsta0\\default");
+        info!("  Show window: SW_SHOW");
+        info!("  STARTUPINFOW size: {} bytes", si.cb);
         
         let mut pi = PROCESS_INFORMATION::default();
 
         let mut cmdline_wide = to_wide(&cmdline);
         
-        info!("Launching process with command line: {}", cmdline);
-        info!("Desktop: winsta0\\default, Show window: SW_SHOW");
+        info!("Step 5: Calling CreateProcessAsUserW");
+        info!("  lpApplicationName: NULL (using command line parsing)");
+        info!("  lpCommandLine: {}", cmdline);
+        info!("  Creation flags: CREATE_NEW_PROCESS_GROUP");
         
         // For GUI applications, use CREATE_NEW_PROCESS_GROUP for proper process isolation
         use windows::Win32::System::Threading::CREATE_NEW_PROCESS_GROUP;
@@ -119,9 +253,12 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
 
         if let Err(e) = result {
             // Fallback: try without desktop specification
-            warn!("Failed to launch with desktop specification, trying without: {:?}", e);
+            error!("✗ CreateProcessAsUserW failed with desktop specification: {:?}", e);
+            warn!("Attempting fallback: retrying without desktop specification");
             
+            info!("Step 6: Fallback attempt - removing desktop specification");
             si.lpDesktop = PWSTR::null();
+            info!("  Desktop: NULL (removed)");
             let mut cmdline_wide_retry = to_wide(&cmdline);
             
             let result_retry = CreateProcessAsUserW(
@@ -141,20 +278,31 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
             let _ = CloseHandle(primary_token);
             
             if let Err(e2) = result_retry {
-                error!("CreateProcessAsUserW failed even without desktop: {:?}", e2);
+                error!("✗ CreateProcessAsUserW failed again without desktop specification: {:?}", e2);
+                error!("Both attempts to launch process failed");
                 anyhow::bail!("Failed to launch process in user session: {:?}", e2);
             }
+            
+            info!("✓ Fallback successful - process launched without desktop specification");
         } else {
+            info!("✓ CreateProcessAsUserW succeeded on first attempt");
             let _ = CloseHandle(primary_token);
         }
 
         let pid = pi.dwProcessId;
         let process_handle = pi.hProcess;
         
+        info!("Step 7: Process created successfully");
+        info!("  Process ID (PID): {}", pid);
+        info!("  Process handle: {:?}", process_handle);
+        info!("  Thread ID: {}", pi.dwThreadId);
+        info!("  Thread handle: {:?}", pi.hThread);
+        
         // Close thread handle as we don't need it
         let _ = CloseHandle(pi.hThread);
+        info!("  Closed thread handle (not needed for monitoring)");
 
-        info!("✓ Process launched successfully in user session {}, PID: {}", session_id, pid);
+        info!("=== Process launched successfully in user session {} with PID {} ===", session_id, pid);
         Ok((pid, process_handle))
     }
 }
@@ -247,25 +395,26 @@ impl ToolRunManager {
 
                 // Build executable path based on file type
                 use crate::models::MainFileType;
+                
+                #[cfg(target_os = "macos")]
                 let mut command_path = match tool.file_type {
                     MainFileType::Application => {
                         // For APPLICATION type, use applications directory
-                        #[cfg(target_os = "macos")]
-                        {
-                            params_processor.directory_manager
-                                .applications_dir()
-                                .join(format!("{}.app", tool.tool_agent_id))
-                        }
-                        
-                        #[cfg(not(target_os = "macos"))]
-                        {
-                            // Fallback to regular path for non-macOS
-                            params_processor.directory_manager
-                                .get_agent_path(&tool.tool_agent_id)
-                        }
+                        params_processor.directory_manager
+                            .applications_dir()
+                            .join(format!("{}.app", tool.tool_agent_id))
                     },
                     MainFileType::Executable => {
                         // For EXECUTABLE type, use app support directory
+                        params_processor.directory_manager
+                            .get_agent_path(&tool.tool_agent_id)
+                    }
+                }.to_string_lossy().to_string();
+
+                #[cfg(not(target_os = "macos"))]
+                let command_path = match tool.file_type {
+                    MainFileType::Application | MainFileType::Executable => {
+                        // For non-macOS, both types use app support directory
                         params_processor.directory_manager
                             .get_agent_path(&tool.tool_agent_id)
                     }
