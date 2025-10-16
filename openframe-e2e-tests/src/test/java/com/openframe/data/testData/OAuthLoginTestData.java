@@ -5,7 +5,6 @@ import com.openframe.support.enums.ApiEndpoints;
 import com.openframe.support.helpers.ApiCalls;
 import com.openframe.support.utils.CookieManager;
 import com.openframe.support.utils.StringUtils;
-import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import lombok.Builder;
 import lombok.Data;
@@ -58,7 +57,30 @@ public class OAuthLoginTestData {
                 .build();
     }
 
-    @Step("Start OAuth login flow")
+    /**
+     * Perform complete OAuth login flow and get tokens
+     * High-level method for quick authentication in tests
+     * 
+     * @param email user email
+     * @param password user password
+     * @param tenantId tenant ID
+     * @return OAuthTokenResponse with access_token, refresh_token, and cookies
+     */
+    public static OAuthTokenResponse performCompleteLogin(String email, String password, String tenantId) {
+        log.info("Starting complete login flow for: {}", email);
+        
+        OAuthLoginTestData loginData = create(email, password, tenantId);
+        
+        startOAuthFlow(loginData);
+        initiateAuthorization(loginData);
+        submitCredentials(loginData);
+        getAuthorizationCode(loginData);
+        OAuthTokenResponse tokens = exchangeCodeForTokens(loginData);
+        
+        log.info("Login completed successfully for: {}", email);
+        return tokens;
+    }
+
     public static Response startOAuthFlow(OAuthLoginTestData data) {
         log.info("Step 1: Starting OAuth flow for tenant: {}", data.getTenantId());
 
@@ -89,7 +111,6 @@ public class OAuthLoginTestData {
      * Step 2: OAuth2 authorize - get JSESSIONID
      * Updates: cookies (adds JSESSIONID)
      */
-    @Step("Initiate OAuth2 authorization")
     public static Response initiateAuthorization(OAuthLoginTestData data) {
         log.info("Step 2: Initiating OAuth2 authorization");
 
@@ -120,7 +141,6 @@ public class OAuthLoginTestData {
      * Step 3: Submit login credentials
      * Updates: cookies, validates redirect
      */
-    @Step("Submit login credentials")
     public static Response submitCredentials(OAuthLoginTestData data) {
         log.info("Step 3: Submitting credentials for: {}", data.getEmail());
 
@@ -147,7 +167,6 @@ public class OAuthLoginTestData {
      * Step 4: Follow redirect and get authorization code
      * Updates: authorizationCode, cookies
      */
-    @Step("Get authorization code")
     public static Response getAuthorizationCode(OAuthLoginTestData data) {
         log.info("Step 4: Getting authorization code");
 
@@ -174,7 +193,6 @@ public class OAuthLoginTestData {
     /**
      * Step 5: Exchange code for tokens
      */
-    @Step("Exchange code for tokens")
     public static OAuthTokenResponse exchangeCodeForTokens(OAuthLoginTestData data) {
         log.info("Step 5: Exchanging code for tokens");
 

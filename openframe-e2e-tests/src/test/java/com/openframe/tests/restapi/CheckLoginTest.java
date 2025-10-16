@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.*;
  */
 @Slf4j
 @Tag("smoke")
-@DisplayName("Minimal Login Flow - Refactored")
+@DisplayName("Check login Flow ")
 public class CheckLoginTest extends ApiBaseTest {
 
     // Test user credentials (filled in setup)

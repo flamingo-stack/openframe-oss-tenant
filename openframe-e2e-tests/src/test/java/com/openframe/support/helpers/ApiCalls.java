@@ -1,8 +1,6 @@
 package com.openframe.support.helpers;
 
 import com.openframe.support.enums.ApiEndpoints;
-import io.qameta.allure.Step;
-import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,11 +10,12 @@ import static com.openframe.support.constants.TestConstants.CONTENT_TYPE_JSON;
 import static io.restassured.RestAssured.given;
 
 /**
- * Simple API calls wrapper with logging and Allure reporting
+ * Simple API calls wrapper with logging
+ * AllureRestAssured filter is configured globally in RestAssuredConfig
  */
 @Slf4j
 public class ApiCalls {
-    @Step("GET {endpoint}")
+    
     public static Response get(ApiEndpoints endpoint, Object... pathParams) {
         String path = pathParams.length > 0 ? 
             endpoint.getPathWithParams(pathParams) : 
@@ -25,7 +24,6 @@ public class ApiCalls {
         logRequest("GET", path, null);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .when()
                 .get(path);
                 
@@ -34,14 +32,13 @@ public class ApiCalls {
         return response;
     }
     
-    @Step("GET {endpoint}")
+    
     public static Response get(ApiEndpoints endpoint, Map<String, Object> queryParams) {
         String path = endpoint.getPath();
             
         logRequest("GET", path, queryParams);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .queryParams(queryParams)
             .when()
                 .get(path);
@@ -51,14 +48,12 @@ public class ApiCalls {
         return response;
     }
     
-    @Step("GET {endpoint} with cookies")
     public static Response getWithCookies(ApiEndpoints endpoint, String cookies) {
         String path = endpoint.getPath();
             
         logRequest("GET", path, null);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .header("Cookie", cookies)
             .when()
                 .get(path);
@@ -68,7 +63,6 @@ public class ApiCalls {
         return response;
     }
     
-    @Step("GET {endpoint} with cookies and query params (no redirects)")
     public static Response getWithCookiesAndQueryParams(ApiEndpoints endpoint, String cookies, 
                                                         Map<String, Object> queryParams,
                                                         Object... pathParams) {
@@ -79,7 +73,6 @@ public class ApiCalls {
         logRequest("GET", path, queryParams);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .header("Cookie", cookies)
             .queryParams(queryParams)
             .redirects().follow(false)
@@ -91,7 +84,6 @@ public class ApiCalls {
         return response;
     }
     
-    @Step("GET {endpoint} with query params (no redirects)")
     public static Response getWithQueryParams(ApiEndpoints endpoint, 
                                               Map<String, Object> queryParams) {
         String path = endpoint.getPath();
@@ -99,7 +91,6 @@ public class ApiCalls {
         logRequest("GET", path, queryParams);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .queryParams(queryParams)
             .redirects().follow(false)
             .when()
@@ -110,12 +101,10 @@ public class ApiCalls {
         return response;
     }
     
-    @Step("GET {endpoint} with cookies (no redirects, no URL encoding)")
     public static Response getWithCookiesNoEncoding(String url, String cookies) {
         logRequest("GET", url, null);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .header("Cookie", cookies)
             .redirects().follow(false)
             .urlEncodingEnabled(false)
@@ -127,7 +116,6 @@ public class ApiCalls {
         return response;
     }
     
-    @Step("POST {endpoint} form data with cookies (no redirects)")
     public static Response postFormWithCookies(ApiEndpoints endpoint, String cookies, 
                                                Map<String, Object> formParams) {
         String path = endpoint.getPath();
@@ -135,7 +123,6 @@ public class ApiCalls {
         logRequest("POST", path, formParams);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .header("Cookie", cookies)
             .formParams(formParams)
             .redirects().follow(false)
@@ -147,14 +134,12 @@ public class ApiCalls {
         return response;
     }
     
-    @Step("POST {endpoint}")
     public static Response post(ApiEndpoints endpoint, Object requestBody) {
         String path = endpoint.getPath();
         
         logRequest("POST", path, requestBody);
         
         Response response = given()
-            .filter(new AllureRestAssured())
             .contentType(CONTENT_TYPE_JSON)
             .body(requestBody)
             .when()
