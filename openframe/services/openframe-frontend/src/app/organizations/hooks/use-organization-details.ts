@@ -22,6 +22,7 @@ export interface OrganizationDetails {
   contractStart: string | null
   contractEnd: string | null
   notes: string[]
+  isDefault: boolean
 }
 
 function formatAddress(addr?: any): string {
@@ -77,6 +78,7 @@ export function useOrganizationDetails() {
         contractStart: org.contractStartDate || null,
         contractEnd: org.contractEndDate || null,
         notes: (org.notes ? [org.notes] : []),
+        isDefault: org.isDefault || false,
       }
 
       setOrganization(mapped)

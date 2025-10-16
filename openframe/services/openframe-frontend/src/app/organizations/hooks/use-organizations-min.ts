@@ -8,6 +8,7 @@ export interface OrganizationMin {
   id: string
   organizationId: string
   name: string
+  isDefault: boolean
 }
 
 export function useOrganizationsMin() {
@@ -30,7 +31,7 @@ export function useOrganizationsMin() {
 
       const payload = (response.data as any)?.data?.organizations
       const list = Array.isArray(payload?.organizations) ? payload.organizations : []
-      const mapped: OrganizationMin[] = list.map((o: any) => ({ id: o.id, organizationId: o.organizationId, name: o.name }))
+      const mapped: OrganizationMin[] = list.map((o: any) => ({ id: o.id, organizationId: o.organizationId, name: o.name, isDefault: o.isDefault }))
       setItems(mapped)
       return mapped
     } catch (e) {

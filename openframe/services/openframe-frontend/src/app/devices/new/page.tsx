@@ -17,8 +17,8 @@ import { useOrganizationsMin } from '../../organizations/hooks/use-organizations
 
 type Platform = OSPlatformId
 
-const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe'
-const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe.exe'
+const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client'
+const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client.exe'
 
 export default function NewDevicePage() {
   const router = useRouter()
@@ -37,7 +37,7 @@ export default function NewDevicePage() {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'localhost --localMode'
     }
-    return `{hostname}`
+    return hostname
   }, [])
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function NewDevicePage() {
   useEffect(() => {
     if (orgs.length > 0 && !selectedOrgId) {
       // Try to find "Default" organization first
-      const defaultOrg = orgs.find(o => o.name.toLowerCase() === 'default')
+      const defaultOrg = orgs.find(o => o.isDefault)
       const orgToSelect = defaultOrg || orgs[0]
 
       if (orgToSelect) {

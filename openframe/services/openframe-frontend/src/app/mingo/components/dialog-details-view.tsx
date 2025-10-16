@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Clock,
   CheckCircle,
@@ -11,12 +11,16 @@ import {
 import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo/ui-kit'
 import { Button } from '@flamingo/ui-kit'
 import { DetailLoader } from '@flamingo/ui-kit/components/ui'
+import { DeviceInfoSection } from '../../components/shared'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
-import type { Message, TextData } from '../types/dialog.types'
+import type { Message, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
+  const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
+    return owner != null && typeof owner === 'object' && 'machineId' in owner
+  }
   const {
     currentDialog: dialog,
     currentMessages: messages,
@@ -42,6 +46,15 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       clearCurrent()
     }
   }, [dialogId])
+
+  useEffect(() => {
+    if (!dialogId) return
+    const interval = setInterval(() => {
+      fetchDialog(dialogId)
+      fetchMessages(dialogId, false, true)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [dialogId, fetchDialog, fetchMessages])
 
   const handleSendMessage = (text: string) => {
     if (!isPaused) return
@@ -69,37 +82,128 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   }
 
   const chatMessages = useMemo(() => {
-    const reversedMessages = [...messages].reverse()
-    
-    return reversedMessages.filter((msg: Message) => {
-      const messageDataArray = msg.messageData as any
-      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
-        return messageDataArray[0].type === 'TEXT'
-      }
-      return (msg.messageData as any)?.type === 'TEXT'
-    }).map((msg: Message) => {
-      let content = ''
-      
-      const messageDataArray = msg.messageData as any
-      if (Array.isArray(messageDataArray) && messageDataArray.length > 0) {
-        const firstData = messageDataArray[0]
-        if (firstData.type === 'TEXT') {
-          content = firstData.text || ''
+    const processedMessages: Array<{
+      id: string
+      content: Array<{
+        type: 'text'
+        text: string
+      } | {
+        type: 'tool_execution'
+        data: {
+          type: 'EXECUTING_TOOL' | 'EXECUTED_TOOL'
+          integratedToolType: string
+          toolFunction: string
+          parameters?: Record<string, any>
+          result?: string
+          success?: boolean
         }
-      } else if ((msg.messageData as any)?.type === 'TEXT') {
-        content = (msg.messageData as TextData).text || ''
-      }
+      }>
+      role: 'user' | 'assistant'
+      timestamp: Date
+    }> = []
 
-      return {
-        id: msg.id,
-        content,
-        role: msg.owner?.type === 'CLIENT' ? 'user' as const : 
-              msg.owner?.type === 'ASSISTANT' ? 'assistant' as const : 
-              'assistant' as const,
-        timestamp: new Date(msg.createdAt)
+    const executingTools = new Map<string, {
+      integratedToolType: string
+      toolFunction: string
+      parameters?: Record<string, any>
+    }>()
+
+    let currentAssistantMessage: {
+      id: string
+      segments: any[]
+      timestamp: Date
+    } | null = null
+
+    messages.forEach((msg: Message, index: number) => {
+      const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData]
+      const role = msg.owner?.type === 'CLIENT' ? 'user' as const : 'assistant' as const
+      
+      messageDataArray.forEach((data: any) => {
+        if (role === 'user' && data.type === 'TEXT') {
+          processedMessages.push({
+            id: msg.id,
+            content: [{
+              type: 'text',
+              text: data.text || ''
+            }],
+            role: 'user',
+            timestamp: new Date(msg.createdAt)
+          })
+        } else if (role === 'assistant') {
+          if (data.type === 'EXECUTING_TOOL') {
+            const toolKey = `${data.integratedToolType}-${data.toolFunction}`
+            executingTools.set(toolKey, {
+              integratedToolType: data.integratedToolType,
+              toolFunction: data.toolFunction,
+              parameters: data.parameters
+            })
+          } else if (data.type === 'EXECUTED_TOOL') {
+            const toolKey = `${data.integratedToolType}-${data.toolFunction}`
+            const executingTool = executingTools.get(toolKey)
+            
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id,
+                segments: [],
+                timestamp: new Date(msg.createdAt)
+              }
+            }
+            
+            currentAssistantMessage.segments.push({
+              type: 'tool_execution',
+              data: {
+                type: 'EXECUTED_TOOL',
+                integratedToolType: data.integratedToolType,
+                toolFunction: data.toolFunction,
+                parameters: executingTool?.parameters || data.parameters,
+                result: data.result,
+                success: data.success
+              }
+            })
+            
+            executingTools.delete(toolKey)
+          } else if (data.type === 'TEXT') {
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id,
+                segments: [],
+                timestamp: new Date(msg.createdAt)
+              }
+            }
+            
+            currentAssistantMessage.segments.push({
+              type: 'text',
+              text: data.text || ''
+            })
+          }
+        }
+      })
+
+      const nextMsg = messages[index + 1]
+      const isLastMessage = index === messages.length - 1
+      const nextIsFromDifferentOwner = nextMsg && nextMsg.owner?.type !== msg.owner?.type
+      
+      if (currentAssistantMessage && (isLastMessage || nextIsFromDifferentOwner || role === 'user')) {
+        if (currentAssistantMessage.segments.length > 0) {
+          processedMessages.push({
+            id: currentAssistantMessage.id,
+            content: currentAssistantMessage.segments,
+            role: 'assistant',
+            timestamp: currentAssistantMessage.timestamp
+          })
+        }
+        currentAssistantMessage = null
       }
     })
+
+    return processedMessages
   }, [messages])
+
+  const prevLenRef = useRef<number>(messages.length)
+  const shouldAutoScroll = messages.length > prevLenRef.current
+  useEffect(() => {
+    prevLenRef.current = messages.length
+  }, [messages.length])
 
   const headerActions = dialog && (
     <div className="flex gap-4 items-center">
@@ -148,69 +252,18 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >
-      {/* Info Bar */}
-      <div className="mt-6 bg-ods-card border border-ods-border rounded-md p-4 flex items-center gap-4">
-        {/* Organization */}
-        <div className="flex items-center gap-4 flex-1">
-          <div className="w-8 h-8 bg-ods-bg-surface rounded flex items-center justify-center">
-            <span className="text-ods-text-secondary text-sm">P</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-              {/* Organization name not in schema; placeholder */}
-              {'Organization'}
-            </span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-              {'Type'}
-            </span>
-          </div>
-        </div>
-
-        {/* Device */}
-        <div className="flex items-center gap-4 flex-1">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1">
-              <span className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
-                {/* Device name not in schema; show owner machineId if present */}
-                {'device'}
-              </span>
-              <Monitor className="h-4 w-4 text-ods-text-secondary" />
-            </div>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-              Device
-            </span>
-          </div>
-        </div>
-
-        {/* SLA Countdown */}
-        <div className="flex flex-col flex-1">
-          <span className="font-['DM_Sans'] font-medium text-[18px] text-error">
-            {/* SLA countdown not in schema; placeholder */}
-            {'--:--:--'}
-          </span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary">
-            SLA Countdown
-          </span>
-        </div>
-
-        {/* Status */}
-        <div className="flex items-center">
-          {dialog.status === 'RESOLVED' ? (
-            <StatusTag
-              label="RESOLVED"
-            />
-          ) : (
-            <StatusTag
-              label={dialog.status.replace('_', ' ')}
-              variant={
-                dialog.status === 'ACTIVE' ? 'success' :
-                dialog.status === 'ACTION_REQUIRED' ? 'warning' :
-                dialog.status === 'ON_HOLD' ? 'error' : 'info'
-              }
-            />
-          )}
-        </div>
-      </div>
+      {/* Device Info Section */}
+      {isClientOwner(dialog.owner) && dialog.owner.machineId && (
+        <DeviceInfoSection
+          deviceId={dialog.owner.machineId}
+          device={dialog.owner.machine ? {
+            id: dialog.owner.machine.id,
+            machineId: dialog.owner.machine.machineId,
+            hostname: dialog.owner.machine.hostname,
+            displayName: dialog.owner.machine.hostname,
+          } : undefined}
+        />
+      )}
 
       {/* Chat Section */}
       <div className="flex-1 flex gap-6 pt-6 min-h-0">
@@ -224,9 +277,8 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
             <ChatMessageList
               className=""
               messages={chatMessages}
-              autoScroll
+              autoScroll={shouldAutoScroll}
               showAvatars={false}
-              isTyping={messagesLoading}
             />
             {hasMore && !messagesLoading && (
               <div className="p-2 text-center border-t border-ods-border">

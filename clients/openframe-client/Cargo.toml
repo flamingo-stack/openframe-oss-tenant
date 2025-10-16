@@ -1,5 +1,5 @@
 [package]
-name = "openframe"
+name = "openframe-client"
 version = "0.1.0"
 edition = "2021"
 authors = ["Flamingo Team"]
@@ -12,7 +12,7 @@ keywords = ["system-management", "monitoring", "agent", "automation"]
 categories = ["system", "monitoring"]
 
 [[bin]]
-name = "openframe"
+name = "openframe-client"
 path = "src/main.rs"
 
 [lib]
@@ -72,7 +72,7 @@ embed-resource = "2.4"
 
 [package.metadata.bundle]
 name = "OpenFrame"
-identifier = "com.openframe"
+identifier = "com.openframe.client"
 icon = ["icons/32x32.png", "icons/128x128.png", "icons/256x256.png"]
 version = "0.1.0"
 copyright = "Copyright (c) 2024 Flamingo Team"
@@ -89,7 +89,7 @@ OpenFrame is a powerful system management and monitoring solution that provides:
 [package.metadata.velopack]
 version = "0.1.0"
 product-name = "OpenFrame"
-executable = "openframe"
+executable = "openframe-client"
 authors = ["Flamingo Team"]
 first-run = true
 license = "MIT"

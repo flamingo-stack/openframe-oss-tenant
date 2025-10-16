@@ -10,6 +10,12 @@ export const GET_DIALOGS_QUERY = `
      owner {
       ... on ClientDialogOwner {
        machineId
+       machine {
+        id
+        machineId
+        hostname
+        organizationId
+       }
       }
      }
      createdAt
@@ -42,6 +48,11 @@ export const GET_DIALOG_QUERY = `
     owner {
       ... on ClientDialogOwner {
       machineId
+      machine {
+        id
+        machineId
+        hostname
+       }
       }
     }
     createdAt
@@ -53,6 +64,20 @@ export const GET_DIALOG_QUERY = `
       dialogId
       createdAt
     }
+    }
+  }
+`
+
+export const GET_DIALOG_STATISTICS_QUERY = `
+  query GetDialogStatistics {
+    dialogStatistics {
+      totalCount
+      statusCounts {
+        status
+        count
+      }
+      averageResolutionTimeFormatted
+      averageRating
     }
   }
 `
@@ -90,6 +115,25 @@ export const GET_DIALOG_MESSAGES_QUERY = `
             type
             ... on TextData {
               text
+            }
+
+            ... on ExecutingToolData {
+              type
+              integratedToolType
+              toolFunction
+              parameters
+              requiresApproval
+              approvalStatus
+            }
+
+            ... on ExecutedToolData {
+              type
+              integratedToolType
+              toolFunction
+              result
+              success
+              requiredApproval
+              approvalStatus
             }
 
             ... on ErrorData {

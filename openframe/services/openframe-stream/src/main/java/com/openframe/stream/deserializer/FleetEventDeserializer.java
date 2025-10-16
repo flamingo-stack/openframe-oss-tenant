@@ -70,7 +70,7 @@ public class FleetEventDeserializer extends IntegratedToolEventDeserializer {
 
     @Override
     protected String getDetails(JsonNode after) {
-        return parseStringField(after, FIELD_DETAILS).orElse("{}");
+        return parseStringField(after, FIELD_DETAILS).orElse(null);
     }
 
     @Override

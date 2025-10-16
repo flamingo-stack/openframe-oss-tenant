@@ -22,6 +22,7 @@ export const GET_DEVICE_FILTERS_QUERY = `
       }
       organizationIds {
         value
+        label
         count
         __typename
       }

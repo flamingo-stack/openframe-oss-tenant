@@ -2,6 +2,17 @@
  * GraphQL queries for logs
  */
 
+export const GET_LOG_FILTERS_QUERY = `
+  query GetLogFilters($filter: LogFilterInput) {
+    logFilters(filter: $filter) {
+      toolTypes
+      eventTypes
+      severities
+      __typename
+    }
+  }
+`
+
 export const GET_LOGS_QUERY = `
   query GetLogs($filter: LogFilterInput, $pagination: CursorPaginationInput, $search: String) {
     logs(filter: $filter, pagination: $pagination, search: $search) {
