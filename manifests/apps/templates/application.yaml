@@ -17,7 +17,7 @@ spec:
   sources:
     - repoURL: {{ $.Values.deployment.oss.repository.URL }}
       targetRevision: {{ $.Values.deployment.oss.repository.branch }}
-      path: "{{ if regexMatch `^namespace-` $name }}{{ printf "%s/%s/namespace" $.Values.deployment.oss.repository.baseDir $app.namespace }}{{ else }}{{ printf "%s/%s/%s" $.Values.deployment.oss.repository.baseDir $app.namespace $name }}{{ end }}"
+      path: "{{ $.Values.deployment.oss.repository.baseDir }}/{{ $app.namespace }}/{{ $name }}"
       helm:
         values: |
           deployment:

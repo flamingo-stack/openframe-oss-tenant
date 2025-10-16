@@ -1,7 +1,4 @@
-registerJob:
-  enabled: true
-servicemonitor:
-  enabled: true
+environment: dev 
 
 registry:
   docker:
@@ -10,6 +7,11 @@ registry:
     password: ""
     email: ""
     
+registerJob:
+  enabled: true
+servicemonitor:
+  enabled: true
+
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-stream
   tag: latest

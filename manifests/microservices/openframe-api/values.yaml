@@ -1,3 +1,5 @@
+environment: dev 
+
 registerJob:
   enabled: true
 servicemonitor:

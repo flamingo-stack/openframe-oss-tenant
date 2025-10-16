@@ -1,3 +1,6 @@
+# Environment configuration (dev, qa, prod)
+environment: dev 
+
 deployment:
   oss:
     enabled: true    

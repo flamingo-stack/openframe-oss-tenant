@@ -1,12 +1,5 @@
-# Monitoring configuration
-servicemonitor:
-  enabled: true
+environment: dev 
 
-# Job configuration
-registerJob:
-  enabled: true
-
-# Deployment configuration
 deployment:
   oss:
     enabled: true    
@@ -42,7 +35,12 @@ registry:
     username: ""
     password: ""
     email: ""
-    
+
+servicemonitor:
+  enabled: true
+registerJob:
+  enabled: true
+  
 # Application configuration
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
