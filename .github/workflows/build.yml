@@ -294,11 +294,11 @@ jobs:
           go-version: '1.23'
 
       # Download (& extract) Rust client artifacts
-      - name: Download macOS client
+      - name: Download Rust Clients
         if: github.event_name == 'workflow_dispatch' && inputs.version != ''
         uses: actions/download-artifact@v4
         with:
-          path: release-artifacts
+          path: final-artifacts/clients
         continue-on-error: true
 
       - name: Install GoReleaser
@@ -328,8 +328,6 @@ jobs:
           ls -la final-artifacts/clients/
           tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/openframe-client
           zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-client.exe
-          tar -czf final-artifacts/clients/openframe-chat-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/openframe-chat
-          zip -j final-artifacts/clients/openframe-chat-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-chatt.exe
 
       - name: Generate release body
         id: release_body
