@@ -43,19 +43,6 @@ public class DBQuery {
         return users.countDocuments(new Document("tenantId", tenantId));
     }
 
-    public static UserDocument findUserByTenantName(String tenantName) {
-        MongoCollection<Document> tenants = getDatabase().getCollection("tenants");
-        Document tenant = tenants.find(new Document("name", tenantName)).first();
-        if (tenant == null) {
-            return null;
-        }
-        String tenantId = tenant.getString("_id");
-        
-        MongoCollection<Document> users = getDatabase().getCollection("users");
-        Document doc = users.find(new Document("tenantId", tenantId)).first();
-        return UserDocument.fromDocument(doc);
-    }
-
     public static void clearAllUsers() {
         MongoCollection<Document> users = getDatabase().getCollection("users");
         long deletedCount = users.deleteMany(new Document()).getDeletedCount();
