@@ -20,7 +20,7 @@ spec:
       path: "{{ $.Values.deployment.oss.repository.baseDir }}/{{ $app.namespace }}/{{ $name }}"
       helm:
         values: |
-          environment: {{ .Values.environment }}
+          environment: {{ $.Values.environment }}
           deployment:
 {{ toYaml $.Values.deployment | indent 12 }}
           registry:
