@@ -328,6 +328,8 @@ jobs:
           ls -la final-artifacts/clients/
           tar -czf final-artifacts/clients/openframe-client-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/openframe-client
           zip -j final-artifacts/clients/openframe-client-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-client.exe
+          tar -czf final-artifacts/clients/openframe-chat-macos_${{ inputs.version }}.tar.gz final-artifacts/clients/openframe-chat
+          zip -j final-artifacts/clients/openframe-chat-windows_${{ inputs.version }}.zip final-artifacts/clients/openframe-chatt.exe
 
       - name: Generate release body
         id: release_body
@@ -340,7 +342,7 @@ jobs:
             echo ""
             echo "## Clients"
             echo "- **macOS** (Universal): \`openframe-client\` and \`openframe-chat\`"
-            echo "- **Windows** (x64): \`openframe-client.exe\` and \`openframe-cha.exe\`"
+            echo "- **Windows** (x64): \`openframe-client.exe\` and \`openframe-chat.exe\`"
             echo ""
             echo "- **macOS** (Universal): \`openframe\` (ARM64 + x86_64)"
             echo "Latest version:"
