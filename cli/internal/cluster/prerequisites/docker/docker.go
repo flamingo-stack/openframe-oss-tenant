@@ -367,7 +367,7 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 	fmt.Println("Windows Server is compatible with Docker Engine")
 
 	// Check if Chocolatey is installed
-	fmt.Println("\nChecking for Chocolatey...")
+	fmt.Println("\nStep 1/4: Checking for Chocolatey...")
 	chocoInstalled := commandExists("choco")
 
 	if !chocoInstalled {
@@ -380,18 +380,36 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 		fmt.Println("Chocolatey is already installed")
 	}
 
-	// Install Docker using Chocolatey
-	fmt.Println("\nInstalling Docker using Chocolatey...")
-	fmt.Println("This will:")
-	fmt.Println("  1. Install Docker Engine via Chocolatey")
-	fmt.Println("  2. Start the Docker service")
-	fmt.Println()
-
-	fmt.Println("Running installation (this may take several minutes)...")
+	// Install .NET Framework 4.8 (required by Docker)
+	fmt.Println("\nStep 2/4: Installing .NET Framework 4.8...")
+	fmt.Println("This is required by Docker and may take several minutes...")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	// Install docker-engine package
-	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--no-progress")
+	dotnetCmd := exec.Command("choco", "install", "dotnetfx", "-y", "--no-progress")
+	dotnetCmd.Stdout = os.Stdout
+	dotnetCmd.Stderr = os.Stderr
+
+	if err := dotnetCmd.Run(); err != nil {
+		fmt.Printf("Warning: .NET Framework installation had issues: %v\n", err)
+		fmt.Println("Continuing anyway - it may already be installed...")
+	} else {
+		fmt.Println(".NET Framework installation completed")
+	}
+
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	// Refresh environment variables after .NET installation
+	fmt.Println("\nStep 3/4: Refreshing environment...")
+	refreshCmd := exec.Command("powershell", "-Command", "refreshenv")
+	_ = refreshCmd.Run()
+
+	// Install Docker using Chocolatey with all dependencies
+	fmt.Println("\nStep 4/4: Installing Docker Engine...")
+	fmt.Println("This may take several minutes...")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	// Install docker-engine package with install-arguments to accept dependencies
+	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--force")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -399,6 +417,7 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 		fmt.Println("─────────────────────────────────────────────────────────────")
 		fmt.Printf("\nInstallation failed: %v\n", err)
 		fmt.Println("\nYou can try installing manually:")
+		fmt.Println("  choco install dotnetfx -y")
 		fmt.Println("  choco install docker-engine -y")
 		return fmt.Errorf("failed to install Docker Engine: %w", err)
 	}
@@ -414,7 +433,8 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 
 	if err := startCmd.Run(); err != nil {
 		fmt.Printf("Warning: Could not start Docker service: %v\n", err)
-		fmt.Println("You may need to start it manually: Start-Service Docker")
+		fmt.Println("You may need to restart the system and start it manually: Start-Service Docker")
+		fmt.Println("\nNote: A system restart may be required after .NET Framework installation.")
 	} else {
 		fmt.Println("Docker service started and configured for automatic startup")
 	}
