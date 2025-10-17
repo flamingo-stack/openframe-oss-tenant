@@ -24,7 +24,7 @@ public class CorsConfig {
     }
 
     @Bean
-    public CorsWebFilter corsWebFilterForOAuth(CorsConfiguration corsConfiguration) {
+    public CorsWebFilter corsWebFilter(CorsConfiguration corsConfiguration) {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);
         return new CorsWebFilter(source);
