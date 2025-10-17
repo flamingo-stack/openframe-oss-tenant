@@ -10,10 +10,6 @@ pub struct ToolInstallationMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_type: Option<SessionType>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub file_type: Option<MainFileType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub require_gui: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub installation_command_args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uninstallation_command_args: Option<Vec<String>>,
@@ -32,14 +28,6 @@ pub enum SessionType {
     Console,
     #[serde(rename = "USER")]
     User,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum MainFileType {
-    #[serde(rename = "EXECUTABLE")]
-    Executable,
-    #[serde(rename = "APPLICATION")]
-    Application,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

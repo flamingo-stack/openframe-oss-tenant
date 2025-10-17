@@ -9,7 +9,6 @@ use tokio::sync::RwLock;
 
 use crate::models::installed_tool::InstalledTool;
 use crate::models::ToolConnection;
-use crate::models::MainFileType;
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
@@ -62,16 +61,6 @@ impl ToolConnectionProcessingManager {
         }
 
         for tool in tools {
-            // Only process executable tools, skip applications
-            if tool.file_type != MainFileType::Executable {
-                info!(
-                    "Tool {} is not an executable (file_type: {:?}) - skipping connection processing",
-                    tool.tool_id,
-                    tool.file_type
-                );
-                continue;
-            }
-
             if self.tool_connection_service.exists_by_tool_agent_id(&tool.tool_agent_id).await? {
                 info!(
                 "Tool connection for tool {} already exists - skipping",
@@ -92,16 +81,6 @@ impl ToolConnectionProcessingManager {
     }
 
     pub async fn run_new_tool(&self, installed_tool: InstalledTool) -> Result<()> {
-        // Only process executable tools, skip applications
-        if installed_tool.file_type != MainFileType::Executable {
-            info!(
-                "Tool {} is not an executable (file_type: {:?}) - skipping connection processing",
-                installed_tool.tool_id,
-                installed_tool.file_type
-            );
-            return Ok(());
-        }
-
         if self.tool_connection_service.exists_by_tool_agent_id(&installed_tool.tool_agent_id).await? {
             info!(
                 "Tool connection for tool {} already exists - skipping",

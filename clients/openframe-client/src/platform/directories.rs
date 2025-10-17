@@ -108,27 +108,6 @@ pub fn get_app_support_directory() -> PathBuf {
     }
 }
 
-/// Returns the platform-specific applications installation directory path
-/// This is where .app bundles and other application packages are installed
-pub fn get_applications_directory() -> PathBuf {
-    #[cfg(target_os = "macos")]
-    {
-        PathBuf::from("/Applications")
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        let program_files = std::env::var("ProgramFiles")
-            .unwrap_or_else(|_| "C:\\Program Files".to_string());
-        PathBuf::from(program_files).join("OpenFrame")
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        PathBuf::from("/opt/openframe")
-    }
-}
-
 /// Returns the platform-specific logs directory path
 pub fn get_logs_directory() -> PathBuf {
     // First check for environment variable override
@@ -786,12 +765,6 @@ impl DirectoryManager {
             .join(tool_agent_id)
             .join(asset_name)
     }
-
-    /// Returns the applications installation directory path
-    /// This is where .app bundles and other application packages are installed
-    pub fn applications_dir(&self) -> PathBuf {
-        get_applications_directory()
-    }
 }
 
 #[cfg(test)]
@@ -1006,7 +979,7 @@ mod tests {
         let app_dir = temp_dir.path().join("app");
         let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_all_custom_dirs(logs_dir, app_dir, secured_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir, app_dir, secured_dir.clone());
 
         // Test secured directory creation
         assert!(manager.ensure_directories().is_ok());

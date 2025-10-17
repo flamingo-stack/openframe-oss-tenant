@@ -19,7 +19,6 @@ pub use initial_configuration::InitialConfiguration;
 pub use agent_token_response::AgentTokenResponse;
 pub use tool_installation_result::ToolInstallationResult;
 pub use tool_installation_message::ToolInstallationMessage;
-pub use tool_installation_message::MainFileType;
 pub use tool_installation_message::SessionType;
 pub use tool_connection_message::ToolConnectionMessage;
 pub use installed_tool::InstalledTool;
