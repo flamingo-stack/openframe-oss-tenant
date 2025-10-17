@@ -24,6 +24,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 // TODO: remove spring cloud stream configs as deprecated
+// TODO: use consumer update to support property changes
 public class ToolConnectionListener {
 
     private final Connection natsConnection;
@@ -65,11 +66,11 @@ public class ToolConnectionListener {
 
             // Subscribe with callback - NATS will invoke handleMessage in its own thread
             subscription = js.subscribe(
-                    SUBJECT,
-                    dispatcher,
-                    this::handleMessage,
-                    false,  // manual ack
-                    pushOptions
+                SUBJECT,
+                dispatcher,
+                this::handleMessage,
+                false,  // manual ack
+                pushOptions
             );
 
             log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} (maxDeliver={}, ackWait={})", SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
