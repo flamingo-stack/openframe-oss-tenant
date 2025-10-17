@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -380,45 +381,72 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 		fmt.Println("Chocolatey is already installed")
 	}
 
-	// Install .NET Framework 4.8 (required by Docker)
-	fmt.Println("\nStep 2/4: Installing .NET Framework 4.8...")
-	fmt.Println("This is required by Docker and may take several minutes...")
-	fmt.Println("─────────────────────────────────────────────────────────────")
+	// Check .NET Framework version
+	fmt.Println("\nStep 2/4: Checking .NET Framework...")
+	dotnetCheck := exec.Command("powershell", "-Command", "(Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full' -ErrorAction SilentlyContinue).Release -ge 528040")
+	output, _ := dotnetCheck.Output()
+	hasDotNet48 := strings.TrimSpace(string(output)) == "True"
 
-	dotnetCmd := exec.Command("choco", "install", "dotnetfx", "-y", "--no-progress")
-	dotnetCmd.Stdout = os.Stdout
-	dotnetCmd.Stderr = os.Stderr
+	if !hasDotNet48 {
+		fmt.Println(".NET Framework 4.8 not detected. Installing...")
+		fmt.Println("Note: This may require a system reboot to complete.")
+		fmt.Println("─────────────────────────────────────────────────────────────")
 
-	if err := dotnetCmd.Run(); err != nil {
-		fmt.Printf("Warning: .NET Framework installation had issues: %v\n", err)
-		fmt.Println("Continuing anyway - it may already be installed...")
+		dotnetCmd := exec.Command("choco", "install", "netfx-4.8", "-y", "--no-progress", "--ignore-reboot-requests")
+		dotnetCmd.Stdout = os.Stdout
+		dotnetCmd.Stderr = os.Stderr
+
+		if err := dotnetCmd.Run(); err != nil {
+			fmt.Println("─────────────────────────────────────────────────────────────")
+			fmt.Printf("\nWarning: .NET Framework installation had issues: %v\n", err)
+
+			// Ask user if they want to continue
+			fmt.Println("\n.NET Framework 4.8 may need to be installed manually.")
+			fmt.Println("You can:")
+			fmt.Println("  1. Reboot the system and run this installer again")
+			fmt.Println("  2. Install .NET 4.8 manually from:")
+			fmt.Println("     https://dotnet.microsoft.com/download/dotnet-framework/net48")
+			fmt.Println("  3. Try to continue anyway (Docker installation may fail)")
+			fmt.Print("\nDo you want to continue anyway? [y/N]: ")
+
+			var response string
+			fmt.Scanln(&response)
+			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+				return fmt.Errorf(".NET Framework 4.8 is required for Docker. Please install it and try again")
+			}
+		} else {
+			fmt.Println("─────────────────────────────────────────────────────────────")
+			fmt.Println(".NET Framework installation completed")
+			fmt.Println("Note: A system reboot may be required for changes to take effect.")
+		}
 	} else {
-		fmt.Println(".NET Framework installation completed")
+		fmt.Println(".NET Framework 4.8 is already installed")
 	}
 
-	fmt.Println("─────────────────────────────────────────────────────────────")
-
-	// Refresh environment variables after .NET installation
+	// Refresh environment variables
 	fmt.Println("\nStep 3/4: Refreshing environment...")
 	refreshCmd := exec.Command("powershell", "-Command", "refreshenv")
 	_ = refreshCmd.Run()
 
-	// Install Docker using Chocolatey with all dependencies
+	// Install Docker using Chocolatey
 	fmt.Println("\nStep 4/4: Installing Docker Engine...")
 	fmt.Println("This may take several minutes...")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	// Install docker-engine package with install-arguments to accept dependencies
-	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--force")
+	// Install docker-engine package
+	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--ignore-dependencies")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
 		fmt.Println("─────────────────────────────────────────────────────────────")
 		fmt.Printf("\nInstallation failed: %v\n", err)
-		fmt.Println("\nYou can try installing manually:")
-		fmt.Println("  choco install dotnetfx -y")
-		fmt.Println("  choco install docker-engine -y")
+		fmt.Println("\nPossible solutions:")
+		fmt.Println("  1. Reboot the system (if .NET was just installed)")
+		fmt.Println("  2. Install manually:")
+		fmt.Println("     choco install netfx-4.8 -y")
+		fmt.Println("     # Reboot system")
+		fmt.Println("     choco install docker-engine -y")
 		return fmt.Errorf("failed to install Docker Engine: %w", err)
 	}
 
