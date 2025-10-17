@@ -217,9 +217,9 @@ impl ToolInstallationService {
 
         // Start tool connection processing for newly installed tool
         info!("Processing connection for tool {} after installation", tool_agent_id);
-        //self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
-          //  .await
-            //.context("Failed to process tool connection after installation")?;
+        self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
+           .await
+            .context("Failed to process tool connection after installation")?;
 
         Ok(())
     }
