@@ -367,52 +367,36 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 	fmt.Println("Installing Docker Engine on Windows Server...")
 	fmt.Println("Windows Server is compatible with Docker Engine")
 
-	// Check if Chocolatey is installed
-	fmt.Println("\nStep 1/4: Checking for Chocolatey...")
-	chocoInstalled := commandExists("choco")
-
-	if !chocoInstalled {
-		fmt.Println("Chocolatey is not installed. Installing Chocolatey first...")
-		if err := d.installChocolatey(); err != nil {
-			return fmt.Errorf("failed to install Chocolatey: %w", err)
-		}
-		fmt.Println("Chocolatey installed successfully!")
-	} else {
-		fmt.Println("Chocolatey is already installed")
-	}
-
-	// Check .NET Framework version
-	fmt.Println("\nStep 2/4: Checking .NET Framework...")
+	// Step 1: Check .NET Framework FIRST (required by Chocolatey)
+	fmt.Println("\nStep 1/4: Checking .NET Framework...")
 	dotnetCheck := exec.Command("powershell", "-Command", "(Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full' -ErrorAction SilentlyContinue).Release -ge 528040")
 	output, _ := dotnetCheck.Output()
 	hasDotNet48 := strings.TrimSpace(string(output)) == "True"
 
 	if !hasDotNet48 {
 		fmt.Println(".NET Framework 4.8 not detected. Installing...")
-		fmt.Println("Note: This may require a system reboot to complete.")
+		fmt.Println("Note: Chocolatey requires .NET Framework 4.8 or higher")
+		fmt.Println("This installation may require a system reboot to complete.")
 		fmt.Println("─────────────────────────────────────────────────────────────")
 
-		dotnetCmd := exec.Command("choco", "install", "netfx-4.8", "-y", "--verbose", "--ignore-reboot-requests")
-		dotnetCmd.Stdout = os.Stdout
-		dotnetCmd.Stderr = os.Stderr
-
-		if err := dotnetCmd.Run(); err != nil {
+		// Download and install .NET 4.8 directly from Microsoft
+		if err := d.installDotNetFramework(); err != nil {
 			fmt.Println("─────────────────────────────────────────────────────────────")
 			fmt.Printf("\nWarning: .NET Framework installation had issues: %v\n", err)
 
 			// Ask user if they want to continue
-			fmt.Println("\n.NET Framework 4.8 may need to be installed manually.")
+			fmt.Println("\n.NET Framework 4.8 installation failed or requires a reboot.")
 			fmt.Println("You can:")
 			fmt.Println("  1. Reboot the system and run this installer again")
 			fmt.Println("  2. Install .NET 4.8 manually from:")
-			fmt.Println("     https://dotnet.microsoft.com/download/dotnet-framework/net48")
-			fmt.Println("  3. Try to continue anyway (Docker installation may fail)")
+			fmt.Println("     https://go.microsoft.com/fwlink/?linkid=2088631")
+			fmt.Println("  3. Try to continue anyway (installation will likely fail)")
 			fmt.Print("\nDo you want to continue anyway? [y/N]: ")
 
 			var response string
 			fmt.Scanln(&response)
 			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
-				return fmt.Errorf(".NET Framework 4.8 is required for Docker. Please install it and try again")
+				return fmt.Errorf(".NET Framework 4.8 is required. Please install it and try again")
 			}
 		} else {
 			fmt.Println("─────────────────────────────────────────────────────────────")
@@ -420,7 +404,26 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 			fmt.Println("Note: A system reboot may be required for changes to take effect.")
 		}
 	} else {
-		fmt.Println(".NET Framework 4.8 is already installed")
+		fmt.Println(".NET Framework 4.8 or higher is already installed")
+	}
+
+	// Step 2: Install Chocolatey (now that .NET is confirmed)
+	fmt.Println("\nStep 2/4: Checking for Chocolatey...")
+	chocoInstalled := commandExists("choco")
+
+	if !chocoInstalled {
+		fmt.Println("Chocolatey is not installed. Installing Chocolatey...")
+		if err := d.installChocolatey(); err != nil {
+			return fmt.Errorf("failed to install Chocolatey: %w", err)
+		}
+		fmt.Println("Chocolatey installed successfully!")
+
+		// Refresh PATH to make choco command available
+		fmt.Println("Refreshing environment variables...")
+		refreshCmd := exec.Command("powershell", "-Command", "$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')")
+		_ = refreshCmd.Run()
+	} else {
+		fmt.Println("Chocolatey is already installed")
 	}
 
 	// Refresh environment variables
@@ -476,6 +479,39 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 	versionCmd.Stdout = os.Stdout
 	versionCmd.Stderr = os.Stderr
 	_ = versionCmd.Run()
+
+	return nil
+}
+
+func (d *DockerInstaller) installDotNetFramework() error {
+	// .NET Framework 4.8 offline installer URL
+	const dotnetURL = "https://go.microsoft.com/fwlink/?linkid=2088631"
+
+	tempDir := os.TempDir()
+	installerPath := filepath.Join(tempDir, "ndp48-x86-x64-allos-enu.exe")
+
+	// Download .NET Framework installer
+	fmt.Println("Downloading .NET Framework 4.8 installer...")
+	if err := downloadFileWithProgress(dotnetURL, installerPath); err != nil {
+		return fmt.Errorf("failed to download .NET Framework: %w", err)
+	}
+	fmt.Println()
+
+	// Run installer with quiet mode and no restart
+	fmt.Println("Installing .NET Framework 4.8 (this may take several minutes)...")
+	cmd := exec.Command(installerPath, "/q", "/norestart")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		// Clean up installer
+		_ = os.Remove(installerPath)
+		return fmt.Errorf("installation failed: %w", err)
+	}
+
+	// Clean up installer
+	fmt.Println("Cleaning up installer...")
+	_ = os.Remove(installerPath)
 
 	return nil
 }
