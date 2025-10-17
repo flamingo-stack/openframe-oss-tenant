@@ -147,6 +147,7 @@ jobs:
       
 
   build_clients:
+    if: false
     name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes, matrix]
     runs-on: "${{ matrix.os }}-latest"
@@ -246,6 +247,7 @@ jobs:
 
 
   build_helm:
+    if: false
     name: "Build Helm Chart"
     needs: [changes]
     runs-on: ubuntu-latest
@@ -306,9 +308,11 @@ jobs:
           mkdir -p final-artifacts/clients
           if [ -d "release-artifacts" ]; then
             for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
-              #find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
-              find release-artifacts -type f -name "$client" -exec tar -czf "final-artifacts/clients/$client_macos_${{ inputs.version }}.tar.gz" -C release-artifacts/ {} \;
-              find release-artifacts -type f -name "$client.exe" -exec zip -j "final-artifacts/clients/$client_windows_${{ inputs.version }}.zip" {} \;
+               touch final-artifacts/clients/$client.tar.gz
+               touch final-artifacts/clients/$client.zip
+#              find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
+#              find release-artifacts -type f -name "$client" -exec tar -czf "final-artifacts/clients/$client_macos_${{ inputs.version }}.tar.gz" -C release-artifacts/ {} \;
+#              find release-artifacts -type f -name "$client.exe" -exec zip -j "final-artifacts/clients/$client_windows_${{ inputs.version }}.zip" {} \;
             done
           fi
 
@@ -317,13 +321,12 @@ jobs:
         run: |
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
 
-          mkdir -p dist
-          cat > dist/RELEASE_NOTES.md << 'EOF'
+          cat > RELEASE_NOTES.md << 'EOF'
 
           ## Docker Images
           EOF
-          echo "$IMAGES" >> dist/RELEASE_NOTES.md
-          cat >> dist/RELEASE_NOTES.md << 'EOF'
+          echo "$IMAGES" >> RELEASE_NOTES.md
+          cat >> RELEASE_NOTES.md << 'EOF'
 
           ## CLI Binaries
           Download the appropriate archive for your platform:
@@ -355,7 +358,7 @@ jobs:
           GORELEASER_CURRENT_TAG: ${{ inputs.version }}
         run: |
           git tag -f ${{ inputs.version }}
-          goreleaser release --clean --skip=validate --release-notes=dist/RELEASE_NOTES.md
+          goreleaser release --clean --skip=validate --release-notes=RELEASE_NOTES.md
 
       - name: Verify GoReleaser artifacts
         if: github.event_name == 'workflow_dispatch' && inputs.version != ''

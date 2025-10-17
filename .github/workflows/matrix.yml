@@ -21,12 +21,7 @@ jobs:
       - name: Define Matrix
         id: matrix
         run: |
-          images_matrix_json='[
-            {
-              "name": "openframe-api",
-              "path": "./openframe/services/openframe-api",
-              "context": "."
-            }]'
+          images_matrix_json='[]'
           images_matrix_json2='[
             {
               "name": "openframe-api",
