@@ -369,26 +369,61 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 	// Install Docker using PowerShell script
 	fmt.Println("\nInstalling Docker using PowerShell...")
 	fmt.Println("This will:")
-	fmt.Println("  1. Install the Docker-Microsoft PackageManagement Provider")
-	fmt.Println("  2. Install Docker Engine")
-	fmt.Println("  3. Start the Docker service")
+	fmt.Println("  1. Install NuGet package provider (required)")
+	fmt.Println("  2. Install the Docker-Microsoft PackageManagement Provider")
+	fmt.Println("  3. Install Docker Engine")
+	fmt.Println("  4. Start the Docker service")
 	fmt.Println()
 
 	// PowerShell command to install Docker on Windows Server
 	psScript := `
-# Install Docker-Microsoft PackageManagement Provider
-Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+$ErrorActionPreference = "Stop"
 
-# Install Docker
-Install-Package -Name docker -ProviderName DockerMsftProvider -Force
+# Set TLS 1.2 for secure downloads
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# Start Docker service
-Start-Service Docker
+Write-Host "Step 1/4: Installing NuGet package provider..." -ForegroundColor Cyan
+try {
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false | Out-Null
+    Write-Host "  NuGet provider installed successfully" -ForegroundColor Green
+} catch {
+    Write-Host "  Error installing NuGet: $_" -ForegroundColor Red
+    throw
+}
 
-# Set Docker to start automatically
-Set-Service -Name Docker -StartupType Automatic
+Write-Host "Step 2/4: Installing Docker-Microsoft PackageManagement Provider..." -ForegroundColor Cyan
+try {
+    Install-Module -Name DockerMsftProvider -Repository PSGallery -Force -Confirm:$false | Out-Null
+    Write-Host "  DockerMsftProvider installed successfully" -ForegroundColor Green
+} catch {
+    Write-Host "  Error installing DockerMsftProvider: $_" -ForegroundColor Red
+    throw
+}
 
-Write-Host "Docker Engine installed successfully"
+Write-Host "Step 3/4: Installing Docker Engine..." -ForegroundColor Cyan
+try {
+    Install-Package -Name docker -ProviderName DockerMsftProvider -Force -Confirm:$false | Out-Null
+    Write-Host "  Docker Engine installed successfully" -ForegroundColor Green
+} catch {
+    Write-Host "  Error installing Docker: $_" -ForegroundColor Red
+    throw
+}
+
+Write-Host "Step 4/4: Starting Docker service..." -ForegroundColor Cyan
+try {
+    Start-Service Docker
+    Set-Service -Name Docker -StartupType Automatic
+    Write-Host "  Docker service started and configured for automatic startup" -ForegroundColor Green
+} catch {
+    Write-Host "  Error starting Docker service: $_" -ForegroundColor Red
+    throw
+}
+
+Write-Host ""
+Write-Host "Docker Engine installed successfully!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Docker version:" -ForegroundColor Cyan
+docker version
 `
 
 	// Create temp script file
@@ -410,7 +445,13 @@ Write-Host "Docker Engine installed successfully"
 
 	if err := cmd.Run(); err != nil {
 		fmt.Println("─────────────────────────────────────────────────────────────")
-		return fmt.Errorf("failed to install Docker Engine: %w\n\nYou can try installing manually using:\nInstall-Module -Name DockerMsftProvider -Repository PSGallery -Force\nInstall-Package -Name docker -ProviderName DockerMsftProvider -Force", err)
+		fmt.Printf("\nInstallation failed: %v\n", err)
+		fmt.Println("\nYou can try installing manually in PowerShell (Run as Administrator):")
+		fmt.Println("  Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force")
+		fmt.Println("  Install-Module -Name DockerMsftProvider -Repository PSGallery -Force")
+		fmt.Println("  Install-Package -Name docker -ProviderName DockerMsftProvider -Force")
+		fmt.Println("  Start-Service Docker")
+		return fmt.Errorf("failed to install Docker Engine: %w", err)
 	}
 
 	fmt.Println("─────────────────────────────────────────────────────────────")
