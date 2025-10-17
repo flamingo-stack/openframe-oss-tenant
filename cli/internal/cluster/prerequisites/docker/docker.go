@@ -2,11 +2,8 @@ package docker
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -323,33 +320,14 @@ func startDockerLinux() error {
 }
 
 func (d *DockerInstaller) installWindows() error {
-	fmt.Println("Installing prerequisites for Docker on Windows...")
+	fmt.Println("Installing Docker on Windows...")
+	fmt.Println("Note: Chocolatey will automatically install .NET Framework 4.8 if needed.")
 
-	// Step 1: Check and install .NET Framework 4.8
-	fmt.Println("\nStep 1/3: Checking .NET Framework 4.8...")
-	dotnetInstalled, err := d.checkDotNetFramework()
-	if err != nil {
-		fmt.Printf("Warning: Could not check .NET Framework: %v\n", err)
-	}
-
-	if !dotnetInstalled {
-		fmt.Println(".NET Framework 4.8 not found. Downloading and installing...")
-		if err := d.installDotNetFramework(); err != nil {
-			fmt.Printf("Warning: .NET Framework installation failed: %v\n", err)
-			fmt.Println("You may need to install it manually from:")
-			fmt.Println("https://go.microsoft.com/fwlink/?linkid=2088631")
-		} else {
-			fmt.Println(".NET Framework 4.8 installed successfully.")
-			fmt.Println("Note: A system reboot may be required.")
-		}
-	} else {
-		fmt.Println(".NET Framework 4.8 is already installed.")
-	}
-
-	// Step 2: Install Chocolatey if needed
-	fmt.Println("\nStep 2/3: Checking Chocolatey package manager...")
+	// Step 1: Install Chocolatey if needed (this will auto-install .NET 4.8 if missing)
+	fmt.Println("\nStep 1/2: Checking Chocolatey package manager...")
 	if !commandExists("choco") {
-		fmt.Println("Installing Chocolatey...")
+		fmt.Println("Installing Chocolatey (this may take several minutes)...")
+		fmt.Println("Chocolatey will automatically install .NET Framework 4.8 if it's not present.")
 		if err := d.installChocolatey(); err != nil {
 			return fmt.Errorf("failed to install Chocolatey: %w", err)
 		}
@@ -358,114 +336,14 @@ func (d *DockerInstaller) installWindows() error {
 		fmt.Println("Chocolatey is already installed.")
 	}
 
-	// Step 3: Install Docker Desktop
-	fmt.Println("\nStep 3/3: Installing Docker Desktop...")
+	// Step 2: Install Docker Desktop
+	fmt.Println("\nStep 2/2: Installing Docker Desktop...")
 	return d.installWindowsChocolatey()
 }
 
-func (d *DockerInstaller) checkDotNetFramework() (bool, error) {
-	// Check if .NET Framework 4.8 or higher is installed
-	// Release number 528040 or higher indicates .NET 4.8+
-	cmd := exec.Command("powershell", "-Command",
-		"(Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full' -ErrorAction SilentlyContinue).Release")
-	output, err := cmd.Output()
-	if err != nil {
-		return false, err
-	}
-
-	releaseStr := strings.TrimSpace(string(output))
-	if releaseStr == "" {
-		return false, nil
-	}
-
-	var releaseNum int
-	if _, err := fmt.Sscanf(releaseStr, "%d", &releaseNum); err != nil {
-		return false, err
-	}
-
-	// .NET 4.8 has release number 528040 or higher
-	return releaseNum >= 528040, nil
-}
-
-func (d *DockerInstaller) installDotNetFramework() error {
-	// Download .NET Framework 4.8 offline installer
-	const dotnetURL = "https://go.microsoft.com/fwlink/?linkid=2088631"
-
-	tempDir := os.TempDir()
-	installerPath := filepath.Join(tempDir, "ndp48-installer.exe")
-
-	fmt.Println("Downloading .NET Framework 4.8 offline installer...")
-	fmt.Println("This may take a few minutes (approximately 100 MB)...")
-
-	// Download the installer
-	resp, err := http.Get(dotnetURL)
-	if err != nil {
-		return fmt.Errorf("failed to download installer: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed with status: %s", resp.Status)
-	}
-
-	// Create the installer file
-	out, err := os.Create(installerPath)
-	if err != nil {
-		return fmt.Errorf("failed to create installer file: %w", err)
-	}
-	defer out.Close()
-
-	// Copy the response body to file
-	fmt.Println("Downloading...")
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		_ = os.Remove(installerPath)
-		return fmt.Errorf("failed to download installer: %w", err)
-	}
-	fmt.Println("Download complete!")
-
-	// Run the installer
-	fmt.Println("\nInstalling .NET Framework 4.8...")
-	fmt.Println("This will run silently and may take several minutes.")
-
-	cmd := exec.Command(installerPath, "/q", "/norestart")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		os.Remove(installerPath)
-		return fmt.Errorf("installation failed: %w", err)
-	}
-
-	// Clean up
-	os.Remove(installerPath)
-
-	return nil
-}
-
 func (d *DockerInstaller) installChocolatey() error {
-	installScript := `
-function Install-Chocolatey {
-    try {
-        Write-Host "Installing Chocolatey..." -ForegroundColor Yellow
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-        Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
-        return $true
-    }
-    catch {
-        Write-Host "Failed to install Chocolatey" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
-        return $false
-    }
-}
-
-$result = Install-Chocolatey
-if (-not $result) {
-    exit 1
-}
-`
+	// Official Chocolatey installation command from https://chocolatey.org/install
+	installScript := `Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))`
 
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
 	cmd.Stdout = os.Stdout
@@ -479,17 +357,7 @@ if (-not $result) {
 	chocoPath := "C:\\ProgramData\\chocolatey\\bin"
 	currentPath := os.Getenv("PATH")
 	if !strings.Contains(currentPath, chocoPath) {
-		os.Setenv("PATH", currentPath+";"+chocoPath)
-	}
-
-	// Verify Chocolatey installation
-	verifyCmd := exec.Command("cmd", "/c", "choco", "--version")
-	if err := verifyCmd.Run(); err != nil {
-		// Try with full path
-		verifyCmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "--version")
-		if err := verifyCmd.Run(); err != nil {
-			return fmt.Errorf("Chocolatey installation completed but verification failed. Please restart your terminal and try again")
-		}
+		_ = os.Setenv("PATH", currentPath+";"+chocoPath)
 	}
 
 	return nil
