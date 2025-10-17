@@ -138,7 +138,7 @@ export class ChatApiService {
   private async *createDialogAndStream(initialMessage: string): AsyncGenerator<MessageSegment> {
     if (this.debugMode) {
       yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/dialogs` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/dialogs` }
     }
     
     const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/dialogs`, {
@@ -158,8 +158,7 @@ export class ChatApiService {
         yield { type: 'text', text: `[DEBUG] Dialog creation failed:` }
         yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
         yield { type: 'text', text: `  Response: ${errorText}` }
-        yield { type: 'text', text: `  URL: ${this.apiBaseUrl}/api/v1/dialogs` }
-        yield { type: 'text', text: `  Token present: ${this.apiToken !== 'YOUR_API_TOKEN_HERE'}` }
+        yield { type: 'text', text: `  URL: ${this.getApiBaseUrl()}/api/v1/dialogs` }
       }
       throw new Error(`Failed to create dialog: ${response.status} ${response.statusText}\n${errorText}`)
     }
@@ -175,7 +174,7 @@ export class ChatApiService {
     if (this.debugMode) {
       yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}` }
       yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/messages/process` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/messages/process` }
     }
     
     const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/messages/process`, {
@@ -199,7 +198,7 @@ export class ChatApiService {
         yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
         yield { type: 'text', text: `  Response: ${errorText}` }
         yield { type: 'text', text: `  Dialog ID: ${this.dialogId}` }
-        yield { type: 'text', text: `  URL: ${this.apiBaseUrl}/api/v1/messages/process` }
+        yield { type: 'text', text: `  URL: ${this.getApiBaseUrl()}/api/v1/messages/process` }
       }
       throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
     }

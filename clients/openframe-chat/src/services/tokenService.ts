@@ -109,7 +109,11 @@ class TokenService {
    */
   private async initApiUrl() {
     try {
-      const apiUrl = "https://" + (await invoke<string>('get_server_url'));
+      const serverUrl = await invoke<string>('get_server_url');
+      
+      const apiUrl = serverUrl.startsWith('http://') || serverUrl.startsWith('https://') 
+        ? serverUrl 
+        : `https://${serverUrl}`;
       
       if (apiUrl) {
         this.currentApiBaseUrl = apiUrl;

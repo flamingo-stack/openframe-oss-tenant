@@ -7,42 +7,11 @@ import {
   ChatInput,
   ChatQuickAction
 } from '@flamingo/ui-kit'
-import { useChat, type Message } from '../hooks/useChat'
-import { useToken } from '../hooks/useToken'
-import { useMemo } from 'react'
-import { MessageSegment } from '../types/chat.types'
+import { useChat } from '../hooks/useChat'
 import faeAvatar from '../assets/fae-avatar.png'
-
-/**
- * Transform messages to ensure content is always a string for ChatMessageList
- */
-function transformMessagesForDisplay(messages: Message[]): Message[] {
-  return messages.map(message => {
-    // If content is already a string, return as-is
-    if (typeof message.content === 'string') {
-      return message
-    }
-    
-    // If content is an array of segments, extract text
-    if (Array.isArray(message.content)) {
-      const textContent = message.content
-        .filter((segment: MessageSegment) => segment.type === 'text')
-        .map((segment: MessageSegment) => segment.type === 'text' ? segment.text : '')
-        .join('')
-      
-      return {
-        ...message,
-        content: textContent
-      }
-    }
-    
-    return message
-  })
-}
 
 export function ChatView() {
   const DEBUG_MODE = false
-  const token = useToken()
   
   const { 
     messages,
@@ -53,10 +22,7 @@ export function ChatView() {
     quickActions,
     hasMessages
   } = useChat({ useApi: true, useMock: false, debugMode: DEBUG_MODE })
-  
-  // Transform messages to ensure content is strings for ChatMessageList
-  const displayMessages = useMemo(() => transformMessagesForDisplay(messages), [messages])
-  
+
   return (
     <ChatContainer>
       <ChatHeader userAvatar={faeAvatar} />
@@ -64,7 +30,7 @@ export function ChatView() {
       <ChatContent>
         {hasMessages ? (
           <ChatMessageList
-            messages={displayMessages}
+            messages={messages}
             isTyping={isTyping}
             autoScroll={true}
           />
