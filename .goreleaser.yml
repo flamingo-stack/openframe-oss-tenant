@@ -72,6 +72,8 @@ release:
   make_latest: false
   draft: true
   prerelease: auto
+  header: |
+    {{ if .Env.RELEASE_HEADER }}{{ .Env.RELEASE_HEADER }}{{ end }}
   extra_files:
     - glob: final-artifacts/clients/*.tar.gz
     - glob: final-artifacts/clients/*.zip

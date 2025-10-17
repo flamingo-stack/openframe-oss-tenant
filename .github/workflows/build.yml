@@ -310,35 +310,37 @@ jobs:
             done
           fi
 
-      - name: Generate release notes
+      - name: Generate release header
         if: github.event_name == 'workflow_dispatch' && inputs.version != ''
         run: |
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
 
-          cat > RELEASE_NOTES.md << 'EOF'
+          cat > RELEASE_HEADER.md << 'EOF'
+## Docker Images
+EOF
+          echo "$IMAGES" >> RELEASE_HEADER.md
+          cat >> RELEASE_HEADER.md << 'EOF'
 
-          ## Docker Images
-          EOF
-          echo "$IMAGES" >> RELEASE_NOTES.md
-          cat >> RELEASE_NOTES.md << 'EOF'
+## CLI Binaries
+Download the appropriate archive for your platform:
 
-          ## CLI Binaries
-          Download the appropriate archive for your platform:
+- **Linux (x64)**: `openframe-cli_${{ inputs.version }}_linux_amd64.tar.gz`
+- **Linux (ARM64)**: `openframe-cli_${{ inputs.version }}_linux_arm64.tar.gz`
+- **macOS (x64)**: `openframe-cli_${{ inputs.version }}_darwin_amd64.tar.gz`
+- **macOS (ARM64)**: `openframe-cli_${{ inputs.version }}_darwin_arm64.tar.gz`
+- **Windows (x64)**: `openframe-cli_${{ inputs.version }}_windows_amd64.zip`
+- **Windows (ARM64)**: `openframe-cli_${{ inputs.version }}_windows_arm64.zip`
 
-          - **Linux (x64)**: `openframe-cli_${{ inputs.version }}_linux_amd64.tar.gz`
-          - **Linux (ARM64)**: `openframe-cli_${{ inputs.version }}_linux_arm64.tar.gz`
-          - **macOS (x64)**: `openframe-cli_${{ inputs.version }}_darwin_amd64.tar.gz`
-          - **macOS (ARM64)**: `openframe-cli_${{ inputs.version }}_darwin_arm64.tar.gz`
-          - **Windows (x64)**: `openframe-cli_${{ inputs.version }}_windows_amd64.zip`
-          - **Windows (ARM64)**: `openframe-cli_${{ inputs.version }}_windows_arm64.zip`
+## Rust Clients
+- **macOS** (Universal): `openframe-client_macos_${{ inputs.version }}.tar.gz`
+- **Windows** (x64): `openframe-client_windows_${{ inputs.version }}.zip`
 
-          ## Rust Clients
-          - **macOS** (Universal): `openframe-client` and `openframe-chat`
-          - **Windows** (x64): `openframe-client.exe` and `openframe-chat.exe`
+## Helm Chart
+- `oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}`
 
-          ## Helm Chart
-          - `oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}`
-          EOF
+---
+
+EOF
 
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -350,9 +352,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ inputs.version }}
+          RELEASE_HEADER: ${{ steps.release_header.outputs.content }}
         run: |
           git tag -f ${{ inputs.version }}
-          goreleaser release --clean --skip=validate --release-notes=RELEASE_NOTES.md
+          export RELEASE_HEADER="$(cat RELEASE_HEADER.md)"
+          goreleaser release --clean --skip=validate
 
       - name: Verify GoReleaser artifacts
         if: github.event_name == 'workflow_dispatch' && inputs.version != ''
