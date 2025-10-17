@@ -98,11 +98,15 @@ func (w *WindowsPrerequisitesInstaller) isVCRedistInstalled() bool {
 func (w *WindowsPrerequisitesInstaller) installDotNet() error {
 	// Only use winget - Chocolatey has dependency issues with .NET Framework 4.8
 	if !commandExists("winget") {
-		fmt.Println("\nwinget is required to install .NET Runtime automatically.")
-		w.showWingetInstallHelp()
-		fmt.Println("\nAlternatively, install .NET Runtime manually:")
-		fmt.Println("  https://dotnet.microsoft.com/download/dotnet/8.0")
-		return fmt.Errorf("winget not found - .NET Runtime requires manual installation")
+		fmt.Println("\nwinget is not installed. Attempting to install winget automatically...")
+		if err := w.installWinget(); err != nil {
+			fmt.Printf("Failed to install winget automatically: %v\n", err)
+			w.showWingetInstallHelp()
+			fmt.Println("\nAlternatively, install .NET Runtime manually:")
+			fmt.Println("  https://dotnet.microsoft.com/download/dotnet/8.0")
+			return fmt.Errorf("winget not found - .NET Runtime requires manual installation")
+		}
+		fmt.Println("winget installed successfully! Continuing with .NET Runtime installation...")
 	}
 
 	fmt.Println("Installing .NET Runtime via winget...")
@@ -131,11 +135,15 @@ func (w *WindowsPrerequisitesInstaller) installDotNet() error {
 func (w *WindowsPrerequisitesInstaller) installVCRedist() error {
 	// Only use winget - Chocolatey has dependency issues
 	if !commandExists("winget") {
-		fmt.Println("\nwinget is required to install Visual C++ Redistributables automatically.")
-		w.showWingetInstallHelp()
-		fmt.Println("\nAlternatively, install Visual C++ Redistributables manually:")
-		fmt.Println("  https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist")
-		return fmt.Errorf("winget not found - Visual C++ Redistributables require manual installation")
+		fmt.Println("\nwinget is not installed. Attempting to install winget automatically...")
+		if err := w.installWinget(); err != nil {
+			fmt.Printf("Failed to install winget automatically: %v\n", err)
+			w.showWingetInstallHelp()
+			fmt.Println("\nAlternatively, install Visual C++ Redistributables manually:")
+			fmt.Println("  https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist")
+			return fmt.Errorf("winget not found - Visual C++ Redistributables require manual installation")
+		}
+		fmt.Println("winget installed successfully! Continuing with VC++ Redistributables installation...")
 	}
 
 	fmt.Println("Installing Visual C++ Redistributables via winget...")
@@ -152,6 +160,59 @@ func (w *WindowsPrerequisitesInstaller) installVCRedist() error {
 	return nil
 }
 
+// installWinget automatically installs winget (App Installer) on Windows
+func (w *WindowsPrerequisitesInstaller) installWinget() error {
+	fmt.Println("Downloading and installing winget (App Installer)...")
+
+	// Download the latest App Installer package from Microsoft
+	// This is the official Microsoft-hosted package
+	wingetURL := "https://aka.ms/getwinget"
+	tempDir := os.TempDir()
+	installerPath := tempDir + "\\Microsoft.DesktopAppInstaller.msixbundle"
+
+	// Use PowerShell to download with progress
+	downloadCmd := fmt.Sprintf(
+		`$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
+		wingetURL, installerPath,
+	)
+
+	fmt.Println("Downloading App Installer package...")
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", downloadCmd)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to download winget installer: %w", err)
+	}
+
+	// Install the package using Add-AppxPackage
+	fmt.Println("Installing App Installer package...")
+	installCmd := fmt.Sprintf(`Add-AppxPackage -Path '%s'`, installerPath)
+	cmd = exec.Command("powershell", "-NoProfile", "-Command", installCmd)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		// Clean up installer file
+		os.Remove(installerPath)
+		return fmt.Errorf("failed to install winget: %w. You may need to run as Administrator", err)
+	}
+
+	// Clean up installer file
+	os.Remove(installerPath)
+
+	// Verify installation by checking if winget command is now available
+	// Note: User may need to restart terminal for PATH to update
+	fmt.Println("Verifying winget installation...")
+	if commandExists("winget") {
+		fmt.Println("winget installed and available!")
+		return nil
+	}
+
+	// winget might be installed but not in current PATH
+	fmt.Println("winget installed but may require terminal restart to be available in PATH")
+	fmt.Println("Please restart your terminal and try again, or continue with manual installation.")
+
+	return fmt.Errorf("winget installed but not yet available in PATH - restart terminal")
+}
+
 // showWingetInstallHelp provides instructions for installing winget
 func (w *WindowsPrerequisitesInstaller) showWingetInstallHelp() {
 	// Check Windows version
@@ -162,7 +223,7 @@ func (w *WindowsPrerequisitesInstaller) showWingetInstallHelp() {
 		versionInfo = strings.TrimSpace(string(output))
 	}
 
-	fmt.Println("\nTo install winget:")
+	fmt.Println("\nTo install winget manually:")
 
 	// Check if they might have winget but it's not in PATH
 	appDataLocal := os.Getenv("LOCALAPPDATA")
@@ -176,7 +237,7 @@ func (w *WindowsPrerequisitesInstaller) showWingetInstallHelp() {
 		if _, err := os.Stat(path); err == nil {
 			wingetFound = true
 			fmt.Printf("  Note: winget appears to be installed at: %s\n", path)
-			fmt.Println("  You may need to add it to your PATH or run this command in a new terminal.")
+			fmt.Println("  You may need to restart your terminal.")
 			break
 		}
 	}

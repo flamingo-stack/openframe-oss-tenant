@@ -255,37 +255,39 @@ func (d *DockerInstaller) installArch() error {
 
 func (d *DockerInstaller) installWindows() error {
 	// Try winget first (built into Windows 10+ 1809 and later)
-	if commandExists("winget") {
-		fmt.Println("Installing Docker Desktop via winget...")
-		cmd := exec.Command("winget", "install", "-e", "--id", "Docker.DockerDesktop", "--accept-package-agreements", "--accept-source-agreements")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("winget installation failed: %v\n", err)
-			fmt.Println("\nDocker Desktop installation requires manual setup on Windows.")
-			fmt.Println("Please download and install Docker Desktop from:")
+	if !commandExists("winget") {
+		fmt.Println("\nwinget is not installed. Attempting to install winget automatically...")
+		if err := installWinget(); err != nil {
+			fmt.Printf("Failed to install winget automatically: %v\n", err)
+			showWingetInstallHelp()
+			fmt.Println("\nAlternatively, install Docker Desktop manually:")
 			fmt.Println("  https://www.docker.com/products/docker-desktop")
 			fmt.Println("\nAfter installation, start Docker Desktop and run this command again.")
-			return fmt.Errorf("Docker Desktop installation failed - please install manually")
+			return fmt.Errorf("Docker Desktop requires manual installation")
 		}
-
-		fmt.Println("Docker Desktop installed successfully. Starting Docker Desktop...")
-		if err := startDockerWindows(); err != nil {
-			fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
-			fmt.Println("Please start Docker Desktop manually from Start Menu")
-		}
-		return nil
+		fmt.Println("winget installed successfully! Continuing with Docker Desktop installation...")
 	}
 
-	// Don't use Chocolatey for Docker Desktop - it has dependency issues
-	// Direct user to manual installation instead
-	fmt.Println("\nwinget not found. Docker Desktop installation requires winget on Windows 10+")
-	showWingetInstallHelp()
-	fmt.Println("\nAlternatively, install Docker Desktop manually:")
-	fmt.Println("  https://www.docker.com/products/docker-desktop")
-	fmt.Println("\nAfter installation, start Docker Desktop and run this command again.")
-	return fmt.Errorf("Docker Desktop requires manual installation")
+	fmt.Println("Installing Docker Desktop via winget...")
+	cmd := exec.Command("winget", "install", "-e", "--id", "Docker.DockerDesktop", "--accept-package-agreements", "--accept-source-agreements")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("winget installation failed: %v\n", err)
+		fmt.Println("\nDocker Desktop installation requires manual setup on Windows.")
+		fmt.Println("Please download and install Docker Desktop from:")
+		fmt.Println("  https://www.docker.com/products/docker-desktop")
+		fmt.Println("\nAfter installation, start Docker Desktop and run this command again.")
+		return fmt.Errorf("Docker Desktop installation failed - please install manually")
+	}
+
+	fmt.Println("Docker Desktop installed successfully. Starting Docker Desktop...")
+	if err := startDockerWindows(); err != nil {
+		fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
+		fmt.Println("Please start Docker Desktop manually from Start Menu")
+	}
+	return nil
 }
 
 
@@ -380,6 +382,59 @@ func WaitForDocker() error {
 	return fmt.Errorf("timeout waiting for Docker to start")
 }
 
+// installWinget automatically installs winget (App Installer) on Windows
+func installWinget() error {
+	fmt.Println("Downloading and installing winget (App Installer)...")
+
+	// Download the latest App Installer package from Microsoft
+	// This is the official Microsoft-hosted package
+	wingetURL := "https://aka.ms/getwinget"
+	tempDir := os.TempDir()
+	installerPath := tempDir + "\\Microsoft.DesktopAppInstaller.msixbundle"
+
+	// Use PowerShell to download with progress
+	downloadCmd := fmt.Sprintf(
+		`$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
+		wingetURL, installerPath,
+	)
+
+	fmt.Println("Downloading App Installer package...")
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", downloadCmd)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to download winget installer: %w", err)
+	}
+
+	// Install the package using Add-AppxPackage
+	fmt.Println("Installing App Installer package...")
+	installCmd := fmt.Sprintf(`Add-AppxPackage -Path '%s'`, installerPath)
+	cmd = exec.Command("powershell", "-NoProfile", "-Command", installCmd)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		// Clean up installer file
+		os.Remove(installerPath)
+		return fmt.Errorf("failed to install winget: %w. You may need to run as Administrator", err)
+	}
+
+	// Clean up installer file
+	os.Remove(installerPath)
+
+	// Verify installation by checking if winget command is now available
+	// Note: User may need to restart terminal for PATH to update
+	fmt.Println("Verifying winget installation...")
+	if commandExists("winget") {
+		fmt.Println("winget installed and available!")
+		return nil
+	}
+
+	// winget might be installed but not in current PATH
+	fmt.Println("winget installed but may require terminal restart to be available in PATH")
+	fmt.Println("Please restart your terminal and try again, or continue with manual installation.")
+
+	return fmt.Errorf("winget installed but not yet available in PATH - restart terminal")
+}
+
 // showWingetInstallHelp provides instructions for installing winget
 func showWingetInstallHelp() {
 	// Check Windows version
@@ -390,7 +445,7 @@ func showWingetInstallHelp() {
 		versionInfo = strings.TrimSpace(string(output))
 	}
 
-	fmt.Println("\nTo install winget:")
+	fmt.Println("\nTo install winget manually:")
 
 	// Check if they might have winget but it's not in PATH
 	appDataLocal := os.Getenv("LOCALAPPDATA")
@@ -404,7 +459,7 @@ func showWingetInstallHelp() {
 		if _, err := os.Stat(path); err == nil {
 			wingetFound = true
 			fmt.Printf("  Note: winget appears to be installed at: %s\n", path)
-			fmt.Println("  You may need to add it to your PATH or run this command in a new terminal.")
+			fmt.Println("  You may need to restart your terminal.")
 			break
 		}
 	}
