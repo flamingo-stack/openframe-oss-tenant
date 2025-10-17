@@ -223,7 +223,6 @@ public class DevicePipelineTest extends BasePipelineTest {
         }
     }
     
-    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForDeviceInGraphQL(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -250,7 +249,6 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), machineId, attempts));
     }
     
-    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForDeviceInPinotFilters(Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -281,7 +279,6 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), attempts));
     }
     
-    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForDeviceInGraphQLList(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;

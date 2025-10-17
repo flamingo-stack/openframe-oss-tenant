@@ -46,7 +46,6 @@ public abstract class BasePipelineTest extends BaseTest {
                hex.substring(8, 10) + ":" + hex.substring(10, 12);
     }
 
-    // No @Step - буде показано через executePhase
     protected <T> T awaitPipelineCondition(String condition, Duration timeout, Callable<T> probe) {
         log.debug("[{}] Awaiting condition: {} (max {}s)", testId, condition, timeout.getSeconds());
         
@@ -59,7 +58,6 @@ public abstract class BasePipelineTest extends BaseTest {
             .until(probe, result -> result != null);
     }
 
-    // No @Step - буде показано через executePhase
     protected void awaitPipelineBooleanCondition(String condition, Duration timeout, Callable<Boolean> probe) {
         awaitPipelineCondition(condition, timeout, () -> {
             Boolean result = probe.call();
