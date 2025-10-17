@@ -316,12 +316,12 @@ jobs:
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
 
           cat > RELEASE_HEADER.md << 'EOF'
-          ## 🐳Docker Images
+          ## 🐳 Docker Images
           EOF
           echo "$IMAGES" >> RELEASE_HEADER.md
           cat >> RELEASE_HEADER.md << 'EOF'
           
-          ## 🦩OpenFrame CLI Binaries
+          ## 🦩 OpenFrame CLI Binaries
           Download the appropriate archive for your platform:
           
           - **Linux (x64)**: `openframe-cli_${{ inputs.version }}_linux_amd64.tar.gz`
@@ -331,11 +331,11 @@ jobs:
           - **Windows (x64)**: `openframe-cli_${{ inputs.version }}_windows_amd64.zip`
           - **Windows (ARM64)**: `openframe-cli_${{ inputs.version }}_windows_arm64.zip`
           
-          ## 🦩OpenFrame Clients
+          ## 🦩 OpenFrame Clients
           - **macOS** (Universal): `openframe-client_macos_${{ inputs.version }}.tar.gz`
           - **Windows** (x64): `openframe-client_windows_${{ inputs.version }}.zip`
           
-          ## 🦩OpenFrame Chat Clients
+          ## 🦩 OpenFrame Chat Clients
           - **macOS** (Universal): `openframe-chat-client_macos_${{ inputs.version }}.tar.gz`
           - **Windows** (x64): `openframe-chat-client_windows_${{ inputs.version }}.zip`
           
