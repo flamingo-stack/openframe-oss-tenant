@@ -66,16 +66,16 @@ apps:
     project: default
     namespace: platform
     syncWave: "0"
-  ngrok-operator:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-  ingress-nginx:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
+  # ngrok-operator:
+  #   enabled: true
+  #   project: platform
+  #   namespace: platform
+  #   syncWave: "0"
+  # ingress-nginx:
+  #   enabled: true
+  #   project: platform
+  #   namespace: platform
+  #   syncWave: "0"
   promtail:
     enabled: true
     project: platform
@@ -93,14 +93,14 @@ apps:
     syncWave: "0"
     syncOptions:
       ServerSideApply: true
-  grafana:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-    syncOptions:
-      ServerSideApply: true
-      RespectIgnoreDifferences: true
+  # grafana:
+  #   enabled: true
+  #   project: platform
+  #   namespace: platform
+  #   syncWave: "0"
+  #   syncOptions:
+  #     ServerSideApply: true
+  #     RespectIgnoreDifferences: true
 
   namespace-datasources:
     enabled: true
@@ -112,46 +112,46 @@ apps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-  debezium-connect:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  pinot:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  cassandra:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  kafka:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  nats:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
-  mongodb-exporter:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
+  # debezium-connect:
+  #   enabled: true
+  #   project: datasources
+  #   namespace: datasources
+  #   syncWave: "1"
+  # pinot:
+  #   enabled: true
+  #   project: datasources
+  #   namespace: datasources
+  #   syncWave: "1"
+  # cassandra:
+  #   enabled: true
+  #   project: datasources
+  #   namespace: datasources
+  #   syncWave: "1"
+  # kafka:
+  #   enabled: true
+  #   project: datasources
+  #   namespace: datasources
+  #   syncWave: "1"
+  # nats:
+  #   enabled: true
+  #   project: datasources
+  #   namespace: datasources
+  #   syncWave: "1"
+  # mongodb-exporter:
+  #   enabled: true
+  #   project: datasources
+  #   namespace: datasources
+  #   syncWave: "1"
   redis:
     enabled: true
     project: datasources
     namespace: datasources
     syncWave: "1"
-  redis-exporter:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
+  # redis-exporter:
+  #   enabled: true
+  #   project: datasources
+  #   namespace: datasources
+  #   syncWave: "1"
 
   namespace-microservices:
     enabled: true
