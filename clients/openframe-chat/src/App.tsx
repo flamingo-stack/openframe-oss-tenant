@@ -8,9 +8,9 @@ function App() {
   
   useEffect(() => {
     if (token) {
-      console.log('✅ [APP] Token received from Rust:', token.substring(0, 10) + '...')
+      console.log('[APP] Token received from Rust:', token.substring(0, 10) + '...')
     } else {
-      console.log('⏳ [APP] Waiting for token from Rust...')
+      console.log('[APP] Waiting for token from Rust...')
     }
   }, [token])
   

@@ -23,7 +23,7 @@ export function useToken() {
     
     // Subscribe to token updates
     const unsubscribe = tokenService.onTokenUpdate((newToken) => {
-      console.log('🔑 [useToken] Token updated in hook:', newToken.substring(0, 20) + '...');
+      console.log('[useToken] Token updated in hook:', newToken.substring(0, 20) + '...');
       setToken(newToken);
     });
 
