@@ -366,99 +366,81 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 	fmt.Println("Installing Docker Engine on Windows Server...")
 	fmt.Println("Windows Server is compatible with Docker Engine")
 
-	// Install Docker using PowerShell script
-	fmt.Println("\nInstalling Docker using PowerShell...")
+	// Check if Chocolatey is installed
+	fmt.Println("\nChecking for Chocolatey...")
+	chocoInstalled := commandExists("choco")
+
+	if !chocoInstalled {
+		fmt.Println("Chocolatey is not installed. Installing Chocolatey first...")
+		if err := d.installChocolatey(); err != nil {
+			return fmt.Errorf("failed to install Chocolatey: %w", err)
+		}
+		fmt.Println("Chocolatey installed successfully!")
+	} else {
+		fmt.Println("Chocolatey is already installed")
+	}
+
+	// Install Docker using Chocolatey
+	fmt.Println("\nInstalling Docker using Chocolatey...")
 	fmt.Println("This will:")
-	fmt.Println("  1. Install NuGet package provider (required)")
-	fmt.Println("  2. Install the Docker-Microsoft PackageManagement Provider")
-	fmt.Println("  3. Install Docker Engine")
-	fmt.Println("  4. Start the Docker service")
+	fmt.Println("  1. Install Docker Engine via Chocolatey")
+	fmt.Println("  2. Start the Docker service")
 	fmt.Println()
 
-	// PowerShell command to install Docker on Windows Server
-	psScript := `
-$ErrorActionPreference = "Stop"
+	fmt.Println("Running installation (this may take several minutes)...")
+	fmt.Println("─────────────────────────────────────────────────────────────")
 
-# Set TLS 1.2 for secure downloads
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-Write-Host "Step 1/4: Installing NuGet package provider..." -ForegroundColor Cyan
-try {
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false | Out-Null
-    Write-Host "  NuGet provider installed successfully" -ForegroundColor Green
-} catch {
-    Write-Host "  Error installing NuGet: $_" -ForegroundColor Red
-    throw
-}
-
-Write-Host "Step 2/4: Installing Docker-Microsoft PackageManagement Provider..." -ForegroundColor Cyan
-try {
-    Install-Module -Name DockerMsftProvider -Repository PSGallery -Force -Confirm:$false | Out-Null
-    Write-Host "  DockerMsftProvider installed successfully" -ForegroundColor Green
-} catch {
-    Write-Host "  Error installing DockerMsftProvider: $_" -ForegroundColor Red
-    throw
-}
-
-Write-Host "Step 3/4: Installing Docker Engine..." -ForegroundColor Cyan
-try {
-    Install-Package -Name docker -ProviderName DockerMsftProvider -Force -Confirm:$false | Out-Null
-    Write-Host "  Docker Engine installed successfully" -ForegroundColor Green
-} catch {
-    Write-Host "  Error installing Docker: $_" -ForegroundColor Red
-    throw
-}
-
-Write-Host "Step 4/4: Starting Docker service..." -ForegroundColor Cyan
-try {
-    Start-Service Docker
-    Set-Service -Name Docker -StartupType Automatic
-    Write-Host "  Docker service started and configured for automatic startup" -ForegroundColor Green
-} catch {
-    Write-Host "  Error starting Docker service: $_" -ForegroundColor Red
-    throw
-}
-
-Write-Host ""
-Write-Host "Docker Engine installed successfully!" -ForegroundColor Green
-Write-Host ""
-Write-Host "Docker version:" -ForegroundColor Cyan
-docker version
-`
-
-	// Create temp script file
-	tempDir := os.TempDir()
-	scriptPath := filepath.Join(tempDir, "install-docker.ps1")
-
-	if err := os.WriteFile(scriptPath, []byte(psScript), 0644); err != nil {
-		return fmt.Errorf("failed to create installation script: %w", err)
-	}
-	defer os.Remove(scriptPath)
-
-	// Execute PowerShell script
-	cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", scriptPath)
+	// Install docker-engine package
+	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--no-progress")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
-	fmt.Println("Running installation script (this may take several minutes)...")
-	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	if err := cmd.Run(); err != nil {
 		fmt.Println("─────────────────────────────────────────────────────────────")
 		fmt.Printf("\nInstallation failed: %v\n", err)
-		fmt.Println("\nYou can try installing manually in PowerShell (Run as Administrator):")
-		fmt.Println("  Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force")
-		fmt.Println("  Install-Module -Name DockerMsftProvider -Repository PSGallery -Force")
-		fmt.Println("  Install-Package -Name docker -ProviderName DockerMsftProvider -Force")
-		fmt.Println("  Start-Service Docker")
+		fmt.Println("\nYou can try installing manually:")
+		fmt.Println("  choco install docker-engine -y")
 		return fmt.Errorf("failed to install Docker Engine: %w", err)
 	}
 
 	fmt.Println("─────────────────────────────────────────────────────────────")
 	fmt.Println("Docker Engine installed successfully!")
-	fmt.Println("Docker service is running and will start automatically on boot.")
+
+	// Start Docker service
+	fmt.Println("\nStarting Docker service...")
+	startCmd := exec.Command("powershell", "-Command", "Start-Service Docker; Set-Service -Name Docker -StartupType Automatic")
+	startCmd.Stdout = os.Stdout
+	startCmd.Stderr = os.Stderr
+
+	if err := startCmd.Run(); err != nil {
+		fmt.Printf("Warning: Could not start Docker service: %v\n", err)
+		fmt.Println("You may need to start it manually: Start-Service Docker")
+	} else {
+		fmt.Println("Docker service started and configured for automatic startup")
+	}
+
+	// Show Docker version
+	fmt.Println("\nDocker version:")
+	versionCmd := exec.Command("docker", "version")
+	versionCmd.Stdout = os.Stdout
+	versionCmd.Stderr = os.Stderr
+	_ = versionCmd.Run()
 
 	return nil
+}
+
+func (d *DockerInstaller) installChocolatey() error {
+	psScript := `
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+`
+
+	cmd := exec.Command("powershell", "-Command", psScript)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 // downloadFileWithProgress downloads a file and shows progress percentage
