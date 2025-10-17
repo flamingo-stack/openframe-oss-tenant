@@ -14,10 +14,10 @@ export function useToken() {
     // Request token from Rust immediately on mount
     tokenService.requestToken().then((fetchedToken) => {
       if (fetchedToken) {
-        console.log('✅ [useToken] Initial token received:', fetchedToken.substring(0, 20) + '...');
+        console.log('[useToken] Initial token received:', fetchedToken.substring(0, 20) + '...');
         setToken(fetchedToken);
       } else {
-        console.log('⚠️  [useToken] No token available yet');
+        console.log('[useToken] No token available yet');
       }
     });
     

@@ -5,7 +5,6 @@ TARGET ?=
 ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
-	@@ -13,21 +12,14 @@ fmt:
 
 fmt-check:
 	cd src-tauri && $(CARGO) fmt --all -- --check
