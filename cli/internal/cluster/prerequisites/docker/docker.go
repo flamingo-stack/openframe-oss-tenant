@@ -323,6 +323,20 @@ func (d *DockerInstaller) installWindows() error {
 	fmt.Println("Installing Docker on Windows...")
 	fmt.Println("Note: Chocolatey will automatically install .NET Framework 4.8 if needed.")
 
+	// Detect if this is Windows Server
+	isServer, err := IsWindowsServer()
+	if err != nil {
+		fmt.Printf("Warning: Could not detect Windows edition: %v\n", err)
+		fmt.Println("Assuming Windows Desktop...")
+		isServer = false
+	}
+
+	if isServer {
+		fmt.Println("Detected: Windows Server - will install Docker Engine")
+	} else {
+		fmt.Println("Detected: Windows Desktop - will install Docker Desktop")
+	}
+
 	// Step 1: Install Chocolatey if needed (this will auto-install .NET 4.8 if missing)
 	fmt.Println("\nStep 1/2: Checking Chocolatey package manager...")
 	if !commandExists("choco") {
@@ -336,9 +350,12 @@ func (d *DockerInstaller) installWindows() error {
 		fmt.Println("Chocolatey is already installed.")
 	}
 
-	// Step 2: Install Docker Desktop
-	fmt.Println("\nStep 2/2: Installing Docker Desktop...")
-	return d.installWindowsChocolatey()
+	// Step 2: Install Docker (Engine for Server, Desktop for Windows)
+	fmt.Println("\nStep 2/2: Installing Docker...")
+	if isServer {
+		return d.installDockerEngine()
+	}
+	return d.installDockerDesktop()
 }
 
 func (d *DockerInstaller) installChocolatey() error {
@@ -363,7 +380,64 @@ func (d *DockerInstaller) installChocolatey() error {
 	return nil
 }
 
-func (d *DockerInstaller) installWindowsChocolatey() error {
+func (d *DockerInstaller) installDockerEngine() error {
+	fmt.Println("Installing Docker Engine via Chocolatey...")
+
+	// Try both choco and full path
+	var cmd *exec.Cmd
+	if commandExists("choco") {
+		// Use --no-progress and --confirm to prevent any interactive prompts
+		cmd = exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--limit-output")
+	} else {
+		// Try with full path if choco is not in PATH yet
+		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-engine", "-y", "--no-progress", "--limit-output")
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		// Check if error message contains .NET or reboot related text
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "exit status") {
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println()
+			fmt.Println("Chocolatey has installed .NET Framework 4.8, but a system")
+			fmt.Println("reboot is required before Docker can be installed.")
+			fmt.Println()
+			fmt.Println("Next steps:")
+			fmt.Println("  1. Restart your computer now")
+			fmt.Println("  2. Run this installer again after reboot")
+			fmt.Println("  3. Docker Engine will install successfully")
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			return fmt.Errorf("system reboot required - please restart and run again")
+		}
+		return fmt.Errorf("failed to install Docker Engine via Chocolatey: %w", err)
+	}
+
+	fmt.Println("Docker Engine installed successfully.")
+
+	// Start Docker service on Windows Server
+	fmt.Println("Starting Docker service...")
+	startCmd := exec.Command("powershell", "-Command", "Start-Service Docker; Set-Service -Name Docker -StartupType Automatic")
+	startCmd.Stdout = os.Stdout
+	startCmd.Stderr = os.Stderr
+
+	if err := startCmd.Run(); err != nil {
+		fmt.Printf("Warning: Could not start Docker service: %v\n", err)
+		fmt.Println("You may need to start it manually: Start-Service Docker")
+	} else {
+		fmt.Println("Docker service started and configured for automatic startup")
+	}
+
+	return nil
+}
+
+func (d *DockerInstaller) installDockerDesktop() error {
 	fmt.Println("Installing Docker Desktop via Chocolatey...")
 
 	// Try both choco and full path
@@ -379,6 +453,25 @@ func (d *DockerInstaller) installWindowsChocolatey() error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
+		// Check if error message contains .NET or reboot related text
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "exit status") {
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println()
+			fmt.Println("Chocolatey has installed .NET Framework 4.8, but a system")
+			fmt.Println("reboot is required before Docker can be installed.")
+			fmt.Println()
+			fmt.Println("Next steps:")
+			fmt.Println("  1. Restart your computer now")
+			fmt.Println("  2. Run this installer again after reboot")
+			fmt.Println("  3. Docker Desktop will install successfully")
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			return fmt.Errorf("system reboot required - please restart and run again")
+		}
 		return fmt.Errorf("failed to install Docker Desktop via Chocolatey: %w", err)
 	}
 
