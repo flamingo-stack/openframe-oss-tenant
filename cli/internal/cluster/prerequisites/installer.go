@@ -263,13 +263,15 @@ func (i *Installer) CheckAndInstallNonInteractive(nonInteractive bool) error {
 			if confirmed {
 				if err := docker.StartDocker(); err != nil {
 					pterm.Error.Printf("Failed to start Docker: %v\n", err)
-					pterm.Info.Println("Please start Docker Desktop manually and try again.")
+					fmt.Println()
+					i.showDockerStartInstructions()
 					os.Exit(1)
 				}
 				spinner, _ := pterm.DefaultSpinner.Start("Waiting for Docker to start...")
 				if err := docker.WaitForDocker(); err != nil {
 					spinner.Fail("Docker failed to start")
-					pterm.Info.Println("Please start Docker Desktop manually and try again.")
+					fmt.Println()
+					i.showDockerStartInstructions()
 					os.Exit(1)
 				}
 				spinner.Success("Docker started successfully")
@@ -309,7 +311,7 @@ func (i *Installer) showManualInstructions() {
 
 func (i *Installer) showDockerStartInstructions() {
 	fmt.Println()
-	pterm.Info.Println("Please start Docker manually and try again:")
+	pterm.Info.Println("Docker troubleshooting:")
 	switch runtime.GOOS {
 	case "darwin":
 		pterm.Printf("• Open Docker Desktop from Applications or Launchpad\n")
@@ -323,10 +325,22 @@ func (i *Installer) showDockerStartInstructions() {
 		pterm.Printf("• Enable Docker to start on boot (optional):\n")
 		pterm.Printf("  %s\n", pterm.Cyan("sudo systemctl enable docker"))
 	case "windows":
-		pterm.Printf("• Start Docker Desktop from Start Menu or Desktop shortcut\n")
-		pterm.Printf("• Or run from Command Prompt:\n")
-		pterm.Printf("  %s\n", pterm.Cyan(`"C:\Program Files\Docker\Docker\Docker Desktop.exe"`))
-		pterm.Printf("• Wait for Docker to fully start (system tray icon should show running)\n")
+		// Check if Windows Server
+		isServer, _ := docker.IsWindowsServer()
+		if isServer {
+			pterm.Printf("• Windows Server requires a system restart after Docker installation\n")
+			pterm.Printf("• After restart, enable Windows Containers feature:\n")
+			pterm.Printf("  %s\n", pterm.Cyan("Install-WindowsFeature -Name Containers"))
+			pterm.Printf("• Then restart again and start Docker service:\n")
+			pterm.Printf("  %s\n", pterm.Cyan("Start-Service Docker"))
+			pterm.Printf("• Check service status:\n")
+			pterm.Printf("  %s\n", pterm.Cyan("Get-Service Docker"))
+		} else {
+			pterm.Printf("• Start Docker Desktop from Start Menu or Desktop shortcut\n")
+			pterm.Printf("• Or run from Command Prompt:\n")
+			pterm.Printf("  %s\n", pterm.Cyan(`"C:\Program Files\Docker\Docker\Docker Desktop.exe"`))
+			pterm.Printf("• Wait for Docker to fully start (system tray icon should show running)\n")
+		}
 	default:
 		pterm.Printf("• Start Docker Desktop or Docker daemon according to your system\n")
 		pterm.Printf("• Verify Docker is running: %s\n", pterm.Cyan("docker ps"))

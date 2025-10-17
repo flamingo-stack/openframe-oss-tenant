@@ -421,10 +421,23 @@ func (d *DockerInstaller) installDockerEngine() error {
 
 	fmt.Println("Docker Engine installed successfully.")
 
-	// Start Docker service on Windows Server with retry logic
-	fmt.Println("Starting Docker service...")
+	// Enable Windows Containers feature on Windows Server
+	fmt.Println("\nEnabling Windows Containers feature...")
+	containersCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Containers -Restart:$false")
+	containersCmd.Stdout = os.Stdout
+	containersCmd.Stderr = os.Stderr
 
-	var lastErr error
+	if err := containersCmd.Run(); err != nil {
+		fmt.Printf("Warning: Could not enable Containers feature: %v\n", err)
+		fmt.Println("You may need to enable it manually: Install-WindowsFeature -Name Containers")
+	} else {
+		fmt.Println("Windows Containers feature enabled.")
+		fmt.Println("Note: A system restart may be required for the feature to take full effect.")
+	}
+
+	// Start Docker service on Windows Server with retry logic
+	fmt.Println("\nStarting Docker service...")
+
 	maxRetries := 3
 	for i := 0; i < maxRetries; i++ {
 		if i > 0 {
@@ -437,7 +450,6 @@ func (d *DockerInstaller) installDockerEngine() error {
 		startCmd.Stderr = os.Stderr
 
 		if err := startCmd.Run(); err != nil {
-			lastErr = err
 			continue
 		}
 
@@ -446,28 +458,22 @@ func (d *DockerInstaller) installDockerEngine() error {
 		return nil
 	}
 
-	// All retries failed - provide detailed troubleshooting
+	// All retries failed - show restart message
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("⚠  DOCKER SERVICE FAILED TO START")
+	fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
-	fmt.Printf("Error: %v\n", lastErr)
+	fmt.Println("Docker Engine has been installed, but the Windows Containers")
+	fmt.Println("feature requires a system reboot to complete activation.")
 	fmt.Println()
-	fmt.Println("Most common causes:")
-	fmt.Println("  1. Windows Containers feature not enabled")
-	fmt.Println("  2. Hyper-V feature not enabled (if required)")
-	fmt.Println("  3. System restart required after Docker installation")
-	fmt.Println()
-	fmt.Println("Recommended actions:")
+	fmt.Println("Next steps:")
 	fmt.Println("  1. Restart your computer now")
-	fmt.Println("  2. After restart, verify Docker service:")
-	fmt.Println("     Get-Service Docker")
-	fmt.Println("  3. Try starting manually:")
-	fmt.Println("     Start-Service Docker")
+	fmt.Println("  2. Docker service will start automatically after reboot")
+	fmt.Println("  3. Verify with: Get-Service Docker")
 	fmt.Println()
-	fmt.Println("To enable Windows Containers feature:")
-	fmt.Println("     Install-WindowsFeature -Name Containers")
+	fmt.Println("If Docker still doesn't start after reboot, run:")
+	fmt.Println("  Start-Service Docker")
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
