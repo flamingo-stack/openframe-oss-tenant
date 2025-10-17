@@ -391,17 +391,23 @@ func installWinget() error {
 	tempDir := os.TempDir()
 	installerPath := tempDir + "\\winget-installer.msixbundle"
 
-	// Download using PowerShell
+	// Download using PowerShell with progress
 	downloadCmd := fmt.Sprintf(
-		`[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
+		`[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `+
+		`Write-Host 'Downloading winget (this may take 1-2 minutes)...'; `+
+		`Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing -TimeoutSec 300`,
 		wingetURL, installerPath,
 	)
 
-	fmt.Println("Downloading winget installer package...")
+	fmt.Println("Downloading winget installer package (this may take 1-2 minutes)...")
 	cmd := exec.Command("powershell", "-NoProfile", "-Command", downloadCmd)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to download winget: %w", err)
 	}
+
+	fmt.Println("Download complete!")
 
 	// Install the package
 	fmt.Println("Installing winget...")
