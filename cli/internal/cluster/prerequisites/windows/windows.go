@@ -95,86 +95,59 @@ func (w *WindowsPrerequisitesInstaller) isVCRedistInstalled() bool {
 }
 
 func (w *WindowsPrerequisitesInstaller) installDotNet() error {
-	// Try winget first
-	if commandExists("winget") {
-		fmt.Println("Installing .NET Runtime via winget...")
-		cmd := exec.Command("winget", "install", "-e", "--id", "Microsoft.DotNet.Runtime.8", "--accept-package-agreements", "--accept-source-agreements")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			// Try .NET 6 as fallback
-			cmd = exec.Command("winget", "install", "-e", "--id", "Microsoft.DotNet.Runtime.6", "--accept-package-agreements", "--accept-source-agreements")
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-
-			if err := cmd.Run(); err != nil {
-				return w.installDotNetChoco()
-			}
-		}
-		return nil
+	// Only use winget - Chocolatey has dependency issues with .NET Framework 4.8
+	if !commandExists("winget") {
+		fmt.Println("\nwinget is required to install .NET Runtime automatically.")
+		fmt.Println("Please install .NET Runtime manually from:")
+		fmt.Println("  https://dotnet.microsoft.com/download/dotnet/8.0")
+		fmt.Println("or install winget (comes with Windows 10+ version 1809 or later)")
+		return fmt.Errorf("winget not found - .NET Runtime requires manual installation")
 	}
 
-	// Fall back to chocolatey
-	if commandExists("choco") {
-		return w.installDotNetChoco()
-	}
-
-	return fmt.Errorf("neither winget nor chocolatey found")
-}
-
-func (w *WindowsPrerequisitesInstaller) installDotNetChoco() error {
-	fmt.Println("Installing .NET Runtime via Chocolatey...")
-	// Use dotnet-8.0-runtime which has fewer dependencies
-	cmd := exec.Command("choco", "install", "dotnet-8.0-runtime", "-y", "--ignore-dependencies")
+	fmt.Println("Installing .NET Runtime via winget...")
+	cmd := exec.Command("winget", "install", "-e", "--id", "Microsoft.DotNet.Runtime.8", "--accept-package-agreements", "--accept-source-agreements")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		// Try dotnet-6.0-runtime as fallback
-		cmd = exec.Command("choco", "install", "dotnet-6.0-runtime", "-y", "--ignore-dependencies")
+		// Try .NET 6 as fallback
+		fmt.Println("Trying .NET 6 Runtime as fallback...")
+		cmd = exec.Command("winget", "install", "-e", "--id", "Microsoft.DotNet.Runtime.6", "--accept-package-agreements", "--accept-source-agreements")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+
 		if err := cmd.Run(); err != nil {
+			fmt.Println("\nFailed to install .NET Runtime via winget.")
+			fmt.Println("Please install .NET Runtime manually from:")
+			fmt.Println("  https://dotnet.microsoft.com/download")
 			return fmt.Errorf("failed to install .NET Runtime: %w", err)
 		}
 	}
-
 	return nil
 }
 
+
 func (w *WindowsPrerequisitesInstaller) installVCRedist() error {
-	// Try winget first
-	if commandExists("winget") {
-		fmt.Println("Installing Visual C++ Redistributables via winget...")
-		cmd := exec.Command("winget", "install", "-e", "--id", "Microsoft.VCRedist.2015+.x64", "--accept-package-agreements", "--accept-source-agreements")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			return w.installVCRedistChoco()
-		}
-		return nil
+	// Only use winget - Chocolatey has dependency issues
+	if !commandExists("winget") {
+		fmt.Println("\nwinget is required to install Visual C++ Redistributables automatically.")
+		fmt.Println("Please install Visual C++ Redistributables manually from:")
+		fmt.Println("  https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist")
+		fmt.Println("or install winget (comes with Windows 10+ version 1809 or later)")
+		return fmt.Errorf("winget not found - Visual C++ Redistributables require manual installation")
 	}
 
-	// Fall back to chocolatey
-	if commandExists("choco") {
-		return w.installVCRedistChoco()
-	}
-
-	return fmt.Errorf("neither winget nor chocolatey found")
-}
-
-func (w *WindowsPrerequisitesInstaller) installVCRedistChoco() error {
-	fmt.Println("Installing Visual C++ Redistributables via Chocolatey...")
-	// Install just the 2015-2022 version to avoid dependency issues
-	cmd := exec.Command("choco", "install", "vcredist140", "-y", "--ignore-dependencies")
+	fmt.Println("Installing Visual C++ Redistributables via winget...")
+	cmd := exec.Command("winget", "install", "-e", "--id", "Microsoft.VCRedist.2015+.x64", "--accept-package-agreements", "--accept-source-agreements")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
+		fmt.Println("\nFailed to install Visual C++ Redistributables via winget.")
+		fmt.Println("Please install Visual C++ Redistributables manually from:")
+		fmt.Println("  https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist")
 		return fmt.Errorf("failed to install Visual C++ Redistributables: %w", err)
 	}
-
 	return nil
 }
+

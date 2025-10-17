@@ -261,8 +261,12 @@ func (d *DockerInstaller) installWindows() error {
 		cmd.Stderr = os.Stderr
 
 		if err := cmd.Run(); err != nil {
-			fmt.Printf("winget installation failed, trying chocolatey...\n")
-			return d.installWindowsChoco()
+			fmt.Printf("winget installation failed: %v\n", err)
+			fmt.Println("\nDocker Desktop installation requires manual setup on Windows.")
+			fmt.Println("Please download and install Docker Desktop from:")
+			fmt.Println("  https://www.docker.com/products/docker-desktop")
+			fmt.Println("\nAfter installation, start Docker Desktop and run this command again.")
+			return fmt.Errorf("Docker Desktop installation failed - please install manually")
 		}
 
 		fmt.Println("Docker Desktop installed successfully. Starting Docker Desktop...")
@@ -273,32 +277,15 @@ func (d *DockerInstaller) installWindows() error {
 		return nil
 	}
 
-	// Fall back to chocolatey
-	if commandExists("choco") {
-		return d.installWindowsChoco()
-	}
-
-	return fmt.Errorf("neither winget nor chocolatey found. Please install winget (Windows 10+ recommended) or chocolatey from https://chocolatey.org/, then try again")
+	// Don't use Chocolatey for Docker Desktop - it has dependency issues
+	// Direct user to manual installation instead
+	fmt.Println("\nwinget not found. Docker Desktop installation requires winget on Windows 10+")
+	fmt.Println("Please install Docker Desktop manually from:")
+	fmt.Println("  https://www.docker.com/products/docker-desktop")
+	fmt.Println("\nAfter installation, start Docker Desktop and run this command again.")
+	return fmt.Errorf("Docker Desktop requires manual installation")
 }
 
-func (d *DockerInstaller) installWindowsChoco() error {
-	fmt.Println("Installing Docker Desktop via Chocolatey...")
-	cmd := exec.Command("choco", "install", "docker-desktop", "-y")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Docker Desktop: %w", err)
-	}
-
-	fmt.Println("Docker Desktop installed successfully. Starting Docker Desktop...")
-	if err := startDockerWindows(); err != nil {
-		fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
-		fmt.Println("Please start Docker Desktop manually from Start Menu")
-	}
-
-	return nil
-}
 
 func (d *DockerInstaller) runCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
