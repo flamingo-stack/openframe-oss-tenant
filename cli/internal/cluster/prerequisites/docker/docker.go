@@ -392,7 +392,7 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 		fmt.Println("Note: This may require a system reboot to complete.")
 		fmt.Println("─────────────────────────────────────────────────────────────")
 
-		dotnetCmd := exec.Command("choco", "install", "netfx-4.8", "-y", "--no-progress", "--ignore-reboot-requests")
+		dotnetCmd := exec.Command("choco", "install", "netfx-4.8", "-y", "--verbose", "--ignore-reboot-requests")
 		dotnetCmd.Stdout = os.Stdout
 		dotnetCmd.Stderr = os.Stderr
 
@@ -431,22 +431,25 @@ func (d *DockerInstaller) installWindowsServerDocker() error {
 	// Install Docker using Chocolatey
 	fmt.Println("\nStep 4/4: Installing Docker Engine...")
 	fmt.Println("This may take several minutes...")
+	fmt.Println("Installation will show detailed output below:")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	// Install docker-engine package
-	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--ignore-dependencies")
+	// Install docker-engine package with verbose output
+	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--verbose", "--ignore-dependencies")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
 		fmt.Println("─────────────────────────────────────────────────────────────")
-		fmt.Printf("\nInstallation failed: %v\n", err)
+		fmt.Printf("\nDocker installation failed: %v\n", err)
 		fmt.Println("\nPossible solutions:")
 		fmt.Println("  1. Reboot the system (if .NET was just installed)")
-		fmt.Println("  2. Install manually:")
+		fmt.Println("  2. Ensure .NET Framework 4.8 is fully installed")
+		fmt.Println("  3. Install manually:")
 		fmt.Println("     choco install netfx-4.8 -y")
 		fmt.Println("     # Reboot system")
-		fmt.Println("     choco install docker-engine -y")
+		fmt.Println("     choco install docker-engine -y --verbose")
+		fmt.Println("\nFor more details, check the verbose output above.")
 		return fmt.Errorf("failed to install Docker Engine: %w", err)
 	}
 
