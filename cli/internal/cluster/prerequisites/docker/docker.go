@@ -429,7 +429,7 @@ func (d *DockerInstaller) installDockerEngine() error {
 	for i := 0; i < maxRetries; i++ {
 		if i > 0 {
 			fmt.Printf("Retry %d/%d: Waiting for Docker service to be ready...\n", i, maxRetries-1)
-			time.Sleep(3 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 
 		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker; Set-Service -Name Docker -StartupType Automatic")
@@ -446,11 +446,32 @@ func (d *DockerInstaller) installDockerEngine() error {
 		return nil
 	}
 
-	// All retries failed
-	fmt.Printf("Warning: Could not start Docker service after %d attempts: %v\n", maxRetries, lastErr)
-	fmt.Println("The service may need more time to initialize.")
-	fmt.Println("You can start it manually: Start-Service Docker")
+	// All retries failed - provide detailed troubleshooting
+	fmt.Println()
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println("⚠  DOCKER SERVICE FAILED TO START")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println()
+	fmt.Printf("Error: %v\n", lastErr)
+	fmt.Println()
+	fmt.Println("Most common causes:")
+	fmt.Println("  1. Windows Containers feature not enabled")
+	fmt.Println("  2. Hyper-V feature not enabled (if required)")
+	fmt.Println("  3. System restart required after Docker installation")
+	fmt.Println()
+	fmt.Println("Recommended actions:")
+	fmt.Println("  1. Restart your computer now")
+	fmt.Println("  2. After restart, verify Docker service:")
+	fmt.Println("     Get-Service Docker")
+	fmt.Println("  3. Try starting manually:")
+	fmt.Println("     Start-Service Docker")
+	fmt.Println()
+	fmt.Println("To enable Windows Containers feature:")
+	fmt.Println("     Install-WindowsFeature -Name Containers")
+	fmt.Println()
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
+	// Don't fail the installation - Docker is installed, just needs restart
 	return nil
 }
 
