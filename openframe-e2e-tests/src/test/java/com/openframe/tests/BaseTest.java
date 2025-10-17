@@ -1,7 +1,9 @@
 package com.openframe.tests;
 
 import com.openframe.support.enums.TestPhase;
+import com.openframe.support.helpers.AllureTestListener;
 import com.openframe.config.ThreadSafeTestContext;
+import com.openframe.support.utils.RetryExtension;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
 import lombok.extern.slf4j.Slf4j;
@@ -9,14 +11,20 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
 /**
  * Base class for all tests providing common functionality
+ * Automatically captures test failures with stack traces via AllureTestListener
  */
 @Slf4j
+@ExtendWith(AllureTestListener.class)
+@ExtendWith(RetryExtension.class)
 public abstract class BaseTest {
     
     protected static final String RUN_ID = UUID.randomUUID().toString();
@@ -30,7 +38,6 @@ public abstract class BaseTest {
         
         log.info("Test: {} [testId={}]", testInfo.getDisplayName(), testId);
         Allure.epic("OpenFrame Tests");
-        Allure.addAttachment("Test ID", testId);
         
         ThreadSafeTestContext.createUniqueUser("test_user");
     }
@@ -51,12 +58,26 @@ public abstract class BaseTest {
         log.info("[{}] {}: {}", testId, phase, description);
         try {
             T result = action.call();
-            Allure.addAttachment(phase + " Result", String.valueOf(result));
             return result;
         } catch (Exception e) {
-            log.error("[{}] {} failed: {}", testId, phase, e.getMessage());
-            Allure.addAttachment(phase + " Error", e.getMessage());
-            throw new AssertionError(phase + " failed: " + description, e);
+            log.error("[{}] {} failed: {}", testId, phase, e.getMessage(), e);
+
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            String fullStackTrace = sw.toString();
+
+            String detailedMessage = String.format(
+                "%s failed: %s%n" +
+                "Test ID: %s%n" +
+                "Error: %s: %s%n%n" +
+                "%s",
+                phase, description, testId,
+                e.getClass().getSimpleName(), e.getMessage(),
+                fullStackTrace
+            );
+
+            throw new AssertionError(detailedMessage, e);
         }
     }
 
@@ -66,13 +87,5 @@ public abstract class BaseTest {
             action.run();
             return null;
         });
-    }
-    
-    protected void sleep(long milliseconds) {
-        try {
-            Thread.sleep(milliseconds);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 }

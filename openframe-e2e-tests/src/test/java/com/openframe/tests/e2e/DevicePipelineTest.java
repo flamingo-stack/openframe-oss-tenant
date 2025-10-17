@@ -8,11 +8,7 @@ import io.qameta.allure.*;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -23,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.openframe.support.constants.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,15 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * - Device data accessibility via GraphQL (single device and list queries)
  */
 @Slf4j
-@Epic("Device Pipeline")
 @Feature("End-to-End Device Processing")
-@Tag("device-pipeline")
+@Tag("smoke")
 @DisplayName("Device Pipeline E2E")
-public class DevicePipelineE2ETest extends BasePipelineE2ETest {
+public class DevicePipelineTest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
-    private static final Duration PINOT_INDEXING_TIMEOUT = Duration.ofSeconds(45);
-    private static final Duration MONGODB_TIMEOUT = Duration.ofSeconds(10);
     
     @BeforeEach
     protected void setupTest(TestInfo testInfo) {
@@ -53,8 +47,6 @@ public class DevicePipelineE2ETest extends BasePipelineE2ETest {
     }
     
     @Test
-    @Story("Device Registration Pipeline")
-    @Severity(SeverityLevel.CRITICAL)
     @Description("Verify device registration flows through complete pipeline to MongoDB and Pinot")
     void deviceRegistrationFlowsThroughPipeline() throws Exception {
         long startTime = System.currentTimeMillis();
@@ -200,13 +192,9 @@ public class DevicePipelineE2ETest extends BasePipelineE2ETest {
                 return ids;
             });
             
-            Map<String, Object> filters = executePhase(TestPhase.ACT, "Query device filters", () -> {
-                Thread.sleep(5000);
-                
-                Response response = ApiHelpers.graphqlQuery(GraphQLQueries.DEVICE_FILTERS_QUERY);
-                response.then().statusCode(200);
-                return response.jsonPath().getMap("data.deviceFilters");
-            });
+            Map<String, Object> filters = executePhase(TestPhase.ASSERT, 
+                "Wait for devices to be indexed in Pinot filters", 
+                () -> waitForDeviceInPinotFilters(PINOT_INDEXING_TIMEOUT));
             
             assertThat(filters)
                 .as("Filters should be returned")
@@ -235,7 +223,6 @@ public class DevicePipelineE2ETest extends BasePipelineE2ETest {
         }
     }
     
-    @Step("Wait for device to be accessible via GraphQL")
     private Map<String, Object> waitForDeviceInGraphQL(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -262,7 +249,6 @@ public class DevicePipelineE2ETest extends BasePipelineE2ETest {
             testId, timeout.toMillis(), machineId, attempts));
     }
     
-    @Step("Wait for device to appear in Pinot filters")
     private Map<String, Object> waitForDeviceInPinotFilters(Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -293,7 +279,6 @@ public class DevicePipelineE2ETest extends BasePipelineE2ETest {
             testId, timeout.toMillis(), attempts));
     }
     
-    @Step("Wait for device in GraphQL device list")
     private Map<String, Object> waitForDeviceInGraphQLList(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;

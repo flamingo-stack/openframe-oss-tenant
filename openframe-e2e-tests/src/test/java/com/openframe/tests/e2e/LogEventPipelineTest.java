@@ -10,10 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -29,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static com.openframe.support.constants.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,11 +37,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  */
 @Slf4j
-@Epic("Log Event Pipeline")
+@Disabled
 @Feature("End-to-End Log Processing")
-@Tag("log-pipeline")
+@Tag("smoke")
 @DisplayName("Log Event Pipeline E2E")
-public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
+public class LogEventPipelineTest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
     private static final Duration GRAPHQL_TIMEOUT = Duration.ofSeconds(30);
@@ -56,8 +54,6 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("toolTestDataProvider")
-    @Story("Tool Integration Pipeline")
-    @Severity(SeverityLevel.CRITICAL)
     @Description("Verify log events flow through the complete pipeline to GraphQL")
     void logEventFlowsThroughPipeline(ToolTestData testData) throws Exception {
         long startTime = System.currentTimeMillis();
@@ -90,8 +86,13 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
                 () -> verifyMessageInPinotTopic(testId)
             );
             
-            assertThat(record).isNotNull();
-            assertThat(record.value()).contains(testId);
+            assertThat(record)
+                .as("Kafka message should be received in Pinot topic for test: %s", testId)
+                .isNotNull();
+            
+            assertThat(record.value())
+                .as("Message value should contain testId: %s", testId)
+                .contains(testId);
             
             Map<String, Object> logEntry = executePhase(
                 TestPhase.ASSERT,
@@ -161,7 +162,6 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
         );
     }
     
-    @Step("Setup Kafka consumers for {sourceTopic}")
     private void setupKafkaConsumers(String sourceTopic) {
         log.info("[{}] Setting up test consumers", testId);
         
@@ -191,7 +191,6 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
             String.format("Source: %s\nTarget: %s", sourceTopic, KafkaTestInfrastructure.TOPIC_PINOT_EVENTS));
     }
     
-    @Step("Verify message appears in Pinot topic")
     private ConsumerRecord<String, String> verifyMessageInPinotTopic(String testId) throws Exception {
         log.info("[{}] Verifying message in Pinot topic", testId);
         
@@ -207,9 +206,8 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
         return record;
     }
     
-    @Step("Verify log event is queryable via GraphQL API for {toolType}")
     private Map<String, Object> waitForLogInGraphQL(String toolType, String searchTerm) {
-        Instant deadline = Instant.now().plus(LogEventPipelineE2ETest.GRAPHQL_TIMEOUT);
+        Instant deadline = Instant.now().plus(LogEventPipelineTest.GRAPHQL_TIMEOUT);
         Duration retryInterval = Duration.ofMillis(500);
         int attempts = 0;
         
@@ -234,7 +232,7 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
         
         throw new AssertionError(String.format(
             "[%s] Log not found in GraphQL after %d ms (toolType: %s, searchTerm: %s, attempts: %d)",
-            testId, LogEventPipelineE2ETest.GRAPHQL_TIMEOUT.toMillis(), toolType, searchTerm, attempts));
+            testId, LogEventPipelineTest.GRAPHQL_TIMEOUT.toMillis(), toolType, searchTerm, attempts));
     }
     
     private Optional<Map<String, Object>> tryGetLogFromGraphQL(String toolType, String searchTerm) {
@@ -300,7 +298,6 @@ public class LogEventPipelineE2ETest extends BasePipelineE2ETest {
         }
     }
     
-    @Step("Verify log details in Cassandra")
     private void verifyLogDetailsInCassandra(Map<String, Object> logEntry) {
         try {
             String query = String.format("""

@@ -3,7 +3,7 @@ package com.openframe.tests.integration;
 import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.ApiHelpers;
 import com.openframe.support.constants.GraphQLQueries;
-import com.openframe.tests.e2e.BasePipelineE2ETest;
+import com.openframe.tests.e2e.BasePipelineTest;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -18,12 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 @Feature("GraphQL API")
-
+@Tag("smoke")
 @DisplayName("GraphQL Log Query Integration Test")
-@TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Execution(ExecutionMode.CONCURRENT)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class GraphQLLogQueryIT extends BasePipelineE2ETest {
+public class GraphQLLogQueryTest extends BasePipelineTest {
     
     @BeforeEach
     void setup(TestInfo testInfo) {
