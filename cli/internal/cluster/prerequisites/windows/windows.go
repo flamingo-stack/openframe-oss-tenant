@@ -39,9 +39,6 @@ func (w *WindowsPrerequisitesInstaller) Install() error {
 
 	fmt.Println("Installing Windows prerequisites...")
 
-	dotnetInstalled := false
-	vcredistInstalled := false
-
 	// Install .NET Runtime
 	if !w.isDotNetInstalled() {
 		fmt.Println("Installing .NET Runtime...")
@@ -50,12 +47,10 @@ func (w *WindowsPrerequisitesInstaller) Install() error {
 			fmt.Println("Note: .NET Runtime is optional. Docker Desktop may still work without it.")
 			fmt.Println("If you encounter issues, install .NET manually from https://dotnet.microsoft.com/download")
 		} else {
-			dotnetInstalled = true
 			fmt.Println(".NET Runtime installed successfully")
 		}
 	} else {
 		fmt.Println(".NET Runtime is already installed")
-		dotnetInstalled = true
 	}
 
 	// Install Visual C++ Redistributables
@@ -65,12 +60,10 @@ func (w *WindowsPrerequisitesInstaller) Install() error {
 			fmt.Printf("Warning: Failed to install Visual C++ Redistributables: %v\n", err)
 			fmt.Println("Note: Visual C++ Redistributables are optional. Most tools will work without them.")
 		} else {
-			vcredistInstalled = true
 			fmt.Println("Visual C++ Redistributables installed successfully")
 		}
 	} else {
 		fmt.Println("Visual C++ Redistributables are already installed")
-		vcredistInstalled = true
 	}
 
 	// Always return nil - these are optional dependencies
