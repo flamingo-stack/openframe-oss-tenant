@@ -299,7 +299,7 @@ impl DirectoryManager {
     }
 
     /// Creates a new DirectoryManager with custom directories
-    pub fn with_all_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf, secured_dir: PathBuf) -> Self {
+    pub fn with_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf, secured_dir: PathBuf) -> Self {
         Self {
             logs_dir,
             app_support_dir,
@@ -778,7 +778,7 @@ mod tests {
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
+        let manager = DirectoryManager::with_all_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Test directory creation
         assert!(manager.ensure_directories().is_ok());
