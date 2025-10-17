@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.openframe.support.constants.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,12 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Slf4j
 @Feature("End-to-End Device Processing")
+@Tag("smoke")
 @DisplayName("Device Pipeline E2E")
 public class DevicePipelineTest extends BasePipelineTest {
     
     private KafkaTestInfrastructure kafka;
-    private static final Duration PINOT_INDEXING_TIMEOUT = Duration.ofSeconds(45);
-    private static final Duration MONGODB_TIMEOUT = Duration.ofSeconds(10);
     
     @BeforeEach
     protected void setupTest(TestInfo testInfo) {
@@ -223,7 +223,6 @@ public class DevicePipelineTest extends BasePipelineTest {
         }
     }
     
-    // No @Step
     private Map<String, Object> waitForDeviceInGraphQL(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -250,7 +249,6 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), machineId, attempts));
     }
     
-    // No @Step - executePhase
     private Map<String, Object> waitForDeviceInPinotFilters(Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -281,7 +279,6 @@ public class DevicePipelineTest extends BasePipelineTest {
             testId, timeout.toMillis(), attempts));
     }
     
-    // No @Step - executePhase
     private Map<String, Object> waitForDeviceInGraphQLList(String machineId, Duration timeout) {
         Instant deadline = Instant.now().plus(timeout);
         int attempts = 0;
@@ -400,5 +397,9 @@ public class DevicePipelineTest extends BasePipelineTest {
             log.warn("[{}] Error searching device in list: {}", testId, e.getMessage());
             return Optional.empty();
         }
+    }
+    
+    protected String getTestPrefix() {
+        return "device";
     }
 }

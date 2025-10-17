@@ -1,4 +1,4 @@
-package com.openframe.data.dto;
+package com.openframe.data.testData;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,6 +41,23 @@ public class UserDocument {
                 .emailVerified(doc.getBoolean("emailVerified"))
                 .roles(doc.getList("roles", String.class))
                 .build();
+    }
+
+    public Document toDocument() {
+        Document doc = new Document();
+        if (id != null) doc.append("_id", id);
+        if (email != null) doc.append("email", email);
+        if (firstName != null) doc.append("firstName", firstName);
+        if (lastName != null) doc.append("lastName", lastName);
+        if (status != null) doc.append("status", status);
+        if (tenantId != null) doc.append("tenantId", tenantId);
+        if (tenantDomain != null) doc.append("tenantDomain", tenantDomain);
+        if (passwordHash != null) doc.append("passwordHash", passwordHash);
+        if (loginProvider != null) doc.append("loginProvider", loginProvider);
+        if (emailVerified != null) doc.append("emailVerified", emailVerified);
+        if (roles != null) doc.append("roles", roles);
+        doc.append("_class", "com.openframe.data.document.auth.AuthUser");
+        return doc;
     }
 }
 

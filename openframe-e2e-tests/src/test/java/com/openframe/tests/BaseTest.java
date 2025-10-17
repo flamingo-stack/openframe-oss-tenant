@@ -3,6 +3,7 @@ package com.openframe.tests;
 import com.openframe.support.enums.TestPhase;
 import com.openframe.support.helpers.AllureTestListener;
 import com.openframe.config.ThreadSafeTestContext;
+import com.openframe.support.utils.RetryExtension;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.concurrent.Callable;
  */
 @Slf4j
 @ExtendWith(AllureTestListener.class)
+@ExtendWith(RetryExtension.class)
 public abstract class BaseTest {
     
     protected static final String RUN_ID = UUID.randomUUID().toString();

@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static com.openframe.support.constants.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -161,7 +162,6 @@ public class LogEventPipelineTest extends BasePipelineTest {
         );
     }
     
-    // No @Step - буде показано через executePhase
     private void setupKafkaConsumers(String sourceTopic) {
         log.info("[{}] Setting up test consumers", testId);
         
@@ -191,7 +191,6 @@ public class LogEventPipelineTest extends BasePipelineTest {
             String.format("Source: %s\nTarget: %s", sourceTopic, KafkaTestInfrastructure.TOPIC_PINOT_EVENTS));
     }
     
-    // No @Step - буде показано через executePhase
     private ConsumerRecord<String, String> verifyMessageInPinotTopic(String testId) throws Exception {
         log.info("[{}] Verifying message in Pinot topic", testId);
         
@@ -207,7 +206,6 @@ public class LogEventPipelineTest extends BasePipelineTest {
         return record;
     }
     
-    // No @Step - буде показано через executePhase
     private Map<String, Object> waitForLogInGraphQL(String toolType, String searchTerm) {
         Instant deadline = Instant.now().plus(LogEventPipelineTest.GRAPHQL_TIMEOUT);
         Duration retryInterval = Duration.ofMillis(500);
@@ -300,7 +298,6 @@ public class LogEventPipelineTest extends BasePipelineTest {
         }
     }
     
-    // No @Step - буде показано через executePhase
     private void verifyLogDetailsInCassandra(Map<String, Object> logEntry) {
         try {
             String query = String.format("""

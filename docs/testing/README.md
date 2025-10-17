@@ -18,10 +18,6 @@ https://flamingo-stack.github.io/openframe-oss-tenant/allure/{PR_NUMBER}/
 - **PR comment** contains direct link to the report
 - **Reports are stored** in `gh-pages` branch
 
-### 📋 Test Types
-- **Unit tests** (`*Test.java`) - run in `test` job
-- **E2E tests** (`*E2ETest.java`) - will be added later in separate job
-
 ### 🔧 Local Execution
 ```bash
 # Run all tests
@@ -34,8 +30,3 @@ mvn clean test -Dtest="**/*Test"
 allure generate target/allure-results -o allure-report
 allure open allure-report
 ```
-
-### 📈 Monitoring
-- **GitHub Actions** - test status
-- **Allure Reports** - detailed analytics
-- **PR comments** - quick access to reports
