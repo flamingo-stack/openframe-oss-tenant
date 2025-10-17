@@ -58,9 +58,6 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
     steps:
-      - name: bypass
-        run: echo "This job is currently disabled."
-        continue-on-error: true
       - name: Check if build should run
         id: should_run
         run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
@@ -276,8 +273,7 @@ jobs:
 
   release:
     name: "Create Release"
-#    needs: [changes, matrix, build_images, build_clients, build_helm]
-    needs: [changes, matrix, build_clients, build_helm]
+    needs: [changes, matrix, build_images, build_clients, build_helm]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' && 
@@ -288,14 +284,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-
-      # Download (& extract) Rust client artifacts
-      - name: Download Rust Clients
-        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
