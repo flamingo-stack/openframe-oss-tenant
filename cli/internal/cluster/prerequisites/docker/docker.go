@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -271,35 +270,23 @@ func (d *DockerInstaller) installWindows() error {
 	}
 
 	fmt.Println("\nInstalling Docker Desktop (this may take several minutes)...")
+	fmt.Println("Installation log:")
+	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	// Capture both stdout and stderr for detailed error reporting
-	var stdout, stderr bytes.Buffer
+	// Stream output to console in real-time
 	cmd := exec.Command(installerPath, "install", "--quiet", "--accept-license")
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
 		// Clean up installer file
 		_ = os.Remove(installerPath)
 
-		// Build detailed error message
-		errorMsg := fmt.Sprintf("Docker Desktop installation failed: %v", err)
-
-		if stderr.Len() > 0 {
-			errorMsg += fmt.Sprintf("\n\nError output:\n%s", stderr.String())
-		}
-
-		if stdout.Len() > 0 {
-			errorMsg += fmt.Sprintf("\n\nStandard output:\n%s", stdout.String())
-		}
-
-		return fmt.Errorf("%s", errorMsg)
+		fmt.Println("─────────────────────────────────────────────────────────────")
+		return fmt.Errorf("Docker Desktop installation failed: %w", err)
 	}
 
-	// Show any output from successful installation
-	if stdout.Len() > 0 {
-		fmt.Printf("\nInstaller output:\n%s\n", stdout.String())
-	}
+	fmt.Println("─────────────────────────────────────────────────────────────")
 
 	// Clean up installer file
 	fmt.Println("Cleaning up installer file...")

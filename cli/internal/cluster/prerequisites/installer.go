@@ -27,6 +27,16 @@ func NewInstaller() *Installer {
 }
 
 func (i *Installer) InstallMissingPrerequisites() error {
+	// Check for administrator privileges on Windows
+	if runtime.GOOS == "windows" {
+		if err := admin.RequireAdmin(); err != nil {
+			pterm.Error.Println(err.Error())
+			fmt.Println()
+			pterm.Info.Println(admin.GetElevationInstructions())
+			return err
+		}
+	}
+
 	allPresent, missing := i.checker.CheckAll()
 	if allPresent {
 		pterm.Success.Println("All prerequisites are already installed.")
@@ -59,6 +69,16 @@ func (i *Installer) InstallMissingPrerequisites() error {
 }
 
 func (i *Installer) installSpecificTools(tools []string) error {
+	// Check for administrator privileges on Windows before any installation
+	if runtime.GOOS == "windows" {
+		if err := admin.RequireAdmin(); err != nil {
+			pterm.Error.Println(err.Error())
+			fmt.Println()
+			pterm.Info.Println(admin.GetElevationInstructions())
+			return err
+		}
+	}
+
 	pterm.Info.Printf("Starting installation of %d tool(s): %s\n", len(tools), strings.Join(tools, ", "))
 
 	for idx, tool := range tools {
