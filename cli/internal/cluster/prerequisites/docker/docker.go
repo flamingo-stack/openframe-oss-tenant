@@ -503,7 +503,19 @@ func (d *DockerInstaller) installDockerDesktop() error {
 }
 
 func startDockerWindows() error {
-	// Try to start Docker Desktop on Windows
+	// Check if this is Windows Server (has Docker Engine service)
+	checkService := exec.Command("powershell", "-Command", "Get-Service -Name Docker -ErrorAction SilentlyContinue")
+	if err := checkService.Run(); err == nil {
+		// Docker Engine service exists - start it instead of Docker Desktop
+		fmt.Println("Starting Docker Engine service...")
+		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker")
+		if err := startCmd.Run(); err != nil {
+			return fmt.Errorf("failed to start Docker Engine service: %w", err)
+		}
+		return nil
+	}
+
+	// This is Windows Desktop - try to start Docker Desktop
 	cmd := exec.Command("cmd", "/c", "start", "", "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe")
 	if err := cmd.Run(); err != nil {
 		// Try alternative path
