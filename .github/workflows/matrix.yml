@@ -26,6 +26,12 @@ jobs:
               "name": "openframe-api",
               "path": "./openframe/services/openframe-api",
               "context": "."
+            }]'
+          images_matrix_json2='[
+            {
+              "name": "openframe-api",
+              "path": "./openframe/services/openframe-api",
+              "context": "."
             },
             {
               "name": "openframe-authorization-server",
