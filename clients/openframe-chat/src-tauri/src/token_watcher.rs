@@ -11,7 +11,7 @@ struct TokenUpdateEvent {
     token: String,
 }
 
-/// Service that watches for token changes in the shared token file
+/// Service that watches for token changes in the shared token enc file
 pub struct TokenWatcher {
     token_file_path: PathBuf,
     current_token: Arc<Mutex<Option<String>>>,

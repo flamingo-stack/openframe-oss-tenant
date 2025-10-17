@@ -40,7 +40,7 @@ fn get_active_user_session() -> Option<u32> {
     unsafe {
         info!("=== Starting active user session detection ===");
         
-        // 1. Try to get SessionId of current process
+        // 1. Try to get Session Id of current process
         let current_pid = GetCurrentProcessId();
         info!("Current process PID: {}", current_pid);
         
