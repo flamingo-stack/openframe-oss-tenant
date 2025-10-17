@@ -313,6 +313,7 @@ jobs:
           fi
 
       - name: Generate release notes
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
         run: |
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
 
