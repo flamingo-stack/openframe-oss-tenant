@@ -256,7 +256,28 @@ func (d *DockerInstaller) installArch() error {
 }
 
 func (d *DockerInstaller) installWindows() error {
+	// Check Windows version compatibility first
+	fmt.Println("Checking Windows version compatibility...")
+	if err := CheckDockerCompatibility(); err != nil {
+		return err
+	}
+
+	// Check if this is Windows Server
+	isServer, err := IsWindowsServer()
+	if err != nil {
+		return fmt.Errorf("failed to detect Windows edition: %w", err)
+	}
+
+	if isServer {
+		return d.installWindowsServerDocker()
+	}
+
+	return d.installWindowsDesktopDocker()
+}
+
+func (d *DockerInstaller) installWindowsDesktopDocker() error {
 	fmt.Println("Installing Docker Desktop on Windows...")
+	fmt.Println("Windows version is compatible with Docker Desktop")
 
 	// Docker Desktop installer URL (latest stable)
 	const dockerURL = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
@@ -337,6 +358,64 @@ func (d *DockerInstaller) installWindows() error {
 	fmt.Println("Docker Desktop installation completed successfully!")
 	fmt.Println("Note: Docker Desktop may require a system restart to complete the installation.")
 	fmt.Println("      You will need to start Docker Desktop manually after installation.")
+
+	return nil
+}
+
+func (d *DockerInstaller) installWindowsServerDocker() error {
+	fmt.Println("Installing Docker Engine on Windows Server...")
+	fmt.Println("Windows Server is compatible with Docker Engine")
+
+	// Install Docker using PowerShell script
+	fmt.Println("\nInstalling Docker using PowerShell...")
+	fmt.Println("This will:")
+	fmt.Println("  1. Install the Docker-Microsoft PackageManagement Provider")
+	fmt.Println("  2. Install Docker Engine")
+	fmt.Println("  3. Start the Docker service")
+	fmt.Println()
+
+	// PowerShell command to install Docker on Windows Server
+	psScript := `
+# Install Docker-Microsoft PackageManagement Provider
+Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+
+# Install Docker
+Install-Package -Name docker -ProviderName DockerMsftProvider -Force
+
+# Start Docker service
+Start-Service Docker
+
+# Set Docker to start automatically
+Set-Service -Name Docker -StartupType Automatic
+
+Write-Host "Docker Engine installed successfully"
+`
+
+	// Create temp script file
+	tempDir := os.TempDir()
+	scriptPath := filepath.Join(tempDir, "install-docker.ps1")
+
+	if err := os.WriteFile(scriptPath, []byte(psScript), 0644); err != nil {
+		return fmt.Errorf("failed to create installation script: %w", err)
+	}
+	defer os.Remove(scriptPath)
+
+	// Execute PowerShell script
+	cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", scriptPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	fmt.Println("Running installation script (this may take several minutes)...")
+	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	if err := cmd.Run(); err != nil {
+		fmt.Println("─────────────────────────────────────────────────────────────")
+		return fmt.Errorf("failed to install Docker Engine: %w\n\nYou can try installing manually using:\nInstall-Module -Name DockerMsftProvider -Repository PSGallery -Force\nInstall-Package -Name docker -ProviderName DockerMsftProvider -Force", err)
+	}
+
+	fmt.Println("─────────────────────────────────────────────────────────────")
+	fmt.Println("Docker Engine installed successfully!")
+	fmt.Println("Docker service is running and will start automatically on boot.")
 
 	return nil
 }
