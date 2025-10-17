@@ -2,11 +2,8 @@ package docker
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -256,362 +253,6 @@ func (d *DockerInstaller) installArch() error {
 	return nil
 }
 
-func (d *DockerInstaller) installWindows() error {
-	// Check Windows version compatibility first
-	fmt.Println("Checking Windows version compatibility...")
-	if err := CheckDockerCompatibility(); err != nil {
-		return err
-	}
-
-	// Check if this is Windows Server
-	isServer, err := IsWindowsServer()
-	if err != nil {
-		return fmt.Errorf("failed to detect Windows edition: %w", err)
-	}
-
-	if isServer {
-		return d.installWindowsServerDocker()
-	}
-
-	return d.installWindowsDesktopDocker()
-}
-
-func (d *DockerInstaller) installWindowsDesktopDocker() error {
-	fmt.Println("Installing Docker Desktop on Windows...")
-	fmt.Println("Windows version is compatible with Docker Desktop")
-
-	// Docker Desktop installer URL (latest stable)
-	const dockerURL = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
-
-	tempDir := os.TempDir()
-	installerPath := filepath.Join(tempDir, "DockerDesktopInstaller.exe")
-
-	// Check if installer already exists to skip re-download
-	if _, err := os.Stat(installerPath); os.IsNotExist(err) {
-		fmt.Println("Downloading Docker Desktop installer...")
-		if err := downloadFileWithProgress(dockerURL, installerPath); err != nil {
-			return fmt.Errorf("failed to download Docker Desktop: %w", err)
-		}
-		fmt.Println()
-	} else {
-		fmt.Printf("Using cached installer at: %s\n", installerPath)
-	}
-
-	fmt.Println("Installing Docker Desktop (this may take several minutes)...")
-
-	// Create log file for installation output
-	logPath := filepath.Join(tempDir, "docker-install.log")
-	logFile, err := os.Create(logPath)
-	if err != nil {
-		fmt.Printf("Warning: Could not create log file: %v\n", err)
-	} else {
-		defer logFile.Close()
-		fmt.Printf("Installation log will be written to: %s\n", logPath)
-	}
-
-	fmt.Println("Installation log:")
-	fmt.Println("─────────────────────────────────────────────────────────────")
-
-	// Try with verbose flag and stream to both console and log file
-	cmd := exec.Command(installerPath, "install", "--accept-license", "--verbose")
-
-	// Create multi-writer to write to both console and file
-	if logFile != nil {
-		cmd.Stdout = io.MultiWriter(os.Stdout, logFile)
-		cmd.Stderr = io.MultiWriter(os.Stderr, logFile)
-	} else {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
-
-	if err := cmd.Run(); err != nil {
-		fmt.Println("─────────────────────────────────────────────────────────────")
-		fmt.Printf("\nInstallation failed with error: %v\n", err)
-		fmt.Printf("Installer location: %s\n", installerPath)
-		fmt.Printf("Installation log: %s\n", logPath)
-
-		// Try to read and display the log file
-		if logContent, readErr := os.ReadFile(logPath); readErr == nil && len(logContent) > 0 {
-			fmt.Println("\nInstaller log content:")
-			fmt.Println("─────────────────────────────────────────────────────────────")
-			fmt.Println(string(logContent))
-			fmt.Println("─────────────────────────────────────────────────────────────")
-		}
-
-		fmt.Println("\nYou can try running the installer manually with administrator privileges:")
-		fmt.Printf("  %s install --accept-license --verbose\n", installerPath)
-		return fmt.Errorf("Docker Desktop installation failed: %w", err)
-	}
-
-	fmt.Println("─────────────────────────────────────────────────────────────")
-
-	// Show log file location on success too
-	if logFile != nil {
-		fmt.Printf("Installation log saved to: %s\n", logPath)
-	}
-
-	// Clean up installer file
-	fmt.Println("Cleaning up installer file...")
-	if err := os.Remove(installerPath); err != nil {
-		fmt.Printf("Warning: Could not remove installer file at %s: %v\n", installerPath, err)
-	}
-
-	fmt.Println("Docker Desktop installation completed successfully!")
-	fmt.Println("Note: Docker Desktop may require a system restart to complete the installation.")
-	fmt.Println("      You will need to start Docker Desktop manually after installation.")
-
-	return nil
-}
-
-func (d *DockerInstaller) installWindowsServerDocker() error {
-	fmt.Println("Installing Docker Engine on Windows Server...")
-	fmt.Println("Windows Server is compatible with Docker Engine")
-
-	// Step 1: Check .NET Framework FIRST (required by Chocolatey)
-	fmt.Println("\nStep 1/4: Checking .NET Framework...")
-	dotnetCheck := exec.Command("powershell", "-Command", "(Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full' -ErrorAction SilentlyContinue).Release -ge 528040")
-	output, _ := dotnetCheck.Output()
-	hasDotNet48 := strings.TrimSpace(string(output)) == "True"
-
-	if !hasDotNet48 {
-		fmt.Println(".NET Framework 4.8 not detected. Installing...")
-		fmt.Println("Note: Chocolatey requires .NET Framework 4.8 or higher")
-		fmt.Println("This installation may require a system reboot to complete.")
-		fmt.Println("─────────────────────────────────────────────────────────────")
-
-		// Download and install .NET 4.8 directly from Microsoft
-		if err := d.installDotNetFramework(); err != nil {
-			fmt.Println("─────────────────────────────────────────────────────────────")
-			fmt.Printf("\nWarning: .NET Framework installation had issues: %v\n", err)
-
-			// Ask user if they want to continue
-			fmt.Println("\n.NET Framework 4.8 installation failed or requires a reboot.")
-			fmt.Println("You can:")
-			fmt.Println("  1. Reboot the system and run this installer again")
-			fmt.Println("  2. Install .NET 4.8 manually from:")
-			fmt.Println("     https://go.microsoft.com/fwlink/?linkid=2088631")
-			fmt.Println("  3. Try to continue anyway (installation will likely fail)")
-			fmt.Print("\nDo you want to continue anyway? [y/N]: ")
-
-			var response string
-			fmt.Scanln(&response)
-			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
-				return fmt.Errorf(".NET Framework 4.8 is required. Please install it and try again")
-			}
-		} else {
-			fmt.Println("─────────────────────────────────────────────────────────────")
-			fmt.Println(".NET Framework installation completed")
-			fmt.Println("Note: A system reboot may be required for changes to take effect.")
-		}
-	} else {
-		fmt.Println(".NET Framework 4.8 or higher is already installed")
-	}
-
-	// Step 2: Install Chocolatey (now that .NET is confirmed)
-	fmt.Println("\nStep 2/4: Checking for Chocolatey...")
-	chocoInstalled := commandExists("choco")
-
-	if !chocoInstalled {
-		fmt.Println("Chocolatey is not installed. Installing Chocolatey...")
-		if err := d.installChocolatey(); err != nil {
-			return fmt.Errorf("failed to install Chocolatey: %w", err)
-		}
-		fmt.Println("Chocolatey installed successfully!")
-
-		// Refresh PATH to make choco command available
-		fmt.Println("Refreshing environment variables...")
-		refreshCmd := exec.Command("powershell", "-Command", "$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')")
-		_ = refreshCmd.Run()
-	} else {
-		fmt.Println("Chocolatey is already installed")
-	}
-
-	// Refresh environment variables
-	fmt.Println("\nStep 3/4: Refreshing environment...")
-	refreshCmd := exec.Command("powershell", "-Command", "refreshenv")
-	_ = refreshCmd.Run()
-
-	// Install Docker using Chocolatey
-	fmt.Println("\nStep 4/4: Installing Docker Engine...")
-	fmt.Println("This may take several minutes...")
-	fmt.Println("Installation will show detailed output below:")
-	fmt.Println("─────────────────────────────────────────────────────────────")
-
-	// Install docker-engine package with verbose output
-	cmd := exec.Command("choco", "install", "docker-engine", "-y", "--verbose", "--ignore-dependencies")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		fmt.Println("─────────────────────────────────────────────────────────────")
-		fmt.Printf("\nDocker installation failed: %v\n", err)
-		fmt.Println("\nPossible solutions:")
-		fmt.Println("  1. Reboot the system (if .NET was just installed)")
-		fmt.Println("  2. Ensure .NET Framework 4.8 is fully installed")
-		fmt.Println("  3. Install manually:")
-		fmt.Println("     choco install netfx-4.8 -y")
-		fmt.Println("     # Reboot system")
-		fmt.Println("     choco install docker-engine -y --verbose")
-		fmt.Println("\nFor more details, check the verbose output above.")
-		return fmt.Errorf("failed to install Docker Engine: %w", err)
-	}
-
-	fmt.Println("─────────────────────────────────────────────────────────────")
-	fmt.Println("Docker Engine installed successfully!")
-
-	// Start Docker service
-	fmt.Println("\nStarting Docker service...")
-	startCmd := exec.Command("powershell", "-Command", "Start-Service Docker; Set-Service -Name Docker -StartupType Automatic")
-	startCmd.Stdout = os.Stdout
-	startCmd.Stderr = os.Stderr
-
-	if err := startCmd.Run(); err != nil {
-		fmt.Printf("Warning: Could not start Docker service: %v\n", err)
-		fmt.Println("You may need to restart the system and start it manually: Start-Service Docker")
-		fmt.Println("\nNote: A system restart may be required after .NET Framework installation.")
-	} else {
-		fmt.Println("Docker service started and configured for automatic startup")
-	}
-
-	// Show Docker version
-	fmt.Println("\nDocker version:")
-	versionCmd := exec.Command("docker", "version")
-	versionCmd.Stdout = os.Stdout
-	versionCmd.Stderr = os.Stderr
-	_ = versionCmd.Run()
-
-	return nil
-}
-
-func (d *DockerInstaller) installDotNetFramework() error {
-	// .NET Framework 4.8 offline installer URL
-	const dotnetURL = "https://go.microsoft.com/fwlink/?linkid=2088631"
-
-	tempDir := os.TempDir()
-	installerPath := filepath.Join(tempDir, "ndp48-x86-x64-allos-enu.exe")
-
-	// Download .NET Framework installer
-	fmt.Println("Downloading .NET Framework 4.8 installer...")
-	if err := downloadFileWithProgress(dotnetURL, installerPath); err != nil {
-		return fmt.Errorf("failed to download .NET Framework: %w", err)
-	}
-	fmt.Println()
-
-	// Run installer with quiet mode and no restart
-	fmt.Println("Installing .NET Framework 4.8 (this may take several minutes)...")
-	cmd := exec.Command(installerPath, "/q", "/norestart")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		// Clean up installer
-		_ = os.Remove(installerPath)
-		return fmt.Errorf("installation failed: %w", err)
-	}
-
-	// Clean up installer
-	fmt.Println("Cleaning up installer...")
-	_ = os.Remove(installerPath)
-
-	return nil
-}
-
-func (d *DockerInstaller) installChocolatey() error {
-	psScript := `
-Set-ExecutionPolicy Bypass -Scope Process -Force
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-`
-
-	cmd := exec.Command("powershell", "-Command", psScript)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
-}
-
-// downloadFileWithProgress downloads a file and shows progress percentage
-func downloadFileWithProgress(url, filepath string) error {
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	// Get the content length
-	contentLength := resp.ContentLength
-	if contentLength <= 0 {
-		// If content length is unknown, download without progress
-		fmt.Println("Downloading... (size unknown)")
-		_, err = io.Copy(out, resp.Body)
-		return err
-	}
-
-	// Create a progress reader
-	counter := &writeCounter{Total: uint64(contentLength)}
-	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
-	fmt.Println() // New line after progress
-
-	return err
-}
-
-// writeCounter counts the number of bytes written to it and displays progress
-type writeCounter struct {
-	Total      uint64
-	Downloaded uint64
-}
-
-func (wc *writeCounter) Write(p []byte) (int, error) {
-	n := len(p)
-	wc.Downloaded += uint64(n)
-	wc.printProgress()
-	return n, nil
-}
-
-func (wc *writeCounter) printProgress() {
-	// Clear the line
-	fmt.Printf("\r%s", clearLine())
-
-	// Calculate percentage
-	percentage := float64(wc.Downloaded) / float64(wc.Total) * 100
-
-	// Print progress
-	fmt.Printf("\rDownloading... %.2f%% (%s / %s)",
-		percentage,
-		formatBytes(wc.Downloaded),
-		formatBytes(wc.Total))
-}
-
-func formatBytes(bytes uint64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-	div, exp := uint64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
-}
-
-func clearLine() string {
-	return "\033[2K"
-}
-
 func (d *DockerInstaller) runCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	// Completely silence output during installation
@@ -676,6 +317,150 @@ func startDockerLinux() error {
 	}
 
 	return fmt.Errorf("unable to start Docker daemon: no supported init system found")
+}
+
+func (d *DockerInstaller) installWindows() error {
+	// Check if Docker is already installed (in PATH or as Docker Desktop)
+	if commandExists("docker") {
+		// Docker is already installed and in PATH
+		return nil
+	}
+
+	// Check if Docker Desktop exists but not in PATH
+	dockerPaths := []string{
+		"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe",
+		"C:\\Program Files (x86)\\Docker\\Docker\\Docker Desktop.exe",
+	}
+
+	for _, path := range dockerPaths {
+		if _, err := os.Stat(path); err == nil {
+			// Docker Desktop is installed but not in PATH
+			// Try to start it to get PATH updated
+			fmt.Println("Docker Desktop found. Starting it to update PATH...")
+			cmd := exec.Command("cmd", "/c", "start", "", path)
+			cmd.Run() // Ignore error, just try to start
+
+			fmt.Println("Docker Desktop is installed but 'docker' command is not in PATH.")
+			fmt.Println("Please restart your terminal after Docker Desktop starts and run this command again.")
+			return nil // Consider it installed even if not in PATH
+		}
+	}
+
+	// Docker is not installed, try to install it
+	// First try winget (usually available on Windows 10/11)
+	if commandExists("winget") {
+		fmt.Println("Installing Docker Desktop via winget...")
+		cmd := exec.Command("winget", "install", "--id", "Docker.DockerDesktop", "--accept-package-agreements", "--accept-source-agreements")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err == nil {
+			fmt.Println("Docker Desktop installed successfully.")
+			fmt.Println("Starting Docker Desktop...")
+			if err := startDockerWindows(); err != nil {
+				fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
+				fmt.Println("Please start Docker Desktop manually from the Start Menu")
+			}
+			return nil
+		}
+		// winget failed, fall through to try chocolatey
+		fmt.Println("Winget installation failed, trying alternative method...")
+	}
+
+	// Check if Chocolatey is installed
+	if commandExists("choco") {
+		return d.installWindowsChocolatey()
+	}
+
+	// Chocolatey not installed - install it automatically
+	fmt.Println("Chocolatey not found. Installing Chocolatey package manager...")
+	if err := d.installChocolatey(); err != nil {
+		return fmt.Errorf("failed to install Chocolatey: %w. Please install Docker Desktop manually from https://docker.com/products/docker-desktop", err)
+	}
+
+	// Now try to install Docker with newly installed Chocolatey
+	return d.installWindowsChocolatey()
+}
+
+func (d *DockerInstaller) installChocolatey() error {
+	installScript := `
+function Install-Chocolatey {
+    try {
+        Write-Host "Installing Chocolatey..." -ForegroundColor Yellow
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "Failed to install Chocolatey" -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        return $false
+    }
+}
+
+$result = Install-Chocolatey
+if (-not $result) {
+    exit 1
+}
+`
+
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Chocolatey: %w", err)
+	}
+
+	// Update PATH for current session
+	chocoPath := "C:\\ProgramData\\chocolatey\\bin"
+	currentPath := os.Getenv("PATH")
+	if !strings.Contains(currentPath, chocoPath) {
+		os.Setenv("PATH", currentPath+";"+chocoPath)
+	}
+
+	// Verify Chocolatey installation
+	verifyCmd := exec.Command("cmd", "/c", "choco", "--version")
+	if err := verifyCmd.Run(); err != nil {
+		// Try with full path
+		verifyCmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "--version")
+		if err := verifyCmd.Run(); err != nil {
+			return fmt.Errorf("Chocolatey installation completed but verification failed. Please restart your terminal and try again")
+		}
+	}
+
+	return nil
+}
+
+func (d *DockerInstaller) installWindowsChocolatey() error {
+	fmt.Println("Installing Docker Desktop via Chocolatey...")
+
+	// Try both choco and full path
+	var cmd *exec.Cmd
+	if commandExists("choco") {
+		cmd = exec.Command("choco", "install", "docker-desktop", "-y")
+	} else {
+		// Try with full path if choco is not in PATH yet
+		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-desktop", "-y")
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Docker Desktop via Chocolatey: %w", err)
+	}
+
+	fmt.Println("Docker Desktop installed successfully.")
+	fmt.Println("Starting Docker Desktop...")
+	if err := startDockerWindows(); err != nil {
+		fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
+		fmt.Println("Please start Docker Desktop manually from the Start Menu")
+	}
+
+	return nil
 }
 
 func startDockerWindows() error {
