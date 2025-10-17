@@ -2,8 +2,7 @@
   "id": "openframe-chat",
   "version": "0.1.0",
   "status": "ENABLED",
-  "fileType": "EXECUTABLE",
-  "requireGui": true,
+  "sessionType": "USER",
   "runCommandArgs": [
     "--server-url", "${client.serverUrl}",
     "--openframe-secret", "${client.openframeSecret}",
