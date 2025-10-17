@@ -46,7 +46,6 @@
         <grpc.version>1.58.0</grpc.version>
         <!-- Centralized OpenFrame OSS libs version -->
         <openframe.libs.version>3.4.2</openframe.libs.version>
-        <openframe.libs.version>3.4.1</openframe.libs.version>
     </properties>
 
     <modules>
