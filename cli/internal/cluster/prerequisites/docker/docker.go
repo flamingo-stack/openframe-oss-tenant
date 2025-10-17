@@ -293,12 +293,6 @@ func (d *DockerInstaller) installWindows() error {
 			errorMsg += fmt.Sprintf("\n\nStandard output:\n%s", stdout.String())
 		}
 
-		errorMsg += "\n\nTroubleshooting tips:"
-		errorMsg += "\n  - Ensure you have administrator privileges"
-		errorMsg += "\n  - Check if WSL 2 is installed (required for Docker Desktop)"
-		errorMsg += "\n  - Verify Windows version is compatible (Windows 10/11 Pro, Enterprise, or Education)"
-		errorMsg += "\n  - Try downloading and installing manually from: https://docker.com/products/docker-desktop"
-
 		return fmt.Errorf("%s", errorMsg)
 	}
 

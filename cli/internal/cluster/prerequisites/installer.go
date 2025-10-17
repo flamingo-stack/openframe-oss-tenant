@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/admin"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/docker"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/k3d"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/kubectl"
@@ -136,6 +137,16 @@ func (i *Installer) CheckAndInstall() error {
 
 // CheckAndInstallNonInteractive checks and installs prerequisites with optional non-interactive mode
 func (i *Installer) CheckAndInstallNonInteractive(nonInteractive bool) error {
+	// PHASE 0: Check for administrator privileges on Windows
+	if runtime.GOOS == "windows" {
+		if err := admin.RequireAdmin(); err != nil {
+			pterm.Error.Println(err.Error())
+			fmt.Println()
+			pterm.Info.Println(admin.GetElevationInstructions())
+			return err
+		}
+	}
+
 	// PHASE 1: Check what's actually missing vs what's not running
 	allPresent, missing := i.checker.CheckAll()
 	if allPresent {
