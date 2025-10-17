@@ -35,13 +35,12 @@ public class ToolInstallationNatsPublisher {
     private ToolInstallationMessage buildMessage(IntegratedToolAgent toolAgent, IntegratedTool tool) {
         ToolInstallationMessage message = new ToolInstallationMessage();
         message.setToolAgentId(toolAgent.getId());
-        // TODO: need refactoringg
+        // TODO: need refactoring
         message.setToolId(toolAgent.getToolId() == null ? "" : toolAgent.getToolId());
         message.setToolType(tool.getToolType() == null ? "" : tool.getToolType() );
 
         message.setVersion(toolAgent.getVersion());
-        message.setFileType(toolAgent.getFileType());
-        message.setRequireGui(toolAgent.isRequireGui());
+        message.setSessionType(toolAgent.getSessionType());
         message.setAssets(mapAssets(toolAgent.getAssets()));
         message.setInstallationCommandArgs(toolAgent.getInstallationCommandArgs());
         message.setUninstallationCommandArgs(toolAgent.getUninstallationCommandArgs());
