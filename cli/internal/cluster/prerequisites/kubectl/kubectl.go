@@ -55,7 +55,7 @@ func (k *KubectlInstaller) Install() error {
 	case "linux":
 		return k.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic kubectl installation on Windows not supported. Please install from https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/")
+		return k.installWindows()
 	default:
 		return fmt.Errorf("automatic kubectl installation not supported on %s", runtime.GOOS)
 	}
@@ -217,6 +217,28 @@ func (k *KubectlInstaller) installBinary() error {
 		}
 	}
 
+	return nil
+}
+
+func (k *KubectlInstaller) installWindows() error {
+	fmt.Println("Installing kubectl via Chocolatey...")
+
+	// Try both choco and full path
+	var cmd *exec.Cmd
+	if commandExists("choco") {
+		cmd = exec.Command("choco", "install", "kubernetes-cli", "-y")
+	} else {
+		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "kubernetes-cli", "-y")
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install kubectl via Chocolatey: %w", err)
+	}
+
+	fmt.Println("kubectl installed successfully.")
 	return nil
 }
 

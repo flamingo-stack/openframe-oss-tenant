@@ -2,6 +2,7 @@ package k3d
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 )
@@ -54,7 +55,7 @@ func (k *K3dInstaller) Install() error {
 	case "linux":
 		return k.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic k3d installation on Windows not supported. Please install from https://k3d.io/v5.4.6/#installation")
+		return k.installWindows()
 	default:
 		return fmt.Errorf("automatic k3d installation not supported on %s", runtime.GOOS)
 	}
@@ -158,6 +159,28 @@ func (k *K3dInstaller) installBinary() error {
 		}
 	}
 
+	return nil
+}
+
+func (k *K3dInstaller) installWindows() error {
+	fmt.Println("Installing k3d via Chocolatey...")
+
+	// Try both choco and full path
+	var cmd *exec.Cmd
+	if commandExists("choco") {
+		cmd = exec.Command("choco", "install", "k3d", "-y")
+	} else {
+		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "k3d", "-y")
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install k3d via Chocolatey: %w", err)
+	}
+
+	fmt.Println("k3d installed successfully.")
 	return nil
 }
 
