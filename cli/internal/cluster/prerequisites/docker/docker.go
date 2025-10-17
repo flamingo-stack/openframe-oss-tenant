@@ -382,81 +382,56 @@ func WaitForDocker() error {
 	return fmt.Errorf("timeout waiting for Docker to start")
 }
 
-// installWinget automatically installs winget (App Installer) on Windows
+// installWinget attempts to install or update winget via Microsoft Store
 func installWinget() error {
-	// Check if running as Administrator
-	isAdmin := isRunningAsAdmin()
+	fmt.Println("\nwinget is not available. Installing via Microsoft Store...")
 
-	if !isAdmin {
-		fmt.Println("\nwinget installation requires Administrator privileges.")
-		fmt.Println("\nPlease do one of the following:")
-		fmt.Println("  1. Close this terminal and re-run as Administrator:")
-		fmt.Println("     - Right-click PowerShell/Command Prompt")
-		fmt.Println("     - Select 'Run as Administrator'")
-		fmt.Println("     - Run the bootstrap command again")
-		fmt.Println("\n  2. Or install winget manually (doesn't require admin):")
-		fmt.Println("     - Open Microsoft Store")
-		fmt.Println("     - Search for 'App Installer'")
-		fmt.Println("     - Click 'Get' or 'Update'")
-		fmt.Println("\n  3. Or install Docker Desktop manually:")
-		fmt.Println("     - Download from: https://www.docker.com/products/docker-desktop")
-		return fmt.Errorf("Administrator privileges required for automatic installation")
-	}
+	// Try to open Microsoft Store to the App Installer page
+	// This is the most reliable way to install/update winget
+	storeURL := "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1"
 
-	fmt.Println("Downloading and installing winget (App Installer)...")
+	fmt.Println("\nOpening Microsoft Store to install 'App Installer' (winget)...")
+	fmt.Println("Please click 'Get' or 'Update' in the Microsoft Store window that opens.")
+	fmt.Println("After installation completes:")
+	fmt.Println("  1. Close Microsoft Store")
+	fmt.Println("  2. Restart this terminal")
+	fmt.Println("  3. Run the bootstrap command again")
 
-	// Download the latest App Installer package from Microsoft
-	wingetURL := "https://aka.ms/getwinget"
-	tempDir := os.TempDir()
-	installerPath := tempDir + "\\Microsoft.DesktopAppInstaller.msixbundle"
-
-	// Use PowerShell to download with progress
-	downloadCmd := fmt.Sprintf(
-		`$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
-		wingetURL, installerPath,
-	)
-
-	fmt.Println("Downloading App Installer package...")
-	cmd := exec.Command("powershell", "-NoProfile", "-Command", downloadCmd)
+	cmd := exec.Command("cmd", "/c", "start", storeURL)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to download winget installer: %w", err)
+		fmt.Printf("\nFailed to open Microsoft Store: %v\n", err)
+		showWingetInstallHelp()
+		return fmt.Errorf("winget installation requires Microsoft Store")
 	}
 
-	// Install the package using Add-AppxPackage
-	fmt.Println("Installing App Installer package...")
-	installCmd := fmt.Sprintf(`Add-AppxPackage -Path '%s'`, installerPath)
-	cmd = exec.Command("powershell", "-NoProfile", "-Command", installCmd)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	fmt.Println("\nWaiting for you to complete the installation in Microsoft Store...")
+	fmt.Println("Press Enter after you've installed App Installer to continue, or Ctrl+C to exit...")
 
-	if err := cmd.Run(); err != nil {
-		// Clean up installer file
-		os.Remove(installerPath)
-		return fmt.Errorf("failed to install winget: %w", err)
-	}
+	// Wait for user to press Enter
+	fmt.Scanln()
 
-	// Clean up installer file
-	os.Remove(installerPath)
-
-	// Verify installation by checking if winget command is now available
-	fmt.Println("Verifying winget installation...")
+	// Verify installation
 	if commandExists("winget") {
-		fmt.Println("winget installed and available!")
+		fmt.Println("✓ winget is now available!")
 		return nil
 	}
 
-	// winget might be installed but not in current PATH
-	fmt.Println("winget installed but may require terminal restart to be available in PATH")
-	fmt.Println("Please restart your terminal and try again.")
+	fmt.Println("\nwinget is still not available. This usually means:")
+	fmt.Println("  1. The installation is still in progress")
+	fmt.Println("  2. You need to restart your terminal")
+	fmt.Println("\nPlease restart your terminal and run the bootstrap command again.")
 
-	return fmt.Errorf("winget installed but not yet available in PATH - restart terminal")
+	return fmt.Errorf("winget not yet available - restart terminal required")
 }
 
 // isRunningAsAdmin checks if the current process is running with Administrator privileges
 func isRunningAsAdmin() bool {
-	cmd := exec.Command("powershell", "-NoProfile", "-Command", "[Security.Principal.WindowsIdentity]::GetCurrent().Groups -contains 'S-1-5-32-544'")
+	// Use a more reliable method: check if we have the Administrator role
+	cmd := exec.Command("powershell", "-NoProfile", "-Command",
+		`$identity = [Security.Principal.WindowsIdentity]::GetCurrent(); $principal = New-Object Security.Principal.WindowsPrincipal($identity); $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)`)
 	output, err := cmd.Output()
 	if err != nil {
+		// If we can't even run the check, assume not admin
 		return false
 	}
 	result := strings.TrimSpace(string(output))
