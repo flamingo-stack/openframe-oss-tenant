@@ -157,47 +157,19 @@ fn wcslen(ptr: *const u16) -> usize {
 #[cfg(windows)]
 fn launch_process_in_console_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
     unsafe {
-        let session_id = match get_active_user_session() {
-            Some(id) => {
-                info!("Successfully obtained active user session ID: {}", id);
-                id
-            }
-            None => {
-                anyhow::bail!("No active user session found");
-            }
-        };
+        let session_id = WTSGetActiveConsoleSessionId();
+        info!("Physical console session ID: {}", session_id);
+        if session_id == u32::MAX {
+            anyhow::bail!("No active user session found");
+        }
 
-        info!("Step 1: Querying user token for session {}", session_id);
         let mut user_token = HANDLE(0);
         if let Err(e) = WTSQueryUserToken(session_id, &mut user_token) {
-            error!("Failed to get user token for session {}: {:?}", session_id, e);
             anyhow::bail!("Failed to get user token for session {}: {:?}", session_id, e);
         }
-        
-        info!("Successfully obtained user token for session {} (handle: {:?})", session_id, user_token);
 
-        // Duplicate token to get primary token (required for CreateProcessAsUserW)
-        info!("Step 2: Duplicating token to get primary token (required for CreateProcessAsUserW)");
-        let mut primary_token = HANDLE(0);
-        if let Err(e) = DuplicateTokenEx(
-            user_token,
-            TOKEN_ALL_ACCESS,
-            None,
-            SECURITY_IMPERSONATION_LEVEL(2), // SecurityImpersonation
-            TokenPrimary,
-            &mut primary_token,
-        ) {
-            error!("Failed to duplicate token: {:?}", e);
-            let _ = CloseHandle(user_token);
-            anyhow::bail!("Failed to duplicate token for session {}: {:?}", session_id, e);
-        }
-        
-        let _ = CloseHandle(user_token);
-        info!("Successfully duplicated token to primary token (handle: {:?})", primary_token);
-
-        // Build command line with full path in quotes + arguments
-        info!("Step 3: Building command line");
-        let mut cmdline = format!("\"{}\"", command_path);
+        // Build command line with arguments
+        let mut cmdline = command_path.to_string();
         for arg in args {
             cmdline.push(' ');
             // Quote argument if it contains spaces
@@ -209,96 +181,43 @@ fn launch_process_in_console_session(command_path: &str, args: &[String]) -> Res
                 cmdline.push_str(arg);
             }
         }
-        info!("Command line: {}", cmdline);
 
-        info!("Step 4: Setting up STARTUPINFOW structure for console application");
         let mut si = STARTUPINFOW::default();
         si.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
-        
-        // For console applications, set the desktop to winsta0\default
-        let desktop = to_wide("winsta0\\default");
-        si.lpDesktop = PWSTR(desktop.as_ptr() as *mut u16);
-        info!("  Desktop: winsta0\\default");
-        info!("  STARTUPINFOW size: {} bytes", si.cb);
-        
         let mut pi = PROCESS_INFORMATION::default();
 
         let mut cmdline_wide = to_wide(&cmdline);
-        
-        info!("Step 5: Calling CreateProcessAsUserW for console application");
-        info!("  lpApplicationName: NULL (using command line parsing)");
-        info!("  lpCommandLine: {}", cmdline);
-        info!("  Creation flags: CREATE_NEW_CONSOLE (creates visible console window)");
-        
-        // For console applications, use CREATE_NEW_CONSOLE to create a visible console window
-        use windows::Win32::System::Threading::CREATE_NEW_CONSOLE;
-        
+
+        // Use DETACHED_PROCESS | CREATE_NO_WINDOW to run without visible console
+        use windows::Win32::System::Threading::{DETACHED_PROCESS, CREATE_NO_WINDOW};
+
         let result = CreateProcessAsUserW(
-            primary_token,
-            PCWSTR::null(), // lpApplicationName = NULL
+            user_token,
+            PCWSTR(to_wide(command_path).as_ptr()),
             PWSTR(cmdline_wide.as_mut_ptr()),
             None,
             None,
             false,
-            CREATE_NEW_CONSOLE, // Create a new visible console window
+            DETACHED_PROCESS | CREATE_NO_WINDOW,
             None,
             None,
             &si,
             &mut pi,
         );
 
+        let _ = CloseHandle(user_token);
+
         if let Err(e) = result {
-            // Fallback: try without desktop specification
-            error!("✗ CreateProcessAsUserW failed with desktop specification: {:?}", e);
-            warn!("Attempting fallback: retrying without desktop specification");
-            
-            info!("Step 6: Fallback attempt - removing desktop specification");
-            si.lpDesktop = PWSTR::null();
-            info!("  Desktop: NULL (removed)");
-            let mut cmdline_wide_retry = to_wide(&cmdline);
-            
-            let result_retry = CreateProcessAsUserW(
-                primary_token,
-                PCWSTR::null(),
-                PWSTR(cmdline_wide_retry.as_mut_ptr()),
-                None,
-                None,
-                false,
-                CREATE_NEW_CONSOLE,
-                None,
-                None,
-                &si,
-                &mut pi,
-            );
-            
-            let _ = CloseHandle(primary_token);
-            
-            if let Err(e2) = result_retry {
-                error!("✗ CreateProcessAsUserW failed again without desktop specification: {:?}", e2);
-                error!("Both attempts to launch console process failed");
-                anyhow::bail!("Failed to launch process in console session: {:?}", e2);
-            }
-            
-            info!("Fallback successful - console process launched without desktop specification");
-        } else {
-            info!("CreateProcessAsUserW succeeded on first attempt");
-            let _ = CloseHandle(primary_token);
+            anyhow::bail!("Failed to launch process in user session: {:?}", e);
         }
 
         let pid = pi.dwProcessId;
         let process_handle = pi.hProcess;
-        
-        info!("Step 7: Console process created successfully");
-        info!("  Process ID (PID): {}", pid);
-        info!("  Process handle: {:?}", process_handle);
-        info!("  Thread ID: {}", pi.dwThreadId);
-        info!("  Thread handle: {:?}", pi.hThread);
-        
+
         // Close thread handle as we don't need it
         let _ = CloseHandle(pi.hThread);
-        info!("  Closed thread handle (not needed for monitoring)");
 
-        info!("=== Console process launched successfully in session {} with PID {} ===", session_id, pid);
+        info!("Process launched in user session, PID: {}", pid);
         Ok((pid, process_handle))
     }
 }
