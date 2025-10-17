@@ -1,3 +1,5 @@
+environment: dev
+
 global:
   registerJob:
     enabled: true
