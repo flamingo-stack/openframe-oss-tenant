@@ -778,7 +778,7 @@ mod tests {
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
 
-        let manager = DirectoryManager::with_all_custom_dirs(logs_dir.clone(), app_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
 
         // Test directory creation
         assert!(manager.ensure_directories().is_ok());
@@ -979,7 +979,7 @@ mod tests {
         let app_dir = temp_dir.path().join("app");
         let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir, app_dir, secured_dir.clone());
+        let manager = DirectoryManager::with_all_custom_dirs(logs_dir, app_dir, secured_dir.clone());
 
         // Test secured directory creation
         assert!(manager.ensure_directories().is_ok());
