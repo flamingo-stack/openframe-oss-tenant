@@ -299,7 +299,7 @@ impl DirectoryManager {
     }
 
     /// Creates a new DirectoryManager with custom directories
-    pub fn with_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf, secured_dir: PathBuf) -> Self {
+    pub fn with_all_custom_dirs(logs_dir: PathBuf, app_support_dir: PathBuf, secured_dir: PathBuf) -> Self {
         Self {
             logs_dir,
             app_support_dir,

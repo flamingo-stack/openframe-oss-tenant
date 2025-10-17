@@ -43,7 +43,7 @@ impl ToolInstallationService {
         tool_run_manager: ToolRunManager,
         tool_connection_processing_manager: ToolConnectionProcessingManager,
     ) -> Self {
-        // Ensure directories exists
+        // Ensure directories exist
         directory_manager
             .ensure_directories()
             .with_context(|| "Failed to ensure secured directory exists")
@@ -75,7 +75,7 @@ impl ToolInstallationService {
         let version_clone = tool_installation_message.version.clone();
         let run_args_clone = tool_installation_message.run_command_args.clone();
 
-        // Create tool-specific directory in app support
+        // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
         let tool_folder_path = base_folder_path.join(tool_agent_id);
         
@@ -218,7 +218,7 @@ impl ToolInstallationService {
         // Start tool connection processing for newly installed tool
         info!("Processing connection for tool {} after installation", tool_agent_id);
         self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
-           .await
+            .await
             .context("Failed to process tool connection after installation")?;
 
         Ok(())

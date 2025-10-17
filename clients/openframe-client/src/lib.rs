@@ -348,6 +348,7 @@ impl Client {
         self.registration_processor.process().await?;
         self.auth_processor.process().await?;
 
+        // Connect to NATS
         self.nats_connection_manager.connect().await?;
 
         // Start tool installation message listener in background
