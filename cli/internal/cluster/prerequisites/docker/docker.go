@@ -486,41 +486,75 @@ func (d *DockerInstaller) installDockerEngine() error {
 func (d *DockerInstaller) installDockerDesktop() error {
 	// Check if Hyper-V is enabled (required for Docker Desktop)
 	fmt.Println("Checking Hyper-V status...")
-	checkHyperV := exec.Command("powershell", "-Command", "(Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State")
-	output, err := checkHyperV.Output()
 
-	if err != nil || !strings.Contains(string(output), "Enabled") {
+	// Use DISM to check Hyper-V status (more reliable than PowerShell cmdlet)
+	checkHyperV := exec.Command("powershell", "-Command", "dism /Online /Get-FeatureInfo /FeatureName:Microsoft-Hyper-V-All")
+	output, err := checkHyperV.CombinedOutput()
+	outputStr := string(output)
+
+	isEnabled := strings.Contains(outputStr, "State : Enabled")
+
+	if err != nil || !isEnabled {
 		fmt.Println("Hyper-V is not enabled. Enabling Hyper-V...")
-		fmt.Println("Note: This will require a system restart.")
+		fmt.Println("Note: This requires administrator privileges and will require a system restart.")
+		fmt.Println()
 
-		enableHyperV := exec.Command("powershell", "-Command", "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -NoRestart")
-		enableHyperV.Stdout = os.Stdout
-		enableHyperV.Stderr = os.Stderr
+		// Enable Hyper-V using DISM (more reliable than PowerShell for this)
+		fmt.Println("Enabling Hyper-V platform and management tools...")
+		enableCmd := exec.Command("powershell", "-Command", "dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All /NoRestart")
+		enableCmd.Stdout = os.Stdout
+		enableCmd.Stderr = os.Stderr
 
-		if err := enableHyperV.Run(); err != nil {
-			fmt.Printf("Warning: Could not enable Hyper-V automatically: %v\n", err)
-			fmt.Println("You may need to enable it manually in Windows Features.")
-		} else {
-			fmt.Println("Hyper-V enabled successfully.")
+		if err := enableCmd.Run(); err != nil {
+			fmt.Println()
+			fmt.Printf("Error enabling Hyper-V: %v\n", err)
 			fmt.Println()
 			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
+			fmt.Println("⚠  MANUAL HYPER-V ENABLEMENT REQUIRED")
 			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 			fmt.Println()
-			fmt.Println("Hyper-V has been enabled, but a system reboot is required")
-			fmt.Println("before Docker Desktop can be installed.")
+			fmt.Println("Automatic Hyper-V enablement failed. Please enable it manually:")
 			fmt.Println()
-			fmt.Println("Next steps:")
-			fmt.Println("  1. Restart your computer now")
-			fmt.Println("  2. Run this installer again after reboot")
-			fmt.Println("  3. Docker Desktop will install successfully")
+			fmt.Println("Method 1: Using PowerShell (run as Administrator):")
+			fmt.Println("  powershell -Command \"Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All\"")
+			fmt.Println()
+			fmt.Println("Method 2: Using DISM (run as Administrator):")
+			fmt.Println("  powershell -Command \"dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All\"")
+			fmt.Println()
+			fmt.Println("Method 3: Using Windows Features GUI:")
+			fmt.Println("  1. Open Control Panel > Programs > Turn Windows features on or off")
+			fmt.Println("  2. Check 'Hyper-V' (all sub-items)")
+			fmt.Println("  3. Click OK and restart when prompted")
+			fmt.Println()
+			fmt.Println("After enabling Hyper-V and restarting, run this installer again.")
 			fmt.Println()
 			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			return fmt.Errorf("system reboot required for Hyper-V activation - please restart and run again")
+			return fmt.Errorf("Hyper-V enablement failed - please enable manually and run again")
 		}
-	} else {
-		fmt.Println("Hyper-V is already enabled.")
+
+		fmt.Println()
+		fmt.Println("Hyper-V enabled successfully.")
+		fmt.Println()
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		fmt.Println()
+		fmt.Println("Hyper-V has been enabled, but a system reboot is required")
+		fmt.Println("before Docker Desktop can be installed.")
+		fmt.Println()
+		fmt.Println("Next steps:")
+		fmt.Println("  1. Restart your computer now")
+		fmt.Println("  2. Run this installer again after reboot")
+		fmt.Println("  3. Docker Desktop will install successfully")
+		fmt.Println()
+		fmt.Println("To restart now, run:")
+		fmt.Println("  shutdown /r /t 0")
+		fmt.Println()
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		return fmt.Errorf("system reboot required for Hyper-V activation - please restart and run again")
 	}
+
+	fmt.Println("Hyper-V is already enabled.")
 
 	fmt.Println("Installing Docker Desktop via Chocolatey...")
 
