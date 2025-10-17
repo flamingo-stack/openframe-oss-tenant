@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::models::MainFileType;
+use crate::models::{MainFileType, SessionType};
 
 /// Installation status of the tool on the endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -20,6 +20,7 @@ pub struct InstalledTool {
     pub tool_id: String,
     pub tool_type: String,
     pub version: String,
+    pub session_type: SessionType,
     pub run_command_args: Vec<String>,
     pub tool_agent_id_command_args: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -37,6 +38,7 @@ impl Default for InstalledTool {
             tool_id: String::new(),
             tool_type: String::new(),
             version: String::new(),
+            session_type: SessionType::Service,
             run_command_args: Vec::new(),
             status: ToolStatus::default(),
             tool_agent_id_command_args: Vec::new(),
