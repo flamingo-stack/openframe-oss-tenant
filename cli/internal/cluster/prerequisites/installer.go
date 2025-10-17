@@ -342,9 +342,12 @@ func (i *Installer) installWindowsPrerequisites(nonInteractive bool) error {
 		spinner, _ := pterm.DefaultSpinner.Start("Installing Windows system prerequisites...")
 		if err := installer.Install(); err != nil {
 			spinner.Warning("Failed to install some Windows prerequisites")
-			return err
+			pterm.Info.Println("Note: .NET Runtime and VC++ Redistributables are optional. Docker Desktop may still work without them.")
+			pterm.Info.Println("If you encounter issues, please install them manually.")
+			// Don't return error - these are optional prerequisites
+		} else {
+			spinner.Success("Windows system prerequisites installed successfully")
 		}
-		spinner.Success("Windows system prerequisites installed successfully")
 	} else {
 		pterm.Info.Println("Skipping Windows system prerequisites installation")
 		pterm.Warning.Println("Note: Docker Desktop may require .NET Runtime to function properly")

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -280,7 +281,8 @@ func (d *DockerInstaller) installWindows() error {
 	// Don't use Chocolatey for Docker Desktop - it has dependency issues
 	// Direct user to manual installation instead
 	fmt.Println("\nwinget not found. Docker Desktop installation requires winget on Windows 10+")
-	fmt.Println("Please install Docker Desktop manually from:")
+	showWingetInstallHelp()
+	fmt.Println("\nAlternatively, install Docker Desktop manually:")
 	fmt.Println("  https://www.docker.com/products/docker-desktop")
 	fmt.Println("\nAfter installation, start Docker Desktop and run this command again.")
 	return fmt.Errorf("Docker Desktop requires manual installation")
@@ -376,4 +378,47 @@ func WaitForDocker() error {
 		time.Sleep(1 * time.Second)
 	}
 	return fmt.Errorf("timeout waiting for Docker to start")
+}
+
+// showWingetInstallHelp provides instructions for installing winget
+func showWingetInstallHelp() {
+	// Check Windows version
+	cmd := exec.Command("cmd", "/c", "ver")
+	output, err := cmd.Output()
+	versionInfo := ""
+	if err == nil {
+		versionInfo = strings.TrimSpace(string(output))
+	}
+
+	fmt.Println("\nTo install winget:")
+
+	// Check if they might have winget but it's not in PATH
+	appDataLocal := os.Getenv("LOCALAPPDATA")
+	possibleWingetPaths := []string{
+		appDataLocal + "\\Microsoft\\WindowsApps\\winget.exe",
+		"C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_*\\winget.exe",
+	}
+
+	wingetFound := false
+	for _, path := range possibleWingetPaths {
+		if _, err := os.Stat(path); err == nil {
+			wingetFound = true
+			fmt.Printf("  Note: winget appears to be installed at: %s\n", path)
+			fmt.Println("  You may need to add it to your PATH or run this command in a new terminal.")
+			break
+		}
+	}
+
+	if !wingetFound {
+		fmt.Println("  1. Open Microsoft Store")
+		fmt.Println("  2. Search for 'App Installer'")
+		fmt.Println("  3. Install or update 'App Installer'")
+		fmt.Println("  4. Restart your terminal")
+		fmt.Println("\n  Or download directly from:")
+		fmt.Println("    https://aka.ms/getwinget")
+
+		if strings.Contains(versionInfo, "Windows 10") || strings.Contains(versionInfo, "Windows 11") {
+			fmt.Println("\n  winget is included with Windows 10 (version 1809+) and Windows 11")
+		}
+	}
 }

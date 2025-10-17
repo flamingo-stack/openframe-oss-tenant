@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 type WindowsPrerequisitesInstaller struct{}
@@ -98,9 +99,9 @@ func (w *WindowsPrerequisitesInstaller) installDotNet() error {
 	// Only use winget - Chocolatey has dependency issues with .NET Framework 4.8
 	if !commandExists("winget") {
 		fmt.Println("\nwinget is required to install .NET Runtime automatically.")
-		fmt.Println("Please install .NET Runtime manually from:")
+		w.showWingetInstallHelp()
+		fmt.Println("\nAlternatively, install .NET Runtime manually:")
 		fmt.Println("  https://dotnet.microsoft.com/download/dotnet/8.0")
-		fmt.Println("or install winget (comes with Windows 10+ version 1809 or later)")
 		return fmt.Errorf("winget not found - .NET Runtime requires manual installation")
 	}
 
@@ -131,9 +132,9 @@ func (w *WindowsPrerequisitesInstaller) installVCRedist() error {
 	// Only use winget - Chocolatey has dependency issues
 	if !commandExists("winget") {
 		fmt.Println("\nwinget is required to install Visual C++ Redistributables automatically.")
-		fmt.Println("Please install Visual C++ Redistributables manually from:")
+		w.showWingetInstallHelp()
+		fmt.Println("\nAlternatively, install Visual C++ Redistributables manually:")
 		fmt.Println("  https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist")
-		fmt.Println("or install winget (comes with Windows 10+ version 1809 or later)")
 		return fmt.Errorf("winget not found - Visual C++ Redistributables require manual installation")
 	}
 
@@ -149,5 +150,48 @@ func (w *WindowsPrerequisitesInstaller) installVCRedist() error {
 		return fmt.Errorf("failed to install Visual C++ Redistributables: %w", err)
 	}
 	return nil
+}
+
+// showWingetInstallHelp provides instructions for installing winget
+func (w *WindowsPrerequisitesInstaller) showWingetInstallHelp() {
+	// Check Windows version
+	cmd := exec.Command("cmd", "/c", "ver")
+	output, err := cmd.Output()
+	versionInfo := ""
+	if err == nil {
+		versionInfo = strings.TrimSpace(string(output))
+	}
+
+	fmt.Println("\nTo install winget:")
+
+	// Check if they might have winget but it's not in PATH
+	appDataLocal := os.Getenv("LOCALAPPDATA")
+	possibleWingetPaths := []string{
+		appDataLocal + "\\Microsoft\\WindowsApps\\winget.exe",
+		"C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_*\\winget.exe",
+	}
+
+	wingetFound := false
+	for _, path := range possibleWingetPaths {
+		if _, err := os.Stat(path); err == nil {
+			wingetFound = true
+			fmt.Printf("  Note: winget appears to be installed at: %s\n", path)
+			fmt.Println("  You may need to add it to your PATH or run this command in a new terminal.")
+			break
+		}
+	}
+
+	if !wingetFound {
+		fmt.Println("  1. Open Microsoft Store")
+		fmt.Println("  2. Search for 'App Installer'")
+		fmt.Println("  3. Install or update 'App Installer'")
+		fmt.Println("  4. Restart your terminal")
+		fmt.Println("\n  Or download directly from:")
+		fmt.Println("    https://aka.ms/getwinget")
+
+		if strings.Contains(versionInfo, "Windows 10") || strings.Contains(versionInfo, "Windows 11") {
+			fmt.Println("\n  winget is included with Windows 10 (version 1809+) and Windows 11")
+		}
+	}
 }
 
