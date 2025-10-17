@@ -147,7 +147,6 @@ jobs:
       
 
   build_clients:
-    if: ${{ github.event_name == 'workflow_call' }}
     name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes, matrix]
     runs-on: "${{ matrix.os }}-latest"
