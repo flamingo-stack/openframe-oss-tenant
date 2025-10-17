@@ -54,7 +54,7 @@ func (k *K3dInstaller) Install() error {
 	case "linux":
 		return k.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic k3d installation on Windows not supported. Please install from https://k3d.io/v5.4.6/#installation")
+		return k.installWindows()
 	default:
 		return fmt.Errorf("automatic k3d installation not supported on %s", runtime.GOOS)
 	}
@@ -158,6 +158,41 @@ func (k *K3dInstaller) installBinary() error {
 		}
 	}
 
+	return nil
+}
+
+func (k *K3dInstaller) installWindows() error {
+	// Try winget first (built into Windows 10+ 1809 and later)
+	if commandExists("winget") {
+		fmt.Println("Installing k3d via winget...")
+		cmd := exec.Command("winget", "install", "-e", "--id", "k3d-io.k3d", "--accept-package-agreements", "--accept-source-agreements")
+
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("winget installation failed, trying chocolatey...\n")
+			return k.installWindowsChoco()
+		}
+
+		fmt.Println("k3d installed successfully.")
+		return nil
+	}
+
+	// Fall back to chocolatey
+	if commandExists("choco") {
+		return k.installWindowsChoco()
+	}
+
+	return fmt.Errorf("neither winget nor chocolatey found. Please install winget (Windows 10+ recommended) or chocolatey from https://chocolatey.org/, then try again")
+}
+
+func (k *K3dInstaller) installWindowsChoco() error {
+	fmt.Println("Installing k3d via Chocolatey...")
+	cmd := exec.Command("choco", "install", "k3d", "-y")
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install k3d: %w", err)
+	}
+
+	fmt.Println("k3d installed successfully.")
 	return nil
 }
 

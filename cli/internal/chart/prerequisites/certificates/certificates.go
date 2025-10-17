@@ -98,7 +98,7 @@ func (c *CertificateInstaller) installMkcert() error {
 	case "linux":
 		return c.installMkcertLinux()
 	case "windows":
-		return fmt.Errorf("automatic mkcert installation on Windows not supported. Please install from https://github.com/FiloSottile/mkcert")
+		return c.installMkcertWindows()
 	default:
 		return fmt.Errorf("automatic mkcert installation not supported on %s", runtime.GOOS)
 	}
@@ -144,6 +144,41 @@ func (c *CertificateInstaller) installMkcertLinux() error {
 	return nil
 }
 
+func (c *CertificateInstaller) installMkcertWindows() error {
+	// Try winget first (built into Windows 10+ 1809 and later)
+	if commandExists("winget") {
+		fmt.Println("Installing mkcert via winget...")
+		cmd := exec.Command("winget", "install", "-e", "--id", "FiloSottile.mkcert", "--accept-package-agreements", "--accept-source-agreements")
+
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("winget installation failed, trying chocolatey...\n")
+			return c.installMkcertWindowsChoco()
+		}
+
+		fmt.Println("mkcert installed successfully.")
+		return nil
+	}
+
+	// Fall back to chocolatey
+	if commandExists("choco") {
+		return c.installMkcertWindowsChoco()
+	}
+
+	return fmt.Errorf("neither winget nor chocolatey found. Please install winget (Windows 10+ recommended) or chocolatey from https://chocolatey.org/, then try again")
+}
+
+func (c *CertificateInstaller) installMkcertWindowsChoco() error {
+	fmt.Println("Installing mkcert via Chocolatey...")
+	cmd := exec.Command("choco", "install", "mkcert", "-y")
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install mkcert: %w", err)
+	}
+
+	fmt.Println("mkcert installed successfully.")
+	return nil
+}
+
 func (c *CertificateInstaller) generateCertificates() error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -167,13 +202,23 @@ func (c *CertificateInstaller) generateCertificates() error {
 	rootCAKeyPath := filepath.Join(caRoot, "rootCA-key.pem")
 	if _, err := os.Stat(rootCAKeyPath); os.IsNotExist(err) {
 		// Install CA with NSS trust stores for browsers - silently
-		installCmd := exec.Command("bash", "-c", "TRUST_STORES=nss mkcert -install 2>&1")
+		var installCmd *exec.Cmd
+		if runtime.GOOS == "windows" {
+			installCmd = exec.Command("mkcert", "-install")
+		} else {
+			installCmd = exec.Command("bash", "-c", "TRUST_STORES=nss mkcert -install 2>&1")
+		}
+
 		output, err := installCmd.Output()
 		if err != nil {
 			// Check if it's a password/sudo issue
 			if strings.Contains(string(output), "password") || strings.Contains(string(output), "sudo") {
 				// Allow interactive password prompt
-				installCmd := exec.Command("bash", "-c", "TRUST_STORES=nss mkcert -install")
+				if runtime.GOOS == "windows" {
+					installCmd = exec.Command("mkcert", "-install")
+				} else {
+					installCmd = exec.Command("bash", "-c", "TRUST_STORES=nss mkcert -install")
+				}
 				installCmd.Stdin = os.Stdin
 				installCmd.Stdout = os.Stdout
 				installCmd.Stderr = os.Stderr
@@ -310,8 +355,16 @@ func (c *CertificateInstaller) generateCertificates() error {
 	}
 
 	// Generate localhost certificates (silently)
-	generateCmd := exec.Command("bash", "-c",
-		fmt.Sprintf("cd '%s' && mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 ::1 >/dev/null 2>&1", certDir))
+	var generateCmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		// On Windows, use PowerShell to change directory and run mkcert
+		generateCmd = exec.Command("powershell", "-Command",
+			fmt.Sprintf("Set-Location '%s'; mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 ::1 2>$null", certDir))
+	} else {
+		generateCmd = exec.Command("bash", "-c",
+			fmt.Sprintf("cd '%s' && mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 ::1 >/dev/null 2>&1", certDir))
+	}
+
 	if err := generateCmd.Run(); err != nil {
 		return fmt.Errorf("failed to generate certificates: %w", err)
 	}

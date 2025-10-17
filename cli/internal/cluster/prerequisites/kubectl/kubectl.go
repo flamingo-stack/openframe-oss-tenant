@@ -55,7 +55,7 @@ func (k *KubectlInstaller) Install() error {
 	case "linux":
 		return k.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic kubectl installation on Windows not supported. Please install from https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/")
+		return k.installWindows()
 	default:
 		return fmt.Errorf("automatic kubectl installation not supported on %s", runtime.GOOS)
 	}
@@ -195,7 +195,7 @@ func (k *KubectlInstaller) installArch() error {
 
 func (k *KubectlInstaller) installBinary() error {
 	fmt.Println("Installing kubectl via direct binary download...")
-	
+
 	arch := runtime.GOARCH
 	if arch == "amd64" {
 		arch = "amd64"
@@ -217,6 +217,45 @@ func (k *KubectlInstaller) installBinary() error {
 		}
 	}
 
+	return nil
+}
+
+func (k *KubectlInstaller) installWindows() error {
+	// Try winget first (built into Windows 10+ 1809 and later)
+	if commandExists("winget") {
+		fmt.Println("Installing kubectl via winget...")
+		cmd := exec.Command("winget", "install", "-e", "--id", "Kubernetes.kubectl", "--accept-package-agreements", "--accept-source-agreements")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("winget installation failed, trying chocolatey...\n")
+			return k.installWindowsChoco()
+		}
+
+		fmt.Println("kubectl installed successfully.")
+		return nil
+	}
+
+	// Fall back to chocolatey
+	if commandExists("choco") {
+		return k.installWindowsChoco()
+	}
+
+	return fmt.Errorf("neither winget nor chocolatey found. Please install winget (Windows 10+ recommended) or chocolatey from https://chocolatey.org/, then try again")
+}
+
+func (k *KubectlInstaller) installWindowsChoco() error {
+	fmt.Println("Installing kubectl via Chocolatey...")
+	cmd := exec.Command("choco", "install", "kubernetes-cli", "-y")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install kubectl: %w", err)
+	}
+
+	fmt.Println("kubectl installed successfully.")
 	return nil
 }
 

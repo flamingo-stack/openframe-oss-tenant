@@ -54,7 +54,7 @@ func (h *HelmInstaller) Install() error {
 	case "linux":
 		return h.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic Helm installation on Windows not supported. Please install from https://helm.sh/docs/intro/install/")
+		return h.installWindows()
 	default:
 		return fmt.Errorf("automatic Helm installation not supported on %s", runtime.GOOS)
 	}
@@ -143,6 +143,41 @@ func (h *HelmInstaller) installScript() error {
 		return fmt.Errorf("failed to install Helm via script: %w", err)
 	}
 
+	return nil
+}
+
+func (h *HelmInstaller) installWindows() error {
+	// Try winget first (built into Windows 10+ 1809 and later)
+	if commandExists("winget") {
+		fmt.Println("Installing Helm via winget...")
+		cmd := exec.Command("winget", "install", "-e", "--id", "Helm.Helm", "--accept-package-agreements", "--accept-source-agreements")
+
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("winget installation failed, trying chocolatey...\n")
+			return h.installWindowsChoco()
+		}
+
+		fmt.Println("Helm installed successfully.")
+		return nil
+	}
+
+	// Fall back to chocolatey
+	if commandExists("choco") {
+		return h.installWindowsChoco()
+	}
+
+	return fmt.Errorf("neither winget nor chocolatey found. Please install winget (Windows 10+ recommended) or chocolatey from https://chocolatey.org/, then try again")
+}
+
+func (h *HelmInstaller) installWindowsChoco() error {
+	fmt.Println("Installing Helm via Chocolatey...")
+	cmd := exec.Command("choco", "install", "kubernetes-helm", "-y")
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Helm: %w", err)
+	}
+
+	fmt.Println("Helm installed successfully.")
 	return nil
 }
 

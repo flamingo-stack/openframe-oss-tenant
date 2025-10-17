@@ -67,7 +67,7 @@ func (d *DockerInstaller) Install() error {
 	case "linux":
 		return d.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic Docker installation on Windows not supported. Please install Docker Desktop from https://docker.com/products/docker-desktop")
+		return d.installWindows()
 	default:
 		return fmt.Errorf("automatic Docker installation not supported on %s", runtime.GOOS)
 	}
@@ -226,7 +226,7 @@ func (d *DockerInstaller) installFedora() error {
 
 func (d *DockerInstaller) installArch() error {
 	fmt.Println("Installing Docker on Arch Linux...")
-	
+
 	commands := [][]string{
 		{"sudo", "pacman", "-S", "--noconfirm", "docker"},
 		{"sudo", "systemctl", "enable", "docker"},
@@ -247,6 +247,54 @@ func (d *DockerInstaller) installArch() error {
 		} else {
 			fmt.Println("Note: You may need to log out and back in for Docker group permissions to take effect")
 		}
+	}
+
+	return nil
+}
+
+func (d *DockerInstaller) installWindows() error {
+	// Try winget first (built into Windows 10+ 1809 and later)
+	if commandExists("winget") {
+		fmt.Println("Installing Docker Desktop via winget...")
+		cmd := exec.Command("winget", "install", "-e", "--id", "Docker.DockerDesktop", "--accept-package-agreements", "--accept-source-agreements")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("winget installation failed, trying chocolatey...\n")
+			return d.installWindowsChoco()
+		}
+
+		fmt.Println("Docker Desktop installed successfully. Starting Docker Desktop...")
+		if err := startDockerWindows(); err != nil {
+			fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
+			fmt.Println("Please start Docker Desktop manually from Start Menu")
+		}
+		return nil
+	}
+
+	// Fall back to chocolatey
+	if commandExists("choco") {
+		return d.installWindowsChoco()
+	}
+
+	return fmt.Errorf("neither winget nor chocolatey found. Please install winget (Windows 10+ recommended) or chocolatey from https://chocolatey.org/, then try again")
+}
+
+func (d *DockerInstaller) installWindowsChoco() error {
+	fmt.Println("Installing Docker Desktop via Chocolatey...")
+	cmd := exec.Command("choco", "install", "docker-desktop", "-y")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Docker Desktop: %w", err)
+	}
+
+	fmt.Println("Docker Desktop installed successfully. Starting Docker Desktop...")
+	if err := startDockerWindows(); err != nil {
+		fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
+		fmt.Println("Please start Docker Desktop manually from Start Menu")
 	}
 
 	return nil
