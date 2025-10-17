@@ -2,8 +2,11 @@ package docker
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"time"
 )
@@ -67,7 +70,7 @@ func (d *DockerInstaller) Install() error {
 	case "linux":
 		return d.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic Docker installation on Windows not supported. Please install Docker Desktop from https://docker.com/products/docker-desktop")
+		return d.installWindows()
 	default:
 		return fmt.Errorf("automatic Docker installation not supported on %s", runtime.GOOS)
 	}
@@ -82,7 +85,7 @@ func (d *DockerInstaller) installMacOS() error {
 	cmd := exec.Command("brew", "install", "--cask", "docker")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install Docker Desktop: %w", err)
 	}
@@ -113,7 +116,7 @@ func (d *DockerInstaller) installLinux() error {
 
 func (d *DockerInstaller) installUbuntu() error {
 	fmt.Println("Installing Docker on Ubuntu/Debian...")
-	
+
 	commands := [][]string{
 		{"sudo", "apt", "update"},
 		{"sudo", "apt", "install", "-y", "apt-transport-https", "ca-certificates", "curl", "gnupg", "lsb-release"},
@@ -166,7 +169,7 @@ func (d *DockerInstaller) installUbuntu() error {
 
 func (d *DockerInstaller) installRedHat() error {
 	fmt.Println("Installing Docker on CentOS/RHEL...")
-	
+
 	commands := [][]string{
 		{"sudo", "yum", "install", "-y", "yum-utils"},
 		{"sudo", "yum-config-manager", "--add-repo", "https://download.docker.com/linux/centos/docker-ce.repo"},
@@ -196,7 +199,7 @@ func (d *DockerInstaller) installRedHat() error {
 
 func (d *DockerInstaller) installFedora() error {
 	fmt.Println("Installing Docker on Fedora...")
-	
+
 	commands := [][]string{
 		{"sudo", "dnf", "install", "-y", "dnf-plugins-core"},
 		{"sudo", "dnf", "config-manager", "--add-repo", "https://download.docker.com/linux/fedora/docker-ce.repo"},
@@ -226,7 +229,7 @@ func (d *DockerInstaller) installFedora() error {
 
 func (d *DockerInstaller) installArch() error {
 	fmt.Println("Installing Docker on Arch Linux...")
-	
+
 	commands := [][]string{
 		{"sudo", "pacman", "-S", "--noconfirm", "docker"},
 		{"sudo", "systemctl", "enable", "docker"},
@@ -250,6 +253,125 @@ func (d *DockerInstaller) installArch() error {
 	}
 
 	return nil
+}
+
+func (d *DockerInstaller) installWindows() error {
+	fmt.Println("Installing Docker Desktop on Windows...")
+
+	// Docker Desktop installer URL (latest stable)
+	const dockerURL = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+
+	tempDir := os.TempDir()
+	installerPath := filepath.Join(tempDir, "DockerDesktopInstaller.exe")
+
+	fmt.Println("Downloading Docker Desktop installer...")
+	if err := downloadFileWithProgress(dockerURL, installerPath); err != nil {
+		return fmt.Errorf("failed to download Docker Desktop: %w", err)
+	}
+
+	fmt.Println("\nInstalling Docker Desktop (this may take several minutes)...")
+
+	cmd := exec.Command(installerPath, "install", "--quiet", "--accept-license")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		// Clean up installer file
+		os.Remove(installerPath)
+		return fmt.Errorf("failed to install Docker Desktop: %w", err)
+	}
+
+	// Clean up installer file
+	fmt.Println("Cleaning up installer file...")
+	os.Remove(installerPath)
+
+	fmt.Println("Docker Desktop installation completed successfully!")
+	fmt.Println("Note: Docker Desktop may require a system restart to complete the installation.")
+	fmt.Println("      You will need to start Docker Desktop manually after installation.")
+
+	return nil
+}
+
+// downloadFileWithProgress downloads a file and shows progress percentage
+func downloadFileWithProgress(url, filepath string) error {
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	// Get the content length
+	contentLength := resp.ContentLength
+	if contentLength <= 0 {
+		// If content length is unknown, download without progress
+		fmt.Println("Downloading... (size unknown)")
+		_, err = io.Copy(out, resp.Body)
+		return err
+	}
+
+	// Create a progress reader
+	counter := &writeCounter{Total: uint64(contentLength)}
+	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
+	fmt.Println() // New line after progress
+
+	return err
+}
+
+// writeCounter counts the number of bytes written to it and displays progress
+type writeCounter struct {
+	Total      uint64
+	Downloaded uint64
+}
+
+func (wc *writeCounter) Write(p []byte) (int, error) {
+	n := len(p)
+	wc.Downloaded += uint64(n)
+	wc.printProgress()
+	return n, nil
+}
+
+func (wc *writeCounter) printProgress() {
+	// Clear the line
+	fmt.Printf("\r%s", clearLine())
+
+	// Calculate percentage
+	percentage := float64(wc.Downloaded) / float64(wc.Total) * 100
+
+	// Print progress
+	fmt.Printf("\rDownloading... %.2f%% (%s / %s)",
+		percentage,
+		formatBytes(wc.Downloaded),
+		formatBytes(wc.Total))
+}
+
+func formatBytes(bytes uint64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := uint64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func clearLine() string {
+	return "\033[2K"
 }
 
 func (d *DockerInstaller) runCommand(name string, args ...string) error {
@@ -305,7 +427,7 @@ func startDockerLinux() error {
 		}
 		return nil
 	}
-	
+
 	// Try service command (older systems)
 	if commandExists("service") {
 		cmd := exec.Command("sudo", "service", "docker", "start")
@@ -314,7 +436,7 @@ func startDockerLinux() error {
 		}
 		return nil
 	}
-	
+
 	return fmt.Errorf("unable to start Docker daemon: no supported init system found")
 }
 
