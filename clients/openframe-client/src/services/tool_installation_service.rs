@@ -1,6 +1,6 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::clients::tool_api_client::ToolApiClient;
-use tracing::{info, debug};
+use tracing::{info, debug, warn};
 use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
@@ -19,8 +19,6 @@ use tokio::process::Command;
 use std::path::Path;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
-#[cfg(target_os = "windows")]
-use crate::platform::permissions::Permissions;
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
@@ -99,6 +97,7 @@ impl ToolInstallationService {
                 .get_tool_agent_file(tool_agent_id.clone())
                 .await?;
 
+            // Save directly and set permissions (always executable)
             File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
 
             // Set file permissions to executable
@@ -201,8 +200,9 @@ impl ToolInstallationService {
             tool_id: tool_installation_message.tool_id.clone(),
             tool_type: tool_installation_message.tool_type.clone(),
             version: version_clone,
+            session_type: tool_installation_message.session_type.clone().unwrap_or(crate::models::SessionType::Service),
             run_command_args: run_args_clone,
-            tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args,
+            tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             status: ToolStatus::Installed,
         };

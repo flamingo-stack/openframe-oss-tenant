@@ -29,7 +29,6 @@ public class ToolConnectionService {
     public void addToolConnection(String openframeAgentId, String toolTypeValue, String agentToolId) {
         validateAgentId(openframeAgentId);
         validateToolType(toolTypeValue);
-        validateAgentToolId(agentToolId);
         validateMachineExists(openframeAgentId);
 
         ToolType toolType = getToolTypeFromString(toolTypeValue);
@@ -84,12 +83,6 @@ public class ToolConnectionService {
     private void validateMachineExists(String machineId) {
         if (machineRepository.findByMachineId(machineId).isEmpty()) {
             throw new MachineNotFoundException("Machine not found: " + machineId);
-        }
-    }
-
-    private void validateAgentToolId(String agentToolId) {
-        if (agentToolId == null || agentToolId.trim().isEmpty()) {
-            throw new InvalidAgentIdException("Agent tool ID cannot be empty");
         }
     }
 
