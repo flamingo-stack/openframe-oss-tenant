@@ -6,6 +6,11 @@ ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
 
+.PHONY: lint build test fmt fmt-check clippy clean
+
+fmt:
+	cd src-tauri && $(CARGO) fmt --all
+
 fmt-check:
 	cd src-tauri && $(CARGO) fmt --all -- --check
 
