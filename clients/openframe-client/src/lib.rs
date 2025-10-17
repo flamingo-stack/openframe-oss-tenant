@@ -55,7 +55,6 @@ use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
-use crate::services::ChatInstallerService;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -127,7 +126,6 @@ pub struct Client {
     tool_agent_update_listener: ToolAgentUpdateListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
-    chat_installer_service: ChatInstallerService,
 }
 
 impl Client {
@@ -327,10 +325,6 @@ impl Client {
             config_service.clone()
         );
 
-        // Initialize chat installer service
-        let chat_installer_service = ChatInstallerService::new()
-            .context("Failed to initialize chat installer service")?;
-
         Ok(Self {
             config,
             directory_manager,
@@ -342,7 +336,6 @@ impl Client {
             tool_agent_update_listener,
             tool_run_manager,
             tool_connection_processing_manager,
-            chat_installer_service,
         })
     }
 

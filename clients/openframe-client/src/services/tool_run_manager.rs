@@ -48,7 +48,7 @@ fn get_active_user_session() -> Option<u32> {
         if ProcessIdToSessionId(current_pid, &mut session_id).is_ok() {
             info!("Current process session ID: {}", session_id);
             if session_id != 0 {
-                info!("✓ Not running as service - using current process session ID: {}", session_id);
+                info!("Not running as service - using current process session ID: {}", session_id);
                 return Some(session_id);
             }
             info!("Session ID is 0 - running as service, need to find active user session");
@@ -123,7 +123,7 @@ fn get_active_user_session() -> Option<u32> {
                     });
 
                 if let Some((id, name)) = best_session {
-                    info!("✓ Selected active user session: ID={}, Name='{}'", id, name);
+                    info!("Selected active user session: ID={}, Name='{}'", id, name);
                     WTSFreeMemory(pp_session_info as _);
                     return Some(*id);
                 } else {
@@ -155,11 +155,11 @@ fn wcslen(ptr: *const u16) -> usize {
 }
 
 #[cfg(windows)]
-fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
+fn launch_process_in_console_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
     unsafe {
         let session_id = match get_active_user_session() {
             Some(id) => {
-                info!("✓ Successfully obtained active user session ID: {}", id);
+                info!("Successfully obtained active user session ID: {}", id);
                 id
             }
             None => {
@@ -174,7 +174,7 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
             anyhow::bail!("Failed to get user token for session {}: {:?}", session_id, e);
         }
         
-        info!("✓ Successfully obtained user token for session {} (handle: {:?})", session_id, user_token);
+        info!("Successfully obtained user token for session {} (handle: {:?})", session_id, user_token);
 
         // Duplicate token to get primary token (required for CreateProcessAsUserW)
         info!("Step 2: Duplicating token to get primary token (required for CreateProcessAsUserW)");
@@ -193,7 +193,156 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
         }
         
         let _ = CloseHandle(user_token);
-        info!("✓ Successfully duplicated token to primary token (handle: {:?})", primary_token);
+        info!("Successfully duplicated token to primary token (handle: {:?})", primary_token);
+
+        // Build command line with full path in quotes + arguments
+        info!("Step 3: Building command line");
+        let mut cmdline = format!("\"{}\"", command_path);
+        for arg in args {
+            cmdline.push(' ');
+            // Quote argument if it contains spaces
+            if arg.contains(' ') {
+                cmdline.push('"');
+                cmdline.push_str(arg);
+                cmdline.push('"');
+            } else {
+                cmdline.push_str(arg);
+            }
+        }
+        info!("Command line: {}", cmdline);
+
+        info!("Step 4: Setting up STARTUPINFOW structure for console application");
+        let mut si = STARTUPINFOW::default();
+        si.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
+        
+        // For console applications, set the desktop to winsta0\default
+        let desktop = to_wide("winsta0\\default");
+        si.lpDesktop = PWSTR(desktop.as_ptr() as *mut u16);
+        info!("  Desktop: winsta0\\default");
+        info!("  STARTUPINFOW size: {} bytes", si.cb);
+        
+        let mut pi = PROCESS_INFORMATION::default();
+
+        let mut cmdline_wide = to_wide(&cmdline);
+        
+        info!("Step 5: Calling CreateProcessAsUserW for console application");
+        info!("  lpApplicationName: NULL (using command line parsing)");
+        info!("  lpCommandLine: {}", cmdline);
+        info!("  Creation flags: CREATE_NEW_CONSOLE (creates visible console window)");
+        
+        // For console applications, use CREATE_NEW_CONSOLE to create a visible console window
+        use windows::Win32::System::Threading::CREATE_NEW_CONSOLE;
+        
+        let result = CreateProcessAsUserW(
+            primary_token,
+            PCWSTR::null(), // lpApplicationName = NULL
+            PWSTR(cmdline_wide.as_mut_ptr()),
+            None,
+            None,
+            false,
+            CREATE_NEW_CONSOLE, // Create a new visible console window
+            None,
+            None,
+            &si,
+            &mut pi,
+        );
+
+        if let Err(e) = result {
+            // Fallback: try without desktop specification
+            error!("✗ CreateProcessAsUserW failed with desktop specification: {:?}", e);
+            warn!("Attempting fallback: retrying without desktop specification");
+            
+            info!("Step 6: Fallback attempt - removing desktop specification");
+            si.lpDesktop = PWSTR::null();
+            info!("  Desktop: NULL (removed)");
+            let mut cmdline_wide_retry = to_wide(&cmdline);
+            
+            let result_retry = CreateProcessAsUserW(
+                primary_token,
+                PCWSTR::null(),
+                PWSTR(cmdline_wide_retry.as_mut_ptr()),
+                None,
+                None,
+                false,
+                CREATE_NEW_CONSOLE,
+                None,
+                None,
+                &si,
+                &mut pi,
+            );
+            
+            let _ = CloseHandle(primary_token);
+            
+            if let Err(e2) = result_retry {
+                error!("✗ CreateProcessAsUserW failed again without desktop specification: {:?}", e2);
+                error!("Both attempts to launch console process failed");
+                anyhow::bail!("Failed to launch process in console session: {:?}", e2);
+            }
+            
+            info!("Fallback successful - console process launched without desktop specification");
+        } else {
+            info!("CreateProcessAsUserW succeeded on first attempt");
+            let _ = CloseHandle(primary_token);
+        }
+
+        let pid = pi.dwProcessId;
+        let process_handle = pi.hProcess;
+        
+        info!("Step 7: Console process created successfully");
+        info!("  Process ID (PID): {}", pid);
+        info!("  Process handle: {:?}", process_handle);
+        info!("  Thread ID: {}", pi.dwThreadId);
+        info!("  Thread handle: {:?}", pi.hThread);
+        
+        // Close thread handle as we don't need it
+        let _ = CloseHandle(pi.hThread);
+        info!("  Closed thread handle (not needed for monitoring)");
+
+        info!("=== Console process launched successfully in session {} with PID {} ===", session_id, pid);
+        Ok((pid, process_handle))
+    }
+}
+
+#[cfg(windows)]
+fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
+    unsafe {
+        let session_id = match get_active_user_session() {
+            Some(id) => {
+                info!("Successfully obtained active user session ID: {}", id);
+                id
+            }
+            None => {
+                anyhow::bail!("No active user session found");
+            }
+        };
+
+        info!("Step 1: Querying user token for session {}", session_id);
+        let mut user_token = HANDLE(0);
+        if let Err(e) = WTSQueryUserToken(session_id, &mut user_token) {
+            error!("Failed to get user token for session {}: {:?}", session_id, e);
+            anyhow::bail!("Failed to get user token for session {}: {:?}", session_id, e);
+        }
+        
+        info!("Successfully obtained user token for session {} (handle: {:?})", session_id, user_token);
+
+        // Duplicate token to get primary token (required for CreateProcessAsUserW)
+        info!("Step 2: Duplicating token to get primary token (required for CreateProcessAsUserW)");
+        let mut primary_token = HANDLE(0);
+        if let Err(e) = DuplicateTokenEx(
+            user_token,
+            TOKEN_ALL_ACCESS,
+            None,
+            SECURITY_IMPERSONATION_LEVEL(2), // SecurityImpersonation
+            TokenPrimary,
+            &mut primary_token,
+        ) {
+            error!("Failed to duplicate token: {:?}", e);
+            let _ = CloseHandle(user_token);
+            anyhow::bail!("Failed to duplicate token for session {}: {:?}", session_id, e);
+        }
+        
+        let _ = CloseHandle(user_token);
+        info!("Successfully duplicated token to primary token (handle: {:?})", primary_token);
 
         // Build command line with full path in quotes + arguments
         info!("Step 3: Building command line");
@@ -283,9 +432,9 @@ fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result
                 anyhow::bail!("Failed to launch process in user session: {:?}", e2);
             }
             
-            info!("✓ Fallback successful - process launched without desktop specification");
+            info!("Fallback successful - process launched without desktop specification");
         } else {
-            info!("✓ CreateProcessAsUserW succeeded on first attempt");
+            info!("CreateProcessAsUserW succeeded on first attempt");
             let _ = CloseHandle(primary_token);
         }
 
@@ -444,48 +593,99 @@ impl ToolRunManager {
                     }
                 }
 
-                // Check if this is MeshCentral or openframe-chat on Windows - launch in user session
+                // On Windows, check session type to determine launch method
                 #[cfg(windows)]
-                let needs_user_session = tool.tool_agent_id.to_lowercase().contains("meshcentral") 
-                    || tool.tool_agent_id.to_lowercase().contains("openframe-chat");
-                
-                #[cfg(windows)]
-                if needs_user_session {
-                    info!("Launching {} in user session", tool.tool_agent_id);
-                    match launch_process_in_user_session(&command_path, &processed_args) {
-                        Ok((pid, process_handle)) => {
-                            info!("{} launched successfully with PID: {}", tool.tool_agent_id, pid);
-                            
-                            // Wait for process to exit in blocking thread to avoid blocking async runtime
-                            let exit_code = tokio::task::spawn_blocking(move || {
-                                use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE};
-                                
-                                unsafe {
-                                    let _ = WaitForSingleObject(process_handle, INFINITE);
+                {
+                    use crate::models::SessionType;
+                    
+                    match tool.session_type {
+                        SessionType::User => {
+                            info!("Launching {} in USER session (GUI application)", tool.tool_agent_id);
+                            match launch_process_in_user_session(&command_path, &processed_args) {
+                                Ok((pid, process_handle)) => {
+                                    info!("{} launched successfully in USER session with PID: {}", tool.tool_agent_id, pid);
                                     
-                                    // Get exit code
-                                    let mut exit_code: u32 = 0;
-                                    let _ = GetExitCodeProcess(process_handle, &mut exit_code);
-                                    let _ = CloseHandle(process_handle);
+                                    // Wait for process to exit in blocking thread to avoid blocking async runtime
+                                    let exit_code = tokio::task::spawn_blocking(move || {
+                                        use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE};
+                                        
+                                        unsafe {
+                                            let _ = WaitForSingleObject(process_handle, INFINITE);
+                                            
+                                            // Get exit code
+                                            let mut exit_code: u32 = 0;
+                                            let _ = GetExitCodeProcess(process_handle, &mut exit_code);
+                                            let _ = CloseHandle(process_handle);
+                                            
+                                            exit_code
+                                        }
+                                    }).await.unwrap_or(1);
                                     
-                                    exit_code
+                                    warn!(tool_id = %tool.tool_agent_id,
+                                          "{} process exited with code {} - restarting in {} seconds",
+                                          tool.tool_agent_id, exit_code, RETRY_DELAY_SECONDS);
+                                    
+                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                    continue;
                                 }
-                            }).await.unwrap_or(1);
-                            
-                            warn!(tool_id = %tool.tool_agent_id,
-                                  "{} process exited with code {} - restarting in {} seconds",
-                                  tool.tool_agent_id, exit_code, RETRY_DELAY_SECONDS);
-                            
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                            continue;
+                                Err(e) => {
+                                    error!(tool_id = %tool.tool_agent_id, error = %e,
+                                           "Failed to launch {} in USER session - retrying in {} seconds", 
+                                           tool.tool_agent_id, RETRY_DELAY_SECONDS);
+                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                    continue;
+                                }
+                            }
                         }
-                        Err(e) => {
-                            error!(tool_id = %tool.tool_agent_id, error = %e,
-                                   "Failed to launch {} in user session - retrying in {} seconds", 
-                                   tool.tool_agent_id, RETRY_DELAY_SECONDS);
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                            continue;
+                        SessionType::Console => {
+                            info!("Launching {} in CONSOLE session (console application)", tool.tool_agent_id);
+                            match launch_process_in_console_session(&command_path, &processed_args) {
+                                Ok((pid, process_handle)) => {
+                                    info!("{} launched successfully in CONSOLE session with PID: {}", tool.tool_agent_id, pid);
+                                    
+                                    // Wait for process to exit in blocking thread to avoid blocking async runtime
+                                    let exit_code = tokio::task::spawn_blocking(move || {
+                                        use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE};
+                                        
+                                        unsafe {
+                                            let _ = WaitForSingleObject(process_handle, INFINITE);
+                                            
+                                            // Get exit code
+                                            let mut exit_code: u32 = 0;
+                                            let _ = GetExitCodeProcess(process_handle, &mut exit_code);
+                                            let _ = CloseHandle(process_handle);
+                                            
+                                            exit_code
+                                        }
+                                    }).await.unwrap_or(1);
+                                    
+                                    warn!(tool_id = %tool.tool_agent_id,
+                                          "{} process exited with code {} - restarting in {} seconds",
+                                          tool.tool_agent_id, exit_code, RETRY_DELAY_SECONDS);
+                                    
+                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                    continue;
+                                }
+                                Err(e) => {
+                                    error!(tool_id = %tool.tool_agent_id, error = %e,
+                                           "Failed to launch {} in CONSOLE session - retrying in {} seconds", 
+                                           tool.tool_agent_id, RETRY_DELAY_SECONDS);
+                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                    continue;
+                                }
+                            }
                         }
+                        SessionType::Service => {
+                            info!("Launching {} as SERVICE (standard spawn)", tool.tool_agent_id);
+                            // Continue to standard spawn below
+                        }
+                    }
+                    
+                    // If we reached here and session_type is Service, continue to standard spawn
+                    if tool.session_type != SessionType::Service {
+                        // User or Console sessions are handled above and continue the loop
+                        // This should never be reached, but just in case
+                        continue;
                     }
                 }
 
