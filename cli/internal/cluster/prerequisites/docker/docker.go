@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -271,19 +272,46 @@ func (d *DockerInstaller) installWindows() error {
 
 	fmt.Println("\nInstalling Docker Desktop (this may take several minutes)...")
 
+	// Capture both stdout and stderr for detailed error reporting
+	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(installerPath, "install", "--quiet", "--accept-license")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
 		// Clean up installer file
-		os.Remove(installerPath)
-		return fmt.Errorf("failed to install Docker Desktop: %w", err)
+		_ = os.Remove(installerPath)
+
+		// Build detailed error message
+		errorMsg := fmt.Sprintf("Docker Desktop installation failed: %v", err)
+
+		if stderr.Len() > 0 {
+			errorMsg += fmt.Sprintf("\n\nError output:\n%s", stderr.String())
+		}
+
+		if stdout.Len() > 0 {
+			errorMsg += fmt.Sprintf("\n\nStandard output:\n%s", stdout.String())
+		}
+
+		errorMsg += "\n\nTroubleshooting tips:"
+		errorMsg += "\n  - Ensure you have administrator privileges"
+		errorMsg += "\n  - Check if WSL 2 is installed (required for Docker Desktop)"
+		errorMsg += "\n  - Verify Windows version is compatible (Windows 10/11 Pro, Enterprise, or Education)"
+		errorMsg += "\n  - Try downloading and installing manually from: https://docker.com/products/docker-desktop"
+
+		return fmt.Errorf("%s", errorMsg)
+	}
+
+	// Show any output from successful installation
+	if stdout.Len() > 0 {
+		fmt.Printf("\nInstaller output:\n%s\n", stdout.String())
 	}
 
 	// Clean up installer file
 	fmt.Println("Cleaning up installer file...")
-	os.Remove(installerPath)
+	if err := os.Remove(installerPath); err != nil {
+		fmt.Printf("Warning: Could not remove installer file at %s: %v\n", installerPath, err)
+	}
 
 	fmt.Println("Docker Desktop installation completed successfully!")
 	fmt.Println("Note: Docker Desktop may require a system restart to complete the installation.")
