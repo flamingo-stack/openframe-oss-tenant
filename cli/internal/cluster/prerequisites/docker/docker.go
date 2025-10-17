@@ -382,33 +382,65 @@ func WaitForDocker() error {
 	return fmt.Errorf("timeout waiting for Docker to start")
 }
 
-// installWinget attempts to install or update winget via Microsoft Store
+// installWinget downloads and installs winget directly from GitHub
 func installWinget() error {
-	fmt.Println("\nwinget is not available. Installing via Microsoft Store...")
+	fmt.Println("Downloading winget from GitHub...")
 
-	// Try to open Microsoft Store to the App Installer page
-	// This is the most reliable way to install/update winget
-	storeURL := "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1"
+	// Use the latest release download URL
+	wingetURL := "https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+	tempDir := os.TempDir()
+	installerPath := tempDir + "\\winget-installer.msixbundle"
 
-	fmt.Println("\nOpening Microsoft Store to install 'App Installer' (winget)...")
-	fmt.Println("Please click 'Get' or 'Update' in the Microsoft Store window that opens.")
-	fmt.Println("After installation completes:")
-	fmt.Println("  1. Close Microsoft Store")
-	fmt.Println("  2. Restart this terminal")
-	fmt.Println("  3. Run the bootstrap command again")
+	// Download using PowerShell
+	downloadCmd := fmt.Sprintf(
+		`[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
+		wingetURL, installerPath,
+	)
 
-	cmd := exec.Command("cmd", "/c", "start", storeURL)
+	fmt.Println("Downloading winget installer package...")
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", downloadCmd)
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("\nFailed to open Microsoft Store: %v\n", err)
-		showWingetInstallHelp()
-		return fmt.Errorf("winget installation requires Microsoft Store")
+		return fmt.Errorf("failed to download winget: %w", err)
 	}
 
-	fmt.Println("\nWaiting for you to complete the installation in Microsoft Store...")
-	fmt.Println("Press Enter after you've installed App Installer to continue, or Ctrl+C to exit...")
+	// Install the package
+	fmt.Println("Installing winget...")
+	installCmd := fmt.Sprintf(`Add-AppxPackage -Path '%s'`, installerPath)
+	cmd = exec.Command("powershell", "-NoProfile", "-Command", installCmd)
+	output, err := cmd.CombinedOutput()
 
-	// Wait for user to press Enter
-	fmt.Scanln()
+	// Clean up installer file
+	os.Remove(installerPath)
+
+	if err != nil {
+		// Check if it's a dependency issue
+		if strings.Contains(string(output), "dependencies") || strings.Contains(string(output), "0x80073CF3") {
+			fmt.Println("\nwinget installation requires dependencies. Installing dependencies...")
+			// Try to install VCLibs and UI.Xaml dependencies
+			if depErr := installWingetDependencies(); depErr != nil {
+				fmt.Printf("Failed to install dependencies: %v\n", depErr)
+			}
+			// Retry installation
+			downloadCmd2 := fmt.Sprintf(
+				`[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
+				wingetURL, installerPath,
+			)
+			cmd2 := exec.Command("powershell", "-NoProfile", "-Command", downloadCmd2)
+			if err := cmd2.Run(); err == nil {
+				installCmd2 := fmt.Sprintf(`Add-AppxPackage -Path '%s'`, installerPath)
+				cmd3 := exec.Command("powershell", "-NoProfile", "-Command", installCmd2)
+				if err := cmd3.Run(); err != nil {
+					os.Remove(installerPath)
+					return fmt.Errorf("failed to install winget after installing dependencies: %w", err)
+				}
+			}
+			os.Remove(installerPath)
+		} else {
+			return fmt.Errorf("failed to install winget: %w - %s", err, string(output))
+		}
+	}
+
+	fmt.Println("winget installed successfully!")
 
 	// Verify installation
 	if commandExists("winget") {
@@ -416,12 +448,50 @@ func installWinget() error {
 		return nil
 	}
 
-	fmt.Println("\nwinget is still not available. This usually means:")
-	fmt.Println("  1. The installation is still in progress")
-	fmt.Println("  2. You need to restart your terminal")
-	fmt.Println("\nPlease restart your terminal and run the bootstrap command again.")
+	fmt.Println("\nwinget installed but not yet available in PATH.")
+	fmt.Println("Please restart your terminal and run the bootstrap command again.")
+	return fmt.Errorf("winget installed but requires terminal restart")
+}
 
-	return fmt.Errorf("winget not yet available - restart terminal required")
+// installWingetDependencies installs required dependencies for winget
+func installWingetDependencies() error {
+	tempDir := os.TempDir()
+
+	// Install VCLibs
+	vclibsURL := "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
+	vclibsPath := tempDir + "\\VCLibs.appx"
+
+	downloadCmd := fmt.Sprintf(
+		`[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
+		vclibsURL, vclibsPath,
+	)
+
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", downloadCmd)
+	if err := cmd.Run(); err == nil {
+		installCmd := fmt.Sprintf(`Add-AppxPackage -Path '%s'`, vclibsPath)
+		cmd = exec.Command("powershell", "-NoProfile", "-Command", installCmd)
+		cmd.Run() // Ignore errors, might already be installed
+		os.Remove(vclibsPath)
+	}
+
+	// Install UI.Xaml
+	xamlURL := "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx"
+	xamlPath := tempDir + "\\UIXaml.appx"
+
+	downloadCmd = fmt.Sprintf(
+		`[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%s' -OutFile '%s' -UseBasicParsing`,
+		xamlURL, xamlPath,
+	)
+
+	cmd = exec.Command("powershell", "-NoProfile", "-Command", downloadCmd)
+	if err := cmd.Run(); err == nil {
+		installCmd := fmt.Sprintf(`Add-AppxPackage -Path '%s'`, xamlPath)
+		cmd = exec.Command("powershell", "-NoProfile", "-Command", installCmd)
+		cmd.Run() // Ignore errors, might already be installed
+		os.Remove(xamlPath)
+	}
+
+	return nil
 }
 
 // isRunningAsAdmin checks if the current process is running with Administrator privileges
