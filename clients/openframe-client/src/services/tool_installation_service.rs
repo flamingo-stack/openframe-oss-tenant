@@ -220,7 +220,7 @@ impl ToolInstallationService {
             version: version_clone,
             session_type: tool_installation_message.session_type.clone().unwrap_or(crate::models::SessionType::Service),
             run_command_args: run_args_clone,
-            tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args,
+            tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             status: ToolStatus::Installed,
             file_type: tool_installation_message.file_type.clone().unwrap_or(MainFileType::Executable),
