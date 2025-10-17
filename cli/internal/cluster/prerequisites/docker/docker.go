@@ -264,29 +264,69 @@ func (d *DockerInstaller) installWindows() error {
 	tempDir := os.TempDir()
 	installerPath := filepath.Join(tempDir, "DockerDesktopInstaller.exe")
 
-	fmt.Println("Downloading Docker Desktop installer...")
-	if err := downloadFileWithProgress(dockerURL, installerPath); err != nil {
-		return fmt.Errorf("failed to download Docker Desktop: %w", err)
+	// Check if installer already exists to skip re-download
+	if _, err := os.Stat(installerPath); os.IsNotExist(err) {
+		fmt.Println("Downloading Docker Desktop installer...")
+		if err := downloadFileWithProgress(dockerURL, installerPath); err != nil {
+			return fmt.Errorf("failed to download Docker Desktop: %w", err)
+		}
+		fmt.Println()
+	} else {
+		fmt.Printf("Using cached installer at: %s\n", installerPath)
 	}
 
-	fmt.Println("\nInstalling Docker Desktop (this may take several minutes)...")
+	fmt.Println("Installing Docker Desktop (this may take several minutes)...")
+
+	// Create log file for installation output
+	logPath := filepath.Join(tempDir, "docker-install.log")
+	logFile, err := os.Create(logPath)
+	if err != nil {
+		fmt.Printf("Warning: Could not create log file: %v\n", err)
+	} else {
+		defer logFile.Close()
+		fmt.Printf("Installation log will be written to: %s\n", logPath)
+	}
+
 	fmt.Println("Installation log:")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
-	// Stream output to console in real-time
-	cmd := exec.Command(installerPath, "install", "--quiet", "--accept-license")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// Try with verbose flag and stream to both console and log file
+	cmd := exec.Command(installerPath, "install", "--accept-license", "--verbose")
+
+	// Create multi-writer to write to both console and file
+	if logFile != nil {
+		cmd.Stdout = io.MultiWriter(os.Stdout, logFile)
+		cmd.Stderr = io.MultiWriter(os.Stderr, logFile)
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	if err := cmd.Run(); err != nil {
-		// Clean up installer file
-		_ = os.Remove(installerPath)
-
 		fmt.Println("─────────────────────────────────────────────────────────────")
+		fmt.Printf("\nInstallation failed with error: %v\n", err)
+		fmt.Printf("Installer location: %s\n", installerPath)
+		fmt.Printf("Installation log: %s\n", logPath)
+
+		// Try to read and display the log file
+		if logContent, readErr := os.ReadFile(logPath); readErr == nil && len(logContent) > 0 {
+			fmt.Println("\nInstaller log content:")
+			fmt.Println("─────────────────────────────────────────────────────────────")
+			fmt.Println(string(logContent))
+			fmt.Println("─────────────────────────────────────────────────────────────")
+		}
+
+		fmt.Println("\nYou can try running the installer manually with administrator privileges:")
+		fmt.Printf("  %s install --accept-license --verbose\n", installerPath)
 		return fmt.Errorf("Docker Desktop installation failed: %w", err)
 	}
 
 	fmt.Println("─────────────────────────────────────────────────────────────")
+
+	// Show log file location on success too
+	if logFile != nil {
+		fmt.Printf("Installation log saved to: %s\n", logPath)
+	}
 
 	// Clean up installer file
 	fmt.Println("Cleaning up installer file...")
