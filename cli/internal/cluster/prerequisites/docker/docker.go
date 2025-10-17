@@ -421,18 +421,35 @@ func (d *DockerInstaller) installDockerEngine() error {
 
 	fmt.Println("Docker Engine installed successfully.")
 
-	// Start Docker service on Windows Server
+	// Start Docker service on Windows Server with retry logic
 	fmt.Println("Starting Docker service...")
-	startCmd := exec.Command("powershell", "-Command", "Start-Service Docker; Set-Service -Name Docker -StartupType Automatic")
-	startCmd.Stdout = os.Stdout
-	startCmd.Stderr = os.Stderr
 
-	if err := startCmd.Run(); err != nil {
-		fmt.Printf("Warning: Could not start Docker service: %v\n", err)
-		fmt.Println("You may need to start it manually: Start-Service Docker")
-	} else {
+	var lastErr error
+	maxRetries := 3
+	for i := 0; i < maxRetries; i++ {
+		if i > 0 {
+			fmt.Printf("Retry %d/%d: Waiting for Docker service to be ready...\n", i, maxRetries-1)
+			time.Sleep(3 * time.Second)
+		}
+
+		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker; Set-Service -Name Docker -StartupType Automatic")
+		startCmd.Stdout = os.Stdout
+		startCmd.Stderr = os.Stderr
+
+		if err := startCmd.Run(); err != nil {
+			lastErr = err
+			continue
+		}
+
+		// Success!
 		fmt.Println("Docker service started and configured for automatic startup")
+		return nil
 	}
+
+	// All retries failed
+	fmt.Printf("Warning: Could not start Docker service after %d attempts: %v\n", maxRetries, lastErr)
+	fmt.Println("The service may need more time to initialize.")
+	fmt.Println("You can start it manually: Start-Service Docker")
 
 	return nil
 }
