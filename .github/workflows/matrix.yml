@@ -268,7 +268,7 @@ jobs:
               "os": "windows",
               "target": "x86_64-pc-windows-msvc",
               "target_path": "./clients/openframe-client/target"
-            }]
+            }]'
           clients_matrix_json2='[
             {  
               "id": "client",
