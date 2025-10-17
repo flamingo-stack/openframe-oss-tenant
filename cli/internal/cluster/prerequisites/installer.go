@@ -10,6 +10,7 @@ import (
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/docker"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/k3d"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/kubectl"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/windows"
 	"github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
 	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
@@ -136,6 +137,19 @@ func (i *Installer) CheckAndInstall() error {
 
 // CheckAndInstallNonInteractive checks and installs prerequisites with optional non-interactive mode
 func (i *Installer) CheckAndInstallNonInteractive(nonInteractive bool) error {
+	// PHASE 0: Install Windows system prerequisites first (if on Windows)
+	if runtime.GOOS == "windows" {
+		if err := i.installWindowsPrerequisites(nonInteractive); err != nil {
+			if nonInteractive {
+				pterm.Warning.Printf("Failed to install Windows prerequisites: %v\n", err)
+				pterm.Info.Println("Continuing anyway (non-interactive mode)...")
+			} else {
+				pterm.Warning.Printf("Failed to install Windows prerequisites: %v\n", err)
+				pterm.Info.Println("Continuing with tool installation...")
+			}
+		}
+	}
+
 	// PHASE 1: Check what's actually missing vs what's not running
 	allPresent, missing := i.checker.CheckAll()
 	if allPresent {
@@ -300,4 +314,41 @@ func (i *Installer) showDockerStartInstructions() {
 		pterm.Printf("• Start Docker Desktop or Docker daemon according to your system\n")
 		pterm.Printf("• Verify Docker is running: %s\n", pterm.Cyan("docker ps"))
 	}
+}
+
+func (i *Installer) installWindowsPrerequisites(nonInteractive bool) error {
+	installer := windows.NewWindowsPrerequisitesInstaller()
+
+	// Check if already installed
+	if installer.IsInstalled() {
+		return nil
+	}
+
+	pterm.Info.Println("Checking Windows system prerequisites (.NET, Visual C++ Redistributables)...")
+
+	var confirmed bool
+	if nonInteractive {
+		pterm.Info.Println("Installing Windows system prerequisites (non-interactive mode)...")
+		confirmed = true
+	} else {
+		var err error
+		confirmed, err = ui.ConfirmActionInteractive("Install Windows system prerequisites (.NET, VC++ Redistributables)?", true)
+		if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
+			return err
+		}
+	}
+
+	if confirmed {
+		spinner, _ := pterm.DefaultSpinner.Start("Installing Windows system prerequisites...")
+		if err := installer.Install(); err != nil {
+			spinner.Warning("Failed to install some Windows prerequisites")
+			return err
+		}
+		spinner.Success("Windows system prerequisites installed successfully")
+	} else {
+		pterm.Info.Println("Skipping Windows system prerequisites installation")
+		pterm.Warning.Println("Note: Docker Desktop may require .NET Runtime to function properly")
+	}
+
+	return nil
 }
