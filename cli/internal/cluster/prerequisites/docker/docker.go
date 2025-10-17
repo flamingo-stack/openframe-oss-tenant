@@ -384,10 +384,28 @@ func WaitForDocker() error {
 
 // installWinget automatically installs winget (App Installer) on Windows
 func installWinget() error {
+	// Check if running as Administrator
+	isAdmin := isRunningAsAdmin()
+
+	if !isAdmin {
+		fmt.Println("\nwinget installation requires Administrator privileges.")
+		fmt.Println("\nPlease do one of the following:")
+		fmt.Println("  1. Close this terminal and re-run as Administrator:")
+		fmt.Println("     - Right-click PowerShell/Command Prompt")
+		fmt.Println("     - Select 'Run as Administrator'")
+		fmt.Println("     - Run the bootstrap command again")
+		fmt.Println("\n  2. Or install winget manually (doesn't require admin):")
+		fmt.Println("     - Open Microsoft Store")
+		fmt.Println("     - Search for 'App Installer'")
+		fmt.Println("     - Click 'Get' or 'Update'")
+		fmt.Println("\n  3. Or install Docker Desktop manually:")
+		fmt.Println("     - Download from: https://www.docker.com/products/docker-desktop")
+		return fmt.Errorf("Administrator privileges required for automatic installation")
+	}
+
 	fmt.Println("Downloading and installing winget (App Installer)...")
 
 	// Download the latest App Installer package from Microsoft
-	// This is the official Microsoft-hosted package
 	wingetURL := "https://aka.ms/getwinget"
 	tempDir := os.TempDir()
 	installerPath := tempDir + "\\Microsoft.DesktopAppInstaller.msixbundle"
@@ -414,14 +432,13 @@ func installWinget() error {
 	if err := cmd.Run(); err != nil {
 		// Clean up installer file
 		os.Remove(installerPath)
-		return fmt.Errorf("failed to install winget: %w. You may need to run as Administrator", err)
+		return fmt.Errorf("failed to install winget: %w", err)
 	}
 
 	// Clean up installer file
 	os.Remove(installerPath)
 
 	// Verify installation by checking if winget command is now available
-	// Note: User may need to restart terminal for PATH to update
 	fmt.Println("Verifying winget installation...")
 	if commandExists("winget") {
 		fmt.Println("winget installed and available!")
@@ -430,9 +447,20 @@ func installWinget() error {
 
 	// winget might be installed but not in current PATH
 	fmt.Println("winget installed but may require terminal restart to be available in PATH")
-	fmt.Println("Please restart your terminal and try again, or continue with manual installation.")
+	fmt.Println("Please restart your terminal and try again.")
 
 	return fmt.Errorf("winget installed but not yet available in PATH - restart terminal")
+}
+
+// isRunningAsAdmin checks if the current process is running with Administrator privileges
+func isRunningAsAdmin() bool {
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", "[Security.Principal.WindowsIdentity]::GetCurrent().Groups -contains 'S-1-5-32-544'")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	result := strings.TrimSpace(string(output))
+	return result == "True"
 }
 
 // showWingetInstallHelp provides instructions for installing winget
