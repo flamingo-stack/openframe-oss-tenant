@@ -509,7 +509,15 @@ func startDockerWindows() error {
 		// Docker Engine service exists - start it instead of Docker Desktop
 		fmt.Println("Starting Docker Engine service...")
 		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker")
+		startCmd.Stdout = os.Stdout
+		startCmd.Stderr = os.Stderr
+
 		if err := startCmd.Run(); err != nil {
+			// Get detailed error information
+			statusCmd := exec.Command("powershell", "-Command", "Get-Service -Name Docker | Select-Object Status,StartType | Format-List")
+			output, _ := statusCmd.Output()
+			fmt.Println("\nDocker service status:")
+			fmt.Println(string(output))
 			return fmt.Errorf("failed to start Docker Engine service: %w", err)
 		}
 		return nil
@@ -517,10 +525,17 @@ func startDockerWindows() error {
 
 	// This is Windows Desktop - try to start Docker Desktop
 	cmd := exec.Command("cmd", "/c", "start", "", "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	if err := cmd.Run(); err != nil {
 		// Try alternative path
 		cmd = exec.Command("powershell", "-Command", "Start-Process", "'Docker Desktop'")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
 		if err := cmd.Run(); err != nil {
+			fmt.Printf("\nError details: %v\n", err)
 			return fmt.Errorf("failed to start Docker Desktop: %w", err)
 		}
 	}
