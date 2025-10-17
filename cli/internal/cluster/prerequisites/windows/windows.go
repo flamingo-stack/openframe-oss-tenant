@@ -39,13 +39,23 @@ func (w *WindowsPrerequisitesInstaller) Install() error {
 
 	fmt.Println("Installing Windows prerequisites...")
 
+	dotnetInstalled := false
+	vcredistInstalled := false
+
 	// Install .NET Runtime
 	if !w.isDotNetInstalled() {
 		fmt.Println("Installing .NET Runtime...")
 		if err := w.installDotNet(); err != nil {
 			fmt.Printf("Warning: Failed to install .NET Runtime: %v\n", err)
-			fmt.Println("You may need to install .NET manually from https://dotnet.microsoft.com/download")
+			fmt.Println("Note: .NET Runtime is optional. Docker Desktop may still work without it.")
+			fmt.Println("If you encounter issues, install .NET manually from https://dotnet.microsoft.com/download")
+		} else {
+			dotnetInstalled = true
+			fmt.Println(".NET Runtime installed successfully")
 		}
+	} else {
+		fmt.Println(".NET Runtime is already installed")
+		dotnetInstalled = true
 	}
 
 	// Install Visual C++ Redistributables
@@ -53,10 +63,18 @@ func (w *WindowsPrerequisitesInstaller) Install() error {
 		fmt.Println("Installing Visual C++ Redistributables...")
 		if err := w.installVCRedist(); err != nil {
 			fmt.Printf("Warning: Failed to install Visual C++ Redistributables: %v\n", err)
-			fmt.Println("You may need to install Visual C++ Redistributables manually")
+			fmt.Println("Note: Visual C++ Redistributables are optional. Most tools will work without them.")
+		} else {
+			vcredistInstalled = true
+			fmt.Println("Visual C++ Redistributables installed successfully")
 		}
+	} else {
+		fmt.Println("Visual C++ Redistributables are already installed")
+		vcredistInstalled = true
 	}
 
+	// Always return nil - these are optional dependencies
+	// Even if they fail, we want to continue with the main tool installation
 	return nil
 }
 
@@ -114,12 +132,19 @@ func (w *WindowsPrerequisitesInstaller) installDotNet() error {
 
 func (w *WindowsPrerequisitesInstaller) installDotNetChoco() error {
 	fmt.Println("Installing .NET Runtime via Chocolatey...")
-	cmd := exec.Command("choco", "install", "dotnet-runtime", "-y")
+	// Use dotnet-8.0-runtime which has fewer dependencies
+	cmd := exec.Command("choco", "install", "dotnet-8.0-runtime", "-y", "--ignore-dependencies")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install .NET Runtime: %w", err)
+		// Try dotnet-6.0-runtime as fallback
+		cmd = exec.Command("choco", "install", "dotnet-6.0-runtime", "-y", "--ignore-dependencies")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to install .NET Runtime: %w", err)
+		}
 	}
 
 	return nil
@@ -149,7 +174,8 @@ func (w *WindowsPrerequisitesInstaller) installVCRedist() error {
 
 func (w *WindowsPrerequisitesInstaller) installVCRedistChoco() error {
 	fmt.Println("Installing Visual C++ Redistributables via Chocolatey...")
-	cmd := exec.Command("choco", "install", "vcredist-all", "-y")
+	// Install just the 2015-2022 version to avoid dependency issues
+	cmd := exec.Command("choco", "install", "vcredist140", "-y", "--ignore-dependencies")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
