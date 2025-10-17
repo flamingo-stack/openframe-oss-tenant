@@ -484,6 +484,44 @@ func (d *DockerInstaller) installDockerEngine() error {
 }
 
 func (d *DockerInstaller) installDockerDesktop() error {
+	// Check if Hyper-V is enabled (required for Docker Desktop)
+	fmt.Println("Checking Hyper-V status...")
+	checkHyperV := exec.Command("powershell", "-Command", "(Get-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V-All -Online).State")
+	output, err := checkHyperV.Output()
+
+	if err != nil || !strings.Contains(string(output), "Enabled") {
+		fmt.Println("Hyper-V is not enabled. Enabling Hyper-V...")
+		fmt.Println("Note: This will require a system restart.")
+
+		enableHyperV := exec.Command("powershell", "-Command", "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -NoRestart")
+		enableHyperV.Stdout = os.Stdout
+		enableHyperV.Stderr = os.Stderr
+
+		if err := enableHyperV.Run(); err != nil {
+			fmt.Printf("Warning: Could not enable Hyper-V automatically: %v\n", err)
+			fmt.Println("You may need to enable it manually in Windows Features.")
+		} else {
+			fmt.Println("Hyper-V enabled successfully.")
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println()
+			fmt.Println("Hyper-V has been enabled, but a system reboot is required")
+			fmt.Println("before Docker Desktop can be installed.")
+			fmt.Println()
+			fmt.Println("Next steps:")
+			fmt.Println("  1. Restart your computer now")
+			fmt.Println("  2. Run this installer again after reboot")
+			fmt.Println("  3. Docker Desktop will install successfully")
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			return fmt.Errorf("system reboot required for Hyper-V activation - please restart and run again")
+		}
+	} else {
+		fmt.Println("Hyper-V is already enabled.")
+	}
+
 	fmt.Println("Installing Docker Desktop via Chocolatey...")
 
 	// Try both choco and full path
