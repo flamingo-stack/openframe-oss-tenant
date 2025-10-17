@@ -145,6 +145,7 @@ jobs:
 
   build_clients:
     name: "Build Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
+    if: false
     needs: [changes, matrix]
     runs-on: "${{ matrix.os }}-latest"
     env:
@@ -274,7 +275,8 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [changes, matrix, build_images, build_clients, build_helm]
+#    needs: [changes, matrix, build_images, build_clients, build_helm]
+    needs: [changes, matrix]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' && 
