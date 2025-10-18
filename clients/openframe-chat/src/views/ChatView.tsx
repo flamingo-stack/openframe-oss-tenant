@@ -11,7 +11,7 @@ import { useChat } from '../hooks/useChat'
 import faeAvatar from '../assets/fae-avatar.png'
 
 export function ChatView() {
-  const DEBUG_MODE = false
+  const DEBUG_MODE = true
   
   const { 
     messages,
@@ -25,6 +25,9 @@ export function ChatView() {
 
   return (
     <ChatContainer>
+      <div className="px-4 py-2 bg-gray-800 text-xs text-gray-400 border-b border-gray-700">
+        Origin: {window.location.origin}
+      </div>
       <ChatHeader userAvatar={faeAvatar} />
       
       <ChatContent>
