@@ -4,7 +4,7 @@
   "status": "ENABLED",
   "sessionType": "USER",
   "runCommandArgs": [
-    "--server-url", "${client.serverUrl}",
+    "--serverUrl", "${client.serverUrl}",
     "--openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
   ],
