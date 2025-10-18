@@ -8,6 +8,7 @@ import {
   ChatQuickAction
 } from '@flamingo/ui-kit'
 import { useChat } from '../hooks/useChat'
+import { DebugPanel } from './DebugPanel'
 import faeAvatar from '../assets/fae-avatar.png'
 
 export function ChatView() {
@@ -24,60 +25,64 @@ export function ChatView() {
   } = useChat({ useApi: true, useMock: false, debugMode: DEBUG_MODE })
 
   return (
-    <ChatContainer>
-      <div className="px-4 py-2 bg-gray-800 text-xs text-gray-400 border-b border-gray-700">
-        Origin: {window.location.origin}
-      </div>
-      <ChatHeader userAvatar={faeAvatar} />
-      
-      <ChatContent>
-        {hasMessages ? (
-          <ChatMessageList
-            messages={messages}
-            isTyping={isTyping}
-            autoScroll={true}
-          />
-        ) : (
-          <div className="flex-1 flex flex-col justify-center items-center px-4">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-light text-white mb-2">
-                Hey! How can I help?
-              </h1>
-              <p className="text-gray-400">
-                Describe what's happening and I'll take a look.
-              </p>
-            </div>
-            
-            {/* Quick Actions */}
-            {quickActions.length > 0 && (
-              <div className="w-full max-w-2xl">
-                <h3 className="text-xs uppercase tracking-wider text-gray-500 mb-3">
-                  Quick Help
-                </h3>
-                <div className="space-y-2">
-                  {quickActions.map((action) => (
-                    <ChatQuickAction
-                      key={action.id}
-                      text={action.text}
-                      onAction={handleQuickAction}
-                    />
-                  ))}
-                </div>
+    <>
+      <ChatContainer>
+        <div className="px-4 py-2 bg-gray-800 text-xs text-gray-400 border-b border-gray-700">
+          Origin: {window.location.origin}
+        </div>
+        <ChatHeader userAvatar={faeAvatar} />
+        
+        <ChatContent>
+          {hasMessages ? (
+            <ChatMessageList
+              messages={messages}
+              isTyping={isTyping}
+              autoScroll={true}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col justify-center items-center px-4">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-light text-white mb-2">
+                  Hey! How can I help?
+                </h1>
+                <p className="text-gray-400">
+                  Describe what's happening and I'll take a look.
+                </p>
               </div>
-            )}
-          </div>
-        )}
-      </ChatContent>
+              
+              {/* Quick Actions */}
+              {quickActions.length > 0 && (
+                <div className="w-full max-w-2xl">
+                  <h3 className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+                    Quick Help
+                  </h3>
+                  <div className="space-y-2">
+                    {quickActions.map((action) => (
+                      <ChatQuickAction
+                        key={action.id}
+                        text={action.text}
+                        onAction={handleQuickAction}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </ChatContent>
+        
+        <ChatFooter>
+          <ChatInput
+            onSend={sendMessage}
+            sending={isStreaming}
+            placeholder="Enter your request here..."
+            className="px-12"
+            reserveAvatarOffset={false}
+          />
+        </ChatFooter>
+      </ChatContainer>
       
-      <ChatFooter>
-        <ChatInput
-          onSend={sendMessage}
-          sending={isStreaming}
-          placeholder="Enter your request here..."
-          className="px-12"
-          reserveAvatarOffset={false}
-        />
-      </ChatFooter>
-    </ChatContainer>
+      <DebugPanel />
+    </>
   )
 }

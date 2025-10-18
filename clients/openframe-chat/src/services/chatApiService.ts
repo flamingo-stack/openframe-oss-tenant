@@ -1,5 +1,6 @@
 import { MessageSegment } from '../types/chat.types'
 import { tokenService } from './tokenService'
+import { debugLogService } from './debugLogService'
 
 interface DialogCreatedEventData {
   dialogId: string
@@ -136,20 +137,51 @@ export class ChatApiService {
   }
 
   private async *createDialogAndStream(initialMessage: string): AsyncGenerator<MessageSegment> {
+    const url = `${this.getApiBaseUrl()}/chat/api/v1/dialogs`
+    const token = tokenService.getCurrentToken()
+    const requestBody = { initialMessage }
+    
+    // Log request
+    debugLogService.logRequest({
+      url,
+      method: 'POST',
+      authToken: token || undefined,
+      requestBody
+    })
+    
     if (this.debugMode) {
       yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/dialogs` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${url}` }
     }
     
-    const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/dialogs`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({ initialMessage })
+      body: JSON.stringify(requestBody)
     }).catch(err => {
+      // Log error
+      debugLogService.logError({
+        url,
+        method: 'POST',
+        error: err.message,
+        authToken: token || undefined
+      })
+      
       if (this.debugMode) {
-        throw new Error(`Network error creating dialog: ${err.message}\nURL: ${this.getApiBaseUrl()}/chat/api/v1/dialogs`)
+        throw new Error(`Network error creating dialog: ${err.message}\nURL: ${url}`)
       }
       throw err
+    })
+    
+    // Log response
+    const responseBodyText = await response.clone().text().catch(() => response.statusText)
+    debugLogService.logResponse({
+      url,
+      method: 'POST',
+      status: response.status,
+      statusText: response.statusText,
+      responseBody: responseBodyText.substring(0, 1000), // Limit to first 1000 chars for SSE
+      authToken: token || undefined
     })
     
     if (!response.ok) {
@@ -158,7 +190,7 @@ export class ChatApiService {
         yield { type: 'text', text: `[DEBUG] Dialog creation failed:` }
         yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
         yield { type: 'text', text: `  Response: ${errorText}` }
-        yield { type: 'text', text: `  URL: ${this.getApiBaseUrl()}/api/v1/dialogs` }
+        yield { type: 'text', text: `  URL: ${url}` }
       }
       throw new Error(`Failed to create dialog: ${response.status} ${response.statusText}\n${errorText}`)
     }
@@ -171,24 +203,55 @@ export class ChatApiService {
       throw new Error('Dialog ID is not set')
     }
     
+    const url = `${this.getApiBaseUrl()}/chat/api/v1/messages/process`
+    const token = tokenService.getCurrentToken()
+    const requestBody = {
+      dialogId: this.dialogId,
+      content
+    }
+    
+    // Log request
+    debugLogService.logRequest({
+      url,
+      method: 'POST',
+      authToken: token || undefined,
+      requestBody
+    })
+    
     if (this.debugMode) {
       yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}` }
       yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/messages/process` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${url}` }
     }
     
-    const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/messages/process`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({
-        dialogId: this.dialogId,
-        content
-      })
+      body: JSON.stringify(requestBody)
     }).catch(err => {
+      // Log error
+      debugLogService.logError({
+        url,
+        method: 'POST',
+        error: err.message,
+        authToken: token || undefined
+      })
+      
       if (this.debugMode) {
-        throw new Error(`Network error processing message: ${err.message}\nURL: ${this.getApiBaseUrl()}/chat/api/v1/messages/process\nDialog ID: ${this.dialogId}`)
+        throw new Error(`Network error processing message: ${err.message}\nURL: ${url}\nDialog ID: ${this.dialogId}`)
       }
       throw err
+    })
+    
+    // Log response
+    const responseBodyText = await response.clone().text().catch(() => response.statusText)
+    debugLogService.logResponse({
+      url,
+      method: 'POST',
+      status: response.status,
+      statusText: response.statusText,
+      responseBody: responseBodyText.substring(0, 1000), // Limit to first 1000 chars for SSE
+      authToken: token || undefined
     })
     
     if (!response.ok) {
@@ -198,7 +261,7 @@ export class ChatApiService {
         yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
         yield { type: 'text', text: `  Response: ${errorText}` }
         yield { type: 'text', text: `  Dialog ID: ${this.dialogId}` }
-        yield { type: 'text', text: `  URL: ${this.getApiBaseUrl()}/api/v1/messages/process` }
+        yield { type: 'text', text: `  URL: ${url}` }
       }
       throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
     }
