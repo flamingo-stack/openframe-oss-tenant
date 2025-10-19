@@ -55,3 +55,44 @@ export interface ToolExecutionEventData {
 }
 
 export type SSEEventData = TextEventData | ToolExecutionEventData
+
+// Connection state types
+export enum ConnectionState {
+  IDLE = 'idle',
+  CONNECTING = 'connecting',
+  CONNECTED = 'connected',
+  RECONNECTING = 'reconnecting',
+  FAILED = 'failed',
+  CLOSED = 'closed'
+}
+
+// Retry configuration
+export interface RetryConfig {
+  maxRetries: number
+  baseDelay: number        // Initial delay in milliseconds
+  maxDelay: number         // Maximum delay in milliseconds
+  jitterRatio: number      // 0-1, percentage of delay to randomize
+  connectionTimeout: number // Timeout for initial connection in milliseconds
+}
+
+// Error classifications
+export enum ErrorType {
+  NETWORK = 'network',      // Network/connection errors - retry
+  AUTH = 'auth',           // Authentication errors - don't retry
+  SERVER = 'server',       // Server errors (5xx) - retry with backoff
+  CLIENT = 'client',       // Client errors (4xx) - don't retry
+  TIMEOUT = 'timeout',     // Connection timeout - retry
+  UNKNOWN = 'unknown'      // Unknown errors - retry cautiously
+}
+
+export interface ClassifiedError {
+  type: ErrorType
+  message: string
+  status?: number
+  shouldRetry: boolean
+  originalError?: Error
+}
+
+// Connection event callbacks
+export type ConnectionStateCallback = (state: ConnectionState, error?: ClassifiedError) => void
+export type RetryCallback = (attempt: number, delay: number) => void
