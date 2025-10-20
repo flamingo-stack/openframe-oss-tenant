@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static org.apache.zookeeper.common.StringUtils.isEmpty;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -28,8 +30,16 @@ public class AgentRegistrationToolService {
     private void publish(String machineId, IntegratedToolAgent toolAgent) {
         String toolId = toolAgent.getToolId();
         try {
-            IntegratedTool tool = integratedToolService.getToolById(toolId)
-                    .orElseThrow(() -> new IllegalStateException("No tool found for " + toolId));
+            // TODO: need refactoring
+            IntegratedTool tool;
+            if (isEmpty(toolId)) {
+                tool = new IntegratedTool();
+                tool.setId("");
+                tool.setType("");
+            } else {
+                tool = integratedToolService.getToolById(toolId)
+                        .orElseThrow(() -> new IllegalStateException("No tool found:" + toolId));
+            }
 
             // process params for installation command args
             List<String> installationCommandArgs = toolAgent.getInstallationCommandArgs();

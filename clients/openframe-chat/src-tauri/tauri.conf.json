@@ -12,12 +12,24 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Fae Chat",
         "width": 1000,
         "height": 800,
         "resizable": true,
         "fullscreen": false,
-        "closable": true
+        "closable": true,
+        "visible": false
+      },
+      {
+        "label": "invisible",
+        "title": "",
+        "width": 1,
+        "height": 1,
+        "visible": false,
+        "decorations": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": false
       }
     ],
     "security": {
@@ -33,6 +45,14 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
   }
 }

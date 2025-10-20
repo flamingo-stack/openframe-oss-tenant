@@ -1,5 +1,27 @@
 {{- include "chart.validate" . -}}
 {{- if and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.gcp.enabled }}
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openframe-gateway
+spec:
+  parentRefs:
+    - name: "{{ .Values.deployment.saas.ingress.gcp.tenantID }}-internal-gateway"
+      namespace: platform
+  hostnames:
+    - "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: openframe-gateway
+          port: 8100
+
+---
+
 apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
 metadata:
@@ -21,23 +43,19 @@ spec:
 
 ---
 
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
 metadata:
   name: openframe-gateway
 spec:
-  parentRefs:
-    - name: "{{ .Values.deployment.saas.ingress.gcp.tenantID }}-internal-gateway"
-      namespace: platform
-  hostnames:
-    - "{{ .Values.deployment.saas.ingress.gcp.tenantID }}.{{ .Values.deployment.saas.ingress.gcp.privateDomain }}"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: openframe-gateway
-          port: 8100
+  default:
+    timeoutSec: 180
+    logging:
+      enabled: true
+      sampleRate: 500000
+  targetRef:
+    group: ""
+    kind: Service
+    name: openframe-gateway
 
 {{- end }}
