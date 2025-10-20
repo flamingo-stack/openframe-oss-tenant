@@ -352,7 +352,7 @@ jobs:
         run: |
           git tag ${{ inputs.version }}
           export RELEASE_HEADER="$(cat RELEASE_HEADER.md)"
-          goreleaser release --clean --skip=validate  ##
+          goreleaser release --clean
 
       - name: Verify GoReleaser artifacts
         run: |
