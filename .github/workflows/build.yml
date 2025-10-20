@@ -10,14 +10,13 @@ permissions:
 
 on:
   push:
-    branches: [main, ami/cli-go-releaser]
+    branches: [main]
     paths:
       - 'manifests/**'
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
       - 'clients/**'
-      - '.github/**'
   workflow_dispatch:
     inputs:
       version:
