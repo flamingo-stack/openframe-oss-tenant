@@ -69,9 +69,10 @@ changelog:
       order: 999
 
 release:
-  make_latest: false
-  # draft: true
+  make_latest: true
+  draft: false
   prerelease: auto
+  name_template: "🦩 {{ .Tag }}"
   header: |
     {{ if .Env.RELEASE_HEADER }}{{ .Env.RELEASE_HEADER }}{{ end }}
   extra_files:
