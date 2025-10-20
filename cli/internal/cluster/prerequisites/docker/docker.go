@@ -380,7 +380,8 @@ func (d *DockerInstaller) installChocolatey() error {
 	return nil
 }
 
-func (d *DockerInstaller) installDockerEngine() error {
+// installDockerEngineViaChocolatey is a fallback method if DockerMsftProvider fails
+func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 	fmt.Println("Installing Docker Engine via Chocolatey...")
 
 	// Try both choco and full path
@@ -420,9 +421,48 @@ func (d *DockerInstaller) installDockerEngine() error {
 	}
 
 	fmt.Println("Docker Engine installed successfully.")
+	return nil
+}
 
-	// Enable Windows Containers feature on Windows Server
-	fmt.Println("\nEnabling Windows Containers feature...")
+func (d *DockerInstaller) installDockerEngine() error {
+	fmt.Println("Installing Docker Engine using Microsoft's official method...")
+	fmt.Println()
+
+	// Step 1: Install DockerMsftProvider module
+	fmt.Println("Step 1/3: Installing DockerMsftProvider PowerShell module...")
+	installModuleCmd := exec.Command("powershell", "-Command",
+		"Install-Module -Name DockerMsftProvider -Repository PSGallery -Force")
+	installModuleCmd.Stdout = os.Stdout
+	installModuleCmd.Stderr = os.Stderr
+
+	if err := installModuleCmd.Run(); err != nil {
+		fmt.Printf("Warning: Could not install DockerMsftProvider module: %v\n", err)
+		fmt.Println("Falling back to Chocolatey installation method...")
+		return d.installDockerEngineViaChocolatey()
+	}
+
+	fmt.Println("DockerMsftProvider module installed successfully.")
+	fmt.Println()
+
+	// Step 2: Install Docker Engine and Client
+	fmt.Println("Step 2/3: Installing Docker Engine and Client...")
+	fmt.Println("(This may take several minutes, please wait...)")
+	installDockerCmd := exec.Command("powershell", "-Command",
+		"Install-Package -Name docker -ProviderName DockerMsftProvider -Force")
+	installDockerCmd.Stdout = os.Stdout
+	installDockerCmd.Stderr = os.Stderr
+
+	if err := installDockerCmd.Run(); err != nil {
+		fmt.Printf("Warning: Could not install Docker via DockerMsftProvider: %v\n", err)
+		fmt.Println("Falling back to Chocolatey installation method...")
+		return d.installDockerEngineViaChocolatey()
+	}
+
+	fmt.Println("Docker Engine installed successfully.")
+	fmt.Println()
+
+	// Step 3: Enable Windows Containers feature on Windows Server
+	fmt.Println("Step 3/3: Enabling Windows Containers feature...")
 	containersCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Containers -Restart:$false | Select-Object -ExpandProperty RestartNeeded")
 	output, err := containersCmd.CombinedOutput()
 	outputStr := string(output)
