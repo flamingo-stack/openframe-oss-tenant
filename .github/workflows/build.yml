@@ -10,13 +10,14 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches: [main, ami/cli-go-releaser]
     paths:
       - 'manifests/**'
       - 'openframe/**'
       - 'integrated-tools/**'
       - 'pom.xml'
       - 'clients/**'
+      - '.github/**'
   workflow_dispatch:
     inputs:
       version:
@@ -49,98 +50,98 @@ jobs:
       github.event_name == 'push'
 
 
-  build_images:
-    name: "Build: ${{ matrix.name }}"
-    needs: [changes, matrix]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
-    steps:
-      - name: Check if build should run
-        id: should_run
-        run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
+  # build_images:
+  #   name: "Build: ${{ matrix.name }}"
+  #   needs: [changes, matrix]
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include: ${{ fromJson(needs.matrix.outputs.images_matrix) }}
+  #   steps:
+  #     - name: Check if build should run
+  #       id: should_run
+  #       run: echo "run=${{ github.event_name == 'workflow_dispatch' || fromJSON(toJSON(needs.changes.outputs))[matrix.name] == 'true' }}" >> $GITHUB_OUTPUT
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        if: steps.should_run.outputs.run == 'true'
-        with:
-          fetch-depth: 1
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       if: steps.should_run.outputs.run == 'true'
+  #       with:
+  #         fetch-depth: 1
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        if: steps.should_run.outputs.run == 'true'
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Log in to GitHub Container Registry
+  #       uses: docker/login-action@v3
+  #       if: steps.should_run.outputs.run == 'true'
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        if: steps.should_run.outputs.run == 'true'
-        with:
-          platforms: linux/amd64,linux/arm64
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #       if: steps.should_run.outputs.run == 'true'
+  #       with:
+  #         platforms: linux/amd64,linux/arm64
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        if: steps.should_run.outputs.run == 'true'
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+  #       if: steps.should_run.outputs.run == 'true'
 
-      - name: Generate metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        if: steps.should_run.outputs.run == 'true'
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
-          tags: |
-            type=ref,event=tag
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
-          labels: |
-            org.opencontainers.image.vendor=${{ env.ORGANISATION }}
-            org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
-            org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+  #     - name: Generate metadata
+  #       id: meta
+  #       uses: docker/metadata-action@v5
+  #       if: steps.should_run.outputs.run == 'true'
+  #       with:
+  #         images: ${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/${{ matrix.name }}
+  #         tags: |
+  #           type=ref,event=tag
+  #           type=raw,value=latest,enable={{is_default_branch}}
+  #           type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
+  #         labels: |
+  #           org.opencontainers.image.vendor=${{ env.ORGANISATION }}
+  #           org.opencontainers.image.description=OpenFrame is a platform for building and deploying AI agents.
+  #           org.opencontainers.image.licenses=Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+  #           org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-      - name: Format build arguments
-        id: format_args
-        uses: ./.github/steps/docker-format-build-args
-        if: steps.should_run.outputs.run == 'true'
-        with:
-          build_args: ${{ toJSON(matrix.build_args) }}
-        env:
-          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+  #     - name: Format build arguments
+  #       id: format_args
+  #       uses: ./.github/steps/docker-format-build-args
+  #       if: steps.should_run.outputs.run == 'true'
+  #       with:
+  #         build_args: ${{ toJSON(matrix.build_args) }}
+  #       env:
+  #         BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
-      - name: Build and push image
-        id: docker_build
-        uses: docker/build-push-action@v6
-        if: steps.should_run.outputs.run == 'true'
-        with:
-          # need to copy the pom.xml from the root so it builds with the lib version correctly
-          context: ${{ matrix.context || matrix.path }}
-          file: ${{ matrix.path }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: false
-          sbom: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          secrets: |
-            github_token=${{ secrets.GITHUB_TOKEN }}
-          build-args: |
-            GITHUB_ACTOR=${{ github.actor }}
-            ${{ env.BUILD_ARGS }}
+  #     - name: Build and push image
+  #       id: docker_build
+  #       uses: docker/build-push-action@v6
+  #       if: steps.should_run.outputs.run == 'true'
+  #       with:
+  #         # need to copy the pom.xml from the root so it builds with the lib version correctly
+  #         context: ${{ matrix.context || matrix.path }}
+  #         file: ${{ matrix.path }}/Dockerfile
+  #         platforms: linux/amd64,linux/arm64
+  #         push: true
+  #         provenance: false
+  #         sbom: true
+  #         tags: ${{ steps.meta.outputs.tags }}
+  #         labels: ${{ steps.meta.outputs.labels }}
+  #         secrets: |
+  #           github_token=${{ secrets.GITHUB_TOKEN }}
+  #         build-args: |
+  #           GITHUB_ACTOR=${{ github.actor }}
+  #           ${{ env.BUILD_ARGS }}
 
-      - name: Cleanup old container versions
-        if: steps.docker_build.outcome == 'success'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        continue-on-error: true
-        with:
-          package: ${{ env.REPOSITORY }}/${{ matrix.name }}
-          delete-ghost-images: true
-          delete-tags: '.*'
-          exclude-tags: '^(?:[0-9]+\.[0-9]+\.[0-9]+|latest|test-.*)$'
-          use-regex: true
+  #     - name: Cleanup old container versions
+  #       if: steps.docker_build.outcome == 'success'
+  #       uses: dataaxiom/ghcr-cleanup-action@v1
+  #       continue-on-error: true
+  #       with:
+  #         package: ${{ env.REPOSITORY }}/${{ matrix.name }}
+  #         delete-ghost-images: true
+  #         delete-tags: '.*'
+  #         exclude-tags: '^(?:[0-9]+\.[0-9]+\.[0-9]+|latest|test-.*)$'
+  #         use-regex: true
       
 
   build_clients:
@@ -274,7 +275,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [changes, matrix, build_images, build_clients, build_helm]
+    needs: [changes, matrix, build_clients, build_helm]  # [changes, matrix, build_images, build_clients, build_helm]
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' && 
