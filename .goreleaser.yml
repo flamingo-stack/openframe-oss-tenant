@@ -70,7 +70,7 @@ changelog:
 
 release:
   make_latest: false
-  draft: true
+  # draft: true
   prerelease: auto
   header: |
     {{ if .Env.RELEASE_HEADER }}{{ .Env.RELEASE_HEADER }}{{ end }}
