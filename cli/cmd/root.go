@@ -8,6 +8,7 @@ import (
 	"github.com/flamingo-stack/openframe/openframe/cmd/chart"
 	"github.com/flamingo-stack/openframe/openframe/cmd/cluster"
 	"github.com/flamingo-stack/openframe/openframe/cmd/dev"
+	"github.com/flamingo-stack/openframe/openframe/cmd/diagnose"
 	"github.com/flamingo-stack/openframe/openframe/internal/shared/config"
 	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
@@ -68,6 +69,7 @@ operation for automation and power users.`,
 	rootCmd.AddCommand(getChartCmd())
 	rootCmd.AddCommand(getBootstrapCmd())
 	rootCmd.AddCommand(getDevCmd())
+	rootCmd.AddCommand(getDiagnoseCmd())
 
 	// Add global flags following cluster pattern
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
@@ -141,4 +143,9 @@ func getBootstrapCmd() *cobra.Command {
 // getDevCmd returns the dev command
 func getDevCmd() *cobra.Command {
 	return dev.GetDevCmd()
+}
+
+// getDiagnoseCmd returns the diagnose command
+func getDiagnoseCmd() *cobra.Command {
+	return diagnose.GetDiagnoseCmd()
 }
