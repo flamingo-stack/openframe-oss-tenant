@@ -423,15 +423,37 @@ func (d *DockerInstaller) installDockerEngine() error {
 
 	// Enable Windows Containers feature on Windows Server
 	fmt.Println("\nEnabling Windows Containers feature...")
-	containersCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Containers -Restart:$false")
-	containersCmd.Stdout = os.Stdout
-	containersCmd.Stderr = os.Stderr
+	containersCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Containers -Restart:$false | Select-Object -ExpandProperty RestartNeeded")
+	output, err := containersCmd.CombinedOutput()
+	outputStr := string(output)
 
-	if err := containersCmd.Run(); err != nil {
+	if err != nil {
 		fmt.Printf("Warning: Could not enable Containers feature: %v\n", err)
 		fmt.Println("You may need to enable it manually: Install-WindowsFeature -Name Containers")
 	} else {
 		fmt.Println("Windows Containers feature enabled.")
+
+		// Check if restart is explicitly required
+		if strings.Contains(outputStr, "Yes") || strings.Contains(outputStr, "True") {
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println()
+			fmt.Println("The Windows Containers feature has been installed, but a system")
+			fmt.Println("reboot is REQUIRED before Docker Engine can start.")
+			fmt.Println()
+			fmt.Println("Next steps:")
+			fmt.Println("  1. Restart your computer now: shutdown /r /t 0")
+			fmt.Println("  2. Docker service will start automatically after reboot")
+			fmt.Println()
+			fmt.Println("After reboot, verify Docker is running:")
+			fmt.Println("  powershell -Command \"Get-Service Docker\"")
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			return nil // Don't try to start Docker if restart is required
+		}
+
 		fmt.Println("Note: A system restart may be required for the feature to take full effect.")
 	}
 
