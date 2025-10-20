@@ -8,7 +8,6 @@
     "--openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
   ],
-  "agentToolIdCommandArgs": [],
-  "allowConfigurationUpdate": true
+  "agentToolIdCommandArgs": []
 }
 
