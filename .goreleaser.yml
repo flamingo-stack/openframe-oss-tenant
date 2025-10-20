@@ -77,5 +77,3 @@ release:
   extra_files:
     - glob: final-artifacts/clients/*.tar.gz
     - glob: final-artifacts/clients/*.zip
-    - glob: final-artifacts/clients/*_macos
-    - glob: final-artifacts/clients/*_windows.exe

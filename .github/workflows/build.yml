@@ -300,7 +300,7 @@ jobs:
             if [ -d "release-artifacts/${client}-macos" ]; then
               [ -f "release-artifacts/${client}-macos/${client}" ] && \
                 cp "release-artifacts/${client}-macos/${client}" "final-artifacts/clients/${client}_macos"
-              tar -czf "final-artifacts/clients/${client}_macos_${{ inputs.version }}.tar.gz" \
+              tar -czf "final-artifacts/clients/${client}_${{ inputs.version }}_macos.tar.gz" \
                 -C "release-artifacts/${client}-macos" .
             fi
             # Windows
@@ -308,7 +308,7 @@ jobs:
               [ -f "release-artifacts/${client}-windows/${client}.exe" ] && \
                 cp "release-artifacts/${client}-windows/${client}.exe" "final-artifacts/clients/${client}_windows.exe"
               (cd "release-artifacts/${client}-windows" && \
-                zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows_${{ inputs.version }}.zip" .)
+                zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_${{ inputs.version }}_windows.zip" .)
             fi
           done
           ls -lh final-artifacts/clients/
