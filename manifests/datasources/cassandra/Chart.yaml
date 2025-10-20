@@ -7,5 +7,5 @@ appVersion: "1.0"
 
 dependencies:
   - name: cassandra
-    version: ">=12.2.1"
+    version: "12.3.9"
     repository: oci://registry-1.docker.io/bitnamicharts  # should be migrated
