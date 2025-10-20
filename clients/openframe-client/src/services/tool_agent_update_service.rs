@@ -79,7 +79,7 @@ impl ToolAgentUpdateService {
             
             info!("Tool {} has been restarted with new session type: {:?}", tool_agent_id, session_type);
         } else {
-            debug!("Session type for tool {} is already {:?}, no update needed", tool_agent_id, session_type);
+            info!("Session type for tool {} is already {:?}, no update needed", tool_agent_id, session_type);
         }
 
         // TODO: Version updates are temporarily disabled

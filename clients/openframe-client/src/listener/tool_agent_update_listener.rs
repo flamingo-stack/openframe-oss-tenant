@@ -70,7 +70,6 @@ impl ToolAgentUpdateListener {
                 }
             };
             
-            // Вся обработка в отдельном методе, ошибки не прерывают цикл
             if let Err(e) = self.process_message(message).await {
                 error!("Failed to process message: {:#}", e);
             }
