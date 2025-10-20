@@ -28,6 +28,7 @@ public class ToolAgentUpdatePublisher {
         ToolAgentUpdateMessage message = new ToolAgentUpdateMessage();
         message.setToolAgentId(toolAgent.getId());
         message.setVersion(toolAgent.getVersion());
+        message.setSessionType(toolAgent.getSessionType());
         return message;
     }
 }
