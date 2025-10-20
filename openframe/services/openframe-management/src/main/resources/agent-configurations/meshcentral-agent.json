@@ -3,6 +3,7 @@
   "toolId": "meshcentral-server",
   "version": "1.0.0",
   "status": "ENABLED",
+  "sessionType": "CONSOLE",
   "runCommandArgs": [
     "connect",
     "--openframe-mode",

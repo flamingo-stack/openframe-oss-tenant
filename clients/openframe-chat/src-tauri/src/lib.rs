@@ -1,12 +1,85 @@
 use tauri::{
+    image::Image,
+    menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, Runtime, WindowEvent,
+    Manager, RunEvent, WindowEvent,
 };
+
+mod token_watcher;
+mod token_decryption_service;
+use token_watcher::{TokenWatcher, TokenState};
+use tauri::State;
+use std::sync::{Arc, Mutex};
+
+pub struct ServerUrlState {
+    pub url: Arc<Mutex<Option<String>>>,
+}
+
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+#[tauri::command]
+fn get_token(token_state: State<TokenState>) -> Option<String> {
+    let token = token_state.current_token.lock().unwrap();
+    if token.is_some() {
+        println!("[INFO] Token requested from frontend");
+    } else {
+        println!("[ERROR] Token requested but not available");
+    }
+    token.clone()
+}
+
+#[tauri::command]
+fn get_server_url(server_url_state: State<ServerUrlState>) -> Option<String> {
+    let url = server_url_state.url.lock().unwrap();
+    if url.is_some() {
+        println!("[INFO] Server URL requested from frontend");
+    } else {
+        println!("[WARN] Server URL requested but not available");
+    }
+    url.clone()
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .setup(|app| {
+    println!("[INFO] OpenFrame Chat starting...");
+    
+    // Parse command line arguments
+    let args: Vec<String> = std::env::args().collect();
+    
+    // Look for --openframe-token-path, --openframe-secret, and --serverUrl parameters
+    let mut token_path: Option<String> = None;
+    let mut secret: Option<String> = None;
+    let mut server_url: Option<String> = None;
+
+    for i in 0..args.len() {
+        if args[i] == "--openframe-token-path" && i + 1 < args.len() {
+            token_path = Some(args[i + 1].clone());
+        } else if args[i] == "--openframe-secret" && i + 1 < args.len() {
+            secret = Some(args[i + 1].clone());
+        } else if args[i] == "--serverUrl" && i + 1 < args.len() {
+            server_url = Some(args[i + 1].clone());
+        }
+    }
+    
+    let mut builder = tauri::Builder::default();
+    
+    // Start token watcher and get state if both parameters are provided
+    let token_params = match (token_path, secret) {
+        (Some(path), Some(secret_key)) => {
+            Some((path, secret_key))
+        }
+        _ => {
+            eprintln!("[ERROR] Missing required parameters: --openframe-token-path and --openframe-secret");
+            None
+        }
+    };
+    
+    let server_url_clone = server_url.clone();
+
+    builder = builder.setup(move |app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -14,87 +87,120 @@ pub fn run() {
                         .build(),
                 )?;
             }
+            
+            // Manage server URL state
+            let url_state = ServerUrlState {
+                url: Arc::new(Mutex::new(server_url_clone.clone()))
+            };
+            app.manage(url_state);
 
-            // Create the system tray
-            let _ = create_tray(app)?;
+            if let Some(url) = &server_url_clone {
+                println!("[INFO] Server URL configured: {}", url);
+            } else {
+                println!("[WARN] No server URL provided");
+            }
 
+            // Start token watcher with app handle if parameters were provided
+            if let Some((path, secret_key)) = token_params {
+                let state = TokenWatcher::start(path, secret_key, app.handle().clone());
+                app.manage(state);
+                println!("[INFO] Token watcher initialized");
+            } else {
+                // Still create and manage empty state so commands don't fail
+                let empty_state = TokenState {
+                    current_token: Arc::new(Mutex::new(None))
+                };
+                app.manage(empty_state);
+            }
+            
+            let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+            
+            // Get the path to the icon relative to the resources directory
+            let icon_path = app.path().resource_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from(""))
+                .join("icons")
+                .join("32x32.png");
+            
+            let tray_icon = if icon_path.exists() {
+                Image::from_path(&icon_path)?
+            } else {
+                // Fallback to embedded icon
+                Image::from_bytes(include_bytes!("../icons/32x32.png"))?
+            };
+
+            let _tray = TrayIconBuilder::new()
+                .icon(tray_icon)
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .tooltip("OpenFrame Chat")
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .on_menu_event(move |app, event| {
+                    match event.id.as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            // Force quit using std::process::exit to bypass ExitRequested event
+                            // This ensures the tray menu Quit button actually closes the app
+                            std::process::exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .build(app)?;
+            
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Handle window close event
             match event {
                 WindowEvent::CloseRequested { api, .. } => {
-                    // Prevent the window from closing
+                    // Prevent the default close behavior
                     api.prevent_close();
+                    
                     // Hide the window instead
                     let _ = window.hide();
                 }
                 _ => {}
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-
-fn create_tray<R: Runtime>(app: &tauri::App<R>) -> Result<(), Box<dyn std::error::Error>> {
-    let tray_menu = tauri::menu::MenuBuilder::new(app)
-        .item(
-            &tauri::menu::MenuItemBuilder::with_id("show", "Show")
-                .build(app)?,
-        )
-        .separator()
-        .item(
-            &tauri::menu::MenuItemBuilder::with_id("quit", "Quit")
-                .build(app)?,
-        )
-        .build()?;
-
-    // Get the path to the icon relative to the resources directory
-    let icon_path = app.path().resource_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from(""))
-        .join("icons")
-        .join("32x32.png");
+        .invoke_handler(tauri::generate_handler![greet, get_token, get_server_url]);
     
-    let icon = if icon_path.exists() {
-        tauri::image::Image::from_path(&icon_path)?
-    } else {
-        // Fallback to embedded icon
-        tauri::image::Image::from_bytes(include_bytes!("../icons/32x32.png"))?
-    };
-
-    let _tray = TrayIconBuilder::new()
-        .menu(&tray_menu)
-        .icon(icon)
-        .tooltip("Fae Chat")
-        .on_menu_event(move |app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-            "quit" => {
-                app.exit(0);
-            }
-            _ => {}
-        })
-        .on_tray_icon_event(|tray, event| {
+    builder.build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
             match event {
-                TrayIconEvent::Click {
-                    button: MouseButton::Left,
-                    button_state: MouseButtonState::Up,
-                    ..
-                } => {
-                    // Show window on left click
-                    if let Some(window) = tray.app_handle().get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
+                RunEvent::Ready => {
+                    println!("[INFO] Application ready");
+                }
+                RunEvent::ExitRequested { api, .. } => {
+                    // Prevent the app from exiting via system shortcuts
+                    api.prevent_exit();
+                    
+                    // Hide all windows instead of closing
+                    for (_, window) in app_handle.webview_windows() {
+                        let _ = window.hide();
                     }
                 }
                 _ => {}
             }
-        })
-        .build(app)?;
-
-    Ok(())
+        });
 }
+

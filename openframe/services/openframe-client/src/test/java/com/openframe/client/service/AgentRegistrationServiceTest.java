@@ -88,7 +88,7 @@ class AgentRegistrationServiceTest {
 
 
         AgentRegistrationResponse response = agentRegistrationService.register(INITIAL_KEY, request);
-        
+
         assertNotNull(response);
         assertEquals(MACHINE_ID, response.getMachineId());
         assertEquals("agent_" + MACHINE_ID, response.getClientId());
@@ -150,4 +150,4 @@ class AgentRegistrationServiceTest {
         request.setAgentVersion("1.0.0");
         return request;
     }
-} 
+}

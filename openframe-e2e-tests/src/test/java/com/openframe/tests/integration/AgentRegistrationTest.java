@@ -1,8 +1,8 @@
 package com.openframe.tests.integration;
 
 import com.openframe.support.enums.TestPhase;
-import com.openframe.tests.e2e.BasePipelineE2ETest;
 import com.openframe.support.helpers.ApiHelpers;
+import com.openframe.tests.e2e.BasePipelineTest;
 import io.qameta.allure.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
@@ -13,18 +13,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
+
+import static com.openframe.support.constants.TestConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-@Epic("Integration Tests")
 @Feature("Agent Registration")
-@Story("Agent registration workflow")
-@Tag("e2e")
-@Tag("api")
+@Tag("smoke")
 @DisplayName("Agent Registration Flow E2E Test")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.CONCURRENT)
-public class AgentRegistrationIT extends BasePipelineE2ETest {
+public class AgentRegistrationTest extends BasePipelineTest {
     private String machineId;
     
     @BeforeEach
@@ -135,7 +133,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
             executePhase(TestPhase.ACT, "Register multiple agents concurrently", () -> {
                 String managementKey = ApiHelpers.getActiveManagementKey();
                 
-                List<CompletableFuture<String>> futures = IntStream.range(0, 5)
+                List<CompletableFuture<String>> futures = IntStream.range(0, CONCURRENT_AGENTS_COUNT)
                     .mapToObj(i -> CompletableFuture.supplyAsync(() -> {
                         String host = "concurrent-host-" + i + "-" + testId;
                         Map<String, Object> data = ApiHelpers.createAgentData(host);
@@ -149,7 +147,7 @@ public class AgentRegistrationIT extends BasePipelineE2ETest {
                 
                 assertThat(machineIds)
                     .as("All agents should be registered")
-                    .hasSize(5)
+                    .hasSize(CONCURRENT_AGENTS_COUNT)
                     .doesNotContainNull()
                     .doesNotHaveDuplicates();
                 

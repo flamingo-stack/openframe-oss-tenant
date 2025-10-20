@@ -1,10 +1,9 @@
 package com.openframe.tests.ui;
 
-import lombok.Setter;
 import org.junit.jupiter.api.*;
 import pageObjects.OpenFrameMainPage;
-import com.openframe.data.dto.OrganizationRegistrationData;
-import com.openframe.data.UiTestDataGenerator;
+import com.openframe.data.testData.OrganizationRegistrationData;
+import com.openframe.data.testData.UiTestDataGenerator;
 import static org.junit.jupiter.api.Assertions.*;
 
 
