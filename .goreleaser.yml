@@ -22,9 +22,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/flamingo-stack/openframe/cmd.version={{.Version}}
-      - -X github.com/flamingo-stack/openframe/cmd.commit={{.Commit}}
-      - -X github.com/flamingo-stack/openframe/cmd.date={{.Date}}
+      - -X github.com/flamingo-stack/openframe/openframe/cmd.DefaultVersionInfo.Version={{.Version}}
+      - -X github.com/flamingo-stack/openframe/openframe/cmd.DefaultVersionInfo.Commit={{.Commit}}
+      - -X github.com/flamingo-stack/openframe/openframe/cmd.DefaultVersionInfo.Date={{.Date}}
 
 archives:
   # This archive packages the Go binaries built above. The universal binary will replace the two separate macOS builds.
