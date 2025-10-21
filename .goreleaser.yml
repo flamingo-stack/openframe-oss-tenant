@@ -31,7 +31,7 @@ archives:
   - id: openframe-cli-archive
     ids:
       - openframe-cli
-    name_template: "openframe-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "openframe-cli_{{ .Os }}_{{ .Arch }}"
     formats: ["tar.gz"]
     format_overrides:
       - goos: windows
