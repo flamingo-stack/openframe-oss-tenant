@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/cluster/prerequisites"
-	"github.com/flamingo/openframe/internal/cluster/providers/k3d"
-	uiCluster "github.com/flamingo/openframe/internal/cluster/ui"
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/providers/k3d"
+	uiCluster "github.com/flamingo-stack/openframe/openframe/internal/cluster/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -733,7 +733,7 @@ func CreateClusterWithPrerequisitesNonInteractive(clusterName string, verbose bo
 	} else {
 		service = NewClusterService(exec)
 	}
-	
+
 	// Build cluster configuration
 	config := models.ClusterConfig{
 		Name:       clusterName,
@@ -744,7 +744,7 @@ func CreateClusterWithPrerequisitesNonInteractive(clusterName string, verbose bo
 	if clusterName == "" {
 		config.Name = "openframe-dev" // default name
 	}
-	
+
 	// Create the cluster
 	return service.CreateCluster(config)
 }

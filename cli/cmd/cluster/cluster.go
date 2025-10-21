@@ -1,10 +1,10 @@
 package cluster
 
 import (
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/cluster/prerequisites"
-	"github.com/flamingo/openframe/internal/cluster/utils"
-	"github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/utils"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +12,7 @@ import (
 func GetClusterCmd() *cobra.Command {
 	// Initialize global flags
 	utils.InitGlobalFlags()
-	
+
 	clusterCmd := &cobra.Command{
 		Use:     "cluster",
 		Aliases: []string{"k"},
@@ -59,4 +59,3 @@ Examples:
 
 	return clusterCmd
 }
-

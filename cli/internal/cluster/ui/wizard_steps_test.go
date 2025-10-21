@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
 	"github.com/stretchr/testify/assert"
 )
 

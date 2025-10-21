@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	chartServices "github.com/flamingo/openframe/internal/chart/services"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	chartServices "github.com/flamingo-stack/openframe/openframe/internal/chart/services"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 )
@@ -38,15 +38,15 @@ func (p *Provider) InstallCharts(clusterName, helmValuesFile string) error {
 // InstallChartsWithContext installs charts on a cluster with context support for cancellation
 func (p *Provider) InstallChartsWithContext(ctx context.Context, clusterName, helmValuesFile string) error {
 	pterm.Warning.Printf("OpenFrame chart needs to be reinstalled to disable autoSync for Skaffold usage...\n")
-	
+
 	// Check if helm-values.yaml exists in current directory
 	existingValues := "helm-values.yaml"
-	
+
 	// Create development helm values file with autoSync disabled
 	if err := p.createDevHelmValuesFile(helmValuesFile, existingValues); err != nil {
 		return fmt.Errorf("failed to create development helm values: %w", err)
 	}
-	
+
 	if p.verbose {
 		pterm.Info.Printf("Created helm-values.yaml with development settings\n")
 		pterm.Info.Println("AutoSync is disabled for Skaffold development workflow")
@@ -58,16 +58,16 @@ func (p *Provider) InstallChartsWithContext(ctx context.Context, clusterName, he
 		return fmt.Errorf("chart installation cancelled: %w", ctx.Err())
 	default:
 	}
-	
+
 	// Use the chart services which will read helm-values.yaml from current directory
 	// For development workflow, we need a more aggressive approach to stop background processes
 	done := make(chan error, 1)
-	
+
 	go func() {
 		err := chartServices.InstallChartsWithDefaultsContext(ctx, []string{clusterName}, false, false, p.verbose)
 		done <- err
 	}()
-	
+
 	// Wait for either completion or context cancellation
 	select {
 	case err := <-done:
@@ -84,7 +84,7 @@ func (p *Provider) InstallChartsWithContext(ctx context.Context, clusterName, he
 	case <-ctx.Done():
 		// Context cancelled - use a more targeted approach
 		pterm.Success.Println("ArgoCD Applications reinstalled")
-		
+
 		// Use panic recovery to forcefully stop the goroutine chain
 		// This is aggressive but necessary to stop the ArgoCD applications spinner
 		go func() {
@@ -93,7 +93,7 @@ func (p *Provider) InstallChartsWithContext(ctx context.Context, clusterName, he
 			exec.Command("pkill", "-f", "kubectl.*applications").Run()
 			exec.Command("pkill", "-f", "helm.*install").Run()
 		}()
-		
+
 		return nil // Return success to allow skaffold to proceed
 	}
 }
@@ -155,48 +155,48 @@ func (p *Provider) GetDefaultDevValues() string {
 func (p *Provider) createDevHelmValuesFile(baseValuesFile string, outputFile string) error {
 	// Start with empty values or load from base file
 	values := make(map[string]interface{})
-	
+
 	// Try to load existing helm-values.yaml first if it exists
 	if _, err := os.Stat(outputFile); err == nil {
 		data, err := ioutil.ReadFile(outputFile)
 		if err != nil {
 			return fmt.Errorf("failed to read existing helm values: %w", err)
 		}
-		
+
 		if err := yaml.Unmarshal(data, &values); err != nil {
 			// If unmarshal fails, start with empty values
 			values = make(map[string]interface{})
 		}
 	}
-	
+
 	// If additional base values file is provided, merge it
 	if baseValuesFile != "" && baseValuesFile != outputFile {
 		if err := p.validateHelmValuesFile(baseValuesFile); err != nil {
 			return err
 		}
-		
+
 		data, err := ioutil.ReadFile(baseValuesFile)
 		if err != nil {
 			return fmt.Errorf("failed to read base helm values: %w", err)
 		}
-		
+
 		var baseValues map[string]interface{}
 		if err := yaml.Unmarshal(data, &baseValues); err != nil {
 			return fmt.Errorf("failed to parse base helm values: %w", err)
 		}
-		
+
 		// Merge base values into existing values
 		for k, v := range baseValues {
 			values[k] = v
 		}
 	}
-	
+
 	// Set development-specific values
 	// Ensure global section exists
 	if _, ok := values["global"]; !ok {
 		values["global"] = make(map[string]interface{})
 	}
-	
+
 	// Set autoSync to false for development
 	globalSection, ok := values["global"].(map[string]interface{})
 	if !ok {
@@ -205,23 +205,22 @@ func (p *Provider) createDevHelmValuesFile(baseValuesFile string, outputFile str
 		globalSection = values["global"].(map[string]interface{})
 	}
 	globalSection["autoSync"] = false
-	
+
 	// Marshal the values back to YAML
 	yamlData, err := yaml.Marshal(values)
 	if err != nil {
 		return fmt.Errorf("failed to marshal helm values: %w", err)
 	}
-	
+
 	// Write to the output file
 	if err := ioutil.WriteFile(outputFile, yamlData, 0644); err != nil {
 		return fmt.Errorf("failed to write helm values: %w", err)
 	}
-	
+
 	if p.verbose {
 		pterm.Info.Printf("Created development helm values file: %s\n", outputFile)
 		pterm.Info.Println("Development settings applied: global.autoSync = false")
 	}
-	
+
 	return nil
 }
-
