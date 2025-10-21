@@ -18,12 +18,12 @@ kafka:
     replicaCount: 1
     podAntiAffinityPreset: hard
     resources:
-      # requests:
-      #   cpu: 2
-      #   memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 512Mi
       limits:
-        cpu: 1
-        memory: 2048Mi
+        cpu: 500m
+        memory: 1Gi
 
   listeners:
     client:
@@ -49,12 +49,12 @@ kafka:
     replicaCount: 1
 
     resources:
-      # requests:
-      #   cpu: 2
-      #   memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 512Mi
       limits:
-        cpu: 1
-        memory: 2048Mi
+        cpu: 500m
+        memory: 1Gi
 
   kraft:
     enabled: true
