@@ -101,6 +101,7 @@ public class ToolConnectionListener {
                         .ackWait(ACK_WAIT)
                         .maxDeliver(MAX_DELIVER)
                         .filterSubject(SUBJECT)
+                        .deliverSubject("machine.tool-connection.delivery")
                         .build();
 
                 jsm.createConsumer(STREAM_NAME, consumerConfig);
