@@ -447,10 +447,15 @@ Write-Host "Chocolatey installed to: $env:ChocolateyInstall"
 
 	// Configure Chocolatey for fully unattended operation
 	fmt.Println("Configuring Chocolatey for unattended installation...")
-	configCmd := exec.Command("choco", "feature", "enable", "-n", "allowGlobalConfirmation")
+
+	// Use the full path to choco.exe since PATH may not be updated yet
+	chocoExePath := userChocoPath + "\\choco.exe"
+	configCmd := exec.Command(chocoExePath, "feature", "enable", "-n", "allowGlobalConfirmation")
+	configCmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
 	_ = configCmd.Run() // Ignore errors, proceed anyway
 
 	fmt.Println("Chocolatey user-only installation completed successfully!")
+	fmt.Printf("Chocolatey installed to: %s\n", userChocoPath)
 	return nil
 }
 
@@ -464,6 +469,9 @@ func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 
 	// Use flags for completely silent, unattended installation
 	cmd := exec.Command(chocoPath, "install", "docker-engine", "-y", "--no-progress", "--force", "--accept-license", "--confirm", "--limit-output")
+
+	// Set environment variables for Chocolatey
+	cmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -498,10 +506,10 @@ func (d *DockerInstaller) installDockerEngine() error {
 	fmt.Println("Installing Docker Engine using Microsoft's official method...")
 	fmt.Println()
 
-	// Step 1: Install DockerMsftProvider module
+	// Step 1: Install DockerMsftProvider module (user scope - no admin required)
 	fmt.Println("Step 1/3: Installing DockerMsftProvider PowerShell module...")
 	installModuleCmd := exec.Command("powershell", "-Command",
-		"Install-Module -Name DockerMsftProvider -Repository PSGallery -Force")
+		"Install-Module -Name DockerMsftProvider -Repository PSGallery -Scope CurrentUser -Force")
 	installModuleCmd.Stdout = os.Stdout
 	installModuleCmd.Stderr = os.Stderr
 
@@ -726,6 +734,9 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	// --accept-license: Auto-accept license
 	// --confirm: Auto-confirm all prompts (redundant with -y but explicit)
 	cmd := exec.Command(chocoPath, "install", "docker-desktop", "-y", "--no-progress", "--force", "--accept-license", "--confirm")
+
+	// Set environment variables for Chocolatey
+	cmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
