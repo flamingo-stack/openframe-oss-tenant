@@ -271,44 +271,106 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 								len(notReadyApps), notReadyApps[:5])
 						}
 
-						// TEMP DEBUG: Show pods for kafka/cassandra after 3 min
-						if elapsed > 3*time.Minute && int(elapsed.Seconds())%30 == 0 {
+						// DEBUG: Show pod details for stuck applications after 5 min, every minute
+						if elapsed > 5*time.Minute && int(elapsed.Seconds())%60 == 0 {
+							stuckApps := []Application{}
 							for _, app := range apps {
-								if (app.Name == "kafka" || app.Name == "cassandra") && app.Health != "Healthy" {
-									nsResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", "argocd", "get", "app", app.Name, "-o", "jsonpath={.spec.destination.namespace}")
-									if nsResult != nil && nsResult.Stdout != "" {
-										ns := strings.TrimSpace(nsResult.Stdout)
-										pterm.Info.Printf("\n=== DEBUG: %s pods in %s ===\n", app.Name, ns)
-										podResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "pods", "-o", "wide")
-										if podResult != nil && podResult.Stdout != "" {
-											pterm.Info.Println(podResult.Stdout)
+								if app.Health != "Healthy" && app.Health != "Missing" {
+									stuckApps = append(stuckApps, app)
+								}
+							}
+
+							if len(stuckApps) > 0 {
+								pterm.Info.Printf("\n=== DEBUG: Found %d stuck application(s) ===\n", len(stuckApps))
+
+								for _, app := range stuckApps {
+									pterm.Info.Printf("\n--- %s (Health: %s, Sync: %s) ---\n", app.Name, app.Health, app.Sync)
+
+									// Get namespace
+									nsResult, err := m.executor.Execute(localCtx, "kubectl", "-n", "argocd", "get", "app", app.Name, "-o", "jsonpath={.spec.destination.namespace}")
+									if err != nil || nsResult == nil || nsResult.Stdout == "" {
+										pterm.Warning.Printf("Could not get namespace for %s\n", app.Name)
+										continue
+									}
+									ns := strings.TrimSpace(nsResult.Stdout)
+
+									// Get pods with issues: not Running or with restarts
+									podQuery := "jsonpath={range .items[?(@.status.phase!=\"Running\")]}{.metadata.name}{\"\\t\"}{.status.phase}{\"\\t\"}{.status.containerStatuses[0].restartCount}{\"\\n\"}{end}"
+									problemPodsResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "pods", "-o", podQuery)
+
+									// Also get pods with restarts but Running
+									restartPodsQuery := "jsonpath={range .items[?(@.status.phase==\"Running\")]}{.metadata.name}{\"\\t\"}{.status.containerStatuses[0].restartCount}{\"\\n\"}{end}"
+									restartPodsResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "pods", "-o", restartPodsQuery)
+
+									problemPods := make(map[string]bool)
+
+									// Parse non-running pods
+									if problemPodsResult != nil && problemPodsResult.Stdout != "" {
+										for _, line := range strings.Split(strings.TrimSpace(problemPodsResult.Stdout), "\n") {
+											if line != "" {
+												podName := strings.Split(line, "\t")[0]
+												problemPods[podName] = true
+											}
 										}
-										// Get logs from crashing pods (including previous crashes)
-										pterm.Info.Printf("=== Logs from %s-0 (last 30 lines) ===\n", app.Name)
-										logResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "logs", app.Name+"-0", "--tail=30", "--all-containers=true", "--prefix=true")
-										if logResult != nil && logResult.Stdout != "" {
-											pterm.Info.Println(logResult.Stdout)
+									}
+
+									// Parse pods with restarts
+									if restartPodsResult != nil && restartPodsResult.Stdout != "" {
+										for _, line := range strings.Split(strings.TrimSpace(restartPodsResult.Stdout), "\n") {
+											if line == "" {
+												continue
+											}
+											parts := strings.Split(line, "\t")
+											if len(parts) >= 2 && parts[1] != "0" && parts[1] != "" {
+												problemPods[parts[0]] = true
+											}
 										}
-										// Get logs from previous crashed container
-										pterm.Info.Printf("=== Previous crash logs from %s-0 ===\n", app.Name)
-										prevLogResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "logs", app.Name+"-0", "--previous", "--all-containers=true", "--prefix=true", "--tail=50")
-										if prevLogResult != nil && prevLogResult.Stdout != "" {
-											pterm.Info.Println(prevLogResult.Stdout)
+									}
+
+									if len(problemPods) == 0 {
+										pterm.Info.Println("  No problematic pods found (may be an ArgoCD sync issue)")
+										continue
+									}
+
+									pterm.Info.Printf("  Found %d pod(s) with issues\n", len(problemPods))
+
+									for podName := range problemPods {
+										pterm.Info.Printf("\n  Pod: %s\n", podName)
+
+										// Get pod status summary
+										statusResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "pod", podName, "-o", "jsonpath={.status.phase}{'/'}{.status.containerStatuses[*].state}")
+										if statusResult != nil && statusResult.Stdout != "" {
+											pterm.Info.Printf("  Status: %s\n", statusResult.Stdout)
 										}
-										// Check for OOMKilled or other termination reasons
-										pterm.Info.Printf("=== Pod describe for %s-0 ===\n", app.Name)
-										describeResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "describe", "pod", app.Name+"-0")
-										if describeResult != nil && describeResult.Stdout != "" {
-											// Only show last 50 lines (Events section)
-											lines := strings.Split(describeResult.Stdout, "\n")
-											if len(lines) > 50 {
-												pterm.Info.Println(strings.Join(lines[len(lines)-50:], "\n"))
-											} else {
-												pterm.Info.Println(describeResult.Stdout)
+
+										// Get recent events for this pod
+										eventsResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "events", "--field-selector", "involvedObject.name="+podName, "--sort-by=.lastTimestamp", "-o", "custom-columns=TIME:.lastTimestamp,REASON:.reason,MESSAGE:.message", "--no-headers")
+										if eventsResult != nil && eventsResult.Stdout != "" {
+											eventLines := strings.Split(strings.TrimSpace(eventsResult.Stdout), "\n")
+											if len(eventLines) > 5 {
+												eventLines = eventLines[len(eventLines)-5:]
+											}
+											pterm.Info.Println("  Recent Events:")
+											for _, event := range eventLines {
+												if event != "" {
+													pterm.Info.Printf("    %s\n", event)
+												}
+											}
+										}
+
+										// Get last 20 lines of logs
+										logsResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "logs", podName, "--tail=20", "--all-containers=true", "--prefix=true")
+										if logsResult != nil && logsResult.Stdout != "" {
+											pterm.Info.Println("  Recent Logs:")
+											for _, line := range strings.Split(logsResult.Stdout, "\n") {
+												if line != "" {
+													pterm.Info.Printf("    %s\n", line)
+												}
 											}
 										}
 									}
 								}
+								pterm.Info.Println("\n=== End Debug ===")
 							}
 						}
 					}
