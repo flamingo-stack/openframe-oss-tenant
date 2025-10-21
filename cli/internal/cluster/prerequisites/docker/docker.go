@@ -379,34 +379,78 @@ func (d *DockerInstaller) installWindows() error {
 	return d.installDockerDesktop()
 }
 
+// getChocoPath returns the path to choco.exe, checking user-local installation first
+func (d *DockerInstaller) getChocoPath() string {
+	// Try user-local installation first (%LOCALAPPDATA%\choco\bin\choco.exe)
+	userChocoPath := os.Getenv("LOCALAPPDATA") + "\\choco\\bin\\choco.exe"
+	if _, err := os.Stat(userChocoPath); err == nil {
+		return userChocoPath
+	}
+
+	// Try system-wide installation (C:\ProgramData\chocolatey\bin\choco.exe)
+	systemChocoPath := "C:\\ProgramData\\chocolatey\\bin\\choco.exe"
+	if _, err := os.Stat(systemChocoPath); err == nil {
+		return systemChocoPath
+	}
+
+	// If choco is in PATH, just use "choco"
+	if commandExists("choco") {
+		return "choco"
+	}
+
+	// Default to user-local path (will be created by installation)
+	return userChocoPath
+}
+
 func (d *DockerInstaller) installChocolatey() error {
-	fmt.Println("Installing Chocolatey package manager...")
+	fmt.Println("Installing Chocolatey package manager (user-only mode)...")
 	fmt.Println("Note: This is a fully automated installation with no dialogs or prompts.")
 
-	// Official Chocolatey installation command from https://chocolatey.org/install
-	// This installs system-wide (requires admin), but we'll configure choco to be non-interactive
-	installScript := `Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))`
+	// Non-admin Chocolatey installation using ChocolateyInstallNonAdmin environment variable
+	// This installs to user's home directory and doesn't require admin privileges
+	// Reference: https://docs.chocolatey.org/en-us/choco/setup#non-administrative-install
+	installScript := `
+# Set environment variable for non-admin install
+$env:ChocolateyInstall = "$env:LOCALAPPDATA\choco"
+
+# Create directory if it doesn't exist
+New-Item -Path $env:ChocolateyInstall -ItemType Directory -Force | Out-Null
+
+# Download and run installer
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Add to PATH for current session
+$env:PATH = "$env:ChocolateyInstall\bin;$env:PATH"
+
+Write-Host "Chocolatey installed to: $env:ChocolateyInstall"
+`
 
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Chocolatey: %w\n\nNote: Chocolatey installation typically requires running from an elevated PowerShell/Command Prompt.\nPlease right-click on PowerShell or Command Prompt and select 'Run as Administrator', then run this installer again.", err)
+		return fmt.Errorf("failed to install Chocolatey in user mode: %w", err)
 	}
 
-	// Update PATH for current session
-	chocoPath := "C:\\ProgramData\\chocolatey\\bin"
+	// Update PATH for current session - use user's local chocolatey installation
+	userChocoPath := os.Getenv("LOCALAPPDATA") + "\\choco\\bin"
 	currentPath := os.Getenv("PATH")
-	if !strings.Contains(currentPath, chocoPath) {
-		_ = os.Setenv("PATH", currentPath+";"+chocoPath)
+	if !strings.Contains(currentPath, userChocoPath) {
+		_ = os.Setenv("PATH", userChocoPath+";"+currentPath)
 	}
+
+	// Also set ChocolateyInstall for current session
+	_ = os.Setenv("ChocolateyInstall", os.Getenv("LOCALAPPDATA")+"\\choco")
 
 	// Configure Chocolatey for fully unattended operation
 	fmt.Println("Configuring Chocolatey for unattended installation...")
 	configCmd := exec.Command("choco", "feature", "enable", "-n", "allowGlobalConfirmation")
 	_ = configCmd.Run() // Ignore errors, proceed anyway
 
+	fmt.Println("Chocolatey user-only installation completed successfully!")
 	return nil
 }
 
@@ -415,16 +459,11 @@ func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 	fmt.Println("Installing Docker Engine via Chocolatey...")
 	fmt.Println("Note: This is a fully unattended installation with no user prompts.")
 
-	// Try both choco and full path
-	var cmd *exec.Cmd
-	if commandExists("choco") {
-		// Use flags for completely silent, unattended installation
-		cmd = exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--force", "--accept-license", "--confirm", "--limit-output")
-	} else {
-		// Try with full path if choco is not in PATH yet
-		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-engine", "-y", "--no-progress", "--force", "--accept-license", "--confirm", "--limit-output")
-	}
+	// Get choco path - try user-local first, then system-wide
+	chocoPath := d.getChocoPath()
 
+	// Use flags for completely silent, unattended installation
+	cmd := exec.Command(chocoPath, "install", "docker-engine", "-y", "--no-progress", "--force", "--accept-license", "--confirm", "--limit-output")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -589,12 +628,18 @@ func (d *DockerInstaller) installDockerDesktop() error {
 
 	if err != nil || !isEnabled {
 		fmt.Println("Hyper-V is not enabled. Enabling Hyper-V...")
-		fmt.Println("Note: This requires administrator privileges and will require a system restart.")
+		fmt.Println()
+		fmt.Println("IMPORTANT: Enabling Hyper-V requires administrator privileges.")
+		fmt.Println("Windows will prompt for UAC elevation. Please click 'Yes' when prompted.")
+		fmt.Println("Note: A system restart will be required after enabling Hyper-V.")
 		fmt.Println()
 
 		// Try Install-WindowsFeature first (more reliable on Windows Server and some editions)
 		fmt.Println("Enabling Hyper-V platform and management tools...")
-		enableCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false")
+
+		// Use Start-Process with -Verb RunAs to request elevation
+		enableScript := `Start-Process powershell -Verb RunAs -ArgumentList '-Command','Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false' -Wait`
+		enableCmd := exec.Command("powershell", "-Command", enableScript)
 		enableCmd.Stdout = os.Stdout
 		enableCmd.Stderr = os.Stderr
 
@@ -603,7 +648,8 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		// If Install-WindowsFeature fails (not available on some Windows editions), fall back to DISM
 		if err != nil {
 			fmt.Println("Install-WindowsFeature not available, trying DISM method...")
-			enableCmd = exec.Command("powershell", "-Command", "dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All /NoRestart")
+			dismScript := `Start-Process powershell -Verb RunAs -ArgumentList '-Command','dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All /NoRestart' -Wait`
+			enableCmd = exec.Command("powershell", "-Command", dismScript)
 			enableCmd.Stdout = os.Stdout
 			enableCmd.Stderr = os.Stderr
 			err = enableCmd.Run()
@@ -665,21 +711,21 @@ func (d *DockerInstaller) installDockerDesktop() error {
 
 	fmt.Println("Installing Docker Desktop via Chocolatey...")
 	fmt.Println("Note: This is a fully unattended installation with no user prompts.")
+	fmt.Println()
+	fmt.Println("IMPORTANT: Docker Desktop installation requires administrator privileges.")
+	fmt.Println("The Chocolatey package will attempt to elevate privileges automatically.")
+	fmt.Println("If prompted by UAC (User Account Control), please click 'Yes' to allow the installation.")
+	fmt.Println()
 
-	// Try both choco and full path with fully unattended flags
-	var cmd *exec.Cmd
-	if commandExists("choco") {
-		// Use flags for completely silent, unattended installation
-		// --no-progress: Suppress progress output
-		// --force: Force installation even if already installed
-		// --accept-license: Auto-accept license
-		// --confirm: Auto-confirm all prompts (redundant with -y but explicit)
-		cmd = exec.Command("choco", "install", "docker-desktop", "-y", "--no-progress", "--force", "--accept-license", "--confirm")
-	} else {
-		// Try with full path if choco is not in PATH yet
-		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-desktop", "-y", "--no-progress", "--force", "--accept-license", "--confirm")
-	}
+	// Get choco path - try user-local first, then system-wide
+	chocoPath := d.getChocoPath()
 
+	// Use flags for completely silent, unattended installation
+	// --no-progress: Suppress progress output
+	// --force: Force installation even if already installed
+	// --accept-license: Auto-accept license
+	// --confirm: Auto-confirm all prompts (redundant with -y but explicit)
+	cmd := exec.Command(chocoPath, "install", "docker-desktop", "-y", "--no-progress", "--force", "--accept-license", "--confirm")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
