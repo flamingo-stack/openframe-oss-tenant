@@ -88,6 +88,12 @@ cassandra:
       repository: bitnamilegacy/cassandra-exporter
       tag: 2.3.8-debian-12-r51
 
+    readinessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 15
+      timeoutSeconds: 45
+      failureThreshold: 5
+
     enabled: true
     serviceMonitor:
       enabled: true

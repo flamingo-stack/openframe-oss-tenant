@@ -111,7 +111,16 @@ kafka:
       image:
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0-debian-12-r0
-        
+      
+      livenessProbe:
+        initialDelaySeconds: 90 
+        periodSeconds: 20        
+        failureThreshold: 6   
+      readinessProbe:
+        initialDelaySeconds: 60
+        periodSeconds: 15
+        failureThreshold: 5
+
       enabled: true
       kafkaJmxPort: 5555
       extraRules: |-
