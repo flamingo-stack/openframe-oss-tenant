@@ -58,30 +58,41 @@ impl ToolAgentUpdateListener {
 
         info!("Start listening for tool agent update messages");
         let mut messages = consumer.messages().await?;
-        while let Some(message) = messages.next().await {
-            info!("Received tool agent update message: {:?}", message);
-
-            let message = message?;
-
-            let payload = String::from_utf8_lossy(&message.payload);
-            let tool_agent_update_message: ToolAgentUpdateMessage = serde_json::from_str(&payload)?;
-            let tool_agent_id = tool_agent_update_message.tool_agent_id.clone();
-
-            match self.tool_agent_update_service.process_update(tool_agent_update_message).await {
-                Ok(_) => {
-                    // ack
-                    info!("Acknowledging tool agent update message for tool: {}", tool_agent_id);
-                    message.ack().await
-                        .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-                    info!("Tool agent update message acknowledged for tool: {}", tool_agent_id);
-                }
+        
+        while let Some(message_result) = messages.next().await {
+            info!("Received tool agent update message: {:?}", message_result);
+            
+            let message = match message_result {
+                Ok(msg) => msg,
                 Err(e) => {
-                    // do not ack: let message be redelivered per consumer ack policy
-                    error!("Failed to process tool agent update message for tool {}: {:#}", tool_agent_id, e);
-                    info!("Leaving message unacked for potential redelivery: tool {}", tool_agent_id);
+                    error!("Failed to receive message: {:#}", e);
+                    continue;
                 }
+            };
+            
+            if let Err(e) = self.process_message(message).await {
+                error!("Failed to process message: {:#}", e);
             }
         }
+        
+        Ok(())
+    }
+
+    async fn process_message(&self, message: jetstream::message::Message) -> Result<()> {
+        
+        let payload = String::from_utf8_lossy(&message.payload);
+        let tool_agent_update_message: ToolAgentUpdateMessage = serde_json::from_str(&payload)?;
+        let tool_agent_id = tool_agent_update_message.tool_agent_id.clone();
+
+        info!("Processing tool agent update for: {}", tool_agent_id);
+
+        self.tool_agent_update_service.process_update(tool_agent_update_message).await?;
+        
+        info!("Acknowledging tool agent update message for tool: {}", tool_agent_id);
+        message.ack().await
+            .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+        info!("Tool agent update message acknowledged for tool: {}", tool_agent_id);
+        
         Ok(())
     }
 

@@ -16,6 +16,7 @@ import static java.lang.String.format;
 
 @Component
 @RequiredArgsConstructor
+// TODO: have been migrated to libs. Remove after testing.
 public class ToolInstallationNatsPublisher {
 
     private final static String TOPIC_NAME_TEMPLATE = "machine.%s.tool-installation";

@@ -300,7 +300,7 @@ impl Client {
         let tool_agent_update_service = ToolAgentUpdateService::new(
             tool_agent_file_client.clone(),
             installed_tools_service.clone(),
-            tool_kill_service.clone(),
+            tool_run_manager.clone(),
             directory_manager.clone()
         );
 

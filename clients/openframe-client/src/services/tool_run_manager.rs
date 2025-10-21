@@ -4,10 +4,11 @@ use std::process::Stdio;
 use tokio::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::task::JoinHandle;
 use crate::models::installed_tool::InstalledTool;
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
@@ -380,7 +381,7 @@ pub struct ToolRunManager {
     installed_tools_service: InstalledToolsService,
     params_processor: ToolCommandParamsResolver,
     tool_kill_service: ToolKillService,
-    running_tools: Arc<RwLock<HashSet<String>>>,
+    running_tools: Arc<RwLock<HashMap<String, Option<JoinHandle<()>>>>>,
 }
 
 impl ToolRunManager {
@@ -393,7 +394,7 @@ impl ToolRunManager {
             installed_tools_service,
             params_processor,
             tool_kill_service,
-            running_tools: Arc::new(RwLock::new(HashSet::new())),
+            running_tools: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -433,12 +434,47 @@ impl ToolRunManager {
         self.run_tool(installed_tool).await
     }
 
+    /// Reruns a tool with new configuration.
+    /// This stops the currently running tool (if any) and starts it again with the updated configuration.
+    pub async fn rerun_tool(&self, installed_tool: InstalledTool) -> Result<()> {
+        let tool_id = &installed_tool.tool_agent_id;
+        info!("Rerunning tool {} with new configuration", tool_id);
+
+        // Stop the running task if it exists
+        {
+            let mut running_tools = self.running_tools.write().await;
+            if let Some(Some(handle)) = running_tools.remove(tool_id) {
+                info!("Aborting existing task for tool: {}", tool_id);
+                handle.abort();
+            }
+            // Insert None as placeholder to reserve the slot
+            running_tools.insert(tool_id.to_string(), None);
+        }
+
+        // Kill the process if it's still running
+        info!("Stopping process for tool: {}", tool_id);
+        self.tool_kill_service.stop_tool(tool_id).await
+            .with_context(|| format!("Failed to stop tool process for: {}", tool_id))?;
+
+        // Wait a moment for cleanup
+        sleep(Duration::from_millis(500)).await;
+
+        // Start the tool with new configuration
+        info!("Starting tool {} with new configuration", tool_id);
+        self.run_tool(installed_tool).await
+    }
+
+    /// Atomically checks if a tool is already marked as running and marks it if not.
+    /// Returns true if the tool was successfully marked (not running before), false if already running.
+    /// This is race-condition safe.
     async fn try_mark_running(&self, tool_id: &str) -> bool {
-        let mut set = self.running_tools.write().await;
-        if set.contains(tool_id) {
+        let mut map = self.running_tools.write().await;
+        if map.contains_key(tool_id) {
             false
         } else {
-            set.insert(tool_id.to_string());
+            // Insert None as placeholder to reserve the slot
+            // The actual handle will be inserted later in run_tool
+            map.insert(tool_id.to_string(), None);
             true
         }
     }
@@ -446,8 +482,9 @@ impl ToolRunManager {
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
+        let tool_id = tool.tool_agent_id.clone();
         let params_processor = self.params_processor.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             loop {
                 // exchange args placeholders to real values
                 let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
@@ -459,9 +496,6 @@ impl ToolRunManager {
                     }
                 };
 
-                debug!("Run tool {} with args: {:?}", tool.tool_agent_id, processed_args);
-
-                // Build executable path (always uses app support directory)
                 let command_path = params_processor.directory_manager
                     .get_agent_path(&tool.tool_agent_id)
                     .to_string_lossy()
@@ -624,6 +658,12 @@ impl ToolRunManager {
                 }
             }
         });
+
+        // Replace the None placeholder with the actual task handle
+        {
+            let mut running_tools = self.running_tools.write().await;
+            running_tools.insert(tool_id, Some(handle));
+        }
 
         Ok(())
     }
