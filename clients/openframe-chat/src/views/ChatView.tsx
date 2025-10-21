@@ -18,12 +18,17 @@ export function ChatView() {
     sendMessage,
     handleQuickAction,
     quickActions,
-    hasMessages
+    hasMessages,
+    clearMessages
   } = useChat({ useApi: true, useMock: false })
 
   return (
     <ChatContainer>
-      <ChatHeader userAvatar={faeAvatar} />
+      <ChatHeader 
+        userAvatar={faeAvatar} 
+        showNewChat={hasMessages}
+        onNewChat={clearMessages}
+      />
       
       <ChatContent>
         {hasMessages ? (
