@@ -3,7 +3,7 @@ package root_integration
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/tests/integration/common"
+	"github.com/flamingo-stack/openframe/openframe/tests/integration/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +13,7 @@ func TestRootHelp(t *testing.T) {
 	if result.Failed() {
 		t.Skip("CLI binary not available")
 	}
-	
+
 	require.Contains(t, result.Stdout, "OpenFrame CLI")
 	require.Contains(t, result.Stdout, "Available Commands:")
 	require.Contains(t, result.Stdout, "cluster")
@@ -25,7 +25,7 @@ func TestRootVersion(t *testing.T) {
 	if result.Failed() {
 		t.Skip("CLI binary not available")
 	}
-	
+
 	require.NotEmpty(t, result.Stdout)
 }
 
@@ -57,6 +57,6 @@ func TestInvalidCommand(t *testing.T) {
 	if result.Error != nil && result.Stdout == "" && result.Stderr == "" {
 		t.Skip("CLI binary not available")
 	}
-	
+
 	require.True(t, result.Failed(), "Invalid command should fail")
 }

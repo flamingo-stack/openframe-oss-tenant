@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/utils/config"
-	"github.com/flamingo/openframe/internal/chart/utils/errors"
-	"github.com/flamingo/openframe/internal/chart/models"
-	"github.com/flamingo/openframe/internal/chart/providers/argocd"
-	"github.com/flamingo/openframe/internal/chart/providers/helm"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/providers/argocd"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/providers/helm"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/errors"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 
@@ -42,7 +42,7 @@ func (a *ArgoCD) Install(ctx context.Context, config config.ChartInstallConfig) 
 	if err != nil {
 		return errors.WrapAsChartError("installation", "ArgoCD", err).WithCluster(config.ClusterName)
 	}
-	
+
 	pterm.Success.Println("ArgoCD installed")
 	return nil
 }
@@ -53,13 +53,13 @@ func (a *ArgoCD) WaitForApplications(ctx context.Context, config config.ChartIns
 	if config.Verbose {
 		pterm.Info.Println("Waiting for ArgoCD applications...")
 	}
-	
+
 	err := a.argoCDManager.WaitForApplications(ctx, config)
 	if err != nil {
 		// Error details handled by caller - no duplicate error message needed
 		return errors.NewRecoverableChartError("waiting", "ArgoCD applications", err, 60*time.Second).WithCluster(config.ClusterName)
 	}
-	
+
 	// Success message removed - handled by calling service
 	return nil
 }

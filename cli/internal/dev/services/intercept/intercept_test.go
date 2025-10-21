@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -119,7 +119,7 @@ func TestService_CreateIntercept(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset mock state
 			mockExecutor.Reset()
-			
+
 			// Setup test-specific mocks
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockExecutor)
@@ -130,9 +130,9 @@ func TestService_CreateIntercept(t *testing.T) {
 			if tt.expectError {
 				assert.Error(t, err)
 				// Error could be from telepresence connection or intercept creation
-				assert.True(t, 
+				assert.True(t,
 					strings.Contains(err.Error(), "failed to create intercept") ||
-					strings.Contains(err.Error(), "failed to ensure telepresence connection"),
+						strings.Contains(err.Error(), "failed to ensure telepresence connection"),
 					"Error should contain either 'failed to create intercept' or 'failed to ensure telepresence connection', got: %s", err.Error())
 			} else {
 				assert.NoError(t, err)
@@ -142,7 +142,7 @@ func TestService_CreateIntercept(t *testing.T) {
 			if !tt.expectError {
 				commands := mockExecutor.GetExecutedCommands()
 				assert.Len(t, commands, 1) // just intercept command now
-				
+
 				// Find the intercept command
 				var interceptCmd string
 				for _, cmd := range commands {
@@ -233,7 +233,7 @@ func TestIntercept_CommandConstruction(t *testing.T) {
 	flags := &models.InterceptFlags{
 		Port:           8080,
 		Namespace:      "production",
-		RemotePortName: "http", 
+		RemotePortName: "http",
 		EnvFile:        "/tmp/test.env",
 		Global:         true,
 		Header:         []string{"X-Test=value", "X-User=admin"},
@@ -255,7 +255,7 @@ func TestIntercept_CommandConstruction(t *testing.T) {
 		}
 	}
 	assert.NotEmpty(t, cmd, "intercept command should exist")
-	
+
 	// Verify all expected arguments are present
 	expectedArgs := []string{
 		"telepresence intercept test-service",

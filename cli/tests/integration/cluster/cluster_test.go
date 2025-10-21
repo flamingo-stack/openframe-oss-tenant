@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo/openframe/tests/integration/common"
+	"github.com/flamingo-stack/openframe/openframe/tests/integration/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,8 +28,8 @@ func TestValidation(t *testing.T) {
 		{"create_dry_run", []string{"cluster", "create", "test", "--dry-run", "--skip-wizard"}, false, ""},
 		{"create_empty_name", []string{"cluster", "create", "", "--skip-wizard", "--dry-run"}, true, "empty"},
 		{"create_zero_nodes", []string{"cluster", "create", "test", "--nodes", "0", "--skip-wizard", "--dry-run"}, true, "node count"},
-		
-		// Other commands validation  
+
+		// Other commands validation
 		{"delete_help", []string{"cluster", "delete", "--help"}, false, ""},
 		{"delete_nonexistent", []string{"cluster", "delete", "nonexistent-cluster"}, true, ""},
 		{"status_help", []string{"cluster", "status", "--help"}, false, ""},
@@ -81,7 +81,7 @@ func TestClusterOperations(t *testing.T) {
 
 	// Generate unique cluster name with shorter timestamp to avoid conflicts
 	clusterName := fmt.Sprintf("test-%d", time.Now().Unix()%100000)
-	
+
 	// Ensure cleanup on exit
 	t.Cleanup(func() {
 		common.CleanupTestCluster(clusterName)
@@ -91,26 +91,26 @@ func TestClusterOperations(t *testing.T) {
 	t.Log("Phase 1: Creating cluster")
 	var createSuccess bool
 	var lastError string
-	
+
 	for attempt := 1; attempt <= 3; attempt++ {
 		t.Logf("Cluster creation attempt %d for: %s", attempt, clusterName)
-		
+
 		// Clean up any partial state from previous attempt
 		if attempt > 1 {
 			common.CleanupTestCluster(clusterName)
 			time.Sleep(500 * time.Millisecond) // Fixed short backoff
 		}
-		
+
 		result := common.RunCLI("cluster", "create", clusterName, "--skip-wizard", "--nodes", "1")
 		if result.Success() {
 			createSuccess = true
 			t.Logf("✓ Cluster creation succeeded on attempt %d", attempt)
 			break
 		}
-		
+
 		lastError = result.Stderr
 		t.Logf("Cluster creation attempt %d failed: %s", attempt, result.Stderr)
-		
+
 		// Check if it's a port conflict and try a different name
 		if strings.Contains(strings.ToLower(result.Stderr), "port") || strings.Contains(strings.ToLower(result.Stderr), "bind") {
 			clusterName = fmt.Sprintf("test-%d-%d", time.Now().Unix()%100000, attempt)
@@ -203,7 +203,7 @@ func TestClusterOperations(t *testing.T) {
 
 	// Phase 7: Test operations on deleted cluster
 	t.Log("Phase 7: Testing operations on deleted cluster")
-	
+
 	// Status should fail
 	statusDeletedResult := common.RunCLI("cluster", "status", clusterName)
 	require.True(t, statusDeletedResult.Failed(), "Status on deleted cluster should fail")
@@ -260,10 +260,10 @@ func TestEmptyList(t *testing.T) {
 	if output != "" && !strings.Contains(output, "NAME") {
 		// Check for the presence of "no" and "clusters" and "available" to handle ANSI formatting
 		outputLower := strings.ToLower(output)
-		require.True(t, 
-			strings.Contains(outputLower, "no") && 
-			strings.Contains(outputLower, "clusters") && 
-			strings.Contains(outputLower, "available"),
+		require.True(t,
+			strings.Contains(outputLower, "no") &&
+				strings.Contains(outputLower, "clusters") &&
+				strings.Contains(outputLower, "available"),
 			"Expected message about no clusters being available, got: %s", output)
 	}
 }
@@ -277,17 +277,17 @@ func TestEdgeCases(t *testing.T) {
 
 	t.Run("ClusterNameValidation", func(t *testing.T) {
 		nameTests := []struct {
-			name      string
+			name        string
 			clusterName string
 			expectation string // "fail", "succeed", or "either"
 		}{
 			{"empty_name", "", "fail"},
-			{"just_spaces", "   ", "either"}, // CLI may trim spaces
-			{"special_chars", "test@cluster!", "either"}, // k3d may accept some special chars
+			{"just_spaces", "   ", "either"},                 // CLI may trim spaces
+			{"special_chars", "test@cluster!", "either"},     // k3d may accept some special chars
 			{"too_long", strings.Repeat("a", 100), "either"}, // May truncate or fail
-			{"dots_only", "...", "either"}, // Depends on implementation
-			{"starts_with_dash", "-test", "either"}, // k3d may allow this
-			{"uppercase", "TEST", "succeed"}, // Usually allowed
+			{"dots_only", "...", "either"},                   // Depends on implementation
+			{"starts_with_dash", "-test", "either"},          // k3d may allow this
+			{"uppercase", "TEST", "succeed"},                 // Usually allowed
 			{"with_numbers", "test123", "succeed"},
 			{"with_dashes", "test-cluster", "succeed"},
 			{"very_short", "a", "succeed"},
@@ -296,7 +296,7 @@ func TestEdgeCases(t *testing.T) {
 		for _, tc := range nameTests {
 			t.Run(tc.name, func(t *testing.T) {
 				result := common.RunCLI("cluster", "create", tc.clusterName, "--dry-run", "--skip-wizard")
-				
+
 				switch tc.expectation {
 				case "fail":
 					require.True(t, result.Failed(), "Expected '%s' to fail but it succeeded", tc.clusterName)
@@ -322,7 +322,7 @@ func TestEdgeCases(t *testing.T) {
 		// Test concurrent list operations (safe operations)
 		numConcurrent := 3
 		results := make(chan bool, numConcurrent)
-		
+
 		for i := 0; i < numConcurrent; i++ {
 			go func(id int) {
 				result := common.RunCLI("cluster", "list")
@@ -353,7 +353,7 @@ func TestEdgeCases(t *testing.T) {
 	t.Run("StateConsistency", func(t *testing.T) {
 		// Test duplicate creation attempts
 		testName := fmt.Sprintf("duplicate-test-%d", time.Now().Unix()%10000)
-		
+
 		// First dry-run should succeed
 		result1 := common.RunCLI("cluster", "create", testName, "--dry-run", "--skip-wizard")
 		require.True(t, result1.Success(), "First dry-run should succeed")
@@ -406,7 +406,7 @@ func TestExtendedScenarios(t *testing.T) {
 	t.Run("MultiNodeCluster", func(t *testing.T) {
 		common.CleanupAllTestClusters()
 		clusterName := fmt.Sprintf("multi-test-%d", time.Now().Unix()%10000)
-		
+
 		t.Cleanup(func() {
 			common.CleanupTestCluster(clusterName)
 		})
@@ -432,10 +432,10 @@ func TestExtendedScenarios(t *testing.T) {
 	t.Run("ClusterCollisions", func(t *testing.T) {
 		common.CleanupAllTestClusters()
 		baseName := fmt.Sprintf("collision-%d", time.Now().Unix()%10000)
-		
+
 		cluster1 := baseName + "-1"
 		cluster2 := baseName + "-2"
-		
+
 		t.Cleanup(func() {
 			common.CleanupTestCluster(cluster1)
 			common.CleanupTestCluster(cluster2)
@@ -463,7 +463,7 @@ func TestExtendedScenarios(t *testing.T) {
 		// Wait for cleanup to complete and resources to be freed
 		time.Sleep(1 * time.Second) // Reduced wait time
 
-		// Second cluster lifecycle  
+		// Second cluster lifecycle
 		t.Logf("Creating second cluster: %s", cluster2)
 		result2 := common.RunCLI("cluster", "create", cluster2, "--skip-wizard", "--nodes", "1")
 		require.True(t, result2.Success(), "Second cluster creation failed: %s", result2.Stderr)
@@ -488,7 +488,7 @@ func TestExtendedScenarios(t *testing.T) {
 	t.Run("InterruptionRecovery", func(t *testing.T) {
 		common.CleanupAllTestClusters()
 		clusterName := fmt.Sprintf("interrupt-test-%d", time.Now().Unix()%10000)
-		
+
 		t.Cleanup(func() {
 			common.CleanupTestCluster(clusterName)
 		})
@@ -525,7 +525,7 @@ func TestExtendedScenarios(t *testing.T) {
 	t.Run("StressOperations", func(t *testing.T) {
 		common.CleanupAllTestClusters()
 		clusterName := fmt.Sprintf("stress-test-%d", time.Now().Unix()%10000)
-		
+
 		t.Cleanup(func() {
 			common.CleanupTestCluster(clusterName)
 		})

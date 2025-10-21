@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 

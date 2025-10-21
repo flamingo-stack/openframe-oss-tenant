@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/flamingo/openframe/internal/chart/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
 	"github.com/pterm/pterm"
 )
 

@@ -88,6 +88,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   const handlePlatformToggle = (osType: OSType) => {
     // Convert OSType to lowercase for API compatibility
     const platformId = osType.toLowerCase()
+    
     setScriptData(prev => ({
       ...prev,
       supported_platforms: prev.supported_platforms.includes(platformId)

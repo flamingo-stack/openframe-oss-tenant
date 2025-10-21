@@ -3,15 +3,15 @@ package configuration
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	"github.com/flamingo/openframe/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewBranchConfigurator(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	configurator := NewBranchConfigurator(modifier)
-	
+
 	assert.NotNil(t, configurator)
 	assert.Equal(t, modifier, configurator.modifier)
 }
@@ -109,7 +109,7 @@ func TestBranchConfigurator_Configure_WithEmptyValues(t *testing.T) {
 func TestBranchConfigurator_Configure_BranchValidation(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewBranchConfigurator(modifier) // Test constructor
-	
+
 	// Test various branch name formats
 	testCases := []struct {
 		name   string
@@ -124,7 +124,7 @@ func TestBranchConfigurator_Configure_BranchValidation(t *testing.T) {
 		{"empty branch", "", false},
 		{"whitespace branch", "   ", false},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			existingValues := map[string]interface{}{
