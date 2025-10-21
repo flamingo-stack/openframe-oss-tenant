@@ -1,9 +1,9 @@
 package cluster
 
 import (
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/cluster/providers/k3d"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/providers/k3d"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 )
 
 // FlagContainer holds all flag structures needed by cluster commands
@@ -15,10 +15,10 @@ type FlagContainer struct {
 	Status  *models.StatusFlags  `json:"status"`
 	Delete  *models.DeleteFlags  `json:"delete"`
 	Cleanup *models.CleanupFlags `json:"cleanup"`
-	
+
 	// Dependencies for testing and execution
 	Executor    executor.CommandExecutor `json:"-"` // Command executor for external commands
-	TestManager *k3d.K3dManager           `json:"-"` // Test K3D cluster manager for unit tests
+	TestManager *k3d.K3dManager          `json:"-"` // Test K3D cluster manager for unit tests
 }
 
 // GetGlobal implements models.CommandFlags interface
@@ -43,7 +43,7 @@ func NewFlagContainer() *FlagContainer {
 	}
 }
 
-// SyncGlobalFlags synchronizes global flags across all command-specific flags  
+// SyncGlobalFlags synchronizes global flags across all command-specific flags
 func (f *FlagContainer) SyncGlobalFlags() {
 	if f.Global != nil {
 		f.Create.GlobalFlags = *f.Global
@@ -63,4 +63,3 @@ func (f *FlagContainer) Reset() {
 	f.Delete = &models.DeleteFlags{}
 	f.Cleanup = &models.CleanupFlags{}
 }
-

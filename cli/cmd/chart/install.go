@@ -3,9 +3,9 @@ package chart
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/chart/services"
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/services"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
+	sharedErrors "github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
 	"github.com/spf13/cobra"
 )
 

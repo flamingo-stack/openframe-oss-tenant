@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"github.com/flamingo/openframe/internal/bootstrap"
+	"github.com/flamingo-stack/openframe/openframe/internal/bootstrap"
 	"github.com/spf13/cobra"
 )
 

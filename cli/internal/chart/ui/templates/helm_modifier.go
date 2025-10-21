@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
 	"gopkg.in/yaml.v3"
 )
 

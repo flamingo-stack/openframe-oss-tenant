@@ -3,16 +3,16 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/cluster/ui"
-	"github.com/flamingo/openframe/internal/cluster/utils"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
 
 func getStatusCmd() *cobra.Command {
 	// Ensure global flags are initialized
 	utils.InitGlobalFlags()
-	
+
 	statusCmd := &cobra.Command{
 		Use:   "status [NAME]",
 		Short: "Show detailed cluster status and information",
@@ -38,35 +38,32 @@ Examples:
 
 	// Add status-specific flags
 	models.AddStatusFlags(statusCmd, utils.GetGlobalFlags().Status)
-	
+
 	return statusCmd
 }
 
 func runClusterStatus(cmd *cobra.Command, args []string) error {
 	service := utils.GetCommandService()
 	operationsUI := ui.NewOperationsUI()
-	
+
 	// Get all available clusters
 	clusters, err := service.ListClusters()
 	if err != nil {
 		return fmt.Errorf("failed to list clusters: %w", err)
 	}
-	
+
 	// Handle cluster selection with friendly UI
 	clusterName, err := operationsUI.SelectClusterForOperation(clusters, args, "check status")
 	if err != nil {
 		return err
 	}
-	
+
 	// If no cluster selected (e.g., empty list), exit gracefully
 	if clusterName == "" {
 		return nil
 	}
-	
+
 	// Execute cluster status through service layer
 	globalFlags := utils.GetGlobalFlags()
 	return service.ShowClusterStatus(clusterName, globalFlags.Status.Detailed, globalFlags.Status.NoApps, globalFlags.Global.Verbose)
 }
-
-
-

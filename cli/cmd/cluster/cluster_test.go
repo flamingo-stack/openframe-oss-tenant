@@ -3,7 +3,7 @@ package cluster
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 )
 
 func init() {

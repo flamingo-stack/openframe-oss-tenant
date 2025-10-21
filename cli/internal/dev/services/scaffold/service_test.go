@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/flamingo/openframe/internal/dev/ui"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -23,7 +23,7 @@ func (m *MockExecutor) Execute(ctx context.Context, command string, args ...stri
 	for i, arg := range args {
 		mockArgs[i+2] = arg
 	}
-	
+
 	callArgs := m.Called(mockArgs...)
 	return callArgs.Get(0).(*executor.CommandResult), callArgs.Error(1)
 }
@@ -44,7 +44,7 @@ func (m *MockExecutor) SetVerbose(verbose bool) {
 func TestNewService(t *testing.T) {
 	exec := &MockExecutor{}
 	service := NewService(exec, true)
-	
+
 	assert.NotNil(t, service)
 	assert.Equal(t, exec, service.executor)
 	assert.True(t, service.verbose)
@@ -53,7 +53,7 @@ func TestNewService(t *testing.T) {
 
 func TestService_GetClusterName(t *testing.T) {
 	service := NewService(&MockExecutor{}, false)
-	
+
 	tests := []struct {
 		name     string
 		args     []string
@@ -84,7 +84,7 @@ func TestService_GetClusterName(t *testing.T) {
 				t.Skip("Skipping test that requires interactive selection")
 				return
 			}
-			
+
 			result, err := service.getClusterName(tt.args)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -94,7 +94,7 @@ func TestService_GetClusterName(t *testing.T) {
 
 func TestService_BuildSkaffoldArgs(t *testing.T) {
 	service := NewService(&MockExecutor{}, true)
-	
+
 	tests := []struct {
 		name     string
 		flags    *models.ScaffoldFlags
@@ -139,34 +139,34 @@ func TestService_BuildSkaffoldArgs(t *testing.T) {
 
 func TestService_BuildSkaffoldArgs_NonVerbose(t *testing.T) {
 	service := NewService(&MockExecutor{}, false)
-	
+
 	flags := &models.ScaffoldFlags{
 		Namespace: "",
 	}
-	
+
 	// Create mock service selection
 	mockService := &ui.ServiceSelection{
 		ServiceName: "openframe-api",
 		FilePath:    "../openframe/services/openframe-api/skaffold.yaml",
 		Directory:   "../openframe/services/openframe-api",
 	}
-	
+
 	result := service.buildSkaffoldArgs(mockService, "openframe-api", flags)
 	expected := []string{"dev", "--cache-artifacts=false", "-n", "openframe-api"}
-	
+
 	assert.Equal(t, expected, result)
 }
 
 func TestService_IsRunning(t *testing.T) {
 	service := NewService(&MockExecutor{}, false)
-	
+
 	// Initially not running
 	assert.False(t, service.IsRunning())
-	
+
 	// Set running
 	service.isRunning = true
 	assert.True(t, service.IsRunning())
-	
+
 	// Set not running
 	service.isRunning = false
 	assert.False(t, service.IsRunning())
@@ -174,12 +174,12 @@ func TestService_IsRunning(t *testing.T) {
 
 func TestService_Stop(t *testing.T) {
 	service := NewService(&MockExecutor{}, false)
-	
+
 	// Test stopping when not running
 	err := service.Stop()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no active Skaffold session")
-	
+
 	// Test stopping when running
 	service.isRunning = true
 	err = service.Stop()

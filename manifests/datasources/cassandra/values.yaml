@@ -83,12 +83,21 @@ cassandra:
     enableUDF: false
 
   metrics:
+    enabled: false
     # bitnamilegacy
     image:
       repository: bitnamilegacy/cassandra-exporter
       tag: 2.3.8-debian-12-r51
+    
+    podAnnotations:
+      prometheus.io/path: "/metrics"
 
-    enabled: true
+    readinessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 15
+      timeoutSeconds: 45
+      failureThreshold: 5
+
     serviceMonitor:
       enabled: true
       namespace: datasources
