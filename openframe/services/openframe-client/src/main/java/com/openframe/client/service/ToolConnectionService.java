@@ -77,7 +77,7 @@ public class ToolConnectionService {
         connection.setConnectedAt(Instant.now());
         toolConnectionRepository.save(connection);
 
-        log.info("Saved tool connection with machineId {} tool {} agentToolId {}", openframeAgentId, toolType, agentToolId);
+        log.info("Saved tool connection for machine {} tool {} agentToolId {}", openframeAgentId, toolType, agentToolId);
     }
 
     private void validateMachineExists(String machineId) {
