@@ -83,6 +83,7 @@ cassandra:
     enableUDF: false
 
   metrics:
+    enabled: false
     # bitnamilegacy
     image:
       repository: bitnamilegacy/cassandra-exporter
@@ -92,13 +93,11 @@ cassandra:
       prometheus.io/path: "/metrics"
 
     readinessProbe:
-      enabled: false
       initialDelaySeconds: 60
       periodSeconds: 15
       timeoutSeconds: 45
       failureThreshold: 5
 
-    enabled: true
     serviceMonitor:
       enabled: true
       namespace: datasources
