@@ -59,10 +59,10 @@ class ToolConnectionServiceTest {
         when(toolConnectionRepository.findByMachineIdAndToolType(MACHINE_ID, ToolType.MESHCENTRAL))
                 .thenReturn(Optional.empty());
         when(toolConnectionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
-        when(toolAgentIdTransformerService.transform(ToolType.MESHCENTRAL, AGENT_TOOL_ID))
+        when(toolAgentIdTransformerService.transform(ToolType.MESHCENTRAL, AGENT_TOOL_ID, true))
                 .thenReturn(TRANSFORMED_AGENT_TOOL_ID);
 
-        toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID);
+        toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID, true);
 
         verify(toolConnectionRepository).save(toolConnectionCaptor.capture());
         ToolConnection savedConnection = toolConnectionCaptor.getValue();
@@ -83,7 +83,7 @@ class ToolConnectionServiceTest {
                 .thenReturn(Optional.of(existingConnection));
 
         assertDoesNotThrow(() ->
-                toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
+                toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID, true)
         );
     }
 
@@ -98,7 +98,7 @@ class ToolConnectionServiceTest {
                 .thenReturn(Optional.of(existingConnection));
         when(toolConnectionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
-        toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID);
+        toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID, true);
 
         verify(toolConnectionRepository).save(toolConnectionCaptor.capture());
         ToolConnection savedConnection = toolConnectionCaptor.getValue();
@@ -120,7 +120,7 @@ class ToolConnectionServiceTest {
                 .thenReturn(Optional.of(existingConnection));
 
         assertDoesNotThrow(() ->
-                toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID)
+                toolConnectionService.addToolConnection(MACHINE_ID, TOOL_TYPE, AGENT_TOOL_ID, true)
         );
     }
 

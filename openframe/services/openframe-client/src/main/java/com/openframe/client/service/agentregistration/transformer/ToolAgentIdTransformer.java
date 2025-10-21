@@ -6,6 +6,6 @@ public interface ToolAgentIdTransformer {
 
     ToolType getToolType();
 
-    String transform(String agentToolId);
+    String transform(String agentToolId, boolean lastAttempt);
 
 }
