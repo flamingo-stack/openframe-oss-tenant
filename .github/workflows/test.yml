@@ -246,6 +246,16 @@ jobs:
             make build TARGET="${{ matrix.target }}"
           fi
 
+      - name: Upload Rust Artifacts for Windows / Linux
+        if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ matrix.name }}-${{ matrix.os }}"
+          path: "${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+          if-no-files-found: warn
+          retention-days: 1
+          compression-level: 9
+
   
   test_helm:
     name: "Test Helm Chart"

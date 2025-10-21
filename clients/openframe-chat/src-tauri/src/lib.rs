@@ -15,6 +15,10 @@ pub struct ServerUrlState {
     pub url: Arc<Mutex<Option<String>>>,
 }
 
+pub struct DebugModeState {
+    pub enabled: Arc<Mutex<bool>>,
+}
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -42,6 +46,13 @@ fn get_server_url(server_url_state: State<ServerUrlState>) -> Option<String> {
     url.clone()
 }
 
+#[tauri::command]
+fn get_debug_mode(debug_mode_state: State<DebugModeState>) -> bool {
+    let enabled = debug_mode_state.enabled.lock().unwrap();
+    println!("[INFO] Debug mode requested from frontend: {}", *enabled);
+    *enabled
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     println!("[INFO] OpenFrame Chat starting...");
@@ -49,10 +60,11 @@ pub fn run() {
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
     
-    // Look for --openframe-token-path, --openframe-secret, and --serverUrl parameters
+    // Look for --openframe-token-path, --openframe-secret, --serverUrl, and --devMode parameters
     let mut token_path: Option<String> = None;
     let mut secret: Option<String> = None;
     let mut server_url: Option<String> = None;
+    let mut debug_mode = false;
 
     for i in 0..args.len() {
         if args[i] == "--openframe-token-path" && i + 1 < args.len() {
@@ -61,6 +73,8 @@ pub fn run() {
             secret = Some(args[i + 1].clone());
         } else if args[i] == "--serverUrl" && i + 1 < args.len() {
             server_url = Some(args[i + 1].clone());
+        } else if args[i] == "--devMode" {
+            debug_mode = true;
         }
     }
     
@@ -78,6 +92,7 @@ pub fn run() {
     };
     
     let server_url_clone = server_url.clone();
+    let debug_mode_clone = debug_mode;
 
     builder = builder.setup(move |app| {
             if cfg!(debug_assertions) {
@@ -99,6 +114,13 @@ pub fn run() {
             } else {
                 println!("[WARN] No server URL provided");
             }
+
+            // Manage debug mode state
+            let debug_state = DebugModeState {
+                enabled: Arc::new(Mutex::new(debug_mode_clone))
+            };
+            app.manage(debug_state);
+            println!("[INFO] Debug mode: {}", debug_mode_clone);
 
             // Start token watcher with app handle if parameters were provided
             if let Some((path, secret_key)) = token_params {
@@ -181,7 +203,7 @@ pub fn run() {
                 _ => {}
             }
         })
-        .invoke_handler(tauri::generate_handler![greet, get_token, get_server_url]);
+        .invoke_handler(tauri::generate_handler![greet, get_token, get_server_url, get_debug_mode]);
     
     builder.build(tauri::generate_context!())
         .expect("error while building tauri application")

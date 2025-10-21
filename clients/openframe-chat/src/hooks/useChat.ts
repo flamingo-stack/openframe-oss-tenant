@@ -3,6 +3,7 @@ import { useSSE } from './useSSE'
 import { useChatConfig } from './useChatConfig'
 import { Message, MessageSegment, ToolExecutionData } from '../types/chat.types'
 import faeAvatar from '../assets/fae-avatar.png'
+import { useDebugMode } from '../contexts/DebugModeContext'
 
 export type { Message } from '../types/chat.types'
 
@@ -12,24 +13,22 @@ interface UseChatOptions {
   useApi?: boolean
   apiToken?: string
   apiBaseUrl?: string
-  debugMode?: boolean
 }
 
 function isToolSegment(segment: MessageSegment): segment is { type: 'tool_execution'; data: ToolExecutionData } {
   return segment.type === 'tool_execution'
 }
 
-export function useChat({ sseUrl, useMock = false, useApi = true, apiToken, apiBaseUrl, debugMode = false }: UseChatOptions = {}) {
+export function useChat({ sseUrl, useMock = false, useApi = true }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const currentAssistantSegmentsRef = useRef<MessageSegment[]>([])
+  const { debugMode } = useDebugMode()
   
   const { streamMessage, isStreaming, error: sseError, reset } = useSSE({ 
     url: sseUrl, 
     useMock, 
     useApi,
-    apiToken,
-    apiBaseUrl,
     debugMode
   })
   const { quickActions } = useChatConfig()
@@ -139,10 +138,22 @@ export function useChat({ sseUrl, useMock = false, useApi = true, apiToken, apiB
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'error',
+        name: 'Fae',
+        timestamp: new Date(),
+        avatar: faeAvatar,
         content: err instanceof Error ? err.message : 'An error occurred while processing your request.',
-        timestamp: new Date()
       }
-      setMessages(prev => [...prev.slice(0, -1), errorMessage])
+      
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1]
+        if (lastMessage && 
+            lastMessage.role === 'assistant' && 
+            (lastMessage.content === '' || 
+             (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))) {
+          return [...prev.slice(0, -1), errorMessage]
+        }
+        return [...prev, errorMessage]
+      })
     } finally {
       setIsTyping(false)
       currentAssistantSegmentsRef.current = []
