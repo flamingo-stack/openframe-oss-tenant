@@ -3,9 +3,9 @@ package dev
 import (
 	"context"
 
-	"github.com/flamingo/openframe/internal/dev/models"
-	scaffoldService "github.com/flamingo/openframe/internal/dev/services/scaffold"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
+	scaffoldService "github.com/flamingo-stack/openframe/openframe/internal/dev/services/scaffold"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/spf13/cobra"
 )
 
@@ -63,4 +63,3 @@ func runScaffold(cmd *cobra.Command, args []string, flags *models.ScaffoldFlags)
 
 	return service.RunScaffoldWorkflow(ctx, args, flags)
 }
-

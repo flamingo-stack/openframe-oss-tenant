@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +14,7 @@ func init() {
 func TestBootstrapCommand(t *testing.T) {
 	// Test bootstrap command structure manually since it's not a cluster subcommand
 	cmd := GetBootstrapCmd()
-	
+
 	// Test basic structure
 	assert.Equal(t, "bootstrap", cmd.Name(), "Command name should match")
 	assert.NotEmpty(t, cmd.Short, "Command should have short description")
@@ -28,8 +28,8 @@ func TestBootstrapCommandStructure(t *testing.T) {
 	// Test bootstrap-specific structure
 	assert.Equal(t, "bootstrap [cluster-name]", cmd.Use)
 	assert.Empty(t, cmd.Aliases, "Bootstrap doesn't have aliases currently")
-	
-	// Test that command has no subcommands (it's a leaf command)  
+
+	// Test that command has no subcommands (it's a leaf command)
 	assert.Empty(t, cmd.Commands(), "Bootstrap command should have no subcommands")
 
 	// Test bootstrap-specific content
@@ -37,7 +37,7 @@ func TestBootstrapCommandStructure(t *testing.T) {
 	assert.Contains(t, cmd.Long, "This command performs a complete OpenFrame setup")
 	assert.Contains(t, cmd.Long, "openframe cluster create")
 	assert.Contains(t, cmd.Long, "openframe chart install")
-	
+
 	// Test examples are present
 	assert.Contains(t, cmd.Long, "Examples:")
 	assert.Contains(t, cmd.Long, "openframe bootstrap")
@@ -54,10 +54,10 @@ func TestBootstrapArgumentValidation(t *testing.T) {
 		// Test valid cases
 		err := cmd.Args(cmd, []string{})
 		assert.NoError(t, err, "Should accept no arguments")
-		
+
 		err = cmd.Args(cmd, []string{"test-cluster"})
 		assert.NoError(t, err, "Should accept one argument")
-		
+
 		// Test invalid case - too many arguments
 		err = cmd.Args(cmd, []string{"arg1", "arg2"})
 		assert.Error(t, err, "Should reject more than one argument")

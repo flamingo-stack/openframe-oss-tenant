@@ -11,8 +11,6 @@ import { useChat } from '../hooks/useChat'
 import faeAvatar from '../assets/fae-avatar.png'
 
 export function ChatView() {
-  const DEBUG_MODE = false
-  
   const { 
     messages,
     isTyping,
@@ -20,12 +18,17 @@ export function ChatView() {
     sendMessage,
     handleQuickAction,
     quickActions,
-    hasMessages
-  } = useChat({ useApi: true, useMock: false, debugMode: DEBUG_MODE })
+    hasMessages,
+    clearMessages
+  } = useChat({ useApi: true, useMock: false })
 
   return (
     <ChatContainer>
-      <ChatHeader userAvatar={faeAvatar} />
+      <ChatHeader 
+        userAvatar={faeAvatar} 
+        showNewChat={hasMessages}
+        onNewChat={clearMessages}
+      />
       
       <ChatContent>
         {hasMessages ? (

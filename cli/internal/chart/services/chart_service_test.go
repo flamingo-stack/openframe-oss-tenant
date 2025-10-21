@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	clusterDomain "github.com/flamingo/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
+	clusterDomain "github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +42,7 @@ func (m *MockClusterLister) SetError(err error) {
 
 func TestNewChartService(t *testing.T) {
 	service := NewChartService(false, false)
-	
+
 	assert.NotNil(t, service)
 	assert.NotNil(t, service.executor)
 	assert.NotNil(t, service.clusterService)
@@ -55,7 +55,7 @@ func TestNewChartService(t *testing.T) {
 
 func TestNewChartService_WithDryRun(t *testing.T) {
 	service := NewChartService(true, false)
-	
+
 	assert.NotNil(t, service)
 	assert.NotNil(t, service.executor)
 	assert.NotNil(t, service.clusterService)
@@ -63,7 +63,7 @@ func TestNewChartService_WithDryRun(t *testing.T) {
 
 func TestNewChartService_WithVerbose(t *testing.T) {
 	service := NewChartService(false, true)
-	
+
 	assert.NotNil(t, service)
 	assert.NotNil(t, service.executor)
 	assert.NotNil(t, service.clusterService)
@@ -72,12 +72,12 @@ func TestNewChartService_WithVerbose(t *testing.T) {
 func TestInstallationWorkflow_Creation(t *testing.T) {
 	service := NewChartService(false, false)
 	clusterService := NewMockClusterLister()
-	
+
 	workflow := &InstallationWorkflow{
 		chartService:   service,
 		clusterService: clusterService,
 	}
-	
+
 	assert.NotNil(t, workflow)
 	assert.Equal(t, service, workflow.chartService)
 	assert.Equal(t, clusterService, workflow.clusterService)
@@ -102,7 +102,7 @@ func TestMockClusterLister_WithClusters(t *testing.T) {
 			Status: "running",
 		},
 		{
-			Name:   "cluster-2", 
+			Name:   "cluster-2",
 			Status: "stopped",
 		},
 	}

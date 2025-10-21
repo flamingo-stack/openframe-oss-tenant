@@ -1,8 +1,8 @@
 package services
 
 import (
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	chartUI "github.com/flamingo/openframe/internal/chart/ui"
+	chartUI "github.com/flamingo-stack/openframe/openframe/internal/chart/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
 	"github.com/pterm/pterm"
 )
 

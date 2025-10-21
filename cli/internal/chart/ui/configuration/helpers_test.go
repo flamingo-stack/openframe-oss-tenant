@@ -3,7 +3,7 @@ package configuration
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,8 +84,8 @@ func TestConfigurationWizard_ShowConfigurationSummary_WithSaaSConfig(t *testing.
 		SaaSConfig: &types.SaaSConfig{
 			RepositoryPassword:       "repo-pass",
 			ConfigRepositoryPassword: "config-pass",
-			SaaSBranch:              "main",
-			OSSBranch:               "develop",
+			SaaSBranch:               "main",
+			OSSBranch:                "develop",
 		},
 		ModifiedSections: []string{"deployment", "saas"},
 		ExistingValues:   map[string]interface{}{},
