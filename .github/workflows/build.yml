@@ -368,4 +368,4 @@ jobs:
           git add ${VALUES_PATH}/values-qa.yaml
           git commit -m "Update QA to ${{ inputs.version }}"
           git push -u origin qa-${{ inputs.version }}
-          gh pr create --title "Promote QA to ${{ inputs.version }}" --base main
+          gh pr create --title "Promote QA to ${{ inputs.version }}" --body "Update QA tags to ${{ inputs.version }}" --base main
