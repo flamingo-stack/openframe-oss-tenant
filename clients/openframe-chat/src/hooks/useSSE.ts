@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { MockChatService } from '../services/mockChatService'
 import { SSEService } from '../services/sseService'
 import { ChatApiService } from '../services/chatApiService'
@@ -13,14 +13,20 @@ interface UseSSEOptions {
   debugMode?: boolean
 }
 
-export function useSSE({ url, useMock = false, useApi = true, apiToken, apiBaseUrl, debugMode = false }: UseSSEOptions = {}) {
+export function useSSE({ url, useMock = false, useApi = true, debugMode = false }: UseSSEOptions = {}) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   
   const mockService = useRef(new MockChatService())
   const sseService = useRef(url ? new SSEService(url) : null)
-  const apiService = useRef(new ChatApiService(apiToken, apiBaseUrl, debugMode))
+  const apiService = useRef(new ChatApiService(debugMode))
+  
+  useEffect(() => {
+    if (apiService.current) {
+      apiService.current.setDebugMode(debugMode)
+    }
+  }, [debugMode])
   
   const streamMessage = useCallback(async function* (
     message: string
