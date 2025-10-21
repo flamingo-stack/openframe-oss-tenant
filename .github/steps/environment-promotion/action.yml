@@ -1,0 +1,44 @@
+name: Environment Promotion
+description: Promove Helm values from one Environment to another
+inputs:
+  FROM_ENVIRONMENT:
+    description: 'The Environment which is promoted'
+    required: true
+  TO_ENVIRONMENT:
+    description: 'The Environment where is promoted'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup and export all needed vars
+      shell: bash
+      run: |
+        BINARY_NAME="${{ inputs.binary_name }}"
+        BINARY_PATH="./artifacts/$BINARY_NAME"
+        DEVELOPER_ID="${{ inputs.apple_developer_id }}"
+
+        echo "BINARY_NAME=$BINARY_NAME"  >> $GITHUB_ENV
+        echo "BINARY_PATH=$BINARY_PATH" >> $GITHUB_ENV
+        echo "DEVELOPER_ID=$DEVELOPER_ID" >> $GITHUB_ENV
+
+    - name: Setup Apple Code Signing
+      shell: bash
+      run: |
+        CERTIFICATE_PATH="$HOME/certificate.p12"
+        KEYCHAIN_PATH="$HOME/signing.keychain-db"
+        
+        # Decode certificate and create keychain
+        echo "${{ inputs.apple_certificate_p12 }}" | base64 --decode > "$CERTIFICATE_PATH"
+        security create-keychain -p "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
+        security default-keychain -s "$KEYCHAIN_PATH"
+        security unlock-keychain -p "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
+        
+        # Import certificate and set key partition list
+        security import "$CERTIFICATE_PATH" -P "${{ inputs.apple_certificate_password }}" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+        security set-key-partition-list -S apple-tool:,apple: -s -k "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
+                
+        # Verify setup, cleanup initial cert and export path
+        security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+        rm "$CERTIFICATE_PATH"
+        echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
