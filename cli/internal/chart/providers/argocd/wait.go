@@ -271,8 +271,8 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 								len(notReadyApps), notReadyApps[:5])
 						}
 
-						// DEBUG: Show pod details for stuck applications after 5 min, every minute
-						if elapsed > 5*time.Minute && int(elapsed.Seconds())%60 == 0 {
+						// DEBUG: Show pod details for stuck applications after 7 min, every 5 minutes
+						if elapsed > 7*time.Minute && int(elapsed.Seconds())%300 == 0 {
 							stuckApps := []Application{}
 							for _, app := range apps {
 								if app.Health != "Healthy" && app.Health != "Missing" {
