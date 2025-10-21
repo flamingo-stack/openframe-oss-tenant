@@ -3,14 +3,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.client.service.NatsTopicMachineIdExtractor;
 import com.openframe.client.service.ToolConnectionService;
 import com.openframe.data.model.nats.ToolConnectionMessage;
-import io.nats.client.Connection;
-import io.nats.client.Dispatcher;
-import io.nats.client.JetStream;
-import io.nats.client.JetStreamSubscription;
-import io.nats.client.Message;
-import io.nats.client.PushSubscribeOptions;
+import io.nats.client.*;
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.ConsumerConfiguration;
+import io.nats.client.api.ConsumerInfo;
 import io.nats.client.api.DeliverPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +22,6 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 // TODO: remove spring cloud stream configs as deprecated
-// TODO: use consumer update to support property changes
 public class ToolConnectionListener {
 
     private final Connection natsConnection;
@@ -51,29 +46,32 @@ public class ToolConnectionListener {
             // NATS Dispatcher manages threads internally
             dispatcher = natsConnection.createDispatcher();
 
-            // Create consumer configuration with retry policy
+            JetStreamManagement jsm = natsConnection.jetStreamManagement();
+
+            ConsumerInfo existingConsumer = jsm.getConsumerInfo(STREAM_NAME, CONSUMER_NAME);
+            log.info("Existing consumer config: {}", existingConsumer.getConsumerConfiguration());
+
+            String deliverSubject = existingConsumer.getConsumerConfiguration().getDeliverSubject();
             ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
                     .durable(CONSUMER_NAME)
                     .ackPolicy(AckPolicy.Explicit)
                     .deliverPolicy(DeliverPolicy.All)
                     .ackWait(ACK_WAIT)
                     .maxDeliver(MAX_DELIVER)
+                    .filterSubject(SUBJECT)
+                    .deliverSubject(deliverSubject)
                     .build();
 
-            // Subscribe with push-based consumer
+            log.info("New consumer config: " + consumerConfig);
+
+            jsm.addOrUpdateConsumer(STREAM_NAME, consumerConfig);
+
             PushSubscribeOptions pushOptions = PushSubscribeOptions.builder()
                     .stream(STREAM_NAME)
                     .configuration(consumerConfig)
                     .build();
 
-            // Subscribe with callback - NATS will invoke handleMessage in its own thread
-            subscription = js.subscribe(
-                SUBJECT,
-                dispatcher,
-                this::handleMessage,
-                false,  // manual ack
-                pushOptions
-            );
+            subscription = js.subscribe(SUBJECT, dispatcher, this::handleMessage, false, pushOptions);
 
             log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} (maxDeliver={}, ackWait={})", SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
 

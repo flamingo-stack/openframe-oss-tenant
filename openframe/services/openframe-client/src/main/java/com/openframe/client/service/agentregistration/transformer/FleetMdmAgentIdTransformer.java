@@ -68,38 +68,30 @@ public class FleetMdmAgentIdTransformer implements ToolAgentIdTransformer {
             logHosts(hosts);
 
             // Filter hosts: exact UUID match and non-empty os data
-            Optional<Host> matchingHost = hosts.stream()
+            return hosts.stream()
                     .filter(host -> agentToolId.equals(host.getUuid()))
                     .filter(host -> isNotBlank(host.getOsVersion()) || isNotBlank(host.getOsqueryVersion()))
-                    .findFirst();
-
-            if (matchingHost.isPresent()) {
-                String transformedAgentToolId = String.valueOf(matchingHost.get().getId());
-                log.info("Transformed Fleet MDM agent tool ID from UUID {} to host ID {}", agentToolId, transformedAgentToolId);
-                return transformedAgentToolId;
-            } else {
-                if (!lastAttempt) {
-                    throw new IllegalStateException("No valid fleetmdm-agent mdm host found with uuid=" + agentToolId);
-                } else {
-                    log.info("Process last attempt for uuid {}", agentToolId);
-                    if (hosts.size() != 1) {
-                        log.info("Use max host id strategy");
-                        Long maxHostId = hosts.stream()
-                                .map(Host::getId)
-                                .max(Long::compareTo)
-                                .orElseThrow(() -> new IllegalStateException("System error during max host id lookup"));
-                        String transformedAgentToolId = String.valueOf(maxHostId);
-                        log.info("Transformed Fleet MDM agent tool ID from UUID {} to host ID {} using max id strategy", agentToolId, transformedAgentToolId);
-                        return transformedAgentToolId;
-                    } else {
-                        log.info("Use uuid to fix it manually: {}", agentToolId);
-                        return agentToolId;
-                    }
-                }
-            }
+                    .findFirst()
+                    .map(host -> processMatchingHost(host, agentToolId))
+                    .orElseGet(() -> processNoMatchingHost(agentToolId, lastAttempt));
         } catch (Exception e) {
             log.error("Failed to transform Fleet MDM agent tool ID: {}", agentToolId, e);
             throw new IllegalStateException("Failed to transform Fleet MDM agent tool ID", e);
+        }
+    }
+
+    private String processMatchingHost(Host host, String agentToolId) {
+        String transformedAgentToolId = String.valueOf(host.getId());
+        log.info("Transformed Fleet MDM agent tool ID from UUID {} to host ID {}", agentToolId, transformedAgentToolId);
+        return transformedAgentToolId;
+    }
+
+    private String processNoMatchingHost(String agentToolId, boolean lastAttempt) {
+        if (!lastAttempt) {
+            throw new IllegalStateException("No valid fleetmdm-agent mdm host found with uuid=" + agentToolId);
+        } else {
+            log.info("Use uuid to fix it manually: {}", agentToolId);
+            return agentToolId;
         }
     }
 
