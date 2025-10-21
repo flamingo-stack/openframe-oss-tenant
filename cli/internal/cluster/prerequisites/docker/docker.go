@@ -358,17 +358,20 @@ func (d *DockerInstaller) installWindows() error {
 		fmt.Println("Note: Installation requires user interaction for Docker Desktop installer.")
 	}
 
-	// Step 1: Install Chocolatey if needed (this will auto-install .NET 4.8 if missing)
+	// Step 1: Install Chocolatey if needed
 	fmt.Println("\nStep 1/2: Checking Chocolatey package manager...")
-	if !commandExists("choco") {
+
+	// Check if chocolatey is actually installed by checking the file path
+	chocoPath := d.getChocoPath()
+	if _, err := os.Stat(chocoPath); os.IsNotExist(err) {
 		fmt.Println("Installing Chocolatey (this may take several minutes)...")
-		fmt.Println("Chocolatey will automatically install .NET Framework 4.8 if it's not present.")
 		if err := d.installChocolatey(); err != nil {
 			return fmt.Errorf("failed to install Chocolatey: %w", err)
 		}
 		fmt.Println("Chocolatey installed successfully.")
 	} else {
 		fmt.Println("Chocolatey is already installed.")
+		fmt.Printf("Found at: %s\n", chocoPath)
 	}
 
 	// Step 2: Install Docker (Engine for Server, Desktop for Windows)
@@ -506,8 +509,16 @@ func (d *DockerInstaller) installDockerEngine() error {
 	fmt.Println("Installing Docker Engine using Microsoft's official method...")
 	fmt.Println()
 
+	// Step 0: Install NuGet provider first (required for PowerShell Gallery)
+	fmt.Println("Step 1/4: Installing NuGet provider...")
+	nugetCmd := exec.Command("powershell", "-Command",
+		"Install-PackageProvider -Name NuGet -Scope CurrentUser -Force -ErrorAction SilentlyContinue")
+	nugetCmd.Stdout = os.Stdout
+	nugetCmd.Stderr = os.Stderr
+	_ = nugetCmd.Run() // Ignore errors, may already be installed
+
 	// Step 1: Install DockerMsftProvider module (user scope - no admin required)
-	fmt.Println("Step 1/3: Installing DockerMsftProvider PowerShell module...")
+	fmt.Println("Step 2/4: Installing DockerMsftProvider PowerShell module...")
 	installModuleCmd := exec.Command("powershell", "-Command",
 		"Install-Module -Name DockerMsftProvider -Repository PSGallery -Scope CurrentUser -Force")
 	installModuleCmd.Stdout = os.Stdout
@@ -523,7 +534,7 @@ func (d *DockerInstaller) installDockerEngine() error {
 	fmt.Println()
 
 	// Step 2: Install Docker Engine and Client
-	fmt.Println("Step 2/3: Installing Docker Engine and Client...")
+	fmt.Println("Step 3/4: Installing Docker Engine and Client...")
 	fmt.Println("(This may take several minutes, please wait...)")
 	installDockerCmd := exec.Command("powershell", "-Command",
 		"Install-Package -Name docker -ProviderName DockerMsftProvider -Force")
@@ -540,7 +551,7 @@ func (d *DockerInstaller) installDockerEngine() error {
 	fmt.Println()
 
 	// Step 3: Enable Windows Containers feature on Windows Server
-	fmt.Println("Step 3/3: Enabling Windows Containers feature...")
+	fmt.Println("Step 4/4: Enabling Windows Containers feature...")
 	containersCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Containers -Restart:$false | Select-Object -ExpandProperty RestartNeeded")
 	output, err := containersCmd.CombinedOutput()
 	outputStr := string(output)
