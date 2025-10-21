@@ -94,11 +94,12 @@ public class ToolConnectionListener {
             String toolType = toolConnectionMessage.getToolType();
             String agentToolId = toolConnectionMessage.getAgentToolId();
             long deliveredCount = message.metaData().deliveredCount();
+            boolean lastAttempt = isLastAttempt(deliveredCount);
 
             log.info("Processing tool connection: machineId={} toolType={} agentToolId={} (delivery={})", machineId, toolType, agentToolId, deliveredCount);
 
             // Process the tool connection
-            toolConnectionService.addToolConnection(machineId, toolType, agentToolId);
+            toolConnectionService.addToolConnection(machineId, toolType, agentToolId, lastAttempt);
 
             // Acknowledge successful processing
             message.ack();
@@ -108,6 +109,10 @@ public class ToolConnectionListener {
             // Don't ack the message and let it be redelivered
             log.info("Leaving message unacked for potential redelivery: tool connection");
         }
+    }
+
+    private boolean isLastAttempt(long deliveredCount) {
+        return deliveredCount == MAX_DELIVER;
     }
 
     @PreDestroy
