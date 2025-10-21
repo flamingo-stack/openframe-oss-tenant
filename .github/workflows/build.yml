@@ -356,7 +356,8 @@ jobs:
 
       #     set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
 
-      - name: Promote DEV to QA
+      - name: Create QA Promotion PR
+        id: create_pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALUES_PATH: manifests/apps
@@ -369,5 +370,11 @@ jobs:
           git commit -m "Update QA to ${{ inputs.version }}"
           git push -u origin qa-${{ inputs.version }} --force
           PR_URL=$(gh pr create --title "QA promotion ${{ inputs.version }}" --body "Update QA tags to ${{ inputs.version }}" --base main)
-          gh pr review "$PR_URL" --approve
-          gh pr merge "$PR_URL" --squash --auto
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Merge QA Promotion PR
+        env:
+          GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
+        run: |
+          gh pr review "${{ steps.create_pr.outputs.pr_url }}" --approve
+          gh pr merge "${{ steps.create_pr.outputs.pr_url }}" --squash --auto
