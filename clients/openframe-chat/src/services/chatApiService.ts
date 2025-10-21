@@ -137,8 +137,8 @@ export class ChatApiService {
 
   private async *createDialogAndStream(initialMessage: string): AsyncGenerator<MessageSegment> {
     if (this.debugMode) {
-      yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/dialogs` }
+      yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"\n` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/dialogs\n` }
     }
     
     const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/dialogs`, {
@@ -172,9 +172,9 @@ export class ChatApiService {
     }
     
     if (this.debugMode) {
-      yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}` }
-      yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/messages/process` }
+      yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}\n` }
+      yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"\n` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/messages/process\n` }
     }
     
     const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/messages/process`, {
@@ -276,6 +276,10 @@ export class ChatApiService {
     }
   }
   
+  setDebugMode(enabled: boolean) {
+    this.debugMode = enabled
+  }
+
   reset() {
     this.dialogId = null
   }

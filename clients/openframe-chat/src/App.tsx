@@ -2,6 +2,7 @@ import './styles/globals.css'
 import { ChatView } from './views/ChatView'
 import { useToken } from './hooks/useToken'
 import { useEffect } from 'react'
+import { DebugModeProvider } from './contexts/DebugModeContext'
 
 function App() {
   const token = useToken()
@@ -14,7 +15,11 @@ function App() {
     }
   }, [token])
   
-  return <ChatView />
+  return (
+    <DebugModeProvider>
+      <ChatView />
+    </DebugModeProvider>
+  )
 }
 
 export default App
