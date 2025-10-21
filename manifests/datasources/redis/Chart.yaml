@@ -8,4 +8,4 @@ appVersion: "1.0"
 dependencies:
   - name: redis
     version: ">=21.2.10"
-    repository: https://charts.bitnami.com/bitnami  # should be migrated
+    repository: oci://registry-1.docker.io/bitnamicharts  # should be migrated

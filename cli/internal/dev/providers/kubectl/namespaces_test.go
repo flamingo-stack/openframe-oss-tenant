@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -183,7 +183,7 @@ func TestProvider_ValidateNamespace(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				
+
 				// Verify the correct command was executed
 				commands := mockExecutor.GetExecutedCommands()
 				assert.Len(t, commands, 1)

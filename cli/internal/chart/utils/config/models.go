@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/flamingo/openframe/internal/chart/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
 )
 
 // ChartInstallConfig holds configuration for chart installation

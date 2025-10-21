@@ -3,16 +3,16 @@ package ui
 import (
 	"fmt"
 
-	clusterUI "github.com/flamingo/openframe/internal/cluster/ui"
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/shared/config"
-	"github.com/flamingo/openframe/internal/shared/ui/messages"
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	clusterUI "github.com/flamingo-stack/openframe/openframe/internal/cluster/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/config"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui/messages"
 	"github.com/pterm/pterm"
 )
 
 // OperationsUI provides user-friendly interfaces for chart operations
-type OperationsUI struct{
+type OperationsUI struct {
 	clusterSelector     *clusterUI.Selector
 	credentialsPrompter *config.CredentialsPrompter
 	messageTemplates    *messages.Templates

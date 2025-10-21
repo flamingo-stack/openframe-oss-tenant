@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,10 +16,10 @@ func TestService_GetCurrentNamespace(t *testing.T) {
 	service := NewService(mockExecutor, false)
 
 	tests := []struct {
-		name               string
-		setupMocks         func(*executor.MockCommandExecutor)
-		expectedNamespace  string
-		expectError        bool
+		name              string
+		setupMocks        func(*executor.MockCommandExecutor)
+		expectedNamespace string
+		expectError       bool
 	}{
 		{
 			name: "telepresence status returns valid JSON",
@@ -93,7 +93,7 @@ func TestService_GetCurrentNamespace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset mock state
 			mockExecutor.Reset()
-			
+
 			// Setup test-specific mocks
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockExecutor)
@@ -135,7 +135,7 @@ func TestService_SwitchNamespace(t *testing.T) {
 		},
 		{
 			name:    "quit fails but connect succeeds",
-			current: "default", 
+			current: "default",
 			target:  "staging",
 			setupMocks: func(mock *executor.MockCommandExecutor) {
 				// First call to quit fails
@@ -161,7 +161,7 @@ func TestService_SwitchNamespace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset mock state
 			mockExecutor.Reset()
-			
+
 			// Setup test-specific mocks
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockExecutor)

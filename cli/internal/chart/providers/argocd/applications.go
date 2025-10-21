@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/chart/utils/config"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 
@@ -34,7 +34,7 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 	// This shows ALL planned applications across all sync waves
 	manifestResult, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io", "app-of-apps",
 		"-o", "jsonpath={.status.resources[?(@.kind=='Application')].name}")
-	
+
 	if err == nil && manifestResult.Stdout != "" {
 		resources := strings.Fields(manifestResult.Stdout)
 		if len(resources) > 0 {
@@ -44,21 +44,21 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 			return len(resources)
 		}
 	}
-	
+
 	// Method 2: Get the source manifest from app-of-apps and count applications
 	// This gives us the definitive count from the source repository
 	sourceResult, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io", "app-of-apps",
 		"-o", "jsonpath={.spec.source}")
-	
+
 	if err == nil && sourceResult.Stdout != "" && config.Verbose {
 		pterm.Debug.Printf("App-of-apps source: %s\n", sourceResult.Stdout)
 	}
-	
+
 	// Method 3: Try to get the complete resource list from app-of-apps status
 	// This includes all resources that will be created, not just current ones
 	allResourcesResult, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io", "app-of-apps",
 		"-o", "jsonpath={range .status.resources[*]}{.kind}{\":\"}{.name}{\"\\n\"}{end}")
-	
+
 	if err == nil && allResourcesResult.Stdout != "" {
 		lines := strings.Split(strings.TrimSpace(allResourcesResult.Stdout), "\n")
 		appCount := 0
@@ -74,12 +74,12 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 			return appCount
 		}
 	}
-	
+
 	// Method 4: Check ArgoCD server API for planned applications
 	// Query the ArgoCD server pod directly for application information
 	serverPod, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "pod",
 		"-l", "app.kubernetes.io/name=argocd-server", "-o", "jsonpath={.items[0].metadata.name}")
-	
+
 	if err == nil && serverPod.Stdout != "" {
 		podName := strings.TrimSpace(serverPod.Stdout)
 		// Try to query ArgoCD's internal application list via kubectl exec
@@ -101,12 +101,12 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 			}
 		}
 	}
-	
+
 	// Method 4: Try to get all applications including those being created
 	// This includes applications in all states (even those not yet synced due to sync waves)
 	allAppsResult, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io",
 		"-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}")
-	
+
 	if err == nil && allAppsResult.Stdout != "" {
 		apps := strings.Split(strings.TrimSpace(allAppsResult.Stdout), "\n")
 		// Filter out empty lines and count
@@ -124,18 +124,18 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 			return count
 		}
 	}
-	
+
 	// Method 2: Check helm values to count applications defined
 	helmResult, err := m.executor.Execute(ctx, "helm", "get", "values", "app-of-apps", "-n", "argocd")
 	if err == nil && helmResult.Stdout != "" {
 		// Count application definitions in various formats
 		// Look for patterns that indicate application definitions
 		appPatterns := []string{
-			"repoURL:",           // Each app typically has a repoURL
-			"targetRevision:",    // And a targetRevision
-			"- name:",           // Applications might be in a list
+			"repoURL:",        // Each app typically has a repoURL
+			"targetRevision:", // And a targetRevision
+			"- name:",         // Applications might be in a list
 		}
-		
+
 		maxCount := 0
 		for _, pattern := range appPatterns {
 			count := strings.Count(helmResult.Stdout, pattern)
@@ -143,7 +143,7 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 				maxCount = count
 			}
 		}
-		
+
 		if maxCount > 0 {
 			if config.Verbose {
 				pterm.Debug.Printf("Estimated %d applications from helm values\n", maxCount)
@@ -151,11 +151,11 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 			return maxCount
 		}
 	}
-	
+
 	// Method 3: Check ApplicationSets which generate multiple applications
 	appSetResult, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applicationsets.argoproj.io",
 		"-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}")
-	
+
 	if err == nil && appSetResult.Stdout != "" {
 		appSets := strings.Split(strings.TrimSpace(appSetResult.Stdout), "\n")
 		count := 0
@@ -174,12 +174,12 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 			return estimated
 		}
 	}
-	
+
 	// Default: return 0 to indicate unknown, will be discovered dynamically
 	if config.Verbose {
 		pterm.Debug.Println("Could not determine total expected applications upfront, will discover dynamically")
 	}
-	
+
 	return 0
 }
 
@@ -187,7 +187,7 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 func (m *Manager) parseApplications(ctx context.Context, verbose bool) ([]Application, error) {
 	// Use direct kubectl command instead of parsing JSON string to avoid control character issues
 	// Use conditional jsonpath to handle missing status fields
-	result, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io", 
+	result, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io",
 		"-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\t\"}{.status.health.status}{\"\\t\"}{.status.sync.status}{\"\\n\"}{end}")
 
 	if err != nil {
@@ -211,7 +211,7 @@ func (m *Manager) parseApplications(ctx context.Context, verbose bool) ([]Applic
 		if len(parts) >= 3 {
 			health := strings.TrimSpace(parts[1])
 			sync := strings.TrimSpace(parts[2])
-			
+
 			// Default empty values to "Unknown"
 			if health == "" {
 				health = "Unknown"
@@ -219,13 +219,13 @@ func (m *Manager) parseApplications(ctx context.Context, verbose bool) ([]Applic
 			if sync == "" {
 				sync = "Unknown"
 			}
-			
+
 			app := Application{
 				Name:   strings.TrimSpace(parts[0]),
 				Health: health,
 				Sync:   sync,
 			}
-			
+
 			// Include ALL applications, even with Unknown status
 			// This ensures we get accurate counts and don't have apps disappearing
 			apps = append(apps, app)

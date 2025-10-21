@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo/openframe/tests/integration/common"
+	"github.com/flamingo-stack/openframe/openframe/tests/integration/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -82,18 +82,18 @@ func (suite *ClusterTestSuite) RequireDependencies() {
 // CreateTestCluster creates a test cluster with automatic cleanup
 func (suite *ClusterTestSuite) CreateTestCluster(nodeCount int) string {
 	suite.RequireDependencies()
-	
+
 	// Clean up any existing test clusters first
 	common.CleanupAllTestClusters()
-	
+
 	clusterName := suite.clusterName
 	suite.t.Cleanup(func() {
 		common.CleanupTestCluster(clusterName)
 	})
-	
+
 	result := common.RunCLI("cluster", "create", clusterName, "--skip-wizard", "--nodes", fmt.Sprintf("%d", nodeCount))
 	require.True(suite.t, result.Success(), "Cluster creation failed: %s", result.Stderr)
-	
+
 	return clusterName
 }
 
@@ -102,7 +102,7 @@ func (suite *ClusterTestSuite) RunValidationTests(testCases []ValidationTestCase
 	for _, tc := range testCases {
 		suite.t.Run(tc.Name, func(t *testing.T) {
 			result := common.RunCLI(tc.Args...)
-			
+
 			if tc.ExpectError {
 				require.True(t, result.Failed(), "Expected error but command succeeded")
 				if tc.ErrorMsg != "" {

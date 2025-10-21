@@ -4,11 +4,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/flamingo/openframe/internal/cluster"
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/shared/errors"
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +58,7 @@ func GetSuppressedCommandService() *cluster.ClusterService {
 func WrapCommandWithCommonSetup(runFunc func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		// Logo is now shown in PersistentPreRunE, not here
-		
+
 		// Execute the command
 		err := runFunc(cmd, args)
 		if err != nil {

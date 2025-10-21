@@ -7,18 +7,24 @@ kafka:
   image:
     repository: bitnamilegacy/kafka
     tag: 4.0.0-debian-12-r10
+  
+  global:
+    # bitnamilegacy
+    security:
+      allowInsecureImages: true
 
   broker:
     resourcesPreset: medium
     replicaCount: 1
     podAntiAffinityPreset: hard
+
     resources:
-      # requests:
-      #   cpu: 2
-      #   memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 1Gi
       limits:
         cpu: 1
-        memory: 2048Mi
+        memory: 2Gi
 
   listeners:
     client:
@@ -44,12 +50,12 @@ kafka:
     replicaCount: 1
 
     resources:
-      # requests:
-      #   cpu: 2
-      #   memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 512Mi
       limits:
-        cpu: 1
-        memory: 2048Mi
+        cpu: 500m
+        memory: 1Gi
 
   kraft:
     enabled: true
@@ -102,12 +108,29 @@ kafka:
 
   metrics:
     jmx:
+      enabled: false
       # bitnamilegacy
       image:
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0-debian-12-r0
-        
-      enabled: true
+      
+      livenessProbe:
+        initialDelaySeconds: 90 
+        periodSeconds: 20        
+        failureThreshold: 6   
+      readinessProbe:
+        initialDelaySeconds: 60
+        periodSeconds: 15
+        failureThreshold: 5
+      
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
+
       kafkaJmxPort: 5555
       extraRules: |-
         - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value

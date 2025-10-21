@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: openframe-cli
+
+before:
+  hooks:
+    - sh -c "cd cli && go mod tidy && go mod download"
+builds:
+  - id: openframe-cli
+    main: ./main.go
+    dir: ./cli
+    binary: openframe
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/flamingo-stack/openframe/openframe/cmd.DefaultVersionInfo.Version={{.Version}}
+      - -X github.com/flamingo-stack/openframe/openframe/cmd.DefaultVersionInfo.Commit={{.Commit}}
+      - -X github.com/flamingo-stack/openframe/openframe/cmd.DefaultVersionInfo.Date={{.Date}}
+
+archives:
+  # This archive packages the Go binaries built above. The universal binary will replace the two separate macOS builds.
+  - id: openframe-cli-archive
+    ids:
+      - openframe-cli
+    name_template: "openframe-cli_{{ .Os }}_{{ .Arch }}"
+    formats: ["tar.gz"]
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+    files:
+      - README.md
+    wrap_in_directory: false
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  use: github-native
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - '^build:'
+      - '^style:'
+      - '^refactor:'
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Bug fixes
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  make_latest: true
+  draft: false
+  prerelease: auto
+  name_template: "🦩 {{ .Tag }}"
+  header: |
+    {{ if .Env.RELEASE_HEADER }}{{ .Env.RELEASE_HEADER }}{{ end }}
+  extra_files:
+    - glob: final-artifacts/clients/*.tar.gz
+    - glob: final-artifacts/clients/*.zip

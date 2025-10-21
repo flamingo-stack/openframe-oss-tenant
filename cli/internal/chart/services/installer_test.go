@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo/openframe/internal/chart/models"
-	"github.com/flamingo/openframe/internal/chart/utils/config"
-	"github.com/flamingo/openframe/internal/chart/utils/errors"
-	sharedErrors "github.com/flamingo/openframe/internal/shared/errors"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/errors"
+	sharedErrors "github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -254,10 +254,10 @@ func TestInstaller_InstallCharts_NoWaitWithoutAppOfApps(t *testing.T) {
 
 func TestInstaller_InstallCharts_ErrorTypes(t *testing.T) {
 	tests := []struct {
-		name          string
-		setupMocks    func(*MockArgoCDService, *MockAppOfAppsService)
-		config        config.ChartInstallConfig
-		checkError    func(t *testing.T, err error)
+		name       string
+		setupMocks func(*MockArgoCDService, *MockAppOfAppsService)
+		config     config.ChartInstallConfig
+		checkError func(t *testing.T, err error)
 	}{
 		{
 			name: "ArgoCD error wrapped as ChartError",

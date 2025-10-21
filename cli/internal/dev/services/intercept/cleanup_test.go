@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +21,7 @@ func TestService_SetupCleanupHandler(t *testing.T) {
 
 	// Verify signal channel is configured
 	assert.NotNil(t, service.signalChannel)
-	
+
 	// Verify channel can receive signals (we don't actually send signals in tests)
 	select {
 	case <-service.signalChannel:
@@ -36,12 +36,12 @@ func TestService_Cleanup(t *testing.T) {
 	mockExecutor := testutil.NewTestMockExecutor()
 
 	tests := []struct {
-		name                string
-		service             *Service
-		setupState          func(*Service)
-		setupMocks          func(*executor.MockCommandExecutor)
-		expectLeaveCommand  bool
-		expectQuitCommand   bool
+		name                 string
+		service              *Service
+		setupState           func(*Service)
+		setupMocks           func(*executor.MockCommandExecutor)
+		expectLeaveCommand   bool
+		expectQuitCommand    bool
 		expectRestoreCommand bool
 	}{
 		{
@@ -186,12 +186,12 @@ func TestService_Cleanup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset mock state
 			mockExecutor.Reset()
-			
+
 			// Setup test-specific state
 			if tt.setupState != nil {
 				tt.setupState(tt.service)
 			}
-			
+
 			// Setup test-specific mocks
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockExecutor)
@@ -199,24 +199,24 @@ func TestService_Cleanup(t *testing.T) {
 
 			// We can't test the actual cleanup method directly since it calls os.Exit(0)
 			// Instead, we test the individual components that would be called
-			
+
 			if tt.service.isIntercepting {
 				// Simulate the cleanup process without os.Exit
 				tt.service.isIntercepting = false
-				
+
 				// Test leave command if expected
 				if tt.expectLeaveCommand && tt.service.currentService != "" {
 					_, _ = mockExecutor.Execute(nil, "telepresence", "leave", tt.service.currentService)
 					// Command should be executed (error or not)
 					assert.True(t, mockExecutor.WasCommandExecuted("telepresence leave"))
 				}
-				
+
 				// Test quit command if expected
 				if tt.expectQuitCommand {
 					_, _ = mockExecutor.Execute(nil, "telepresence", "quit")
 					assert.True(t, mockExecutor.WasCommandExecuted("telepresence quit"))
 				}
-				
+
 				// Test restore command if expected
 				if tt.expectRestoreCommand && tt.service.originalNamespace != "" && tt.service.originalNamespace != tt.service.currentNamespace {
 					_, _ = mockExecutor.Execute(nil, "telepresence", "connect", "--namespace", tt.service.originalNamespace)
@@ -229,7 +229,7 @@ func TestService_Cleanup(t *testing.T) {
 
 func TestSignalHandling(t *testing.T) {
 	testutil.InitializeTestMode()
-	
+
 	tests := []struct {
 		name   string
 		signal os.Signal
@@ -248,15 +248,15 @@ func TestSignalHandling(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExecutor := testutil.NewTestMockExecutor()
 			service := NewService(mockExecutor, false)
-			
+
 			// Set up cleanup handler
 			service.setupCleanupHandler("test-service")
-			
+
 			// Verify that the signal channel is set up to receive the expected signals
 			// We can't easily test the actual signal handling without triggering cleanup,
 			// but we can verify the channel exists and the setup doesn't panic
 			assert.NotNil(t, service.signalChannel)
-			
+
 			// Test channel capacity and behavior
 			// Since setupCleanupHandler starts a goroutine that consumes from the channel,
 			// we need to test that the channel can accept signals without blocking
