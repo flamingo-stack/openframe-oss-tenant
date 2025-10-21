@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -45,7 +45,7 @@ func FormatAge(createdAt time.Time) string {
 // ShowClusterCreationNextSteps displays next steps after cluster creation
 func ShowClusterCreationNextSteps(clusterName string) {
 	fmt.Println()
-	
+
 	// Create table data for next steps
 	tableData := pterm.TableData{
 		{pterm.Gray("Bootstrap OpenFrame:  ") + pterm.Cyan("openframe bootstrap")},
@@ -53,7 +53,7 @@ func ShowClusterCreationNextSteps(clusterName string) {
 		{pterm.Gray("List all clusters:    ") + pterm.Cyan("openframe cluster list")},
 		{pterm.Gray("Access with kubectl:  ") + pterm.Cyan("kubectl get nodes")},
 	}
-	
+
 	pterm.Info.Println("Next Steps:")
 	// Try to render as table, fallback to simple output
 	if err := pterm.DefaultTable.WithData(tableData).Render(); err != nil {
@@ -66,4 +66,3 @@ func ShowClusterCreationNextSteps(clusterName string) {
 	}
 	fmt.Println()
 }
-

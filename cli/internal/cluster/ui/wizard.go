@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )
@@ -98,7 +98,6 @@ func (w *ConfigWizard) Run() (ClusterConfig, error) {
 	return w.config, nil
 }
 
-
 // SelectCluster provides interactive cluster selection
 func SelectCluster(clusters []models.ClusterInfo, message string) (models.ClusterInfo, error) {
 	if len(clusters) == 0 {
@@ -150,11 +149,11 @@ func (h *ConfigurationHandler) GetClusterConfig(clusterName string) (models.Clus
 	if err != nil {
 		return models.ClusterConfig{}, err
 	}
-	
+
 	if modeChoice == "quick" {
 		return h.getQuickConfig(clusterName), nil
 	}
-	
+
 	return h.getWizardConfig(clusterName)
 }
 
@@ -193,7 +192,7 @@ func (h *ConfigurationHandler) getQuickConfig(clusterName string) models.Cluster
 	if clusterName == "" {
 		clusterName = "openframe-dev"
 	}
-	
+
 	return models.ClusterConfig{
 		Name:       clusterName,
 		Type:       models.ClusterTypeK3d,
@@ -205,17 +204,17 @@ func (h *ConfigurationHandler) getQuickConfig(clusterName string) models.Cluster
 // getWizardConfig runs the interactive configuration wizard
 func (h *ConfigurationHandler) getWizardConfig(clusterName string) (models.ClusterConfig, error) {
 	wizard := NewConfigWizard()
-	
+
 	// Set defaults if cluster name provided
 	if clusterName != "" {
 		wizard.SetDefaults(clusterName, models.ClusterTypeK3d, 3, "latest")
 	}
-	
+
 	wizardConfig, err := wizard.Run()
 	if err != nil {
 		return models.ClusterConfig{}, err
 	}
-	
+
 	// Convert wizard config to domain config
 	return models.ClusterConfig{
 		Name:       wizardConfig.Name,

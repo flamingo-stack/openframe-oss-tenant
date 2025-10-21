@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 
@@ -55,7 +55,6 @@ func (s *Service) StartIntercept(serviceName string, flags *models.InterceptFlag
 	if err := s.checkKubernetesContext(); err != nil {
 		return err
 	}
-
 
 	pterm.Info.Println("Setting up intercept...")
 
@@ -126,7 +125,7 @@ func (s *Service) validateInputs(serviceName string, flags *models.InterceptFlag
 // checkKubernetesContext verifies that kubectl has an available context
 func (s *Service) checkKubernetesContext() error {
 	ctx := context.Background()
-	
+
 	// Check if kubectl is available
 	result, err := s.executor.Execute(ctx, "kubectl", "config", "current-context")
 	if err != nil {
@@ -136,33 +135,33 @@ func (s *Service) checkKubernetesContext() error {
 			pterm.Error.Println("kubectl not found. Please install kubectl to use intercept functionality.")
 			return fmt.Errorf("kubectl not available")
 		}
-		
+
 		// Check if no context is set
 		if strings.Contains(errMsg, "current-context is not set") || strings.Contains(errMsg, "no current context") {
 			pterm.Error.Println("No active kubectl context found. Please set a context with: kubectl config use-context <context-name>")
 			return fmt.Errorf("no active kubectl context")
 		}
-		
+
 		return fmt.Errorf("failed to get kubectl context: %w", err)
 	}
-	
+
 	currentContext := strings.TrimSpace(result.Stdout)
 	if currentContext == "" {
 		pterm.Error.Println("No active kubectl context found. Please set a context with: kubectl config use-context <context-name>")
 		return fmt.Errorf("no active kubectl context")
 	}
-	
+
 	if s.verbose {
 		pterm.Info.Printf("Using kubectl context: %s\n", currentContext)
 	}
-	
+
 	// Verify we can connect to the cluster
 	_, err = s.executor.Execute(ctx, "kubectl", "cluster-info")
 	if err != nil {
 		pterm.Error.Printf("Cannot connect to Kubernetes cluster '%s'. Please check your cluster connection.\n", currentContext)
 		return fmt.Errorf("cluster connection failed: %w", err)
 	}
-	
+
 	return nil
 }
 

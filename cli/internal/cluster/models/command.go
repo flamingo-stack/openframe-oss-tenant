@@ -1,8 +1,8 @@
 package models
 
 import (
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/spf13/cobra"
-	"github.com/flamingo/openframe/internal/shared/executor"
 )
 
 // CommandFlags represents the minimum interface for command flags
@@ -21,13 +21,13 @@ type CommandExecutor interface {
 type ClusterCommand interface {
 	// GetCommand returns the cobra command
 	GetCommand(flags CommandFlags) *cobra.Command
-	
-	// Execute runs the command logic  
+
+	// Execute runs the command logic
 	Execute(cmd *cobra.Command, args []string, flags CommandFlags, executor CommandExecutor) error
-	
+
 	// ValidateFlags validates command-specific flags
 	ValidateFlags(flags CommandFlags) error
-	
+
 	// SetupFlags configures command-specific flags
 	SetupFlags(cmd *cobra.Command, flags CommandFlags)
 }

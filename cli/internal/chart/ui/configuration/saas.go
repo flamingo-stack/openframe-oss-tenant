@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -46,8 +46,8 @@ func (w *ConfigurationWizard) configureSaaSDefaults(config *types.ChartConfigura
 	config.SaaSConfig = &types.SaaSConfig{
 		RepositoryPassword:       strings.TrimSpace(repoPassword),
 		ConfigRepositoryPassword: strings.TrimSpace(configRepoPassword),
-		SaaSBranch:              strings.TrimSpace(saasBranch),
-		OSSBranch:               strings.TrimSpace(ossBranch),
+		SaaSBranch:               strings.TrimSpace(saasBranch),
+		OSSBranch:                strings.TrimSpace(ossBranch),
 	}
 
 	config.DockerRegistry = &types.DockerRegistryConfig{
@@ -106,8 +106,8 @@ func (w *ConfigurationWizard) configureSaaSInteractive(config *types.ChartConfig
 	config.SaaSConfig = &types.SaaSConfig{
 		RepositoryPassword:       strings.TrimSpace(repoPassword),
 		ConfigRepositoryPassword: strings.TrimSpace(configRepoPassword),
-		SaaSBranch:              strings.TrimSpace(saasBranch),
-		OSSBranch:               strings.TrimSpace(ossBranch),
+		SaaSBranch:               strings.TrimSpace(saasBranch),
+		OSSBranch:                strings.TrimSpace(ossBranch),
 	}
 
 	config.DockerRegistry = &types.DockerRegistryConfig{

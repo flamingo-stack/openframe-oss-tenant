@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/dev/services/intercept"
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/services/intercept"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -125,14 +125,14 @@ func TestProvider_GetServices(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, len(tt.expectedServices), len(services))
-				
+
 				for i, expectedService := range tt.expectedServices {
 					if i < len(services) {
 						assert.Equal(t, expectedService.Name, services[i].Name)
 						assert.Equal(t, expectedService.Namespace, services[i].Namespace)
 						assert.Equal(t, expectedService.Type, services[i].Type)
 						assert.Equal(t, len(expectedService.Ports), len(services[i].Ports))
-						
+
 						for j, expectedPort := range expectedService.Ports {
 							if j < len(services[i].Ports) {
 								assert.Equal(t, expectedPort.Name, services[i].Ports[j].Name)
@@ -287,12 +287,12 @@ func TestProvider_GetService(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, service)
-				
+
 				assert.Equal(t, tt.expectedService.Name, service.Name)
 				assert.Equal(t, tt.expectedService.Namespace, service.Namespace)
 				assert.Equal(t, tt.expectedService.Type, service.Type)
 				assert.Equal(t, len(tt.expectedService.Ports), len(service.Ports))
-				
+
 				for i, expectedPort := range tt.expectedService.Ports {
 					if i < len(service.Ports) {
 						assert.Equal(t, expectedPort.Name, service.Ports[i].Name)
@@ -367,7 +367,7 @@ func TestProvider_ValidateService(t *testing.T) {
 				assert.Contains(t, err.Error(), "not found")
 			} else {
 				assert.NoError(t, err)
-				
+
 				// Verify the correct command was executed
 				commands := mockExecutor.GetExecutedCommands()
 				assert.Len(t, commands, 1)
@@ -379,4 +379,3 @@ func TestProvider_ValidateService(t *testing.T) {
 		})
 	}
 }
-

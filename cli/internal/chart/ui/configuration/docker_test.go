@@ -3,15 +3,15 @@ package configuration
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/utils/types"
-	"github.com/flamingo/openframe/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDockerConfigurator(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	configurator := NewDockerConfigurator(modifier)
-	
+
 	assert.NotNil(t, configurator)
 	assert.Equal(t, modifier, configurator.modifier)
 }
@@ -19,7 +19,7 @@ func TestNewDockerConfigurator(t *testing.T) {
 func TestDockerConfigurator_Configure_DefaultCredentials(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewDockerConfigurator(modifier) // Test constructor
-	
+
 	// Create configuration with existing Docker values
 	existingValues := map[string]interface{}{
 		"registry": map[string]interface{}{
@@ -30,18 +30,18 @@ func TestDockerConfigurator_Configure_DefaultCredentials(t *testing.T) {
 			},
 		},
 	}
-	
+
 	config := &types.ChartConfiguration{
 		ExistingValues:   existingValues,
 		ModifiedSections: []string{},
 	}
-	
+
 	// Test getting current Docker settings
 	currentDocker := modifier.GetCurrentDockerSettings(existingValues)
 	assert.Equal(t, "default", currentDocker.Username)
 	assert.Equal(t, "****", currentDocker.Password)
 	assert.Equal(t, "default@example.com", currentDocker.Email)
-	
+
 	// When user selects default credentials, no changes should be made
 	// config.ModifiedSections should remain empty
 	assert.Empty(t, config.ModifiedSections)
@@ -50,7 +50,7 @@ func TestDockerConfigurator_Configure_DefaultCredentials(t *testing.T) {
 func TestDockerConfigurator_Configure_CustomCredentials(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewDockerConfigurator(modifier) // Test constructor
-	
+
 	// Test the modifier can handle custom Docker credentials
 	existingValues := map[string]interface{}{
 		"registry": map[string]interface{}{
@@ -61,7 +61,7 @@ func TestDockerConfigurator_Configure_CustomCredentials(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Simulate custom credentials selection
 	config := &types.ChartConfiguration{
 		DockerRegistry: &types.DockerRegistryConfig{
@@ -72,11 +72,11 @@ func TestDockerConfigurator_Configure_CustomCredentials(t *testing.T) {
 		ModifiedSections: []string{"docker"},
 		ExistingValues:   existingValues,
 	}
-	
+
 	// Apply configuration
 	err := modifier.ApplyConfiguration(existingValues, config)
 	assert.NoError(t, err)
-	
+
 	// Verify Docker settings were updated
 	registry := existingValues["registry"].(map[string]interface{})
 	docker := registry["docker"].(map[string]interface{})
@@ -88,15 +88,15 @@ func TestDockerConfigurator_Configure_CustomCredentials(t *testing.T) {
 func TestDockerConfigurator_Configure_WithEmptyValues(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewDockerConfigurator(modifier) // Test constructor
-	
+
 	// Test with empty values (no registry section)
 	existingValues := map[string]interface{}{}
-	
+
 	currentDocker := modifier.GetCurrentDockerSettings(existingValues)
 	assert.Equal(t, "default", currentDocker.Username)
 	assert.Equal(t, "****", currentDocker.Password)
 	assert.Equal(t, "default@example.com", currentDocker.Email)
-	
+
 	// Test applying custom Docker config to empty values
 	config := &types.ChartConfiguration{
 		DockerRegistry: &types.DockerRegistryConfig{
@@ -107,10 +107,10 @@ func TestDockerConfigurator_Configure_WithEmptyValues(t *testing.T) {
 		ModifiedSections: []string{"docker"},
 		ExistingValues:   existingValues,
 	}
-	
+
 	err := modifier.ApplyConfiguration(existingValues, config)
 	assert.NoError(t, err)
-	
+
 	// Verify registry and docker sections were created
 	registry, ok := existingValues["registry"].(map[string]interface{})
 	assert.True(t, ok)
@@ -124,7 +124,7 @@ func TestDockerConfigurator_Configure_WithEmptyValues(t *testing.T) {
 func TestDockerConfigurator_promptForDockerSettings_Validation(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewDockerConfigurator(modifier) // Test constructor
-	
+
 	// Test various Docker configuration scenarios
 	testCases := []struct {
 		name     string
@@ -171,7 +171,7 @@ func TestDockerConfigurator_promptForDockerSettings_Validation(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test that the configuration structure is valid
@@ -185,7 +185,7 @@ func TestDockerConfigurator_promptForDockerSettings_Validation(t *testing.T) {
 func TestDockerConfigurator_Configure_NoChangesWhenSameValues(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewDockerConfigurator(modifier) // Test constructor
-	
+
 	// Test when user enters the same values as current
 	existingValues := map[string]interface{}{
 		"registry": map[string]interface{}{
@@ -196,7 +196,7 @@ func TestDockerConfigurator_Configure_NoChangesWhenSameValues(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Create copy for comparison
 	originalValues := make(map[string]interface{})
 	for k, v := range existingValues {
@@ -218,7 +218,7 @@ func TestDockerConfigurator_Configure_NoChangesWhenSameValues(t *testing.T) {
 			originalValues[k] = v
 		}
 	}
-	
+
 	// Simulate user entering the same values
 	config := &types.ChartConfiguration{
 		DockerRegistry: &types.DockerRegistryConfig{
@@ -229,10 +229,10 @@ func TestDockerConfigurator_Configure_NoChangesWhenSameValues(t *testing.T) {
 		ModifiedSections: []string{"docker"},
 		ExistingValues:   existingValues,
 	}
-	
+
 	err := modifier.ApplyConfiguration(existingValues, config)
 	assert.NoError(t, err)
-	
+
 	// Values should be updated (even if they're the same)
 	registry := existingValues["registry"].(map[string]interface{})
 	docker := registry["docker"].(map[string]interface{})
@@ -244,10 +244,10 @@ func TestDockerConfigurator_Configure_NoChangesWhenSameValues(t *testing.T) {
 func TestDockerConfigurator_Configure_SpecialCharacters(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewDockerConfigurator(modifier) // Test constructor
-	
+
 	// Test Docker credentials with special characters
 	existingValues := map[string]interface{}{}
-	
+
 	config := &types.ChartConfiguration{
 		DockerRegistry: &types.DockerRegistryConfig{
 			Username: "user@domain.com",
@@ -257,10 +257,10 @@ func TestDockerConfigurator_Configure_SpecialCharacters(t *testing.T) {
 		ModifiedSections: []string{"docker"},
 		ExistingValues:   existingValues,
 	}
-	
+
 	err := modifier.ApplyConfiguration(existingValues, config)
 	assert.NoError(t, err)
-	
+
 	// Verify special characters are preserved
 	registry := existingValues["registry"].(map[string]interface{})
 	docker := registry["docker"].(map[string]interface{})
@@ -272,7 +272,7 @@ func TestDockerConfigurator_Configure_SpecialCharacters(t *testing.T) {
 func TestDockerConfigurator_Configure_EdgeCases(t *testing.T) {
 	modifier := templates.NewHelmValuesModifier()
 	_ = NewDockerConfigurator(modifier) // Test constructor
-	
+
 	testCases := []struct {
 		name     string
 		username string
@@ -298,11 +298,11 @@ func TestDockerConfigurator_Configure_EdgeCases(t *testing.T) {
 			email:    "测试@example.com",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			existingValues := map[string]interface{}{}
-			
+
 			config := &types.ChartConfiguration{
 				DockerRegistry: &types.DockerRegistryConfig{
 					Username: tc.username,
@@ -312,10 +312,10 @@ func TestDockerConfigurator_Configure_EdgeCases(t *testing.T) {
 				ModifiedSections: []string{"docker"},
 				ExistingValues:   existingValues,
 			}
-			
+
 			err := modifier.ApplyConfiguration(existingValues, config)
 			assert.NoError(t, err)
-			
+
 			registry := existingValues["registry"].(map[string]interface{})
 			docker := registry["docker"].(map[string]interface{})
 			assert.Equal(t, tc.username, docker["username"])

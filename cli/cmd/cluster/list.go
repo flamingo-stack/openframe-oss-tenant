@@ -3,15 +3,15 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/flamingo/openframe/internal/cluster/models"
-	"github.com/flamingo/openframe/internal/cluster/utils"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
 
 func getListCmd() *cobra.Command {
 	// Ensure global flags are initialized
 	utils.InitGlobalFlags()
-	
+
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all Kubernetes clusters",
@@ -43,7 +43,7 @@ Examples:
 	if globalFlags != nil && globalFlags.List != nil {
 		models.AddListFlags(listCmd, globalFlags.List)
 	}
-	
+
 	return listCmd
 }
 

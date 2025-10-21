@@ -274,7 +274,7 @@ jobs:
 
   release:
     name: "Create Release"
-    needs: [changes, matrix, build_images, build_clients, build_helm]
+    needs: [changes, matrix, build_clients, build_helm]  # build_images
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' && 
@@ -282,6 +282,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -291,42 +293,79 @@ jobs:
 
       - name: Prepare release artifacts
         run: |
+          set -e
           mkdir -p final-artifacts/clients
-          if [ -d "release-artifacts" ]; then
-            for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
-              find release-artifacts -type f \( -name "$client" -o -name "$client.exe" \) -exec cp {} final-artifacts/clients/ \;
-            done
-          fi
+          for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
+            # macOS
+            if [ -d "release-artifacts/${client}-macos" ]; then
+              [ -f "release-artifacts/${client}-macos/${client}" ] && \
+                cp "release-artifacts/${client}-macos/${client}" "final-artifacts/clients/${client}_macos"
+              tar -czf "final-artifacts/clients/${client}_macos.tar.gz" \
+                -C "release-artifacts/${client}-macos" .
+            fi
+            # Windows
+            if [ -d "release-artifacts/${client}-windows" ]; then
+              [ -f "release-artifacts/${client}-windows/${client}.exe" ] && \
+                cp "release-artifacts/${client}-windows/${client}.exe" "final-artifacts/clients/${client}_windows.exe"
+              (cd "release-artifacts/${client}-windows" && \
+                zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
+            fi
+          done
+          ls -lh final-artifacts/clients/
 
-          echo "Final artifacts to release:"
-          ls -lh final-artifacts/clients/ 2>/dev/null || echo "No client artifacts"
-
-      - name: Generate release body
-        id: release_body
+      - name: Generate release header
         run: |
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
-          {
-            echo "body<<EOF"
-            echo "## Images"
-            echo "$IMAGES"
-            echo ""
-            echo "## Clients"
-            echo "- **macOS** (Universal): \`openframe-client\` and \`openframe-chat\`"
-            echo "- **Windows** (x64): \`openframe-client.exe\` and \`openframe-cha.exe\`"
-            echo ""
-            echo "## Chart"
-            echo "- \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
+          cat > RELEASE_HEADER.md <<EOF
+          ## Images
+          $IMAGES
+
+          ## OpenFrame CLI
+          - **Linux (x64)**: \`openframe-cli_linux_amd64.tar.gz\`
+          - **Linux (ARM64)**: \`openframe-cli_linux_arm64.tar.gz\`
+          - **macOS (x64)**: \`openframe-cli_darwin_amd64.tar.gz\`
+          - **macOS (ARM64)**: \`openframe-cli_darwin_arm64.tar.gz\`
+          - **Windows (x64)**: \`openframe-cli_windows_amd64.zip\`
+          - **Windows (ARM64)**: \`openframe-cli_windows_arm64.zip\`
+
+          ## OpenFrame Clients
+          - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
+          - **Windows** (x64): \`openframe-client_windows.zip\`
+          - **macOS** (Universal): \`openframe-chat_macos.tar.gz\`
+          - **Windows** (x64): \`openframe-chat_windows.zip\`
+
+          ## Helm Chart
+          - \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`
+          ---
+          EOF
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          tag_name: ${{ inputs.version }}
-          name: Release ${{ inputs.version }}
-          draft: false
-          prerelease: false
-          files: |
-            final-artifacts/clients/*
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: ${{ steps.release_body.outputs.body }}
+          install-only: true
+
+      - name: Run GoReleaser (release)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ inputs.version }}
+        run: |
+          git tag ${GORELEASER_CURRENT_TAG}
+          export RELEASE_HEADER="$(cat RELEASE_HEADER.md)"
+          goreleaser release --clean --skip=validate
+
+          set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
+
+      # - name: Promote DEV to QA
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     VALUES_PATH: manifests/apps
+      #   run: |
+      #     git checkout -b qa-${{ inputs.version }}
+      #     sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add ${VALUES_PATH}/values-qa.yaml
+      #     git commit -m "Update QA to ${{ inputs.version }}"
+      #     git push -u origin qa-${{ inputs.version }} --force
+      #     gh pr create --title "Promote QA to ${{ inputs.version }}" --body "Update QA tags to ${{ inputs.version }}" --base main

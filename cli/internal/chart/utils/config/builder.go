@@ -3,8 +3,8 @@ package config
 import (
 	"os"
 
-	"github.com/flamingo/openframe/internal/chart/models"
-	chartUI "github.com/flamingo/openframe/internal/chart/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
+	chartUI "github.com/flamingo-stack/openframe/openframe/internal/chart/ui"
 	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 )
@@ -27,13 +27,13 @@ func NewBuilder(operationsUI *chartUI.OperationsUI) *Builder {
 type HelmValues struct {
 	Deployment struct {
 		OSS struct {
-			Enabled bool `yaml:"enabled"`
+			Enabled    bool `yaml:"enabled"`
 			Repository struct {
 				Branch string `yaml:"branch"`
 			} `yaml:"repository"`
 		} `yaml:"oss"`
 		SaaS struct {
-			Enabled bool `yaml:"enabled"`
+			Enabled    bool `yaml:"enabled"`
 			Repository struct {
 				Branch string `yaml:"branch"`
 			} `yaml:"repository"`

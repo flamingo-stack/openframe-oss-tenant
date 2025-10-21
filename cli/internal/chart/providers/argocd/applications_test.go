@@ -4,25 +4,25 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/utils/config"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewManager(t *testing.T) {
 	mockExec := executor.NewMockCommandExecutor()
 	manager := NewManager(mockExec)
-	
+
 	assert.NotNil(t, manager)
 	assert.Equal(t, mockExec, manager.executor)
 }
 
 func TestGetTotalExpectedApplications(t *testing.T) {
 	tests := []struct {
-		name           string
-		setupMock      func(*executor.MockCommandExecutor)
-		expectedCount  int
-		verbose        bool
+		name          string
+		setupMock     func(*executor.MockCommandExecutor)
+		expectedCount int
+		verbose       bool
 	}{
 		{
 			name: "successfully counts all applications",
@@ -40,17 +40,17 @@ func TestGetTotalExpectedApplications(t *testing.T) {
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io app-of-apps", &executor.CommandResult{
 					Stdout: "",
 				})
-				
+
 				// ArgoCD server pod call returns empty (no server pod found)
 				m.SetResponse("kubectl -n argocd get pod -l app.kubernetes.io/name=argocd-server", &executor.CommandResult{
 					Stdout: "",
 				})
-				
+
 				// General kubectl call returns empty
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io", &executor.CommandResult{
 					Stdout: "",
 				})
-				
+
 				// Helm values call returns applications
 				m.SetResponse("helm get values app-of-apps", &executor.CommandResult{
 					Stdout: `applications:
@@ -74,22 +74,22 @@ func TestGetTotalExpectedApplications(t *testing.T) {
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io app-of-apps", &executor.CommandResult{
 					Stdout: "",
 				})
-				
+
 				// ArgoCD server pod call returns empty
 				m.SetResponse("kubectl -n argocd get pod", &executor.CommandResult{
 					Stdout: "",
 				})
-				
+
 				// General kubectl call returns empty
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io", &executor.CommandResult{
 					Stdout: "",
 				})
-				
+
 				// Helm values call returns empty
 				m.SetResponse("helm get values", &executor.CommandResult{
 					Stdout: "",
 				})
-				
+
 				// ApplicationSets call
 				m.SetResponse("applicationsets.argoproj.io", &executor.CommandResult{
 					Stdout: "appset1\nappset2\n",
@@ -126,10 +126,10 @@ func TestGetTotalExpectedApplications(t *testing.T) {
 
 func TestParseApplications(t *testing.T) {
 	tests := []struct {
-		name          string
-		setupMock     func(*executor.MockCommandExecutor)
-		expectedApps  []Application
-		expectError   bool
+		name         string
+		setupMock    func(*executor.MockCommandExecutor)
+		expectedApps []Application
+		expectError  bool
 	}{
 		{
 			name: "successfully parses healthy applications",

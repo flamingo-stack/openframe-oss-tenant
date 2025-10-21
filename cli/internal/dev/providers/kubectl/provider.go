@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/dev/services/intercept"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/services/intercept"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 )
 
 // Provider implements Kubernetes operations using kubectl

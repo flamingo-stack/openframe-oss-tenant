@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/dev/services/intercept"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/services/intercept"
 )
 
 // MockKubernetesClient provides a mock implementation for testing UI components
 type MockKubernetesClient struct {
-	namespaces      []string
-	services        map[string][]intercept.ServiceInfo
+	namespaces           []string
+	services             map[string][]intercept.ServiceInfo
 	shouldFailNamespaces bool
 	shouldFailServices   bool
 }
@@ -95,12 +95,12 @@ func (m *MockKubernetesClient) GetServices(ctx context.Context, namespace string
 	if m.shouldFailServices {
 		return nil, fmt.Errorf("mock error: failed to list services")
 	}
-	
+
 	services, exists := m.services[namespace]
 	if !exists {
 		return []intercept.ServiceInfo{}, nil
 	}
-	
+
 	return services, nil
 }
 
@@ -110,13 +110,13 @@ func (m *MockKubernetesClient) GetService(ctx context.Context, namespace, servic
 	if !exists {
 		return nil, fmt.Errorf("namespace '%s' not found", namespace)
 	}
-	
+
 	for _, service := range services {
 		if service.Name == serviceName {
 			return &service, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("service '%s' not found in namespace '%s'", serviceName, namespace)
 }
 
@@ -175,13 +175,13 @@ func (m *MockKubernetesClient) GetServicesByType(ctx context.Context, namespace,
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var filtered []intercept.ServiceInfo
 	for _, service := range services {
 		if strings.EqualFold(service.Type, serviceType) {
 			filtered = append(filtered, service)
 		}
 	}
-	
+
 	return filtered, nil
 }
