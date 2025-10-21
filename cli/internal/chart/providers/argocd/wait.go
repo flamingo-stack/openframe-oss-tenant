@@ -283,11 +283,17 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 										if podResult != nil && podResult.Stdout != "" {
 											pterm.Info.Println(podResult.Stdout)
 										}
-										// Get logs from crashing pods
+										// Get logs from crashing pods (including previous crashes)
 										pterm.Info.Printf("=== Logs from %s-0 (last 30 lines) ===\n", app.Name)
 										logResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "logs", app.Name+"-0", "--tail=30", "--all-containers=true", "--prefix=true")
 										if logResult != nil && logResult.Stdout != "" {
 											pterm.Info.Println(logResult.Stdout)
+										}
+										// Get logs from previous crashed container
+										pterm.Info.Printf("=== Previous crash logs from %s-0 ===\n", app.Name)
+										prevLogResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "logs", app.Name+"-0", "--previous", "--all-containers=true", "--prefix=true", "--tail=50")
+										if prevLogResult != nil && prevLogResult.Stdout != "" {
+											pterm.Info.Println(prevLogResult.Stdout)
 										}
 									}
 								}
