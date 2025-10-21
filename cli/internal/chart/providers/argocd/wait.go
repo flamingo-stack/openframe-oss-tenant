@@ -295,6 +295,18 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 										if prevLogResult != nil && prevLogResult.Stdout != "" {
 											pterm.Info.Println(prevLogResult.Stdout)
 										}
+										// Check for OOMKilled or other termination reasons
+										pterm.Info.Printf("=== Pod describe for %s-0 ===\n", app.Name)
+										describeResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "describe", "pod", app.Name+"-0")
+										if describeResult != nil && describeResult.Stdout != "" {
+											// Only show last 50 lines (Events section)
+											lines := strings.Split(describeResult.Stdout, "\n")
+											if len(lines) > 50 {
+												pterm.Info.Println(strings.Join(lines[len(lines)-50:], "\n"))
+											} else {
+												pterm.Info.Println(describeResult.Stdout)
+											}
+										}
 									}
 								}
 							}
