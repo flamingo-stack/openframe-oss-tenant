@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -268,6 +269,29 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 						} else {
 							pterm.Info.Printf("  Still waiting for %d applications (showing first 5): %v...\n",
 								len(notReadyApps), notReadyApps[:5])
+						}
+
+						// TEMP DEBUG: Show pods for kafka/cassandra after 3 min
+						if elapsed > 3*time.Minute && int(elapsed.Seconds())%30 == 0 {
+							for _, app := range apps {
+								if (app.Name == "kafka" || app.Name == "cassandra") && app.Health != "Healthy" {
+									nsResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", "argocd", "get", "app", app.Name, "-o", "jsonpath={.spec.destination.namespace}")
+									if nsResult != nil && nsResult.Stdout != "" {
+										ns := strings.TrimSpace(nsResult.Stdout)
+										pterm.Info.Printf("\n=== DEBUG: %s pods in %s ===\n", app.Name, ns)
+										podResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "pods", "-o", "wide")
+										if podResult != nil && podResult.Stdout != "" {
+											pterm.Info.Println(podResult.Stdout)
+										}
+										// Show recent events
+										pterm.Info.Printf("=== Recent events for %s ===\n", app.Name)
+										eventResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "events", "--sort-by=.lastTimestamp", "--field-selector", "involvedObject.name="+app.Name, "|", "tail", "-10")
+										if eventResult != nil && eventResult.Stdout != "" {
+											pterm.Info.Println(eventResult.Stdout)
+										}
+									}
+								}
+							}
 						}
 					}
 
