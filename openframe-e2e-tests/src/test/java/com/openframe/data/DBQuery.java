@@ -2,14 +2,14 @@ package com.openframe.data;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.openframe.config.DatabaseConnectionManager;
 import com.openframe.data.testData.UserDocument;
-import com.openframe.tests.restapi.ApiBaseTest;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 
 /**
- * Database query utility for API tests
- * Uses shared MongoDB connection from ApiBaseTest (thread-safe)
+ * Database query utility for test framework
+ * Uses centralized database connection manager (thread-safe)
  */
 @Slf4j
 public class DBQuery {
@@ -19,7 +19,7 @@ public class DBQuery {
      * Thread-safe: MongoDB Java Driver connection pool handles concurrency
      */
     private static MongoDatabase getDatabase() {
-        return ApiBaseTest.getMongoConnection().getDatabase();
+        return DatabaseConnectionManager.getDatabase();
     }
 
     public static UserDocument findUserByEmail(String email) {

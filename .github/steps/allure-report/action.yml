@@ -19,7 +19,7 @@ runs:
       shell: bash
       run: |
         wget -q https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
-        tar -zxf allure-2.25.0.tgz -C /opt/
+        sudo tar -zxf allure-2.25.0.tgz -C /opt/
         sudo ln -sf /opt/allure-2.25.0/bin/allure /usr/bin/allure
         echo "✅ Allure CLI installed"
 
