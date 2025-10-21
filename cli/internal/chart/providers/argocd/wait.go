@@ -283,11 +283,11 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 										if podResult != nil && podResult.Stdout != "" {
 											pterm.Info.Println(podResult.Stdout)
 										}
-										// Show recent events
-										pterm.Info.Printf("=== Recent events for %s ===\n", app.Name)
-										eventResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "get", "events", "--sort-by=.lastTimestamp", "--field-selector", "involvedObject.name="+app.Name, "|", "tail", "-10")
-										if eventResult != nil && eventResult.Stdout != "" {
-											pterm.Info.Println(eventResult.Stdout)
+										// Get logs from crashing pods
+										pterm.Info.Printf("=== Logs from %s-0 (last 30 lines) ===\n", app.Name)
+										logResult, _ := m.executor.Execute(localCtx, "kubectl", "-n", ns, "logs", app.Name+"-0", "--tail=30", "--all-containers=true", "--prefix=true")
+										if logResult != nil && logResult.Stdout != "" {
+											pterm.Info.Println(logResult.Stdout)
 										}
 									}
 								}
