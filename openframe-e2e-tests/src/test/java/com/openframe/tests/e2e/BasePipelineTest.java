@@ -3,7 +3,6 @@ package com.openframe.tests.e2e;
 import com.openframe.support.enums.TestPhase;
 import com.openframe.tests.BaseTest;
 import io.qameta.allure.Allure;
-import io.qameta.allure.Step;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
@@ -12,15 +11,10 @@ import java.util.concurrent.Callable;
 
 import org.awaitility.Awaitility;
 
-@Slf4j
-public abstract class BasePipelineE2ETest extends BaseTest {
+import static com.openframe.support.constants.TestConstants.*;
 
-    protected static final Duration EVENTUAL_CONSISTENCY = Duration.ofSeconds(30);
-    protected static final Duration PIPELINE_TIMEOUT = Duration.ofSeconds(60);
-    
-    protected static final String API_SERVICE_URL = "http://openframe-api.microservices.svc.cluster.local:8090";
-    protected static final String CLIENT_SERVICE_URL = "http://openframe-client.microservices.svc.cluster.local:8097";
-    protected static final String GATEWAY_URL = "http://openframe-gateway.microservices.svc.cluster.local:8080";
+@Slf4j
+public abstract class BasePipelineTest extends BaseTest {
 
     protected <T> void assertImmediate(String description, Callable<T> action) {
         executePhase(TestPhase.ASSERT, description + " (immediate)", action);
@@ -52,7 +46,6 @@ public abstract class BasePipelineE2ETest extends BaseTest {
                hex.substring(8, 10) + ":" + hex.substring(10, 12);
     }
 
-    @Step("Waiting for: {condition}")
     protected <T> T awaitPipelineCondition(String condition, Duration timeout, Callable<T> probe) {
         log.debug("[{}] Awaiting condition: {} (max {}s)", testId, condition, timeout.getSeconds());
         
@@ -65,7 +58,6 @@ public abstract class BasePipelineE2ETest extends BaseTest {
             .until(probe, result -> result != null);
     }
 
-    @Step("Verifying: {condition}")
     protected void awaitPipelineBooleanCondition(String condition, Duration timeout, Callable<Boolean> probe) {
         awaitPipelineCondition(condition, timeout, () -> {
             Boolean result = probe.call();

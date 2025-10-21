@@ -3,6 +3,7 @@
   "toolId": "fleetmdm-server",
   "version": "1.0.0",
   "status": "ENABLED",
+  "sessionType": "SERVICE",
   "runCommandArgs": [
     "--fleet-url", "${client.serverUrl}",
     "--enroll-secret", "${server.registrationSecret}",

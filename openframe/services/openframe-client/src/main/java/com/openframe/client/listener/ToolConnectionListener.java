@@ -1,5 +1,4 @@
 package com.openframe.client.listener;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.client.service.NatsTopicMachineIdExtractor;
 import com.openframe.client.service.ToolConnectionService;
@@ -27,6 +26,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 // TODO: remove spring cloud stream configs as deprecated
+// TODO: use consumer update to support property changes
 public class ToolConnectionListener {
 
     private final Connection natsConnection;
@@ -39,7 +39,7 @@ public class ToolConnectionListener {
     private static final String CONSUMER_NAME = "tool-connection-processor";
     private static final int MAX_DELIVER = 10;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
-    
+
     private Dispatcher dispatcher;
     private JetStreamSubscription subscription;
 
@@ -47,7 +47,7 @@ public class ToolConnectionListener {
     public void subscribeToToolConnections() {
         try {
             JetStream js = natsConnection.jetStream();
-            
+
             // NATS Dispatcher manages threads internally
             dispatcher = natsConnection.createDispatcher();
 
@@ -86,7 +86,7 @@ public class ToolConnectionListener {
     private void handleMessage(Message message) {
         String messagePayload = new String(message.getData(), StandardCharsets.UTF_8);
         String subject = message.getSubject();
-        
+
         try {
             String machineId = machineIdExtractor.extract(subject);
             ToolConnectionMessage toolConnectionMessage = objectMapper.readValue(messagePayload, ToolConnectionMessage.class);
@@ -99,7 +99,7 @@ public class ToolConnectionListener {
 
             // Process the tool connection
             toolConnectionService.addToolConnection(machineId, toolType, agentToolId);
-            
+
             // Acknowledge successful processing
             message.ack();
             log.info("Tool connection processed successfully and acked");
@@ -120,7 +120,7 @@ public class ToolConnectionListener {
                 log.error("Error unsubscribing from JetStream", e);
             }
         }
-        
+
         if (dispatcher != null) {
             try {
                 dispatcher.drain(Duration.ofSeconds(5));
@@ -131,4 +131,3 @@ public class ToolConnectionListener {
         }
     }
 }
-

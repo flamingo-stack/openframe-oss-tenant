@@ -22,7 +22,7 @@ export function ChatView() {
     quickActions,
     hasMessages
   } = useChat({ useApi: true, useMock: false, debugMode: DEBUG_MODE })
-  
+
   return (
     <ChatContainer>
       <ChatHeader userAvatar={faeAvatar} />

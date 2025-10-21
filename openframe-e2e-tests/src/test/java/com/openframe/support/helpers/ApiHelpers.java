@@ -1,6 +1,6 @@
 package com.openframe.support.helpers;
 
-import com.openframe.data.TestDataGenerator;
+import com.openframe.data.testData.TestDataGenerator;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import lombok.extern.slf4j.Slf4j;
@@ -8,14 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.openframe.support.constants.TestConstants.*;
 import static io.restassured.RestAssured.given;
 
 @Slf4j
 public class ApiHelpers {
-    
-    private static final String API_SERVICE_URL = "http://openframe-api.microservices.svc.cluster.local:8090";
-    private static final String CLIENT_SERVICE_URL = "http://openframe-client.microservices.svc.cluster.local:8097";
-    private static final String GATEWAY_URL = "http://openframe-gateway.microservices.svc.cluster.local:8100";
     
     public static RequestSpecification baseSpec() {
         String testId = TestDataGenerator.generateShortUuid();

@@ -122,124 +122,133 @@ impl ToolConnectionProcessingManager {
 
         tokio::spawn(async move {
             loop {
-                // Resolve placeholders for tool_agent_id_command_args (gets agent_tool_id from command output)
-                let processed_args = match params_processor.process(
-                    &tool.tool_agent_id,
-                    tool.tool_agent_id_command_args.clone(),
-                ) {
-                    Ok(args) => args,
-                    Err(e) => {
-                        error!(
-                            "Failed to resolve tool {} agent_tool_id_command args: {:#}",
-                            tool.tool_id,
-                            e
-                        );
-                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                        continue;
-                    }
-                };
+                // If tool_agent_id_command_args is empty, use empty string as agent_tool_id
+                let agent_tool_id = if tool.tool_agent_id_command_args.is_empty() {
+                    info!(
+                        tool_id = %tool.tool_id,
+                        "No agentId command configured - using empty agent_tool_id"
+                    );
+                    String::new()
+                } else {
+                    // Resolve placeholders for tool_agent_id_command_args (gets agent_tool_id from command output)
+                    let processed_args = match params_processor.process(
+                        &tool.tool_agent_id,
+                        tool.tool_agent_id_command_args.clone(),
+                    ) {
+                        Ok(args) => args,
+                        Err(e) => {
+                            error!(
+                                "Failed to resolve tool {} agent_tool_id_command args: {:#}",
+                                tool.tool_id,
+                                e
+                            );
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+                    };
 
-                info!(
-                    "Run tool {} agentId command (to get agent_tool_id) with args: {:?}",
-                    tool.tool_id,
-                    processed_args
-                );
+                    info!(
+                        "Run tool {} agentId command (to get agent_tool_id) with args: {:?}",
+                        tool.tool_id,
+                        processed_args
+                    );
 
-                // Build executable path using directory manager
-                let command_path = params_processor.directory_manager
-                    .get_agent_path(&tool.tool_agent_id)
-                    .to_string_lossy()
-                    .to_string();
+                    // Build executable path using directory manager
+                    let command_path = params_processor.directory_manager
+                        .get_agent_path(&tool.tool_agent_id)
+                        .to_string_lossy()
+                        .to_string();
 
-                info!("Running...");
-                // Execute command with a 2-second timeout and capture output
-                let command_future = Command::new(&command_path).args(&processed_args).output();
-                let output = match timeout(Duration::from_secs(15), command_future).await {
-                    // Command finished within timeout
-                    Ok(Ok(out)) => {
-                        info!("Command completed successfully: {}", String::from_utf8_lossy(&out.stdout));
-                        out
-                    }
-                    // Command returned an error before timeout
-                    Ok(Err(e)) => {
-                        error!("Failed to execute agentId command: {:#} – retrying", e);
-                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                        continue;
-                    }
-                    // Timeout expired
-                    Err(_) => {
-                        error!("agentId command timed out after 2 seconds – retrying");
-                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                        continue;
-                    }
-                };
+                    info!("Running...");
+                    // Execute command with a 15-second timeout and capture output
+                    let command_future = Command::new(&command_path).args(&processed_args).output();
+                    let output = match timeout(Duration::from_secs(15), command_future).await {
+                        // Command finished within timeout
+                        Ok(Ok(out)) => {
+                            info!("Command completed successfully: {}", String::from_utf8_lossy(&out.stdout));
+                            out
+                        }
+                        // Command returned an error before timeout
+                        Ok(Err(e)) => {
+                            error!("Failed to execute agentId command: {:#} – retrying", e);
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+                        // Timeout expired
+                        Err(_) => {
+                            error!("agentId command timed out after 15 seconds – retrying");
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+                    };
 
-                info!("Checking success");
+                    info!("Checking success");
 
-                if output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                    info!(tool_id = %tool.tool_id, result = %stdout, "agentId command completed successfully");
+                    if output.status.success() {
+                        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                        info!(tool_id = %tool.tool_id, result = %stdout, "agentId command completed successfully");
 
-                    // Parse agent_tool_id from command output
-                    if !stdout.is_empty() {
-                        // TODO: add mechanism to verify that it's correct agent id
-                        let agent_tool_id = stdout; // Use the command output as agent_tool_id
-                        
-                        match config_service.get_machine_id().await {
-                            Ok(machine_id) => {
-                                if let Err(e) = tool_connection_publisher
-                                    .publish(machine_id, agent_tool_id.clone(), tool.tool_type.clone())
-                                    .await
-                                {
-                                    error!(tool_id = %tool.tool_id, error = %e, "Failed to publish tool connection message");
-                                    // Retry publishing on next cycle
-                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                    continue;
-                                }
-
-                                if let Err(e) = tool_connection_service.save(ToolConnection {
-                                    tool_agent_id: tool.tool_agent_id.clone(),
-                                    agent_tool_id: agent_tool_id.clone(),
-                                    published: true,
-                                }).await {
-                                    error!(tool_id = %tool.tool_id, error = %e, "Failed to save tool connection record");
-                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                    continue;
-                                }
-
-                                info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");
-                                // Stop processing after successful publish
-                                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                break;
-                            }
-                            Err(e) => {
-                                error!("Failed to get machine_id: {:#}", e);
-                                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                continue;
-                            }
+                        // Parse agent_tool_id from command output
+                        if !stdout.is_empty() {
+                            // TODO: add mechanism to verify that it's correct agent id
+                            stdout // Use the command output as agent_tool_id
+                        } else {
+                            info!(
+                                tool_id = %tool.tool_id,
+                                "agentId command returned empty output - retrying in {} seconds",
+                                RETRY_DELAY_SECONDS
+                            );
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
                         }
                     } else {
-                        info!(
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        error!(
                             tool_id = %tool.tool_id,
-                            "agentId command returned empty output - retrying in {} seconds",
+                            exit_status = %output.status,
+                            "agentId command failed - stdout: {} stderr: {}. Retrying in {} seconds",
+                            stdout,
+                            stderr,
                             RETRY_DELAY_SECONDS
                         );
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
                     }
-                } else {
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    error!(
-                        tool_id = %tool.tool_id,
-                        exit_status = %output.status,
-                        "agentId command failed - stdout: {} stderr: {}. Retrying in {} seconds",
-                        stdout,
-                        stderr,
-                        RETRY_DELAY_SECONDS
-                    );
-                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                    continue;
+                };
+
+                // Publish tool connection message
+                match config_service.get_machine_id().await {
+                    Ok(machine_id) => {
+                        if let Err(e) = tool_connection_publisher
+                            .publish(machine_id, agent_tool_id.clone(), tool.tool_type.clone())
+                            .await
+                        {
+                            error!(tool_id = %tool.tool_id, error = %e, "Failed to publish tool connection message");
+                            // Retry publishing on next cycle
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+
+                        if let Err(e) = tool_connection_service.save(ToolConnection {
+                            tool_agent_id: tool.tool_agent_id.clone(),
+                            agent_tool_id: agent_tool_id.clone(),
+                            published: true,
+                        }).await {
+                            error!(tool_id = %tool.tool_id, error = %e, "Failed to save tool connection record");
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+
+                        info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");
+                        // Stop processing after successful publish
+                        break;
+                    }
+                    Err(e) => {
+                        error!("Failed to get machine_id: {:#}", e);
+                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        continue;
+                    }
                 }
             }
         });

@@ -1,4 +1,4 @@
-package com.openframe.data.dto;
+package com.openframe.data.testData;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,15 +26,6 @@ public class OrganizationRegistrationData {
         this.email = email;
         this.password = password;
         this.confirmPassword = password;
-    }
-
-    public boolean isValid() {
-        return organizationName != null && !organizationName.trim().isEmpty() &&
-               firstName != null && !firstName.trim().isEmpty() &&
-               lastName != null && !lastName.trim().isEmpty() &&
-               email != null && !email.trim().isEmpty() && email.contains("@") &&
-               password != null && password.length() >= 8 &&
-               password.equals(confirmPassword);
     }
     
     @Override

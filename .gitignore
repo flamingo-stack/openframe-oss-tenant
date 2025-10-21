@@ -69,6 +69,8 @@ client/Cargo.lock
 **/dist
 **/multi-platform-hub
 .**.json
+client/chat-client/package-lock.json
+client/chat-client/src-tauri/gen
 .next/
 openframe/services/openframe-frontend/pnpm-lock.yaml
 tsconfig.tsbuildinfo

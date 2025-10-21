@@ -1,4 +1,5 @@
-# Deployment configuration
+environment: dev
+
 deployment:
   oss:
     enabled: true    
@@ -26,9 +27,6 @@ deployment:
       gcp:
         enabled: false 
         publicDomain: "flamingo.cx"
-  
-registerJob:
-  enabled: true
 
 registry:
   docker:
@@ -36,7 +34,10 @@ registry:
     username: ""
     password: ""
     email: ""
-    
+
+registerJob:
+  enabled: true
+ 
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-frontend
   tag: latest

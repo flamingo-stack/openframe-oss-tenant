@@ -14,6 +14,8 @@ spec:
       targetRevision: {{ .Values.deployment.oss.repository.branch }}
       path: "{{ .Values.deployment.oss.repository.baseDir }}/{{ .Values.deployment.oss.repository.appsDir }}"
       helm:
+        valueFiles:
+          - "values-{{ .Values.environment }}.yaml"
         values: |
           {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
     {{- if .Values.deployment.saas.enabled }}
@@ -21,6 +23,8 @@ spec:
       targetRevision: {{ .Values.deployment.saas.repository.branch }}
       path: "{{ .Values.deployment.saas.repository.baseDir }}/{{ .Values.deployment.saas.repository.appsDir }}"
       helm:
+        valueFiles:
+          - "values-{{ .Values.environment }}.yaml"
         values: |
           {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
     {{- end }}

@@ -8,13 +8,26 @@ pub struct ToolInstallationMessage {
     pub tool_type: String,
     pub version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_type: Option<SessionType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub installation_command_args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uninstallation_command_args: Option<Vec<String>>,
     pub run_command_args: Vec<String>,
-    pub tool_agent_id_command_args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_agent_id_command_args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assets: Option<Vec<Asset>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum SessionType {
+    #[serde(rename = "SERVICE")]
+    Service,
+    #[serde(rename = "CONSOLE")]
+    Console,
+    #[serde(rename = "USER")]
+    User,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
