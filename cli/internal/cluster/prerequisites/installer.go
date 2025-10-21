@@ -2,17 +2,13 @@ package prerequisites
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/admin"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/docker"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/k3d"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/kubectl"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -27,16 +23,6 @@ func NewInstaller() *Installer {
 }
 
 func (i *Installer) InstallMissingPrerequisites() error {
-	// Check for administrator privileges on Windows
-	if runtime.GOOS == "windows" {
-		if err := admin.RequireAdmin(); err != nil {
-			pterm.Error.Println(err.Error())
-			fmt.Println()
-			pterm.Info.Println(admin.GetElevationInstructions())
-			return err
-		}
-	}
-
 	allPresent, missing := i.checker.CheckAll()
 	if allPresent {
 		pterm.Success.Println("All prerequisites are already installed.")
@@ -69,16 +55,6 @@ func (i *Installer) InstallMissingPrerequisites() error {
 }
 
 func (i *Installer) installSpecificTools(tools []string) error {
-	// Check for administrator privileges on Windows before any installation
-	if runtime.GOOS == "windows" {
-		if err := admin.RequireAdmin(); err != nil {
-			pterm.Error.Println(err.Error())
-			fmt.Println()
-			pterm.Info.Println(admin.GetElevationInstructions())
-			return err
-		}
-	}
-
 	pterm.Info.Printf("Starting installation of %d tool(s): %s\n", len(tools), strings.Join(tools, ", "))
 
 	for idx, tool := range tools {
@@ -157,16 +133,6 @@ func (i *Installer) CheckAndInstall() error {
 
 // CheckAndInstallNonInteractive checks and installs prerequisites with optional non-interactive mode
 func (i *Installer) CheckAndInstallNonInteractive(nonInteractive bool) error {
-	// PHASE 0: Check for administrator privileges on Windows
-	if runtime.GOOS == "windows" {
-		if err := admin.RequireAdmin(); err != nil {
-			pterm.Error.Println(err.Error())
-			fmt.Println()
-			pterm.Info.Println(admin.GetElevationInstructions())
-			return err
-		}
-	}
-
 	// PHASE 1: Check what's actually missing vs what's not running
 	allPresent, missing := i.checker.CheckAll()
 	if allPresent {
@@ -193,93 +159,41 @@ func (i *Installer) CheckAndInstallNonInteractive(nonInteractive bool) error {
 		}
 	}
 
-	// PHASE 2: Install missing tools FIRST
+	// PHASE 2: Install missing tools FIRST (fully automated, no prompts)
 	if len(missingTools) > 0 {
 		pterm.Warning.Printf("Missing Prerequisites: %s\n", strings.Join(missingTools, ", "))
+		pterm.Info.Println("Installing prerequisites automatically...")
 
-		var confirmed bool
-		if nonInteractive {
-			// Auto-approve in non-interactive mode
-			pterm.Info.Println("Auto-installing prerequisites (non-interactive mode)...")
-			confirmed = true
-		} else {
-			var err error
-			confirmed, err = ui.ConfirmActionInteractive("Would you like me to install them automatically?", true)
-			if err := errors.WrapConfirmationError(err, "failed to get user confirmation"); err != nil {
-				return err
+		if err := i.installSpecificTools(missingTools); err != nil {
+			pterm.Error.Printf("Failed to install some prerequisites: %v\n", err)
+			if !nonInteractive {
+				i.showManualInstructions()
 			}
+			return err
 		}
-
-		if confirmed {
-			if err := i.installSpecificTools(missingTools); err != nil {
-				// In non-interactive mode, log error but continue
-				if nonInteractive {
-					pterm.Warning.Printf("Failed to install some prerequisites: %v\n", err)
-					pterm.Info.Println("Continuing anyway (non-interactive mode)...")
-				} else {
-					return err
-				}
-			} else {
-				pterm.Success.Println("All missing tools installed successfully!")
-			}
-		} else {
-			i.showManualInstructions()
-			os.Exit(1)
-		}
+		pterm.Success.Println("All missing tools installed successfully!")
 	}
 
-	// PHASE 3: Now check if Docker needs to be started (after all tools are installed)
+	// PHASE 3: Now check if Docker needs to be started (after all tools are installed) - fully automated
 	if dockerNotRunning {
-		if nonInteractive {
-			// In non-interactive mode, try to start Docker automatically
-			pterm.Warning.Println("Docker is not running.")
-			pterm.Info.Println("Attempting to start Docker automatically (non-interactive mode)...")
+		pterm.Warning.Println("Docker is not running.")
+		pterm.Info.Println("Attempting to start Docker automatically...")
 
-			if err := docker.StartDocker(); err != nil {
-				pterm.Warning.Printf("Could not start Docker automatically: %v\n", err)
-				pterm.Info.Println("Docker must be started manually. Continuing anyway...")
-				// Don't exit in non-interactive mode, let it fail later if needed
-				return nil
-			}
-
-			spinner, _ := pterm.DefaultSpinner.Start("Waiting for Docker to start...")
-			if err := docker.WaitForDocker(); err != nil {
-				spinner.Warning("Docker failed to start automatically")
-				pterm.Info.Println("Please ensure Docker is running before cluster operations.")
-				// Don't exit in non-interactive mode
-				return nil
-			}
-			spinner.Success("Docker started successfully")
-		} else {
-			// Interactive mode - prompt user
-			pterm.Warning.Println("Docker is not running.")
-			confirmed, err := ui.ConfirmActionInteractive("Would you like me to start Docker for you?", true)
-			if errors.HandleConfirmationError(err) {
-				return nil // Won't be reached due to os.Exit in handler
-			}
-			if err != nil {
-				return fmt.Errorf("failed to get Docker start confirmation: %w", err)
-			}
-			if confirmed {
-				if err := docker.StartDocker(); err != nil {
-					pterm.Error.Printf("Failed to start Docker: %v\n", err)
-					fmt.Println()
-					i.showDockerStartInstructions()
-					os.Exit(1)
-				}
-				spinner, _ := pterm.DefaultSpinner.Start("Waiting for Docker to start...")
-				if err := docker.WaitForDocker(); err != nil {
-					spinner.Fail("Docker failed to start")
-					fmt.Println()
-					i.showDockerStartInstructions()
-					os.Exit(1)
-				}
-				spinner.Success("Docker started successfully")
-			} else {
-				i.showDockerStartInstructions()
-				os.Exit(1)
-			}
+		if err := docker.StartDocker(); err != nil {
+			pterm.Warning.Printf("Could not start Docker automatically: %v\n", err)
+			pterm.Info.Println("Please start Docker manually and try again.")
+			i.showDockerStartInstructions()
+			return fmt.Errorf("Docker is not running and could not be started automatically")
 		}
+
+		spinner, _ := pterm.DefaultSpinner.Start("Waiting for Docker to start...")
+		if err := docker.WaitForDocker(); err != nil {
+			spinner.Warning("Docker failed to start automatically")
+			pterm.Info.Println("Please ensure Docker is running before cluster operations.")
+			i.showDockerStartInstructions()
+			return fmt.Errorf("Docker failed to start within timeout period")
+		}
+		spinner.Success("Docker started successfully")
 	}
 
 	return nil

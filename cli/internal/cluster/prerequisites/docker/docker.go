@@ -321,7 +321,6 @@ func startDockerLinux() error {
 
 func (d *DockerInstaller) installWindows() error {
 	fmt.Println("Installing Docker on Windows...")
-	fmt.Println("Note: Chocolatey will automatically install .NET Framework 4.8 if needed.")
 
 	// Detect if this is Windows Server
 	isServer, err := IsWindowsServer()
@@ -331,10 +330,32 @@ func (d *DockerInstaller) installWindows() error {
 		isServer = false
 	}
 
+	// Check Hyper-V hardware capability for Desktop editions (not needed for Server)
+	if !isServer {
+		fmt.Println("Checking hardware virtualization support...")
+		capable, err := CheckHyperVCapability()
+		if err != nil {
+			fmt.Printf("Warning: Could not determine Hyper-V capability: %v\n", err)
+			fmt.Println("Proceeding anyway, but Docker Desktop may not work...")
+		} else if !capable {
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println("⚠  HARDWARE VIRTUALIZATION NOT SUPPORTED")
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			fmt.Println()
+			fmt.Println(GetHyperVCapabilityMessage())
+			fmt.Println()
+			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			return fmt.Errorf("OpenFrame CLI is not supported on this system due to lack of virtualization features")
+		}
+		fmt.Println("✓ Hardware virtualization is supported")
+	}
+
 	if isServer {
 		fmt.Println("Detected: Windows Server - will install Docker Engine")
 	} else {
 		fmt.Println("Detected: Windows Desktop - will install Docker Desktop")
+		fmt.Println("Note: Installation requires user interaction for Docker Desktop installer.")
 	}
 
 	// Step 1: Install Chocolatey if needed (this will auto-install .NET 4.8 if missing)
@@ -359,7 +380,11 @@ func (d *DockerInstaller) installWindows() error {
 }
 
 func (d *DockerInstaller) installChocolatey() error {
+	fmt.Println("Installing Chocolatey package manager...")
+	fmt.Println("Note: This is a fully automated installation with no dialogs or prompts.")
+
 	// Official Chocolatey installation command from https://chocolatey.org/install
+	// This installs system-wide (requires admin), but we'll configure choco to be non-interactive
 	installScript := `Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))`
 
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
@@ -367,7 +392,7 @@ func (d *DockerInstaller) installChocolatey() error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Chocolatey: %w", err)
+		return fmt.Errorf("failed to install Chocolatey: %w\n\nNote: Chocolatey installation typically requires running from an elevated PowerShell/Command Prompt.\nPlease right-click on PowerShell or Command Prompt and select 'Run as Administrator', then run this installer again.", err)
 	}
 
 	// Update PATH for current session
@@ -377,21 +402,27 @@ func (d *DockerInstaller) installChocolatey() error {
 		_ = os.Setenv("PATH", currentPath+";"+chocoPath)
 	}
 
+	// Configure Chocolatey for fully unattended operation
+	fmt.Println("Configuring Chocolatey for unattended installation...")
+	configCmd := exec.Command("choco", "feature", "enable", "-n", "allowGlobalConfirmation")
+	_ = configCmd.Run() // Ignore errors, proceed anyway
+
 	return nil
 }
 
 // installDockerEngineViaChocolatey is a fallback method if DockerMsftProvider fails
 func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 	fmt.Println("Installing Docker Engine via Chocolatey...")
+	fmt.Println("Note: This is a fully unattended installation with no user prompts.")
 
 	// Try both choco and full path
 	var cmd *exec.Cmd
 	if commandExists("choco") {
-		// Use --no-progress and --confirm to prevent any interactive prompts
-		cmd = exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--limit-output")
+		// Use flags for completely silent, unattended installation
+		cmd = exec.Command("choco", "install", "docker-engine", "-y", "--no-progress", "--force", "--accept-license", "--confirm", "--limit-output")
 	} else {
 		// Try with full path if choco is not in PATH yet
-		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-engine", "-y", "--no-progress", "--limit-output")
+		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-engine", "-y", "--no-progress", "--force", "--accept-license", "--confirm", "--limit-output")
 	}
 
 	cmd.Stdout = os.Stdout
@@ -633,14 +664,20 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	fmt.Println("Hyper-V is already enabled.")
 
 	fmt.Println("Installing Docker Desktop via Chocolatey...")
+	fmt.Println("Note: This is a fully unattended installation with no user prompts.")
 
-	// Try both choco and full path
+	// Try both choco and full path with fully unattended flags
 	var cmd *exec.Cmd
 	if commandExists("choco") {
-		cmd = exec.Command("choco", "install", "docker-desktop", "-y")
+		// Use flags for completely silent, unattended installation
+		// --no-progress: Suppress progress output
+		// --force: Force installation even if already installed
+		// --accept-license: Auto-accept license
+		// --confirm: Auto-confirm all prompts (redundant with -y but explicit)
+		cmd = exec.Command("choco", "install", "docker-desktop", "-y", "--no-progress", "--force", "--accept-license", "--confirm")
 	} else {
 		// Try with full path if choco is not in PATH yet
-		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-desktop", "-y")
+		cmd = exec.Command("C:\\ProgramData\\chocolatey\\bin\\choco.exe", "install", "docker-desktop", "-y", "--no-progress", "--force", "--accept-license", "--confirm")
 	}
 
 	cmd.Stdout = os.Stdout

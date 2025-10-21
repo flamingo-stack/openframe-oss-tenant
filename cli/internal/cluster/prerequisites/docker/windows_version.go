@@ -106,3 +106,78 @@ func IsWindowsServer() (bool, error) {
 	}
 	return info.IsServer, nil
 }
+
+// CheckHyperVCapability checks if the hardware supports Hyper-V virtualization
+func CheckHyperVCapability() (bool, error) {
+	// Use systeminfo to check for Hyper-V requirements
+	cmd := exec.Command("systeminfo")
+	output, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("failed to run systeminfo: %w", err)
+	}
+
+	outputStr := string(output)
+
+	// Look for Hyper-V Requirements section
+	if !strings.Contains(outputStr, "Hyper-V Requirements") {
+		return false, fmt.Errorf("unable to determine Hyper-V capability from systeminfo output")
+	}
+
+	// Check each requirement
+	requirements := []string{
+		"VM Monitor Mode Extensions:",
+		"Virtualization Enabled In Firmware:",
+		"Second Level Address Translation:",
+		"Data Execution Prevention Available:",
+	}
+
+	for _, req := range requirements {
+		// Find the line with this requirement
+		lines := strings.Split(outputStr, "\n")
+		for _, line := range lines {
+			if strings.Contains(line, req) {
+				// Check if it says "Yes"
+				if !strings.Contains(line, "Yes") {
+					// Extract the requirement name for error message
+					reqName := strings.TrimSuffix(req, ":")
+					return false, fmt.Errorf("hardware requirement not met: %s", reqName)
+				}
+				break
+			}
+		}
+	}
+
+	return true, nil
+}
+
+// GetHyperVCapabilityMessage returns a user-friendly message about Hyper-V capability
+func GetHyperVCapabilityMessage() string {
+	capable, err := CheckHyperVCapability()
+
+	if err != nil {
+		return fmt.Sprintf("Unable to determine Hyper-V capability: %v", err)
+	}
+
+	if !capable {
+		return `OpenFrame CLI is not supported on this system due to lack of virtualization features.
+
+Your hardware does not support the virtualization features required for Docker Desktop and Hyper-V.
+
+Requirements:
+  • Hardware virtualization support (Intel VT-x or AMD-V)
+  • Virtualization enabled in BIOS/UEFI firmware
+  • Second Level Address Translation (SLAT)
+  • Data Execution Prevention (DEP)
+
+To enable virtualization:
+  1. Restart your computer and enter BIOS/UEFI settings (usually F2, F10, Del, or Esc during boot)
+  2. Find the virtualization setting (may be under CPU, Advanced, or Security settings)
+  3. Enable Intel VT-x (Intel) or AMD-V (AMD) virtualization
+  4. Enable VT-d or AMD-Vi if available
+  5. Save changes and exit
+
+If your hardware does not support virtualization, you will need a different computer to run OpenFrame CLI.`
+	}
+
+	return "Hyper-V virtualization is supported on this system."
+}
