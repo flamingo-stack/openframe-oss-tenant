@@ -2,6 +2,7 @@ package com.openframe.client.listener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.client.service.NatsTopicMachineIdExtractor;
 import com.openframe.client.service.ToolConnectionService;
+import com.openframe.core.exception.NatsException;
 import com.openframe.data.model.nats.ToolConnectionMessage;
 import io.nats.client.*;
 import io.nats.client.api.AckPolicy;
@@ -15,6 +16,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
@@ -32,7 +35,7 @@ public class ToolConnectionListener {
     private static final String STREAM_NAME = "TOOL_CONNECTIONS";
     private static final String SUBJECT = "machine.*.tool-connection";
     private static final String CONSUMER_NAME = "tool-connection-processor";
-    private static final int MAX_DELIVER = 10;
+    private static final int MAX_DELIVER = 50;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
 
     private Dispatcher dispatcher;
@@ -46,9 +49,30 @@ public class ToolConnectionListener {
             // NATS Dispatcher manages threads internally
             dispatcher = natsConnection.createDispatcher();
 
-            JetStreamManagement jsm = natsConnection.jetStreamManagement();
+            ConsumerConfiguration consumerConfig = buildConsumerConfig();
 
+            PushSubscribeOptions pushOptions = PushSubscribeOptions.builder()
+                    .stream(STREAM_NAME)
+                    .configuration(consumerConfig)
+                    .build();
+
+            subscription = js.subscribe(SUBJECT, dispatcher, this::handleMessage, false, pushOptions);
+
+            log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} (maxDeliver={}, ackWait={})", SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
+
+        } catch (Exception e) {
+            log.error("Failed to subscribe to JetStream", e);
+            throw new RuntimeException("Failed to subscribe to JetStream", e);
+        }
+    }
+
+    private ConsumerConfiguration buildConsumerConfig() throws IOException, JetStreamApiException {
+        JetStream js = natsConnection.jetStream();
+        JetStreamManagement jsm = natsConnection.jetStreamManagement();
+
+        try {
             ConsumerInfo existingConsumer = jsm.getConsumerInfo(STREAM_NAME, CONSUMER_NAME);
+
             log.info("Existing consumer config: {}", existingConsumer.getConsumerConfiguration());
 
             String deliverSubject = existingConsumer.getConsumerConfiguration().getDeliverSubject();
@@ -66,18 +90,24 @@ public class ToolConnectionListener {
 
             jsm.addOrUpdateConsumer(STREAM_NAME, consumerConfig);
 
-            PushSubscribeOptions pushOptions = PushSubscribeOptions.builder()
-                    .stream(STREAM_NAME)
-                    .configuration(consumerConfig)
-                    .build();
+            return consumerConfig;
+        } catch (JetStreamApiException e) {
+            if (e.getErrorCode() == 404) {
+                log.info("Consumer {} {} doesn't exist", STREAM_NAME, CONSUMER_NAME);
+                ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
+                        .durable(CONSUMER_NAME)
+                        .ackPolicy(AckPolicy.Explicit)
+                        .deliverPolicy(DeliverPolicy.All)
+                        .ackWait(ACK_WAIT)
+                        .maxDeliver(MAX_DELIVER)
+                        .filterSubject(SUBJECT)
+                        .build();
 
-            subscription = js.subscribe(SUBJECT, dispatcher, this::handleMessage, false, pushOptions);
+                jsm.createConsumer(STREAM_NAME, consumerConfig);
 
-            log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} (maxDeliver={}, ackWait={})", SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
-
-        } catch (Exception e) {
-            log.error("Failed to subscribe to JetStream", e);
-            throw new RuntimeException("Failed to subscribe to JetStream", e);
+                return consumerConfig;
+            }
+            throw new NatsException("Api error during consumer " + STREAM_NAME + " retrieve", e);
         }
     }
 
