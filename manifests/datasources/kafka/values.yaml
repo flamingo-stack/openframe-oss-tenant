@@ -122,6 +122,14 @@ kafka:
         initialDelaySeconds: 60
         periodSeconds: 15
         failureThreshold: 5
+      
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
 
       enabled: true
       kafkaJmxPort: 5555

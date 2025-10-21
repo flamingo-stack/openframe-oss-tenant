@@ -69,8 +69,8 @@ changelog:
       order: 999
 
 release:
-  make_latest: true
-  draft: false
+  make_latest: false
+  draft: true
   prerelease: auto
   name_template: "🦩 {{ .Tag }}"
   header: |
