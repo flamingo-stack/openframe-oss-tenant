@@ -6,11 +6,6 @@ permissions:
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to Promote to Prod (e.g., v1.2.3)"
-        required: true
-        type: string
 
 # =============================================================================
 # JOBS
@@ -30,14 +25,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALUES_PATH: manifests/apps
         run: |
-          git checkout -b prod-${{ inputs.version }}
-          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-prod.yaml
+          DATE=$(date +%Y-%m-%d-%H%M)
+          git checkout -b prod-promotion-$DATE
+          cp ${VALUES_PATH}/values-qa.yaml ${VALUES_PATH}/values-prod.yaml
+          sed -i "s/environment: qa/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ${VALUES_PATH}/values-prod.yaml
-          git commit -m "Update Production to ${{ inputs.version }}"
-          git push -u origin prod-${{ inputs.version }} --force
-          PR_URL=$(gh pr create --title "Release ${{ inputs.version }} (Prod promotion)" --body "Update Production tags to ${{ inputs.version }}" --base main)
+          git commit -m "Promote QA to Production"
+          git push -u origin prod-promotion-$DATE --force
+          PR_URL=$(gh pr create --title "Promote QA to Production" --body "Promote QA configuration to Production" --base main)
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
 
       - name: Merge Prod Promotion PR

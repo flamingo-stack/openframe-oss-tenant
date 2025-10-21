@@ -16,11 +16,11 @@ apps:
   openframe-api: 
     values:
       image:
-        tag: latest
+        tag: cfff
   openframe-authorization-server:
     values:
       image:
-        tag: latest
+        tag: 222
   openframe-gateway: 
     values:
       image:
