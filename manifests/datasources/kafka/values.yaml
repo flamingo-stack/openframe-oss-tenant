@@ -113,10 +113,12 @@ kafka:
         tag: 1.4.0-debian-12-r0
       
       livenessProbe:
+        enabled: false
         initialDelaySeconds: 90 
         periodSeconds: 20        
         failureThreshold: 6   
       readinessProbe:
+        enabled: false
         initialDelaySeconds: 60
         periodSeconds: 15
         failureThreshold: 5
