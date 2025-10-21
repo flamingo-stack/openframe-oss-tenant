@@ -345,16 +345,16 @@ jobs:
         with:
           install-only: true
 
-      - name: Run GoReleaser (release)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ inputs.version }}
-        run: |
-          git tag ${GORELEASER_CURRENT_TAG}
-          export RELEASE_HEADER="$(cat RELEASE_HEADER.md)"
-          goreleaser release --clean --skip=validate
+      # - name: Run GoReleaser (release)
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     GORELEASER_CURRENT_TAG: ${{ inputs.version }}
+      #   run: |
+      #     git tag ${GORELEASER_CURRENT_TAG}
+      #     export RELEASE_HEADER="$(cat RELEASE_HEADER.md)"
+      #     goreleaser release --clean --skip=validate
 
-          set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
+      #     set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
 
       - name: Promote DEV to QA
         env:
@@ -368,4 +368,6 @@ jobs:
           git add ${VALUES_PATH}/values-qa.yaml
           git commit -m "Update QA to ${{ inputs.version }}"
           git push -u origin qa-${{ inputs.version }} --force
-          gh pr create --title "Promote QA to ${{ inputs.version }}" --body "Update QA tags to ${{ inputs.version }}" --base main
+          PR_URL=$(gh pr create --title "QA promotion ${{ inputs.version }}" --body "Update QA tags to ${{ inputs.version }}" --base main)
+          gh pr review "$PR_URL" --approve
+          gh pr merge "$PR_URL" --squash --auto
