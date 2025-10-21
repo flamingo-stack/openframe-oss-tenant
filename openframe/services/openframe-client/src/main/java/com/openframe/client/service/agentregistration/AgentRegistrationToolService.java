@@ -4,6 +4,7 @@ import com.openframe.data.document.tool.IntegratedTool;
 import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import com.openframe.data.service.IntegratedToolAgentService;
 import com.openframe.data.service.IntegratedToolService;
+import com.openframe.data.service.ToolInstallationNatsPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
