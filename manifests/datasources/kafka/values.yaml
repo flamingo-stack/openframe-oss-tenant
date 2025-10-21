@@ -17,6 +17,11 @@ kafka:
     resourcesPreset: medium
     replicaCount: 1
     podAntiAffinityPreset: hard
+
+    extraEnvVars:
+    - name: JAVA_TOOL_OPTIONS
+      value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Xms64m -Xmx128m"
+
     resources:
       requests:
         cpu: 250m
@@ -47,6 +52,11 @@ kafka:
   controller:
     resourcesPreset: medium
     replicaCount: 1
+
+    extraEnvVars:
+    - name: JAVA_TOOL_OPTIONS
+      value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Xms64m -Xmx128m"
+
 
     resources:
       requests:
