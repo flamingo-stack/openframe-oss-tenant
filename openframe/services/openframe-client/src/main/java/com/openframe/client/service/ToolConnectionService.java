@@ -26,10 +26,9 @@ public class ToolConnectionService {
     private final ToolAgentIdTransformerService toolAgentIdTransformerService;
 
     @Transactional
-    public void addToolConnection(String openframeAgentId, String toolTypeValue, String agentToolId) {
+    public void addToolConnection(String openframeAgentId, String toolTypeValue, String agentToolId, boolean lastAttempt) {
         validateAgentId(openframeAgentId);
         validateToolType(toolTypeValue);
-        validateAgentToolId(agentToolId);
         validateMachineExists(openframeAgentId);
 
         ToolType toolType = getToolTypeFromString(toolTypeValue);
@@ -45,7 +44,7 @@ public class ToolConnectionService {
                                 toolType,
                                 agentToolId
                         ),
-                        () -> addNewToolConnection(openframeAgentId, toolType, agentToolId)
+                        () -> addNewToolConnection(openframeAgentId, toolType, agentToolId, lastAttempt)
                 );
     }
 
@@ -69,27 +68,21 @@ public class ToolConnectionService {
         }
     }
 
-    private void addNewToolConnection(String openframeAgentId, ToolType toolType, String agentToolId) {
+    private void addNewToolConnection(String openframeAgentId, ToolType toolType, String agentToolId, boolean lastAttempt) {
         ToolConnection connection = new ToolConnection();
         connection.setMachineId(openframeAgentId);
         connection.setToolType(toolType);
-        connection.setAgentToolId(toolAgentIdTransformerService.transform(toolType, agentToolId));
+        connection.setAgentToolId(toolAgentIdTransformerService.transform(toolType, agentToolId, lastAttempt));
         connection.setStatus(ConnectionStatus.CONNECTED);
         connection.setConnectedAt(Instant.now());
         toolConnectionRepository.save(connection);
 
-        log.info("Saved tool connection with machineId {} tool {} agentToolId {}", openframeAgentId, toolType, agentToolId);
+        log.info("Saved tool connection for machine {} tool {} agentToolId {}", openframeAgentId, toolType, agentToolId);
     }
 
     private void validateMachineExists(String machineId) {
         if (machineRepository.findByMachineId(machineId).isEmpty()) {
             throw new MachineNotFoundException("Machine not found: " + machineId);
-        }
-    }
-
-    private void validateAgentToolId(String agentToolId) {
-        if (agentToolId == null || agentToolId.trim().isEmpty()) {
-            throw new InvalidAgentIdException("Agent tool ID cannot be empty");
         }
     }
 

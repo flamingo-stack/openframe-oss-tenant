@@ -58,7 +58,9 @@ export interface LogsTableRef {
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}, ref) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState<{ severities?: string[], toolTypes?: string[], deviceId?: string }>({})
+  const [filters, setFilters] = useState<{ severities?: string[], toolTypes?: string[], organizationIds?: string[], deviceId?: string }>({
+    deviceId: deviceId
+  })
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
   const [isInitialized, setIsInitialized] = useState(false)
   const [selectedLog, setSelectedLog] = useState<UILogEntry | null>(null)
@@ -67,15 +69,14 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   const { logFilters, fetchLogFilters } = useLogFilters()
 
-  // TEMPORARY: Don't pass deviceId to backend (not supported yet in GraphQL)
-  // Only pass severities and toolTypes to backend
   const backendFilters = useMemo(() => {
     return {
       severities: filters.severities,
-      toolTypes: filters.toolTypes
-      // deviceId NOT included - backend doesn't support it yet
+      toolTypes: filters.toolTypes,
+      organizationIds: filters.organizationIds,
+      deviceId: filters.deviceId || deviceId
     }
-  }, [filters])
+  }, [filters, deviceId])
 
   const { 
     logs, 
@@ -92,16 +93,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   // Transform API logs to UI format
-  // TEMPORARY: Client-side filter as workaround until backend supports deviceId in LogFilterInput
   const transformedLogs: UILogEntry[] = useMemo(() => {
-    let filteredLogs = logs
-
-    // Temporary client-side deviceId filter (remove when backend adds support)
-    if (deviceId) {
-      filteredLogs = logs.filter(log => log.deviceId === deviceId)
-    }
-
-    return filteredLogs.map((log) => {
+    return logs.map((log) => {
       return {
         id: log.toolEventId,
         logId: log.toolEventId,
@@ -183,12 +176,18 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         )
       },
       {
-        key: 'device',
-        label: 'DEVICE',
+        key: 'source',
+        label: 'SOURCE',
         width: 'w-[240px]',
+        filterable: true,
+        filterOptions: logFilters?.organizations?.map((org) => ({
+          id: org.id || 'system',
+          label: org.name === 'null' ? 'System' : org.name,
+          value: org.id
+        })),
         renderCell: (log) => (
           <DeviceCardCompact
-            deviceName={log.device.name}
+            deviceName={log.device.name === 'null' ? 'System' : log.device.name}
             organization={log.device.organization}
           />
         )
@@ -205,7 +204,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
     // Filter out device column when embedded (showing device-specific logs)
     if (embedded) {
-      return allColumns.filter(col => col.key !== 'device')
+      return allColumns.filter(col => col.key !== 'source')
     }
 
     return allColumns
@@ -221,6 +220,15 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
     }
   ], [router])
+
+  useEffect(() => {
+    if (deviceId !== undefined) {
+      setFilters(prev => ({
+        ...prev,
+        deviceId: deviceId
+      }))
+    }
+  }, [deviceId])
 
   useEffect(() => {
     if (!isInitialized) {
@@ -285,10 +293,15 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     if (columnFilters.tool?.length > 0) {
       newFilters.toolTypes = columnFilters.tool
     }
+
+    if (columnFilters.source?.length > 0) {
+      newFilters.organizationIds = columnFilters.source
+    }
     
     setFilters(prev => {
       if (JSON.stringify(prev.severities?.sort()) === JSON.stringify(newFilters.severities?.sort()) &&
-          JSON.stringify(prev.toolTypes?.sort()) === JSON.stringify(newFilters.toolTypes?.sort())) {
+          JSON.stringify(prev.toolTypes?.sort()) === JSON.stringify(newFilters.toolTypes?.sort()) &&
+          JSON.stringify(prev.organizationIds?.sort()) === JSON.stringify(newFilters.organizationIds?.sort())) {
         return prev
       }
       return newFilters

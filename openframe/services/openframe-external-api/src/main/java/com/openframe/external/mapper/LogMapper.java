@@ -5,11 +5,13 @@ import com.openframe.api.dto.audit.LogEvent;
 import com.openframe.api.dto.audit.LogFilters;
 import com.openframe.api.dto.audit.LogDetails;
 import com.openframe.api.dto.audit.LogFilterOptions;
+import com.openframe.api.dto.audit.OrganizationFilterOption;
 import com.openframe.external.dto.audit.LogResponse;
 import com.openframe.external.dto.audit.LogsResponse;
 import com.openframe.external.dto.audit.LogFilterResponse;
 import com.openframe.external.dto.audit.LogDetailsResponse;
 import com.openframe.external.dto.audit.LogFilterCriteria;
+import com.openframe.external.dto.audit.OrganizationFilterResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -61,10 +63,18 @@ public class LogMapper extends BaseRestMapper {
             return LogFilterResponse.builder().build();
         }
 
+        List<OrganizationFilterResponse> organizations = filters.getOrganizations().stream()
+                .map(org -> OrganizationFilterResponse.builder()
+                        .id(org.getId())
+                        .name(org.getName())
+                        .build())
+                .collect(Collectors.toList());
+
         return LogFilterResponse.builder()
                 .toolTypes(filters.getToolTypes())
                 .eventTypes(filters.getEventTypes())
                 .severities(filters.getSeverities())
+                .organizations(organizations)
                 .build();
     }
 
@@ -80,6 +90,8 @@ public class LogMapper extends BaseRestMapper {
                 .toolTypes(criteria.getToolTypes())
                 .eventTypes(criteria.getEventTypes())
                 .severities(criteria.getSeverities())
+                .organizationIds(criteria.getOrganizationIds())
+                .deviceId(criteria.getDeviceId())
                 .build();
     }
 

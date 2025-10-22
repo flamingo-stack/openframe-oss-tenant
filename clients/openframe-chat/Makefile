@@ -1,7 +1,7 @@
 CARGO ?= cargo
 
 # Optional target for cross-compilation
-TARGET ?= 
+TARGET ?=
 ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
@@ -21,10 +21,9 @@ lint: fmt-check clippy
 
 build:
 	rm -rf node_modules package-lock.json
-	npm install 
+	npm install
 	npm run prebuild
-	cargo install tauri-cli
-	$(CARGO) tauri build $(TARGET_FLAG)
+	npx tauri build $(TARGET_FLAG)
 
 test: build
 	$(CARGO) tauri test

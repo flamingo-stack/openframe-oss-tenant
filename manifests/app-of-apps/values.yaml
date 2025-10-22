@@ -1,5 +1,4 @@
-# Environment configuration (dev, qa, prod)
-environment: dev 
+environment: dev
 
 deployment:
   oss:

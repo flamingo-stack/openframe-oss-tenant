@@ -62,6 +62,10 @@ public class LogController {
             @RequestParam(required = false) List<String> eventTypes,
             @Parameter(description = "Severity levels to filter")
             @RequestParam(required = false) List<String> severities,
+            @Parameter(description = "Organization IDs to filter by")
+            @RequestParam(required = false) List<String> organizationIds,
+            @Parameter(description = "Device ID to filter by (exact matching)")
+            @RequestParam(required = false) String deviceId,
             @Parameter(description = "Search in log summary and content")
             @RequestParam(required = false) String search,
             @Parameter(description = "Page size (default: 20, max: 100)")
@@ -71,8 +75,8 @@ public class LogController {
             @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId,
             @Parameter(hidden = true) @RequestHeader(value = "X-API-Key-Id", required = false) String apiKeyId) {
 
-        log.info("Getting logs - startDate: {}, endDate: {}, toolTypes: {}, eventTypes: {}, severities: {}, search: {}, limit: {}, cursor: {} - userId: {}, apiKeyId: {}", 
-                startDate, endDate, toolTypes, eventTypes, severities, search, limit, cursor, userId, apiKeyId);
+        log.info("Getting logs - startDate: {}, endDate: {}, toolTypes: {}, eventTypes: {}, severities: {}, organizationIds: {}, deviceId: {}, search: {}, limit: {}, cursor: {} - userId: {}, apiKeyId: {}", 
+                startDate, endDate, toolTypes, eventTypes, severities, organizationIds, deviceId, search, limit, cursor, userId, apiKeyId);
         
         LogFilterCriteria filterCriteria = LogFilterCriteria.builder()
                 .startDate(startDate)
@@ -80,6 +84,8 @@ public class LogController {
                 .toolTypes(toolTypes)
                 .eventTypes(eventTypes)
                 .severities(severities)
+                .organizationIds(organizationIds)
+                .deviceId(deviceId)
                 .build();
         
         PaginationCriteria paginationCriteria = PaginationCriteria.builder()
@@ -118,11 +124,13 @@ public class LogController {
             @RequestParam(required = false) List<String> eventTypes,
             @Parameter(description = "Severity levels to filter")
             @RequestParam(required = false) List<String> severities,
+            @Parameter(description = "Organization IDs to filter by")
+            @RequestParam(required = false) List<String> organizationIds,
             @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId,
             @Parameter(hidden = true) @RequestHeader(value = "X-API-Key-Id", required = false) String apiKeyId) {
 
-        log.info("Getting log filters - startDate: {}, endDate: {}, toolTypes: {}, eventTypes: {}, severities: {} - userId: {}, apiKeyId: {}", 
-                startDate, endDate, toolTypes, eventTypes, severities, userId, apiKeyId);
+        log.info("Getting log filters - startDate: {}, endDate: {}, toolTypes: {}, eventTypes: {}, severities: {}, organizationIds: {} - userId: {}, apiKeyId: {}", 
+                startDate, endDate, toolTypes, eventTypes, severities, organizationIds, userId, apiKeyId);
         
         LogFilterCriteria filterCriteria = LogFilterCriteria.builder()
                 .startDate(startDate)
@@ -130,6 +138,7 @@ public class LogController {
                 .toolTypes(toolTypes)
                 .eventTypes(eventTypes)
                 .severities(severities)
+                .organizationIds(organizationIds)
                 .build();
         
         var filters = logService.getLogFilters(

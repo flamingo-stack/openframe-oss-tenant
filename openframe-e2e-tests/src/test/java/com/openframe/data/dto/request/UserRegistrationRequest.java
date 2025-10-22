@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
  * Represents the data structure used in API calls
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserRegistrationRequest {

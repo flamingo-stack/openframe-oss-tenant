@@ -4,11 +4,14 @@ import com.openframe.data.document.tool.IntegratedTool;
 import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import com.openframe.data.service.IntegratedToolAgentService;
 import com.openframe.data.service.IntegratedToolService;
+import com.openframe.data.service.ToolInstallationNatsPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static org.apache.zookeeper.common.StringUtils.isEmpty;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +31,16 @@ public class AgentRegistrationToolService {
     private void publish(String machineId, IntegratedToolAgent toolAgent) {
         String toolId = toolAgent.getToolId();
         try {
-            IntegratedTool tool = integratedToolService.getToolById(toolId)
-                    .orElseThrow(() -> new IllegalStateException("No tool found for " + toolId));
+            // TODO: need refactoring
+            IntegratedTool tool;
+            if (isEmpty(toolId)) {
+                tool = new IntegratedTool();
+                tool.setId("");
+                tool.setType("");
+            } else {
+                tool = integratedToolService.getToolById(toolId)
+                        .orElseThrow(() -> new IllegalStateException("No tool found:" + toolId));
+            }
 
             // process params for installation command args
             List<String> installationCommandArgs = toolAgent.getInstallationCommandArgs();

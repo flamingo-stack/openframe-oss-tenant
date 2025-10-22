@@ -1,7 +1,5 @@
 import { MessageSegment } from '../types/chat.types'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-const API_TOKEN = import.meta.env.VITE_API_TOKEN
+import { tokenService } from './tokenService'
 
 interface DialogCreatedEventData {
   dialogId: string
@@ -19,25 +17,49 @@ interface MessageEventData {
 
 export class ChatApiService {
   private dialogId: string | null = null
-  private apiToken: string
-  private apiBaseUrl: string
   private debugMode: boolean
-  
-  constructor(token?: string, baseUrl?: string, debug: boolean = false) {
-    this.apiToken = token || API_TOKEN
-    this.apiBaseUrl = baseUrl || API_BASE_URL
+  private tokenUnsubscribe?: () => void
+  private apiUrlUnsubscribe?: () => void
+
+  constructor(debug: boolean = false) {
     this.debugMode = debug
+
+    this.tokenUnsubscribe = tokenService.onTokenUpdate(() => {
+      if (this.debugMode) {
+        console.log('[ChatApiService] Token updated via listener')
+      }
+    })
+    
+    this.apiUrlUnsubscribe = tokenService.onApiUrlUpdate((apiUrl) => {
+      if (this.debugMode) {
+        console.log('[ChatApiService] API URL updated:', apiUrl)
+      }
+    })
+
+    tokenService.requestToken().catch(err => {
+      if (this.debugMode) {
+        console.error('[ChatApiService] Initial token request failed:', err)
+      }
+    })
   }
-  
+
+  private getApiBaseUrl(): string {
+    return tokenService.getCurrentApiBaseUrl() || ''
+  }
+
   private getHeaders(): HeadersInit {
+    const token = tokenService.getCurrentToken()
+
     return {
-      'Authorization': `Bearer ${this.apiToken}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   }
   
   async *streamMessage(message: string): AsyncGenerator<MessageSegment> {
     try {
+      await this.ensureTokenReady()
+      
       if (!this.dialogId) {
         yield* this.createDialogAndStream(message)
       } else {
@@ -49,6 +71,26 @@ export class ChatApiService {
         yield { type: 'text', text: `[DEBUG] API Error:\n${errorDetails}` }
       }
       throw error
+    }
+  }
+  
+  private async ensureTokenReady(): Promise<void> {
+    let token = tokenService.getCurrentToken()
+    
+    if (!token) {
+      if (this.debugMode) {
+        console.log('[ChatApiService] Token not ready, requesting...')
+      }
+      token = await tokenService.requestToken()
+      
+      if (!token) {
+        throw new Error('Authentication token not available.')
+      }
+    }
+    
+    const apiUrl = tokenService.getCurrentApiBaseUrl()
+    if (!apiUrl) {
+      throw new Error('API server URL not configured.')
     }
   }
   
@@ -68,8 +110,8 @@ export class ChatApiService {
     }
     
     details.push(`Endpoint: ${this.dialogId ? '/messages/process' : '/dialogs'}`)
-    details.push(`Base URL: ${this.apiBaseUrl}`)
-    details.push(`Token configured: ${this.apiToken !== 'YOUR_API_TOKEN_HERE'}`)
+    details.push(`Base URL: ${this.getApiBaseUrl()}`)
+    details.push(`Token available: ${tokenService.getCurrentToken() !== null}`)
     details.push(`Dialog ID: ${this.dialogId || 'Not set'}`)
     
     return details.join('\n')
@@ -130,17 +172,20 @@ export class ChatApiService {
 
   private async *createDialogAndStream(initialMessage: string): AsyncGenerator<MessageSegment> {
     if (this.debugMode) {
-      yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/dialogs` }
+      const token = tokenService.getCurrentToken()
+      yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"\n` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/dialogs\n` }
+      yield { type: 'text', text: `[DEBUG] Token status: ${token ? 'Available' : 'Missing'}\n` }
+      yield { type: 'text', text: `[DEBUG] Authorization: Bearer ${token ? token.substring(0, 10) + '...' : 'null'}\n` }
     }
     
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/dialogs`, {
+    const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/dialogs`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ initialMessage })
     }).catch(err => {
       if (this.debugMode) {
-        throw new Error(`Network error creating dialog: ${err.message}\nURL: ${this.apiBaseUrl}/api/v1/dialogs`)
+        throw new Error(`Network error creating dialog: ${err.message}\nURL: ${this.getApiBaseUrl()}/chat/api/v1/dialogs`)
       }
       throw err
     })
@@ -151,8 +196,7 @@ export class ChatApiService {
         yield { type: 'text', text: `[DEBUG] Dialog creation failed:` }
         yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
         yield { type: 'text', text: `  Response: ${errorText}` }
-        yield { type: 'text', text: `  URL: ${this.apiBaseUrl}/api/v1/dialogs` }
-        yield { type: 'text', text: `  Token present: ${this.apiToken !== 'YOUR_API_TOKEN_HERE'}` }
+        yield { type: 'text', text: `  URL: ${this.getApiBaseUrl()}/api/v1/dialogs` }
       }
       throw new Error(`Failed to create dialog: ${response.status} ${response.statusText}\n${errorText}`)
     }
@@ -166,12 +210,14 @@ export class ChatApiService {
     }
     
     if (this.debugMode) {
-      yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}` }
-      yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.apiBaseUrl}/api/v1/messages/process` }
+      const token = tokenService.getCurrentToken()
+      yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}\n` }
+      yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"\n` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/messages/process\n` }
+      yield { type: 'text', text: `[DEBUG] Token status: ${token ? 'Available' : 'Missing'}\n` }
     }
     
-    const response = await fetch(`${this.apiBaseUrl}/api/v1/messages/process`, {
+    const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/messages/process`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({
@@ -180,7 +226,7 @@ export class ChatApiService {
       })
     }).catch(err => {
       if (this.debugMode) {
-        throw new Error(`Network error processing message: ${err.message}\nURL: ${this.apiBaseUrl}/api/v1/messages/process\nDialog ID: ${this.dialogId}`)
+        throw new Error(`Network error processing message: ${err.message}\nURL: ${this.getApiBaseUrl()}/chat/api/v1/messages/process\nDialog ID: ${this.dialogId}`)
       }
       throw err
     })
@@ -192,7 +238,7 @@ export class ChatApiService {
         yield { type: 'text', text: `  Status: ${response.status} ${response.statusText}` }
         yield { type: 'text', text: `  Response: ${errorText}` }
         yield { type: 'text', text: `  Dialog ID: ${this.dialogId}` }
-        yield { type: 'text', text: `  URL: ${this.apiBaseUrl}/api/v1/messages/process` }
+        yield { type: 'text', text: `  URL: ${this.getApiBaseUrl()}/api/v1/messages/process` }
       }
       throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
     }
@@ -270,11 +316,24 @@ export class ChatApiService {
     }
   }
   
+  setDebugMode(enabled: boolean) {
+    this.debugMode = enabled
+  }
+
   reset() {
     this.dialogId = null
   }
   
   getDialogId(): string | null {
     return this.dialogId
+  }
+
+  destroy() {
+    if (this.tokenUnsubscribe) {
+      this.tokenUnsubscribe()
+    }
+    if (this.apiUrlUnsubscribe) {
+      this.apiUrlUnsubscribe()
+    }
   }
 }

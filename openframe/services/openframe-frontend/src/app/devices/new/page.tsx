@@ -17,8 +17,8 @@ import { useOrganizationsMin } from '../../organizations/hooks/use-organizations
 
 type Platform = OSPlatformId
 
-const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client'
-const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client.exe'
+const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client_macos.tar.gz'
+const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client_windows.zip'
 
 export default function NewDevicePage() {
   const router = useRouter()
@@ -82,10 +82,10 @@ export default function NewDevicePage() {
 
     if (platform === 'windows') {
       const argString = `${baseArgs}${extras}`
-      return `Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe.exe'; Start-Process -FilePath '.\\openframe.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
+      return `Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.'; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
     }
 
-    return `curl -L -o openframe '${MACOS_BINARY_URL}' && chmod +x ./openframe && sudo ./openframe ${baseArgs}${extras}`
+    return `curl -L -o openframe-client_macos.tar.gz '${MACOS_BINARY_URL}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`
   }, [initialKey, args, platform, selectedOrgId, serverUrl])
 
   const copyCommand = useCallback(async () => {
