@@ -339,14 +339,6 @@ func (d *DockerInstaller) installWindows() error {
 		isServer = false
 	}
 
-	// Check Hyper-V hardware capability for Desktop editions (not needed for Server)
-	if !isServer {
-		capable, err := CheckHyperVCapability()
-		if err == nil && !capable {
-			return fmt.Errorf("hardware virtualization not supported - Hyper-V required for Docker Desktop")
-		}
-	}
-
 
 	// Install Chocolatey if needed
 	// Check if chocolatey is actually installed by checking the file path
@@ -470,37 +462,6 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("administrator privileges required - please run as administrator")
 	}
 
-	// Check if Hyper-V is enabled (required for Docker Desktop)
-	checkHyperV := exec.Command("powershell", "-Command", "dism /Online /Get-FeatureInfo /FeatureName:Microsoft-Hyper-V-All")
-	output, err := checkHyperV.CombinedOutput()
-	outputStr := string(output)
-
-	isEnabled := strings.Contains(outputStr, "State : Enabled")
-
-	if err != nil || !isEnabled {
-		// Try Install-WindowsFeature first (more reliable on Windows Server and some editions)
-		enableCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false")
-		enableCmd.Stdout = os.Stdout
-		enableCmd.Stderr = os.Stderr
-
-		err := enableCmd.Run()
-
-		// If Install-WindowsFeature fails (not available on some Windows editions), fall back to DISM
-		if err != nil {
-			enableCmd = exec.Command("powershell", "-Command", "dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All /NoRestart")
-			enableCmd.Stdout = os.Stdout
-			enableCmd.Stderr = os.Stderr
-			err = enableCmd.Run()
-		}
-
-		if err != nil {
-			return fmt.Errorf("failed to enable Hyper-V - please enable manually and run again")
-		}
-
-		return fmt.Errorf("system reboot required for Hyper-V activation - please restart and run again")
-	}
-
-
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
 
@@ -520,13 +481,16 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("failed to install Docker Desktop: %w", err)
 	}
 
+	// Enable WSL2 integration before starting Docker
+	_ = enableWSL2()
+
+	// Configure Docker Desktop for WSL2 mode (Linux containers)
+	configureDockerForWSL2()
+
 	// Start Docker Desktop
-	if err := startDockerWindows(); err != nil {
-		return fmt.Errorf("failed to start Docker Desktop: %w", err)
-	}
+	_ = startDockerWindows()
 
 	// Wait for Docker to become responsive (up to 2 minutes)
-	fmt.Println("Waiting for Docker Desktop to start (this may take up to 2 minutes)...")
 	dockerStarted := false
 	for i := 0; i < 120; i++ {
 		checkCmd := exec.Command("docker", "info")
@@ -538,43 +502,48 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	}
 
 	if !dockerStarted {
-		return fmt.Errorf("Docker Desktop did not start within 2 minutes - please start it manually and try again")
-	}
-
-	fmt.Println("✓ Docker Desktop is running")
-
-	// Switch to Windows containers
-	fmt.Println("Switching to Windows container mode...")
-	switchScript := `
-		$dockerCli = "C:\Program Files\Docker\Docker\DockerCli.exe"
-		if (Test-Path $dockerCli) {
-			& $dockerCli -SwitchWindowsEngine 2>&1 | Out-Null
-			Start-Sleep -Seconds 5
-			& $dockerCli -SwitchDaemon 2>&1 | Out-Null
-		}
-	`
-	switchCmd := exec.Command("powershell", "-NoProfile", "-Command", switchScript)
-	_ = switchCmd.Run()
-
-	// Wait for switch to complete and verify
-	time.Sleep(15 * time.Second)
-
-	// Verify we're in Windows container mode
-	checkCmd := exec.Command("docker", "info", "--format", "{{.OSType}}")
-	if output, err := checkCmd.Output(); err == nil {
-		osType := strings.TrimSpace(string(output))
-		if osType == "linux" {
-			fmt.Println()
-			fmt.Println("WARNING: Docker is in Linux container mode - switching required")
-			fmt.Println("Manually switch to Windows containers:")
-			fmt.Println("  Right-click Docker Desktop icon → 'Switch to Windows containers'")
-			fmt.Println()
-			return fmt.Errorf("docker is in Linux mode - please switch to Windows containers manually")
-		}
-		fmt.Println("✓ Docker Desktop is in Windows container mode")
+		return fmt.Errorf("docker Desktop did not start within 2 minutes")
 	}
 
 	return nil
+}
+
+func enableWSL2() error {
+	// Enable WSL and Virtual Machine Platform features
+	installScript := `
+# Enable WSL
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+
+# Enable Virtual Machine Platform
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# Set WSL2 as default
+wsl --set-default-version 2
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
+	return cmd.Run()
+}
+
+func configureDockerForWSL2() {
+	// Configure Docker Desktop settings for WSL2 mode
+	configScript := `
+$settingsPath = "$env:APPDATA\Docker\settings.json"
+$dockerDir = Split-Path -Path $settingsPath -Parent
+if (-not (Test-Path $dockerDir)) {
+    New-Item -Path $dockerDir -ItemType Directory -Force | Out-Null
+}
+
+$settings = @{
+    "wslEngineEnabled" = $true
+    "displayedOnboarding" = $true
+    "exposeDockerAPIOnTCP2375" = $false
+    "useWindowsContainers" = $false
+}
+
+$settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Force
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", configScript)
+	_ = cmd.Run()
 }
 
 func startDockerWindows() error {
