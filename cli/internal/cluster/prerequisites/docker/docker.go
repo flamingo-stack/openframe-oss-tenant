@@ -521,33 +521,44 @@ func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
 
-	// Use PowerShell to run choco with elevation and enable Windows Containers feature
-	// The --yes flag and proper environment variables prevent the timeout prompt
+	// Create a PowerShell script that runs with elevation
 	psScript := fmt.Sprintf(`
+# This entire script will be run with elevation
 $chocoPath = "%s"
 $env:ChocolateyInstall = "%s"
 
-# Step 1: Enable Windows Containers feature if not already enabled
 Write-Host "Enabling Windows Containers feature..."
 $containersFeature = Get-WindowsFeature -Name Containers -ErrorAction SilentlyContinue
 if ($containersFeature -and $containersFeature.InstallState -ne 'Installed') {
     Install-WindowsFeature -Name Containers -Restart:$false | Out-Null
     Write-Host "Windows Containers feature enabled"
+} else {
+    Write-Host "Windows Containers feature already enabled"
 }
 
-# Step 2: Run choco install with elevation
-Write-Host "Installing Docker Engine..."
-Start-Process -FilePath "$chocoPath" -ArgumentList "install","docker-engine","-y","--no-progress","--force" -Verb RunAs -Wait -NoNewWindow
+Write-Host "Installing Docker Engine via Chocolatey..."
+& $chocoPath install docker-engine -y --no-progress --force
 
-# Step 3: After installation, set Docker service to start automatically
+Write-Host "Configuring Docker service..."
 if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
     Set-Service -Name docker -StartupType Automatic -ErrorAction SilentlyContinue
     Start-Service docker -ErrorAction SilentlyContinue
-    Write-Host "Docker service configured to start automatically"
+    Write-Host "Docker service started and configured for automatic startup"
+} else {
+    Write-Host "Warning: Docker service not found"
 }
 `, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
 
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript)
+	// Save script to temp file
+	tempScript := os.Getenv("TEMP") + "\\install-docker.ps1"
+	if err := os.WriteFile(tempScript, []byte(psScript), 0644); err != nil {
+		return fmt.Errorf("failed to create temporary script: %w", err)
+	}
+	defer func() { _ = os.Remove(tempScript) }()
+
+	// Run the script with elevation
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+		fmt.Sprintf("Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','%s' -Verb RunAs -Wait", tempScript))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
