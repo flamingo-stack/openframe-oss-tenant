@@ -406,8 +406,12 @@ func (d *DockerInstaller) getChocoPath() string {
 }
 
 func (d *DockerInstaller) installChocolatey() error {
-	fmt.Println("Installing Chocolatey package manager (user-only mode)...")
+	fmt.Println()
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println("  Installing Chocolatey Package Manager (User-Only Mode)")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println("Note: This is a fully automated installation with no dialogs or prompts.")
+	fmt.Println()
 
 	// Non-admin Chocolatey installation
 	// Reference: https://docs.chocolatey.org/en-us/choco/setup#non-administrative-install
@@ -479,36 +483,52 @@ if (Test-Path "$ChocolateyInstall\bin") {
 	configCmd.Env = append(os.Environ(), "ChocolateyInstall="+userChocoPath)
 	_ = configCmd.Run() // Ignore errors, proceed anyway
 
-	fmt.Println("Chocolatey user-only installation completed successfully!")
-	fmt.Printf("Chocolatey installed to: %s\n", userChocoPath)
-	fmt.Printf("Chocolatey executable: %s\n", chocoExePath)
+	fmt.Println()
+	fmt.Println("✓ Chocolatey package manager installed successfully!")
+	fmt.Printf("  Location: %s\n", userChocoPath)
+	fmt.Printf("  Executable: %s\n", chocoExePath)
 
 	// Test that choco command works
 	testCmd := exec.Command(chocoExePath, "--version")
 	testCmd.Env = append(os.Environ(), "ChocolateyInstall="+userChocoPath)
 	if output, err := testCmd.CombinedOutput(); err != nil {
-		fmt.Printf("Warning: Chocolatey installed but cannot execute: %v\n", err)
-		fmt.Printf("Output: %s\n", string(output))
+		fmt.Printf("  Warning: Cannot execute choco: %v\n", err)
+		fmt.Printf("  Output: %s\n", string(output))
 	} else {
-		fmt.Printf("Chocolatey version: %s", string(output))
+		fmt.Printf("  Version: %s", strings.TrimSpace(string(output)))
 	}
+	fmt.Println()
 
 	return nil
 }
 
 // installDockerEngineViaChocolatey is a fallback method if DockerMsftProvider fails
 func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
-	fmt.Println("Installing Docker Engine via Chocolatey...")
-	fmt.Println("Note: This is a fully unattended installation with no user prompts.")
+	fmt.Println()
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println("  Installing Docker Engine via Chocolatey")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println()
+	fmt.Println("IMPORTANT: Docker Engine requires administrator privileges.")
+	fmt.Println("  - Installation target: C:\\Program Files\\docker")
+	fmt.Println("  - Windows UAC will prompt for elevation")
+	fmt.Println("  - Please click 'Yes' when the UAC dialog appears")
+	fmt.Println()
 
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
 
-	// Use flags for completely silent, unattended installation
-	cmd := exec.Command(chocoPath, "install", "docker-engine", "-y", "--no-progress", "--force", "--accept-license", "--confirm", "--limit-output")
+	// Use PowerShell to run choco with elevation
+	// The --yes flag and proper environment variables prevent the timeout prompt
+	psScript := fmt.Sprintf(`
+$chocoPath = "%s"
+$env:ChocolateyInstall = "%s"
 
-	// Set environment variables for Chocolatey
-	cmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
+# Run choco install with elevation
+Start-Process -FilePath "$chocoPath" -ArgumentList "install","docker-engine","-y","--no-progress","--force" -Verb RunAs -Wait -NoNewWindow
+`, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
+
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
