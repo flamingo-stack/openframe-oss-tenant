@@ -1,4 +1,4 @@
-name: OpenFrame Build and Release
+name: Build and Release to QA
 
 permissions:
   contents: write
@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "version to release (e.g., v1.2.3)"
+        description: "Version to Release to QA (e.g., v1.2.3)"
         required: true
         type: string
 
