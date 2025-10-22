@@ -1,4 +1,4 @@
-name: Promote QA to Prod
+name: Release to Prod
 
 permissions:
   contents: write
@@ -13,31 +13,36 @@ on:
 
 jobs:
   promote:
-    name: "Create and Merge Promotion PR"
+    name: "Create and Merge Release PR"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      - name: Make Prod changes
+        env:
+          VALUES_PATH: manifests/apps
+        run: |
+          cp ${VALUES_PATH}/values-qa.yaml ${VALUES_PATH}/values-prod.yaml
+          sed -i "s/environment: qa/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
 
-      - name: Create Prod Promotion PR
+      - name: Create Prod Release PR
         id: create_pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALUES_PATH: manifests/apps
         run: |
-          DATE=$(date +%Y-%m-%d-%H%M)
-          git checkout -b prod-promotion-$DATE
-          cp ${VALUES_PATH}/values-qa.yaml ${VALUES_PATH}/values-prod.yaml
-          sed -i "s/environment: qa/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ${VALUES_PATH}/values-prod.yaml
-          git commit -m "Promote QA to Production"
-          git push -u origin prod-promotion-$DATE --force
-          PR_URL=$(gh pr create --title "Promote QA to Production" --body "Promote QA configuration to Production" --base main)
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
+          git commit -am "Release QA to Prod"
+          git push -u origin HEAD --force
+          PR_URL=$(gh pr create --title "Release QA to Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
+          echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
 
-      - name: Merge Prod Promotion PR
+      - name: Merge Prod Release PR
         env:
           GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
         run: |

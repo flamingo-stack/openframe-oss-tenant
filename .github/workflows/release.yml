@@ -1,4 +1,4 @@
-name: Build and Release to QA
+name: Release to QA
 
 permissions:
   contents: write
@@ -356,25 +356,24 @@ jobs:
 
           set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
 
-      - name: Create QA Promotion PR
-        id: create_pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALUES_PATH: manifests/apps
-        run: |
-          git checkout -b qa-${{ inputs.version }}
-          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ${VALUES_PATH}/values-qa.yaml
-          git commit -m "Update QA to ${{ inputs.version }}"
-          git push -u origin qa-${{ inputs.version }} --force
-          PR_URL=$(gh pr create --title "Release ${{ inputs.version }} (QA promotion)" --body "Update QA tags to ${{ inputs.version }}" --base main)
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+      # - name: Create QA Release Branch changes
+      #   id: create_pr
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     VALUES_PATH: manifests/apps
+      #   run: |
+      #     git checkout -b release/qa-${{ inputs.version }}
+      #     sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add ${VALUES_PATH}/values-qa.yaml
+      #     git commit -m "Update QA to ${{ inputs.version }}"
+      #     git push -u origin release/qa-${{ inputs.version }} --force
 
-      - name: Merge QA Promotion PR
-        env:
-          GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
-        run: |
-          gh pr review "${{ steps.create_pr.outputs.pr_url }}" --approve
-          gh pr merge "${{ steps.create_pr.outputs.pr_url }}" --squash --auto
+      # - name: Create/Merge QA Release PR
+      #   env:
+      #     GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
+      #   run: |
+      #     PR_URL=$(gh pr create --title "Release ${{ inputs.version }} to QA" --body "Update QA tags to ${{ inputs.version }}" --base main)
+      #     gh pr review "${PR_URL}" --approve
+      #     gh pr merge "${PR_URL}" --squash --auto
