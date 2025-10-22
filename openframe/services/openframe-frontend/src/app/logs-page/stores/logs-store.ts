@@ -50,6 +50,7 @@ export interface LogFilters {
   toolTypes: string[]
   eventTypes: string[]
   severities: string[]
+  organizations: { id: string, name: string }[]
   __typename?: string
 }
 

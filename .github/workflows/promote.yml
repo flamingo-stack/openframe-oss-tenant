@@ -1,0 +1,45 @@
+name: Promote QA to Prod
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+
+# =============================================================================
+# JOBS
+# =============================================================================
+
+jobs:
+  promote:
+    name: "Create and Merge Promotion PR"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Prod Promotion PR
+        id: create_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALUES_PATH: manifests/apps
+        run: |
+          DATE=$(date +%Y-%m-%d-%H%M)
+          git checkout -b prod-promotion-$DATE
+          cp ${VALUES_PATH}/values-qa.yaml ${VALUES_PATH}/values-prod.yaml
+          sed -i "s/environment: qa/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ${VALUES_PATH}/values-prod.yaml
+          git commit -m "Promote QA to Production"
+          git push -u origin prod-promotion-$DATE --force
+          PR_URL=$(gh pr create --title "Promote QA to Production" --body "Promote QA configuration to Production" --base main)
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Merge Prod Promotion PR
+        env:
+          GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
+        run: |
+          gh pr review "${{ steps.create_pr.outputs.pr_url }}" --approve
+          gh pr merge "${{ steps.create_pr.outputs.pr_url }}" --squash --auto
