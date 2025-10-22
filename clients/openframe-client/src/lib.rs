@@ -365,20 +365,20 @@ impl Client {
         // Start machine heartbeat run manager
         self.machine_heartbeat_run_manager.start();
 
-        // Start tool installation message listener in background
-//         self.tool_installation_message_listener.start().await?;
-//
-//         // Start OpenFrame client update listener in background
-//         self.openframe_client_update_listener.start().await?;
-//
-//         // Start tool agent update listener in background
-//         self.tool_agent_update_listener.start().await?;
-//
-//         // Start tool run manager
-//         self.tool_run_manager.run().await?;
-//
-//         // Start tool connection processing manager
-//         self.tool_connection_processing_manager.run().await?;
+        //Start tool installation message listener in background
+        self.tool_installation_message_listener.start().await?;
+
+        // Start OpenFrame client update listener in background
+        self.openframe_client_update_listener.start().await?;
+
+        // Start tool agent update listener in background
+        self.tool_agent_update_listener.start().await?;
+
+        // Start tool run manager
+        self.tool_run_manager.run().await?;
+
+        // Start tool connection processing manager
+        self.tool_connection_processing_manager.run().await?;
 
         // Initialize logging
         let config_guard = self.config.read().await;
