@@ -23,8 +23,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
 
       - name: Create/Merge Prod Release PR
         env:
@@ -37,5 +37,8 @@ jobs:
           git commit -am "Release QA to Prod"
           git push -u origin HEAD --force
           PR_URL=$(gh pr create --title "Release QA to Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
+          echo "PR created: $PR_URL"
+          echo "Waiting for CI to start..."
+          sleep 5
           gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto
