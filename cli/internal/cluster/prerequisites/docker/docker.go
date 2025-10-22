@@ -333,66 +333,31 @@ func isRunningAsAdmin() bool {
 }
 
 func (d *DockerInstaller) installWindows() error {
-	fmt.Println("Installing Docker on Windows...")
-	fmt.Println()
-
 	// Detect if this is Windows Server
 	isServer, err := IsWindowsServer()
 	if err != nil {
-		fmt.Printf("Warning: Could not detect Windows edition: %v\n", err)
-		fmt.Println("Assuming Windows Desktop...")
 		isServer = false
 	}
 
 	// Check Hyper-V hardware capability for Desktop editions (not needed for Server)
 	if !isServer {
-		fmt.Println("Checking hardware virtualization support...")
 		capable, err := CheckHyperVCapability()
-		if err != nil {
-			fmt.Printf("Warning: Could not determine Hyper-V capability: %v\n", err)
-			fmt.Println("Proceeding anyway, but Docker Desktop may not work...")
-		} else if !capable {
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println("⚠  HARDWARE VIRTUALIZATION NOT SUPPORTED")
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println()
-			fmt.Println(GetHyperVCapabilityMessage())
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			return fmt.Errorf("OpenFrame CLI is not supported on this system due to lack of virtualization features")
+		if err == nil && !capable {
+			return fmt.Errorf("hardware virtualization not supported - Hyper-V required for Docker Desktop")
 		}
-		fmt.Println("✓ Hardware virtualization is supported")
 	}
 
-	if isServer {
-		fmt.Println("Detected: Windows Server - will install Docker Engine")
-		fmt.Println("Note: Uses native Windows containers (Hyper-V isolation)")
-		fmt.Println("      No Linux compatibility layer required")
-	} else {
-		fmt.Println("Detected: Windows Desktop - will install Docker Desktop")
-		fmt.Println("Note: Requires Hyper-V virtualization support")
-		fmt.Println("      Uses native Windows containers for this installation")
-	}
 
-	// Step 1: Install Chocolatey if needed
-	fmt.Println("\nStep 1/2: Checking Chocolatey package manager...")
-
+	// Install Chocolatey if needed
 	// Check if chocolatey is actually installed by checking the file path
 	chocoPath := d.getChocoPath()
 	if _, err := os.Stat(chocoPath); os.IsNotExist(err) {
-		fmt.Println("Installing Chocolatey (this may take several minutes)...")
 		if err := d.installChocolatey(); err != nil {
 			return fmt.Errorf("failed to install Chocolatey: %w", err)
 		}
-		fmt.Println("Chocolatey installed successfully.")
-	} else {
-		fmt.Println("Chocolatey is already installed.")
-		fmt.Printf("Found at: %s\n", chocoPath)
 	}
 
-	// Step 2: Install Docker (Engine for Server, Desktop for Windows)
-	fmt.Println("\nStep 2/2: Installing Docker...")
+	// Install Docker (Engine for Server, Desktop for Windows)
 	if isServer {
 		return d.installDockerEngine()
 	}
@@ -423,47 +388,24 @@ func (d *DockerInstaller) getChocoPath() string {
 }
 
 func (d *DockerInstaller) installChocolatey() error {
-	fmt.Println()
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("  Installing Chocolatey Package Manager (User-Only Mode)")
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("Note: This is a fully automated installation with no dialogs or prompts.")
-	fmt.Println()
 
 	// Non-admin Chocolatey installation
 	// Reference: https://docs.chocolatey.org/en-us/choco/setup#non-administrative-install
 	userChocoPath := os.Getenv("LOCALAPPDATA") + "\\choco"
 
 	installScript := `
-# Set environment variable for non-admin install
 $ChocolateyInstall = "$env:LOCALAPPDATA\choco"
 [System.Environment]::SetEnvironmentVariable('ChocolateyInstall', $ChocolateyInstall, [System.EnvironmentVariableTarget]::User)
 $env:ChocolateyInstall = $ChocolateyInstall
-
-# Download and run installer
 Set-ExecutionPolicy Bypass -Scope Process -Force
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Show what was installed
-Write-Host "Chocolatey installation directory contents:"
-if (Test-Path "$ChocolateyInstall\bin") {
-    Get-ChildItem "$ChocolateyInstall\bin" | Select-Object Name, Length | Format-Table -AutoSize
-} else {
-    Write-Host "WARNING: bin directory not found!"
-    Get-ChildItem $ChocolateyInstall | Select-Object Name | Format-Table -AutoSize
-}
 `
 
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Chocolatey in user mode: %w", err)
+		return fmt.Errorf("failed to install Chocolatey: %w", err)
 	}
-
-	fmt.Printf("Chocolatey installation script completed. Checking %s\n", userChocoPath)
 
 	// Update PATH for current session - use user's local chocolatey installation
 	userChocoBinPath := userChocoPath + "\\bin"
@@ -475,46 +417,15 @@ if (Test-Path "$ChocolateyInstall\bin") {
 	// Also set ChocolateyInstall for current session
 	_ = os.Setenv("ChocolateyInstall", userChocoPath)
 
-	// Configure Chocolatey for fully unattended operation
-	fmt.Println("Configuring Chocolatey for unattended installation...")
-
-	// Use the full path to choco.exe since PATH may not be updated yet
+	// Configure Chocolatey for unattended operation
 	chocoExePath := userChocoBinPath + "\\choco.exe"
-
-	// First verify the installation by checking if choco.exe exists
 	if _, err := os.Stat(chocoExePath); os.IsNotExist(err) {
-		// Try to diagnose the issue
-		fmt.Printf("ERROR: choco.exe not found at expected location: %s\n", chocoExePath)
-		fmt.Println("Checking what was actually installed...")
-
-		// Check what's in the chocolatey directory
-		checkCmd := exec.Command("powershell", "-Command", fmt.Sprintf("Get-ChildItem '%s' -Recurse | Select-Object FullName", userChocoPath))
-		if output, err := checkCmd.CombinedOutput(); err == nil {
-			fmt.Printf("Contents of %s:\n%s\n", userChocoPath, string(output))
-		}
-
-		return fmt.Errorf("chocolatey installation completed but choco.exe not found at %s - installation may have failed silently", chocoExePath)
+		return fmt.Errorf("chocolatey installation failed - choco.exe not found")
 	}
 
 	configCmd := exec.Command(chocoExePath, "feature", "enable", "-n", "allowGlobalConfirmation")
 	configCmd.Env = append(os.Environ(), "ChocolateyInstall="+userChocoPath)
-	_ = configCmd.Run() // Ignore errors, proceed anyway
-
-	fmt.Println()
-	fmt.Println("✓ Chocolatey package manager installed successfully!")
-	fmt.Printf("  Location: %s\n", userChocoPath)
-	fmt.Printf("  Executable: %s\n", chocoExePath)
-
-	// Test that choco command works
-	testCmd := exec.Command(chocoExePath, "--version")
-	testCmd.Env = append(os.Environ(), "ChocolateyInstall="+userChocoPath)
-	if output, err := testCmd.CombinedOutput(); err != nil {
-		fmt.Printf("  Warning: Cannot execute choco: %v\n", err)
-		fmt.Printf("  Output: %s\n", string(output))
-	} else {
-		fmt.Printf("  Version: %s", strings.TrimSpace(string(output)))
-	}
-	fmt.Println()
+	_ = configCmd.Run()
 
 	return nil
 }
@@ -530,57 +441,22 @@ func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
 
-	// Create a PowerShell script that runs with elevation
 	psScript := fmt.Sprintf(`
-# Check if running as Administrator
-$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-$isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-
-if (-not $isAdmin) {
-    Write-Host "ERROR: This script is NOT running with Administrator privileges!" -ForegroundColor Red
-    Write-Host "Current user: $env:USERNAME"
-    exit 1
-}
-
-Write-Host "Running with Administrator privileges - OK" -ForegroundColor Green
-
 $chocoPath = "%s"
 $env:ChocolateyInstall = "%s"
-
-Write-Host "Enabling Windows Containers feature..."
 $containersFeature = Get-WindowsFeature -Name Containers -ErrorAction SilentlyContinue
 if ($containersFeature -and $containersFeature.InstallState -ne 'Installed') {
     Install-WindowsFeature -Name Containers -Restart:$false | Out-Null
-    Write-Host "Windows Containers feature enabled"
-} else {
-    Write-Host "Windows Containers feature already enabled"
 }
-
-Write-Host "Installing Docker Engine via Chocolatey..."
 & $chocoPath install docker-engine -y --no-progress --force
-
-Write-Host "Configuring Docker service..."
 if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
     Set-Service -Name docker -StartupType Automatic -ErrorAction SilentlyContinue
     Start-Service docker -ErrorAction SilentlyContinue
-    Write-Host "Docker service started and configured for automatic startup"
-} else {
-    Write-Host "Warning: Docker service not found"
 }
-
-Write-Host "Installation completed successfully!"
 `, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
 
-	// Run directly with PowerShell (already running as admin)
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Docker Engine: %w", err)
-	}
-
-	return nil
+	return cmd.Run()
 }
 
 func (d *DockerInstaller) installDockerEngine() error {
