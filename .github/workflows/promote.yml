@@ -19,26 +19,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create Prod Release Branch changes
-        id: create_pr
+      - name: Create Prod changes
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALUES_PATH: manifests/apps
         run: |
-          DATE=$(date +%Y-%m-%d-%H%M)
-          git checkout -b release/prod-$DATE
           cp ${VALUES_PATH}/values-qa.yaml ${VALUES_PATH}/values-prod.yaml
           sed -i "s/environment: qa/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ${VALUES_PATH}/values-prod.yaml
-          git commit -m "Release QA to Production"
-          git push -u origin release/prod-$DATE --force
 
       - name: Create/Merge Prod Release PR
         env:
           GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
         run: |
+          git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release QA to Prod"
+          git push -u origin HEAD --force
           PR_URL=$(gh pr create --title "Release QA to Prod" --body "Update Prod with QA values" --base main)
           gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto

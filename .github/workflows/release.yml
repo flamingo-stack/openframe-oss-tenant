@@ -356,24 +356,21 @@ jobs:
 
           set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
 
-      - name: Create QA Release Branch changes
-        id: create_pr
+      - name: Create QA changes
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALUES_PATH: manifests/apps
         run: |
-          git checkout -b release/qa-${{ inputs.version }}
           sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ${VALUES_PATH}/values-qa.yaml
-          git commit -m "Update QA to ${{ inputs.version }}"
-          git push -u origin release/qa-${{ inputs.version }} --force
 
       - name: Create/Merge QA Release PR
         env:
           GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
         run: |
+          git checkout -b release/qa-${{ inputs.version }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update QA to ${{ inputs.version }}"
+          git push -u origin release/qa-${{ inputs.version }} --force
           PR_URL=$(gh pr create --title "Release ${{ inputs.version }} to QA" --body "Update QA tags to ${{ inputs.version }}" --base main)
           gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto
