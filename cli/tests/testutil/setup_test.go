@@ -3,8 +3,8 @@ package testutil
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/cluster"
-	"github.com/flamingo/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +26,7 @@ func TestNewTestMockExecutor(t *testing.T) {
 
 func TestCreateStandardTestFlags(t *testing.T) {
 	flags := CreateStandardTestFlags()
-	
+
 	assert.NotNil(t, flags)
 	assert.IsType(t, &cluster.FlagContainer{}, flags)
 	assert.NotNil(t, flags.Executor)
@@ -35,17 +35,17 @@ func TestCreateStandardTestFlags(t *testing.T) {
 
 func TestCreateIntegrationTestFlags(t *testing.T) {
 	flags := CreateIntegrationTestFlags()
-	
+
 	assert.NotNil(t, flags)
 	assert.IsType(t, &cluster.FlagContainer{}, flags)
 }
 
 func TestSetVerboseMode(t *testing.T) {
 	flags := CreateStandardTestFlags()
-	
+
 	SetVerboseMode(flags, true)
 	assert.True(t, flags.Global.Verbose)
-	
+
 	SetVerboseMode(flags, false)
 	assert.False(t, flags.Global.Verbose)
 }

@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	sharedUI "github.com/flamingo/openframe/internal/shared/ui"
+	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -107,11 +107,11 @@ func (s *DisplayService) ShowClusterList(clusters []ClusterDisplayInfo, out io.W
 				continue
 			}
 			// Data rows - need to account for styled text by using different spacing
-			fmt.Fprintf(out, "%-17s %-8s %-10s %-6s %s\n", 
+			fmt.Fprintf(out, "%-17s %-8s %-10s %-6s %s\n",
 				pterm.RemoveColorFromString(row[0]), // Remove color codes for alignment
-				row[1], 
+				row[1],
 				pterm.RemoveColorFromString(row[2]), // Remove color codes for alignment
-				row[3], 
+				row[3],
 				row[4])
 		}
 	}
@@ -122,10 +122,10 @@ func (s *DisplayService) ShowClusterStatus(status *ClusterDisplayInfo, out io.Wr
 	fmt.Fprintf(out, "\nCluster Status:\n")
 	fmt.Fprintf(out, "  Name: %s\n", pterm.Bold.Sprint(status.Name))
 	fmt.Fprintf(out, "  Type: %s\n", status.Type)
-	
+
 	statusColor := sharedUI.GetStatusColor(status.Status)
 	fmt.Fprintf(out, "  Status: %s\n", statusColor(status.Status))
-	
+
 	fmt.Fprintf(out, "  Node Count: %d\n", status.NodeCount)
 	fmt.Fprintf(out, "  Created: %s\n", status.CreatedAt.Format("2006-01-02 15:04:05"))
 
@@ -134,9 +134,9 @@ func (s *DisplayService) ShowClusterStatus(status *ClusterDisplayInfo, out io.Wr
 		fmt.Fprintf(out, "\nNodes:\n")
 		for _, node := range status.Nodes {
 			nodeStatusColor := sharedUI.GetStatusColor(node.Status)
-			fmt.Fprintf(out, "  - %s (%s): %s\n", 
-				node.Name, 
-				node.Role, 
+			fmt.Fprintf(out, "  - %s (%s): %s\n",
+				node.Name,
+				node.Role,
 				nodeStatusColor(node.Status))
 		}
 	}

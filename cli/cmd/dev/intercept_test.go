@@ -3,8 +3,8 @@ package dev
 import (
 	"testing"
 
-	"github.com/flamingo/openframe/internal/dev/models"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,25 +20,25 @@ func TestGetInterceptCmd(t *testing.T) {
 	// Test flags exist by trying to get them (nil error means flag exists)
 	_, err := cmd.Flags().GetInt("port")
 	assert.NoError(t, err, "port flag should exist")
-	
+
 	_, err = cmd.Flags().GetString("namespace")
 	assert.NoError(t, err, "namespace flag should exist")
-	
+
 	_, err = cmd.Flags().GetString("mount")
 	assert.NoError(t, err, "mount flag should exist")
-	
+
 	_, err = cmd.Flags().GetString("env-file")
 	assert.NoError(t, err, "env-file flag should exist")
-	
+
 	_, err = cmd.Flags().GetBool("global")
 	assert.NoError(t, err, "global flag should exist")
-	
+
 	_, err = cmd.Flags().GetStringSlice("header")
 	assert.NoError(t, err, "header flag should exist")
-	
+
 	_, err = cmd.Flags().GetBool("replace")
 	assert.NoError(t, err, "replace flag should exist")
-	
+
 	_, err = cmd.Flags().GetString("remote-port")
 	assert.NoError(t, err, "remote-port flag should exist")
 
@@ -107,7 +107,7 @@ func TestInterceptCmd_FlagBinding(t *testing.T) {
 
 func TestInterceptCmd_Examples(t *testing.T) {
 	cmd := getInterceptCmd()
-	
+
 	// Check that examples are present in the long description
 	assert.Contains(t, cmd.Long, "openframe dev intercept my-service --port 8080")
 	assert.Contains(t, cmd.Long, "openframe dev intercept my-service --port 8080 --namespace my-namespace")
@@ -117,12 +117,12 @@ func TestInterceptCmd_Examples(t *testing.T) {
 func TestInterceptCmd_PreRunE(t *testing.T) {
 	// Initialize test mode to avoid UI issues
 	testutil.InitializeTestMode()
-	
+
 	cmd := getInterceptCmd()
-	
+
 	// PreRunE should not exist on intercept cmd (handled by parent dev command)
 	assert.Nil(t, cmd.PreRunE)
-	
+
 	// But the command should still be valid
 	assert.NotNil(t, cmd.RunE)
 }

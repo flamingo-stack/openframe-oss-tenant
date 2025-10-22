@@ -1,18 +1,143 @@
 'use client'
 
-import { BenefitCard } from '@flamingo/ui-kit/components/ui'
+import { useState } from 'react'
+import { BenefitCard, Button, Input, Label } from '@flamingo/ui-kit/components/ui'
 import { 
   OpenFrameLogo, 
   CutVendorCostsIcon, 
   AutomateEverythingIcon, 
-  ReclaimProfitsIcon 
+  ReclaimProfitsIcon,
+  OpenmspLogo,
+  OpenFrameText
 } from '@flamingo/ui-kit/components/icons'
+import { useToast } from '@flamingo/ui-kit/hooks'
+import { getSlackCommunityJoinUrl } from '@flamingo/ui-kit/utils'
+import { runtimeEnv } from '@lib/runtime-config'
 
-/**
- * Shared benefits section for all auth screens
- * Displays OpenFrame logo and three benefit cards
- */
 export function AuthBenefitsSection() {
+  const [email, setEmail] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
+  const appMode = runtimeEnv.appMode()
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const handleJoinWaitlist = async () => {
+    if (!email || !isValidEmail(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+        duration: 3000
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('https://content-api.openframe.ai/api/waitlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, platform: 'openframe' })
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success!",
+          description: "You've been added to the waitlist.",
+          variant: "success",
+          duration: 5000
+        })
+        setEmail('')
+      } else {
+        throw new Error('Failed to join waitlist')
+      }
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: "Unable to join the waitlist. Please try again later.",
+        variant: "destructive",
+        duration: 5000
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleJoinCommunity = () => {
+    window.open(getSlackCommunityJoinUrl(), '_blank')
+  }
+
+  if (appMode === 'saas-shared') {
+    return (
+      <div className="bg-ods-card border-l border-ods-border w-full h-full min-h-screen flex items-center justify-center p-6 lg:p-20">
+        <div className="flex flex-col items-center justify-center gap-10 w-full max-w-lg">
+          {/* OpenFrame Logo */}
+          <div className="flex items-center justify-center">
+            <OpenFrameLogo className="h-10 w-auto mr-5" lowerPathColor="var(--color-accent-primary)" upperPathColor="var(--color-text-primary)" />
+            <OpenFrameText textColor='#FAFAFA' style={{ width: '174px', height: '30px' }}/>
+          </div>
+          
+          {/* Waitlist Form Container */}
+          <div className="bg-ods-card border border-ods-border rounded-md w-full p-10">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <h2 className="font-heading font-semibold text-[32px] leading-[40px] text-ods-text-primary tracking-[-0.64px]">
+                  Get Early Access
+                </h2>
+                <p className="text-[18px] leading-6 text-ods-text-secondary">
+                  Don't have access yet? Join our private beta to get your invitation code and start breaking free from vendor lock-in.
+                </p>
+                <p className="text-[18px] leading-6 text-ods-text-secondary mt-2">
+                  Enter your email below or join our OpenMSP Slack community to connect with other MSPs making the switch.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="waitlist-email" className="text-[18px] text-ods-text-primary">
+                  Email
+                </Label>
+                <Input
+                  id="waitlist-email"
+                  type="email"
+                  placeholder="username@mail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-ods-card border-ods-border text-[18px] h-12 placeholder:text-ods-text-secondary"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full">
+                <Button
+                  onClick={handleJoinCommunity}
+                  variant="outline"
+                  leftIcon={<OpenmspLogo className="w-5 h-5 flex-shrink-0" innerFrontBubbleColor="#f1f1f1" frontBubbleColor="#000000" backBubbleColor="#FFC008" />}
+                  className="flex-1 min-w-0 h-12 bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary"
+                >
+                  <span className="font-bold text-[16px] sm:text-[18px] truncate">Join Community</span>
+                </Button>
+                
+                <Button
+                  onClick={handleJoinWaitlist}
+                  disabled={isSubmitting || !isValidEmail(email)}
+                  className="flex-1 min-w-0 h-12 bg-ods-accent disabled:bg-ods-disabled hover:bg-opacity-80 text-ods-bg font-bold text-[16px] sm:text-[18px] disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Joining...' : 'Join Waitlist'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-ods-card border-l border-ods-border w-full h-full min-h-screen flex items-center justify-center p-6 lg:p-20">
       <div className="flex flex-col items-center justify-center gap-10 w-full max-w-lg">

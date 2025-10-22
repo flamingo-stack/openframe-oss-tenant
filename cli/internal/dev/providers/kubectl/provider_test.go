@@ -4,17 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/shared/executor"
-	"github.com/flamingo/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewProvider(t *testing.T) {
 	testutil.InitializeTestMode()
 	mockExecutor := testutil.NewTestMockExecutor()
-	
+
 	provider := NewProvider(mockExecutor, false)
-	
+
 	assert.NotNil(t, provider)
 	assert.Equal(t, mockExecutor, provider.executor)
 }
@@ -217,7 +217,7 @@ func TestProvider_SetContext(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				
+
 				// Verify the correct command was executed
 				commands := mockExecutor.GetExecutedCommands()
 				assert.Len(t, commands, 1)

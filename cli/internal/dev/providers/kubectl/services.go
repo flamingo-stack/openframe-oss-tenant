@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/flamingo/openframe/internal/dev/services/intercept"
+	"github.com/flamingo-stack/openframe/openframe/internal/dev/services/intercept"
 )
 
 // GetServices returns all services in a namespace
@@ -64,7 +64,7 @@ func (p *Provider) ValidateService(ctx context.Context, namespace, serviceName s
 // getServicesSimple is a fallback method using simpler kubectl commands
 func (p *Provider) getServicesSimple(ctx context.Context, namespace string) ([]intercept.ServiceInfo, error) {
 	// Get service names
-	result, err := p.executor.Execute(ctx, "kubectl", "get", "services", "-n", namespace, 
+	result, err := p.executor.Execute(ctx, "kubectl", "get", "services", "-n", namespace,
 		"-o", "jsonpath={.items[*].metadata.name}")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service names: %w", err)
@@ -99,7 +99,7 @@ func (p *Provider) getServiceSimple(ctx context.Context, namespace, serviceName 
 	// Get first port (simplified)
 	portResult, err := p.executor.Execute(ctx, "kubectl", "get", "service", serviceName, "-n", namespace,
 		"-o", "jsonpath={.spec.ports[0].port}")
-	
+
 	var ports []intercept.ServicePort
 	if err == nil && portResult.Stdout != "" {
 		port, _ := strconv.ParseInt(strings.TrimSpace(portResult.Stdout), 10, 32)
@@ -125,7 +125,7 @@ func (p *Provider) convertJSONToServiceInfo(service serviceJSON, namespace strin
 	var ports []intercept.ServicePort
 	for _, port := range service.Spec.Ports {
 		targetPort := p.parseTargetPort(port.TargetPort)
-		
+
 		// If port name is empty, use the port number as name
 		portName := port.Name
 		if portName == "" {

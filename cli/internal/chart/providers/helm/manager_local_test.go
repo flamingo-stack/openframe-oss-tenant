@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo/openframe/internal/chart/models"
-	"github.com/flamingo/openframe/internal/chart/utils/config"
-	"github.com/flamingo/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
+	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 )
 
