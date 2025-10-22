@@ -7,8 +7,11 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
+
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Slf4j
 @RestController
@@ -40,7 +43,7 @@ public class IntegratedToolController {
     }
 
     @PostMapping("/{id}")
-    public Map<String, Object> saveTool(
+    public ResponseEntity<Map<String, Object>> saveTool(
             @PathVariable String id,
             @RequestBody SaveToolRequest request) {
         try {
@@ -51,10 +54,11 @@ public class IntegratedToolController {
             IntegratedTool savedTool = toolService.saveTool(tool);
             log.info("Successfully saved tool configuration for: {}", id);
             debeziumService.createDebeziumConnector(savedTool.getDebeziumConnector());
-            return Map.of("status", "success", "tool", savedTool);
+            return ResponseEntity.ok(Map.of("status", "success", "tool", savedTool));
         } catch (Exception e) {
             log.error("Failed to save tool: {}", id, e);
-            return Map.of("status", "error", "message", e.getMessage());
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "error", "message", e.getMessage()));
         }
     }
 } 
