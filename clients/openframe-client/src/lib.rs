@@ -351,7 +351,7 @@ impl Client {
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
 
-      // Start tool installation message listener in background
+        // Start tool installation message listener in background
 //         self.tool_installation_message_listener.start().await?;
 //
 //         // Start OpenFrame client update listener in background
