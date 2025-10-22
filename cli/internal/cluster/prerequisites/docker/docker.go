@@ -523,7 +523,18 @@ func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 
 	// Create a PowerShell script that runs with elevation
 	psScript := fmt.Sprintf(`
-# This entire script will be run with elevation
+# Check if running as Administrator
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+$isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $isAdmin) {
+    Write-Host "ERROR: This script is NOT running with Administrator privileges!" -ForegroundColor Red
+    Write-Host "Current user: $env:USERNAME"
+    exit 1
+}
+
+Write-Host "Running with Administrator privileges - OK" -ForegroundColor Green
+
 $chocoPath = "%s"
 $env:ChocolateyInstall = "%s"
 
@@ -547,6 +558,8 @@ if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
 } else {
     Write-Host "Warning: Docker service not found"
 }
+
+Write-Host "Installation completed successfully!"
 `, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
 
 	// Save script to temp file
@@ -556,9 +569,28 @@ if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
 	}
 	defer func() { _ = os.Remove(tempScript) }()
 
-	// Run the script with elevation
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
-		fmt.Sprintf("Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','%s' -Verb RunAs -Wait", tempScript))
+	fmt.Println("Requesting administrator privileges via UAC...")
+	fmt.Println("Please click 'Yes' on the UAC prompt to continue.")
+	fmt.Println()
+
+	// Run the script with elevation - using simpler command
+	elevateCmd := fmt.Sprintf(`
+		$pinfo = New-Object System.Diagnostics.ProcessStartInfo
+		$pinfo.FileName = "powershell.exe"
+		$pinfo.Arguments = "-NoProfile -ExecutionPolicy Bypass -File '%s'"
+		$pinfo.Verb = "RunAs"
+		$pinfo.WindowStyle = "Normal"
+		$pinfo.UseShellExecute = $true
+
+		$p = New-Object System.Diagnostics.Process
+		$p.StartInfo = $pinfo
+		$p.Start() | Out-Null
+		$p.WaitForExit()
+
+		exit $p.ExitCode
+	`, tempScript)
+
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", elevateCmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
