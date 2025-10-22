@@ -44,7 +44,7 @@ jobs:
 
       - name: Create/Merge Prod Release PR
         env:
-          GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto
