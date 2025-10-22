@@ -208,7 +208,12 @@ jobs:
       - name: Check if build should run
         id: should_run
         run: |
-          key="${{ contains(keys(fromJSON(toJSON(matrix))), 'id') && matrix.id || matrix.name }}"
+          # Use matrix.id if it exists, otherwise fall back to matrix.name
+          if [[ -n "${{ matrix.id }}" ]]; then
+            key="${{ matrix.id }}"
+          else
+            key="${{ matrix.name }}"
+          fi
           echo "Using key: $key"
           echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[$key] == 'true' }}" >> $GITHUB_OUTPUT
 
