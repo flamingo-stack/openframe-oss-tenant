@@ -239,26 +239,10 @@ func (i *Installer) showDockerStartInstructions() {
 		pterm.Printf("• Enable Docker to start on boot (optional):\n")
 		pterm.Printf("  %s\n", pterm.Cyan("sudo systemctl enable docker"))
 	case "windows":
-		// Check if Windows Server
-		isServer, _ := docker.IsWindowsServer()
-		if isServer {
-			pterm.Printf("• Windows Server detected - Docker Engine service commands:\n")
-			pterm.Printf("\n")
-			pterm.Printf("• Check Docker service status (PowerShell):\n")
-			pterm.Printf("  %s\n", pterm.Cyan("powershell -Command \"Get-Service Docker\""))
-			pterm.Printf("\n")
-			pterm.Printf("• Start Docker service (PowerShell):\n")
-			pterm.Printf("  %s\n", pterm.Cyan("powershell -Command \"Start-Service Docker\""))
-			pterm.Printf("\n")
-			pterm.Printf("• If Containers feature is missing, enable it (PowerShell):\n")
-			pterm.Printf("  %s\n", pterm.Cyan("powershell -Command \"Install-WindowsFeature -Name Containers\""))
-			pterm.Printf("  Then restart the computer\n")
-		} else {
-			pterm.Printf("• Start Docker Desktop from Start Menu or Desktop shortcut\n")
-			pterm.Printf("• Or run from Command Prompt:\n")
-			pterm.Printf("  %s\n", pterm.Cyan(`"C:\Program Files\Docker\Docker\Docker Desktop.exe"`))
-			pterm.Printf("• Wait for Docker to fully start (system tray icon should show running)\n")
-		}
+		pterm.Printf("• Start Docker Desktop from Start Menu or Desktop shortcut\n")
+		pterm.Printf("• Or run from Command Prompt:\n")
+		pterm.Printf("  %s\n", pterm.Cyan(`"C:\Program Files\Docker\Docker\Docker Desktop.exe"`))
+		pterm.Printf("• Wait for Docker to fully start (system tray icon should show running)\n")
 	default:
 		pterm.Printf("• Start Docker Desktop or Docker daemon according to your system\n")
 		pterm.Printf("• Verify Docker is running: %s\n", pterm.Cyan("docker ps"))

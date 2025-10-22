@@ -319,27 +319,8 @@ func startDockerLinux() error {
 	return fmt.Errorf("unable to start Docker daemon: no supported init system found")
 }
 
-// isRunningAsAdmin checks if the current process has administrator privileges
-func isRunningAsAdmin() bool {
-	cmd := exec.Command("powershell", "-Command", `
-		$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-		$currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-	`)
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	return strings.TrimSpace(string(output)) == "True"
-}
 
 func (d *DockerInstaller) installWindows() error {
-	// Detect if this is Windows Server
-	isServer, err := IsWindowsServer()
-	if err != nil {
-		isServer = false
-	}
-
-
 	// Install Chocolatey if needed
 	// Check if chocolatey is actually installed by checking the file path
 	chocoPath := d.getChocoPath()
@@ -349,10 +330,7 @@ func (d *DockerInstaller) installWindows() error {
 		}
 	}
 
-	// Install Docker (Engine for Server, Desktop for Windows)
-	if isServer {
-		return d.installDockerEngine()
-	}
+	// Install Docker Desktop for Windows
 	return d.installDockerDesktop()
 }
 
@@ -422,38 +400,6 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocola
 	return nil
 }
 
-// installDockerEngineViaChocolatey is a fallback method if DockerMsftProvider fails
-func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
-	// Check if running as Administrator - Docker Engine installation requires it
-	isAdmin := isRunningAsAdmin()
-	if !isAdmin {
-		return fmt.Errorf("administrator privileges required - please run as administrator")
-	}
-
-	// Get choco path - try user-local first, then system-wide
-	chocoPath := d.getChocoPath()
-
-	psScript := fmt.Sprintf(`
-$chocoPath = "%s"
-$env:ChocolateyInstall = "%s"
-$containersFeature = Get-WindowsFeature -Name Containers -ErrorAction SilentlyContinue
-if ($containersFeature -and $containersFeature.InstallState -ne 'Installed') {
-    Install-WindowsFeature -Name Containers -Restart:$false | Out-Null
-}
-& $chocoPath install docker-engine -y --no-progress --force
-if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
-    Set-Service -Name docker -StartupType Automatic -ErrorAction SilentlyContinue
-    Start-Service docker -ErrorAction SilentlyContinue
-}
-`, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
-
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript)
-	return cmd.Run()
-}
-
-func (d *DockerInstaller) installDockerEngine() error {
-	return d.installDockerEngineViaChocolatey()
-}
 
 func (d *DockerInstaller) installDockerDesktop() error {
 	// Get choco path
@@ -478,27 +424,6 @@ func (d *DockerInstaller) installDockerDesktop() error {
 }
 
 func startDockerWindows() error {
-	// Check if this is Windows Server (has Docker Engine service)
-	checkService := exec.Command("powershell", "-Command", "Get-Service -Name Docker -ErrorAction SilentlyContinue")
-	if err := checkService.Run(); err == nil {
-		// Docker Engine service exists - start it instead of Docker Desktop
-		fmt.Println("Starting Docker Engine service...")
-		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker")
-		startCmd.Stdout = os.Stdout
-		startCmd.Stderr = os.Stderr
-
-		if err := startCmd.Run(); err != nil {
-			// Get detailed error information
-			statusCmd := exec.Command("powershell", "-Command", "Get-Service -Name Docker | Select-Object Status,StartType | Format-List")
-			output, _ := statusCmd.Output()
-			fmt.Println("\nDocker service status:")
-			fmt.Println(string(output))
-			return fmt.Errorf("failed to start Docker Engine service: %w", err)
-		}
-		return nil
-	}
-
-	// This is Windows Desktop - try to start Docker Desktop
 	fmt.Println("Starting Docker Desktop...")
 
 	// Try the primary Docker Desktop executable path
@@ -559,108 +484,59 @@ func ShowDockerDiagnostics() {
 }
 
 func showWindowsDockerDiagnostics() {
-	// Check if Windows Server or Desktop
-	isServer, _ := IsWindowsServer()
+	fmt.Println("Platform: Windows Desktop")
+	fmt.Println()
 
-	if isServer {
-		fmt.Println("Platform: Windows Server")
-		fmt.Println()
-
-		// Check Docker service status
-		fmt.Println("1. Docker Service Status:")
-		statusCmd := exec.Command("powershell", "-Command", "Get-Service -Name Docker -ErrorAction SilentlyContinue | Format-List Name,Status,StartType")
-		if output, err := statusCmd.CombinedOutput(); err == nil {
-			fmt.Println(string(output))
-		} else {
-			fmt.Println("   Docker service not found or not accessible")
+	// Check Hyper-V status
+	fmt.Println("1. Hyper-V Status:")
+	hypervCmd := exec.Command("powershell", "-Command", "dism /Online /Get-FeatureInfo /FeatureName:Microsoft-Hyper-V-All")
+	if output, err := hypervCmd.CombinedOutput(); err == nil {
+		// Extract just the State line
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			if strings.Contains(line, "State") {
+				fmt.Println("  ", strings.TrimSpace(line))
+				break
+			}
 		}
-
-		// Check Windows Containers feature
-		fmt.Println("2. Windows Containers Feature Status:")
-		containersCmd := exec.Command("powershell", "-Command", "Get-WindowsFeature -Name Containers | Format-List Name,InstallState")
-		if output, err := containersCmd.CombinedOutput(); err == nil {
-			fmt.Println(string(output))
-		} else {
-			fmt.Println("   Could not check Windows Containers feature")
-		}
-
-		// Check Docker version
-		fmt.Println("3. Docker Version:")
-		versionCmd := exec.Command("docker", "version")
-		if output, err := versionCmd.CombinedOutput(); err == nil {
-			fmt.Println(string(output))
-		} else {
-			fmt.Printf("   Error: %v\n", err)
-		}
-
-		// Show recent Docker service logs from Event Viewer
-		fmt.Println("4. Recent Docker Service Events (last 10):")
-		logsCmd := exec.Command("powershell", "-Command",
-			"Get-EventLog -LogName Application -Source Docker -Newest 10 -ErrorAction SilentlyContinue | Format-Table TimeGenerated,EntryType,Message -AutoSize")
-		if output, err := logsCmd.CombinedOutput(); err == nil {
-			fmt.Println(string(output))
-		} else {
-			fmt.Println("   No Docker events found in Application log")
-		}
-
-		fmt.Println()
-		fmt.Println("To view detailed Docker service logs, run:")
-		fmt.Println("  powershell -Command \"Get-EventLog -LogName Application -Source Docker -Newest 50\"")
-
 	} else {
-		fmt.Println("Platform: Windows Desktop")
-		fmt.Println()
+		fmt.Println("   Could not check Hyper-V status")
+	}
 
-		// Check Hyper-V status
-		fmt.Println("1. Hyper-V Status:")
-		hypervCmd := exec.Command("powershell", "-Command", "dism /Online /Get-FeatureInfo /FeatureName:Microsoft-Hyper-V-All")
-		if output, err := hypervCmd.CombinedOutput(); err == nil {
-			// Extract just the State line
-			lines := strings.Split(string(output), "\n")
-			for _, line := range lines {
-				if strings.Contains(line, "State") {
-					fmt.Println("  ", strings.TrimSpace(line))
-					break
-				}
-			}
-		} else {
-			fmt.Println("   Could not check Hyper-V status")
-		}
-
-		// Check if Docker Desktop process is running
-		fmt.Println()
-		fmt.Println("2. Docker Desktop Process:")
-		processCmd := exec.Command("powershell", "-Command",
-			"Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue | Format-List ProcessName,Id,StartTime")
-		if output, err := processCmd.CombinedOutput(); err == nil {
-			if len(output) > 0 {
-				fmt.Println(string(output))
-			} else {
-				fmt.Println("   Docker Desktop process is not running")
-			}
+	// Check if Docker Desktop process is running
+	fmt.Println()
+	fmt.Println("2. Docker Desktop Process:")
+	processCmd := exec.Command("powershell", "-Command",
+		"Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue | Format-List ProcessName,Id,StartTime")
+	if output, err := processCmd.CombinedOutput(); err == nil {
+		if len(output) > 0 {
+			fmt.Println(string(output))
 		} else {
 			fmt.Println("   Docker Desktop process is not running")
 		}
-
-		// Check Docker version
-		fmt.Println("3. Docker Version:")
-		versionCmd := exec.Command("docker", "version")
-		if output, err := versionCmd.CombinedOutput(); err == nil {
-			fmt.Println(string(output))
-		} else {
-			fmt.Printf("   Error: %v\n", err)
-		}
-
-		// Check Docker Desktop logs location
-		fmt.Println()
-		fmt.Println("4. Docker Desktop Logs Location:")
-		fmt.Println("   %LOCALAPPDATA%\\Docker\\log")
-		fmt.Println()
-		fmt.Println("To view Docker Desktop logs, run:")
-		fmt.Println("  powershell -Command \"Get-Content $env:LOCALAPPDATA\\Docker\\log\\host\\*.log -Tail 50\"")
-		fmt.Println()
-		fmt.Println("Or check the Docker Desktop UI: Settings > Troubleshoot > View logs")
+	} else {
+		fmt.Println("   Docker Desktop process is not running")
 	}
+
+	// Check Docker version
+	fmt.Println()
+	fmt.Println("3. Docker Version:")
+	versionCmd := exec.Command("docker", "version")
+	if output, err := versionCmd.CombinedOutput(); err == nil {
+		fmt.Println(string(output))
+	} else {
+		fmt.Printf("   Error: %v\n", err)
+	}
+
+	// Check Docker Desktop logs location
+	fmt.Println()
+	fmt.Println("4. Docker Desktop Logs Location:")
+	fmt.Println("   %LOCALAPPDATA%\\Docker\\log")
+	fmt.Println()
+	fmt.Println("To view Docker Desktop logs, run:")
+	fmt.Println("  powershell -Command \"Get-Content $env:LOCALAPPDATA\\Docker\\log\\host\\*.log -Tail 50\"")
+	fmt.Println()
+	fmt.Println("Or check the Docker Desktop UI: Settings > Troubleshoot > View logs")
 }
 
 func showLinuxDockerDiagnostics() {
