@@ -80,13 +80,23 @@ export function HardwareTab({ device }: HardwareTabProps) {
       disk.percent > 0
     )
 
-    // Extract physical disk number from device path (e.g., /dev/disk3s1 -> disk3)
     const extractPhysicalDisk = (device: string) => {
-      const match = device.match(/disk(\d+)/)
-      return match ? `disk${match[1]}` : device
+      // macOS format
+      const macMatch = device.match(/disk(\d+)/)
+      if (macMatch) {
+        return `disk${macMatch[1]}`
+      }
+      
+      // Windows drive letter format
+      const driveMatch = device.match(/^([A-Z]):/)
+      if (driveMatch) {
+        return `drive_${driveMatch[1]}`
+      }
+      
+      // Fallback: create key from device string
+      return `disk_${device.replace(/[^a-zA-Z0-9]/g, '_')}`
     }
 
-    // Group partitions by physical disk
     const groupedByPhysicalDisk = validDisks.reduce((acc, disk) => {
       const physicalDisk = extractPhysicalDisk(disk.device)
       if (!acc[physicalDisk]) {
@@ -96,27 +106,84 @@ export function HardwareTab({ device }: HardwareTabProps) {
       return acc
     }, {} as Record<string, typeof validDisks>)
 
-    // Parse physical disk info to get actual sizes and names
     const physicalDiskInfo = (physicalDisks || []).reduce((acc, diskStr) => {
-      const parts = diskStr.trim().split(' ')
-      const size = parts[parts.length - 2] + ' ' + parts[parts.length - 1]
-      const diskMatch = diskStr.match(/disk(\d+)/)
-      if (diskMatch) {
-        const diskKey = `disk${diskMatch[1]}`
-        acc[diskKey] = {
-          size,
-          name: diskStr.includes('SSD') ? 'SSD' : 'HDD',
-          type: diskStr.includes('SSD') ? 'SSD' : 'HDD',
-          exists: true
+      const str = diskStr.trim()
+
+      let diskKey = ''
+      let size = ''
+      let diskType = 'HDD'
+      let diskName = ''
+
+      const macDiskMatch = str.match(/disk(\d+)\s+([\d.]+\s*[KMGT]B)/i)
+      if (macDiskMatch) {
+        diskKey = `disk${macDiskMatch[1]}`
+        size = macDiskMatch[2]
+
+        if (str.includes('SSD') || str.includes('NVMe')) {
+          diskType = 'SSD'
+          diskName = 'SSD'
+        } else if (str.includes('Virtual')) {
+          diskType = 'Virtual'
+          diskName = 'Virtual Disk'
+        } else {
+          diskType = 'HDD'
+          diskName = 'HDD'
+        }
+      } else {
+        const sizeMatch = str.match(/([\d.]+\s*[KMGT]B)/i)
+        if (sizeMatch) {
+          size = sizeMatch[1]
+        }
+
+        const driveLetterMatch = str.match(/\b([A-Z]):/i)
+        if (driveLetterMatch) {
+          diskKey = `drive_${driveLetterMatch[1]}`
+        } else {
+          diskKey = `disk_${str.slice(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}`
+        }
+        
+        if (str.includes('Virtual')) {
+          diskType = 'Virtual'
+          diskName = 'Virtual Disk'
+        } else if (str.includes('SSD') || str.includes('NVMe')) {
+          diskType = 'SSD'
+          diskName = 'SSD'
+        } else if (str.includes('HDD')) {
+          diskType = 'HDD'
+          diskName = 'HDD'
+        } else {
+          if (str.includes('Samsung') || str.includes('Kingston') || str.includes('Crucial')) {
+            diskType = 'SSD'
+            diskName = 'SSD'
+          } else {
+            diskType = 'HDD'
+            diskName = 'HDD'
+          }
         }
       }
+      
+      if (diskKey && size) {
+        acc[diskKey] = {
+          size,
+          name: diskName,
+          type: diskType,
+          exists: true,
+          originalString: str
+        }
+      }
+      
       return acc
     }, {} as Record<string, any>)
 
-    // Create disk objects for all physical disks (even if no partition data)
-    const allDisks = Object.keys(physicalDiskInfo).map(physicalDisk => {
-      const partitions = groupedByPhysicalDisk[physicalDisk]
-      const diskInfo = physicalDiskInfo[physicalDisk]
+    const allPhysicalDiskKeys = Object.keys(physicalDiskInfo)
+    const allPartitionKeys = Object.keys(groupedByPhysicalDisk)
+    
+    // Combine both sets to ensure we don't miss any disks
+    const allDiskKeys = new Set([...allPhysicalDiskKeys, ...allPartitionKeys])
+    
+    const allDisks = Array.from(allDiskKeys).map(diskKey => {
+      const partitions = groupedByPhysicalDisk[diskKey]
+      const diskInfo = physicalDiskInfo[diskKey]
 
       if (partitions && partitions.length > 0) {
         // Has partition data - use the largest partition
@@ -127,18 +194,18 @@ export function HardwareTab({ device }: HardwareTabProps) {
         })
 
         return {
-          name: physicalDisk,
-          size: diskInfo.size,
+          name: diskInfo?.name || diskKey,
+          size: diskInfo?.size || mainPartition.total,
           used: mainPartition.used,
           free: mainPartition.free,
           percentage: mainPartition.percent,
-          type: diskInfo.type,
+          type: diskInfo?.type || (diskKey.includes('Virtual') ? 'Virtual' : 'Unknown'),
           count: partitions.length
         }
-      } else {
-        // No partition data - show disk with unavailable stats
+      } else if (diskInfo) {
+        // Has physical disk info but no partition data
         return {
-          name: physicalDisk,
+          name: diskInfo.name,
           size: diskInfo.size,
           used: 'N/A',
           free: 'N/A',
@@ -146,8 +213,19 @@ export function HardwareTab({ device }: HardwareTabProps) {
           type: diskInfo.type,
           count: 0
         }
+      } else {
+        // Partition without matching physical disk info (fallback)
+        return {
+          name: diskKey,
+          size: 'Unknown',
+          used: 'N/A',
+          free: 'N/A',
+          percentage: 0,
+          type: 'Unknown',
+          count: 0
+        }
       }
-    })
+    }).filter(disk => disk.name && disk.size !== 'Unknown') // Filter out invalid entries
 
     return allDisks.sort((a, b) => {
       // Parse size strings to numeric values for comparison
