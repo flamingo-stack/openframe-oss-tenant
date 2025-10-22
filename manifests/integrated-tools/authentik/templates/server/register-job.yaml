@@ -37,7 +37,7 @@ spec:
               key: AUTHENTIK_BOOTSTRAP_TOKEN
         command:
           - /bin/sh
-          - -c
+          - -euc
           - |
             echo "Registering Authentik..."
             echo "Waiting for OpenFrame Management API to become reachable..."
@@ -45,10 +45,14 @@ spec:
               echo "Still waiting..."
               sleep 10
             done
-            curl --verbose --show-error --fail \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-server" \
-              -H "Content-Type: application/json" \
-              -d '{
+            for attempt in 1 2 3 4; do
+              echo "Sending registration request (attempt ${attempt}/4)..."
+              http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
+                -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-server" \
+                -H "Content-Type: application/json" \
+                --connect-timeout 5 \
+                --max-time 20 \
+                -d '{
                 "tool": {
                   "id": "authentik",
                   "toolType": "AUTHENTIK",
@@ -80,8 +84,43 @@ spec:
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
                   "debeziumConnector": null
                 }
-              }' \
-              --retry-delay 2 \
-              --retry-all-errors
-            echo "Authentik Registration complete."
+              }')
+
+              echo "HTTP $http_code"
+              echo "----- Response body -----"
+              cat /tmp/response.txt || true
+              echo "-------------------------"
+
+              case "$http_code" in
+                2??)
+                  echo "Authentik registration complete."
+                  exit 0
+                  ;;
+                429|5??)
+                  if [ "$attempt" -lt 4 ]; then
+                    echo "Transient error ($http_code). Retrying in 10s..."
+                    sleep 10
+                    continue
+                  fi
+                  echo "Gave up after 4 retries (last HTTP $http_code)."
+                  exit 1
+                  ;;
+                4??)
+                  echo "Client error ($http_code). Not retrying."
+                  exit 1
+                  ;;
+                *)
+                  if [ "$attempt" -lt 4 ]; then
+                    echo "Unexpected/Network error (HTTP $http_code). Retrying in 10s..."
+                    sleep 10
+                    continue
+                  fi
+                  echo "Gave up after 4 retries (last HTTP $http_code)."
+                  exit 1
+                  ;;
+              esac
+            done
+
+            echo "Registration failed after 4 retries."
+            exit 1
 {{- end }}
