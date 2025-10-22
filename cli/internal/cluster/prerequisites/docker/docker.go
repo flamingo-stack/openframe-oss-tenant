@@ -846,10 +846,26 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	}
 
 	fmt.Println("Docker Desktop installed successfully.")
+	fmt.Println()
+
+	// Switch to Windows containers mode
+	fmt.Println("Configuring Docker Desktop for Windows containers...")
+	switchCmd := exec.Command("powershell", "-Command", `
+		$dockerCliPath = "C:\Program Files\Docker\Docker\DockerCli.exe"
+		if (Test-Path $dockerCliPath) {
+			& $dockerCliPath -SwitchWindowsEngine -ErrorAction SilentlyContinue
+			Write-Host "Docker switched to Windows container mode"
+		}
+	`)
+	switchCmd.Stdout = os.Stdout
+	switchCmd.Stderr = os.Stderr
+	_ = switchCmd.Run() // Ignore errors, may not be necessary
+
 	fmt.Println("Starting Docker Desktop...")
 	if err := startDockerWindows(); err != nil {
 		fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
 		fmt.Println("Please start Docker Desktop manually from the Start Menu")
+		fmt.Println("After starting, right-click Docker icon and select 'Switch to Windows containers'")
 	}
 
 	return nil
