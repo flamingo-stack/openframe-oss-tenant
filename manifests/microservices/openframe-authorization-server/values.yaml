@@ -1,4 +1,9 @@
-environment: dev
+environment: dev 
+
+registerJob:
+  enabled: true
+servicemonitor:
+  enabled: true
 
 registry:
   docker:
@@ -6,12 +11,7 @@ registry:
     username: ""
     password: ""
     email: ""
-
-registerJob:
-  enabled: true
-servicemonitor:
-  enabled: true
-
+    
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-authorization-server
   tag: latest

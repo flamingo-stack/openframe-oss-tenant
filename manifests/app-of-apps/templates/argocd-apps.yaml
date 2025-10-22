@@ -15,7 +15,7 @@ spec:
       path: "{{ .Values.deployment.oss.repository.baseDir }}/{{ .Values.deployment.oss.repository.appsDir }}"
       helm:
         valueFiles:
-          - "values-{{ .Values.environment }}.yaml"
+          - "{{ .Values.deployment.saas.repository.baseDir }}/{{ .Values.deployment.saas.repository.appsDir }}/values-{{ .Values.environment }}.yaml"
         values: |
           {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
     {{- if .Values.deployment.saas.enabled }}
@@ -24,7 +24,7 @@ spec:
       path: "{{ .Values.deployment.saas.repository.baseDir }}/{{ .Values.deployment.saas.repository.appsDir }}"
       helm:
         valueFiles:
-          - "values-{{ .Values.environment }}.yaml"
+          - "{{ .Values.deployment.saas.repository.baseDir }}/{{ .Values.deployment.saas.repository.appsDir }}/values-{{ .Values.environment }}.yaml"
         values: |
           {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
     {{- end }}

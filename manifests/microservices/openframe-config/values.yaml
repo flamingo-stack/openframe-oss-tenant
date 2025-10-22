@@ -1,4 +1,9 @@
-environment: dev
+environment: dev 
+
+registerJob:
+  enabled: true
+servicemonitor:
+  enabled: true
 
 deployment:
   oss:
@@ -19,12 +24,7 @@ registry:
     username: ""
     password: ""
     email: ""
-
-registerJob:
-  enabled: true
-servicemonitor:
-  enabled: true
-
+    
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-config
   tag: latest
