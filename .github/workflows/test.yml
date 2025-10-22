@@ -215,7 +215,12 @@ jobs:
             key="${{ matrix.name }}"
           fi
           echo "Using key: $key"
-          echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[$key] == 'true' }}" >> $GITHUB_OUTPUT
+          # Check if the key exists in changes outputs
+          if [[ "${{ fromJSON(toJSON(needs.changes.outputs))[$key] }}" == "true" ]]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Checkout
         uses: actions/checkout@v4
