@@ -462,16 +462,32 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("administrator privileges required - please run as administrator")
 	}
 
-	chocoPath := d.getChocoPath()
+	// Enable Windows Containers feature first
+	fmt.Println("Enabling Windows Containers feature...")
+	enableCmd := exec.Command("powershell", "-NoProfile", "-Command",
+		"Enable-WindowsOptionalFeature -Online -FeatureName Containers -NoRestart")
+	enableCmd.Stdout = os.Stdout
+	enableCmd.Stderr = os.Stderr
+	_ = enableCmd.Run() // Continue even if already enabled
 
-	// Install Docker Desktop via Chocolatey
-	cmd := exec.Command(chocoPath, "install", "docker-desktop", "-y", "--no-progress")
-	cmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
+	// Download and run Microsoft's Docker CE install script
+	fmt.Println("Downloading Docker CE install script...")
+	installScript := `
+# Download Docker CE install script
+Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/microsoft/Windows-Containers/Main/helpful_tools/Install-DockerCE/install-docker-ce.ps1" -OutFile "$env:TEMP\install-docker-ce.ps1"
+
+# Run the install script
+& "$env:TEMP\install-docker-ce.ps1"
+
+# Clean up
+Remove-Item "$env:TEMP\install-docker-ce.ps1" -ErrorAction SilentlyContinue
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Docker Desktop: %w", err)
+		return fmt.Errorf("failed to install Docker CE: %w", err)
 	}
 
 	return nil
