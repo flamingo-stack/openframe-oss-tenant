@@ -520,31 +520,46 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("failed to install Docker Desktop: %w", err)
 	}
 
-	// Configure Docker Desktop settings to use Windows containers by default
-	configureCmd := exec.Command("powershell", "-Command", `
-		$settingsPath = "$env:APPDATA\Docker\settings.json"
-		$dockerDir = Split-Path -Path $settingsPath -Parent
-		if (-not (Test-Path $dockerDir)) {
-			New-Item -Path $dockerDir -ItemType Directory -Force | Out-Null
-		}
-		$settings = @{
-			"displayedOnboarding" = $true
-			"containerModeSwitchRequiresRestart" = $false
-			"exposeDockerAPIOnTCP2375" = $false
-			"displaySwitchWinLinContainersMessage" = $false
-			"dockerCliOptions" = @{ "auditLog" = $false }
-			"linuxVM" = @{ "cpus" = 2; "memoryMiB" = 2048; "swapMiB" = 1024; "diskSizeMiB" = 61035 }
-		}
-		$settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Force
-	`)
-	_ = configureCmd.Run() // Ignore errors
+	// Start Docker Desktop
+	_ = startDockerWindows()
 
-	_ = startDockerWindows() // Ignore errors
-	time.Sleep(30 * time.Second)
+	// Wait for Docker Desktop to fully start (60 seconds)
+	fmt.Println("Waiting for Docker Desktop to start...")
+	time.Sleep(60 * time.Second)
 
-	// Switch to Windows containers after Docker is running
-	switchCmd := exec.Command("powershell", "-Command", `& "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchDaemon`)
-	_ = switchCmd.Run() // Ignore errors
+	// Switch to Windows containers
+	fmt.Println("Switching to Windows container mode...")
+	switchScript := `
+		$dockerCli = "C:\Program Files\Docker\Docker\DockerCli.exe"
+		if (Test-Path $dockerCli) {
+			# Try switching to Windows mode
+			& $dockerCli -SwitchWindowsEngine 2>&1 | Out-Null
+			Start-Sleep -Seconds 5
+			# Also try the daemon switch command
+			& $dockerCli -SwitchDaemon 2>&1 | Out-Null
+		}
+	`
+	switchCmd := exec.Command("powershell", "-NoProfile", "-Command", switchScript)
+	_ = switchCmd.Run()
+
+	// Wait a bit more for the switch to complete
+	time.Sleep(10 * time.Second)
+
+	// Verify we're in Windows container mode
+	checkCmd := exec.Command("docker", "info", "--format", "{{.OSType}}")
+	if output, err := checkCmd.Output(); err == nil {
+		osType := strings.TrimSpace(string(output))
+		if osType == "linux" {
+			fmt.Println()
+			fmt.Println("WARNING: Docker is still in Linux container mode!")
+			fmt.Println("Please manually switch to Windows containers:")
+			fmt.Println("  1. Right-click Docker Desktop icon in system tray")
+			fmt.Println("  2. Select 'Switch to Windows containers...'")
+			fmt.Println()
+		} else if osType == "windows" {
+			fmt.Println("✓ Docker Desktop is in Windows container mode")
+		}
+	}
 
 	return nil
 }
