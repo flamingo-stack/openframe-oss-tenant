@@ -521,29 +521,43 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	}
 
 	// Start Docker Desktop
-	_ = startDockerWindows()
+	if err := startDockerWindows(); err != nil {
+		return fmt.Errorf("failed to start Docker Desktop: %w", err)
+	}
 
-	// Wait for Docker Desktop to fully start (60 seconds)
-	fmt.Println("Waiting for Docker Desktop to start...")
-	time.Sleep(60 * time.Second)
+	// Wait for Docker to become responsive (up to 2 minutes)
+	fmt.Println("Waiting for Docker Desktop to start (this may take up to 2 minutes)...")
+	dockerStarted := false
+	for i := 0; i < 120; i++ {
+		checkCmd := exec.Command("docker", "info")
+		if err := checkCmd.Run(); err == nil {
+			dockerStarted = true
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	if !dockerStarted {
+		return fmt.Errorf("Docker Desktop did not start within 2 minutes - please start it manually and try again")
+	}
+
+	fmt.Println("✓ Docker Desktop is running")
 
 	// Switch to Windows containers
 	fmt.Println("Switching to Windows container mode...")
 	switchScript := `
 		$dockerCli = "C:\Program Files\Docker\Docker\DockerCli.exe"
 		if (Test-Path $dockerCli) {
-			# Try switching to Windows mode
 			& $dockerCli -SwitchWindowsEngine 2>&1 | Out-Null
 			Start-Sleep -Seconds 5
-			# Also try the daemon switch command
 			& $dockerCli -SwitchDaemon 2>&1 | Out-Null
 		}
 	`
 	switchCmd := exec.Command("powershell", "-NoProfile", "-Command", switchScript)
 	_ = switchCmd.Run()
 
-	// Wait a bit more for the switch to complete
-	time.Sleep(10 * time.Second)
+	// Wait for switch to complete and verify
+	time.Sleep(15 * time.Second)
 
 	// Verify we're in Windows container mode
 	checkCmd := exec.Command("docker", "info", "--format", "{{.OSType}}")
@@ -551,14 +565,13 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		osType := strings.TrimSpace(string(output))
 		if osType == "linux" {
 			fmt.Println()
-			fmt.Println("WARNING: Docker is still in Linux container mode!")
-			fmt.Println("Please manually switch to Windows containers:")
-			fmt.Println("  1. Right-click Docker Desktop icon in system tray")
-			fmt.Println("  2. Select 'Switch to Windows containers...'")
+			fmt.Println("WARNING: Docker is in Linux container mode - switching required")
+			fmt.Println("Manually switch to Windows containers:")
+			fmt.Println("  Right-click Docker Desktop icon → 'Switch to Windows containers'")
 			fmt.Println()
-		} else if osType == "windows" {
-			fmt.Println("✓ Docker Desktop is in Windows container mode")
+			return fmt.Errorf("docker is in Linux mode - please switch to Windows containers manually")
 		}
+		fmt.Println("✓ Docker Desktop is in Windows container mode")
 	}
 
 	return nil
@@ -606,14 +619,14 @@ func startDockerWindows() error {
 
 // WaitForDocker waits for Docker daemon to become available
 func WaitForDocker() error {
-	maxAttempts := 30 // 30 seconds timeout
+	maxAttempts := 120 // 2 minutes timeout
 	for i := 0; i < maxAttempts; i++ {
 		if IsDockerRunning() {
 			return nil
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return fmt.Errorf("timeout waiting for Docker to start")
+	return fmt.Errorf("docker failed to start within timeout period")
 }
 
 // ShowDockerDiagnostics displays detailed diagnostic information about Docker
