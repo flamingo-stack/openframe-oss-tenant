@@ -90,7 +90,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
-                  "debeziumConnector": {
+                  "debeziumConnector": [{
                     "name": "fleet-mysql-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.mysql.MySqlConnector",
@@ -103,22 +103,34 @@ spec:
                       "database.server.id": "1",
                       "database.include.list": "'"${MYSQL_DATABASE}"'",
                       "topic.prefix": "fleet_mysql",
-                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities",
+                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities, '"${MYSQL_DATABASE}"'.query_results"",
                       "topic.creation.default.replication.factor": 1,
                       "topic.creation.default.partitions": 10,
                       "topic.creation.default.cleanup.policy": "compact",
                       "topic.creation.default.compression.type": "lz4",
-                      "transforms": "route",
+                      "transforms": "addHeaderQueryResult,addHeaderJSONType,route",
+                      "tombstones.on.delete": "false",
+                      "predicates": "isQueryResult",
                       "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
                       "transforms.route.topic.regex": "fleet_mysql\\.'"${MYSQL_DATABASE}"'\\.(.*)",
                       "transforms.route.topic.replacement": "fleet.$1.events",
+                      "transforms.addHeaderQueryResult.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderQueryResult.header": "message-type",
+                      "transforms.addHeaderQueryResult.value.literal": "FLEET_MDM_QUERY_RESULT_EVENT",
+                      "transforms.addHeaderQueryResult.predicate": "isQueryResult",
+                      "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderJSONType.header": "__TypeId__",
+                      "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage",
+                      "transforms.addHeaderJSONType.predicate": "isQueryResult",
                       "snapshot.mode": "initial",
                       "include.schema.changes": "false",
                       "database.allowPublicKeyRetrieval": "true",
                       "database.useSSL": "false",
                       "schema.history.internal.kafka.topic": "fleet_mysql_schema_history",
-                      "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092"
-                    }
+                      "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092",
+                      "predicates.isQueryResult.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
+                      "predicates.isQueryResult.pattern": "fleet_mysql.'"${MYSQL_DATABASE}"'.query_results"
+                    }]
                   }
                 }
               }' \

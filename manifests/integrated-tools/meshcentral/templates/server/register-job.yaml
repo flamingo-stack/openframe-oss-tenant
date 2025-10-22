@@ -102,7 +102,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/metrics"],
-                  "debeziumConnector": {
+                  "debeziumConnectors": [{
                     "name": "meshcentral-mongo-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
@@ -121,7 +121,7 @@ spec:
                       "transforms.addHeaderJSONType.header": "__TypeId__",
                       "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage"
                     }
-                  }
+                  }]
                 }
               }' \
               --retry-delay 2 \

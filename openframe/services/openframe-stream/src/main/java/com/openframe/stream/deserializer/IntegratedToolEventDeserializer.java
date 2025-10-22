@@ -45,6 +45,9 @@ public abstract class IntegratedToolEventDeserializer implements KafkaMessageDes
     public DeserializedDebeziumMessage deserialize(CommonDebeziumMessage debeziumMessage, MessageType messageType) {
         try {
             JsonNode after = debeziumMessage.getPayload().getAfter();
+            if (after == null || after.isNull()) {
+                return null;
+            }
             long eventTimestamp = getEffectiveTimestamp(debeziumMessage, after);
             String sourceEventType = getSourceEventType(after).orElse(UNKNOWN);
 

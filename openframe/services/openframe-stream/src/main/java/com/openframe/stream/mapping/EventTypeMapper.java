@@ -201,7 +201,8 @@ public class EventTypeMapper {
         
         // Queries
         registerMapping(IntegratedToolType.FLEET, SourceEventTypes.Fleet.LIVE_QUERY, UnifiedEventType.QUERY_EXECUTED);
-        
+        registerMapping(IntegratedToolType.FLEET, SourceEventTypes.Fleet.EXECUTE_SCHEDULED_QUERY, UnifiedEventType.QUERY_EXECUTED);
+
         // OS Version Requirements
         registerMapping(IntegratedToolType.FLEET, SourceEventTypes.Fleet.EDITED_MACOS_MIN_VERSION, UnifiedEventType.CONFIGURATION_UPDATED);
         registerMapping(IntegratedToolType.FLEET, SourceEventTypes.Fleet.EDITED_IOS_MIN_VERSION, UnifiedEventType.CONFIGURATION_UPDATED);
