@@ -1,4 +1,4 @@
-name: Promote QA to Prod
+name: Release QA to Prod
 
 permissions:
   contents: write
@@ -34,7 +34,7 @@ jobs:
           git add ${VALUES_PATH}/values-prod.yaml
           git commit -m "Promote QA to Production"
           git push -u origin prod-promotion-$DATE --force
-          PR_URL=$(gh pr create --title "Promote QA to Production" --body "Promote QA configuration to Production" --base main)
+          PR_URL=$(gh pr create --title "Release QA to Prod" --body "Update Prod with QA values" --base main)
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
 
       - name: Merge Prod Promotion PR
