@@ -319,8 +319,22 @@ func startDockerLinux() error {
 	return fmt.Errorf("unable to start Docker daemon: no supported init system found")
 }
 
+// isRunningAsAdmin checks if the current process has administrator privileges
+func isRunningAsAdmin() bool {
+	cmd := exec.Command("powershell", "-Command", `
+		$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+		$currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+	`)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(output)) == "True"
+}
+
 func (d *DockerInstaller) installWindows() error {
 	fmt.Println("Installing Docker on Windows...")
+	fmt.Println()
 
 	// Detect if this is Windows Server
 	isServer, err := IsWindowsServer()
@@ -507,16 +521,11 @@ if (Test-Path "$ChocolateyInstall\bin") {
 
 // installDockerEngineViaChocolatey is a fallback method if DockerMsftProvider fails
 func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
-	fmt.Println()
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("  Installing Docker Engine via Chocolatey")
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println()
-	fmt.Println("IMPORTANT: Docker Engine requires administrator privileges.")
-	fmt.Println("  - Installation target: C:\\Program Files\\docker")
-	fmt.Println("  - Windows UAC will prompt for elevation")
-	fmt.Println("  - Please click 'Yes' when the UAC dialog appears")
-	fmt.Println()
+	// Check if running as Administrator - Docker Engine installation requires it
+	isAdmin := isRunningAsAdmin()
+	if !isAdmin {
+		return fmt.Errorf("administrator privileges required - please run as administrator")
+	}
 
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
@@ -562,86 +571,30 @@ if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
 Write-Host "Installation completed successfully!"
 `, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
 
-	// Save script to temp file
-	tempScript := os.Getenv("TEMP") + "\\install-docker.ps1"
-	if err := os.WriteFile(tempScript, []byte(psScript), 0644); err != nil {
-		return fmt.Errorf("failed to create temporary script: %w", err)
-	}
-	defer func() { _ = os.Remove(tempScript) }()
-
-	fmt.Println("Requesting administrator privileges via UAC...")
-	fmt.Println("Please click 'Yes' on the UAC prompt to continue.")
-	fmt.Println()
-
-	// Run the script with elevation - using simpler command
-	elevateCmd := fmt.Sprintf(`
-		$pinfo = New-Object System.Diagnostics.ProcessStartInfo
-		$pinfo.FileName = "powershell.exe"
-		$pinfo.Arguments = "-NoProfile -ExecutionPolicy Bypass -File '%s'"
-		$pinfo.Verb = "RunAs"
-		$pinfo.WindowStyle = "Normal"
-		$pinfo.UseShellExecute = $true
-
-		$p = New-Object System.Diagnostics.Process
-		$p.StartInfo = $pinfo
-		$p.Start() | Out-Null
-		$p.WaitForExit()
-
-		exit $p.ExitCode
-	`, tempScript)
-
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", elevateCmd)
+	// Run directly with PowerShell (already running as admin)
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		// Check if error message contains .NET or reboot related text
-		errMsg := err.Error()
-		if strings.Contains(errMsg, "exit status") {
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println()
-			fmt.Println("Chocolatey has installed .NET Framework 4.8, but a system")
-			fmt.Println("reboot is required before Docker can be installed.")
-			fmt.Println()
-			fmt.Println("Next steps:")
-			fmt.Println("  1. Restart your computer now")
-			fmt.Println("  2. Run this installer again after reboot")
-			fmt.Println("  3. Docker Engine will install successfully")
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			return fmt.Errorf("system reboot required - please restart and run again")
-		}
-		return fmt.Errorf("failed to install Docker Engine via Chocolatey: %w", err)
+		return fmt.Errorf("failed to install Docker Engine: %w", err)
 	}
 
-	fmt.Println()
-	fmt.Println("✓ Docker Engine installed successfully")
-	fmt.Println("✓ Docker service configured to start automatically on boot")
 	return nil
 }
 
 func (d *DockerInstaller) installDockerEngine() error {
-	fmt.Println()
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("  Installing Docker Engine for Windows Server")
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println()
-	fmt.Println("Note: Microsoft's DockerMsftProvider is deprecated.")
-	fmt.Println("      Using Chocolatey package manager instead.")
-	fmt.Println()
-
-	// Use Chocolatey directly - DockerMsftProvider is deprecated/broken
 	return d.installDockerEngineViaChocolatey()
 }
 
 func (d *DockerInstaller) installDockerDesktop() error {
-	// Check if Hyper-V is enabled (required for Docker Desktop)
-	fmt.Println("Checking Hyper-V status...")
+	// Check if running as Administrator - Docker Desktop installation requires it
+	isAdmin := isRunningAsAdmin()
+	if !isAdmin {
+		return fmt.Errorf("administrator privileges required - please run as administrator")
+	}
 
-	// Use DISM to check Hyper-V status (more reliable than PowerShell cmdlet)
+	// Check if Hyper-V is enabled (required for Docker Desktop)
 	checkHyperV := exec.Command("powershell", "-Command", "dism /Online /Get-FeatureInfo /FeatureName:Microsoft-Hyper-V-All")
 	output, err := checkHyperV.CombinedOutput()
 	outputStr := string(output)
@@ -649,19 +602,8 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	isEnabled := strings.Contains(outputStr, "State : Enabled")
 
 	if err != nil || !isEnabled {
-		fmt.Println("Hyper-V is not enabled. Enabling Hyper-V...")
-		fmt.Println()
-		fmt.Println("IMPORTANT: Enabling Hyper-V requires administrator privileges.")
-		fmt.Println("Windows will prompt for UAC elevation. Please click 'Yes' when prompted.")
-		fmt.Println("Note: A system restart will be required after enabling Hyper-V.")
-		fmt.Println()
-
 		// Try Install-WindowsFeature first (more reliable on Windows Server and some editions)
-		fmt.Println("Enabling Hyper-V platform and management tools...")
-
-		// Use Start-Process with -Verb RunAs to request elevation
-		enableScript := `Start-Process powershell -Verb RunAs -ArgumentList '-Command','Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false' -Wait`
-		enableCmd := exec.Command("powershell", "-Command", enableScript)
+		enableCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false")
 		enableCmd.Stdout = os.Stdout
 		enableCmd.Stderr = os.Stderr
 
@@ -669,75 +611,19 @@ func (d *DockerInstaller) installDockerDesktop() error {
 
 		// If Install-WindowsFeature fails (not available on some Windows editions), fall back to DISM
 		if err != nil {
-			fmt.Println("Install-WindowsFeature not available, trying DISM method...")
-			dismScript := `Start-Process powershell -Verb RunAs -ArgumentList '-Command','dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All /NoRestart' -Wait`
-			enableCmd = exec.Command("powershell", "-Command", dismScript)
+			enableCmd = exec.Command("powershell", "-Command", "dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All /NoRestart")
 			enableCmd.Stdout = os.Stdout
 			enableCmd.Stderr = os.Stderr
 			err = enableCmd.Run()
 		}
 
 		if err != nil {
-			fmt.Println()
-			fmt.Printf("Error enabling Hyper-V: %v\n", err)
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println("⚠  MANUAL HYPER-V ENABLEMENT REQUIRED")
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println()
-			fmt.Println("Automatic Hyper-V enablement failed. Please enable it manually:")
-			fmt.Println()
-			fmt.Println("Method 1: Using Install-WindowsFeature (run as Administrator):")
-			fmt.Println("  powershell -Command \"Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false\"")
-			fmt.Println()
-			fmt.Println("Method 2: Using Enable-WindowsOptionalFeature (run as Administrator):")
-			fmt.Println("  powershell -Command \"Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All\"")
-			fmt.Println()
-			fmt.Println("Method 3: Using DISM (run as Administrator):")
-			fmt.Println("  powershell -Command \"dism /Online /Enable-Feature /FeatureName:Microsoft-Hyper-V-All /All\"")
-			fmt.Println()
-			fmt.Println("Method 4: Using Windows Features GUI:")
-			fmt.Println("  1. Open Control Panel > Programs > Turn Windows features on or off")
-			fmt.Println("  2. Check 'Hyper-V' (all sub-items)")
-			fmt.Println("  3. Click OK and restart when prompted")
-			fmt.Println()
-			fmt.Println("After enabling Hyper-V and restarting, run this installer again.")
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			return fmt.Errorf("Hyper-V enablement failed - please enable manually and run again")
+			return fmt.Errorf("failed to enable Hyper-V - please enable manually and run again")
 		}
 
-		fmt.Println()
-		fmt.Println("Hyper-V enabled successfully.")
-		fmt.Println()
-		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-		fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
-		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-		fmt.Println()
-		fmt.Println("Hyper-V has been enabled, but a system reboot is required")
-		fmt.Println("before Docker Desktop can be installed.")
-		fmt.Println()
-		fmt.Println("Next steps:")
-		fmt.Println("  1. Restart your computer now")
-		fmt.Println("  2. Run this installer again after reboot")
-		fmt.Println("  3. Docker Desktop will install successfully")
-		fmt.Println()
-		fmt.Println("To restart now, run:")
-		fmt.Println("  shutdown /r /t 0")
-		fmt.Println()
-		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 		return fmt.Errorf("system reboot required for Hyper-V activation - please restart and run again")
 	}
 
-	fmt.Println("Hyper-V is already enabled.")
-
-	fmt.Println("Installing Docker Desktop via Chocolatey...")
-	fmt.Println("Note: This is a fully unattended installation with no user prompts.")
-	fmt.Println()
-	fmt.Println("IMPORTANT: Docker Desktop installation requires administrator privileges.")
-	fmt.Println("The Chocolatey package will attempt to elevate privileges automatically.")
-	fmt.Println("If prompted by UAC (User Account Control), please click 'Yes' to allow the installation.")
-	fmt.Println()
 
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
