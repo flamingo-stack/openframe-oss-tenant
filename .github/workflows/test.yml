@@ -208,24 +208,9 @@ jobs:
       - name: Check if build should run
         id: should_run
         run: |
-          # Use matrix.id if it exists, otherwise fall back to matrix.name
-          if [[ -n "${{ matrix.id }}" ]]; then
-            key="${{ matrix.id }}"
-          else
-            key="${{ matrix.name }}"
-          fi
+          key="${{ matrix.id != '' && matrix.id || matrix.name }}"
           echo "Using key: $key"
-          
-          # Get the changes outputs as JSON and check if our key is true
-          changes_json='${{ toJSON(needs.changes.outputs) }}'
-          echo "Changes JSON: $changes_json"
-          
-          # Use jq to check if the key exists and is true
-          if echo "$changes_json" | jq -e --arg key "$key" '.[$key] == "true"' > /dev/null 2>&1; then
-            echo "run=true" >> $GITHUB_OUTPUT
-          else
-            echo "run=false" >> $GITHUB_OUTPUT
-          fi
+          echo "run=${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && fromJSON(toJSON(needs.changes.outputs))[$key] == 'true' }}" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
