@@ -462,95 +462,92 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("administrator privileges required - please run as administrator")
 	}
 
-	// Install Docker CE - self-contained installation
-	installScript := `
-# Enable Windows Containers feature
-Write-Output "Enabling Windows Containers feature..."
-Enable-WindowsOptionalFeature -Online -FeatureName Containers -NoRestart -ErrorAction SilentlyContinue
+	fmt.Println("Installing Docker CE...")
 
-# Download Docker CE
-Write-Output "Checking Docker versions"
-$DefaultDockerLocation = "https://download.docker.com/win/static/stable/x86_64/"
-$availableVersions = ((Invoke-WebRequest -Uri $DefaultDockerLocation -UseBasicParsing).Links | Where-Object {$_.href -like "docker*"}).href | Sort-Object -Descending
-$availableVersions = ($availableVersions | Select-String -Pattern "docker-(\d+\.\d+\.\d+).+"  -AllMatches | Select-Object -Expand Matches | %{ $_.Groups[1].Value })
-$version = $availableVersions[0]
+	// Step 1: Enable Windows Containers feature
+	fmt.Println("Step 1: Enabling Windows Containers feature...")
+	enableCmd := exec.Command("powershell", "-NoProfile", "-Command",
+		"Enable-WindowsOptionalFeature -Online -FeatureName Containers -NoRestart -ErrorAction SilentlyContinue")
+	enableCmd.Stdout = os.Stdout
+	enableCmd.Stderr = os.Stderr
+	_ = enableCmd.Run()
 
-$zipUrl = $DefaultDockerLocation + "docker-$version.zip"
-$destinationFolder = "$env:TEMP\DockerDownload"
-
-if(!(Test-Path "$destinationFolder")) {
-    New-Item -Path $destinationFolder -ItemType Directory | Out-Null
-}
-
-Write-Output "Downloading $zipUrl to $destinationFolder\docker-$version.zip"
-$ProgressPreference = "SilentlyContinue"
-Invoke-WebRequest -Uri $zipUrl -OutFile "$destinationFolder\docker-$version.zip" -UseBasicParsing
-Expand-Archive -Path "$destinationFolder\docker-$version.zip" -DestinationPath "$destinationFolder\docker-$version" -Force
-$ProgressPreference = "Continue"
-
-# Install Docker binaries
-Write-Output "Installing Docker... $destinationFolder\docker-$version\docker\docker.exe"
-Copy-Item -Path "$destinationFolder\docker-$version\docker\docker.exe" -Destination "$env:windir\System32\docker.exe" -Force
-
-Write-Output "Installing Docker daemon... $destinationFolder\docker-$version\docker\dockerd.exe"
-Copy-Item -Path "$destinationFolder\docker-$version\docker\dockerd.exe" -Destination "$env:windir\System32\dockerd.exe" -Force
-
-# Create docker config directory
-$dockerDataPath = "$env:ProgramData\docker"
-$dockerConfigPath = "$dockerDataPath\config"
-if (!(Test-Path $dockerConfigPath)) {
-    New-Item -Path $dockerConfigPath -ItemType Directory -Force | Out-Null
-}
-
-# Create daemon.json
-$daemonSettings = @{
-    hosts = @("npipe://")
-}
-$daemonSettings | ConvertTo-Json | Out-File -FilePath "$dockerConfigPath\daemon.json" -Encoding ASCII
-
-# Register and start Docker service
-Write-Output "Configuring the docker service..."
-& dockerd --register-service --service-name docker
-
-Write-Output "Starting Docker service..."
-Start-Service -Name docker
-
-# Wait for Docker to be ready
-Write-Output "Waiting for Docker daemon..."
-$dockerReady = $false
-$startTime = Get-Date
-while (-not $dockerReady) {
-    try {
-        docker version | Out-Null
-        if ($?) {
-            $dockerReady = $true
-        }
-    }
-    catch {
-        $timeElapsed = $(Get-Date) - $startTime
-        if ($timeElapsed.TotalMinutes -ge 2) {
-            throw "Docker daemon did not start within 2 minutes"
-        }
-        Start-Sleep -Seconds 1
-    }
-}
-Write-Output "Successfully connected to Docker Daemon."
-
-# Show installed images
-Write-Output "The following images are present on this machine:"
-docker images
-
-Write-Output "Script complete!"
+	// Step 2: Download Docker
+	fmt.Println("Step 2: Downloading Docker CE...")
+	downloadScript := `
+$version = "27.4.0"
+$url = "https://download.docker.com/win/static/stable/x86_64/docker-$version.zip"
+$dest = "$env:TEMP\docker.zip"
+Write-Output "Downloading Docker $version..."
+Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+Write-Output "Extracting..."
+Expand-Archive -Path $dest -DestinationPath "$env:TEMP\docker" -Force
+Write-Output "Download complete"
 `
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Docker CE: %w", err)
+	downloadCmd := exec.Command("powershell", "-NoProfile", "-Command", downloadScript)
+	downloadCmd.Stdout = os.Stdout
+	downloadCmd.Stderr = os.Stderr
+	if err := downloadCmd.Run(); err != nil {
+		return fmt.Errorf("failed to download Docker: %w", err)
 	}
 
-	return nil
+	// Step 3: Install Docker binaries
+	fmt.Println("Step 3: Installing Docker binaries...")
+	installCmd := exec.Command("powershell", "-NoProfile", "-Command", `
+Copy-Item -Path "$env:TEMP\docker\docker\docker.exe" -Destination "$env:windir\System32\docker.exe" -Force
+Copy-Item -Path "$env:TEMP\docker\docker\dockerd.exe" -Destination "$env:windir\System32\dockerd.exe" -Force
+Write-Output "Binaries installed"
+`)
+	installCmd.Stdout = os.Stdout
+	installCmd.Stderr = os.Stderr
+	if err := installCmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Docker binaries: %w", err)
+	}
+
+	// Step 4: Configure Docker
+	fmt.Println("Step 4: Configuring Docker service...")
+	configCmd := exec.Command("powershell", "-NoProfile", "-Command", `
+$configPath = "$env:ProgramData\docker\config"
+if (!(Test-Path $configPath)) {
+    New-Item -Path $configPath -ItemType Directory -Force | Out-Null
+}
+$settings = @{ hosts = @("npipe://") }
+$settings | ConvertTo-Json | Out-File -FilePath "$configPath\daemon.json" -Encoding ASCII
+Write-Output "Config created"
+`)
+	configCmd.Stdout = os.Stdout
+	configCmd.Stderr = os.Stderr
+	_ = configCmd.Run()
+
+	// Step 5: Register and start service
+	fmt.Println("Step 5: Registering Docker service...")
+	registerCmd := exec.Command("dockerd", "--register-service", "--service-name", "docker")
+	registerCmd.Stdout = os.Stdout
+	registerCmd.Stderr = os.Stderr
+	if err := registerCmd.Run(); err != nil {
+		return fmt.Errorf("failed to register Docker service: %w", err)
+	}
+
+	fmt.Println("Step 6: Starting Docker service...")
+	startCmd := exec.Command("powershell", "-NoProfile", "-Command", "Start-Service docker")
+	startCmd.Stdout = os.Stdout
+	startCmd.Stderr = os.Stderr
+	if err := startCmd.Run(); err != nil {
+		return fmt.Errorf("failed to start Docker service: %w", err)
+	}
+
+	// Step 6: Wait for Docker to be ready
+	fmt.Println("Step 7: Waiting for Docker daemon...")
+	for i := 0; i < 120; i++ {
+		checkCmd := exec.Command("docker", "version")
+		if err := checkCmd.Run(); err == nil {
+			fmt.Println("Docker is ready!")
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	return fmt.Errorf("Docker daemon did not start within 2 minutes")
 }
 
 func startDockerWindows() error {
