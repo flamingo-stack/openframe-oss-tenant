@@ -22,7 +22,8 @@ public class JsonKafkaListener {
             topics = {
                     "${openframe.oss-tenant.kafka.topics.inbound.meshcentral-events}",
                     "${openframe.oss-tenant.kafka.topics.inbound.tactical-rmm-events}",
-                    "${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-events}"
+                    "${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-events}",
+                    "${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-query-result-events}"
             },
             groupId = "${spring.oss-tenant.kafka.consumer.group-id}"
     )

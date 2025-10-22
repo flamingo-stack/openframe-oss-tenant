@@ -97,37 +97,55 @@ spec:
                       "username": "'"${MESH_USER}"'",
                       "password": "'"${MESH_PASS}"'"
                     },
-                    "layer": "Integrated Tools",
-                    "layerOrder": 4,
-                    "layerColor": "#455A64",
-                    "metricsPath": "/metrics",
-                    "healthCheckEndpoint": "/",
-                    "healthCheckInterval": 30,
-                    "connectionTimeout": 5000,
-                    "readTimeout": 5000,
-                    "allowedEndpoints": ["/metrics"],
-                    "debeziumConnector": {
-                      "name": "meshcentral-mongo-connector",
-                      "config": {
-                        "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
-                        "mongodb.connection.string": "mongodb://'"${MONGO_INITDB_ROOT_USERNAME}"':'"${MONGO_INITDB_ROOT_PASSWORD}"'@'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0&authSource=admin",
-                        "mongodb.name": "meshcentral",
-                        "topic.prefix": "meshcentral",
-                        "collection.include.list": "meshcentral.events",
-                        "transforms": "route,addHeaderMessageType,addHeaderJSONType",
-                        "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
-                        "transforms.route.regex": ".*",
-                        "transforms.route.replacement": "meshcentral.mongodb.events",
-                        "transforms.addHeaderMessageType.type": "org.apache.kafka.connect.transforms.InsertHeader",
-                        "transforms.addHeaderMessageType.header": "message-type",
-                        "transforms.addHeaderMessageType.value.literal": "MESHCENTRAL_EVENT",
-                        "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
-                        "transforms.addHeaderJSONType.header": "__TypeId__",
-                        "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage"
-                      }
+                    {
+                      "url": "http://meshcentral-server.integrated-tools.svc.cluster.local",
+                      "port": "8383",
+                      "type": "DASHBOARD"
+                    },
+                    {
+                      "url": "ws://meshcentral-server.integrated-tools.svc.cluster.local",
+                      "port": "8383",
+                      "type": "WS"
                     }
-                  }
-                }')
+                  ],
+                  "category": "Device Management",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {
+                    "username": "'"${MESH_USER}"'",
+                    "password": "'"${MESH_PASS}"'"
+                  },
+                  "layer": "Integrated Tools",
+                  "layerOrder": 4,
+                  "layerColor": "#455A64",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/metrics"],
+                  "debeziumConnectors": [{
+                    "name": "meshcentral-mongo-connector",
+                    "config": {
+                      "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+                      "mongodb.connection.string": "mongodb://'"${MONGO_INITDB_ROOT_USERNAME}"':'"${MONGO_INITDB_ROOT_PASSWORD}"'@'"${MONGODB_HOST}"':'"${MONGODB_PORT}"'/meshcentral?replicaSet=rs0&authSource=admin",
+                      "mongodb.name": "meshcentral",
+                      "topic.prefix": "meshcentral",
+                      "collection.include.list": "meshcentral.events",
+                      "transforms": "route,addHeaderMessageType,addHeaderJSONType",
+                      "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+                      "transforms.route.regex": ".*",
+                      "transforms.route.replacement": "meshcentral.mongodb.events",
+                      "transforms.addHeaderMessageType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderMessageType.header": "message-type",
+                      "transforms.addHeaderMessageType.value.literal": "MESHCENTRAL_EVENT",
+                      "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderJSONType.header": "__TypeId__",
+                      "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage"
+                    }
+                  }]
+                }
+              }')
 
               echo "HTTP $http_code"
               echo "----- Response body -----"
@@ -135,7 +153,7 @@ spec:
               echo "-------------------------"
 
               if [ "$http_code" = "200" ]; then
-                echo "Mashcentral Server Registration complete."
+                echo "Mashcentral MongoDB Registration complete."
                 exit 0
               elif [ "$http_code" = "500" ]; then
                 # Extract {"message":"..."} from JSON (tolerates spaces)
