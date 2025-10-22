@@ -138,10 +138,9 @@ func CheckDockerCompatibility() error {
 			return fmt.Errorf(
 				"Docker Desktop requires Windows 10 Pro/Enterprise/Home version 19044 or above.\n"+
 					"Current version: %s (Build %d)\n\n"+
-					"Options:\n"+
-					"1. Update Windows to version 19044 or higher\n"+
-					"2. Use WSL 2 with Docker installed in Linux\n\n"+
-					"To check for Windows updates: Settings > Update & Security > Windows Update",
+					"Please update Windows to version 19044 or higher:\n"+
+					"  Settings > Update & Security > Windows Update\n\n"+
+					"Or install Windows Server to use Docker Engine instead.",
 				info.Edition, info.Build,
 			)
 		}

@@ -353,9 +353,12 @@ func (d *DockerInstaller) installWindows() error {
 
 	if isServer {
 		fmt.Println("Detected: Windows Server - will install Docker Engine")
+		fmt.Println("Note: Uses native Windows containers (Hyper-V isolation)")
+		fmt.Println("      No Linux compatibility layer required")
 	} else {
 		fmt.Println("Detected: Windows Desktop - will install Docker Desktop")
-		fmt.Println("Note: Installation requires user interaction for Docker Desktop installer.")
+		fmt.Println("Note: Requires Hyper-V virtualization support")
+		fmt.Println("      Uses native Windows containers for this installation")
 	}
 
 	// Step 1: Install Chocolatey if needed
