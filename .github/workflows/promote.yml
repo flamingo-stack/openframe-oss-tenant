@@ -38,7 +38,7 @@ jobs:
         run: |
           git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
           git commit -am "Release QA to Prod"
-          # git push -u origin HEAD --force
+          git push -u origin HEAD --force
           # PR_URL=$(gh pr create --title "Release QA to Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
           # echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
 
@@ -48,7 +48,7 @@ jobs:
         run: |
           # git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
           # git commit -am "Release QA to Prod"
-          git push -u origin HEAD --force
+          # git push -u origin HEAD --force
           PR_URL=$(gh pr create --title "Release QA to Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
           echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
           gh pr review "${PR_URL}" --approve
