@@ -53,7 +53,7 @@ public class IntegratedToolController {
 
             IntegratedTool savedTool = toolService.saveTool(tool);
             log.info("Successfully saved tool configuration for: {}", id);
-            debeziumService.createDebeziumConnector(savedTool.getDebeziumConnector());
+            debeziumService.createOrUpdateDebeziumConnector(savedTool.getDebeziumConnectors());
             return ResponseEntity.ok(Map.of("status", "success", "tool", savedTool));
         } catch (Exception e) {
             log.error("Failed to save tool: {}", id, e);
