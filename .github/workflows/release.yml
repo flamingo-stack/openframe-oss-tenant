@@ -356,24 +356,25 @@ jobs:
 
           set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
 
-      # - name: Create QA Release Branch changes
-      #   id: create_pr
-      #   env:
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     VALUES_PATH: manifests/apps
-      #   run: |
-      #     git checkout -b release/qa-${{ inputs.version }}
-      #     sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
-      #     git config user.name "github-actions[bot]"
-      #     git config user.email "github-actions[bot]@users.noreply.github.com"
-      #     git add ${VALUES_PATH}/values-qa.yaml
-      #     git commit -m "Update QA to ${{ inputs.version }}"
-      #     git push -u origin release/qa-${{ inputs.version }} --force
+      - name: Make QA values changes
+        env:
+          VALUES_PATH: manifests/apps
+        run: |
+          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
 
-      # - name: Create/Merge QA Release PR
-      #   env:
-      #     GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
-      #   run: |
-      #     PR_URL=$(gh pr create --title "Release ${{ inputs.version }} to QA" --body "Update QA tags to ${{ inputs.version }}" --base main)
-      #     gh pr review "${PR_URL}" --approve
-      #     gh pr merge "${PR_URL}" --squash --auto
+      - name: Create QA Release PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PR_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
+        run: |
+          git checkout -b release/qa-${{ inputs.version }}
+          git commit -am "Release ${{ inputs.version }} to QA"
+          git push -u origin HEAD --force
+          PR_URL=$(GH_TOKEN=$GH_PR_TOKEN gh pr create --title "Release ${{ inputs.version }} to QA (automatically generated PR)" --body "Update QA tags to ${{ inputs.version }}" --base main)
+          gh pr review "${PR_URL}" --approve
+          gh pr merge "${PR_URL}" --squash --auto
