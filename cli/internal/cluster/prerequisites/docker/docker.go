@@ -521,18 +521,28 @@ func (d *DockerInstaller) installDockerEngineViaChocolatey() error {
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
 
-	// Use PowerShell to run choco with elevation
+	// Use PowerShell to run choco with elevation and enable Windows Containers feature
 	// The --yes flag and proper environment variables prevent the timeout prompt
 	psScript := fmt.Sprintf(`
 $chocoPath = "%s"
 $env:ChocolateyInstall = "%s"
 
-# Run choco install with elevation
+# Step 1: Enable Windows Containers feature if not already enabled
+Write-Host "Enabling Windows Containers feature..."
+$containersFeature = Get-WindowsFeature -Name Containers -ErrorAction SilentlyContinue
+if ($containersFeature -and $containersFeature.InstallState -ne 'Installed') {
+    Install-WindowsFeature -Name Containers -Restart:$false | Out-Null
+    Write-Host "Windows Containers feature enabled"
+}
+
+# Step 2: Run choco install with elevation
+Write-Host "Installing Docker Engine..."
 Start-Process -FilePath "$chocoPath" -ArgumentList "install","docker-engine","-y","--no-progress","--force" -Verb RunAs -Wait -NoNewWindow
 
-# After installation, set Docker service to start automatically
+# Step 3: After installation, set Docker service to start automatically
 if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
     Set-Service -Name docker -StartupType Automatic -ErrorAction SilentlyContinue
+    Start-Service docker -ErrorAction SilentlyContinue
     Write-Host "Docker service configured to start automatically"
 }
 `, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
@@ -571,138 +581,17 @@ if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
 }
 
 func (d *DockerInstaller) installDockerEngine() error {
-	fmt.Println("Installing Docker Engine using Microsoft's official method...")
-	fmt.Println()
-
-	// Step 0: Install NuGet provider first (required for PowerShell Gallery)
-	fmt.Println("Step 1/4: Installing NuGet provider...")
-	nugetCmd := exec.Command("powershell", "-Command",
-		"Install-PackageProvider -Name NuGet -Scope CurrentUser -Force -ErrorAction SilentlyContinue")
-	nugetCmd.Stdout = os.Stdout
-	nugetCmd.Stderr = os.Stderr
-	_ = nugetCmd.Run() // Ignore errors, may already be installed
-
-	// Step 1: Install DockerMsftProvider module (user scope - no admin required)
-	fmt.Println("Step 2/4: Installing DockerMsftProvider PowerShell module...")
-	installModuleCmd := exec.Command("powershell", "-Command",
-		"Install-Module -Name DockerMsftProvider -Repository PSGallery -Scope CurrentUser -Force")
-	installModuleCmd.Stdout = os.Stdout
-	installModuleCmd.Stderr = os.Stderr
-
-	if err := installModuleCmd.Run(); err != nil {
-		fmt.Printf("Warning: Could not install DockerMsftProvider module: %v\n", err)
-		fmt.Println("Falling back to Chocolatey installation method...")
-		return d.installDockerEngineViaChocolatey()
-	}
-
-	fmt.Println("DockerMsftProvider module installed successfully.")
-	fmt.Println()
-
-	// Step 2: Install Docker Engine and Client
-	fmt.Println("Step 3/4: Installing Docker Engine and Client...")
-	fmt.Println("(This may take several minutes, please wait...)")
-	installDockerCmd := exec.Command("powershell", "-Command",
-		"Install-Package -Name docker -ProviderName DockerMsftProvider -Force")
-	installDockerCmd.Stdout = os.Stdout
-	installDockerCmd.Stderr = os.Stderr
-
-	if err := installDockerCmd.Run(); err != nil {
-		fmt.Printf("Warning: Could not install Docker via DockerMsftProvider: %v\n", err)
-		fmt.Println("Falling back to Chocolatey installation method...")
-		return d.installDockerEngineViaChocolatey()
-	}
-
-	fmt.Println("Docker Engine installed successfully.")
-	fmt.Println()
-
-	// Step 3: Enable Windows Containers feature on Windows Server
-	fmt.Println("Step 4/4: Enabling Windows Containers feature...")
-	containersCmd := exec.Command("powershell", "-Command", "Install-WindowsFeature -Name Containers -Restart:$false | Select-Object -ExpandProperty RestartNeeded")
-	output, err := containersCmd.CombinedOutput()
-	outputStr := string(output)
-
-	if err != nil {
-		fmt.Printf("Warning: Could not enable Containers feature: %v\n", err)
-		fmt.Println("You may need to enable it manually: Install-WindowsFeature -Name Containers")
-	} else {
-		fmt.Println("Windows Containers feature enabled.")
-
-		// Check if restart is explicitly required
-		if strings.Contains(outputStr, "Yes") || strings.Contains(outputStr, "True") {
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			fmt.Println()
-			fmt.Println("The Windows Containers feature has been installed, but a system")
-			fmt.Println("reboot is REQUIRED before Docker Engine can start.")
-			fmt.Println()
-			fmt.Println("Next steps:")
-			fmt.Println("  1. Restart your computer now: shutdown /r /t 0")
-			fmt.Println("  2. Docker service will start automatically after reboot")
-			fmt.Println()
-			fmt.Println("After reboot, verify Docker is running:")
-			fmt.Println("  powershell -Command \"Get-Service Docker\"")
-			fmt.Println()
-			fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			return nil // Don't try to start Docker if restart is required
-		}
-
-		fmt.Println("Note: A system restart may be required for the feature to take full effect.")
-	}
-
-	// Set Docker service to start automatically and start it
-	fmt.Println("\nConfiguring and starting Docker service...")
-
-	// First, set to automatic startup
-	autoStartCmd := exec.Command("powershell", "-Command", "Set-Service -Name Docker -StartupType Automatic")
-	_ = autoStartCmd.Run() // Ignore errors
-
-	maxRetries := 3
-	for i := 0; i < maxRetries; i++ {
-		if i > 0 {
-			fmt.Printf("Retry %d/%d: Waiting for Docker service to be ready...\n", i, maxRetries-1)
-			time.Sleep(5 * time.Second)
-		}
-
-		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker")
-		startCmd.Stdout = os.Stdout
-		startCmd.Stderr = os.Stderr
-
-		if err := startCmd.Run(); err != nil {
-			continue
-		}
-
-		// Success!
-		fmt.Println()
-		fmt.Println("✓ Docker service started successfully")
-		fmt.Println("✓ Docker service configured to start automatically on boot")
-		return nil
-	}
-
-	// All retries failed - show restart message
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("⚠  SYSTEM REBOOT REQUIRED")
+	fmt.Println("  Installing Docker Engine for Windows Server")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
-	fmt.Println("Docker Engine has been installed, but the Windows Containers")
-	fmt.Println("feature requires a system reboot to complete activation.")
+	fmt.Println("Note: Microsoft's DockerMsftProvider is deprecated.")
+	fmt.Println("      Using Chocolatey package manager instead.")
 	fmt.Println()
-	fmt.Println("Next steps:")
-	fmt.Println("  1. Restart your computer now")
-	fmt.Println("  2. Docker service will start automatically after reboot")
-	fmt.Println()
-	fmt.Println("After reboot, verify Docker is running:")
-	fmt.Println("  powershell -Command \"Get-Service Docker\"")
-	fmt.Println()
-	fmt.Println("If Docker still doesn't start after reboot, run:")
-	fmt.Println("  powershell -Command \"Start-Service Docker\"")
-	fmt.Println()
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-	// Don't fail the installation - Docker is installed, just needs restart
-	return nil
+	// Use Chocolatey directly - DockerMsftProvider is deprecated/broken
+	return d.installDockerEngineViaChocolatey()
 }
 
 func (d *DockerInstaller) installDockerDesktop() error {
