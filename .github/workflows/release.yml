@@ -367,10 +367,10 @@ jobs:
           GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
         run: |
           git checkout -b release/qa-${{ inputs.version }}
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
           git commit -am "Update QA to ${{ inputs.version }}"
           git push -u origin release/qa-${{ inputs.version }} --force
-          PR_URL=$(gh pr create --title "Release ${{ inputs.version }} to QA" --body "Update QA tags to ${{ inputs.version }}" --base main)
+          PR_URL=$(gh pr create --title "Release ${{ inputs.version }} to QA (automatically generated PR)" --body "Update QA tags to ${{ inputs.version }}" --base main)
           gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto
