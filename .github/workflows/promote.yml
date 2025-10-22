@@ -1,4 +1,4 @@
-name: Release Prod
+name: Release to Prod
 
 permissions:
   contents: write
