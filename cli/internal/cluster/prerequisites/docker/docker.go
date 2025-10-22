@@ -462,25 +462,85 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("administrator privileges required - please run as administrator")
 	}
 
-	// Enable Windows Containers feature first
-	fmt.Println("Enabling Windows Containers feature...")
-	enableCmd := exec.Command("powershell", "-NoProfile", "-Command",
-		"Enable-WindowsOptionalFeature -Online -FeatureName Containers -NoRestart")
-	enableCmd.Stdout = os.Stdout
-	enableCmd.Stderr = os.Stderr
-	_ = enableCmd.Run() // Continue even if already enabled
-
-	// Download and run Microsoft's Docker CE install script
-	fmt.Println("Downloading Docker CE install script...")
+	// Install Docker CE - self-contained installation
 	installScript := `
-# Download Docker CE install script
-Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/microsoft/Windows-Containers/Main/helpful_tools/Install-DockerCE/install-docker-ce.ps1" -OutFile "$env:TEMP\install-docker-ce.ps1"
+# Enable Windows Containers feature
+Write-Output "Enabling Windows Containers feature..."
+Enable-WindowsOptionalFeature -Online -FeatureName Containers -NoRestart -ErrorAction SilentlyContinue
 
-# Run the install script
-& "$env:TEMP\install-docker-ce.ps1"
+# Download Docker CE
+Write-Output "Checking Docker versions"
+$DefaultDockerLocation = "https://download.docker.com/win/static/stable/x86_64/"
+$availableVersions = ((Invoke-WebRequest -Uri $DefaultDockerLocation -UseBasicParsing).Links | Where-Object {$_.href -like "docker*"}).href | Sort-Object -Descending
+$availableVersions = ($availableVersions | Select-String -Pattern "docker-(\d+\.\d+\.\d+).+"  -AllMatches | Select-Object -Expand Matches | %{ $_.Groups[1].Value })
+$version = $availableVersions[0]
 
-# Clean up
-Remove-Item "$env:TEMP\install-docker-ce.ps1" -ErrorAction SilentlyContinue
+$zipUrl = $DefaultDockerLocation + "docker-$version.zip"
+$destinationFolder = "$env:TEMP\DockerDownload"
+
+if(!(Test-Path "$destinationFolder")) {
+    New-Item -Path $destinationFolder -ItemType Directory | Out-Null
+}
+
+Write-Output "Downloading $zipUrl to $destinationFolder\docker-$version.zip"
+$ProgressPreference = "SilentlyContinue"
+Invoke-WebRequest -Uri $zipUrl -OutFile "$destinationFolder\docker-$version.zip" -UseBasicParsing
+Expand-Archive -Path "$destinationFolder\docker-$version.zip" -DestinationPath "$destinationFolder\docker-$version" -Force
+$ProgressPreference = "Continue"
+
+# Install Docker binaries
+Write-Output "Installing Docker... $destinationFolder\docker-$version\docker\docker.exe"
+Copy-Item -Path "$destinationFolder\docker-$version\docker\docker.exe" -Destination "$env:windir\System32\docker.exe" -Force
+
+Write-Output "Installing Docker daemon... $destinationFolder\docker-$version\docker\dockerd.exe"
+Copy-Item -Path "$destinationFolder\docker-$version\docker\dockerd.exe" -Destination "$env:windir\System32\dockerd.exe" -Force
+
+# Create docker config directory
+$dockerDataPath = "$env:ProgramData\docker"
+$dockerConfigPath = "$dockerDataPath\config"
+if (!(Test-Path $dockerConfigPath)) {
+    New-Item -Path $dockerConfigPath -ItemType Directory -Force | Out-Null
+}
+
+# Create daemon.json
+$daemonSettings = @{
+    hosts = @("npipe://")
+}
+$daemonSettings | ConvertTo-Json | Out-File -FilePath "$dockerConfigPath\daemon.json" -Encoding ASCII
+
+# Register and start Docker service
+Write-Output "Configuring the docker service..."
+& dockerd --register-service --service-name docker
+
+Write-Output "Starting Docker service..."
+Start-Service -Name docker
+
+# Wait for Docker to be ready
+Write-Output "Waiting for Docker daemon..."
+$dockerReady = $false
+$startTime = Get-Date
+while (-not $dockerReady) {
+    try {
+        docker version | Out-Null
+        if ($?) {
+            $dockerReady = $true
+        }
+    }
+    catch {
+        $timeElapsed = $(Get-Date) - $startTime
+        if ($timeElapsed.TotalMinutes -ge 2) {
+            throw "Docker daemon did not start within 2 minutes"
+        }
+        Start-Sleep -Seconds 1
+    }
+}
+Write-Output "Successfully connected to Docker Daemon."
+
+# Show installed images
+Write-Output "The following images are present on this machine:"
+docker images
+
+Write-Output "Script complete!"
 `
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
 	cmd.Stdout = os.Stdout
