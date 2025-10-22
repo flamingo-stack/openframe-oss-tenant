@@ -555,8 +555,13 @@ dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /nores
 
 # Set WSL2 as default (wsl --update already ran in cleanup phase)
 wsl --set-default-version 2
+
+# Install Debian distribution for WSL2 (required for Docker Desktop)
+wsl --install Debian --no-launch
 `
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
