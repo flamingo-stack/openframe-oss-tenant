@@ -29,8 +29,7 @@ spec:
               echo "Still waiting..."
               sleep 10
             done
-            for attempt in 1 2 3 4; do
-              echo "Sending registration request (attempt ${attempt}/4)..."
+              echo "Sending registration request..."
               http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
                 -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-management" \
                 -H "Content-Type: application/json" \
@@ -71,36 +70,20 @@ spec:
               cat /tmp/response.txt || true
               echo "-------------------------"
 
-              case "$http_code" in
-                2??)
-                  echo "OpenFrame Management registration complete."
-                  exit 0
-                  ;;
-                429|5??)
-                  if [ "$attempt" -lt 4 ]; then
-                    echo "Transient error ($http_code). Retrying in 10s..."
-                    sleep 10
-                    continue
-                  fi
-                  echo "Gave up after 4 retries (last HTTP $http_code)."
-                  exit 1
-                  ;;
-                4??)
-                  echo "Client error ($http_code). Not retrying."
-                  exit 1
-                  ;;
-                *)
-                  if [ "$attempt" -lt 4 ]; then
-                    echo "Unexpected/Network error (HTTP $http_code). Retrying in 10s..."
-                    sleep 10
-                    continue
-                  fi
-                  echo "Gave up after 4 retries (last HTTP $http_code)."
-                  exit 1
-                  ;;
-              esac
-            done
-
-            echo "Registration failed after 4 retries."
-            exit 1
+              if [ "$http_code" = "200" ]; then
+                echo "OpenFrame Management Registration complete."
+                exit 0
+              elif [ "$http_code" = "500" ]; then
+                # Extract {"message":"..."} from JSON (tolerates spaces)
+                ERR_MSG=$(sed -n 's/.*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' /tmp/response.txt | head -n1)
+                if [ -n "$ERR_MSG" ]; then
+                  echo "Registration failed (500): $ERR_MSG"
+                else
+                  echo "Registration failed (500). See response above."
+                fi
+                exit 1
+              else
+                echo "Registration failed (unexpected HTTP $http_code)."
+                exit 1
+              fi
 {{- end }}
