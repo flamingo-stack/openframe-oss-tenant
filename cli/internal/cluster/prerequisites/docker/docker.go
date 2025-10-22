@@ -409,25 +409,29 @@ func (d *DockerInstaller) installChocolatey() error {
 	fmt.Println("Installing Chocolatey package manager (user-only mode)...")
 	fmt.Println("Note: This is a fully automated installation with no dialogs or prompts.")
 
-	// Non-admin Chocolatey installation using ChocolateyInstallNonAdmin environment variable
-	// This installs to user's home directory and doesn't require admin privileges
+	// Non-admin Chocolatey installation
 	// Reference: https://docs.chocolatey.org/en-us/choco/setup#non-administrative-install
+	userChocoPath := os.Getenv("LOCALAPPDATA") + "\\choco"
+
 	installScript := `
 # Set environment variable for non-admin install
-$env:ChocolateyInstall = "$env:LOCALAPPDATA\choco"
-
-# Create directory if it doesn't exist
-New-Item -Path $env:ChocolateyInstall -ItemType Directory -Force | Out-Null
+$ChocolateyInstall = "$env:LOCALAPPDATA\choco"
+[System.Environment]::SetEnvironmentVariable('ChocolateyInstall', $ChocolateyInstall, [System.EnvironmentVariableTarget]::User)
+$env:ChocolateyInstall = $ChocolateyInstall
 
 # Download and run installer
 Set-ExecutionPolicy Bypass -Scope Process -Force
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-# Add to PATH for current session
-$env:PATH = "$env:ChocolateyInstall\bin;$env:PATH"
-
-Write-Host "Chocolatey installed to: $env:ChocolateyInstall"
+# Show what was installed
+Write-Host "Chocolatey installation directory contents:"
+if (Test-Path "$ChocolateyInstall\bin") {
+    Get-ChildItem "$ChocolateyInstall\bin" | Select-Object Name, Length | Format-Table -AutoSize
+} else {
+    Write-Host "WARNING: bin directory not found!"
+    Get-ChildItem $ChocolateyInstall | Select-Object Name | Format-Table -AutoSize
+}
 `
 
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
@@ -438,29 +442,42 @@ Write-Host "Chocolatey installed to: $env:ChocolateyInstall"
 		return fmt.Errorf("failed to install Chocolatey in user mode: %w", err)
 	}
 
+	fmt.Printf("Chocolatey installation script completed. Checking %s\n", userChocoPath)
+
 	// Update PATH for current session - use user's local chocolatey installation
-	userChocoPath := os.Getenv("LOCALAPPDATA") + "\\choco\\bin"
+	userChocoBinPath := userChocoPath + "\\bin"
 	currentPath := os.Getenv("PATH")
-	if !strings.Contains(currentPath, userChocoPath) {
-		_ = os.Setenv("PATH", userChocoPath+";"+currentPath)
+	if !strings.Contains(currentPath, userChocoBinPath) {
+		_ = os.Setenv("PATH", userChocoBinPath+";"+currentPath)
 	}
 
 	// Also set ChocolateyInstall for current session
-	_ = os.Setenv("ChocolateyInstall", os.Getenv("LOCALAPPDATA")+"\\choco")
+	_ = os.Setenv("ChocolateyInstall", userChocoPath)
 
 	// Configure Chocolatey for fully unattended operation
 	fmt.Println("Configuring Chocolatey for unattended installation...")
 
 	// Use the full path to choco.exe since PATH may not be updated yet
-	chocoExePath := userChocoPath + "\\choco.exe"
-	configCmd := exec.Command(chocoExePath, "feature", "enable", "-n", "allowGlobalConfirmation")
-	configCmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
-	_ = configCmd.Run() // Ignore errors, proceed anyway
+	chocoExePath := userChocoBinPath + "\\choco.exe"
 
-	// Verify the installation by checking if choco.exe exists
+	// First verify the installation by checking if choco.exe exists
 	if _, err := os.Stat(chocoExePath); os.IsNotExist(err) {
+		// Try to diagnose the issue
+		fmt.Printf("ERROR: choco.exe not found at expected location: %s\n", chocoExePath)
+		fmt.Println("Checking what was actually installed...")
+
+		// Check what's in the chocolatey directory
+		checkCmd := exec.Command("powershell", "-Command", fmt.Sprintf("Get-ChildItem '%s' -Recurse | Select-Object FullName", userChocoPath))
+		if output, err := checkCmd.CombinedOutput(); err == nil {
+			fmt.Printf("Contents of %s:\n%s\n", userChocoPath, string(output))
+		}
+
 		return fmt.Errorf("chocolatey installation completed but choco.exe not found at %s - installation may have failed silently", chocoExePath)
 	}
+
+	configCmd := exec.Command(chocoExePath, "feature", "enable", "-n", "allowGlobalConfirmation")
+	configCmd.Env = append(os.Environ(), "ChocolateyInstall="+userChocoPath)
+	_ = configCmd.Run() // Ignore errors, proceed anyway
 
 	fmt.Println("Chocolatey user-only installation completed successfully!")
 	fmt.Printf("Chocolatey installed to: %s\n", userChocoPath)
@@ -468,7 +485,7 @@ Write-Host "Chocolatey installed to: $env:ChocolateyInstall"
 
 	// Test that choco command works
 	testCmd := exec.Command(chocoExePath, "--version")
-	testCmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
+	testCmd.Env = append(os.Environ(), "ChocolateyInstall="+userChocoPath)
 	if output, err := testCmd.CombinedOutput(); err != nil {
 		fmt.Printf("Warning: Chocolatey installed but cannot execute: %v\n", err)
 		fmt.Printf("Output: %s\n", string(output))
