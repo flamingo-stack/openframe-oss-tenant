@@ -456,98 +456,25 @@ func (d *DockerInstaller) installDockerEngine() error {
 }
 
 func (d *DockerInstaller) installDockerDesktop() error {
-	// Check if running as Administrator
-	isAdmin := isRunningAsAdmin()
-	if !isAdmin {
-		return fmt.Errorf("administrator privileges required - please run as administrator")
+	// Get choco path
+	chocoPath := d.getChocoPath()
+
+	fmt.Println("Installing Docker Desktop via Chocolatey...")
+
+	// Install Docker Desktop via Chocolatey with all output streaming
+	cmd := exec.Command(chocoPath, "install", "docker-desktop", "-y", "--no-progress")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Docker Desktop: %w", err)
 	}
 
-	fmt.Println("Installing Docker CE...")
+	fmt.Println("Docker Desktop installed successfully.")
+	fmt.Println("Please start Docker Desktop manually from the Start Menu.")
+	fmt.Println("Wait for Docker Desktop to fully start before running k3d cluster creation.")
 
-	// Step 1: Enable Windows Containers feature
-	fmt.Println("Step 1: Enabling Windows Containers feature...")
-	enableCmd := exec.Command("powershell", "-NoProfile", "-Command",
-		"Enable-WindowsOptionalFeature -Online -FeatureName Containers -NoRestart -ErrorAction SilentlyContinue")
-	enableCmd.Stdout = os.Stdout
-	enableCmd.Stderr = os.Stderr
-	_ = enableCmd.Run()
-
-	// Step 2: Download Docker
-	fmt.Println("Step 2: Downloading Docker CE...")
-	downloadScript := `
-$version = "27.4.0"
-$url = "https://download.docker.com/win/static/stable/x86_64/docker-$version.zip"
-$dest = "$env:TEMP\docker.zip"
-Write-Output "Downloading Docker $version..."
-Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
-Write-Output "Extracting..."
-Expand-Archive -Path $dest -DestinationPath "$env:TEMP\docker" -Force
-Write-Output "Download complete"
-`
-	downloadCmd := exec.Command("powershell", "-NoProfile", "-Command", downloadScript)
-	downloadCmd.Stdout = os.Stdout
-	downloadCmd.Stderr = os.Stderr
-	if err := downloadCmd.Run(); err != nil {
-		return fmt.Errorf("failed to download Docker: %w", err)
-	}
-
-	// Step 3: Install Docker binaries
-	fmt.Println("Step 3: Installing Docker binaries...")
-	installCmd := exec.Command("powershell", "-NoProfile", "-Command", `
-Copy-Item -Path "$env:TEMP\docker\docker\docker.exe" -Destination "$env:windir\System32\docker.exe" -Force
-Copy-Item -Path "$env:TEMP\docker\docker\dockerd.exe" -Destination "$env:windir\System32\dockerd.exe" -Force
-Write-Output "Binaries installed"
-`)
-	installCmd.Stdout = os.Stdout
-	installCmd.Stderr = os.Stderr
-	if err := installCmd.Run(); err != nil {
-		return fmt.Errorf("failed to install Docker binaries: %w", err)
-	}
-
-	// Step 4: Configure Docker
-	fmt.Println("Step 4: Configuring Docker service...")
-	configCmd := exec.Command("powershell", "-NoProfile", "-Command", `
-$configPath = "$env:ProgramData\docker\config"
-if (!(Test-Path $configPath)) {
-    New-Item -Path $configPath -ItemType Directory -Force | Out-Null
-}
-$settings = @{ hosts = @("npipe://") }
-$settings | ConvertTo-Json | Out-File -FilePath "$configPath\daemon.json" -Encoding ASCII
-Write-Output "Config created"
-`)
-	configCmd.Stdout = os.Stdout
-	configCmd.Stderr = os.Stderr
-	_ = configCmd.Run()
-
-	// Step 5: Register and start service
-	fmt.Println("Step 5: Registering Docker service...")
-	registerCmd := exec.Command("dockerd", "--register-service", "--service-name", "docker")
-	registerCmd.Stdout = os.Stdout
-	registerCmd.Stderr = os.Stderr
-	if err := registerCmd.Run(); err != nil {
-		return fmt.Errorf("failed to register Docker service: %w", err)
-	}
-
-	fmt.Println("Step 6: Starting Docker service...")
-	startCmd := exec.Command("powershell", "-NoProfile", "-Command", "Start-Service docker")
-	startCmd.Stdout = os.Stdout
-	startCmd.Stderr = os.Stderr
-	if err := startCmd.Run(); err != nil {
-		return fmt.Errorf("failed to start Docker service: %w", err)
-	}
-
-	// Step 6: Wait for Docker to be ready
-	fmt.Println("Step 7: Waiting for Docker daemon...")
-	for i := 0; i < 120; i++ {
-		checkCmd := exec.Command("docker", "version")
-		if err := checkCmd.Run(); err == nil {
-			fmt.Println("Docker is ready!")
-			return nil
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	return fmt.Errorf("Docker daemon did not start within 2 minutes")
+	return nil
 }
 
 func startDockerWindows() error {
@@ -572,21 +499,27 @@ func startDockerWindows() error {
 	}
 
 	// This is Windows Desktop - try to start Docker Desktop
-	cmd := exec.Command("cmd", "/c", "start", "", "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	fmt.Println("Starting Docker Desktop...")
+
+	// Try the primary Docker Desktop executable path
+	cmd := exec.Command("powershell", "-Command",
+		`Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe"`)
 
 	if err := cmd.Run(); err != nil {
-		// Try alternative path
-		cmd = exec.Command("powershell", "-Command", "Start-Process", "'Docker Desktop'")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("\nError details: %v\n", err)
+		// Try alternative method using COM object
+		altCmd := exec.Command("powershell", "-Command", `
+$shell = New-Object -ComObject Shell.Application
+$shell.ShellExecute("C:\Program Files\Docker\Docker\Docker Desktop.exe")
+`)
+		if err := altCmd.Run(); err != nil {
+			fmt.Println("\nCould not start Docker Desktop automatically.")
+			fmt.Println("Please start Docker Desktop manually from the Start Menu.")
 			return fmt.Errorf("failed to start Docker Desktop: %w", err)
 		}
 	}
+
+	fmt.Println("Docker Desktop is starting...")
+	fmt.Println("Please wait for Docker Desktop to fully start (check system tray icon).")
 	return nil
 }
 
