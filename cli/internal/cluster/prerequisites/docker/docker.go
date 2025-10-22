@@ -512,30 +512,35 @@ func (d *DockerInstaller) installDockerDesktop() error {
 }
 
 func cleanupDockerWSL() {
-	// Clean up any existing Docker WSL distributions and data
-	cleanupScript := `
-# Update WSL first (required for other wsl commands to work)
-wsl --update 2>$null
+	// Update WSL FIRST - this is critical and must complete before other wsl commands
+	updateScript := `
+# Update WSL with --web-download to avoid store dependency
+wsl --update --web-download
+`
+	updateCmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", updateScript)
+	updateCmd.Stdout = os.Stdout
+	updateCmd.Stderr = os.Stderr
+	_ = updateCmd.Run() // Continue even if update fails
 
+	// Now cleanup - WSL commands will work after update
+	cleanupScript := `
 # Shutdown WSL
-wsl --shutdown 2>$null
+wsl --shutdown
 
 # Unregister Docker WSL distributions if they exist
 wsl --unregister docker-desktop-data 2>$null
 wsl --unregister docker-desktop 2>$null
 
 # Verify cleanup
-$distros = wsl --list 2>$null
-if ($distros) {
-    Write-Host "Remaining WSL distributions after cleanup:"
-    Write-Host $distros
-}
+wsl --list
 
 # Clean up Docker data directories
 Remove-Item -Path "$env:APPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:LOCALAPPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
 `
 	cleanupCmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", cleanupScript)
+	cleanupCmd.Stdout = os.Stdout
+	cleanupCmd.Stderr = os.Stderr
 	_ = cleanupCmd.Run() // Ignore errors - these might not exist
 }
 
@@ -548,10 +553,7 @@ dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux 
 # Enable Virtual Machine Platform
 dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
 
-# Update WSL to latest version
-wsl --update
-
-# Set WSL2 as default
+# Set WSL2 as default (wsl --update already ran in cleanup phase)
 wsl --set-default-version 2
 `
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
