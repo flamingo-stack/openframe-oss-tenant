@@ -215,8 +215,13 @@ jobs:
             key="${{ matrix.name }}"
           fi
           echo "Using key: $key"
-          # Check if the key exists in changes outputs
-          if [[ "${{ fromJSON(toJSON(needs.changes.outputs))[$key] }}" == "true" ]]; then
+          
+          # Get the changes outputs as JSON and check if our key is true
+          changes_json='${{ toJSON(needs.changes.outputs) }}'
+          echo "Changes JSON: $changes_json"
+          
+          # Use jq to check if the key exists and is true
+          if echo "$changes_json" | jq -e --arg key "$key" '.[$key] == "true"' > /dev/null 2>&1; then
             echo "run=true" >> $GITHUB_OUTPUT
           else
             echo "run=false" >> $GITHUB_OUTPUT
