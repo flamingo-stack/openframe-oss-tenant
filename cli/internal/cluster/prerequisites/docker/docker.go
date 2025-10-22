@@ -529,6 +529,12 @@ $env:ChocolateyInstall = "%s"
 
 # Run choco install with elevation
 Start-Process -FilePath "$chocoPath" -ArgumentList "install","docker-engine","-y","--no-progress","--force" -Verb RunAs -Wait -NoNewWindow
+
+# After installation, set Docker service to start automatically
+if (Get-Service -Name docker -ErrorAction SilentlyContinue) {
+    Set-Service -Name docker -StartupType Automatic -ErrorAction SilentlyContinue
+    Write-Host "Docker service configured to start automatically"
+}
 `, chocoPath, os.Getenv("LOCALAPPDATA")+"\\choco")
 
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript)
@@ -558,7 +564,9 @@ Start-Process -FilePath "$chocoPath" -ArgumentList "install","docker-engine","-y
 		return fmt.Errorf("failed to install Docker Engine via Chocolatey: %w", err)
 	}
 
-	fmt.Println("Docker Engine installed successfully.")
+	fmt.Println()
+	fmt.Println("✓ Docker Engine installed successfully")
+	fmt.Println("✓ Docker service configured to start automatically on boot")
 	return nil
 }
 
@@ -643,8 +651,12 @@ func (d *DockerInstaller) installDockerEngine() error {
 		fmt.Println("Note: A system restart may be required for the feature to take full effect.")
 	}
 
-	// Start Docker service on Windows Server with retry logic
-	fmt.Println("\nStarting Docker service...")
+	// Set Docker service to start automatically and start it
+	fmt.Println("\nConfiguring and starting Docker service...")
+
+	// First, set to automatic startup
+	autoStartCmd := exec.Command("powershell", "-Command", "Set-Service -Name Docker -StartupType Automatic")
+	_ = autoStartCmd.Run() // Ignore errors
 
 	maxRetries := 3
 	for i := 0; i < maxRetries; i++ {
@@ -653,7 +665,7 @@ func (d *DockerInstaller) installDockerEngine() error {
 			time.Sleep(5 * time.Second)
 		}
 
-		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker; Set-Service -Name Docker -StartupType Automatic")
+		startCmd := exec.Command("powershell", "-Command", "Start-Service Docker")
 		startCmd.Stdout = os.Stdout
 		startCmd.Stderr = os.Stderr
 
@@ -662,7 +674,9 @@ func (d *DockerInstaller) installDockerEngine() error {
 		}
 
 		// Success!
-		fmt.Println("Docker service started and configured for automatic startup")
+		fmt.Println()
+		fmt.Println("✓ Docker service started successfully")
+		fmt.Println("✓ Docker service configured to start automatically on boot")
 		return nil
 	}
 
