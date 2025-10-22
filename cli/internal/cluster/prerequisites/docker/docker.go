@@ -462,6 +462,9 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("administrator privileges required - please run as administrator")
 	}
 
+	// Clean up any previous Docker installations first
+	cleanupDockerWSL()
+
 	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
 
@@ -481,7 +484,7 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("failed to install Docker Desktop: %w", err)
 	}
 
-	// Enable WSL2 integration before starting Docker
+	// Enable WSL2 features and update WSL
 	_ = enableWSL2()
 
 	// Configure Docker Desktop for WSL2 mode (Linux containers)
@@ -508,6 +511,34 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	return nil
 }
 
+func cleanupDockerWSL() {
+	// Clean up any existing Docker WSL distributions and data
+	cleanupScript := `
+# Update WSL first (required for other wsl commands to work)
+wsl --update 2>$null
+
+# Shutdown WSL
+wsl --shutdown 2>$null
+
+# Unregister Docker WSL distributions if they exist
+wsl --unregister docker-desktop-data 2>$null
+wsl --unregister docker-desktop 2>$null
+
+# Verify cleanup
+$distros = wsl --list 2>$null
+if ($distros) {
+    Write-Host "Remaining WSL distributions after cleanup:"
+    Write-Host $distros
+}
+
+# Clean up Docker data directories
+Remove-Item -Path "$env:APPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:LOCALAPPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
+`
+	cleanupCmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", cleanupScript)
+	_ = cleanupCmd.Run() // Ignore errors - these might not exist
+}
+
 func enableWSL2() error {
 	// Enable WSL and Virtual Machine Platform features
 	installScript := `
@@ -516,6 +547,9 @@ dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux 
 
 # Enable Virtual Machine Platform
 dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# Update WSL to latest version
+wsl --update
 
 # Set WSL2 as default
 wsl --set-default-version 2
