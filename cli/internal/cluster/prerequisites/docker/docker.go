@@ -457,8 +457,25 @@ Write-Host "Chocolatey installed to: $env:ChocolateyInstall"
 	configCmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
 	_ = configCmd.Run() // Ignore errors, proceed anyway
 
+	// Verify the installation by checking if choco.exe exists
+	if _, err := os.Stat(chocoExePath); os.IsNotExist(err) {
+		return fmt.Errorf("chocolatey installation completed but choco.exe not found at %s - installation may have failed silently", chocoExePath)
+	}
+
 	fmt.Println("Chocolatey user-only installation completed successfully!")
 	fmt.Printf("Chocolatey installed to: %s\n", userChocoPath)
+	fmt.Printf("Chocolatey executable: %s\n", chocoExePath)
+
+	// Test that choco command works
+	testCmd := exec.Command(chocoExePath, "--version")
+	testCmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
+	if output, err := testCmd.CombinedOutput(); err != nil {
+		fmt.Printf("Warning: Chocolatey installed but cannot execute: %v\n", err)
+		fmt.Printf("Output: %s\n", string(output))
+	} else {
+		fmt.Printf("Chocolatey version: %s", string(output))
+	}
+
 	return nil
 }
 
