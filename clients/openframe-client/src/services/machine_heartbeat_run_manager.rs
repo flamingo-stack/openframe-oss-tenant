@@ -13,17 +13,21 @@ impl MachineHeartbeatRunManager {
         Self { publisher }
     }
 
-    pub async fn start(&self) -> Result<()> {
-        let mut interval = interval(Duration::from_secs(120)); // 2 minutes
+    pub fn start(&self) {
+        let publisher = self.publisher.clone();
         
         info!("Starting machine heartbeat run manager");
         
-        loop {
-            interval.tick().await;
+        tokio::spawn(async move {
+            let mut interval = interval(Duration::from_secs(120)); // 2 minutes
             
-            if let Err(e) = self.publisher.publish_heartbeat().await {
-                error!("Failed to send heartbeat: {}", e);
+            loop {
+                interval.tick().await;
+                
+                if let Err(e) = publisher.publish_heartbeat().await {
+                    error!("Failed to send heartbeat: {}", e);
+                }
             }
-        }
+        });
     }
 }

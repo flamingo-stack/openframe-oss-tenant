@@ -362,13 +362,8 @@ impl Client {
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
 
-        // Start machine heartbeat run manager in background
-        let heartbeat_run_manager = self.machine_heartbeat_run_manager.clone();
-        tokio::spawn(async move {
-            if let Err(e) = heartbeat_run_manager.start().await {
-                error!("Machine heartbeat run manager failed: {}", e);
-            }
-        });
+        // Start machine heartbeat run manager
+        self.machine_heartbeat_run_manager.start();
 
         // Start tool installation message listener in background
 //         self.tool_installation_message_listener.start().await?;
