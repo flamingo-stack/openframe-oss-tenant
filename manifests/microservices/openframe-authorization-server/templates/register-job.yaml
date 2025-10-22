@@ -32,7 +32,7 @@ spec:
             for attempt in 1 2 3 4; do
               echo "Sending registration request (attempt ${attempt}/4)..."
               http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
-                -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-authorization-service" \
+                -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-authorization-server" \
                 -H "Content-Type: application/json" \
                 --connect-timeout 5 \
                 --max-time 20 \
