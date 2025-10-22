@@ -37,7 +37,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
-          # git commit -am "Release QA to Prod"
+          git commit -am "Release QA to Prod"
           # git push -u origin HEAD --force
           # PR_URL=$(gh pr create --title "Release QA to Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
           # echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
@@ -47,7 +47,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
         run: |
           # git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
-          git commit -am "Release QA to Prod"
+          # git commit -am "Release QA to Prod"
           git push -u origin HEAD --force
           PR_URL=$(gh pr create --title "Release QA to Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
           echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
