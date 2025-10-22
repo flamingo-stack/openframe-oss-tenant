@@ -848,24 +848,69 @@ func (d *DockerInstaller) installDockerDesktop() error {
 	fmt.Println("Docker Desktop installed successfully.")
 	fmt.Println()
 
-	// Switch to Windows containers mode
+	// Configure Docker Desktop settings to use Windows containers by default
 	fmt.Println("Configuring Docker Desktop for Windows containers...")
-	switchCmd := exec.Command("powershell", "-Command", `
-		$dockerCliPath = "C:\Program Files\Docker\Docker\DockerCli.exe"
-		if (Test-Path $dockerCliPath) {
-			& $dockerCliPath -SwitchWindowsEngine -ErrorAction SilentlyContinue
-			Write-Host "Docker switched to Windows container mode"
+	configureCmd := exec.Command("powershell", "-Command", `
+		# Docker Desktop settings file location
+		$settingsPath = "$env:APPDATA\Docker\settings.json"
+
+		# Create Docker config directory if it doesn't exist
+		$dockerDir = Split-Path -Path $settingsPath -Parent
+		if (-not (Test-Path $dockerDir)) {
+			New-Item -Path $dockerDir -ItemType Directory -Force | Out-Null
 		}
+
+		# Create or update settings.json to use Windows containers
+		$settings = @{
+			"displayedOnboarding" = $true
+			"containerModeSwitchRequiresRestart" = $false
+			"exposeDockerAPIOnTCP2375" = $false
+			"displaySwitchWinLinContainersMessage" = $false
+			"dockerCliOptions" = @{
+				"auditLog" = $false
+			}
+			"linuxVM" = @{
+				"cpus" = 2
+				"memoryMiB" = 2048
+				"swapMiB" = 1024
+				"diskSizeMiB" = 61035
+			}
+		}
+
+		# Write settings
+		$settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Force
+		Write-Host "Docker Desktop configured for Windows containers"
+		Write-Host "Settings file: $settingsPath"
 	`)
-	switchCmd.Stdout = os.Stdout
-	switchCmd.Stderr = os.Stderr
-	_ = switchCmd.Run() // Ignore errors, may not be necessary
+	configureCmd.Stdout = os.Stdout
+	configureCmd.Stderr = os.Stderr
+	_ = configureCmd.Run() // Ignore errors
 
 	fmt.Println("Starting Docker Desktop...")
 	if err := startDockerWindows(); err != nil {
 		fmt.Printf("Warning: Could not start Docker Desktop automatically: %v\n", err)
-		fmt.Println("Please start Docker Desktop manually from the Start Menu")
-		fmt.Println("After starting, right-click Docker icon and select 'Switch to Windows containers'")
+		fmt.Println()
+		fmt.Println("IMPORTANT: After starting Docker Desktop manually:")
+		fmt.Println("  1. Right-click Docker Desktop icon in system tray")
+		fmt.Println("  2. Select 'Switch to Windows containers'")
+		fmt.Println("  3. Ignore any WSL errors - we don't use WSL")
+	} else {
+		fmt.Println()
+		fmt.Println("Waiting for Docker Desktop to start (this may take 30-60 seconds)...")
+		time.Sleep(30 * time.Second)
+
+		// Now switch to Windows containers after Docker is running
+		fmt.Println("Switching to Windows container mode...")
+		switchCmd := exec.Command("powershell", "-Command", `
+			& "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchDaemon
+		`)
+		if err := switchCmd.Run(); err != nil {
+			fmt.Println()
+			fmt.Println("Note: Please manually switch to Windows containers:")
+			fmt.Println("  Right-click Docker icon → 'Switch to Windows containers'")
+		} else {
+			fmt.Println("✓ Docker Desktop switched to Windows containers")
+		}
 	}
 
 	return nil
