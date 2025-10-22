@@ -456,26 +456,16 @@ func (d *DockerInstaller) installDockerEngine() error {
 }
 
 func (d *DockerInstaller) installDockerDesktop() error {
-	// Check if running as Administrator - Docker Desktop installation requires it
+	// Check if running as Administrator
 	isAdmin := isRunningAsAdmin()
 	if !isAdmin {
 		return fmt.Errorf("administrator privileges required - please run as administrator")
 	}
 
-	// Clean up any previous Docker installations first
-	cleanupDockerWSL()
-
-	// Get choco path - try user-local first, then system-wide
 	chocoPath := d.getChocoPath()
 
-	// Use flags for completely silent, unattended installation
-	// --no-progress: Suppress progress output
-	// --force: Force installation even if already installed
-	// --accept-license: Auto-accept license
-	// --confirm: Auto-confirm all prompts (redundant with -y but explicit)
-	cmd := exec.Command(chocoPath, "install", "docker-desktop", "-y", "--no-progress", "--force", "--accept-license", "--confirm")
-
-	// Set environment variables for Chocolatey
+	// Install Docker Desktop via Chocolatey
+	cmd := exec.Command(chocoPath, "install", "docker-desktop", "-y", "--no-progress")
 	cmd.Env = append(os.Environ(), "ChocolateyInstall="+os.Getenv("LOCALAPPDATA")+"\\choco")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -484,107 +474,7 @@ func (d *DockerInstaller) installDockerDesktop() error {
 		return fmt.Errorf("failed to install Docker Desktop: %w", err)
 	}
 
-	// Enable WSL2 features and update WSL
-	_ = enableWSL2()
-
-	// Configure Docker Desktop for WSL2 mode (Linux containers)
-	configureDockerForWSL2()
-
-	// Start Docker Desktop
-	_ = startDockerWindows()
-
-	// Wait for Docker to become responsive (up to 2 minutes)
-	dockerStarted := false
-	for i := 0; i < 120; i++ {
-		checkCmd := exec.Command("docker", "info")
-		if err := checkCmd.Run(); err == nil {
-			dockerStarted = true
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	if !dockerStarted {
-		return fmt.Errorf("docker Desktop did not start within 2 minutes")
-	}
-
 	return nil
-}
-
-func cleanupDockerWSL() {
-	// Update WSL FIRST - this is critical and must complete before other wsl commands
-	updateScript := `
-# Update WSL with --web-download to avoid store dependency
-wsl --update --web-download
-`
-	updateCmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", updateScript)
-	updateCmd.Stdout = os.Stdout
-	updateCmd.Stderr = os.Stderr
-	_ = updateCmd.Run() // Continue even if update fails
-
-	// Now cleanup - WSL commands will work after update
-	cleanupScript := `
-# Shutdown WSL
-wsl --shutdown
-
-# Unregister Docker WSL distributions if they exist
-wsl --unregister docker-desktop-data 2>$null
-wsl --unregister docker-desktop 2>$null
-
-# Verify cleanup
-wsl --list
-
-# Clean up Docker data directories
-Remove-Item -Path "$env:APPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:LOCALAPPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
-`
-	cleanupCmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", cleanupScript)
-	cleanupCmd.Stdout = os.Stdout
-	cleanupCmd.Stderr = os.Stderr
-	_ = cleanupCmd.Run() // Ignore errors - these might not exist
-}
-
-func enableWSL2() error {
-	// Enable WSL and Virtual Machine Platform features
-	installScript := `
-# Enable WSL
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-
-# Enable Virtual Machine Platform
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-# Set WSL2 as default (wsl --update already ran in cleanup phase)
-wsl --set-default-version 2
-
-# Install Debian distribution for WSL2 (required for Docker Desktop)
-wsl --install Debian --no-launch
-`
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", installScript)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func configureDockerForWSL2() {
-	// Configure Docker Desktop settings for WSL2 mode
-	configScript := `
-$settingsPath = "$env:APPDATA\Docker\settings.json"
-$dockerDir = Split-Path -Path $settingsPath -Parent
-if (-not (Test-Path $dockerDir)) {
-    New-Item -Path $dockerDir -ItemType Directory -Force | Out-Null
-}
-
-$settings = @{
-    "wslEngineEnabled" = $true
-    "displayedOnboarding" = $true
-    "exposeDockerAPIOnTCP2375" = $false
-    "useWindowsContainers" = $false
-}
-
-$settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Force
-`
-	cmd := exec.Command("powershell", "-NoProfile", "-Command", configScript)
-	_ = cmd.Run()
 }
 
 func startDockerWindows() error {
