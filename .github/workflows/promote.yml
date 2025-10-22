@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-       - name: Make Prod changes
+      - name: Make Prod changes
         env:
           VALUES_PATH: manifests/apps
         run: |
