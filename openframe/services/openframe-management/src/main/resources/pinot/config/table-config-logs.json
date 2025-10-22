@@ -18,7 +18,6 @@
     "noDictionaryColumns": [
       "summary",
       "userId",
-      "deviceId",
       "hostname",
       "organizationName"
     ],
@@ -27,12 +26,12 @@
       "toolType",
       "eventType",
       "severity",
-      "organizationId"
+      "organizationId",
+      "deviceId"
     ],
     "textIndexColumns": [
       "summary",
       "userId",
-      "deviceId",
       "organizationName"
     ],
     "rangeIndexColumns": [
@@ -73,15 +72,6 @@
       "indexTypes": [
         "TEXT"
       ],
-      "properties": {
-        "enableQueryCache": "true",
-        "caseSensitive": "false"
-      }
-    },
-    {
-      "name": "deviceId",
-      "encodingType": "RAW",
-      "indexTypes": ["TEXT"],
       "properties": {
         "enableQueryCache": "true",
         "caseSensitive": "false"

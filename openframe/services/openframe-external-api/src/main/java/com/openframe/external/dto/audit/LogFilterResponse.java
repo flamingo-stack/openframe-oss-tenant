@@ -23,4 +23,7 @@ public class LogFilterResponse {
 
     @Schema(description = "Available severities")
     private List<String> severities;
+
+    @Schema(description = "Available organizations")
+    private List<OrganizationFilterResponse> organizations;
 }

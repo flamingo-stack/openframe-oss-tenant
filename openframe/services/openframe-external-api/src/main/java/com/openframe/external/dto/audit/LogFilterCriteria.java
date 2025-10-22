@@ -30,4 +30,10 @@ public class LogFilterCriteria {
     
     @Schema(description = "Severity levels to filter by")
     private List<String> severities;
+    
+    @Schema(description = "Organization IDs to filter by")
+    private List<String> organizationIds;
+    
+    @Schema(description = "Device ID to filter by (exact matching)")
+    private String deviceId;
 }
