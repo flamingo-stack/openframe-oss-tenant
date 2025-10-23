@@ -65,25 +65,7 @@ spec:
                 }
                 }')
 
-              echo "HTTP $http_code"
-              echo "----- Response body -----"
-              cat /tmp/response.txt || true
-              echo "-------------------------"
-
-              if [ "$http_code" = "200" ]; then
-                echo "Debezium UI Registration complete."
-                exit 0
-              elif [ "$http_code" = "500" ]; then
-                # Extract {"message":"..."} from JSON (tolerates spaces)
-                ERR_MSG=$(sed -n 's/.*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' /tmp/response.txt | head -n1)
-                if [ -n "$ERR_MSG" ]; then
-                  echo "Registration failed (500): $ERR_MSG"
-                else
-                  echo "Registration failed (500). See response above."
-                fi
-                exit 1
-              else
-                echo "Registration failed (unexpected HTTP $http_code)."
-                exit 1
-              fi
+              [ "$http_code" = 200 ] && { echo "Debezium UI Registration complete."; exit 0; }
+              [ "$http_code" = 500 ] && { echo "Debezium UI Registration failed 500"; echo "----- Response body -----"; cat /tmp/response.txt || true; echo "-------------------------"; exit 1; }
+              echo "Debezium UI Registration failed (HTTP ${http_code:-n/a})"; exit 1
 {{- end }}
