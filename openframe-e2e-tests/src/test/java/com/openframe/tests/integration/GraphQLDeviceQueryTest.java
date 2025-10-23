@@ -324,13 +324,13 @@ public class GraphQLDeviceQueryTest extends BasePipelineTest {
     void deviceFiltersWorkCorrectly() {
         long startTime = System.currentTimeMillis();
         
-        List<Object> deviceTypes = executePhase(TestPhase.ARRANGE, "Get available device types", () -> {
+        List<String> deviceTypes = executePhase(TestPhase.ARRANGE, "Get available device types", () -> {
             Response response = ApiHelpers.graphqlQuery(GraphQLQueries.DEVICE_FILTERS_QUERY);
-            return response.jsonPath().getList("data.deviceFilters.deviceTypes");
+            return response.jsonPath().getList("data.deviceFilters.deviceTypes", String.class);
         });
         
         if (deviceTypes != null && !deviceTypes.isEmpty()) {
-            String selectedDeviceType = deviceTypes.get(0).toString();
+            String selectedDeviceType = deviceTypes.get(0);
             
             List<Map<String, Object>> filteredDevices = executePhase(TestPhase.ACT, 
                 "Query devices filtered by device type: " + selectedDeviceType, () -> {

@@ -129,20 +129,22 @@ public class UserRegistrationNegativeApiTest extends ApiBaseTest {
         Response response = executePhase(TestPhase.ACT, "Attempt registration with invalid tenantName", () ->
             ApiCalls.post(ApiEndpoints.REGISTRATION_ENDPOINT, userData));
 
-        executePhase(TestPhase.ASSERT, "Verify validation error response", () -> {
+        ErrorResponse errorResponse = executePhase(TestPhase.ASSERT, "Verify validation error response", () -> {
             assertEquals(HTTP_BAD_REQUEST, response.getStatusCode());
-            ErrorResponse errorResponse = response.as(ErrorResponse.class);
+            ErrorResponse error = response.as(ErrorResponse.class);
 
-            assertThat(errorResponse.getCode())
-                .withFailMessage("Expected validation error code but got: %s", errorResponse.getCode())
+            assertThat(error.getCode())
+                .withFailMessage("Expected validation error code but got: %s", error.getCode())
                 .isIn("VALIDATION_ERROR", "BAD_REQUEST");
 
-            assertThat(errorResponse.getMessage().toLowerCase())
-                .withFailMessage("Expected tenant/organization validation message but got: %s", errorResponse.getMessage())
+            assertThat(error.getMessage().toLowerCase())
+                .withFailMessage("Expected tenant/organization validation message but got: %s", error.getMessage())
                 .containsAnyOf("tenant", "organization", "invalid");
+            
+            return error;
         });
 
-        log.info(" TenantName validation working correctly for: '{}' [code: {}, message: {}]",
-                 tenantName, response.as(ErrorResponse.class).getCode(), response.as(ErrorResponse.class).getMessage());
+        log.info("TenantName validation working correctly for: '{}' [code: {}, message: {}]",
+                 tenantName, errorResponse.getCode(), errorResponse.getMessage());
     }
 }
