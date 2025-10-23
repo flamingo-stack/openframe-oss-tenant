@@ -73,9 +73,14 @@ spec:
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
                   "debeziumConnectors": []
                 }
-              }')
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors)
 
-              [ "$http_code" = 200 ] && { echo "Apache Pinot Registration complete."; exit 0; }
-              [ "$http_code" = 500 ] && { echo "Apache Pinot Registration failed 500"; echo "----- Response body -----"; cat /tmp/response.txt || true; echo "-------------------------"; exit 1; }
-              echo "Apache Pinot Registration failed (HTTP ${http_code:-n/a})"; exit 1
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Apache Pinot Registration failed..."; exit 1; }
+            echo "Apache Pinot Registration complete."
 {{- end }}

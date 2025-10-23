@@ -63,9 +63,14 @@ spec:
                   "allowedEndpoints": ["/metrics"],
                   "debeziumConnectors": []
                 }
-              }')
+              }' \
+              --retry-delay 2 \
+              --retry-all-errors)
 
-              [ "$http_code" = 200 ] && { echo "Authentik Redis Registration complete."; exit 0; }
-              [ "$http_code" = 500 ] && { echo "Authentik Redis Registration failed 500"; echo "----- Response body -----"; cat /tmp/response.txt || true; echo "-------------------------"; exit 1; }
-              echo "Authentik Redis Registration failed (HTTP ${http_code:-n/a})"; exit 1
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Authentik Redis Registration failed..."; exit 1; }
+            echo "Authentik Redis Registration complete."
 {{- end }}
