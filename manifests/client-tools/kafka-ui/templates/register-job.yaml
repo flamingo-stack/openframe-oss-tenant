@@ -31,7 +31,7 @@ spec:
             done
               echo "Sending registration request..."
               http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
-                -X POST "http://openframe-management.microservices.svc.cluster.local:30301/v1/tools/kafka-ui" \
+                -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/kafka-ui" \
                 -H "Content-Type: application/json" \
                 --connect-timeout 5 \
                 --max-time 20 \
