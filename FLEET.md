@@ -80,7 +80,7 @@ flowchart LR
 ## Quick Start
 
 Prerequisites:  
-- Go 1.21+  
+- Go latest  
 - Access to a running OpenFrame Gateway  
 
 Build:  
