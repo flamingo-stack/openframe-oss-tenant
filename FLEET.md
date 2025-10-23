@@ -86,7 +86,7 @@ Prerequisites:
 
 Build:  
 ```bash
-git clone https://github.com/Flamingo-CX/fleet.git
+git clone https://github.com/flamingo-stack/fleet.git
 cd fleet
 go mod download
 go build -ldflags "-s -w"
