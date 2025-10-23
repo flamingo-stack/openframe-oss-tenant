@@ -1,4 +1,4 @@
-name: Release to QA
+name: Openframe Release QA
 
 permissions:
   contents: write

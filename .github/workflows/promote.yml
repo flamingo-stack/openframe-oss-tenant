@@ -1,4 +1,4 @@
-name: Release to Prod
+name: Openframe Release Prod
 
 permissions:
   contents: write
