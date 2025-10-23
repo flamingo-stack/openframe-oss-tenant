@@ -1,5 +1,9 @@
 name: Openframe Release QA
 
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+
 permissions:
   contents: write
   packages: write
@@ -355,12 +359,6 @@ jobs:
           goreleaser release --clean --skip=validate
 
           set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
-
-      - name: Make QA values changes
-        env:
-          VALUES_PATH: manifests/apps
-        run: |
-          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
       
       - name: Configure Git
         run: |
@@ -371,10 +369,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_PR_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
+          VALUES_PATH: manifests/apps
         run: |
+          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
           git checkout -b release/qa-${{ inputs.version }}
           git commit -am "Release ${{ inputs.version }} to QA"
           git push -u origin HEAD --force
-          PR_URL=$(GH_TOKEN=$GH_PR_TOKEN gh pr create --title "Release ${{ inputs.version }} to QA (automatically generated PR)" --body "Update QA tags to ${{ inputs.version }}" --base main)
-          gh pr review "${PR_URL}" --approve
+          PR_URL=$(gh pr create --draft --title "Openframe Release QA ${{ inputs.version }} (automatically generated PR)" --body "Update QA tags to ${{ inputs.version }}" --base main)
+          GH_TOKEN=$GH_PR_TOKEN gh pr ready "${PR_URL}"  # to trigger the workflow
+          GH_TOKEN=$GH_PR_TOKEN gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto
