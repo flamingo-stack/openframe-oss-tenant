@@ -1,7 +1,6 @@
 package com.openframe.client.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openframe.client.model.MachineHeartbeatMessage;
 import com.openframe.client.service.MachineStatusService;
 import com.openframe.client.service.NatsTopicMachineIdExtractor;
 import io.nats.client.Connection;
@@ -50,13 +49,10 @@ public class MachineHeartbeatListener {
     }
 
     private void handleMessage(Message message) {
-        String messagePayload = new String(message.getData(), StandardCharsets.UTF_8);
         String subject = message.getSubject();
 
+        String machineId = machineIdExtractor.extract(subject);;
         try {
-            String machineId = machineIdExtractor.extract(subject);
-            MachineHeartbeatMessage heartbeatMessage = objectMapper.readValue(messagePayload, MachineHeartbeatMessage.class);
-
             // Generate timestamp at service side
             Instant eventTimestamp = Instant.now();
 
@@ -67,7 +63,7 @@ public class MachineHeartbeatListener {
 
             log.info("Machine heartbeat processed successfully");
         } catch (Exception e) {
-            log.error("Unexpected error processing machine heartbeat: {}", messagePayload, e);
+            log.error("Unexpected error processing heartbeat for machine {}", machineId, e);
         }
     }
 

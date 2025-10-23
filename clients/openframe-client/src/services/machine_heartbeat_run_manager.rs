@@ -19,7 +19,7 @@ impl MachineHeartbeatRunManager {
         info!("Starting machine heartbeat run manager");
         
         tokio::spawn(async move {
-            let mut interval = interval(Duration::from_secs(120)); // 2 minutes
+            let mut interval = interval(Duration::from_secs(60)); // 1 minute
             
             loop {
                 interval.tick().await;
