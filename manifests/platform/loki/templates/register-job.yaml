@@ -58,7 +58,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
-                  "debeziumConnector": null
+                  "debeziumConnectors": []
                 }
               }' \
               --retry-delay 2 \
