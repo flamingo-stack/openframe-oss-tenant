@@ -120,7 +120,7 @@ jobs:
         uses: docker/build-push-action@v6
         if: steps.should_run.outputs.run == 'true'
         with:
-          need to copy the pom.xml from the root so it builds with the lib version correctly
+          # need to copy the pom.xml from the root so it builds with the lib version correctly
           context: ${{ matrix.context || matrix.path }}
           file: ${{ matrix.path }}/Dockerfile
           platforms: linux/amd64,linux/arm64
