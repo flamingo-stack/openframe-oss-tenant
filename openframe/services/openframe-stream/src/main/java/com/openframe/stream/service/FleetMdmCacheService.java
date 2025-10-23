@@ -5,6 +5,7 @@ import com.openframe.data.document.tool.IntegratedToolId;
 import com.openframe.data.service.IntegratedToolService;
 import com.openframe.sdk.fleetmdm.FleetMdmClient;
 import com.openframe.sdk.fleetmdm.model.Host;
+import com.openframe.sdk.fleetmdm.model.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,14 +16,17 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * Service for host-agent cache operations using Spring Cache abstraction
- * Used in Fleet activities stream processing for enriching activities with agent information
- * Now uses Fleet MDM SDK directly instead of database access
+ * Service for Fleet MDM cache operations using Spring Cache abstraction
+ * Used in Fleet activities stream processing for enriching activities with:
+ * - Agent information (host-to-agent mapping)
+ * - Query definitions (query metadata by ID)
+ * 
+ * Uses Fleet MDM SDK directly instead of database access
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class HostAgentCacheService {
+public class FleetMdmCacheService {
 
     @Value("${fleet.mdm.base-url}")
     private String baseUrl;
@@ -49,14 +53,34 @@ public class HostAgentCacheService {
         }
     }
 
+    /**
+     * Get query definition from cache or Fleet MDM API
+     *
+     * @param queryId the query ID
+     * @return the Query object, or null if not found
+     */
+    @Cacheable(value = "fleetQueryCache", key = "#queryId", unless = "#result == null")
+    public Query getQueryById(Long queryId) {
+        log.debug("Fetching query definition for query ID: {}", queryId);
+        try {
+            FleetMdmClient client = getFleetMdmClient();
+            return client != null ? client.getQueryById(queryId) : null;
+        } catch (IOException | InterruptedException e) {
+            log.error("Error fetching query definition for query ID: {}", queryId, e);
+            return null;
+        }
+    }
+
     private FleetMdmClient getFleetMdmClient() {
         if (fleetMdmClient == null) {
             Optional<IntegratedTool> optionalFleetInfo = integratedToolService.getToolById(IntegratedToolId.FLEET_SERVER_ID.getValue());
-            log.info("FleetMdmClient is null for host: {}", optionalFleetInfo.map(IntegratedTool::getCredentials).orElse(null));
+            log.info("FleetMdmClient is null, attempting to initialize with tool: {}", 
+                optionalFleetInfo.map(IntegratedTool::getCredentials).orElse(null));
             optionalFleetInfo.ifPresent(integratedTool -> {
                 this.fleetMdmClient = new FleetMdmClient(baseUrl, integratedTool.getCredentials().getApiKey().getKey());
             });
         }
         return fleetMdmClient;
     }
-} 
+}
+

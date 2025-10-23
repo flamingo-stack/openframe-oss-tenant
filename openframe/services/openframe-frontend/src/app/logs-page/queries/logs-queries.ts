@@ -8,6 +8,10 @@ export const GET_LOG_FILTERS_QUERY = `
       toolTypes
       eventTypes
       severities
+      organizations {
+        id
+        name
+      }
       __typename
     }
   }

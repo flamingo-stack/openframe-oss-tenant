@@ -2,15 +2,12 @@ package com.openframe.client.listener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.client.service.NatsTopicMachineIdExtractor;
 import com.openframe.client.service.ToolConnectionService;
+import com.openframe.core.exception.NatsException;
 import com.openframe.data.model.nats.ToolConnectionMessage;
-import io.nats.client.Connection;
-import io.nats.client.Dispatcher;
-import io.nats.client.JetStream;
-import io.nats.client.JetStreamSubscription;
-import io.nats.client.Message;
-import io.nats.client.PushSubscribeOptions;
+import io.nats.client.*;
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.ConsumerConfiguration;
+import io.nats.client.api.ConsumerInfo;
 import io.nats.client.api.DeliverPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +16,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
@@ -26,7 +25,6 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 // TODO: remove spring cloud stream configs as deprecated
-// TODO: use consumer update to support property changes
 public class ToolConnectionListener {
 
     private final Connection natsConnection;
@@ -37,7 +35,7 @@ public class ToolConnectionListener {
     private static final String STREAM_NAME = "TOOL_CONNECTIONS";
     private static final String SUBJECT = "machine.*.tool-connection";
     private static final String CONSUMER_NAME = "tool-connection-processor";
-    private static final int MAX_DELIVER = 10;
+    private static final int MAX_DELIVER = 50;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
 
     private Dispatcher dispatcher;
@@ -51,35 +49,66 @@ public class ToolConnectionListener {
             // NATS Dispatcher manages threads internally
             dispatcher = natsConnection.createDispatcher();
 
-            // Create consumer configuration with retry policy
-            ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
-                    .durable(CONSUMER_NAME)
-                    .ackPolicy(AckPolicy.Explicit)
-                    .deliverPolicy(DeliverPolicy.All)
-                    .ackWait(ACK_WAIT)
-                    .maxDeliver(MAX_DELIVER)
-                    .build();
+            ConsumerConfiguration consumerConfig = buildConsumerConfig();
 
-            // Subscribe with push-based consumer
             PushSubscribeOptions pushOptions = PushSubscribeOptions.builder()
                     .stream(STREAM_NAME)
                     .configuration(consumerConfig)
                     .build();
 
-            // Subscribe with callback - NATS will invoke handleMessage in its own thread
-            subscription = js.subscribe(
-                SUBJECT,
-                dispatcher,
-                this::handleMessage,
-                false,  // manual ack
-                pushOptions
-            );
+            subscription = js.subscribe(SUBJECT, dispatcher, this::handleMessage, false, pushOptions);
 
             log.info("Subscribed to JetStream with Dispatcher: subject={} consumer={} (maxDeliver={}, ackWait={})", SUBJECT, CONSUMER_NAME, MAX_DELIVER, ACK_WAIT);
 
         } catch (Exception e) {
             log.error("Failed to subscribe to JetStream", e);
             throw new RuntimeException("Failed to subscribe to JetStream", e);
+        }
+    }
+
+    private ConsumerConfiguration buildConsumerConfig() throws IOException, JetStreamApiException {
+        JetStream js = natsConnection.jetStream();
+        JetStreamManagement jsm = natsConnection.jetStreamManagement();
+
+        try {
+            ConsumerInfo existingConsumer = jsm.getConsumerInfo(STREAM_NAME, CONSUMER_NAME);
+
+            log.info("Existing consumer config: {}", existingConsumer.getConsumerConfiguration());
+
+            String deliverSubject = existingConsumer.getConsumerConfiguration().getDeliverSubject();
+            ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
+                    .durable(CONSUMER_NAME)
+                    .ackPolicy(AckPolicy.Explicit)
+                    .deliverPolicy(DeliverPolicy.All)
+                    .ackWait(ACK_WAIT)
+                    .maxDeliver(MAX_DELIVER)
+                    .filterSubject(SUBJECT)
+                    .deliverSubject(deliverSubject)
+                    .build();
+
+            log.info("New consumer config: " + consumerConfig);
+
+            jsm.addOrUpdateConsumer(STREAM_NAME, consumerConfig);
+
+            return consumerConfig;
+        } catch (JetStreamApiException e) {
+            if (e.getErrorCode() == 404) {
+                log.info("Consumer {} {} doesn't exist", STREAM_NAME, CONSUMER_NAME);
+                ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
+                        .durable(CONSUMER_NAME)
+                        .ackPolicy(AckPolicy.Explicit)
+                        .deliverPolicy(DeliverPolicy.All)
+                        .ackWait(ACK_WAIT)
+                        .maxDeliver(MAX_DELIVER)
+                        .filterSubject(SUBJECT)
+                        .deliverSubject("machine.tool-connection.delivery")
+                        .build();
+
+                jsm.createConsumer(STREAM_NAME, consumerConfig);
+
+                return consumerConfig;
+            }
+            throw new NatsException("Api error during consumer " + STREAM_NAME + " retrieve", e);
         }
     }
 
@@ -94,11 +123,12 @@ public class ToolConnectionListener {
             String toolType = toolConnectionMessage.getToolType();
             String agentToolId = toolConnectionMessage.getAgentToolId();
             long deliveredCount = message.metaData().deliveredCount();
+            boolean lastAttempt = isLastAttempt(deliveredCount);
 
             log.info("Processing tool connection: machineId={} toolType={} agentToolId={} (delivery={})", machineId, toolType, agentToolId, deliveredCount);
 
             // Process the tool connection
-            toolConnectionService.addToolConnection(machineId, toolType, agentToolId);
+            toolConnectionService.addToolConnection(machineId, toolType, agentToolId, lastAttempt);
 
             // Acknowledge successful processing
             message.ack();
@@ -108,6 +138,10 @@ public class ToolConnectionListener {
             // Don't ack the message and let it be redelivered
             log.info("Leaving message unacked for potential redelivery: tool connection");
         }
+    }
+
+    private boolean isLastAttempt(long deliveredCount) {
+        return deliveredCount == MAX_DELIVER;
     }
 
     @PreDestroy

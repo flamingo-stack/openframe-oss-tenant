@@ -23,8 +23,7 @@ build:
 	rm -rf node_modules package-lock.json
 	npm install
 	npm run prebuild
-	cargo install tauri-cli
-	$(CARGO) tauri build $(TARGET_FLAG)
+	npx tauri build $(TARGET_FLAG)
 
 test: build
 	$(CARGO) tauri test

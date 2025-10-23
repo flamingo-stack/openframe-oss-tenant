@@ -24,10 +24,23 @@ export class ChatApiService {
   constructor(debug: boolean = false) {
     this.debugMode = debug
 
-    this.tokenUnsubscribe = tokenService.onTokenUpdate((token) => {})
-    this.apiUrlUnsubscribe = tokenService.onApiUrlUpdate((apiUrl) => {})
+    this.tokenUnsubscribe = tokenService.onTokenUpdate(() => {
+      if (this.debugMode) {
+        console.log('[ChatApiService] Token updated via listener')
+      }
+    })
+    
+    this.apiUrlUnsubscribe = tokenService.onApiUrlUpdate((apiUrl) => {
+      if (this.debugMode) {
+        console.log('[ChatApiService] API URL updated:', apiUrl)
+      }
+    })
 
-    tokenService.requestToken()
+    tokenService.requestToken().catch(err => {
+      if (this.debugMode) {
+        console.error('[ChatApiService] Initial token request failed:', err)
+      }
+    })
   }
 
   private getApiBaseUrl(): string {
@@ -45,6 +58,8 @@ export class ChatApiService {
   
   async *streamMessage(message: string): AsyncGenerator<MessageSegment> {
     try {
+      await this.ensureTokenReady()
+      
       if (!this.dialogId) {
         yield* this.createDialogAndStream(message)
       } else {
@@ -56,6 +71,26 @@ export class ChatApiService {
         yield { type: 'text', text: `[DEBUG] API Error:\n${errorDetails}` }
       }
       throw error
+    }
+  }
+  
+  private async ensureTokenReady(): Promise<void> {
+    let token = tokenService.getCurrentToken()
+    
+    if (!token) {
+      if (this.debugMode) {
+        console.log('[ChatApiService] Token not ready, requesting...')
+      }
+      token = await tokenService.requestToken()
+      
+      if (!token) {
+        throw new Error('Authentication token not available.')
+      }
+    }
+    
+    const apiUrl = tokenService.getCurrentApiBaseUrl()
+    if (!apiUrl) {
+      throw new Error('API server URL not configured.')
     }
   }
   
@@ -137,8 +172,11 @@ export class ChatApiService {
 
   private async *createDialogAndStream(initialMessage: string): AsyncGenerator<MessageSegment> {
     if (this.debugMode) {
-      yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/dialogs` }
+      const token = tokenService.getCurrentToken()
+      yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"\n` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/dialogs\n` }
+      yield { type: 'text', text: `[DEBUG] Token status: ${token ? 'Available' : 'Missing'}\n` }
+      yield { type: 'text', text: `[DEBUG] Authorization: Bearer ${token ? token.substring(0, 10) + '...' : 'null'}\n` }
     }
     
     const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/dialogs`, {
@@ -172,9 +210,11 @@ export class ChatApiService {
     }
     
     if (this.debugMode) {
-      yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}` }
-      yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"` }
-      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/api/v1/messages/process` }
+      const token = tokenService.getCurrentToken()
+      yield { type: 'text', text: `[DEBUG] Processing message with dialog ID: ${this.dialogId}\n` }
+      yield { type: 'text', text: `[DEBUG] Message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"\n` }
+      yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/messages/process\n` }
+      yield { type: 'text', text: `[DEBUG] Token status: ${token ? 'Available' : 'Missing'}\n` }
     }
     
     const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/messages/process`, {
@@ -276,6 +316,10 @@ export class ChatApiService {
     }
   }
   
+  setDebugMode(enabled: boolean) {
+    this.debugMode = enabled
+  }
+
   reset() {
     this.dialogId = null
   }
