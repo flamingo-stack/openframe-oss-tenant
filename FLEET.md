@@ -58,15 +58,15 @@ Fleet runs as a service in OpenFrame and talks to endpoint agents via Gateway. E
 
 ```mermaid
 flowchart LR
-    subgraph Endpoint
-      A[Agent] -- enroll --> T[Enrollment API]
-      A -- inventory/metrics --> G[Gateway]
-      A <-- actions/policy --> G
+    subgraph OpenFrame
+      A[Agent] -- inventory/metrics --> G[OpenFrame Gateway]
+      A <-- actions/policy/enroll --> G
     end
 
-    G[OpenFrame Gateway] --> S[Stream]
+    G --> S[Stream]
     S --> K[(Kafka)]
-    S --> P[(Pinot Analytics)]
+    K --> P[(Pinot Analytics)]
+    K --> C[(Cassandra)]
     G --> API[(Fleet Service API)]
     API --> DB[(DB: inventory, policy, jobs)]
 
