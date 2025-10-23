@@ -10,13 +10,13 @@ use tracing::{error, info};
 #[derive(Clone)]
 pub struct MachineHeartbeatPublisher {
     nats_publisher: NatsMessagePublisher,
-    config_service: Arc<RwLock<AgentConfigurationService>>,
+    config_service: AgentConfigurationService,
 }
 
 impl MachineHeartbeatPublisher {
     pub fn new(
         nats_publisher: NatsMessagePublisher,
-        config_service: Arc<RwLock<AgentConfigurationService>>,
+        config_service: AgentConfigurationService,
     ) -> Self {
         Self {
             nats_publisher,
@@ -25,9 +25,7 @@ impl MachineHeartbeatPublisher {
     }
 
     pub async fn publish_heartbeat(&self) -> Result<()> {
-        let config_guard = self.config_service.read().await;
-        let machine_id = config_guard.get_machine_id().await?;
-        drop(config_guard);
+        let machine_id = self.config_service.get_machine_id().await?;
 
         let heartbeat_message = MachineHeartbeatMessage::new();
         let message_json = serde_json::to_string(&heartbeat_message)?;

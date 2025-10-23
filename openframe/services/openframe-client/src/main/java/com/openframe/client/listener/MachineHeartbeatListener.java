@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 
 @Component
@@ -74,7 +75,7 @@ public class MachineHeartbeatListener {
     public void cleanup() {
         if (dispatcher != null) {
             try {
-                dispatcher.drain(5000); // 5 seconds timeout
+                dispatcher.drain(Duration.ofSeconds(5)); // 5 seconds timeout
                 log.info("Dispatcher drained successfully");
             } catch (Exception e) {
                 log.error("Error draining dispatcher", e);
