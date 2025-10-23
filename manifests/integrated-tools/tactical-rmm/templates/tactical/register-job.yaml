@@ -84,7 +84,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/metrics"],
-                  "debeziumConnector": {
+                  "debeziumConnectors": [{
                     "name": "tactical-rmm-psql-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
@@ -125,7 +125,7 @@ spec:
                       "predicates.isAgentHistory.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
                       "predicates.isAgentHistory.pattern": "trmm.public.agents_agenthistory"
                     }
-                  }
+                  }]
                 }
               }' \
               --retry-delay 2 \

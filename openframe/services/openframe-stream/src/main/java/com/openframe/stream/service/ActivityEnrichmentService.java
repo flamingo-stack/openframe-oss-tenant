@@ -32,7 +32,6 @@ public class ActivityEnrichmentService {
     private final Serde<ActivityMessage> activityMessageSerde;
     private final Serde<ActivityMessage> outgoingActivityMessageSerde;
     private final Serde<HostActivityMessage> hostActivityMessageSerde;
-    private final HostAgentCacheService hostAgentCacheService;
 
     @Value("${openframe.oss-tenant.kafka.topics.inbound.fleet-mdm-activities}")
     private String activitiesTopic;
@@ -109,7 +108,7 @@ public class ActivityEnrichmentService {
         activityData.setHostId(hostId);
         log.debug("Set hostId {} for activity {}", hostId, activityData.getId());
 
-        activityData.setAgentId(hostAgentCacheService.getAgentId(hostId));
+        activityData.setAgentId(hostId.toString());
 
         return activity;
     }

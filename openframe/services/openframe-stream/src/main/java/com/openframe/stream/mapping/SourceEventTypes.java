@@ -181,6 +181,7 @@ public interface SourceEventTypes {
         
         // Queries
         String LIVE_QUERY = "live_query";
+        String EXECUTE_SCHEDULED_QUERY = "execute_scheduled_query";
         
         // OS Version Requirements
         String EDITED_MACOS_MIN_VERSION = "edited_macos_min_version";

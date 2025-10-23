@@ -41,7 +41,7 @@ public class GenericJsonMessageProcessor {
 
     public void process(CommonDebeziumMessage message, MessageType type) {
         DeserializedDebeziumMessage deserializedKafkaMessage = deserialize(message, type);
-        if (deserializedKafkaMessage != null && deserializedKafkaMessage.getSkipProcessing()) {
+        if (deserializedKafkaMessage == null || deserializedKafkaMessage.getSkipProcessing()) {
             return;
         }
         IntegratedToolEnrichedData enrichedData = getExtraParams(deserializedKafkaMessage, type);

@@ -1,4 +1,4 @@
-name: Build and Test
+name: Openframe Test
 
 # =============================================================================
 # WORKFLOW CONFIGURATION
@@ -25,11 +25,6 @@ on:
       - 'scripts/**'
       - 'clients/**'
       - 'cli/**'
-  
-  push:
-    branches: [release/**]        # for automatic release/prod-* and release/qa-*
-    paths:
-      - 'manifests/apps/**'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
