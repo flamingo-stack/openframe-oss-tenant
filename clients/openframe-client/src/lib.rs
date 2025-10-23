@@ -55,6 +55,8 @@ use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
+use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
+use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -126,6 +128,7 @@ pub struct Client {
     tool_agent_update_listener: ToolAgentUpdateListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
+    machine_heartbeat_run_manager: MachineHeartbeatRunManager,
 }
 
 impl Client {
@@ -325,6 +328,13 @@ impl Client {
             config_service.clone()
         );
 
+        // Initialize machine heartbeat publisher and run manager
+        let machine_heartbeat_publisher = MachineHeartbeatPublisher::new(
+            nats_message_publisher.clone(),
+            config_service.clone()
+        );
+        let machine_heartbeat_run_manager = MachineHeartbeatRunManager::new(machine_heartbeat_publisher);
+
         Ok(Self {
             config,
             directory_manager,
@@ -336,6 +346,7 @@ impl Client {
             tool_agent_update_listener,
             tool_run_manager,
             tool_connection_processing_manager,
+            machine_heartbeat_run_manager,
         })
     }
 
@@ -351,7 +362,10 @@ impl Client {
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
 
-        // Start tool installation message listener in background
+        // Start machine heartbeat run manager
+        self.machine_heartbeat_run_manager.start();
+
+        //Start tool installation message listener in background
         self.tool_installation_message_listener.start().await?;
 
         // Start OpenFrame client update listener in background

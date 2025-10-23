@@ -25,6 +25,10 @@ public class MachineStatusService {
         update(machineId, DeviceStatus.OFFLINE, eventTimestamp);
     }
 
+    public void processHeartbeat(String machineId, Instant eventTimestamp) {
+        update(machineId, DeviceStatus.ONLINE, eventTimestamp);
+    }
+
     private void update(String machineId, DeviceStatus newStatus, Instant eventTimestamp) {
         log.info("Received status update event to {} for machineId={} eventTimestamp={}", newStatus, machineId, eventTimestamp);
 
