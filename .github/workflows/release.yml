@@ -375,6 +375,7 @@ jobs:
           git checkout -b release/qa-${{ inputs.version }}
           git commit -am "Release ${{ inputs.version }} to QA"
           git push -u origin HEAD --force
-          PR_URL=$(GH_TOKEN=$GH_PR_TOKEN gh pr create --title "Openframe Release QA ${{ inputs.version }} (automatically generated PR)" --body "Update QA tags to ${{ inputs.version }}" --base main)
+          PR_URL=$(gh pr create --draft --title "Openframe Release QA ${{ inputs.version }} (automatically generated PR)" --body "Update QA tags to ${{ inputs.version }}" --base main)
+          GH_TOKEN=$GH_PR_TOKEN gh pr ready "${PR_URL}"
           gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto
