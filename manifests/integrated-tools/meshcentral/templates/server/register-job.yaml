@@ -56,18 +56,17 @@ spec:
           - |
             echo "Registering MeshCentral Server..."
             echo "Waiting for OpenFrame Management API to become reachable..."
-            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health >/dev/null; do
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
-
-              echo "Sending registration request..."
-              http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
-                -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-server" \
-                -H "Content-Type: application/json" \
-                --connect-timeout 5 \
-                --max-time 20 \
-                -d '{
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/meshcentral-server" \
+              -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
+              -d '{
                   "tool": {
                     "id": "meshcentral-server",
                     "toolType": "MESHCENTRAL",
