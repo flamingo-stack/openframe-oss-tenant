@@ -103,7 +103,7 @@ spec:
                       "database.server.id": "1",
                       "database.include.list": "'"${MYSQL_DATABASE}"'",
                       "topic.prefix": "fleet_mysql",
-                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities, '"${MYSQL_DATABASE}"'.query_results"",
+                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities, '"${MYSQL_DATABASE}"'.query_results",
                       "topic.creation.default.replication.factor": 1,
                       "topic.creation.default.partitions": 10,
                       "topic.creation.default.cleanup.policy": "compact",
@@ -130,8 +130,8 @@ spec:
                       "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092",
                       "predicates.isQueryResult.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
                       "predicates.isQueryResult.pattern": "fleet_mysql.'"${MYSQL_DATABASE}"'.query_results"
-                    }]
-                  }
+                    }
+                  }]
                 }
               }' \
               --retry-delay 2 \

@@ -43,7 +43,7 @@ jobs:
           git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
           git commit -am "Release QA to Prod"
           git push -u origin HEAD --force
-          PR_URL=$(GH_TOKEN=$GH_PR_TOKEN gh pr create --draft --title "Openframe Release Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
+          PR_URL=$(gh pr create --draft --title "Openframe Release Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
           GH_TOKEN=$GH_PR_TOKEN gh pr ready "${PR_URL}"  # to trigger the workflow
           GH_TOKEN=$GH_PR_TOKEN gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto

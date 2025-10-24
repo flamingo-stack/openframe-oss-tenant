@@ -117,7 +117,7 @@ export function AuthBenefitsSection() {
                 <Button
                   onClick={handleJoinCommunity}
                   variant="outline"
-                  leftIcon={<OpenmspLogo className="w-5 h-5 flex-shrink-0" innerFrontBubbleColor="#f1f1f1" frontBubbleColor="#000000" backBubbleColor="#FFC008" />}
+                  rightIcon={<OpenmspLogo className="w-5 h-5 flex-shrink-0" innerFrontBubbleColor="#f1f1f1" frontBubbleColor="#000000" backBubbleColor="#FFC008" />}
                   className="flex-1 min-w-0 h-12 bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary"
                 >
                   <span className="font-bold text-[16px] sm:text-[18px] truncate">Join Community</span>

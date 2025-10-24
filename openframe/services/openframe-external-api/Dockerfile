@@ -15,7 +15,6 @@ COPY .mvn/settings.xml /root/.m2/settings.xml
 # Copy entire project structure
 COPY pom.xml ./
 COPY openframe/ openframe/
-COPY integrated-tools/ integrated-tools/
 
 # Build the application using BuildKit secret
 RUN --mount=type=secret,id=github_token \
