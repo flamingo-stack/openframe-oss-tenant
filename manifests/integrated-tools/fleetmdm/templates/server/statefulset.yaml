@@ -45,7 +45,7 @@ spec:
             path: /setup
             port: 8070
           initialDelaySeconds: 60
-          periodSeconds: 10
+          periodSeconds: 15
         volumeMounts:
         - name: fleet-logs
           mountPath: /var/log/osquery
