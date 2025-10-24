@@ -74,9 +74,3 @@ spec:
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Loki Registration failed..."; exit 1; }
             echo "Loki Registration complete."
 {{- end }}
-
-
-
-
-
-
