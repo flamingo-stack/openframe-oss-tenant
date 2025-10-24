@@ -11,6 +11,7 @@ permissions:
   pull-requests: write
   attestations: write
   id-token: write
+  pages: write
 
 on:
   pull_request:
@@ -188,6 +189,25 @@ jobs:
         run: |
           cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
+      - name: Setup Telepresence
+        uses: ./.github/steps/setup-telepresence
+
+      - name: Run Tests
+        id: tests
+        env:
+          API_BASE_URL: http://localhost:8100
+        run: |
+          cd openframe-e2e-tests
+          mvn test -Dgroups="smoke"
+        continue-on-error: true
+
+      - name: Generate and Deploy Allure Report
+        if: always()
+        uses: ./.github/steps/allure-report
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          test-status: ${{ steps.tests.outcome }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
@@ -256,7 +276,7 @@ jobs:
           retention-days: 1
           compression-level: 9
 
-  
+
   test_helm:
     name: "Test Helm Chart"
     needs: [matrix, changes]
