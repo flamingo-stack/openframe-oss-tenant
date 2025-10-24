@@ -14,10 +14,10 @@ import { SHELL_TYPES } from '@flamingo/ui-kit/types/shell.types'
 
 interface ScriptData {
   name: string
-  type: string
+  shell: string
   default_timeout: number
   args: Array<{ name: string; value: string }>
-  content: string
+  script_body: string
   run_as_user: boolean
   env_vars: Array<{ name: string; value: string }>
   description: string
@@ -38,10 +38,10 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
 
   const [scriptData, setScriptData] = useState<ScriptData>({
     name: '',
-    type: '',
+    shell: 'powershell',
     default_timeout: 90,
     args: [],
-    content: '',
+    script_body: '',
     run_as_user: false,
     env_vars: [],
     description: '',
@@ -65,10 +65,10 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
     if (scriptDetails && isEditMode) {
       setScriptData({
         name: scriptDetails.name,
-        type: scriptDetails.shell,
+        shell: scriptDetails.shell,
         default_timeout: scriptDetails.default_timeout,
         args: scriptDetails.args?.map((arg: string) => ({ name: arg, value: '' })) || [],
-        content: scriptDetails.script_body || '',
+        script_body: scriptDetails.script_body || '',
         run_as_user: scriptDetails.run_as_user,
         env_vars: scriptDetails.env_vars?.map((envVar: string) => {
           const [name, value] = envVar.split('=')
@@ -150,10 +150,10 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
 
       const payload = {
         name: scriptData.name,
-        shell: scriptData.type,
+        shell: scriptData.shell,
         default_timeout: scriptData.default_timeout,
         args: filteredArgs.map(arg => arg.name),
-        script_body: scriptData.content,
+        script_body: scriptData.script_body,
         run_as_user: scriptData.run_as_user,
         env_vars: filteredEnvVars.map(envVar => `${envVar.name}=${envVar.value}`),
         description: scriptData.description,
@@ -262,13 +262,8 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
                 name: os.label,
                 icon: <os.icon className="w-5 h-5" />
               }))}
-              selectedIds={scriptData.supported_platforms.map(p => {
-                // Normalize stored platform IDs to OSType format
-                const normalized = p.toUpperCase()
-                return OS_TYPES.find(os => os.id === normalized)?.id || 'WINDOWS'
-              })}
+              selectedIds={scriptData.supported_platforms.map(p => OS_TYPES.find(os => os.platformId === p)?.id || 'WINDOWS')}
               onSelectionChange={(selectedIds) => {
-                // Convert OSType IDs back to lowercase for API
                 setScriptData(prev => ({
                   ...prev,
                   supported_platforms: selectedIds.map(id => id.toLowerCase())
@@ -309,8 +304,8 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           <div className="flex-1 space-y-1">
             <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Shell Type</label>
             <Select
-              value={scriptData.type}
-              onValueChange={(value) => setScriptData(prev => ({ ...prev, type: value }))}
+              value={scriptData.shell}
+              onValueChange={(value) => setScriptData(prev => ({ ...prev, shell: value }))}
             >
               <SelectTrigger className="w-full bg-ods-card border border-ods-border px-3 py-3 font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary hover:bg-ods-bg-hover focus:ring-0 rounded-md">
                 <SelectValue placeholder="Select Shell Type" />
@@ -464,7 +459,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
               <div className="w-12 bg-ods-bg py-3 px-2">
                 <div ref={lineNumbersRef} className="h-[400px] overflow-y-auto">
                   <div className="text-right text-ods-text-secondary text-lg font-['DM_Sans:Medium',_sans-serif] font-medium leading-6">
-                    {scriptData.content.split('\n').map((_, i) => (
+                    {scriptData.script_body.split('\n').map((_: any, i: any) => (
                       <div key={i}>{i + 1}</div>
                     ))}
                   </div>
@@ -474,8 +469,8 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
               <div className="flex-1 relative">
                 <Textarea
                   ref={textareaRef}
-                  value={scriptData.content}
-                  onChange={(e) => setScriptData(prev => ({ ...prev, content: e.target.value }))}
+                  value={scriptData.script_body}
+                  onChange={(e) => setScriptData(prev => ({ ...prev, script_body: e.target.value }))}
                   onScroll={handleTextareaScroll}
                   wrap="off"
                   className="w-full h-[400px] border-none focus-visible:ring-0 bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none p-3 font-mono leading-6 resize-none overflow-auto"

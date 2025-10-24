@@ -128,9 +128,32 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               )}
             </div>
             <div className="flex-1 flex flex-col gap-1">
-              <Label>Domain</Label>
+              <Label>{isSaasShared ? 'Subdomain' : 'Domain'}</Label>
               <div className="flex flex-col gap-2">
-                <div className="relative">
+                {isSaasShared ? (
+                  <div className="flex items-center bg-ods-card border border-ods-border rounded-lg min-h-[60px] overflow-hidden">
+                    <input
+                      type="text"
+                      value={domain}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !isLoading) {
+                          handleCreateOrganization()
+                        }
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                        setDomain(value)
+                        setSuggestedDomains([])
+                      }}
+                      placeholder="your-company"
+                      disabled={isLoading}
+                      className="flex-grow w-full bg-transparent text-ods-text-secondary font-body text-[18px] font-medium placeholder:text-ods-text-secondary px-3 py-2 outline-none focus:outline-none"
+                    />
+                    <span className="text-ods-text-secondary font-body text-[18px] font-medium pr-1 py-2 flex-shrink-0 whitespace-nowrap select-none">
+                      .{SAAS_DOMAIN_SUFFIX}
+                    </span>
+                  </div>
+                ) : (
                   <Input
                     value={domain}
                     onKeyDown={(e) => {
@@ -142,16 +165,11 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                       setDomain(e.target.value)
                       setSuggestedDomains([])
                     }}
-                    placeholder={isSaasShared ? 'your-subdomain' : 'localhost'}
-                    disabled={!isSaasShared || isLoading}
-                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 p-3 pr-32"
+                    placeholder="localhost"
+                    disabled={isLoading}
+                    className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                   />
-                  {isSaasShared && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ods-text-secondary font-body text-[14px] font-medium leading-5">
-                      .{SAAS_DOMAIN_SUFFIX}
-                    </span>
-                  )}
-                </div>
+                )}
                 {suggestedDomains.length > 0 && (
                   <div className="text-sm text-ods-text-secondary">
                     <p className="mb-1">Available suggestions:</p>
@@ -165,8 +183,9 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                           }}
                           variant="outline"
                           size="sm"
+                          className="font-body"
                         >
-                          {suggestion}
+                          {suggestion}.{SAAS_DOMAIN_SUFFIX}
                         </Button>
                       ))}
                     </div>
