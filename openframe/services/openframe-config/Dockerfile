@@ -15,7 +15,6 @@ COPY .mvn/settings.xml /root/.m2/settings.xml
 # Copy entire project structure
 COPY pom.xml ./
 COPY openframe/ openframe/
-COPY integrated-tools/ integrated-tools/
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
