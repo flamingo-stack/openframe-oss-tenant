@@ -201,13 +201,13 @@ jobs:
           mvn test -Dgroups="smoke"
         continue-on-error: true
 
-      - name: Generate and Deploy Allure Report
-        if: always()
-        uses: ./.github/steps/allure-report
-        with:
-          pr-number: ${{ github.event.pull_request.number }}
-          test-status: ${{ steps.tests.outcome }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Generate and Deploy Allure Report
+#        if: always()
+#        uses: ./.github/steps/allure-report
+#        with:
+#          pr-number: ${{ github.event.pull_request.number }}
+#          test-status: ${{ steps.tests.outcome }}
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
