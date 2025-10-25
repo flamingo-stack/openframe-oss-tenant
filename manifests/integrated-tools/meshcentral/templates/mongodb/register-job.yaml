@@ -88,6 +88,7 @@ spec:
                   "debeziumConnectors": []
                 }
               }' \
+              --retry 5 \
               --retry-delay 2 \
               --retry-all-errors)
 
