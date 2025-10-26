@@ -31,10 +31,14 @@
 ---
 
 ## Quick Links
-- [Quick Start](#quick-start)  
-- [Configuration](#configuration)  
-- [Development](#development)  
-- [Security](#security)  
+- [Highlights](#highlights)
+- [Quick Start](#quick-start)
+  - [Prerequisites](#prerequisites)
+  - [OpenFrame Integration](#openframe-integration)
+  - [Architecture](#architecture)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)  
 
 ---
 
@@ -48,11 +52,27 @@
 - Remote actions (scripts, services, processes, files)  
 - Compliance reporting (drift, remediation, audit)  
 - Integrations: OpenFrame Gateway, Stream (Kafka), Analytics (Pinot), Auth (OIDC/JWT)  
-- API-first (REST/GraphQL gateway), web console (operator UI)  
+- API-first (REST/GraphQL gateway), web console (operator UI)
 
 ---
 
-## Architecture
+## Quick Start
+
+### Prerequisites
+
+**For OpenFrame Integration:**
+- Kubernetes cluster with kubectl
+- Telepresence (for local access to services)
+
+---
+
+### OpenFrame Integration
+
+Fleet is integrated into OpenFrame as **FleetMDM** for device management via osquery.
+
+---
+
+### Architecture
 
 Fleet runs as a service in OpenFrame and talks to endpoint agents via Gateway. Events flow into Stream and Analytics for compliance and dashboards.
 
@@ -76,63 +96,159 @@ flowchart LR
     style API fill:#212121,stroke:#1A1A1A,color:#FAFAFA
 ```
 
----
+#### Deployment
 
-## Quick Start
+FleetMDM is deployed automatically as part of OpenFrame via ArgoCD app-of-apps pattern:
 
-Prerequisites:  
-- Go latest  
-- Access to a running OpenFrame Gateway  
-
-Build:  
-```bash
-git clone https://github.com/flamingo-stack/fleet.git
-cd fleet
-go mod download
-go build -ldflags "-s -w"
+```yaml
+# manifests/apps/values.yaml
+apps:
+  fleetmdm: 
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"  # Deployed after microservices
 ```
 
-Run:  
+**Deploy complete OpenFrame stack:**
 ```bash
-./fleet --server https://gateway.local --token <JWT>
+cd openframe-oss-tenant
+
+# Install with ArgoCD
+helm install openframe ./manifests/app-of-apps
+
+# FleetMDM will be deployed automatically along with:
+# - MySQL and Redis (StatefulSets)
+# - Fleet server with auto-initialization
+# - Tool registration job for OpenFrame integration
 ```
 
----
-
-## Configuration
-
-Configuration files and environment variables allow you to set:  
-- `FLEET_SERVER` – Gateway base URL  
-- `FLEET_TOKEN` – JWT token for authentication  
-- `FLEET_LOG_LEVEL` – error, warning, info, debug  
-- `FLEET_UPDATE_CHANNEL` – stable, beta  
-- `FLEET_SYNC_INTERVAL` – how often devices/software check in  
-
----
-
-## Development
-
-Install dependencies:  
+**Access Fleet UI:**
 ```bash
-go mod tidy
+# Connect to integrated-tools namespace
+telepresence connect --namespace integrated-tools
+
+# Fleet UI will be available at:
+# http://fleetmdm-server.integrated-tools.svc.cluster.local:8070
 ```
 
-Run tests:  
+**For standalone FleetMDM deployment** (not recommended - registration job will fail):
 ```bash
-go test ./...
+helm install fleetmdm ./manifests/integrated-tools/fleetmdm
 ```
 
-Lint & format:  
-```bash
-go fmt ./...
-golangci-lint run
+#### Integration Features
+
+**Auto-initialization:**
+- Creates organization "OpenFrame"  
+- Sets up admin and API-only users
+- Persists API token at `/etc/fleet/api_token.txt`
+- Registers as integrated tool in OpenFrame
+
+**Configuration** is managed via Helm chart at `manifests/integrated-tools/fleetmdm/`.
+
+#### Using Fleet Java SDK
+
+```java
+import com.openframe.sdk.fleetmdm.FleetMdmClient;
+import com.openframe.sdk.fleetmdm.model.Host;
+import com.openframe.sdk.fleetmdm.model.HostSearchRequest;
+import com.openframe.sdk.fleetmdm.model.QueryResult;
+
+@Service
+public class DeviceManagementService {
+    
+    private final FleetMdmClient fleetClient;
+    
+    public DeviceManagementService() {
+        this.fleetClient = new FleetMdmClient(
+            "http://fleetmdm-server.integrated-tools.svc.cluster.local:8070",
+            System.getenv("FLEET_API_TOKEN")
+        );
+    }
+    
+    // Get device by ID
+    public Host getDevice(long hostId) throws IOException, InterruptedException {
+        return fleetClient.getHostById(hostId);
+    }
+    
+    // Search devices
+    public List<Host> searchDevices(String query) throws IOException, InterruptedException {
+        return fleetClient.searchHosts(query);
+    }
+    
+    // Search with pagination
+    public List<Host> searchDevicesPaginated(String query, int page, int perPage) 
+            throws IOException, InterruptedException {
+        HostSearchRequest request = new HostSearchRequest(query, page, perPage);
+        return fleetClient.searchHosts(request);
+    }
+    
+    // Execute osquery on specific device
+    public QueryResult executeQuery(long hostId, String sqlQuery) 
+            throws IOException, InterruptedException {
+        return fleetClient.runQuery(hostId, sqlQuery);
+    }
+    
+    // Example: Get Chrome extensions on device
+    public QueryResult getChromeExtensions(long hostId) 
+            throws IOException, InterruptedException {
+        String query = "SELECT * FROM chrome_extensions";
+        return fleetClient.runQuery(hostId, query);
+    }
+    
+    // Get enroll secret for new devices
+    public String getEnrollSecret() throws IOException, InterruptedException {
+        return fleetClient.getEnrollSecret();
+    }
+}
 ```
+
+#### Troubleshooting
+
+**Check deployment status:**
+```bash
+kubectl get pods -n integrated-tools -l app=fleetmdm-server
+kubectl logs -f fleetmdm-server-0 -n integrated-tools
+```
+
+**Access Fleet services via Telepresence:**
+```bash
+# Connect to cluster
+telepresence connect --namespace integrated-tools
+
+# Access Fleet UI directly
+open http://fleetmdm-server.integrated-tools.svc.cluster.local:8070
+
+# Access MySQL for debugging
+mysql -h fleetmdm-mysql-0.fleetmdm-mysql.integrated-tools.svc.cluster.local -u fleet -p
+
+# Access Redis for debugging
+redis-cli -h fleetmdm-redis.integrated-tools.svc.cluster.local
+```
+
+**Get API token manually:**
+```bash
+kubectl exec -it fleetmdm-server-0 -n integrated-tools -- \
+  cat /etc/fleet/api_token.txt
+```
+
+**Reinitialize if needed:**
+```bash
+kubectl delete pod fleetmdm-server-0 -n integrated-tools
+# StatefulSet will recreate automatically
+```
+
+For complete documentation:
+- [Fleet Official Docs](https://fleetdm.com/docs)
+- [osquery Tables Reference](https://osquery.io/schema)
+- [OpenFrame Java SDK](../../openframe-oss-lib/sdk/fleetmdm/)
 
 ---
 
 ## Security
 
-- All communication is encrypted with TLS 1.3  
+- All communication is encrypted with TLS 1.2
 - OAuth2/OIDC → JWT for authentication (via Gateway)  
 - Minimal client-side privileges required  
 - Safeguards against unsafe command execution  
