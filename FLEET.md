@@ -240,7 +240,7 @@ kubectl delete pod fleetmdm-server-0 -n integrated-tools
 For complete documentation:
 - [Fleet Official Docs](https://fleetdm.com/docs)
 - [osquery Tables Reference](https://osquery.io/schema)
-- [OpenFrame Java SDK](../../openframe-oss-lib/sdk/fleetmdm/)
+- [OpenFrame Java SDK](https://github.com/flamingo-stack/openframe-oss-lib/tree/main/sdk/fleetmdm)
 
 ---
 
