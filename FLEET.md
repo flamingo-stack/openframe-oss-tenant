@@ -112,8 +112,6 @@ apps:
 
 **Deploy complete OpenFrame stack:**
 ```bash
-cd openframe-oss-tenant
-
 # Install with ArgoCD
 helm install openframe ./manifests/app-of-apps
 
