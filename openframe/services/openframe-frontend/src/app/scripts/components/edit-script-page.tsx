@@ -227,14 +227,12 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       <Button
         onClick={() => toast({ title: 'Test Script', description: 'Feature coming soon', variant: 'default' })}
         variant="outline"
-        className="bg-ods-card border-ods-border text-ods-text-primary hover:bg-ods-bg-hover h-12 px-4 text-lg font-bold"
       >
         Test Script
       </Button>
       <Button
         onClick={handleSave}
         disabled={isLoading || !scriptData.name.trim()}
-        className="bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover disabled:opacity-50 h-12 px-4 text-lg font-bold"
       >
         {isLoading ? 'Saving...' : 'Save Script'}
       </Button>
