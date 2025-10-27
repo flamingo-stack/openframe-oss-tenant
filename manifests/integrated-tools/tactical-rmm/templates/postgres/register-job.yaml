@@ -50,40 +50,40 @@ spec:
               --connect-timeout 5 \
               --max-time 20 \
               -d '{
-              "tool": {
-                "id": "tactical-postgres",
-                "toolType": "POSTGRESQL",
-                "name": "TacticalRMM PostgreSQL",
-                "description": "PostgreSQL Database Backend for TacticalRMM",
-                "toolUrls": [
-                  {
-                    "url": "postgresql://'"${POSTGRES_HOST}"'",
-                    "port": "'"${POSTGRES_PORT}"'",
-                    "type": "DATABASE"
-                  }
-                ],
-                "category": "SQL Database",
-                "platformCategory": "Integrated Tool",
-                "enabled": true,
-                "credentials": {
-                  "username": "'"${POSTGRES_USER}"'",
-                  "password": "'"${POSTGRES_PASSWORD}"'"
-                },
-                "layer": "Integrated Tools",
-                "layerOrder": 6,
-                "layerColor": "#3949AB",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/metrics"],
-                "debeziumConnectors": []
-              }
-            }' \
-            --retry 5 \
-            --retry-delay 2 \
-            --retry-all-errors)
+                "tool": {
+                  "id": "tactical-postgres",
+                  "toolType": "POSTGRESQL",
+                  "name": "TacticalRMM PostgreSQL",
+                  "description": "PostgreSQL Database Backend for TacticalRMM",
+                  "toolUrls": [
+                    {
+                      "url": "postgresql://'"${POSTGRES_HOST}"'",
+                      "port": "'"${POSTGRES_PORT}"'",
+                      "type": "DATABASE"
+                    }
+                  ],
+                  "category": "SQL Database",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {
+                    "username": "'"${POSTGRES_USER}"'",
+                    "password": "'"${POSTGRES_PASSWORD}"'"
+                  },
+                  "layer": "Integrated Tools",
+                  "layerOrder": 6,
+                  "layerColor": "#3949AB",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/metrics"],
+                  "debeziumConnectors": []
+                }
+              }' \
+              --retry 5 \
+              --retry-delay 2 \
+              --retry-all-errors)
 
             echo "----- Response body -----"
             cat /tmp/response.txt || true
