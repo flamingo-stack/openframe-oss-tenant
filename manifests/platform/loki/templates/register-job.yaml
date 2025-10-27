@@ -36,37 +36,37 @@ spec:
               --connect-timeout 5 \
               --max-time 20 \
               -d '{
-              "tool": {
-                "id": "loki-primary",
-                "toolType": "LOKI",
-                "name": "Loki",
-                "description": "Loki Log Aggregation System",
-                "toolUrls": [
-                  {
-                    "url": "http://loki.platform.svc.cluster.local",
-                    "port": "3100",
-                    "type": "API"
-                  }
-                ],
-                "category": "Log Aggregation",
-                "platformCategory": "OpenFrame Service",
-                "enabled": true,
-                "credentials": {},
-                "layer": "Monitoring",
-                "layerOrder": 3,
-                "layerColor": "#78909C",
-                "metricsPath": "/metrics",
-                "healthCheckEndpoint": "/health",
-                "healthCheckInterval": 30,
-                "connectionTimeout": 5000,
-                "readTimeout": 5000,
-                "allowedEndpoints": ["/api/v1/*","/metrics"],
-                "debeziumConnectors": []
-              }
-            }' \
-            --retry 5 \
-            --retry-delay 2 \
-            --retry-all-errors)
+                "tool": {
+                  "id": "loki-primary",
+                  "toolType": "LOKI",
+                  "name": "Loki",
+                  "description": "Loki Log Aggregation System",
+                  "toolUrls": [
+                    {
+                      "url": "http://loki.platform.svc.cluster.local",
+                      "port": "3100",
+                      "type": "API"
+                    }
+                  ],
+                  "category": "Log Aggregation",
+                  "platformCategory": "OpenFrame Service",
+                  "enabled": true,
+                  "credentials": {},
+                  "layer": "Monitoring",
+                  "layerOrder": 3,
+                  "layerColor": "#78909C",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/health",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/api/v1/*","/metrics"],
+                  "debeziumConnectors": []
+                }
+              }' \
+              --retry 5 \
+              --retry-delay 2 \
+              --retry-all-errors)
 
             echo "----- Response body -----"
             cat /tmp/response.txt || true
