@@ -21,7 +21,7 @@ spec:
         image: curlimages/curl:8.5.0
         command:
           - /bin/sh
-          - -c
+          - -uc
           - |
             echo "Registering OpenFrame API..."
             echo "Waiting for OpenFrame Management API to become reachable..."
@@ -29,9 +29,12 @@ spec:
               echo "Still waiting..."
               sleep 10
             done
-            curl --verbose --show-error --fail \
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
               -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-authorization-server" \
               -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
               -d '{
                 "tool": {
                   "id": "openframe-authorization-server",
@@ -62,8 +65,13 @@ spec:
                 }
               }' \
               --retry 5 \
-                          --retry-delay 2 \
-              --retry-all-errors \
-              --silent --show-error
+              --retry-delay 2 \
+              --retry-all-errors)
+
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "OpenFrame API Registration failed..."; exit 1; }
             echo "OpenFrame API Registration complete."
 {{- end }}

@@ -27,7 +27,7 @@ spec:
               key: REDIS_HOST
         command:
           - /bin/sh
-          - -c
+          - -uc
           - |
             echo "Registering Tactical RMM Redis..."
             echo "Waiting for OpenFrame Management API to become reachable..."
@@ -35,9 +35,12 @@ spec:
               echo "Still waiting..."
               sleep 10
             done
-            curl --verbose --show-error --fail \
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
               -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-redis" \
               -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
               -d '{
                 "tool": {
                   "id": "tactical-redis",
@@ -67,7 +70,14 @@ spec:
                   "debeziumConnectors": []
                 }
               }' \
+              --retry 5 \
               --retry-delay 2 \
-              --retry-all-errors
+              --retry-all-errors)
+
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Tactical RMM Redis Registration failed..."; exit 1; }
             echo "Tactical RMM Redis Registration complete."
 {{- end }}
