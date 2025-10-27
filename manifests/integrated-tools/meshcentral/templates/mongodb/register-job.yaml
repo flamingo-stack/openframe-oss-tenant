@@ -89,7 +89,8 @@ spec:
                 }
               }' \
               --retry 5 \
-              --retry-delay 2)
+              --retry-delay 2 \
+              --retry-all-errors)
 
             echo "----- Response body -----"
             cat /tmp/response.txt || true
