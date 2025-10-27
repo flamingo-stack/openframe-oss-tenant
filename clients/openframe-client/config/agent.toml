@@ -1,7 +1,7 @@
 # OpenFrame Configuration
 
 [server]
-url = "https://api.openframe.org"
+url = "http://api.openframe.org"
 check_interval = 3600  # Update check interval in seconds
 api_timeout = 30  # API request timeout in seconds
 retry_interval = 300  # Retry interval for failed connections in seconds

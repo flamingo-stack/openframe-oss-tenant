@@ -11,8 +11,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Default API URL
-API_URL="https://localhost/api/agent/registration-secret/active"
+# Default API URL (using plain HTTP for development)
+API_URL="http://localhost/api/agent/registration-secret/active"
 # Default Org ID for dev setup
 ORG_ID="test-org"
 
@@ -56,7 +56,6 @@ fetch_registration_secret() {
         -w "HTTP_STATUS:%{http_code}\n" \
         -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H "Content-Type: application/json" \
-        -k \
         --connect-timeout 30 \
         --max-time 60 \
         "$API_URL" > "$temp_response" 2>&1 || curl_exit_code=$?

@@ -96,7 +96,7 @@ impl Default for ClientConfiguration {
     fn default() -> Self {
         Self {
             server: ServerConfig {
-                url: "https://api.openframe.org".to_string(),
+                url: "http://api.openframe.org".to_string(),
                 check_interval: 3600,
                 update_url: None,
             },
@@ -158,14 +158,12 @@ impl Client {
         // Initialize HTTP client
         let http_client = reqwest::Client::builder()
             .timeout(Duration::from_secs(120))
-            // disable TLS verification for dev mode only
-            .danger_accept_invalid_certs(initial_configuration_service.is_local_mode()?)
             .no_proxy()
             .build()
             .context("Failed to create HTTP client")?;
 
-        // Initialize http url
-        let http_url = format!("https://{}", initial_configuration_service.get_server_url()?);
+        // Initialize http url (using plain HTTP)
+        let http_url = format!("http://{}", initial_configuration_service.get_server_url()?);
 
         // Initialize registration client
         let registration_client = RegistrationClient::new(
@@ -218,8 +216,8 @@ impl Client {
             config_service.clone()
         );
 
-        // Initialize NATS connection manager
-        let ws_url = format!("wss://{}", initial_configuration_service.get_server_url()?);
+        // Initialize NATS connection manager (using plain WebSocket)
+        let ws_url = format!("ws://{}", initial_configuration_service.get_server_url()?);
         let tls_config_provider = LocalTlsConfigProvider::new(initial_configuration_service.clone());
         let nats_connection_manager = NatsConnectionManager::new(
             ws_url,

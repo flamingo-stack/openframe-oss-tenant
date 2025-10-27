@@ -53,7 +53,7 @@ impl NatsConnectionManager {
         let nats_server_url = self.nats_server_url.clone();
         
         // TODO: token fallback and connection retry
-        let mut connect_options = async_nats::ConnectOptions::new()
+        let connect_options = async_nats::ConnectOptions::new()
             .name(machine_id)
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
             .retry_on_initial_connect()
@@ -77,12 +77,7 @@ impl NatsConnectionManager {
                 }
             );
 
-        // Only add TLS config in development mode
-        if self.initial_configuration_service.is_local_mode()? {
-            let tls_config = self.tls_config_provider.create_tls_config()
-                .context("Failed to create development TLS configuration")?;
-            connect_options = connect_options.tls_client_config(tls_config);
-        }
+        // TLS configuration removed - using plain WebSocket (ws://)
 
         let client = connect_options
             .connect(&connection_url)

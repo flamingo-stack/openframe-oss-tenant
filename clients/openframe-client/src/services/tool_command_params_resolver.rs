@@ -28,7 +28,7 @@ impl ToolCommandParamsResolver {
     }
 
     pub fn process(&self, tool_agent_id: &str, command_args: Vec<String>) -> Result<Vec<String>> {
-        let server_url = format!("https://{}", self.initial_configuration_service.get_server_url()?);
+        let server_url = format!("http://{}", self.initial_configuration_service.get_server_url()?);
         let token_path = self.build_token_path();
 
         Ok(command_args
