@@ -35,7 +35,7 @@ spec:
               key: POSTGRES_PORT
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering TacticalRMM PostgreSQL..."
             echo "Waiting for OpenFrame Management API to become reachable..."
@@ -43,47 +43,47 @@ spec:
               echo "Still waiting..."
               sleep 10
             done
-              echo "Sending registration request..."
-              http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
-                -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-postgres" \
-                -H "Content-Type: application/json" \
-                --connect-timeout 5 \
-                --max-time 20 \
-                -d '{
-                "tool": {
-                  "id": "tactical-postgres",
-                  "toolType": "POSTGRESQL",
-                  "name": "TacticalRMM PostgreSQL",
-                  "description": "PostgreSQL Database Backend for TacticalRMM",
-                  "toolUrls": [
-                    {
-                      "url": "postgresql://'"${POSTGRES_HOST}"'",
-                      "port": "'"${POSTGRES_PORT}"'",
-                      "type": "DATABASE"
-                    }
-                  ],
-                  "category": "SQL Database",
-                  "platformCategory": "Integrated Tool",
-                  "enabled": true,
-                  "credentials": {
-                    "username": "'"${POSTGRES_USER}"'",
-                    "password": "'"${POSTGRES_PASSWORD}"'"
-                  },
-                  "layer": "Integrated Tools",
-                  "layerOrder": 6,
-                  "layerColor": "#3949AB",
-                  "metricsPath": "/metrics",
-                  "healthCheckEndpoint": "/",
-                  "healthCheckInterval": 30,
-                  "connectionTimeout": 5000,
-                  "readTimeout": 5000,
-                  "allowedEndpoints": ["/metrics"],
-                  "debeziumConnectors": []
-                }
-              }' \
-              --retry 5 \
-              --retry-delay 2 \
-              --retry-all-errors)
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-postgres" \
+              -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
+              -d '{
+              "tool": {
+                "id": "tactical-postgres",
+                "toolType": "POSTGRESQL",
+                "name": "TacticalRMM PostgreSQL",
+                "description": "PostgreSQL Database Backend for TacticalRMM",
+                "toolUrls": [
+                  {
+                    "url": "postgresql://'"${POSTGRES_HOST}"'",
+                    "port": "'"${POSTGRES_PORT}"'",
+                    "type": "DATABASE"
+                  }
+                ],
+                "category": "SQL Database",
+                "platformCategory": "Integrated Tool",
+                "enabled": true,
+                "credentials": {
+                  "username": "'"${POSTGRES_USER}"'",
+                  "password": "'"${POSTGRES_PASSWORD}"'"
+                },
+                "layer": "Integrated Tools",
+                "layerOrder": 6,
+                "layerColor": "#3949AB",
+                "metricsPath": "/metrics",
+                "healthCheckEndpoint": "/",
+                "healthCheckInterval": 30,
+                "connectionTimeout": 5000,
+                "readTimeout": 5000,
+                "allowedEndpoints": ["/metrics"],
+                "debeziumConnectors": []
+              }
+            }' \
+            --retry 5 \
+            --retry-delay 2 \
+            --retry-all-errors)
 
             echo "----- Response body -----"
             cat /tmp/response.txt || true

@@ -33,7 +33,7 @@ spec:
               key: TRMM_PASS
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Getting Tactical RMM API key..."
             POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
@@ -132,7 +132,8 @@ spec:
                 }
               }' \
               --retry 5 \
-              --retry-delay 2)
+              --retry-delay 2 \
+              --retry-all-errors)
 
             echo "----- Response body -----"
             cat /tmp/response.txt || true

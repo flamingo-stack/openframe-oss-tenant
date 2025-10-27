@@ -33,7 +33,7 @@ spec:
 
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering FleetMDM MySQL..."
             echo "Waiting for OpenFrame Management API to become reachable..."

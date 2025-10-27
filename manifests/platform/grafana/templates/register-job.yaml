@@ -32,7 +32,7 @@ spec:
               key: password
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering Grafana..."
             echo "Waiting for OpenFrame Management API to become reachable..."

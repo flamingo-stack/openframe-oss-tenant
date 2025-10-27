@@ -21,7 +21,7 @@ spec:
         image: curlimages/curl:8.5.0
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering Cassandra..."
             echo "Waiting for OpenFrame Management API to become reachable..."

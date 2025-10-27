@@ -32,7 +32,7 @@ spec:
               key: POSTGRES_PASSWORD
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering Authentik PostgreSQL..."
             echo "Waiting for OpenFrame Management API to become reachable..."

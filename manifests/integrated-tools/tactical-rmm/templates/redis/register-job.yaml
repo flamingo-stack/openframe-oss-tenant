@@ -27,7 +27,7 @@ spec:
               key: REDIS_HOST
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering Tactical RMM Redis..."
             echo "Waiting for OpenFrame Management API to become reachable..."

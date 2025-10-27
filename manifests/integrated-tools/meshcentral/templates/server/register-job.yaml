@@ -52,7 +52,7 @@ spec:
               key: MONGO_INITDB_ROOT_PASSWORD
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering MeshCentral Server..."
             echo "Waiting for OpenFrame Management API to become reachable..."

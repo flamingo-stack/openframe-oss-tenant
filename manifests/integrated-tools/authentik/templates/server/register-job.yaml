@@ -37,7 +37,7 @@ spec:
               key: AUTHENTIK_BOOTSTRAP_TOKEN
         command:
           - /bin/sh
-          - -euc
+          - -uc
           - |
             echo "Registering Authentik..."
             echo "Waiting for OpenFrame Management API to become reachable..."
