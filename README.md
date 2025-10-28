@@ -80,6 +80,7 @@ flowchart TB
     end
     
     subgraph "Infrastructure Layer"
+        Loki       --> Grafana
         Prometheus --> Grafana
     end
     
