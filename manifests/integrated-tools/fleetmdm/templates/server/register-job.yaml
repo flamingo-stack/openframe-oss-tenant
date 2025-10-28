@@ -33,10 +33,10 @@ spec:
               key: FLEET_API_USER_PASSWORD
         command:
           - /bin/sh
-          - -c
+          - -uc
           - |
             echo "Getting FLEET_TOKEN..."
-            POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath="{.items[0].metadata.name}")
+            POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath='{.items[0].metadata.name}')
             until kubectl exec -n integrated-tools "$POD" -- test -f /etc/fleet/api_token.txt 2>/dev/null; do
               echo "Waiting for /etc/fleet/api_token.txt to be available..."
               sleep 5
@@ -49,9 +49,12 @@ spec:
               echo "Still waiting..."
               sleep 10
             done
-            curl --verbose --show-error --fail \
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
               -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-server" \
               -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
               -d '{
                 "tool": {
                   "id": "fleetmdm-server",
@@ -134,7 +137,14 @@ spec:
                   }]
                 }
               }' \
+              --retry 5 \
               --retry-delay 2 \
-              --retry-all-errors
+              --retry-all-errors)
+
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "FleetMDM Server Registration failed..."; exit 1; }
             echo "FleetMDM Server Registration complete."
 {{- end }}

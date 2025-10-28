@@ -14,7 +14,7 @@ import {
   type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
-import { ToolBadge } from "@flamingo/ui-kit"
+import { Input, ToolBadge } from "@flamingo/ui-kit"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { navigateToLogDetails } from '@lib/log-navigation'
@@ -336,9 +336,10 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   const headerActions = (
     <Button
+      variant="outline"
       onClick={handleRefresh}
       leftIcon={<RefreshIcon size={20} />}
-      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+      className="h-12 whitespace-nowrap"
     >
       Refresh
     </Button>
@@ -384,18 +385,19 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
           </h3>
         </div>
 
-        {/* Embedded header with search and refresh */}
-        <div className="flex items-center gap-4">
+        <div className="flex gap-4 items-stretch">
           <div className="flex-1">
-            <input
+            <Input
               type="text"
               placeholder="Search logs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 bg-ods-card border border-ods-border rounded-[6px] text-ods-text-primary font-['DM_Sans'] text-[16px] placeholder:text-ods-text-secondary focus:outline-none focus:ring-2 focus:ring-ods-accent"
+              className="h-12"
             />
           </div>
-          {headerActions}
+          <div className="flex-shrink-0">
+            {headerActions}
+          </div>
         </div>
 
         {/* Error message */}
