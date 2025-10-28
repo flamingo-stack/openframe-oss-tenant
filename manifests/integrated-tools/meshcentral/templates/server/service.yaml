@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: meshcentral-server
 spec:
+  clusterIP: None  # Headless service for StatefulSet
   selector:
     app: meshcentral-server
   ports:
