@@ -5,7 +5,7 @@ metadata:
   name: tactical-rmm
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    # "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
 spec:
   backoffLimit: 3
   template:
@@ -33,7 +33,7 @@ spec:
               key: TRMM_PASS
         command:
           - /bin/sh
-          - -c
+          - -uc
           - |
             echo "Getting Tactical RMM API key..."
             POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
@@ -49,9 +49,12 @@ spec:
               echo "Still waiting..."
               sleep 10
             done
-            curl --verbose --show-error --fail \
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
               -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-rmm" \
               -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
               -d '{
                 "tool": {
                   "id": "tactical-rmm",
@@ -128,7 +131,14 @@ spec:
                   }]
                 }
               }' \
+              --retry 5 \
               --retry-delay 2 \
-              --retry-all-errors
-            echo "TacticalRMM Registration complete."
+              --retry-all-errors)
+
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Tactical RMM Registration failed..."; exit 1; }
+            echo "Tactical RMM Registration complete."
 {{- end }}

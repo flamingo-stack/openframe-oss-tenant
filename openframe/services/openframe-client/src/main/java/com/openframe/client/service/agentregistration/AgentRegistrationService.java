@@ -37,7 +37,7 @@ public class AgentRegistrationService {
     private final AgentSecretGenerator agentSecretGenerator;
     private final PasswordEncoder passwordEncoder;
     private final MachineIdGenerator machineIdGenerator;
-    private final AgentRegistrationToolService agentRegistrationToolService;
+    private final AgentRegistrationToolInstallationService agentRegistrationToolInstallationService;
 
     @Transactional
     // TODO: two phase commit for the nats integration or other fallback
@@ -54,7 +54,7 @@ public class AgentRegistrationService {
         saveOAuthClient(machineId, clientId, clientSecret);
         saveMachine(machineId, request, resolvedOrganizationId);
 
-        agentRegistrationToolService.publishInstallationMessages(machineId);
+        agentRegistrationToolInstallationService.process(machineId);
 
         return new AgentRegistrationResponse(machineId, clientId, clientSecret);
     }
