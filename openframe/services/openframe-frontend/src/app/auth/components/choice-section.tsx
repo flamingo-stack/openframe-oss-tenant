@@ -204,7 +204,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={!orgName.trim() || (isSaasShared && !domain.trim()) || isLoading || isCheckingDomain}
                 loading={isLoading || isCheckingDomain}
                 variant="primary"
-                className="w-full font-body text-[18px] font-bold leading-6 tracking-[-0.36px] py-3"
+                className="!w-full sm:!w-full"
               >
                 {isCheckingDomain ? 'Checking...' : 'Continue'}
               </Button>
@@ -264,7 +264,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={!isEmailValid || isSigningIn || isLoading}
                 loading={isSigningIn || isLoading}
                 variant="primary"
-                className="w-full font-body text-[18px] font-bold leading-6 tracking-[-0.36px] py-3"
+                className="!w-full sm:!w-full"
               >
                 Continue
               </Button>
