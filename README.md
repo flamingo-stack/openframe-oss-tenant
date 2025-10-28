@@ -80,14 +80,12 @@ flowchart TB
     end
     
     subgraph "Infrastructure Layer"
-        Loki[Logging] --> Grafana[Visualization]
-        Prometheus[Monitoring] --> Grafana[Visualization]
+        Prometheus --> Grafana
     end
     
     style Gateway fill:#FFC109,stroke:#1A1A1A,color:#FAFAFA
     style Stream fill:#666666,stroke:#1A1A1A,color:#FAFAFA
     style MongoDB fill:#212121,stroke:#1A1A1A,color:#FAFAFA
-    style K8s fill:#FFC109,stroke:#1A1A1A,color:#212121
 ```
 
 ## Quick Start
