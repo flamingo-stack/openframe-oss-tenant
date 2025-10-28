@@ -74,17 +74,17 @@ spec:
                   "description": "MeshCentral Remote Management Platform",
                   "toolUrls": [
                     {
-                      "url": "http://meshcentral-server.integrated-tools.svc.cluster.local",
+                      "url": "http://meshcentral-server-0.meshcentral-server.integrated-tools.svc.cluster.local",
                       "port": "80",
                       "type": "API"
                     },
                     {
-                      "url": "http://meshcentral-server.integrated-tools.svc.cluster.local",
+                      "url": "http://meshcentral-server-0.meshcentral-server.integrated-tools.svc.cluster.local",
                       "port": "8383",
                       "type": "DASHBOARD"
                     },
                     {
-                      "url": "ws://meshcentral-server.integrated-tools.svc.cluster.local",
+                      "url": "ws://meshcentral-server-0.meshcentral-server.integrated-tools.svc.cluster.local",
                       "port": "8383",
                       "type": "WS"
                     }

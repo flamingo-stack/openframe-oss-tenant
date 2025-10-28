@@ -31,21 +31,13 @@ interface AuthLoginSectionProps {
 /**
  * Modern login section with SSO providers and email/password option
  */
-export function AuthLoginSection({ 
-  email, 
-  tenantInfo, 
-  hasDiscoveredTenants, 
+export function AuthLoginSection({
   availableProviders, 
   onSSO, 
   onBack, 
   isLoading,
-  onEmailPasswordLogin
 }: AuthLoginSectionProps) {
-  const { isCloud, isSelfHosted } = useDeployment()
   const [loginMethod, setLoginMethod] = useState<'sso' | 'email'>('sso')
-  const [emailInput, setEmailInput] = useState(email || '')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
 
   // Separate OpenFrame SSO from standard providers
   const hasOpenFrameSSO = availableProviders.includes('openframe-sso')
@@ -97,13 +89,11 @@ export function AuthLoginSection({
                         disabled={isLoading}
                         loading={isLoading && loginMethod === 'sso'}
                         variant="primary"
-                        className="w-full h-12 text-base"
                       >
                         Sign in with OpenFrame SSO
                       </Button>
                       <Button
                         onClick={onBack}
-                        className="w-full"
                         variant='outline'
                       >
                         Back
@@ -112,7 +102,7 @@ export function AuthLoginSection({
                   )}
 
                   {/* Other SSO Providers */}
-                  {isCloud && enabledProviders.length > 0 && (
+                  {enabledProviders.length > 0 && (
                     <>
                       {hasOpenFrameSSO && (
                         <div className="relative my-6">

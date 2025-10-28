@@ -149,8 +149,11 @@ jobs:
     env:
       CARGO_INCREMENTAL: 0
     if: |
-      github.event_name == 'pull_request' && 
-      !github.event.pull_request.draft
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft &&
+      !startsWith(github.head_ref, 'release/') &&
+      !startsWith(github.head_ref, 'revert/') &&
+      !startsWith(github.head_ref, 'hotfix/')
     steps:
       - uses: actions/checkout@v4
         with:

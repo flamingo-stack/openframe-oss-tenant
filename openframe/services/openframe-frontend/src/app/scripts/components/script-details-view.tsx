@@ -52,16 +52,14 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
       <Button
         onClick={handleEditScript}
         variant="outline"
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
-        leftIcon={<Edit2 size={24} />}
+        leftIcon={<Edit2 size={20} />}
       >
         Edit Script
       </Button>
       <Button
         onClick={handleRunScript}
         variant="primary"
-        className="bg-ods-accent hover:bg-ods-accent-hover text-ods-text-on-accent px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
-        leftIcon={<Play size={24} />}
+        leftIcon={<Play size={20} />}
       >
         Run Script
       </Button>

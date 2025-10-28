@@ -80,84 +80,40 @@ flowchart TB
     end
     
     subgraph "Infrastructure Layer"
-        K8s[Kubernetes] --> Istio[Service Mesh]
-        Prometheus[Monitoring] --> Grafana[Visualization]
+        Loki       --> Grafana
+        Prometheus --> Grafana
     end
     
     style Gateway fill:#FFC109,stroke:#1A1A1A,color:#FAFAFA
     style Stream fill:#666666,stroke:#1A1A1A,color:#FAFAFA
     style MongoDB fill:#212121,stroke:#1A1A1A,color:#FAFAFA
-    style K8s fill:#FFC109,stroke:#1A1A1A,color:#212121
 ```
 
 ## Quick Start
 
-Get OpenFrame running locally in under 5 minutes! Choose your platform:
+Get OpenFrame running locally:
 
-### Windows
-```powershell
-# Interactive mode
-.\scripts\run-windows.ps1
+### CLI Usage
 
-# Silent mode
-.\scripts\run-windows.ps1 -Silent
-```
-
-### MacOS
 ```bash
-# Interactive mode
-./scripts/run-mac.sh
+# Linux
+./cli/openframe-linux-amd64 bootstrap
+./cli/openframe-linux-amd64 bootstrap --non-interactive --verbose
 
-# Silent mode  
-./scripts/run-mac.sh --silent
+# Windows
+./cli/openframe-windows-amd64.exe bootstrap
+./cli/openframe-windows-amd64.exe bootstrap --non-interactive --verbose
+
+# macOS
+./cli/openframe bootstrap
+./cli/openframe bootstrap --non-interactive --verbose
 ```
 
-### Linux
-```bash
-# Interactive mode
-./scripts/run-linux.sh
-
-# Silent mode
-./scripts/run-linux.sh --silent
-```
-
-### Authentication Setup
-
-Create a GitHub Personal Access Token (Classic) with these permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to packages  
-- `write:packages` - Write access to packages
-
-[Create token →](https://github.com/settings/tokens)
-
-
-### Access Your Instance
+For detailed CLI documentation, installation, and all available commands, see [CLI Documentation](docs/cli/README.md).
 
 Once started, OpenFrame will be available at:
-- **UI Dashboard:** http://localhost:8080
-- **GraphQL API:** http://localhost:8080/graphql
-- **Config Server:** http://localhost:8888
+- **UI Dashboard:** https://localhost
 
-
-## Deployment Options
-
-### Docker Compose (Development)
-```bash
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
-
-### Kubernetes (Production)
-```bash
-# Deploy to Kubernetes cluster
-kubectl apply -f k8s/
-
-# Check deployment status
-kubectl get pods -n openframe
-```
 
 ## Screenshots
 
@@ -177,13 +133,12 @@ kubectl get pods -n openframe
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | **Backend** | Spring Boot 3.3 + Java 21 | Core runtime & APIs |
-| **Frontend** | Vue 3 + TypeScript + PrimeVue | Modern web interface |
-| **Agent** | Rust + Tokio | Cross-platform system agent |
+| **Frontend** | Next.js 15 + React 19 + TypeScript 5.8 | Modern web interface |
+| **Client** | Rust + Tokio | Cross-platform system agent |
 | **API Layer** | GraphQL + Netflix DGS | Unified data access |
 | **Message Queue** | Apache Kafka 3.6 | Event streaming |
 | **Databases** | MongoDB + Cassandra + Pinot | Multi-model data storage |
 | **Cache** | Redis | High-performance caching |
-| **Orchestration** | Kubernetes + Istio | Container management |
 | **Monitoring** | Prometheus + Grafana + Loki | Observability stack |
 
 ## Roadmap
@@ -192,9 +147,8 @@ kubectl get pods -n openframe
 - [x] GraphQL API with authentication  
 - [x] Real-time stream processing
 - [x] Cross-platform Rust agent
-- [x] Vue 3 dashboard interface
-- [ ] **Multi-tenant support** *(Q2 2025)*
-- [ ] **Advanced AI/ML integrations** *(Q3 2025)*
+- [x] Multi-tenant support *(Q2 2025)*
+- [x] **Advanced AI/ML integrations** *(Q3 2025)*
 - [ ] **Edge computing capabilities** *(Q4 2025)*
 - [ ] **Mobile companion app** *(2026)*
 
@@ -208,10 +162,17 @@ kubectl get pods -n openframe
 - **Git:** 2.42+
 
 ### Local Development
+
+> **Note:** This project depends on `openframe-oss-lib` (version defined in `pom.xml` as `<openframe.libs.version>`). Maven authentication via GitHub Packages is required - set `GITHUB_ACTOR` and `GITHUB_TOKEN` environment variables before building.
+
 ```bash
 # Clone the repository
 git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
 cd openframe-oss-tenant
+
+# Set up GitHub authentication
+export GITHUB_ACTOR=your-github-username
+export GITHUB_TOKEN=your-github-token
 
 # Build backend services
 mvn clean install
@@ -307,7 +268,7 @@ This project is licensed under the [The Flamingo AI Unified License v1.0](LICENS
 ## Acknowledgments
 
 - Thanks to all our [contributors](https://github.com/flamingo-stack/openframe-oss-tenant/graphs/contributors)
-- Built with amazing open-source projects: Spring Boot, Vue.js, Apache Kafka, and many more
+- Built with amazing open-source projects: Spring Boot, Apache Kafka, and many more
 - Special thanks to the broader open-source community
 
 ---
