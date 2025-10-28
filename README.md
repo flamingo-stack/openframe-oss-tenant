@@ -133,7 +133,7 @@ Once started, OpenFrame will be available at:
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | **Backend** | Spring Boot 3.3 + Java 21 | Core runtime & APIs |
-| **Frontend** | Vue 3 + TypeScript + PrimeVue | Modern web interface |
+| **Frontend** | Next.js 15 + React 19 + TypeScript 5.8 | Modern web interface |
 | **Client** | Rust + Tokio | Cross-platform system agent |
 | **API Layer** | GraphQL + Netflix DGS | Unified data access |
 | **Message Queue** | Apache Kafka 3.6 | Event streaming |
@@ -147,9 +147,8 @@ Once started, OpenFrame will be available at:
 - [x] GraphQL API with authentication  
 - [x] Real-time stream processing
 - [x] Cross-platform Rust agent
-- [x] Vue 3 dashboard interface
-- [ ] **Multi-tenant support** *(Q2 2025)*
-- [ ] **Advanced AI/ML integrations** *(Q3 2025)*
+- [x] Multi-tenant support *(Q2 2025)*
+- [x] **Advanced AI/ML integrations** *(Q3 2025)*
 - [ ] **Edge computing capabilities** *(Q4 2025)*
 - [ ] **Mobile companion app** *(2026)*
 
@@ -262,7 +261,7 @@ This project is licensed under the [The Flamingo AI Unified License v1.0](LICENS
 ## Acknowledgments
 
 - Thanks to all our [contributors](https://github.com/flamingo-stack/openframe-oss-tenant/graphs/contributors)
-- Built with amazing open-source projects: Spring Boot, Vue.js, Apache Kafka, and many more
+- Built with amazing open-source projects: Spring Boot, Apache Kafka, and many more
 - Special thanks to the broader open-source community
 
 ---
