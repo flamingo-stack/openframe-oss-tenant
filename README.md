@@ -92,72 +92,25 @@ flowchart TB
 
 ## Quick Start
 
-Get OpenFrame running locally in under 5 minutes! Choose your platform:
+Get OpenFrame running locally:
 
-### Windows
-```powershell
-# Interactive mode
-.\scripts\run-windows.ps1
+### CLI Usage
 
-# Silent mode
-.\scripts\run-windows.ps1 -Silent
-```
-
-### MacOS
 ```bash
-# Interactive mode
-./scripts/run-mac.sh
+# Interactive cluster creation
+./cli/openframe bootstrap
 
-# Silent mode  
-./scripts/run-mac.sh --silent
+# Non-interactive mode
+./cli/openframe bootstrap --non-interactive --verbose
 ```
 
-### Linux
-```bash
-# Interactive mode
-./scripts/run-linux.sh
-
-# Silent mode
-./scripts/run-linux.sh --silent
-```
-
-### Authentication Setup
-
-Create a GitHub Personal Access Token (Classic) with these permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to packages  
-- `write:packages` - Write access to packages
-
-[Create token →](https://github.com/settings/tokens)
-
+For detailed CLI documentation, installation, and all available commands, see [CLI Documentation](docs/cli/README.md).
 
 ### Access Your Instance
 
 Once started, OpenFrame will be available at:
-- **UI Dashboard:** http://localhost:8080
-- **GraphQL API:** http://localhost:8080/graphql
-- **Config Server:** http://localhost:8888
+- **UI Dashboard:** http://localhost
 
-
-## Deployment Options
-
-### Docker Compose (Development)
-```bash
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
-
-### Kubernetes (Production)
-```bash
-# Deploy to Kubernetes cluster
-kubectl apply -f k8s/
-
-# Check deployment status
-kubectl get pods -n openframe
-```
 
 ## Screenshots
 
