@@ -162,10 +162,17 @@ Once started, OpenFrame will be available at:
 - **Git:** 2.42+
 
 ### Local Development
+
+> **Note:** This project depends on `openframe-oss-lib` (version defined in `pom.xml` as `<openframe.libs.version>`). Maven authentication via GitHub Packages is required - set `GITHUB_ACTOR` and `GITHUB_TOKEN` environment variables before building.
+
 ```bash
 # Clone the repository
 git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
 cd openframe-oss-tenant
+
+# Set up GitHub authentication
+export GITHUB_ACTOR=your-github-username
+export GITHUB_TOKEN=your-github-token
 
 # Build backend services
 mvn clean install
