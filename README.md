@@ -112,7 +112,7 @@ Get OpenFrame running locally:
 For detailed CLI documentation, installation, and all available commands, see [CLI Documentation](docs/cli/README.md).
 
 Once started, OpenFrame will be available at:
-- **UI Dashboard:** http://localhost
+- **UI Dashboard:** https://localhost
 
 
 ## Screenshots
