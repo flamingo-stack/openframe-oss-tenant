@@ -187,13 +187,26 @@ jobs:
           cat "${{ env.HELM_VALUES_FILE }}"
 
       - name: Run environment test script
+        working-directory: cli
         env:
           TERM: dumb
         run: |
-          cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
+          git config --global credential.helper store
+          echo "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com" > ~/.git-credentials
+          openframe bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
       - name: Setup Telepresence
         uses: ./.github/steps/setup-telepresence
+
+      - name: Download OpenFrame CLI from releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          URL="https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-cli_linux_amd64.tar.gz"
+          curl -fL "$URL" -o /tmp/openframe-cli_linux_amd64.tar.gz
+          tar -xzf /tmp/openframe-cli_linux_amd64.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/openframe /usr/local/bin/openframe
 
       - name: Run Tests
         id: tests
