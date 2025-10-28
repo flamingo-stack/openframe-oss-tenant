@@ -80,7 +80,7 @@ flowchart TB
     end
     
     subgraph "Infrastructure Layer"
-        K8s[Kubernetes] --> Istio[Service Mesh]
+        Loki[Logging] --> Grafana[Visualization]
         Prometheus[Monitoring] --> Grafana[Visualization]
     end
     
@@ -97,16 +97,20 @@ Get OpenFrame running locally:
 ### CLI Usage
 
 ```bash
-# Interactive cluster creation
-./cli/openframe bootstrap
+# Linux
+./cli/openframe-linux-amd64 bootstrap
+./cli/openframe-linux-amd64 bootstrap --non-interactive --verbose
 
-# Non-interactive mode
+# Windows
+./cli/openframe-windows-amd64.exe bootstrap
+./cli/openframe-windows-amd64.exe bootstrap --non-interactive --verbose
+
+# macOS
+./cli/openframe bootstrap
 ./cli/openframe bootstrap --non-interactive --verbose
 ```
 
 For detailed CLI documentation, installation, and all available commands, see [CLI Documentation](docs/cli/README.md).
-
-### Access Your Instance
 
 Once started, OpenFrame will be available at:
 - **UI Dashboard:** http://localhost
@@ -131,12 +135,11 @@ Once started, OpenFrame will be available at:
 |-----------|------------|---------|
 | **Backend** | Spring Boot 3.3 + Java 21 | Core runtime & APIs |
 | **Frontend** | Vue 3 + TypeScript + PrimeVue | Modern web interface |
-| **Agent** | Rust + Tokio | Cross-platform system agent |
+| **Client** | Rust + Tokio | Cross-platform system agent |
 | **API Layer** | GraphQL + Netflix DGS | Unified data access |
 | **Message Queue** | Apache Kafka 3.6 | Event streaming |
 | **Databases** | MongoDB + Cassandra + Pinot | Multi-model data storage |
 | **Cache** | Redis | High-performance caching |
-| **Orchestration** | Kubernetes + Istio | Container management |
 | **Monitoring** | Prometheus + Grafana + Loki | Observability stack |
 
 ## Roadmap
