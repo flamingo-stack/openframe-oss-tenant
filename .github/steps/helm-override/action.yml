@@ -15,6 +15,22 @@ inputs:
     description: 'Path to helm-values.yaml file'
     required: false
     default: 'scripts/helm-values.yaml'
+  branch-name:
+    description: 'Branch name to override'
+    required: false
+    default: ''
+  docker-username:
+    description: 'Docker registry username'
+    required: false
+    default: ''
+  docker-password:
+    description: 'Docker registry password'
+    required: false
+    default: ''
+  docker-email:
+    description: 'Docker registry email'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -77,3 +93,31 @@ runs:
           esac
 
         done
+
+    - name: Override branch name
+      if: inputs.branch-name != ''
+      shell: bash
+      env:
+        BRANCH_NAME: "${{ inputs.branch-name }}"
+        HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
+      run: |
+        # Override branch name
+        yq eval ".deployment.oss.repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
+        echo "Updated deployment.oss.repository.branch to: $BRANCH_NAME"
+
+    - name: Override registry
+      if: inputs.docker-username != '' && inputs.docker-password != ''
+      shell: bash
+      env:
+        DOCKER_USERNAME: "${{ inputs.docker-username }}"
+        DOCKER_PASSWORD: "${{ inputs.docker-password }}"
+        DOCKER_EMAIL: "${{ inputs.docker-email }}"
+        HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
+      run: |
+        # Override registry
+        yq eval ".registry.docker.server = \"https://index.docker.io/v1/\"" -i "$HELM_VALUES_FILE"
+        yq eval ".registry.docker.username = \"$DOCKER_USERNAME\"" -i "$HELM_VALUES_FILE"
+        yq eval ".registry.docker.password = \"$DOCKER_PASSWORD\"" -i "$HELM_VALUES_FILE"
+        yq eval ".registry.docker.email = \"$DOCKER_EMAIL\"" -i "$HELM_VALUES_FILE"
+        echo "Updated registry.docker configuration"
+        cat "$HELM_VALUES_FILE"
