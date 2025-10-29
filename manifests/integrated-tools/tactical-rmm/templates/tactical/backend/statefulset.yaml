@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: tactical-backend
 spec:
+  serviceName: tactical-backend
   replicas: 1
   selector:
     matchLabels:
@@ -14,9 +15,7 @@ spec:
     spec:
       {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
         - name: docker-pat-secret
-        {{- end }}
       {{- end }}
 
       initContainers:
@@ -36,13 +35,13 @@ spec:
         image: busybox:1.28
         command: ['sh', '-c', '
           echo "Waiting for PostgreSQL..." &&
-          until nc -z tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
+          until nc -z tactical-postgres-0.tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
           echo "PostgreSQL is ready!" &&
           echo "Waiting for Redis..." &&
-          until nc -z tactical-redis.integrated-tools.svc.cluster.local 6379; do sleep 2; done &&
+          until nc -z tactical-redis-0.tactical-redis.integrated-tools.svc.cluster.local 6379; do sleep 2; done &&
           echo "Redis is ready!" &&
           echo "Waiting for Nginx..." &&
-          until nc -z tactical-nginx.integrated-tools.svc.cluster.local 8080; do sleep 2; done &&
+          until nc -z tactical-nginx-0.tactical-nginx.integrated-tools.svc.cluster.local 8080; do sleep 2; done &&
           echo "Nginx is ready!"
           ']
 
