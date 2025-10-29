@@ -17,6 +17,7 @@ COPY pom.xml ./
 COPY openframe/ openframe/
 
 RUN --mount=type=secret,id=github_token \
+    --mount=type=cache,target=/root/.m2 \
     export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
     mvn clean install \
     -U \
