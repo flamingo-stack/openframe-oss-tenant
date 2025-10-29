@@ -3,12 +3,15 @@ kind: Service
 metadata:
   name: tactical-nginx
 spec:
+  clusterIP: None
   selector:
     app: tactical-nginx
   ports:
   - name: http
     port: 8080
     targetPort: 8080
+    protocol: TCP
   - name: api
     port: 8000
     targetPort: 8000
+    protocol: TCP
