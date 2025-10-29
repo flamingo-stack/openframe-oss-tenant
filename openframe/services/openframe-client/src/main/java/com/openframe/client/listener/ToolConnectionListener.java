@@ -35,6 +35,7 @@ public class ToolConnectionListener {
     private static final String STREAM_NAME = "TOOL_CONNECTIONS";
     private static final String SUBJECT = "machine.*.tool-connection";
     private static final String CONSUMER_NAME = "tool-connection-processor";
+    private static final String DELIVERY_GROUP = "tool-connection";
     private static final int MAX_DELIVER = 50;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
 
@@ -67,7 +68,6 @@ public class ToolConnectionListener {
     }
 
     private ConsumerConfiguration buildConsumerConfig() throws IOException, JetStreamApiException {
-        JetStream js = natsConnection.jetStream();
         JetStreamManagement jsm = natsConnection.jetStreamManagement();
 
         try {
@@ -84,6 +84,7 @@ public class ToolConnectionListener {
                     .maxDeliver(MAX_DELIVER)
                     .filterSubject(SUBJECT)
                     .deliverSubject(deliverSubject)
+                    .deliverGroup(DELIVERY_GROUP)
                     .build();
 
             log.info("New consumer config: " + consumerConfig);
@@ -101,6 +102,7 @@ public class ToolConnectionListener {
                         .ackWait(ACK_WAIT)
                         .maxDeliver(MAX_DELIVER)
                         .filterSubject(SUBJECT)
+                        .deliverGroup(DELIVERY_GROUP)
                         .deliverSubject("machine.tool-connection.delivery")
                         .build();
 
