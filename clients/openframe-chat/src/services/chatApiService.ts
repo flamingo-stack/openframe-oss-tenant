@@ -88,9 +88,17 @@ export class ChatApiService {
       }
     }
     
-    const apiUrl = tokenService.getCurrentApiBaseUrl()
+    let apiUrl = tokenService.getCurrentApiBaseUrl()
     if (!apiUrl) {
-      throw new Error('API server URL not configured.')
+      if (this.debugMode) {
+        console.log('[ChatApiService] API URL not ready, initializing...')
+      }
+      await tokenService.initApiUrl()
+      apiUrl = tokenService.getCurrentApiBaseUrl()
+      
+      if (!apiUrl) {
+        throw new Error('API server URL not configured.')
+      }
     }
   }
   
