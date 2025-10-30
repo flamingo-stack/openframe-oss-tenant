@@ -61,14 +61,6 @@ spec:
         - secretRef:
             name: tactical-postgres
 
-        livenessProbe:
-          exec:
-            command:
-            - cat
-            - /opt/tactical/tmp/tactical/ready
-          initialDelaySeconds: 30
-          periodSeconds: 10
-
         volumeMounts:
         - name: backend-data
           mountPath: /opt/tactical
