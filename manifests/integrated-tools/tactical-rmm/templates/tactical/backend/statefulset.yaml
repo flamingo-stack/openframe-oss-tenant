@@ -61,24 +61,14 @@ spec:
         - secretRef:
             name: tactical-postgres
 
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8000
-          initialDelaySeconds: 45
-          periodSeconds: 5
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 3
         livenessProbe:
-          httpGet:
-            path: /
-            port: 8000
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
           initialDelaySeconds: 30
-          periodSeconds: 15
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 3
+          periodSeconds: 10
+
         volumeMounts:
         - name: backend-data
           mountPath: /opt/tactical
