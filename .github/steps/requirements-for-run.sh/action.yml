@@ -4,6 +4,14 @@ description: Install required tools (Helm, yq, ArgoCD, k3d) and validate the env
 runs:
   using: composite
   steps:
+    - name: Install certutil (NSS tools)
+      shell: bash
+      run: |
+        if ! command -v certutil &> /dev/null; then
+          sudo apt-get update -yqq && sudo apt-get install -yqq libnss3-tools
+        fi
+        echo "certutil version: $(certutil --version)"
+
     - name: Install Helm
       shell: bash
       run: |
