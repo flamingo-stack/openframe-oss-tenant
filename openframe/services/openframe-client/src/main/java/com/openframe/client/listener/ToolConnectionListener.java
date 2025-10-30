@@ -34,8 +34,15 @@ public class ToolConnectionListener {
 
     private static final String STREAM_NAME = "TOOL_CONNECTIONS";
     private static final String SUBJECT = "machine.*.tool-connection";
-    private static final String CONSUMER_NAME = "tool-connection-processor";
+    /* During hotfix updated consumer name with v2 suffix.
+        Motivation of this change that it was consumer without delivery group before
+        and it's impossible to apply new delivery group to old environments.
+        Finally it will be new consumer with delivery group.
+        Previous consumer is deprecated.
+     */
+    private static final String CONSUMER_NAME = "tool-connection-processor-v2";
     private static final String DELIVERY_GROUP = "tool-connection";
+    private static final String DELIVERY_SUBJECT = "machine.tool-connection.delivery";
     private static final int MAX_DELIVER = 50;
     private static final Duration ACK_WAIT = Duration.ofSeconds(30);
 
@@ -75,7 +82,6 @@ public class ToolConnectionListener {
 
             log.info("Existing consumer config: {}", existingConsumer.getConsumerConfiguration());
 
-            String deliverSubject = existingConsumer.getConsumerConfiguration().getDeliverSubject();
             ConsumerConfiguration consumerConfig = ConsumerConfiguration.builder()
                     .durable(CONSUMER_NAME)
                     .ackPolicy(AckPolicy.Explicit)
@@ -83,7 +89,7 @@ public class ToolConnectionListener {
                     .ackWait(ACK_WAIT)
                     .maxDeliver(MAX_DELIVER)
                     .filterSubject(SUBJECT)
-                    .deliverSubject(deliverSubject)
+                    .deliverSubject(DELIVERY_SUBJECT)
                     .deliverGroup(DELIVERY_GROUP)
                     .build();
 
@@ -103,7 +109,7 @@ public class ToolConnectionListener {
                         .maxDeliver(MAX_DELIVER)
                         .filterSubject(SUBJECT)
                         .deliverGroup(DELIVERY_GROUP)
-                        .deliverSubject("machine.tool-connection.delivery")
+                        .deliverSubject(DELIVERY_SUBJECT)
                         .build();
 
                 jsm.createConsumer(STREAM_NAME, consumerConfig);
