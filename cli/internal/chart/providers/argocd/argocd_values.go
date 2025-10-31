@@ -23,6 +23,8 @@ configs:
         end
       end
       return hs
+  params:
+    controller.sync.timeout.seconds: "1200"
 
 repoServer:
   env:

@@ -45,7 +45,7 @@ spec:
     retry:
       limit: 3      
       backoff:
-        duration: 5s               
+        duration: 10s               
         factor: 2            
         maxDuration: 1m  
     automated:
