@@ -67,7 +67,7 @@ func (d *DockerInstaller) Install() error {
 	case "linux":
 		return d.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic Docker installation on Windows not supported. Please install Docker Desktop from https://docker.com/products/docker-desktop")
+		return d.installWindows()
 	default:
 		return fmt.Errorf("automatic Docker installation not supported on %s", runtime.GOOS)
 	}
@@ -272,7 +272,7 @@ func StartDocker() error {
 	case "linux":
 		return startDockerLinux()
 	case "windows":
-		return startDockerWindows()
+		return startDockerWindows() // Implemented in windows.go
 	default:
 		return fmt.Errorf("starting Docker is not supported on %s", runtime.GOOS)
 	}
@@ -318,22 +318,17 @@ func startDockerLinux() error {
 	return fmt.Errorf("unable to start Docker daemon: no supported init system found")
 }
 
-func startDockerWindows() error {
-	// Try to start Docker Desktop on Windows
-	cmd := exec.Command("cmd", "/c", "start", "", "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe")
-	if err := cmd.Run(); err != nil {
-		// Try alternative path
-		cmd = exec.Command("powershell", "-Command", "Start-Process", "'Docker Desktop'")
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to start Docker Desktop: %w", err)
-		}
-	}
-	return nil
-}
+// Note: startDockerWindows is now implemented in windows.go
 
 // WaitForDocker waits for Docker daemon to become available
 func WaitForDocker() error {
-	maxAttempts := 30 // 30 seconds timeout
+	maxAttempts := 30 // 30 seconds timeout for non-Windows, 60 for Windows
+
+	// Windows Docker Desktop takes longer to start
+	if runtime.GOOS == "windows" {
+		return waitForDockerWindows(maxAttempts * 2)
+	}
+
 	for i := 0; i < maxAttempts; i++ {
 		if IsDockerRunning() {
 			return nil
