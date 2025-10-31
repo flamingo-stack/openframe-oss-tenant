@@ -42,6 +42,12 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 30m
+    retry:
+      limit: 3      
+      backoff:
+        duration: 5s               
+        factor: 2            
+        maxDuration: 1m  
     automated:
       prune: {{ $autoSync }}
       selfHeal: {{ $autoSync }}
