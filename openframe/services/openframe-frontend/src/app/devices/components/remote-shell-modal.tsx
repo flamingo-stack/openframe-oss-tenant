@@ -7,6 +7,8 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
 import { MeshTunnel, TunnelState } from '@lib/meshcentral/meshcentral-tunnel'
 
+const WINDOWS_POWERSHELL_CMD = 'powershell -NoLogo -NoProfile 2>nul || "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile 2>nul || "%SystemRoot%\\Sysnative\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile 2>nul || "%ProgramFiles%\\PowerShell\\7\\pwsh.exe" -NoLogo -NoProfile 2>nul || "%ProgramFiles(x86)%\\PowerShell\\7\\pwsh.exe" -NoLogo -NoProfile 2>nul'
+
 interface RemoteShellModalProps {
   isOpen: boolean
   onClose: () => void
@@ -87,7 +89,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel, shell
     if (state === 3 && shellType === 'powershell' && hasReceivedData && !powershellCommandSentRef.current && tunnelRef.current) {
       setTimeout(() => {
         if (tunnelRef.current && !powershellCommandSentRef.current) {
-          tunnelRef.current.sendText('powershell\r')
+          tunnelRef.current.sendText(WINDOWS_POWERSHELL_CMD + '\r')
           powershellCommandSentRef.current = true
         }
       }, 100)
