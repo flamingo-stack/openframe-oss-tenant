@@ -24,7 +24,6 @@ on:
       - '.github/**'
       - 'manifests/**'
       - 'clients/**'
-      - 'cli/**'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
@@ -161,11 +160,6 @@ jobs:
 
       - name: Install tools and validate environment
         uses: ./.github/steps/requirements-for-run.sh
-
-      - name: Ensure helm values exists
-        run: |
-          mkdir -p cli
-          [ -f cli/helm-values.yaml ] || touch cli/helm-values.yaml
 
       - name: Override helm values
         uses: ./.github/steps/helm-override
