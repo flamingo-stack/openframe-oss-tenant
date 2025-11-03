@@ -154,7 +154,7 @@ export default function NewDevicePage() {
                           ? 'bg-ods-card text-ods-text-secondary opacity-50 cursor-not-allowed border-ods-border '
                           : selected
                             ? 'bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent-hover border-ods-accent cursor-pointer '
-                            : 'bg-ods-card text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover border-ods-border cursor-pointer ') + 'w-full min-h-[60px] items-center justify-center rounded-lg border p-2 text-[14px] md:text-[18px] font-medium transition-colors pointer-events-auto'}
+                            : 'bg-ods-card text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover border-ods-border cursor-pointer ') + '!w-full sm:!w-full min-h-[60px] items-center justify-center rounded-lg border p-2 text-[14px] md:text-[18px] font-medium transition-colors pointer-events-auto'}
                       />
                     </div>
                   )

@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: meshcentral-server
 spec:
+  serviceName: meshcentral-server
   replicas: 1
   selector:
     matchLabels:
@@ -20,7 +21,7 @@ spec:
       {{- end }}
       securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
         runAsUser: 0
-      
+
       initContainers:
       - name: wait-mongodb
         image: mongo:8.0.9
@@ -33,8 +34,8 @@ spec:
         args:
           - |
             echo "Waiting for MongoDB replica set to be ready..."
-            
-            # Use the readiness script with retry logic  
+
+            # Use the readiness script with retry logic
             # Increased attempts for GitHub runners (slower environment)
             MAX_ATTEMPTS=240  # 20 minutes total (240 * 5 seconds)
             for i in $(seq 1 $MAX_ATTEMPTS); do
@@ -42,14 +43,14 @@ spec:
                 echo "MongoDB is ready after $i attempts"
                 exit 0
               fi
-              
+
               # Less verbose logging
               if [ $((i % 12)) -eq 0 ]; then
                 echo "Attempt $i/$MAX_ATTEMPTS: MongoDB not ready yet, continuing..."
               fi
               sleep 5
             done
-            
+
             echo "MongoDB did not become ready after $MAX_ATTEMPTS attempts" >&2
             exit 1
         volumeMounts:

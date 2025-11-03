@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: tactical-frontend
 spec:
+  clusterIP: None
   selector:
     app: tactical-frontend
   ports:
   - port: 8080
     targetPort: 8080
+    protocol: TCP

@@ -3,12 +3,15 @@ kind: Service
 metadata:
   name: tactical-nats
 spec:
+  clusterIP: None
   selector:
     app: tactical-nats
   ports:
   - name: http
     port: 9235
     targetPort: 9235
+    protocol: TCP
   - name: websocket
     port: 4222
     targetPort: 4222
+    protocol: TCP
