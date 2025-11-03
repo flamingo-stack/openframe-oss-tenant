@@ -187,8 +187,6 @@ jobs:
         env:
           TERM: dumb
         run: |
-          git config --global credential.helper store
-          echo "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com" > ~/.git-credentials
           openframe bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
       - name: Setup Telepresence
