@@ -55,7 +55,7 @@ func (k *KubectlInstaller) Install() error {
 	case "linux":
 		return k.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic kubectl installation on Windows not supported. Please install from https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/")
+		return k.installWindows()
 	default:
 		return fmt.Errorf("automatic kubectl installation not supported on %s", runtime.GOOS)
 	}
