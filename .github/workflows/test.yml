@@ -36,6 +36,8 @@ env:
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "cli/helm-values.yaml"
+  OPENFRAME_CLI_URL: "https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-cli_linux_amd64.tar.gz"
+
 
 # =============================================================================
 # JOBS
@@ -178,11 +180,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
-          URL="https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-cli_linux_amd64.tar.gz"
-          curl -fL "$URL" -o /tmp/openframe-cli_linux_amd64.tar.gz
-          tar -xzf /tmp/openframe-cli_linux_amd64.tar.gz -C /tmp
-          sudo install -m 0755 /tmp/openframe /usr/local/bin/openframe
+          curl -fL "$OPENFRAME_CLI_URL" | tar -xz -C /tmp && install -m 0755 /tmp/openframe /usr/local/bin/openframe
 
       - name: Run environment test script
         working-directory: cli
