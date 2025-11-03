@@ -37,11 +37,11 @@ spec:
   {{- $autoSync := (hasKey $.Values.deployment.oss.repository "autoSync") | ternary $.Values.deployment.oss.repository.autoSync true }}
   syncPolicy:
     retry:
-      limit: -1
+      limit: 3
       backoff:
-        duration: 5s
+        duration: 15s
         factor: 2
-        maxDuration: 30m
+        maxDuration: 1m
     automated:
       prune: {{ $autoSync }}
       selfHeal: {{ $autoSync }}
