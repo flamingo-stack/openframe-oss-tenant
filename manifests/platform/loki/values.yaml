@@ -19,6 +19,13 @@ loki:
 
     storage:
       type: filesystem
+      bucketNames:
+        chunks: filesystem
+        ruler: filesystem
+        admin: filesystem
+      filesystem:
+        chunksDirectory: /var/loki/chunks
+        rulesDirectory: /var/loki/rules
 
     storage_config:
       filesystem:

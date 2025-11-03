@@ -212,6 +212,7 @@ jobs:
           test-status: ${{ steps.tests.outcome }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+
   test_clients:
     name: "Test Rust Client: ${{ matrix.name }} on ${{ matrix.os }}"
     needs: [changes, matrix]
