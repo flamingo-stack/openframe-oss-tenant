@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: tactical-celerybeat
 spec:
+  clusterIP: None
   selector:
     app: tactical-celerybeat
   ports:
   - port: 8000
     targetPort: 8000
+    protocol: TCP

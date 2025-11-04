@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: tactical-nginx
 spec:
+  serviceName: tactical-nginx
   replicas: 1
   selector:
     matchLabels:
@@ -14,9 +15,7 @@ spec:
     spec:
       {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
         - name: docker-pat-secret
-        {{- end }}
       {{- end }}
 
       containers:

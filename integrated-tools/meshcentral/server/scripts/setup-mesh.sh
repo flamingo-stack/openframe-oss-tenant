@@ -46,7 +46,7 @@ setup_mesh_device_group() {
 
     if [ "$GROUP_CHECK" -gt 0 ]; then
       echo "[meshcentral] MeshCentral device group ${MESH_DEVICE_GROUP} already exists"
-      DEVICE_GROUP_ID=$(eval "$cmd" 2>&1 | grep "${MESH_DEVICE_GROUP}" | awk -F',' '{print $1}' | tr -d '"')
+      DEVICE_GROUP_ID=$(eval "$cmd" 2>&1 | grep "${MESH_DEVICE_GROUP}" | head -n 1 | awk -F',' '{print $1}' | tr -d '"')
     else
       echo "[meshcentral] Creating device group: ${MESH_DEVICE_GROUP}"
       cmd="node ${MESH_DIR}/node_modules/meshcentral/meshctrl.js \
@@ -65,7 +65,7 @@ setup_mesh_device_group() {
         --loginpass ${MESH_PASS} \
         ListDeviceGroups"
 
-      DEVICE_GROUP_ID=$(eval "$cmd" 2>&1 | grep "${MESH_DEVICE_GROUP}" | awk -F',' '{print $1}' | tr -d '"')
+      DEVICE_GROUP_ID=$(eval "$cmd" 2>&1 | grep "${MESH_DEVICE_GROUP}" | head -n 1 | awk -F',' '{print $1}' | tr -d '"')
     fi
 
     if [ ! -z "$DEVICE_GROUP_ID" ]; then

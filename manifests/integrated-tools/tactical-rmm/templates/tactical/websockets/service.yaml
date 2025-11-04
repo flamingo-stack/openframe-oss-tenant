@@ -3,8 +3,10 @@ kind: Service
 metadata:
   name: tactical-websockets
 spec:
+  clusterIP: None
   selector:
     app: tactical-websockets
   ports:
   - port: 8383
     targetPort: 8383
+    protocol: TCP

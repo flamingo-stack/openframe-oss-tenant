@@ -22,9 +22,9 @@ data:
   WS_MASK_OVERRIDE: "1"
   TACTICAL_DIR: "/opt/tactical"
   TACTICAL_TMP_DIR: "/tmp/tactical"
-  API_HOST: "tactical-backend.integrated-tools.svc.cluster.local:8000"
-  API_LOCALHOST_HOST: "tactical-nginx.integrated-tools.svc.cluster.local:8000"
-  APP_HOST: "tactical-frontend.integrated-tools.svc.cluster.local:8080"
+  API_HOST: "tactical-backend-0.tactical-backend.integrated-tools.svc.cluster.local:8000"
+  API_LOCALHOST_HOST: "tactical-nginx-0.tactical-nginx.integrated-tools.svc.cluster.local:8000"
+  APP_HOST: "tactical-frontend-0.tactical-frontend.integrated-tools.svc.cluster.local:8080"
   # https://github.com/flamingo-stack/tacticalrmm/blob/develop/api/tacticalrmm/tacticalrmm/utils.py#L254-L265
   NATS_CONFIG: "/opt/tactical/nats-rmm.conf"
   NATS_API_CONFIG: "/opt/tactical/nats-api.conf"
@@ -35,12 +35,12 @@ data:
   # NATS_WS_BIND_HOST: "tactical-nats.integrated-tools.svc.cluster.local"
   NATS_WS_BIND_HOST: "0.0.0.0"  # Important for NATS_CONFIG to ba able to bind port 9235
   NATS_STANDARD_PORT: "9235"  # this is wrong, it is websocket port
-  NATS_CONNECT_HOST: "tactical-nats.integrated-tools.svc.cluster.local"
+  NATS_CONNECT_HOST: "tactical-nats-0.tactical-nats.integrated-tools.svc.cluster.local"
   # NATS_CONNECT_HOST: "0.0.0.0"
-  NATS_WEBSOCKET_HOST: "tactical-websockets.integrated-tools.svc.cluster.local"  # this is not used anywhere
+  NATS_WEBSOCKET_HOST: "tactical-websockets-0.tactical-websockets.integrated-tools.svc.cluster.local"  # this is not used anywhere
   WEBSOCKETS_BIND_HOST: "tactical-websockets"
   WEBSOCKET_PORT: "8383"
   PUBLIC_DIR: "/usr/share/nginx/html"
   TACTICAL_READY_FILE: "/opt/tactical/tmp/tactical/ready"
-  NGINX_HOST_IP: "tactical-nginx.integrated-tools.svc.cluster.local"
+  NGINX_HOST_IP: "tactical-nginx-0.tactical-nginx.integrated-tools.svc.cluster.local"
   NGINX_HOST_PORT: "8080"

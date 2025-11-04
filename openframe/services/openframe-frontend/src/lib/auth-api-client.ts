@@ -230,7 +230,13 @@ class AuthApiClient {
 
   logout(tenantId?: string) {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ''
-    return window.location.href = `${buildAuthUrl(`/oauth/logout${query}`)}`
+    const logoutUrl = buildAuthUrl(`/oauth/logout${query}`)
+
+    try {
+      window.location.href = logoutUrl
+    } catch (error) {
+      window.location.assign(logoutUrl)
+    }
   }
 }
 

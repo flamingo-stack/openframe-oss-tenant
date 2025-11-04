@@ -107,7 +107,7 @@ class TokenService {
   /**
    * Initialize API base URL from Tauri
    */
-  private async initApiUrl() {
+  async initApiUrl() {
     try {
       const serverUrl = await invoke<string>('get_server_url');
       

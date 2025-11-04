@@ -180,7 +180,7 @@ function createDevice(
     macAddress: fleetData?.primary_mac || node.macAddress,
 
     // System Status
-    status: fleetData?.status || node.status || tacticalData?.status || 'UNKNOWN',
+    status: node.status || fleetData?.status || tacticalData?.status || 'UNKNOWN',
     uptime: fleetData?.uptime,
     last_seen: fleetData?.seen_time || node.lastSeen || tacticalData?.last_seen,
     lastSeen: fleetData?.seen_time || node.lastSeen || tacticalData?.last_seen,

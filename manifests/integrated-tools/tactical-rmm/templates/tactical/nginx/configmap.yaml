@@ -5,9 +5,9 @@ metadata:
   name: tactical-nginx
 data:
   RESOLVER: "kube-dns.kube-system.svc.cluster.local"
-  APP_HOST: "tactical-frontend.integrated-tools.svc.cluster.local:8080"
-  API_HOST: "tactical-backend.integrated-tools.svc.cluster.local:8000"
-  WEBSOCKETS_BIND_HOST: tactical-websockets.integrated-tools.svc.cluster.local
+  APP_HOST: "tactical-frontend-0.tactical-frontend.integrated-tools.svc.cluster.local:8080"
+  API_HOST: "tactical-backend-0.tactical-backend.integrated-tools.svc.cluster.local:8000"
+  WEBSOCKETS_BIND_HOST: tactical-websockets-0.tactical-websockets.integrated-tools.svc.cluster.local
   WEBSOCKET_PORT: "8383"
-  NATS_STD_BIND_HOST: "tactical-nats.integrated-tools.svc.cluster.local"
+  NATS_STD_BIND_HOST: "tactical-nats-0.tactical-nats.integrated-tools.svc.cluster.local"
   NATS_STANDARD_PORT: "9235"
