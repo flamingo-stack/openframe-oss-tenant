@@ -89,12 +89,14 @@ export function AuthLoginSection({
                         disabled={isLoading}
                         loading={isLoading && loginMethod === 'sso'}
                         variant="primary"
+                        className="sm:!w-full"
                       >
                         Sign in with OpenFrame SSO
                       </Button>
                       <Button
                         onClick={onBack}
                         variant='outline'
+                        className="sm:!w-full"
                       >
                         Back
                       </Button>

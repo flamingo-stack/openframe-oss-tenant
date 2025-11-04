@@ -408,36 +408,34 @@ export function useAuth() {
     }
   }
 
-  const logout = useCallback(async () => {
-    console.log('🔐 [Auth] Logging out user')
+  const logout = useCallback(() => {
+    const { tenantId: storeTenantId, user: currentUser } = useAuthStore.getState()
+    const effectiveTenantId = storeTenantId ||
+      currentUser?.tenantId ||
+      currentUser?.organizationId ||
+      tenantInfo?.tenantId;
 
-    try {
-      const { tenantId: storeTenantId } = useAuthStore.getState()
-      const effectiveTenantId = storeTenantId || tenantInfo?.tenantId
-      await authApiClient.logout(effectiveTenantId || undefined)
-    } catch (error) {
-      console.warn('⚠️ [Auth] Server logout request failed (continuing):', error)
-    }
-    
-    // Clear auth store
     const { logout: storeLogout } = useAuthStore.getState()
     storeLogout()
-    
-    // Clear tokens if DevTicket is enabled
+
     const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
     if (isDevTicketEnabled) {
       clearTokens()
     }
-    
-    // Reset auth flow state
+
     setEmail('')
     setTenantInfo(null)
     setHasDiscoveredTenants(false)
     setDiscoveryAttempted(false)
     setAvailableProviders([])
     setIsLoading(false)
-    
-    console.log('✅ [Auth] Logout completed')
+
+    if (effectiveTenantId) {
+      authApiClient.logout(effectiveTenantId)
+    } else {
+      const sharedHostUrl = runtimeEnv.sharedHostUrl()
+      window.location.href = `${sharedHostUrl}/auth`
+    }
   }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, tenantInfo])
 
   const reset = () => {

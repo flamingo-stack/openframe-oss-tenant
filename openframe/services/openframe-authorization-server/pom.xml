@@ -15,10 +15,6 @@
     <name>OpenFrame Authorization Server</name>
     <description>OAuth2 Authorization Server for OpenFrame platform</description>
 
-    <properties>
-        <!-- Inherit java version and BOMs from openframe-parent -->
-    </properties>
-
     <dependencies>
 
         <dependency>
@@ -47,4 +43,4 @@
             </plugin>
         </plugins>
     </build>
-</project> 
+</project>

@@ -311,11 +311,24 @@ func (w *InstallationWorkflow) loadExistingConfiguration(deploymentModeStr strin
 		return nil, fmt.Errorf("failed to create temporary values file: %w", err)
 	}
 
+	// Extract SaaS repository password from helm values for SaaS Shared mode
+	var saasConfig *types.SaaSConfig
+	if deploymentMode == types.DeploymentModeSaaSShared {
+		repositoryPassword := modifier.GetSaaSRepositoryPassword(values)
+		if repositoryPassword == "" {
+			return nil, fmt.Errorf("repository password not found in helm-values.yaml under deployment.saas.repository.password")
+		}
+		saasConfig = &types.SaaSConfig{
+			RepositoryPassword: repositoryPassword,
+		}
+	}
+
 	result := &types.ChartConfiguration{
 		BaseHelmValuesPath: "helm-values.yaml",
 		TempHelmValuesPath: tempFilePath, // Use temporary file like interactive mode
 		ExistingValues:     values,
 		DeploymentMode:     &deploymentMode,
+		SaaSConfig:         saasConfig,
 		ModifiedSections:   []string{},
 	}
 
@@ -387,8 +400,9 @@ func (w *InstallationWorkflow) buildConfiguration(req utilTypes.InstallationRequ
 
 		// Inject authentication token for private SaaS Shared repository
 		if *chartConfig.DeploymentMode == types.DeploymentModeSaaSShared && chartConfig.SaaSConfig != nil && chartConfig.SaaSConfig.RepositoryPassword != "" {
-			// Replace https:// with https://token@
-			githubRepo = strings.Replace(githubRepo, "https://", "https://"+chartConfig.SaaSConfig.RepositoryPassword+"@", 1)
+			// Replace https:// with https://x-access-token:TOKEN@
+			// This format is required for GitHub PAT authentication in non-interactive mode
+			githubRepo = strings.Replace(githubRepo, "https://", "https://x-access-token:"+chartConfig.SaaSConfig.RepositoryPassword+"@", 1)
 		}
 	}
 

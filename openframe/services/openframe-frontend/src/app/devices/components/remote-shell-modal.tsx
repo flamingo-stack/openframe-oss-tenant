@@ -7,20 +7,25 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
 import { MeshTunnel, TunnelState } from '@lib/meshcentral/meshcentral-tunnel'
 
+const WINDOWS_POWERSHELL_CMD = 'powershell -NoLogo -NoProfile 2>nul || "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile 2>nul || "%SystemRoot%\\Sysnative\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile 2>nul || "%ProgramFiles%\\PowerShell\\7\\pwsh.exe" -NoLogo -NoProfile 2>nul || "%ProgramFiles(x86)%\\PowerShell\\7\\pwsh.exe" -NoLogo -NoProfile 2>nul'
+
 interface RemoteShellModalProps {
   isOpen: boolean
   onClose: () => void
   deviceId: string
   deviceLabel?: string
+  shellType?: 'cmd' | 'powershell'
 }
 
-export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: RemoteShellModalProps) {
+export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel, shellType = 'cmd' }: RemoteShellModalProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<any | null>(null)
   const fitRef = useRef<any | null>(null)
   const tunnelRef = useRef<MeshTunnel | null>(null)
   const [state, setState] = useState<TunnelState>(0)
   const [connecting, setConnecting] = useState(false)
+  const [hasReceivedData, setHasReceivedData] = useState(false)
+  const powershellCommandSentRef = useRef(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -81,6 +86,24 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
   }, [isOpen])
 
   useEffect(() => {
+    if (state === 3 && shellType === 'powershell' && hasReceivedData && !powershellCommandSentRef.current && tunnelRef.current) {
+      setTimeout(() => {
+        if (tunnelRef.current && !powershellCommandSentRef.current) {
+          tunnelRef.current.sendText(WINDOWS_POWERSHELL_CMD + '\r')
+          powershellCommandSentRef.current = true
+        }
+      }, 100)
+    }
+  }, [state, shellType, hasReceivedData])
+
+  useEffect(() => {
+    if (!isOpen) {
+      powershellCommandSentRef.current = false
+      setHasReceivedData(false)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
     if (!isOpen) return
     let control: MeshControlClient | undefined
     ;(async () => {
@@ -96,6 +119,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
           protocol: 1,
           options: { cols: term.cols, rows: term.rows },
           onData: (data) => {
+            setHasReceivedData(true)
             if (typeof data === 'string') term.write(data)
             else term.write(new TextDecoder().decode(data))
           },
@@ -132,7 +156,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel }: Rem
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <h2 className="font-['Azeret_Mono'] font-semibold text-[20px] text-ods-text-primary tracking-[-0.4px]">
-              Remote Shell {deviceLabel ? `- ${deviceLabel}` : ''}
+              Remote Shell {shellType === 'powershell' ? '(PowerShell)' : ''} {deviceLabel ? `- ${deviceLabel}` : ''}
             </h2>
             <div className="text-ods-text-secondary text-sm">{statusText}{connecting ? '…' : ''}</div>
           </div>

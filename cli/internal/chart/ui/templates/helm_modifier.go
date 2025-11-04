@@ -374,3 +374,17 @@ func (h *HelmValuesModifier) GetCurrentDeploymentMode(values map[string]interfac
 
 	return types.DeploymentModeOSS // default fallback
 }
+
+// GetSaaSRepositoryPassword extracts the SaaS repository password from Helm values
+func (h *HelmValuesModifier) GetSaaSRepositoryPassword(values map[string]interface{}) string {
+	if deployment, ok := values["deployment"].(map[string]interface{}); ok {
+		if saas, ok := deployment["saas"].(map[string]interface{}); ok {
+			if repository, ok := saas["repository"].(map[string]interface{}); ok {
+				if password, ok := repository["password"].(string); ok {
+					return password
+				}
+			}
+		}
+	}
+	return "" // return empty string if not found
+}

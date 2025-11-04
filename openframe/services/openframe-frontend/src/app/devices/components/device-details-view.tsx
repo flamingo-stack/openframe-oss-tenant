@@ -3,6 +3,14 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, RemoteControlIcon, ShellIcon, StatusTag } from '@flamingo/ui-kit'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@flamingo/ui-kit/components/ui'
+import { CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
+import { normalizeOSType } from '@flamingo/ui-kit'
 import { RemoteShellModal } from './remote-shell-modal'
 import { RemoteDesktopModal } from './remote-desktop-modal'
 import { ScriptIcon, DetailPageContainer } from '@flamingo/ui-kit'
@@ -26,6 +34,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false)
   const [isRemoteShellOpen, setIsRemoteShellOpen] = useState(false)
   const [isRemoteDesktopOpen, setIsRemoteDesktopOpen] = useState(false)
+  const [shellType, setShellType] = useState<'cmd' | 'powershell'>('cmd')
 
   useEffect(() => {
     if (deviceId) {
@@ -57,7 +66,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     setIsRemoteDesktopOpen(true)
   }
 
-  const handleRemoteShell = () => {
+  const handleRemoteShell = (type: 'cmd' | 'powershell' = 'cmd') => {
+    setShellType(type)
     setIsRemoteShellOpen(true)
   }
 
@@ -68,6 +78,13 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     params.set('refresh', Date.now().toString())
     router.push(`${window.location.pathname}?${params.toString()}`)
   }
+
+  const isWindows = useMemo(() => {
+    const osType = normalizedDevice?.platform || 
+                   normalizedDevice?.osType || 
+                   normalizedDevice?.operating_system
+    return normalizeOSType(osType) === 'WINDOWS'
+  }, [normalizedDevice])
 
   if (isLoading) {
     return <CardLoader items={4} />
@@ -99,14 +116,44 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       >
         Remote Control
       </Button>
-      <Button
-        onClick={handleRemoteShell}
-        variant="outline"
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
-        leftIcon={<ShellIcon className="h-6 w-6" />}
-      >
-        Remote Shell
-      </Button>
+      {isWindows ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              leftIcon={<ShellIcon className="h-6 w-6" />}
+              className="bg-ods-card focus-visible:ring-0"
+            >
+              Remote Shell
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-ods-card border-ods-border">
+            <DropdownMenuItem 
+              onClick={() => handleRemoteShell('cmd')}
+              className="text-ods-text-primary focus:bg-ods-accent cursor-pointer"
+            >
+              <CmdIcon className="h-5 w-5 mr-2" />
+              CMD
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleRemoteShell('powershell')}
+              className="text-ods-text-primary focus:bg-ods-accent cursor-pointer"
+            >
+              <PowerShellIcon className="h-5 w-5 mr-2" />
+              PowerShell
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Button
+          onClick={() => handleRemoteShell('cmd')}
+          variant="outline"
+          className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+          leftIcon={<ShellIcon className="h-6 w-6" />}
+        >
+          Remote Shell
+        </Button>
+      )}
     </>
   )
 
@@ -175,6 +222,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         onClose={() => setIsRemoteShellOpen(false)}
         deviceId={meshcentralAgentId || deviceId}
         deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
+        shellType={shellType}
       />
       <RemoteDesktopModal
         isOpen={isRemoteDesktopOpen}

@@ -14,6 +14,8 @@ interface User {
   organizationId?: string
   organizationName?: string
   role?: string
+  tenantId?: string
+  tenantName?: string
 }
 
 export interface AuthState {
