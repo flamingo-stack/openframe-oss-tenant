@@ -50,41 +50,6 @@ export const DEFAULT_SETTINGS: RemoteSettingsConfig = {
   useRemoteKeyboardMap: false
 }
 
-export const SETTINGS_PROFILES = {
-  'high_quality': {
-    name: 'High Quality',
-    description: 'Best quality for LAN connections',
-    encoding: 1,
-    quality: 80,
-    scaling: 1024,
-    frameRate: 'smooth' as const
-  },
-  'balanced': {
-    name: 'Balanced',
-    description: 'Good balance of quality and performance',
-    encoding: 1,
-    quality: 50,
-    scaling: 1024,
-    frameRate: 'medium' as const
-  },
-  'performance': {
-    name: 'Performance',
-    description: 'Optimized for responsiveness',
-    encoding: 1,
-    quality: 30,
-    scaling: 768,
-    frameRate: 'fast' as const
-  },
-  'low_bandwidth': {
-    name: 'Low Bandwidth',
-    description: 'For slow or limited connections',
-    encoding: 1,
-    quality: 20,
-    scaling: 512,
-    frameRate: 'slow' as const
-  }
-} as const
-
 export class RemoteDesktopSettings {
   private settings: RemoteSettingsConfig
   private websocket: any | null = null
