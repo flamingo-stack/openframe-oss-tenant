@@ -2,12 +2,17 @@ export type DesktopInputHandlers = {
   attach(canvas: HTMLCanvasElement): void
   detach(): void
   setViewOnly(viewOnly: boolean): void
+  sendCtrlAltDel?(): void
+  sendKeyCombo?(combo: string): void
+  requestRefresh?(): void
 }
 
 export class MeshDesktop implements DesktopInputHandlers {
   private canvas: HTMLCanvasElement | null = null
   private ctx: CanvasRenderingContext2D | null = null
   private viewOnly = false
+  private swapMouseButtons = false
+  private useRemoteKeyboardMap = false
   private listeners: Array<() => void> = []
   private drawing = false
   private accum: Uint8Array | null = null
@@ -17,6 +22,7 @@ export class MeshDesktop implements DesktopInputHandlers {
   private sender: ((data: Uint8Array) => void) | null = null
   private remoteWidth = 0
   private remoteHeight = 0
+  private pressedKeys: Array<{ vk: number; extended: boolean }> = []
 
   private tileQueue: Array<{ x: number; y: number; bytes: Uint8Array }> = []
   private activeDecodes = 0
@@ -30,9 +36,9 @@ export class MeshDesktop implements DesktopInputHandlers {
     this.stopped = false
     // Input listeners (scaffold): implement binary encoders per MeshCentral desktop protocol later
     const onMouseMove = (e: MouseEvent) => {
-      if (!this.viewOnly) {
-        // MeshCentral move packet format
-      }
+      if (this.viewOnly) return
+      const { x, y } = this.getRemoteXY(e)
+      this.send(this.encodeMouseMove(x, y))
     }
     const onMouseDown = (e: MouseEvent) => {
       if (this.viewOnly) return
@@ -73,37 +79,45 @@ export class MeshDesktop implements DesktopInputHandlers {
     }
     const onKeyDown = (e: KeyboardEvent) => {
       if (this.viewOnly) return
-      const vk = this.mapKeyToVirtualKey(e)
-      if (vk != null) {
-        this.send(this.encodeKeyVirtual(vk, false))
+      
+      const keyCode = this.convertKeyCode(e) ?? this.mapKeyToVirtualKey(e) ?? (e as any).keyCode
+      if (keyCode == null) return
+      
+      const isExt = this.isExtendedKey(e)
+      
+      if (!e.repeat && !this.pressedKeys.some(k => k.vk === keyCode)) {
+        this.pressedKeys.unshift({ vk: keyCode, extended: isExt })
+      }
+      
+      this.send(this.encodeKeyEvent(1, keyCode, isExt))
+      
+      if (this.shouldPreventDefault(e)) {
         e.preventDefault()
       }
     }
-    const onKeyPress = (e: KeyboardEvent) => {
-      if (this.viewOnly) return
-      if (e.ctrlKey || e.metaKey || e.altKey) return
-      const ch = e.key
-      if (ch && ch.length === 1) {
-        const code = ch.codePointAt(0) || 0
-        this.send(this.encodeKeyUnicode(code, false))
-        e.preventDefault()
-      }
-    }
+    const onKeyPress = (_e: KeyboardEvent) => { /* not used; rely on MNG_KVM_KEY only */ }
     const onKeyUp = (e: KeyboardEvent) => {
       if (this.viewOnly) return
-      const vk = this.mapKeyToVirtualKey(e)
-      if (vk != null) {
-        this.send(this.encodeKeyVirtual(vk, true))
-        e.preventDefault()
-        return
+      const keyCode = this.convertKeyCode(e) ?? this.mapKeyToVirtualKey(e) ?? (e as any).keyCode
+      if (keyCode == null) return
+      
+      const isExt = this.isExtendedKey(e)
+
+      const idx = this.pressedKeys.findIndex(k => k.vk === keyCode)
+      if (idx !== -1) {
+        const storedKey = this.pressedKeys[idx]
+        this.pressedKeys.splice(idx, 1)
+        this.send(this.encodeKeyEvent(2, keyCode, storedKey.extended))
+      } else {
+        this.send(this.encodeKeyEvent(2, keyCode, isExt))
       }
-      if (e.ctrlKey || e.metaKey || e.altKey) return
-      const ch = e.key
-      if (ch && ch.length === 1) {
-        const code = ch.codePointAt(0) || 0
-        this.send(this.encodeKeyUnicode(code, true))
-        e.preventDefault()
-      }
+      
+      e.preventDefault()
+    }
+    const onWindowBlur = () => {
+      const keys = [...this.pressedKeys]
+      this.pressedKeys = []
+      for (const k of keys) this.send(this.encodeKeyEvent(2, k.vk, k.extended))
     }
 
     canvas.addEventListener('mousemove', onMouseMove)
@@ -114,6 +128,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keypress', onKeyPress)
     window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onWindowBlur)
 
     this.listeners.push(() => canvas.removeEventListener('mousemove', onMouseMove))
     this.listeners.push(() => canvas.removeEventListener('mousedown', onMouseDown))
@@ -123,6 +138,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     this.listeners.push(() => window.removeEventListener('keydown', onKeyDown))
     this.listeners.push(() => window.removeEventListener('keypress', onKeyPress))
     this.listeners.push(() => window.removeEventListener('keyup', onKeyUp))
+    this.listeners.push(() => window.removeEventListener('blur', onWindowBlur))
   }
 
   detach() {
@@ -140,8 +156,53 @@ export class MeshDesktop implements DesktopInputHandlers {
 
   setViewOnly(viewOnly: boolean) { this.viewOnly = viewOnly }
 
+  setSwapMouseButtons(swap: boolean) {
+    this.swapMouseButtons = swap
+  }
+
+  setUseRemoteKeyboardMap(useRemoteMap: boolean) {
+    this.useRemoteKeyboardMap = useRemoteMap
+  }
+
   setSender(sender: (data: Uint8Array) => void) {
     this.sender = sender
+    this.initializeDesktop()
+  }
+
+  private initializeDesktop() {
+    // Command 1: Desktop Initialization (KVM_INIT)
+    const initBuffer = new Uint8Array(8)
+    const initView = new DataView(initBuffer.buffer)
+    initView.setUint16(0, 0x000E, false)  // Command: KVM_INIT
+    initView.setUint16(2, 0x0004, false)  // Size: 4 bytes
+    initView.setUint32(4, 0, false)       // Flags: 0 for normal mode
+    this.send(initBuffer)
+    
+    // Command 2: Set Compression Settings (Required for image quality)
+    const compBuffer = new Uint8Array(10)
+    const compView = new DataView(compBuffer.buffer)
+    compView.setUint16(0, 0x0005, false)  // Command: COMPRESSION
+    compView.setUint16(2, 0x0006, false)  // Size: 6 bytes
+    compView.setUint8(4, 1)               // Type: 1=JPEG, 2=PNG, 3=TIFF, 4=WebP
+    compView.setUint8(5, 50)              // Quality: 1-100 (50 recommended)
+    compView.setUint16(6, 1024, false)    // Scaling: 1024=100%, 512=50%
+    compView.setUint16(8, 100, false)     // Frame timer: ms between frames
+    this.send(compBuffer)
+    
+    // Command 3: Unpause Desktop Stream (CRITICAL)
+    const unpauseBuffer = new Uint8Array(5)
+    const unpauseView = new DataView(unpauseBuffer.buffer)
+    unpauseView.setUint16(0, 0x0008, false)  // Command: PAUSE
+    unpauseView.setUint16(2, 0x0001, false)  // Size: 1 byte
+    unpauseView.setUint8(4, 0)               // 0=unpause, 1=pause
+    this.send(unpauseBuffer)
+    
+    // Command 4: Request Initial Screen Refresh (Optional but helpful)
+    const refreshBuffer = new Uint8Array(4)
+    const refreshView = new DataView(refreshBuffer.buffer)
+    refreshView.setUint16(0, 0x0006, false)  // Command: REFRESH
+    refreshView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    this.send(refreshBuffer)
   }
 
   private send(bytes: Uint8Array) {
@@ -167,9 +228,15 @@ export class MeshDesktop implements DesktopInputHandlers {
 
   private mapMouseButton(btn: number): number | null {
     // 0: left, 1: middle, 2: right
-    if (btn === 0) return 0x02
-    if (btn === 2) return 0x08
-    if (btn === 1) return 0x20
+    if (this.swapMouseButtons) {
+      if (btn === 0) return 0x08
+      if (btn === 2) return 0x02
+      if (btn === 1) return 0x20
+    } else {
+      if (btn === 0) return 0x02
+      if (btn === 2) return 0x08
+      if (btn === 1) return 0x20
+    }
     return null
   }
 
@@ -181,6 +248,21 @@ export class MeshDesktop implements DesktopInputHandlers {
     buf[3] = 0x0a // length = 10
     buf[4] = 0x00
     buf[5] = buttonByte & 0xff
+    buf[6] = (x >> 8) & 0xff
+    buf[7] = x & 0xff
+    buf[8] = (y >> 8) & 0xff
+    buf[9] = y & 0xff
+    return buf
+  }
+
+  private encodeMouseMove(x: number, y: number): Uint8Array {
+    const buf = new Uint8Array(10)
+    buf[0] = 0x00
+    buf[1] = 0x02
+    buf[2] = 0x00
+    buf[3] = 0x0a
+    buf[4] = 0x00
+    buf[5] = 0x00 // no buttons pressed
     buf[6] = (x >> 8) & 0xff
     buf[7] = x & 0xff
     buf[8] = (y >> 8) & 0xff
@@ -223,76 +305,270 @@ export class MeshDesktop implements DesktopInputHandlers {
     return buf
   }
 
-  private encodeKeyVirtual(vk: number, isUp: boolean): Uint8Array {
-    const buf = new Uint8Array(6)
+  private encodeKeyEvent(action: number, vk: number, extended: boolean): Uint8Array {
+    let protocolAction = action - 1
+    
+    if (extended) {
+      if (protocolAction === 0) protocolAction = 4
+      if (protocolAction === 1) protocolAction = 3
+    }
+    
+    const buf = new Uint8Array(8)
     buf[0] = 0x00
-    buf[1] = 0x01 // InputType.KEY
+    buf[1] = 0x01  // Command: MNG_KVM_KEY
     buf[2] = 0x00
-    buf[3] = 0x06 // len 6
-    buf[4] = isUp ? 0x01 : 0x00
-    buf[5] = vk & 0xff
+    buf[3] = 0x06  // Data Size: Always 6
+    buf[4] = protocolAction & 0xff  // Protocol action (0=DOWN, 1=UP, 3=EXUP, 4=EXDOWN)
+    buf[5] = vk & 0xff              // Virtual key code
+    buf[6] = 0x00  // Reserved
+    buf[7] = 0x00  // Reserved
+    
     return buf
   }
 
-  private encodeKeyUnicode(charCode: number, isUp: boolean): Uint8Array {
-    const buf = new Uint8Array(7)
-    buf[0] = 0x00
-    buf[1] = 0x55 // InputType.KEYUNICODE
-    buf[2] = 0x00
-    buf[3] = 0x07
-    buf[4] = isUp ? 0x01 : 0x00
-    buf[5] = (charCode >> 8) & 0xff
-    buf[6] = charCode & 0xff
-    return buf
-  }
 
   private mapKeyToVirtualKey(e: KeyboardEvent): number | null {
     const key = e.key
-    const code = e.code
-    // Function keys F1..F12
-    if (/^F([1-9]|1[0-2])$/.test(key)) {
-      const n = parseInt(key.substring(1), 10)
-      return 0x6f + n // 0x70..0x7b
-    }
+    
     const map: Record<string, number> = {
-      Backspace: 0x08,
-      Tab: 0x09,
-      Enter: 0x0d,
-      Escape: 0x1b,
-      Esc: 0x1b,
+      // Modifier key names
+      'Shift': 0x10,
+      'Control': 0x11,
+      'Alt': 0x12,
+      'Meta': 0x5B,
+      
+      // Special character keys by name
       ' ': 0x20,
-      Space: 0x20,
-      PageUp: 0x21,
-      PageDown: 0x22,
-      End: 0x23,
-      Home: 0x24,
-      ArrowLeft: 0x25,
-      ArrowUp: 0x26,
-      ArrowRight: 0x27,
-      ArrowDown: 0x28,
-      Insert: 0x2d,
-      Delete: 0x2e,
-      Shift: 0x10,
-      ShiftLeft: 0x10,
-      ShiftRight: 0x10,
-      Control: 0x11,
-      ControlLeft: 0x11,
-      ControlRight: 0x11,
-      Alt: 0x12,
-      AltLeft: 0x12,
-      AltRight: 0x12,
-      Meta: 0x5b,
-      MetaLeft: 0x5b,
-      MetaRight: 0x5c,
-      ContextMenu: 0x5d,
-      CapsLock: 0x14,
+      'Backspace': 0x08,
+      'Tab': 0x09,
+      'Enter': 0x0D,
+      'Escape': 0x1B,
+      'Esc': 0x1B,
+      'Delete': 0x2E,
+      'Insert': 0x2D,
+      
+      // Navigation by name
+      'Home': 0x24,
+      'End': 0x23,
+      'PageUp': 0x21,
+      'PageDown': 0x22,
+      'ArrowLeft': 0x25,
+      'ArrowUp': 0x26,
+      'ArrowRight': 0x27,
+      'ArrowDown': 0x28,
+      
+      // Lock keys
+      'CapsLock': 0x14,
+      'NumLock': 0x90,
+      'ScrollLock': 0x91,
     }
-    if (map[key] != null) return map[key]
-    if (map[code] != null) return map[code]
-    return null
+    
+    return map[key] || null
   }
 
-  // Placeholder: draw a simple indicator for incoming frames until decoder is integrated
+  private extendedKeyTable: string[] = [
+    'ShiftRight', 'AltRight', 'ControlRight',
+    'Home', 'End', 'Insert', 'Delete',
+    'PageUp', 'PageDown', 'NumpadDivide',
+    'NumpadEnter', 'NumLock', 'Pause'
+  ]
+
+  private convertKeyCode(e: KeyboardEvent): number | undefined {
+    if (e.code && e.code.startsWith('Key') && e.code.length === 4) return e.code.charCodeAt(3)
+    if (e.code && e.code.startsWith('Digit') && e.code.length === 6) return e.code.charCodeAt(5)
+    if (e.code && /^F([1-9]|1[0-2])$/.test(e.code)) {
+      const n = parseInt(e.code.substring(1), 10)
+      return 111 + n // F1=112 (0x70) to F12=123 (0x7B)
+    }
+    if (e.code && e.code.startsWith('Numpad') && e.code.length === 7 && /[0-9]/.test(e.code.charAt(6))) {
+      return parseInt(e.code.charAt(6)) + 96 // Numpad 0-9 are 96-105
+    }
+    
+    const t: Record<string, number> = {
+      // Modifier keys
+      ShiftLeft: 0x10, ShiftRight: 0x10,
+      ControlLeft: 0x11, ControlRight: 0x11,
+      AltLeft: 0x12, AltRight: 0x12,
+      MetaLeft: 0x5B, MetaRight: 0x5C,
+      
+      // Special keys
+      Pause: 0x13, CapsLock: 0x14, Space: 0x20,
+      Quote: 0xDE, Minus: 0xBD, Comma: 0xBC,
+      Period: 0xBE, Slash: 0xBF, Semicolon: 0xBA,
+      Equal: 0xBB, BracketLeft: 0xDB, Backslash: 0xDC,
+      BracketRight: 0xDD, Backquote: 0xC0,
+      
+      // Numpad operations
+      NumpadMultiply: 0x6A, NumpadAdd: 0x6B,
+      NumpadSubtract: 0x6D, NumpadDecimal: 0x6E,
+      NumpadDivide: 0x6F, NumLock: 0x90,
+      
+      // System keys
+      ScrollLock: 0x91, PrintScreen: 0x2C,
+      Backspace: 0x08, Tab: 0x09, Enter: 0x0D,
+      NumpadEnter: 0x0D, Escape: 0x1B,
+      ContextMenu: 0x5D,
+      
+      // Navigation keys
+      Delete: 0x2E, Home: 0x24, End: 0x23,
+      PageUp: 0x21, PageDown: 0x22,
+      ArrowLeft: 0x25, ArrowUp: 0x26,
+      ArrowRight: 0x27, ArrowDown: 0x28,
+      Insert: 0x2D
+    }
+    return (e.code && t[e.code]) || undefined
+  }
+
+  private isExtendedKey(e: KeyboardEvent): boolean {
+    if (!e.code) return false
+    if (e.code.startsWith('Arrow')) return true
+    if (e.code === 'MetaLeft' || e.code === 'MetaRight') return true
+    if (e.code === 'ShiftRight' || e.code === 'AltRight' || e.code === 'ControlRight') return true
+    
+    return this.extendedKeyTable.includes(e.code)
+  }
+
+  private shouldPreventDefault(e: KeyboardEvent): boolean {
+    const prevent = [
+      'F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12',
+      'Tab','Enter','Escape','Backspace','Delete','Home','End','PageUp','PageDown'
+    ]
+    // Do not prevent default for pure modifier keys
+    if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta') return false
+    if (prevent.includes(e.key)) return true
+    if (e.code && e.code.startsWith('Arrow')) return true
+    if (e.ctrlKey || e.altKey || e.metaKey) return true
+    return false
+  }
+
+  sendCtrlAltDel() {
+    // Ctrl+Alt+Del Message (Command 0x0A)
+    // Byte 0-1: Command (0x00, 0x0A)
+    // Byte 2-3: Data Size (0x00, 0x04) - Always 4 bytes
+    const buf = new Uint8Array(4)
+    buf[0] = 0x00
+    buf[1] = 0x0A  // Command: MNG_CTRLALTDEL
+    buf[2] = 0x00
+    buf[3] = 0x04  // Data Size: Always 4 bytes
+    this.send(buf)
+  }
+
+  requestRefresh() {
+    const refreshBuffer = new Uint8Array(4)
+    const refreshView = new DataView(refreshBuffer.buffer)
+    refreshView.setUint16(0, 0x0006, false)  // Command: REFRESH
+    refreshView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    this.send(refreshBuffer)
+  }
+  
+  sendKeyCombo(combo: string) {
+    const sequences: Record<string, Array<{ action: number; keyCode: number; extended: boolean }>> = {
+      'ctrl+c': [
+        { action: 1, keyCode: 0x11, extended: false },
+        { action: 1, keyCode: 0x43, extended: false },
+        { action: 2, keyCode: 0x43, extended: false },
+        { action: 2, keyCode: 0x11, extended: false },
+      ],
+      'ctrl+v': [
+        { action: 1, keyCode: 0x11, extended: false },
+        { action: 1, keyCode: 0x56, extended: false },
+        { action: 2, keyCode: 0x56, extended: false },
+        { action: 2, keyCode: 0x11, extended: false },
+      ],
+      'ctrl+a': [
+        { action: 1, keyCode: 0x11, extended: false },
+        { action: 1, keyCode: 0x41, extended: false },
+        { action: 2, keyCode: 0x41, extended: false },
+        { action: 2, keyCode: 0x11, extended: false },
+      ],
+      'ctrl+x': [
+        { action: 1, keyCode: 0x11, extended: false },
+        { action: 1, keyCode: 0x58, extended: false },
+        { action: 2, keyCode: 0x58, extended: false },
+        { action: 2, keyCode: 0x11, extended: false },
+      ],
+      'ctrl+z': [
+        { action: 1, keyCode: 0x11, extended: false },
+        { action: 1, keyCode: 0x5A, extended: false },
+        { action: 2, keyCode: 0x5A, extended: false },
+        { action: 2, keyCode: 0x11, extended: false },
+      ],
+      'ctrl+w': [
+        { action: 1, keyCode: 0x11, extended: false },
+        { action: 1, keyCode: 0x57, extended: false },
+        { action: 2, keyCode: 0x57, extended: false },
+        { action: 2, keyCode: 0x11, extended: false },
+      ],
+      'alt+f4': [
+        { action: 1, keyCode: 0x12, extended: false },
+        { action: 1, keyCode: 0x73, extended: false },
+        { action: 2, keyCode: 0x73, extended: false },
+        { action: 2, keyCode: 0x12, extended: false },
+      ],
+      'alt+tab': [
+        { action: 1, keyCode: 0x12, extended: false },
+        { action: 1, keyCode: 0x09, extended: false },
+        { action: 2, keyCode: 0x09, extended: false },
+        { action: 2, keyCode: 0x12, extended: false },
+      ],
+      'win+l': [
+        { action: 1, keyCode: 0x5B, extended: true },
+        { action: 1, keyCode: 0x4C, extended: false },
+        { action: 2, keyCode: 0x4C, extended: false },
+        { action: 2, keyCode: 0x5B, extended: true },
+      ],
+      'win+m': [
+        { action: 1, keyCode: 0x5B, extended: true },
+        { action: 1, keyCode: 0x4D, extended: false },
+        { action: 2, keyCode: 0x4D, extended: false },
+        { action: 2, keyCode: 0x5B, extended: true },
+      ],
+      'win+r': [
+        { action: 1, keyCode: 0x5B, extended: true },
+        { action: 1, keyCode: 0x52, extended: false },
+        { action: 2, keyCode: 0x52, extended: false },
+        { action: 2, keyCode: 0x5B, extended: true },
+      ],
+      'win+up': [
+        { action: 1, keyCode: 0x5B, extended: true },
+        { action: 1, keyCode: 0x26, extended: false },
+        { action: 2, keyCode: 0x26, extended: false },
+        { action: 2, keyCode: 0x5B, extended: true },
+      ],
+      'win+down': [
+        { action: 1, keyCode: 0x5B, extended: true },
+        { action: 1, keyCode: 0x28, extended: false },
+        { action: 2, keyCode: 0x28, extended: false },
+        { action: 2, keyCode: 0x5B, extended: true },
+      ],
+      'shift+win+m': [
+        { action: 1, keyCode: 0x10, extended: false },
+        { action: 1, keyCode: 0x5B, extended: true },
+        { action: 1, keyCode: 0x4D, extended: false },
+        { action: 2, keyCode: 0x4D, extended: false },
+        { action: 2, keyCode: 0x5B, extended: true },
+        { action: 2, keyCode: 0x10, extended: false },
+      ],
+      'ctrl+shift+esc': [
+        { action: 1, keyCode: 0x11, extended: false },
+        { action: 1, keyCode: 0x10, extended: false },
+        { action: 1, keyCode: 0x1B, extended: false },
+        { action: 2, keyCode: 0x1B, extended: false },
+        { action: 2, keyCode: 0x10, extended: false },
+        { action: 2, keyCode: 0x11, extended: false },
+      ],
+    }
+    
+    const sequence = sequences[combo.toLowerCase()]
+    if (sequence) {
+      for (const key of sequence) {
+        this.send(this.encodeKeyEvent(key.action, key.keyCode, key.extended))
+      }
+    } else if (combo.toLowerCase() === 'ctrl+alt+del') {
+      this.sendCtrlAltDel()
+    }
+  }
+  
   drawPlaceholderFrame() {
     if (!this.ctx || !this.canvas) return
     const { ctx, canvas } = this
