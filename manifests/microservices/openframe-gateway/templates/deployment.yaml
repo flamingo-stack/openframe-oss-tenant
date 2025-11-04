@@ -39,6 +39,9 @@ spec:
             {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
             - name: TENANT_HOST_URL
               value: "https://localhost"
+            {{- else if and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.gcp.enabled }}
+            - name: SHARED_HOST_URL
+              value: "{{ .Values.deployment.saas.ingress.gcp.publicDomain }}"
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
