@@ -23,9 +23,7 @@ on:
       - 'pom.xml'
       - '.github/**'
       - 'manifests/**'
-      - 'scripts/**'
       - 'clients/**'
-      - 'cli/**'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
@@ -36,6 +34,7 @@ env:
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
   HELM_VALUES_FILE: "cli/helm-values.yaml"
+
 
 # =============================================================================
 # JOBS
@@ -163,34 +162,25 @@ jobs:
         uses: ./.github/steps/requirements-for-run.sh
 
       - name: Override helm values
-        uses: ./.github/steps/helm-override-image-tags
+        uses: ./.github/steps/helm-override
         with:
           matrix: ${{ needs.matrix.outputs.images_matrix }}
           changes: ${{ toJSON(needs.changes.outputs) }}
           commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
           helm-values-file: ${{ env.HELM_VALUES_FILE }}
-        
-      - name: Override branch name
-        run: |
-          # Override branch name
-          yq eval ".deployment.oss.repository.branch = \"${{ github.head_ref }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          echo "Updated deployment.oss.repository.branch to: ${{ github.head_ref }}"
+          branch-name: ${{ github.head_ref }}
+          docker-username: ${{ secrets.DOCKER_USERNAME }}
+          docker-password: ${{ secrets.DOCKER_PASSWORD }}
+          docker-email: "dmtkov@flamingo.cx"
 
-      - name: Override registry
-        run: |
-          # Override branch name
-          yq eval ".registry.docker.server = \"https://index.docker.io/v1/\"" -i "${{ env.HELM_VALUES_FILE }}"
-          yq eval ".registry.docker.username = \"${{ secrets.DOCKER_USERNAME }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          yq eval ".registry.docker.password = \"${{ secrets.DOCKER_PASSWORD }}\"" -i "${{ env.HELM_VALUES_FILE }}"
-          yq eval ".registry.docker.email = \"dmtkov@flamingo.cx\"" -i "${{ env.HELM_VALUES_FILE }}"
-          echo "Updated registry.docker to: ${{ github.head_ref }}"
-          cat "${{ env.HELM_VALUES_FILE }}"
-
-      - name: Run environment test script
+      - name: Run tests scripts
+        working-directory: cli
         env:
-          TERM: dumb
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENFRAME_CLI_URL: "https://github.com/${{ env.ORGANISATION }}/openframe-oss-tenant/releases/latest/download/openframe-cli_linux_amd64.tar.gz"
         run: |
-          cd cli && ./openframe-linux-amd64 bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
+          curl -fL "$OPENFRAME_CLI_URL" | tar -xz -C /tmp && install -m 0755 /tmp/openframe /usr/local/bin/openframe
+          openframe bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
       - name: Setup Telepresence
         uses: ./.github/steps/setup-telepresence
