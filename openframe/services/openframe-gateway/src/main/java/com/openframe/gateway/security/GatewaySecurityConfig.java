@@ -1,6 +1,7 @@
 package com.openframe.gateway.security;
 
 import com.openframe.gateway.security.filter.AddAuthorizationHeaderFilter;
+import com.openframe.security.cookie.CookieService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Flux;
 
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.NATS_WS_ENDPOINT_PATH;
@@ -42,6 +44,7 @@ public class GatewaySecurityConfig {
 
     private static final String ADMIN = "ADMIN";
     private static final String AGENT = "AGENT";
+    private static final String CHAT_ENDPOINT_PATH = "/chat";
 
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
@@ -71,7 +74,7 @@ public class GatewaySecurityConfig {
             ServerHttpSecurity http,
             @Value("${management.endpoints.web.base-path}") String managementBasePath,
             ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver,
-            AddAuthorizationHeaderFilter addAuthorizationHeaderFilter
+            WebFilter privateOnlyAuthHeaderFilter
     ) {
         String managementContextPath = isNotBlank(managementBasePath)
                 ? managementBasePath: "/actuator";
@@ -84,7 +87,7 @@ public class GatewaySecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .authenticationManagerResolver(issuerResolver)
                 )
-                .addFilterBefore(addAuthorizationHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .addFilterBefore(privateOnlyAuthHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS,    "/**").permitAll()
                         .pathMatchers(
@@ -93,7 +96,6 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/metrics/**",
                                 CLIENTS_PREFIX + "/api/agents/register",
                                 CLIENTS_PREFIX + "/oauth/token",
-                                DASHBOARD_PREFIX + "/sso/providers",
                                 managementContextPath + "/**",
                                 // TODO: removxxe after migration artifacts to GitHub
                                 CLIENTS_PREFIX + "/tool-agent/**"
@@ -114,6 +116,37 @@ public class GatewaySecurityConfig {
                         .pathMatchers("/**").permitAll()
                 )
                 .build();
+    }
+
+    @Bean
+    public AddAuthorizationHeaderFilter addAuthorizationHeaderFilter(CookieService cookieService) {
+        return new AddAuthorizationHeaderFilter(cookieService);
+    }
+
+    @Bean
+    public WebFilter privateOnlyAuthHeaderFilter(AddAuthorizationHeaderFilter delegate, @Value("${management.endpoints.web.base-path}") String managementBasePath) {
+        return (exchange, chain) -> {
+            String path = exchange.getRequest().getPath().value();
+            boolean clientPrivate = path.startsWith(CLIENTS_PREFIX + "/")
+                    && !(
+                    path.startsWith(CLIENTS_PREFIX + "/metrics/")
+                            || path.equals(CLIENTS_PREFIX + "/api/agents/register")
+                            || path.equals(CLIENTS_PREFIX + "/oauth/token")
+                            || path.startsWith(CLIENTS_PREFIX + "/tool-agent/")
+            );
+
+            boolean isPrivate = path.startsWith(DASHBOARD_PREFIX + "/")
+                    || path.startsWith(TOOLS_PREFIX + "/")
+                    || path.startsWith(WS_TOOLS_PREFIX + "/")
+                    || path.equals(NATS_WS_ENDPOINT_PATH)
+                    || path.startsWith(CHAT_ENDPOINT_PATH + "/")
+                    || clientPrivate;
+
+            if (!isPrivate) {
+                return chain.filter(exchange);
+            }
+            return delegate.filter(exchange, chain);
+        };
     }
 
     @Bean

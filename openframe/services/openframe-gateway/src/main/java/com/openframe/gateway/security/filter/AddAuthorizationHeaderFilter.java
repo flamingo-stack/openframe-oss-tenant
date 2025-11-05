@@ -4,7 +4,6 @@ import com.openframe.security.cookie.CookieService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -21,7 +20,6 @@ import static org.springframework.util.StringUtils.hasText;
  * it to the request if missing. This allows the resource server to authenticate using
  * the standard Authorization header while supporting our multi-source token strategy.
  */
-@Component
 @RequiredArgsConstructor
 @Slf4j
 public class AddAuthorizationHeaderFilter implements WebFilter {
