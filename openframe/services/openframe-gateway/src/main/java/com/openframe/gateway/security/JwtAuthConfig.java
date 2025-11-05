@@ -20,6 +20,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
+import static org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.success;
+
 
 @Configuration
 public class JwtAuthConfig {
@@ -68,13 +70,11 @@ public class JwtAuthConfig {
     private OAuth2TokenValidator<Jwt> createStrictIssuerValidator(IssuerUrlProvider issuerUrlProvider) {
         return jwt -> {
             String iss = (jwt.getIssuer() != null ? jwt.getIssuer().toString() : null);
-            String expected = issuerUrlProvider.getCachedIssuerUrl();
-            if (expected == null || expected.isBlank()) {
-                return OAuth2TokenValidatorResult.success();
+            var expectedList = issuerUrlProvider.getCachedIssuerUrl();
+            if (expectedList == null || expectedList.isEmpty()) {
+                return success();
             }
-            if (expected.equals(iss)) {
-                return OAuth2TokenValidatorResult.success();
-            }
+            if (expectedList.contains(iss)) return success();
             return OAuth2TokenValidatorResult.failure(
                     new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, "Unexpected issuer", null)
             );
@@ -89,5 +89,3 @@ public class JwtAuthConfig {
         );
     }
 }
-
-

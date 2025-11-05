@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Flux;
 
 import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.NATS_WS_ENDPOINT_PATH;
@@ -43,6 +44,7 @@ public class GatewaySecurityConfig {
 
     private static final String ADMIN = "ADMIN";
     private static final String AGENT = "AGENT";
+    private static final String CHAT_ENDPOINT_PATH = "/chat";
 
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
@@ -72,7 +74,7 @@ public class GatewaySecurityConfig {
             ServerHttpSecurity http,
             @Value("${management.endpoints.web.base-path}") String managementBasePath,
             ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver,
-            org.springframework.web.server.WebFilter privateOnlyAuthHeaderFilter
+            WebFilter privateOnlyAuthHeaderFilter
     ) {
         String managementContextPath = isNotBlank(managementBasePath)
                 ? managementBasePath: "/actuator";
@@ -94,7 +96,6 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/metrics/**",
                                 CLIENTS_PREFIX + "/api/agents/register",
                                 CLIENTS_PREFIX + "/oauth/token",
-                                DASHBOARD_PREFIX + "/sso/providers",
                                 managementContextPath + "/**",
                                 // TODO: removxxe after migration artifacts to GitHub
                                 CLIENTS_PREFIX + "/tool-agent/**"
@@ -123,7 +124,7 @@ public class GatewaySecurityConfig {
     }
 
     @Bean
-    public org.springframework.web.server.WebFilter privateOnlyAuthHeaderFilter(AddAuthorizationHeaderFilter delegate) {
+    public WebFilter privateOnlyAuthHeaderFilter(AddAuthorizationHeaderFilter delegate, @Value("${management.endpoints.web.base-path}") String managementBasePath) {
         return (exchange, chain) -> {
             String path = exchange.getRequest().getPath().value();
             boolean clientPrivate = path.startsWith(CLIENTS_PREFIX + "/")
@@ -138,6 +139,7 @@ public class GatewaySecurityConfig {
                     || path.startsWith(TOOLS_PREFIX + "/")
                     || path.startsWith(WS_TOOLS_PREFIX + "/")
                     || path.startsWith(NATS_WS_ENDPOINT_PATH)
+                    || path.startsWith(CHAT_ENDPOINT_PATH + "/")
                     || clientPrivate;
 
             if (!isPrivate) {
