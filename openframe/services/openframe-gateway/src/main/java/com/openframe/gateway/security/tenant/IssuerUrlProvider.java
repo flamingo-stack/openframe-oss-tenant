@@ -62,8 +62,7 @@ public class IssuerUrlProvider {
     }
 
     public List<String> getCachedIssuerUrl() {
-        if (cachedIssuers == null) {
-            // non-blocking warm-up
+        if (cachedIssuers == null || cachedIssuers.isEmpty()) {
             resolveIssuerUrls().subscribe();
         }
         return cachedIssuers != null ? cachedIssuers : Collections.emptyList();
