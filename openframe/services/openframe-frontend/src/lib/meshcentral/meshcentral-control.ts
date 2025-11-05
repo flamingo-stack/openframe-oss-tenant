@@ -113,6 +113,49 @@ export class MeshControlClient {
     this.sendTunnelMsg(nodeId, value)
   }
 
+  async powerAction(nodeId: string, action: 'wake' | 'sleep' | 'reset' | 'poweroff', timeoutMs = 8000): Promise<void> {
+    await this.openSession()
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      throw new Error('Control socket not open')
+    }
+    const actionTypes: Record<typeof action, number> = {
+      wake: 302,
+      sleep: 4,
+      reset: 3,
+      poweroff: 2
+    }
+    const actiontype = actionTypes[action]
+    const nodePath = nodeId.startsWith('node//') ? nodeId : `node//${nodeId}`
+    const responseid = `power_${Date.now()}_${Math.random().toString(36).slice(2)}`
+
+    return new Promise<void>((resolve, reject) => {
+      let timeout: any
+      const handler = (e: MessageEvent) => {
+        try {
+          const msg = JSON.parse(e.data as string)
+          if (msg && msg.action === 'poweraction' && msg.responseid === responseid) {
+            this.socket?.removeEventListener('message', handler as any)
+            clearTimeout(timeout)
+            if (msg.result === 'ok') resolve()
+            else reject(new Error(msg.result || 'Power action failed'))
+          }
+        } catch {}
+      }
+      try {
+        this.socket?.addEventListener('message', handler as any)
+        const payload = { action: 'poweraction', nodeids: [nodePath], actiontype, responseid }
+        this.socket?.send(JSON.stringify(payload))
+        timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler as any)
+          reject(new Error('Timed out waiting for poweraction response'))
+        }, timeoutMs)
+      } catch (e) {
+        this.socket?.removeEventListener('message', handler as any)
+        reject(e as Error)
+      }
+    })
+  }
+
   close() { this.cleanup() }
 
   private cleanup() {
