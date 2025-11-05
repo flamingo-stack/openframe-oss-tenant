@@ -1,6 +1,7 @@
 package com.openframe.gateway.security;
 
 import com.openframe.gateway.security.filter.AddAuthorizationHeaderFilter;
+import com.openframe.security.cookie.CookieService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,7 +72,7 @@ public class GatewaySecurityConfig {
             ServerHttpSecurity http,
             @Value("${management.endpoints.web.base-path}") String managementBasePath,
             ReactiveAuthenticationManagerResolver<ServerWebExchange> issuerResolver,
-            AddAuthorizationHeaderFilter addAuthorizationHeaderFilter
+            org.springframework.web.server.WebFilter privateOnlyAuthHeaderFilter
     ) {
         String managementContextPath = isNotBlank(managementBasePath)
                 ? managementBasePath: "/actuator";
@@ -84,7 +85,7 @@ public class GatewaySecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .authenticationManagerResolver(issuerResolver)
                 )
-                .addFilterBefore(addAuthorizationHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .addFilterBefore(privateOnlyAuthHeaderFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS,    "/**").permitAll()
                         .pathMatchers(
@@ -114,6 +115,36 @@ public class GatewaySecurityConfig {
                         .pathMatchers("/**").permitAll()
                 )
                 .build();
+    }
+
+    @Bean
+    public AddAuthorizationHeaderFilter addAuthorizationHeaderFilter(CookieService cookieService) {
+        return new AddAuthorizationHeaderFilter(cookieService);
+    }
+
+    @Bean
+    public org.springframework.web.server.WebFilter privateOnlyAuthHeaderFilter(AddAuthorizationHeaderFilter delegate) {
+        return (exchange, chain) -> {
+            String path = exchange.getRequest().getPath().value();
+            boolean clientPrivate = path.startsWith(CLIENTS_PREFIX + "/")
+                    && !(
+                    path.startsWith(CLIENTS_PREFIX + "/metrics/")
+                            || path.equals(CLIENTS_PREFIX + "/api/agents/register")
+                            || path.equals(CLIENTS_PREFIX + "/oauth/token")
+                            || path.startsWith(CLIENTS_PREFIX + "/tool-agent/")
+            );
+
+            boolean isPrivate = path.startsWith(DASHBOARD_PREFIX + "/")
+                    || path.startsWith(TOOLS_PREFIX + "/")
+                    || path.startsWith(WS_TOOLS_PREFIX + "/")
+                    || path.startsWith(NATS_WS_ENDPOINT_PATH)
+                    || clientPrivate;
+
+            if (!isPrivate) {
+                return chain.filter(exchange);
+            }
+            return delegate.filter(exchange, chain);
+        };
     }
 
     @Bean
