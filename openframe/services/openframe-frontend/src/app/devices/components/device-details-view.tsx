@@ -12,7 +12,6 @@ import {
 import { CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
 import { normalizeOSType } from '@flamingo/ui-kit'
 import { RemoteShellModal } from './remote-shell-modal'
-import { RemoteDesktopModal } from './remote-desktop-modal'
 import { ScriptIcon, DetailPageContainer } from '@flamingo/ui-kit'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
@@ -33,7 +32,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false)
   const [isRemoteShellOpen, setIsRemoteShellOpen] = useState(false)
-  const [isRemoteDesktopOpen, setIsRemoteDesktopOpen] = useState(false)
   const [shellType, setShellType] = useState<'cmd' | 'powershell'>('cmd')
 
   useEffect(() => {
@@ -63,7 +61,15 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   }
 
   const handleRemoteControl = () => {
-    setIsRemoteDesktopOpen(true)
+    if (!meshcentralAgentId) return
+    const deviceData = {
+      id: deviceId,
+      meshcentralAgentId,
+      hostname: normalizedDevice?.hostname,
+      organization: normalizedDevice?.organization,
+    }
+    const url = `/devices/details/${deviceId}/remote-desktop?deviceData=${encodeURIComponent(JSON.stringify(deviceData))}`
+    router.push(url)
   }
 
   const handleRemoteShell = (type: 'cmd' | 'powershell' = 'cmd') => {
@@ -113,6 +119,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         variant="outline"
         className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
         leftIcon={<RemoteControlIcon className="h-6 w-6" />}
+        disabled={!meshcentralAgentId}
       >
         Remote Control
       </Button>
@@ -123,6 +130,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
               variant="outline"
               leftIcon={<ShellIcon className="h-6 w-6" />}
               className="bg-ods-card focus-visible:ring-0"
+              disabled={!meshcentralAgentId}
             >
               Remote Shell
             </Button>
@@ -150,6 +158,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           variant="outline"
           className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
           leftIcon={<ShellIcon className="h-6 w-6" />}
+          disabled={!meshcentralAgentId}
         >
           Remote Shell
         </Button>
@@ -158,7 +167,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   )
 
   return (
-    <div className={`relative ${isRemoteShellOpen || isRemoteDesktopOpen ? 'overflow-hidden' : ''}`}>
+    <div className={`relative ${isRemoteShellOpen ? 'overflow-hidden' : ''}`}>
       <DetailPageContainer
         title={normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'}
         backButton={{
@@ -166,7 +175,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           onClick: handleBack
         }}
         subtitle={
-          <div className={`flex gap-2 items-center ${isRemoteShellOpen || isRemoteDesktopOpen ? 'hidden' : ''}`}>
+          <div className={`flex gap-2 items-center ${isRemoteShellOpen ? 'hidden' : ''}`}>
             {normalizedDevice?.status && (() => {
               const statusConfig = getDeviceStatusConfig(normalizedDevice.status)
               return (
@@ -185,7 +194,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
 
         {/* Main Content */}
-        <div className={`${isRemoteShellOpen || isRemoteDesktopOpen ? 'invisible pointer-events-none' : 'flex-1 overflow-auto'}`}>
+        <div className={`${isRemoteShellOpen ? 'invisible pointer-events-none' : 'flex-1 overflow-auto'}`}>
           <DeviceInfoSection device={normalizedDevice} />
 
           {/* Tab Navigation */}
@@ -223,12 +232,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         deviceId={meshcentralAgentId || deviceId}
         deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
         shellType={shellType}
-      />
-      <RemoteDesktopModal
-        isOpen={isRemoteDesktopOpen}
-        onClose={() => setIsRemoteDesktopOpen(false)}
-        deviceId={meshcentralAgentId || deviceId}
-        deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
       />
     </div>
   )
