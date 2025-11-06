@@ -119,12 +119,7 @@ kubectl apply -f skaffold.yaml
 
 ## Agent Files
 
-The service includes pre-built agent installers for:
-- **Tactical RMM** (Windows/Linux)
-- **Fleet MDM** (osquery agents)
-- **MeshCentral** (Remote access agents)
-
-These files are served to machines during registration.
+Agent installer files are now part of `openframe-client-core` library and are automatically included when the library is used. The files are served via the `/tool-agent/{assetId}?os={platform}` endpoint implemented in the core library.
 
 ## Development
 
