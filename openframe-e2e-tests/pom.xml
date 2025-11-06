@@ -24,7 +24,7 @@
         <rest-assured.version>5.4.0</rest-assured.version>
         <assertj.version>3.24.2</assertj.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <kafka-clients.version>3.6.0</kafka-clients.version>
+        <kafka-clients.version>3.9.1</kafka-clients.version>
         <lombok.version>1.18.38</lombok.version>
         <jackson.version>2.16.1</jackson.version>
         <slf4j.version>2.0.9</slf4j.version>
