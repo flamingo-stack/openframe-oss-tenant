@@ -11,7 +11,7 @@
 
   "packageRules": [
     {
-      "description": "Auto-merge all updates for OpenFrame libs",
+      "description": "Auto-merge all updates for OpenFrame OSS libraries",
       "matchManagers": ["maven"],
       "matchPackagePatterns": ["^com\\.openframe\\.oss"],
       "groupName": "openframe-libs",
@@ -24,6 +24,11 @@
       "automergeStrategy": "squash",
       "labels": ["dependencies", "openframe-libs"],
       "prPriority": 10
+    },
+    {
+      "description": "Ignore parent POM",
+      "matchPackageNames": ["com.openframe:openframe-parent"],
+      "enabled": false
     }
   ],
 
@@ -35,7 +40,12 @@
     {
       "hostType": "maven",
       "matchHost": "maven.pkg.github.com",
-      "description": "GitHub Packages authentication"
+      "description": "GitHub Packages for OpenFrame OSS libs"
+    },
+    {
+      "hostType": "maven",
+      "matchHost": "maven.pkg.github.com/flamingo-stack/openframe-oss-lib",
+      "description": "Specific host for OpenFrame OSS Maven packages"
     }
   ],
 
