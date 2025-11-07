@@ -138,14 +138,11 @@ public class TacticalRmmScriptsInitializer implements ApplicationRunner {
             request.setCategory(config.getCategory());
             request.setDefaultTimeout(config.getDefaultTimeout());
             request.setScriptBody(scriptContent);
+            request.setRunAsUser(false);
 
-            ScriptListItem createdScript = tacticalRmmClient.addScript(
-                tacticalServerUrl, 
-                apiKey, 
-                request
-            );
+           tacticalRmmClient.addScript(tacticalServerUrl, apiKey, request);
             
-            log.info("Successfully created script: {} (ID: {})", config.getName(), createdScript.getId());
+            log.info("Successfully created script: {}", config.getName());
         } catch (Exception e) {
             log.error("Failed to create script: {}", config.getName(), e);
             throw new IllegalStateException("Failed to create script: " + config.getName(), e);
@@ -155,7 +152,7 @@ public class TacticalRmmScriptsInitializer implements ApplicationRunner {
     private void updateScript(String tacticalServerUrl, String apiKey, String scriptId,
                             ScriptConfig config, String scriptContent) {
         try {
-            log.info("Updating existing script in Tactical RMM: {} (ID: {})", config.getName(), scriptId);
+            log.info("Updating existing script in Tactical RMM: {}", config.getName());
             
             CreateScriptRequest request = new CreateScriptRequest();
             request.setName(config.getName());
@@ -164,17 +161,13 @@ public class TacticalRmmScriptsInitializer implements ApplicationRunner {
             request.setCategory(config.getCategory());
             request.setDefaultTimeout(config.getDefaultTimeout());
             request.setScriptBody(scriptContent);
+            request.setRunAsUser(false);
 
-            ScriptListItem updatedScript = tacticalRmmClient.updateScript(
-                tacticalServerUrl, 
-                apiKey, 
-                scriptId, 
-                request
-            );
+            tacticalRmmClient.updateScript(tacticalServerUrl, apiKey, scriptId, request);
             
-            log.info("Successfully updated script: {} (ID: {})", config.getName(), updatedScript.getId());
+            log.info("Successfully updated script: {})", config.getName());
         } catch (Exception e) {
-            log.error("Failed to update script: {} (ID: {})", config.getName(), scriptId, e);
+            log.error("Failed to update script: {}", config.getName(), e);
             throw new IllegalStateException("Failed to update script: " + config.getName(), e);
         }
     }
