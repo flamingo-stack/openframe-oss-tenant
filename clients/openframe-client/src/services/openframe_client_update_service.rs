@@ -1,15 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use tracing::{info, warn, error};
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 use crate::models::openframe_client_info::ClientUpdateStatus;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::platform::DirectoryManager;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
-use tokio::fs;
 use std::process;
-#[cfg(target_family = "unix")]
-use std::os::unix::fs::PermissionsExt;
+use self_update::cargo_crate_version;
 
 #[derive(Clone)]
 pub struct OpenFrameClientUpdateService {
@@ -27,85 +23,98 @@ impl OpenFrameClientUpdateService {
 
     // TODO: add version timestamp and process race conditions
     pub async fn process_update(&self, message: OpenFrameClientUpdateMessage) -> Result<()> {
-        let new_version = &message.version;
-        info!("Processing OpenFrame client update to version: {}", new_version);
+        let requested_version = message.version.trim();
+        info!("📩 Received update request for version: {}", requested_version);
+        
+        // Validate version format
+        if !Self::is_valid_version(requested_version) {
+            error!("⚠️ Invalid version format: {}", requested_version);
+            return Err(anyhow!("Invalid version format: {}", requested_version));
+        }
+        
+        // Get current version
+        let current_version = cargo_crate_version!();
+        info!("📌 Current version: {}", current_version);
+        
+        // Check if already on requested version
+        if current_version == requested_version {
+            info!("✅ Already running requested version {}", requested_version);
+            return Ok(());
+        }
         
         // Set update status to updating
-        self.client_info_service.set_update_status(ClientUpdateStatus::Updating, Some(new_version.clone())).await
+        self.client_info_service
+            .set_update_status(ClientUpdateStatus::Updating, Some(requested_version.to_string()))
+            .await
             .context("Failed to set update status")?;
         
-        // Get current binary path (where the service is running from)
-        let current_binary_path = std::env::current_exe()
-            .context("Failed to get current executable path")?;
+        info!("🧩 Requested update to version {}", requested_version);
         
-        info!("Current OpenFrame binary path: {}", current_binary_path.display());
+        // Perform the update in a blocking task since self_update is synchronous
+        let version = requested_version.to_string();
+        let client_info_service = self.client_info_service.clone();
         
-        // Store binary path in client info
-        self.client_info_service.set_binary_path(current_binary_path.to_string_lossy().to_string()).await
-            .context("Failed to store binary path")?;
+        let update_result = tokio::task::spawn_blocking(move || {
+            Self::download_and_apply_update(&version)
+        })
+        .await
+        .context("Update task panicked")?;
         
-        // Create backup of current binary
-        let backup_path = current_binary_path.with_extension("backup");
-        if current_binary_path.exists() {
-            info!("Backing up current OpenFrame binary");
-            fs::copy(&current_binary_path, &backup_path)
-                .await
-                .with_context(|| "Failed to backup current OpenFrame binary")?;
+        match update_result {
+            Ok(status) => {
+                info!("✅ Update applied successfully: {}", status.version());
+                
+                // Update client info with new version
+                client_info_service
+                    .update_version(requested_version.to_string())
+                    .await
+                    .context("Failed to update client version info")?;
+                
+                client_info_service
+                    .set_update_status(ClientUpdateStatus::Updated, None)
+                    .await
+                    .context("Failed to set update status to completed")?;
+                
+                // Exit to allow service manager to restart with new binary
+                warn!("🔄 Update complete, restarting with new version...");
+                process::exit(42); // Special exit code for update restart
+            }
+            Err(e) => {
+                error!("❌ Update failed: {:#}", e);
+                client_info_service
+                    .set_update_status(ClientUpdateStatus::Failed, Some(e.to_string()))
+                    .await
+                    .ok(); // Don't fail if we can't update status
+                Err(e)
+            }
         }
-
-        // Mock download new binary (empty bytes for now)
-        info!("Downloading new OpenFrame client binary for version: {}", new_version);
-        let new_binary_bytes = self.get_new_binary_mock(new_version).await?;
-        
-        // Write new binary to temporary location first
-        let temp_binary_path = current_binary_path.with_extension("new");
-        File::create(&temp_binary_path)
-            .await?
-            .write_all(&new_binary_bytes)
-            .await
-            .with_context(|| "Failed to write new OpenFrame binary")?;
-
-        // Set executable permissions
-        #[cfg(target_family = "unix")]
-        {
-            let mut perms = fs::metadata(&temp_binary_path).await?.permissions();
-            perms.set_mode(0o755);
-            fs::set_permissions(&temp_binary_path, perms)
-                .await
-                .with_context(|| "Failed to set executable permissions on new binary")?;
-        }
-
-        // Replace current binary with new one
-        fs::rename(&temp_binary_path, &current_binary_path)
-            .await
-            .with_context(|| "Failed to replace current binary with new one")?;
-
-        info!("OpenFrame client binary updated successfully to version: {}", new_version);
-        
-        // Update client info with new version
-        self.client_info_service.update_version(new_version.clone()).await
-            .context("Failed to update client version info")?;
-        
-        self.client_info_service.set_update_status(ClientUpdateStatus::Updated, None).await
-            .context("Failed to set update status to completed")?;
-        
-        // Kill current process - OS service manager will restart with new binary
-        // TODO: This is dirty solution and should be revised
-        warn!("Terminating current OpenFrame process for binary update - OS service will restart automatically");
-        
-        // Exit with special code to indicate planned restart for update
-        process::exit(42); // Special exit code for update restart
     }
-
-    // Mock implementation - returns empty bytes
-    async fn get_new_binary_mock(&self, version: &str) -> Result<Vec<u8>> {
-        info!("Mock: downloading OpenFrame client binary for version: {}", version);
+    
+    /// Download and apply update from GitHub releases
+    fn download_and_apply_update(version: &str) -> Result<self_update::Status> {
+        info!("⬇️ Downloading version {} from GitHub releases...", version);
         
-        // TODO: Implement actual binary download logic
-        // This should download the new binary from the update server
-        let mock_binary = vec![]; // Empty bytes for now
+        let status = self_update::backends::github::Update::configure()
+            .repo_owner("openframe")
+            .repo_name("openframe-client") // TODO: Make configurable
+            .bin_name("openframe-client")
+            .target_version_tag(version)
+            .show_download_progress(true)
+            .no_confirm(true)
+            .current_version(cargo_crate_version!())
+            .build()
+            .context("Failed to configure update")?
+            .update()
+            .context("Failed to download and apply update")?;
         
-        info!("Mock: downloaded {} bytes for OpenFrame client version: {}", mock_binary.len(), version);
-        Ok(mock_binary)
+        info!("✅ Successfully applied update to version: {}", status.version());
+        Ok(status)
+    }
+    
+    /// Validate version format (basic semver check)
+    fn is_valid_version(version: &str) -> bool {
+        !version.is_empty() 
+            && version.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false)
+            && version.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
     }
 }
