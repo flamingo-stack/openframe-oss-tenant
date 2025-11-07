@@ -1,5 +1,7 @@
 import { buildWsUrl } from './meshcentral-config'
 import { runtimeEnv } from '../runtime-config'
+import { WebSocketManager } from './websocket-manager'
+
 export type TunnelState = 0 | 1 | 2 | 3 // 0: stopped, 1: connecting, 2: open, 3: connected
 
 export type TunnelOptions = {
@@ -15,13 +17,15 @@ type TunnelCallbacks = {
   onStateChange?: (state: TunnelState) => void
   onBinaryData?: (data: Uint8Array) => void
   onCtrlMessage?: (msg: any) => void
+  onRequestPairing?: (relayId: string) => void
 }
 
 export class MeshTunnel {
-  private socket?: WebSocket
+  private wsManager?: WebSocketManager
   private state: TunnelState = 0
   private id: string
   private latencyTimer: any
+  private isHandshakeComplete = false
 
   constructor(
     private params: {
@@ -46,39 +50,96 @@ export class MeshTunnel {
     })
     if (this.params.authCookie) qs.append('auth', this.params.authCookie)
 
-    let url = buildWsUrl(`/meshrelay.ashx?${qs.toString()}`)
-
-    try {
-      const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
-      if (isDevTicketEnabled && typeof window !== 'undefined') {
-        const token = localStorage.getItem('of_access_token')
-        if (token) url += `&authorization=${token}`
-      }
-    } catch {}
+    const buildUrl = () => {
+      let url = buildWsUrl(`/meshrelay.ashx?${qs.toString()}`)
+      
+      try {
+        const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
+        if (isDevTicketEnabled && typeof window !== 'undefined') {
+          const token = localStorage.getItem('of_access_token')
+          if (token) url += `&authorization=${encodeURIComponent(token)}`
+        }
+      } catch {}
+      
+      return url
+    }
 
     this.setState(1)
-    this.socket = new WebSocket(url)
-    this.socket.binaryType = 'arraybuffer'
-    this.socket.onopen = () => {
-      this.setState(2)
+    this.isHandshakeComplete = false
+
+    this.wsManager = new WebSocketManager({
+      url: buildUrl,
+      binaryType: 'arraybuffer',
+      enableMessageQueue: false,
+      maxReconnectAttempts: 10,
+      reconnectBackoff: [1000, 2000, 4000, 8000, 16000, 30000],
+      refreshTokenBeforeReconnect: true,
+      
+      onStateChange: (wsState) => {
+        // Map WebSocketManager states to TunnelState
+        if (wsState === 'connecting' || wsState === 'reconnecting') {
+          this.setState(1)
+          this.isHandshakeComplete = false
+        } else if (wsState === 'connected') {
+          this.setState(2)
+          // Ask caller to re-send pairing via control connection on reconnect
+          try { this.params.onRequestPairing?.(this.id) } catch {}
+          this.initializeHandshake()
+        } else if (wsState === 'disconnected' || wsState === 'failed') {
+          this.setState(0)
+          this.clearLatencyTimer()
+        }
+      },
+      onOpen: () => {},
+      onMessage: (e) => this.onMessage(e),
+      onError: () => {},
+      onClose: () => {
+        this.clearLatencyTimer()
+      },
+      shouldReconnect: (closeEvent) => {
+        // Reconnect on auth failures and abnormal closures
+        const authFailureCodes = [1008, 1006, 4401]
+        const shouldReconnect = !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code)
+        
+        return shouldReconnect
+      }
+    })
+
+    this.wsManager.connect()
+  }
+
+  private initializeHandshake() {
+    this.sendCtrl({ ctrlChannel: 102938, type: 'rtt', time: Date.now() })
+    this.clearLatencyTimer()
+    this.latencyTimer = setInterval(() => {
       this.sendCtrl({ ctrlChannel: 102938, type: 'rtt', time: Date.now() })
-      this.latencyTimer = setInterval(() => this.sendCtrl({ ctrlChannel: 102938, type: 'rtt', time: Date.now() }), 10000)
+    }, 10000)
+  }
+
+  private clearLatencyTimer() {
+    if (this.latencyTimer) {
+      clearInterval(this.latencyTimer)
+      this.latencyTimer = null
     }
-    this.socket.onmessage = (e) => this.onMessage(e)
-    this.socket.onclose = () => this.stop()
-    this.socket.onerror = () => this.stop()
   }
 
   stop() {
-    if (this.latencyTimer) { clearInterval(this.latencyTimer); this.latencyTimer = null }
-    try { if (this.socket?.readyState === WebSocket.OPEN) this.sendCtrl({ ctrlChannel: 102938, type: 'close' }) } catch {}
-    try { this.socket?.close() } catch {}
-    this.socket = undefined
+    this.clearLatencyTimer()
+    
+    try {
+      if (this.wsManager?.isConnected()) {
+        this.sendCtrl({ ctrlChannel: 102938, type: 'close' })
+      }
+    } catch {}
+    
+    this.wsManager?.disconnect()
+    this.wsManager = undefined
     this.setState(0)
+    this.isHandshakeComplete = false
   }
 
   private onMessage(e: MessageEvent) {
-    if (this.state < 3) {
+    if (!this.isHandshakeComplete) {
       const data = e.data
       if (data === 'c' || data === 'cr') {
         const options = this.params.options
@@ -87,9 +148,11 @@ export class MeshTunnel {
         }
         this.sendRaw(String(this.params.protocol ?? 1))
         this.setState(3)
+        this.isHandshakeComplete = true
         return
       }
     }
+    
     if (typeof e.data === 'string') {
       const s = e.data as string
       if (s[0] === '~') {
@@ -99,16 +162,25 @@ export class MeshTunnel {
       try {
         const j = JSON.parse(s)
         if (j && j.ctrlChannel === 102938) {
-          if (j.type === 'console' && this.params.onConsoleMessage) this.params.onConsoleMessage(j.msg)
-          if (j.type === 'ping') this.sendCtrl({ ctrlChannel: 102938, type: 'pong' })
-          if (this.params.onCtrlMessage) this.params.onCtrlMessage(j)
+          if (j.type === 'console' && this.params.onConsoleMessage) {
+            this.params.onConsoleMessage(j.msg)
+          }
+          if (j.type === 'ping') {
+            this.sendCtrl({ ctrlChannel: 102938, type: 'pong' })
+          }
+          if (this.params.onCtrlMessage) {
+            this.params.onCtrlMessage(j)
+          }
           return
         }
       } catch {}
     } else {
       const buf = new Uint8Array(e.data as ArrayBuffer)
-      if (this.params.onBinaryData) this.params.onBinaryData(buf)
-      else this.params.onData(buf)
+      if (this.params.onBinaryData) {
+        this.params.onBinaryData(buf)
+      } else {
+        this.params.onData(buf)
+      }
     }
   }
 
@@ -118,20 +190,30 @@ export class MeshTunnel {
   }
 
   sendCtrl(obj: any) {
-    try { this.socket?.send(JSON.stringify(obj)) } catch {}
+    try {
+      const data = JSON.stringify(obj)
+      this.wsManager?.send(data)
+    } catch (error) {
+      console.error('Error sending control message:', error)
+    }
   }
 
   private sendRaw(x: string | Uint8Array) {
     try {
-      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return
+      if (!this.wsManager?.isConnected()) return
+      
       if (typeof x === 'string') {
         const b = new Uint8Array(x.length)
-        for (let i = 0; i < x.length; i++) b[i] = x.charCodeAt(i)
-        this.socket.send(b.buffer)
+        for (let i = 0; i < x.length; i++) {
+          b[i] = x.charCodeAt(i)
+        }
+        this.wsManager.send(b.buffer)
       } else {
-        this.socket.send(x)
+        this.wsManager.send(x.buffer as ArrayBuffer)
       }
-    } catch {}
+    } catch (error) {
+      console.error('Error sending raw data:', error)
+    }
   }
 
   sendBinary(x: Uint8Array) {
@@ -143,6 +225,17 @@ export class MeshTunnel {
     this.state = s
     this.params.onStateChange?.(s)
   }
+  
+  reconnect() {
+    this.isHandshakeComplete = false
+    this.wsManager?.reconnect()
+  }
+  
+  getState(): TunnelState {
+    return this.state
+  }
+  
+  isConnected(): boolean {
+    return this.state === 3
+  }
 }
-
-
