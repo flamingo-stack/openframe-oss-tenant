@@ -2,5 +2,54 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ]
+  ],
+  "timezone": "UTC",
+  "labels": ["dependencies", "renovate"],
+  "prConcurrentLimit": 3,
+  "prCreation": "immediate",
+  "rangeStrategy": "replace",
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore(deps):",
+
+  "packageRules": [
+    {
+      "description": "OpenFrame libs version property updates",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": ["^com\\.openframe\\.oss"],
+      "groupName": "openframe-libs",
+      "groupSlug": "openframe-libs",
+      "additionalBranchPrefix": "",
+      "commitMessageTopic": "OpenFrame libs",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "prPriority": 10,
+      "automerge": false,
+      "labels": ["dependencies", "openframe-libs"]
+    },
+    {
+      "description": "Auto-merge minor and patch updates for openframe libs",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": ["^com\\.openframe\\.oss"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    }
+  ],
+
+  "maven": {
+    "enabled": true
+  },
+
+  "hostRules": [
+    {
+      "hostType": "maven",
+      "matchHost": "maven.pkg.github.com",
+      "description": "GitHub Packages authentication"
+    }
+  ],
+
+  "registryAliases": {
+    "github-packages": "https://maven.pkg.github.com"
+  }
 }
