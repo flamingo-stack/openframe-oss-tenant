@@ -46,10 +46,6 @@ public class RmmScriptsInitializer implements ApplicationRunner {
     private final TacticalRmmClient tacticalRmmClient;
     private final ResourceLoader resourceLoader;
 
-    /**
-     * Configuration for scripts to be initialized in Tactical RMM.
-     * Add new entries here to automatically create/update scripts on startup.
-     */
     private static final List<ScriptConfig> SCRIPT_CONFIGS = List.of(
         ScriptConfig.builder()
             .name("OpenFrame Test Script")
@@ -100,10 +96,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
         }
     }
 
-    /**
-     * Process a single script configuration
-     */
-    private void processScript(String apiUrl, String apiToken, 
+    private void processScript(String apiUrl, String apiToken,
                               List<ScriptListItem> existingScripts, 
                               ScriptConfig config) throws Exception {
         log.debug("Processing script: {}", config.getName());
@@ -123,9 +116,6 @@ public class RmmScriptsInitializer implements ApplicationRunner {
         }
     }
 
-    /**
-     * Load script content from resources directory
-     */
     private String loadScriptFromResources(String resourcePath) throws Exception {
         Resource resource = resourceLoader.getResource(resourcePath);
         if (!resource.exists()) {
@@ -141,9 +131,6 @@ public class RmmScriptsInitializer implements ApplicationRunner {
         return content;
     }
 
-    /**
-     * Find script by name in the list of existing scripts
-     */
     private ScriptListItem findScriptByName(List<ScriptListItem> scripts, String name) {
         return scripts.stream()
             .filter(script -> name.equals(script.getName()))
@@ -151,10 +138,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
             .orElse(null);
     }
 
-    /**
-     * Create a new script in Tactical RMM
-     */
-    private void createScript(String tacticalServerUrl, String apiKey, 
+    private void createScript(String tacticalServerUrl, String apiKey,
                             ScriptConfig config, String scriptContent) {
         try {
             log.info("Creating new script in Tactical RMM: {}", config.getName());
@@ -180,10 +164,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
         }
     }
 
-    /**
-     * Update an existing script in Tactical RMM
-     */
-    private void updateScript(String tacticalServerUrl, String apiKey, String scriptId, 
+    private void updateScript(String tacticalServerUrl, String apiKey, String scriptId,
                             ScriptConfig config, String scriptContent) {
         try {
             log.info("Updating existing script in Tactical RMM: {} (ID: {})", config.getName(), scriptId);
