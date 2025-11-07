@@ -131,8 +131,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
                 request
             );
             
-            log.info("Successfully created script: {} (ID: {})", 
-                SCRIPT_NAME, createdScript.getId());
+            log.info("Successfully created script: {} (ID: {})", SCRIPT_NAME, createdScript.getId());
         } catch (Exception e) {
             log.error("Failed to create script: {}", SCRIPT_NAME, e);
             throw new RuntimeException("Failed to create script", e);
@@ -160,8 +159,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
                 request
             );
             
-            log.info("Successfully updated script: {} (ID: {})", 
-                SCRIPT_NAME, updatedScript.getId());
+            log.info("Successfully updated script: {} (ID: {})", SCRIPT_NAME, updatedScript.getId());
         } catch (Exception e) {
             log.error("Failed to update script: {} (ID: {})", SCRIPT_NAME, scriptId, e);
             throw new RuntimeException("Failed to update script", e);
