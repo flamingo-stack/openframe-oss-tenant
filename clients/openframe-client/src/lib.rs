@@ -294,9 +294,14 @@ impl Client {
             .context("Failed to initialize OpenFrame client info service")?;
 
         // Initialize OpenFrame client update service
+        // Get update URL from environment or use default
+        let update_base_url = std::env::var("OPENFRAME_UPDATE_URL")
+            .unwrap_or_else(|_| "https://updates.openframe.org/releases".to_string());
+        
         let openframe_client_update_service = OpenFrameClientUpdateService::new(
             directory_manager.clone(),
-            openframe_client_info_service.clone()
+            openframe_client_info_service.clone(),
+            update_base_url
         );
 
         // Initialize tool agent update service
