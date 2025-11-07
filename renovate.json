@@ -23,11 +23,19 @@
       "automergeType": "pr",
       "automergeStrategy": "squash",
       "labels": ["dependencies", "openframe-libs"],
-      "prPriority": 10
+      "prPriority": 10,
+      "enabled": true
     },
     {
       "description": "Ignore parent POM, prevent lookup errors",
       "matchPackageNames": ["com.openframe:openframe-parent"],
+      "enabled": false
+    },
+    {
+      "description": "Disable all other dependencies - only update openframe libs",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": ["*"],
+      "excludePackagePatterns": ["^com\\.openframe\\.oss"],
       "enabled": false
     }
   ],
