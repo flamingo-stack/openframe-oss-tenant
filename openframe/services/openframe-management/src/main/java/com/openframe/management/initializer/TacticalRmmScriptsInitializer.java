@@ -22,18 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Initializer for Tactical RMM scripts.
- * <p>
- * This component runs at startup and ensures that required scripts
- * are present in Tactical RMM. It loads scripts from the resources
- * directory and creates or updates them in Tactical RMM based on
- * script name matching.
- * <p>
- * To add new scripts:
- * 1. Add the script file to src/main/resources/scripts/
- * 2. Add a new ScriptConfig to the SCRIPT_CONFIGS list below
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
