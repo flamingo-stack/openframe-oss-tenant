@@ -24,12 +24,12 @@ import java.util.List;
 
 /**
  * Initializer for Tactical RMM scripts.
- * 
+ * <p>
  * This component runs at startup and ensures that required scripts
  * are present in Tactical RMM. It loads scripts from the resources
  * directory and creates or updates them in Tactical RMM based on
  * script name matching.
- * 
+ * <p>
  * To add new scripts:
  * 1. Add the script file to src/main/resources/scripts/
  * 2. Add a new ScriptConfig to the SCRIPT_CONFIGS list below
@@ -37,25 +37,25 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RmmScriptsInitializer implements ApplicationRunner {
+public class TacticalRmmScriptsInitializer implements ApplicationRunner {
 
     private static final String TOOL_ID = "tactical-rmm";
+
+    private static final List<ScriptConfig> SCRIPT_CONFIGS = List.of(
+            ScriptConfig.builder()
+                    .name("OpenFrame Client Latest Update")
+                    .resourcePath("classpath:scripts/openframe-client-update.ps1")
+                    .description("OpenFrame Client updatest to latest version")
+                    .shell("powershell")
+                    .category("OpenFrame")
+                    .defaultTimeout(30)
+                    .build()
+    );
 
     private final IntegratedToolService integratedToolService;
     private final ToolUrlService toolUrlService;
     private final TacticalRmmClient tacticalRmmClient;
     private final ResourceLoader resourceLoader;
-
-    private static final List<ScriptConfig> SCRIPT_CONFIGS = List.of(
-        ScriptConfig.builder()
-            .name("OpenFrame Test Script")
-            .resourcePath("classpath:scripts/test-script.ps1")
-            .description("OpenFrame test script for system information gathering")
-            .shell("powershell")
-            .category("OpenFrame")
-            .defaultTimeout(30)
-            .build()
-    );
 
     @Override
     public void run(ApplicationArguments args) {
