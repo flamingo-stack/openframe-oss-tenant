@@ -4,12 +4,15 @@
   "version": "1.0.0",
   "status": "ENABLED",
   "sessionType": "CONSOLE",
-  "runCommandArgs": [
-    "connect",
+  "installationCommandArgs": [
+    "-install",
     "--openframe-mode",
-    "--openframe-secret", "${client.openframeSecret}",
-    "--openframe-token-path", "${client.openframeTokenPath}"
+    "--openframe-secret",
+    "${client.openframeSecret}",
+    "--openframe-token-path",
+    "${client.openframeTokenPath}"
   ],
+  "runCommandArgs": [],
   "agentToolIdCommandArgs": [
     "-nodeid-base64"
   ],
