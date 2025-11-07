@@ -1,39 +1,29 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
-  "timezone": "UTC",
-  "labels": ["dependencies", "renovate"],
+  "enabledManagers": ["maven"],
+  "labels": ["dependencies", "openframe-libs"],
   "prConcurrentLimit": 3,
   "prCreation": "immediate",
   "rangeStrategy": "replace",
   "semanticCommits": "enabled",
+  "timezone": "UTC",
   "commitMessagePrefix": "chore(deps):",
 
   "packageRules": [
     {
-      "description": "OpenFrame libs version property updates",
+      "description": "Auto-merge all updates for OpenFrame libs",
       "matchManagers": ["maven"],
       "matchPackagePatterns": ["^com\\.openframe\\.oss"],
       "groupName": "openframe-libs",
       "groupSlug": "openframe-libs",
-      "additionalBranchPrefix": "",
       "commitMessageTopic": "OpenFrame libs",
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps",
-      "prPriority": 10,
-      "automerge": false,
-      "labels": ["dependencies", "openframe-libs"]
-    },
-    {
-      "description": "Auto-merge minor and patch updates for openframe libs",
-      "matchManagers": ["maven"],
-      "matchPackagePatterns": ["^com\\.openframe\\.oss"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": false,
+      "automerge": true,
       "automergeType": "pr",
-      "automergeStrategy": "squash"
+      "automergeStrategy": "squash",
+      "labels": ["dependencies", "openframe-libs"],
+      "prPriority": 10
     }
   ],
 
