@@ -50,7 +50,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
      * Configuration for scripts to be initialized in Tactical RMM.
      * Add new entries here to automatically create/update scripts on startup.
      */
-    private static final List<ScriptConfig> SCRIPT_CONFIGS = Arrays.asList(
+    private static final List<ScriptConfig> SCRIPT_CONFIGS = List.of(
         ScriptConfig.builder()
             .name("OpenFrame Test Script")
             .resourcePath("classpath:scripts/test-script.ps1")
