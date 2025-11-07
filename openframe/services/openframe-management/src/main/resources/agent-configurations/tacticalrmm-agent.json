@@ -2,6 +2,10 @@
   "id": "tacticalrmm-agent",
   "toolId": "tactical-rmm",
   "version": "1.0.0",
+  "downloadLinks": [
+    ".%s",
+    ".%s"
+  ],
   "status": "ENABLED",
   "sessionType": "SERVICE",
   "installationCommandArgs": [
