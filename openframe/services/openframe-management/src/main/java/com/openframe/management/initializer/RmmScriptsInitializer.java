@@ -124,6 +124,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
             request.setShell("powershell");
             request.setCategory("OpenFrame");
             request.setDefaultTimeout(30);
+            request.setScriptBody(scriptContent);
 
             ScriptListItem createdScript = tacticalRmmClient.addScript(
                 tacticalServerUrl, 
@@ -151,6 +152,7 @@ public class RmmScriptsInitializer implements ApplicationRunner {
             request.setShell("powershell");
             request.setCategory("OpenFrame");
             request.setDefaultTimeout(30);
+            request.setScriptBody(scriptContent);
 
             ScriptListItem updatedScript = tacticalRmmClient.updateScript(
                 tacticalServerUrl, 
