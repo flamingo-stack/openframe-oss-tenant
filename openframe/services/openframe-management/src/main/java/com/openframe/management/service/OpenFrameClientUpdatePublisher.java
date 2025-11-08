@@ -1,5 +1,7 @@
 package com.openframe.management.service;
 
+import com.openframe.data.document.clientconfiguration.OpenFrameClientConfiguration;
+import com.openframe.data.mapper.DownloadConfigurationMapper;
 import com.openframe.data.model.nats.OpenFrameClientUpdateMessage;
 import com.openframe.data.repository.nats.NatsMessagePublisher;
 import lombok.RequiredArgsConstructor;
@@ -14,16 +16,18 @@ public class OpenFrameClientUpdatePublisher {
     private final static String TOPIC_NAME = "machine.all.client-update";
 
     private final NatsMessagePublisher natsMessagePublisher;
+    private final DownloadConfigurationMapper downloadConfigurationMapper;
 
-    public void publish(String version) {
-        OpenFrameClientUpdateMessage message = buildMessage(version);
+    public void publish(OpenFrameClientConfiguration configuration) {
+        OpenFrameClientUpdateMessage message = buildMessage(configuration);
         natsMessagePublisher.publish(TOPIC_NAME, message);
-        log.info("Published client update message for all machines with version: {}", version);
+        log.info("Published client update message for all machines with version: {}", configuration.getVersion());
     }
 
-    private OpenFrameClientUpdateMessage buildMessage(String version) {
+    private OpenFrameClientUpdateMessage buildMessage(OpenFrameClientConfiguration configuration) {
         OpenFrameClientUpdateMessage message = new OpenFrameClientUpdateMessage();
-        message.setVersion(version);
+        message.setVersion(configuration.getVersion());
+        message.map(downloadConfigurationMapper.mapToNatsDownloadConfigurations(configuration.getDownloadConfiguration()));
         return message;
     }
 }

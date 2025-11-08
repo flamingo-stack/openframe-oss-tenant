@@ -59,7 +59,7 @@ public class OpenFrameClientConfigurationInitializer {
         String newVersion = newConfiguration.getVersion();
         if (!existingVersion.equals(newVersion)) {
             log.info("Detected version update from {} to {}", existingVersion, newVersion);
-            clientUpdatePublisher.publish(newVersion);
+            clientUpdatePublisher.publish(newConfiguration);
             log.info("Processed version update");
         }
     }

@@ -1,8 +1,9 @@
 package com.openframe.management.service;
 
+import com.openframe.data.document.toolagent.IntegratedToolAgent;
+import com.openframe.data.mapper.DownloadConfigurationMapper;
 import com.openframe.data.model.nats.ToolAgentUpdateMessage;
 import com.openframe.data.repository.nats.NatsMessagePublisher;
-import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class ToolAgentUpdatePublisher {
     private final static String TOPIC_NAME_TEMPLATE = "machine.all.tool-update";
 
     private final NatsMessagePublisher natsMessagePublisher;
+    private final DownloadConfigurationMapper downloadConfigurationMapper;
 
     public void publish(IntegratedToolAgent toolAgent) {
         ToolAgentUpdateMessage message = buildMessage(toolAgent);
@@ -28,6 +30,8 @@ public class ToolAgentUpdatePublisher {
         ToolAgentUpdateMessage message = new ToolAgentUpdateMessage();
         message.setToolAgentId(toolAgent.getId());
         message.setVersion(toolAgent.getVersion());
+        message.setSessionType(toolAgent.getSessionType());
+        message.setDownloadConfigurations(downloadConfigurationMapper.map(toolAgent.getDownloadConfigurations()));
         return message;
     }
 }
