@@ -4,13 +4,13 @@
   "downloadConfigurations": [
     {
       "os": "windows",
-      "linkTemplate": "https://github.com/openframe/openframe-client/releases/download/v{version}/openframe-client-windows-{version}.exe",
-      "fileName": "openframe-client-windows-{version}.exe"
+      "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-client_windows.zip",
+      "fileName": "openframe-client_windows.zip"
     },
     {
       "os": "macos",
-      "linkTemplate": "https://github.com/openframe/openframe-client/releases/download/v{version}/openframe-client-macos-{version}.dmg",
-      "fileName": "openframe-client-macos-{version}.dmg"
+      "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-client_macos.tar.gz",
+      "fileName": "openframe-client_macos.tar.gz"
     }
   ]
 }
