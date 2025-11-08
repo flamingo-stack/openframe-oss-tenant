@@ -37,7 +37,9 @@ public class ToolAgentUpdatePublisher {
         message.setToolAgentId(toolAgent.getId());
         message.setVersion(toolAgent.getVersion());
         message.setSessionType(toolAgent.getSessionType());
-        message.setDownloadConfigurations(downloadConfigurationMapper.map(toolAgent.getDownloadConfigurations()));
+        message.setDownloadConfigurations(
+                downloadConfigurationMapper.map(toolAgent.getDownloadConfigurations(), toolAgent.getVersion())
+        );
         return message;
     }
 }
