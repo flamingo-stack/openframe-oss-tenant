@@ -279,6 +279,7 @@ impl Client {
 
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
+            github_download_service.clone(),
             tool_agent_file_client.clone(),
             tool_api_client,
             tool_command_params_resolver.clone(),
@@ -293,19 +294,19 @@ impl Client {
         let openframe_client_info_service = OpenFrameClientInfoService::new(directory_manager.clone())
             .context("Failed to initialize OpenFrame client info service")?;
 
-        // Initialize OpenFrame client update service
-        // Get update URL from environment or use default
-        let update_base_url = std::env::var("OPENFRAME_UPDATE_URL")
-            .unwrap_or_else(|_| "https://updates.openframe.org/releases".to_string());
+        // Initialize GitHub download service (used by update and installation services)
+        let github_download_service = GithubDownloadService::new(http_client.clone());
         
+        // Initialize OpenFrame client update service
         let openframe_client_update_service = OpenFrameClientUpdateService::new(
             directory_manager.clone(),
             openframe_client_info_service.clone(),
-            update_base_url
+            github_download_service.clone()
         );
 
         // Initialize tool agent update service
         let tool_agent_update_service = ToolAgentUpdateService::new(
+            github_download_service.clone(),
             tool_agent_file_client.clone(),
             installed_tools_service.clone(),
             tool_kill_service.clone(),

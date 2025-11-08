@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
+use crate::services::GithubDownloadService;
 use crate::platform::DirectoryManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -13,6 +14,7 @@ use std::os::unix::fs::PermissionsExt;
 
 #[derive(Clone)]
 pub struct ToolAgentUpdateService {
+    github_download_service: GithubDownloadService,
     tool_agent_file_client: ToolAgentFileClient,
     installed_tools_service: InstalledToolsService,
     tool_kill_service: ToolKillService,
@@ -21,6 +23,7 @@ pub struct ToolAgentUpdateService {
 
 impl ToolAgentUpdateService {
     pub fn new(
+        github_download_service: GithubDownloadService,
         tool_agent_file_client: ToolAgentFileClient,
         installed_tools_service: InstalledToolsService,
         tool_kill_service: ToolKillService,
@@ -33,6 +36,7 @@ impl ToolAgentUpdateService {
             .unwrap();
 
         Self {
+            github_download_service,
             tool_agent_file_client,
             installed_tools_service,
             tool_kill_service,
@@ -80,11 +84,24 @@ impl ToolAgentUpdateService {
 
         // Download new binary
         info!("Downloading new agent binary for tool: {} version: {}", tool_agent_id, new_version);
-        let new_agent_bytes = self
-            .tool_agent_file_client
-            .get_tool_agent_file(tool_agent_id.clone())
-            .await
-            .with_context(|| format!("Failed to download new agent binary for tool: {}", tool_agent_id))?;
+        let new_agent_bytes = if !message.download_configurations.is_empty() {
+            // Use GithubDownloadService with download configurations
+            info!("Using download configurations to update tool agent");
+            let download_config = GithubDownloadService::find_config_for_current_os(&message.download_configurations)
+                .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
+            
+            self.github_download_service
+                .download_and_extract(download_config)
+                .await
+                .with_context(|| format!("Failed to download and extract tool agent update for: {}", tool_agent_id))?
+        } else {
+            // Fall back to legacy method (Artifactory)
+            info!("Using legacy method to update tool agent");
+            self.tool_agent_file_client
+                .get_tool_agent_file(tool_agent_id.clone())
+                .await
+                .with_context(|| format!("Failed to download new agent binary for tool: {}", tool_agent_id))?
+        };
 
         // Write new binary
         File::create(&agent_file_path)

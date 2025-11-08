@@ -3,10 +3,10 @@ use tracing::{info, warn, error};
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 use crate::models::openframe_client_info::ClientUpdateStatus;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
+use crate::services::github_download_service::GithubDownloadService;
 use crate::platform::DirectoryManager;
 use std::path::PathBuf;
 use std::process;
-use reqwest;
 use uuid::Uuid;
 
 /// PowerShell script for updating OpenFrame client on Windows
@@ -112,19 +112,19 @@ catch {
 pub struct OpenFrameClientUpdateService {
     directory_manager: DirectoryManager,
     client_info_service: OpenFrameClientInfoService,
-    update_base_url: String,
+    github_download_service: GithubDownloadService,
 }
 
 impl OpenFrameClientUpdateService {
     pub fn new(
         directory_manager: DirectoryManager, 
         client_info_service: OpenFrameClientInfoService,
-        update_base_url: String,
+        github_download_service: GithubDownloadService,
     ) -> Self {
         Self {
             directory_manager,
             client_info_service,
-            update_base_url,
+            github_download_service,
         }
     }
 
@@ -147,13 +147,28 @@ impl OpenFrameClientUpdateService {
         
         info!("🧩 Starting update to version {}", requested_version);
         
-        // 1. Download update archive
-        let archive_path = self.download_update(requested_version).await
-            .context("Failed to download update")?;
+        // 1. Find the appropriate download configuration for current OS
+        let download_config = GithubDownloadService::find_config_for_current_os(&message.download_configurations)
+            .context("Failed to find download configuration for current OS")?;
         
-        info!("✅ Update downloaded to: {}", archive_path.display());
+        info!("📋 Using download configuration for OS: {}", download_config.os);
         
-        // 2. Launch update process (Windows: PowerShell, Unix: shell script)
+        // 2. Download and extract binary using GithubDownloadService
+        let binary_bytes = self.github_download_service
+            .download_and_extract(download_config)
+            .await
+            .context("Failed to download and extract update")?;
+        
+        info!("✅ Binary downloaded and extracted ({} bytes)", binary_bytes.len());
+        
+        // 3. Save binary to a temp archive for the updater
+        // Note: The updater expects a ZIP, so we create one with the binary
+        let archive_path = self.create_temp_archive(&binary_bytes, &download_config.agent_file_name).await
+            .context("Failed to create temporary archive")?;
+        
+        info!("✅ Temporary archive created: {}", archive_path.display());
+        
+        // 4. Launch update process (Windows: PowerShell, Unix: shell script)
         #[cfg(windows)]
         {
             self.launch_windows_updater(archive_path).await?;
@@ -164,7 +179,7 @@ impl OpenFrameClientUpdateService {
             self.launch_unix_updater(archive_path).await?;
         }
         
-        // 3. Update will happen in separate process, current process exits
+        // 5. Update will happen in separate process, current process exits
         info!("🚀 Update process launched, current service will stop");
         
         // Note: We don't update client_info_service here because the updater script
@@ -172,53 +187,44 @@ impl OpenFrameClientUpdateService {
         process::exit(0);
     }
     
-    /// Download update archive from server
-    async fn download_update(&self, version: &str) -> Result<PathBuf> {
-        info!("⬇️ Downloading update for version: {}", version);
+    /// Creates a temporary ZIP archive containing the binary for the updater script
+    #[cfg(windows)]
+    async fn create_temp_archive(&self, binary_bytes: &[u8], binary_name: &str) -> Result<PathBuf> {
+        use std::io::Write;
+        use zip::write::{FileOptions, ZipWriter};
         
-        // Construct download URL based on platform
-        // Format: https://updates.openframe.org/releases/openframe-client-v1.2.3-windows-x64.zip
-        let platform = std::env::consts::OS;
-        let arch = std::env::consts::ARCH;
-        let filename = format!("openframe-client-{}-{}-{}.zip", version, platform, arch);
-        let download_url = format!("{}/{}", self.update_base_url.trim_end_matches('/'), filename);
-        
-        info!("📥 Downloading from: {}", download_url);
-        
-        // Download to temp directory
         let temp_dir = std::env::temp_dir();
         let archive_path = temp_dir.join(format!("openframe-update-{}.zip", Uuid::new_v4()));
         
-        // Download with reqwest
-        let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(300)) // 5 min timeout
-            .build()?;
+        let file = std::fs::File::create(&archive_path)
+            .context("Failed to create temporary ZIP file")?;
         
-        let response = client.get(&download_url)
-            .send()
-            .await
-            .context("Failed to send download request")?;
+        let mut zip = ZipWriter::new(file);
+        let options = FileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
         
-        if !response.status().is_success() {
-            return Err(anyhow!(
-                "Download failed with status: {} - URL: {}", 
-                response.status(),
-                download_url
-            ));
-        }
+        zip.start_file(binary_name, options)
+            .context("Failed to start file in ZIP")?;
         
-        let bytes = response.bytes().await
-            .context("Failed to read response bytes")?;
+        zip.write_all(binary_bytes)
+            .context("Failed to write binary to ZIP")?;
         
-        info!("📦 Downloaded {} bytes", bytes.len());
-        
-        // Write to file
-        tokio::fs::write(&archive_path, bytes).await
-            .context("Failed to write archive file")?;
-        
-        info!("✅ Archive saved to: {}", archive_path.display());
+        zip.finish()
+            .context("Failed to finalize ZIP archive")?;
         
         Ok(archive_path)
+    }
+    
+    /// On Unix, we can directly write the binary (no ZIP needed)
+    #[cfg(unix)]
+    async fn create_temp_archive(&self, binary_bytes: &[u8], binary_name: &str) -> Result<PathBuf> {
+        let temp_dir = std::env::temp_dir();
+        let binary_path = temp_dir.join(format!("openframe-update-{}-{}", Uuid::new_v4(), binary_name));
+        
+        tokio::fs::write(&binary_path, binary_bytes).await
+            .context("Failed to write binary file")?;
+        
+        Ok(binary_path)
     }
     
     /// Launch PowerShell updater script on Windows
