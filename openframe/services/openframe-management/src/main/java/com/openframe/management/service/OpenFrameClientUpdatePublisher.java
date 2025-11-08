@@ -27,7 +27,7 @@ public class OpenFrameClientUpdatePublisher {
     private OpenFrameClientUpdateMessage buildMessage(OpenFrameClientConfiguration configuration) {
         OpenFrameClientUpdateMessage message = new OpenFrameClientUpdateMessage();
         message.setVersion(configuration.getVersion());
-        message.map(downloadConfigurationMapper.mapToNatsDownloadConfigurations(configuration.getDownloadConfiguration()));
+        message.setDownloadConfigurations(downloadConfigurationMapper.map(configuration.getDownloadConfiguration()));
         return message;
     }
 }
