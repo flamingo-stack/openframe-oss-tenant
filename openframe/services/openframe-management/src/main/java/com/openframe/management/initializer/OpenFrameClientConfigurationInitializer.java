@@ -3,7 +3,7 @@ package com.openframe.management.initializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.document.clientconfiguration.OpenFrameClientConfiguration;
 import com.openframe.data.service.OpenFrameClientConfigurationService;
-import com.openframe.management.service.OpenFrameClientUpdatePublisher;
+import com.openframe.data.service.OpenFrameClientUpdatePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -22,7 +22,7 @@ public class OpenFrameClientConfigurationInitializer {
 
     private final ObjectMapper objectMapper;
     private final OpenFrameClientConfigurationService clientConfigurationService;
-    private final OpenFrameClientUpdatePublisher clientUpdatePublisher;
+    private final OpenFrameClientUpdatePublisher clientUpdateService;
 
     @PostConstruct
     public void init() throws IOException {
@@ -59,7 +59,7 @@ public class OpenFrameClientConfigurationInitializer {
         String newVersion = newConfiguration.getVersion();
         if (!existingVersion.equals(newVersion)) {
             log.info("Detected version update from {} to {}", existingVersion, newVersion);
-            clientUpdatePublisher.publish(newConfiguration);
+            clientUpdateService.publish(newConfiguration);
             log.info("Processed version update");
         }
     }
