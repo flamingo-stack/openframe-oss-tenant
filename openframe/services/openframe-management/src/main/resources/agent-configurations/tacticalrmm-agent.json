@@ -42,13 +42,13 @@
   "downloadConfigurations": [
     {
       "os": "windows",
-      "linkTemplate": "https://github.com/amidaware/rmmagent/releases/download/v{version}/winagent-v{version}.exe",
-      "fileName": "winagent-v{version}.exe"
+      "linkTemplate": "https://github.com/flamingo-stack/rmmagent/releases/download/{version}/rmmagent-windows-amd64.zip",
+      "fileName": "rmmagent-windows-amd64.zip"
     },
     {
       "os": "macos",
-      "linkTemplate": "https://github.com/amidaware/rmmagent/releases/download/v{version}/tacticalagent-v{version}.pkg",
-      "fileName": "tacticalagent-v{version}.pkg"
+      "linkTemplate": "https://github.com/flamingo-stack/rmmagent/releases/download/{version}/rmmagent-macos-universal.tar.gz",
+      "fileName": "rmmagent-macos-universal.tar.gz"
     }
   ]
 }

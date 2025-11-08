@@ -22,13 +22,13 @@
   "downloadConfigurations": [
     {
       "os": "windows",
-      "linkTemplate": "https://github.com/fleetdm/fleet/releases/download/fleet-v{version}/orbit-windows-{version}.msi",
-      "fileName": "orbit-windows-{version}.msi"
+      "linkTemplate": "https://github.com/flamingo-stack/fleet/releases/download/{version}/fleet-windows-amd64.zip",
+      "fileName": "fleet-windows-amd64.zip"
     },
     {
       "os": "macos",
-      "linkTemplate": "https://github.com/fleetdm/fleet/releases/download/fleet-v{version}/orbit-macos-{version}.pkg",
-      "fileName": "orbit-macos-{version}.pkg"
+      "linkTemplate": "https://github.com/flamingo-stack/fleet/releases/download/{version}/fleet-macos-universal.tar.gz",
+      "fileName": "fleet-macos-universal.tar.gz"
     }
   ],
   "assets": [
