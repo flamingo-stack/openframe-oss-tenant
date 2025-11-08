@@ -207,10 +207,7 @@ impl OpenFrameClientUpdateService {
         
         // 6. Update will happen in separate process, current process exits
         info!("Update process launched, current service will stop");
-        
-        // Note: We don't update client_info_service here because the updater script
-        // will restart the service with the new version
-        process::exit(0);
+        Ok(())
     }
     
     /// Creates a temporary ZIP archive containing the binary for the updater script
