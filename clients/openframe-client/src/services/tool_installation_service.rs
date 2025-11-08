@@ -225,7 +225,7 @@ impl ToolInstallationService {
             tool_agent_id: tool_agent_id.clone(),
             tool_id: tool_installation_message.tool_id.clone(),
             tool_type: tool_installation_message.tool_type.clone(),
-            version: version_clone,
+            version: version_clone.clone(),
             session_type: tool_installation_message.session_type.clone().unwrap_or(crate::models::SessionType::Service),
             run_command_args: run_args_clone,
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
