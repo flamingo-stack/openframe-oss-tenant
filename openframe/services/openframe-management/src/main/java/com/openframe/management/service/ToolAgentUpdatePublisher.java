@@ -15,15 +15,21 @@ import static java.lang.String.format;
 @Slf4j
 public class ToolAgentUpdatePublisher {
 
-    private final static String TOPIC_NAME_TEMPLATE = "machine.all.tool-update";
+    private final static String TOPIC_NAME_TEMPLATE = "machine.all.tool.%s.update";
 
     private final NatsMessagePublisher natsMessagePublisher;
     private final DownloadConfigurationMapper downloadConfigurationMapper;
 
     public void publish(IntegratedToolAgent toolAgent) {
+        String topicName = buildTopicName(toolAgent);
         ToolAgentUpdateMessage message = buildMessage(toolAgent);
-        natsMessagePublisher.publish(TOPIC_NAME_TEMPLATE, message);
+        natsMessagePublisher.publish(topicName, message);
         log.info("Published tool update message for tool: {} version: {}", toolAgent.getId(), toolAgent.getVersion());
+    }
+
+    private String buildTopicName(IntegratedToolAgent toolAgent) {
+        String toolAgentId = toolAgent.getId();
+        return format(TOPIC_NAME_TEMPLATE, toolAgentId);
     }
 
     private ToolAgentUpdateMessage buildMessage(IntegratedToolAgent toolAgent) {
