@@ -5,6 +5,8 @@ use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
 use crate::services::GithubDownloadService;
+use crate::services::InstalledAgentMessagePublisher;
+use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::platform::DirectoryManager;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -19,6 +21,8 @@ pub struct ToolAgentUpdateService {
     installed_tools_service: InstalledToolsService,
     tool_kill_service: ToolKillService,
     directory_manager: DirectoryManager,
+    config_service: AgentConfigurationService,
+    installed_agent_publisher: InstalledAgentMessagePublisher,
 }
 
 impl ToolAgentUpdateService {
@@ -28,6 +32,8 @@ impl ToolAgentUpdateService {
         installed_tools_service: InstalledToolsService,
         tool_kill_service: ToolKillService,
         directory_manager: DirectoryManager,
+        config_service: AgentConfigurationService,
+        installed_agent_publisher: InstalledAgentMessagePublisher,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -41,6 +47,8 @@ impl ToolAgentUpdateService {
             installed_tools_service,
             tool_kill_service,
             directory_manager,
+            config_service,
+            installed_agent_publisher,
         }
     }
 
@@ -143,6 +151,24 @@ impl ToolAgentUpdateService {
 
         info!("Tool agent update completed successfully for tool: {} to version: {}", tool_agent_id, new_version);
         info!("Tool {} will be restarted by ToolRunManager after detecting process exit", tool_agent_id);
+        
+        // Publish installed agent message
+        info!("Publishing installed agent message for updated tool: {}", tool_agent_id);
+        match self.config_service.get_machine_id().await {
+            Ok(machine_id) => {
+                if let Err(e) = self.installed_agent_publisher
+                    .publish(machine_id, tool_agent_id.clone(), new_version.clone())
+                    .await
+                {
+                    warn!("Failed to publish installed agent message for {}: {:#}", tool_agent_id, e);
+                    // Don't fail update if publishing fails
+                }
+            }
+            Err(e) => {
+                warn!("Failed to get machine_id for installed agent message: {:#}", e);
+                // Don't fail update if publishing fails
+            }
+        }
         
         Ok(())
     }

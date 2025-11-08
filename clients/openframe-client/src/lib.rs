@@ -51,6 +51,7 @@ use crate::services::tool_agent_update_service::ToolAgentUpdateService;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
+use crate::services::installed_agent_message_publisher::InstalledAgentMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
@@ -249,6 +250,9 @@ impl Client {
         // Initialize NATS message publisher
         let nats_message_publisher = NatsMessagePublisher::new(nats_connection_manager.clone());
 
+        // Initialize installed agent message publisher
+        let installed_agent_message_publisher = InstalledAgentMessagePublisher::new(nats_message_publisher.clone());
+
         // Initialize tool connection message publisher
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
@@ -288,6 +292,8 @@ impl Client {
             directory_manager.clone(),
             tool_run_manager.clone(),
             tool_connection_processing_manager.clone(),
+            config_service.clone(),
+            installed_agent_message_publisher.clone(),
         );
 
         // Initialize OpenFrame client info service
@@ -301,7 +307,9 @@ impl Client {
         let openframe_client_update_service = OpenFrameClientUpdateService::new(
             directory_manager.clone(),
             openframe_client_info_service.clone(),
-            github_download_service.clone()
+            github_download_service.clone(),
+            config_service.clone(),
+            installed_agent_message_publisher.clone(),
         );
 
         // Initialize tool agent update service
@@ -310,7 +318,9 @@ impl Client {
             tool_agent_file_client.clone(),
             installed_tools_service.clone(),
             tool_kill_service.clone(),
-            directory_manager.clone()
+            directory_manager.clone(),
+            config_service.clone(),
+            installed_agent_message_publisher.clone(),
         );
 
         // Initialize tool installation message listener

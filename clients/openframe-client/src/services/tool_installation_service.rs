@@ -6,6 +6,8 @@ use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
 use crate::services::InstalledToolsService;
 use crate::services::GithubDownloadService;
+use crate::services::InstalledAgentMessagePublisher;
+use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
@@ -32,6 +34,8 @@ pub struct ToolInstallationService {
     directory_manager: DirectoryManager,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
+    config_service: AgentConfigurationService,
+    installed_agent_publisher: InstalledAgentMessagePublisher,
 }
 
 impl ToolInstallationService {
@@ -45,6 +49,8 @@ impl ToolInstallationService {
         directory_manager: DirectoryManager,
         tool_run_manager: ToolRunManager,
         tool_connection_processing_manager: ToolConnectionProcessingManager,
+        config_service: AgentConfigurationService,
+        installed_agent_publisher: InstalledAgentMessagePublisher,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -62,6 +68,8 @@ impl ToolInstallationService {
             directory_manager,
             tool_run_manager,
             tool_connection_processing_manager,
+            config_service,
+            installed_agent_publisher,
         }
     }
 
@@ -238,6 +246,24 @@ impl ToolInstallationService {
         self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
             .await
             .context("Failed to process tool connection after installation")?;
+
+        // Publish installed agent message
+        info!("Publishing installed agent message for tool: {}", tool_agent_id);
+        match self.config_service.get_machine_id().await {
+            Ok(machine_id) => {
+                if let Err(e) = self.installed_agent_publisher
+                    .publish(machine_id, tool_agent_id.clone(), version_clone.clone())
+                    .await
+                {
+                    warn!("Failed to publish installed agent message for {}: {:#}", tool_agent_id, e);
+                    // Don't fail installation if publishing fails
+                }
+            }
+            Err(e) => {
+                warn!("Failed to get machine_id for installed agent message: {:#}", e);
+                // Don't fail installation if publishing fails
+            }
+        }
 
         Ok(())
     }

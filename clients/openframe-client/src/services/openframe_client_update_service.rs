@@ -4,6 +4,8 @@ use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage
 use crate::models::openframe_client_info::ClientUpdateStatus;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::github_download_service::GithubDownloadService;
+use crate::services::InstalledAgentMessagePublisher;
+use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::platform::DirectoryManager;
 use std::path::PathBuf;
 use std::process;
@@ -113,6 +115,8 @@ pub struct OpenFrameClientUpdateService {
     directory_manager: DirectoryManager,
     client_info_service: OpenFrameClientInfoService,
     github_download_service: GithubDownloadService,
+    config_service: AgentConfigurationService,
+    installed_agent_publisher: InstalledAgentMessagePublisher,
 }
 
 impl OpenFrameClientUpdateService {
@@ -120,11 +124,15 @@ impl OpenFrameClientUpdateService {
         directory_manager: DirectoryManager, 
         client_info_service: OpenFrameClientInfoService,
         github_download_service: GithubDownloadService,
+        config_service: AgentConfigurationService,
+        installed_agent_publisher: InstalledAgentMessagePublisher,
     ) -> Self {
         Self {
             directory_manager,
             client_info_service,
             github_download_service,
+            config_service,
+            installed_agent_publisher,
         }
     }
 
@@ -179,7 +187,25 @@ impl OpenFrameClientUpdateService {
             self.launch_unix_updater(archive_path).await?;
         }
         
-        // 5. Update will happen in separate process, current process exits
+        // 5. Publish installed agent message before exiting
+        info!("Publishing installed agent message for openframe-client update to version: {}", requested_version);
+        match self.config_service.get_machine_id().await {
+            Ok(machine_id) => {
+                if let Err(e) = self.installed_agent_publisher
+                    .publish(machine_id, "openframe-client".to_string(), requested_version.to_string())
+                    .await
+                {
+                    warn!("Failed to publish installed agent message for openframe-client: {:#}", e);
+                    // Don't fail update if publishing fails
+                }
+            }
+            Err(e) => {
+                warn!("Failed to get machine_id for installed agent message: {:#}", e);
+                // Don't fail update if publishing fails
+            }
+        }
+        
+        // 6. Update will happen in separate process, current process exits
         info!("Update process launched, current service will stop");
         
         // Note: We don't update client_info_service here because the updater script
