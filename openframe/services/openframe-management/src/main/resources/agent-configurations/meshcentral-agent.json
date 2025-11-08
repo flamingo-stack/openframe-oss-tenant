@@ -13,6 +13,11 @@
   "agentToolIdCommandArgs": [
     "-nodeid-base64"
   ],
+  "downloadConfiguration": {
+    "os": null,
+    "linkTemplate": null,
+    "fileName": null
+  },
   "assets": [
     {
       "id": "meshcentral-core-module",

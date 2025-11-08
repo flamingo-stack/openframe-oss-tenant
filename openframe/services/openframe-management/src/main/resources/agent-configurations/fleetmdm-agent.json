@@ -19,6 +19,11 @@
     "--openframe-mode",
     "--openframe-osquery-path", "${client.assetPath.osqueryd}"
   ],
+  "downloadConfiguration": {
+    "os": null,
+    "linkTemplate": null,
+    "fileName": null
+  },
   "assets": [
     {
       "id": "osqueryd",

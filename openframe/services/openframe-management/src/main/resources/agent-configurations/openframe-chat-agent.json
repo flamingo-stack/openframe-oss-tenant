@@ -8,6 +8,11 @@
     "--openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
   ],
-  "agentToolIdCommandArgs": []
+  "agentToolIdCommandArgs": [],
+  "downloadConfiguration": {
+    "os": null,
+    "linkTemplate": null,
+    "fileName": null
+  }
 }
 

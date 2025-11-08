@@ -38,5 +38,10 @@
     "--openframe-mode",
     "-openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
-  ]
+  ],
+  "downloadConfiguration": {
+    "os": null,
+    "linkTemplate": null,
+    "fileName": null
+  }
 }
