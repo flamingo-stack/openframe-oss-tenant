@@ -18,13 +18,13 @@ impl GithubDownloadService {
     /// Downloads and extracts agent binary from the given download configuration
     /// Returns the binary bytes ready to be written to disk
     pub async fn download_and_extract(&self, config: &DownloadConfiguration) -> Result<Bytes> {
-        info!("📥 Downloading from: {}", config.link);
+        info!("Downloading from: {}", config.link);
         
         // Download the archive
         let archive_bytes = self.download(&config.link).await
             .with_context(|| format!("Failed to download from: {}", config.link))?;
         
-        info!("✅ Downloaded {} bytes", archive_bytes.len());
+        info!("Downloaded {} bytes", archive_bytes.len());
         
         // Extract based on file extension
         let binary_bytes = if config.file_name.ends_with(".zip") {
@@ -37,7 +37,7 @@ impl GithubDownloadService {
             return Err(anyhow!("Unsupported archive format: {}", config.file_name));
         };
         
-        info!("✅ Extracted binary: {} ({} bytes)", config.agent_file_name, binary_bytes.len());
+        info!("Extracted binary: {} ({} bytes)", config.agent_file_name, binary_bytes.len());
         
         Ok(binary_bytes)
     }

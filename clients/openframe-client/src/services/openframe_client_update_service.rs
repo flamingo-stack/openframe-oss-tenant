@@ -18,13 +18,13 @@ param(
     [string]$TargetExe
 )
 
-Write-Host "🔄 OpenFrame Updater started"
-Write-Host "📦 Archive: $ArchivePath"
-Write-Host "🎯 Target: $TargetExe"
+Write-Host "OpenFrame Updater started"
+Write-Host "Archive: $ArchivePath"
+Write-Host "Target: $TargetExe"
 
 try {
     # 1. Stop the service
-    Write-Host "🛑 Stopping service: $ServiceName"
+    Write-Host "Stopping service: $ServiceName"
     Stop-Service -Name $ServiceName -Force -ErrorAction Stop
     Start-Sleep -Seconds 2
 
@@ -37,20 +37,20 @@ try {
     }
 
     if ($elapsed -ge $timeout) {
-        Write-Host "❌ Service did not stop in time"
+        Write-Host "ERROR: Service did not stop in time"
         exit 1
     }
 
-    Write-Host "✅ Service stopped"
+    Write-Host "Service stopped"
     Start-Sleep -Seconds 1
 
     # 3. Create backup
     $BackupPath = "$TargetExe.backup"
-    Write-Host "💾 Creating backup: $BackupPath"
+    Write-Host "Creating backup: $BackupPath"
     Copy-Item -Path $TargetExe -Destination $BackupPath -Force
 
     # 4. Extract archive
-    Write-Host "📂 Extracting archive..."
+    Write-Host "Extracting archive..."
     $TempExtract = Join-Path $env:TEMP "openframe-update-$(New-Guid)"
     Expand-Archive -Path $ArchivePath -DestinationPath $TempExtract -Force
 
@@ -58,18 +58,18 @@ try {
     $NewExe = Get-ChildItem -Path $TempExtract -Filter "*.exe" -Recurse | Select-Object -First 1
 
     if (-not $NewExe) {
-        Write-Host "❌ No executable found in archive"
+        Write-Host "ERROR: No executable found in archive"
         throw "No executable found in archive"
     }
 
-    Write-Host "📄 Found executable: $($NewExe.FullName)"
+    Write-Host "Found executable: $($NewExe.FullName)"
 
     # 6. Replace binary
-    Write-Host "🔄 Replacing binary..."
+    Write-Host "Replacing binary..."
     Copy-Item -Path $NewExe.FullName -Destination $TargetExe -Force
 
     # 7. Start service
-    Write-Host "▶️ Starting service: $ServiceName"
+    Write-Host "Starting service: $ServiceName"
     Start-Service -Name $ServiceName -ErrorAction Stop
 
     # 8. Verify service started
@@ -77,29 +77,29 @@ try {
     $service = Get-Service -Name $ServiceName -ErrorAction Stop
 
     if ($service.Status -ne 'Running') {
-        Write-Host "❌ Service failed to start! Rolling back..."
+        Write-Host "ERROR: Service failed to start! Rolling back..."
         Copy-Item -Path $BackupPath -Destination $TargetExe -Force
         Start-Service -Name $ServiceName -ErrorAction Stop
         throw "Service failed to start after update"
     }
 
-    Write-Host "✅ Service started successfully"
+    Write-Host "Service started successfully"
 
     # 9. Cleanup
-    Write-Host "🧹 Cleaning up..."
+    Write-Host "Cleaning up..."
     Remove-Item -Path $ArchivePath -Force -ErrorAction SilentlyContinue
     Remove-Item -Path $TempExtract -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path $BackupPath -Force -ErrorAction SilentlyContinue
 
-    Write-Host "✅ Update complete!"
+    Write-Host "Update complete!"
     exit 0
 }
 catch {
-    Write-Host "❌ Update failed: $_"
+    Write-Host "ERROR: Update failed: $_"
     
     # Attempt rollback if backup exists
     if (Test-Path $BackupPath) {
-        Write-Host "🔙 Attempting rollback..."
+        Write-Host "Attempting rollback..."
         Copy-Item -Path $BackupPath -Destination $TargetExe -Force -ErrorAction SilentlyContinue
         Start-Service -Name $ServiceName -ErrorAction SilentlyContinue
     }
@@ -131,11 +131,11 @@ impl OpenFrameClientUpdateService {
     // TODO: add version timestamp and process race conditions
     pub async fn process_update(&self, message: OpenFrameClientUpdateMessage) -> Result<()> {
         let requested_version = message.version.trim();
-        info!("📩 Received update request for version: {}", requested_version);
+        info!("Received update request for version: {}", requested_version);
         
         // Validate version format
         if !Self::is_valid_version(requested_version) {
-            error!("⚠️ Invalid version format: {}", requested_version);
+            error!("Invalid version format: {}", requested_version);
             return Err(anyhow!("Invalid version format: {}", requested_version));
         }
         
@@ -145,13 +145,13 @@ impl OpenFrameClientUpdateService {
             .await
             .context("Failed to set update status")?;
         
-        info!("🧩 Starting update to version {}", requested_version);
+        info!("Starting update to version {}", requested_version);
         
         // 1. Find the appropriate download configuration for current OS
         let download_config = GithubDownloadService::find_config_for_current_os(&message.download_configurations)
             .context("Failed to find download configuration for current OS")?;
         
-        info!("📋 Using download configuration for OS: {}", download_config.os);
+        info!("Using download configuration for OS: {}", download_config.os);
         
         // 2. Download and extract binary using GithubDownloadService
         let binary_bytes = self.github_download_service
@@ -159,14 +159,14 @@ impl OpenFrameClientUpdateService {
             .await
             .context("Failed to download and extract update")?;
         
-        info!("✅ Binary downloaded and extracted ({} bytes)", binary_bytes.len());
+        info!("Binary downloaded and extracted ({} bytes)", binary_bytes.len());
         
         // 3. Save binary to a temp archive for the updater
         // Note: The updater expects a ZIP, so we create one with the binary
         let archive_path = self.create_temp_archive(&binary_bytes, &download_config.agent_file_name).await
             .context("Failed to create temporary archive")?;
         
-        info!("✅ Temporary archive created: {}", archive_path.display());
+        info!("Temporary archive created: {}", archive_path.display());
         
         // 4. Launch update process (Windows: PowerShell, Unix: shell script)
         #[cfg(windows)]
@@ -180,7 +180,7 @@ impl OpenFrameClientUpdateService {
         }
         
         // 5. Update will happen in separate process, current process exits
-        info!("🚀 Update process launched, current service will stop");
+        info!("Update process launched, current service will stop");
         
         // Note: We don't update client_info_service here because the updater script
         // will restart the service with the new version
@@ -230,7 +230,7 @@ impl OpenFrameClientUpdateService {
     /// Launch PowerShell updater script on Windows
     #[cfg(windows)]
     async fn launch_windows_updater(&self, archive_path: PathBuf) -> Result<()> {
-        info!("🪟 Launching Windows PowerShell updater");
+        info!("Launching Windows PowerShell updater");
         
         // Save PowerShell script to temp file
         let script_path = std::env::temp_dir().join(format!(
@@ -241,7 +241,7 @@ impl OpenFrameClientUpdateService {
         tokio::fs::write(&script_path, UPDATE_SCRIPT).await
             .context("Failed to write PowerShell script")?;
         
-        info!("📝 PowerShell script saved to: {}", script_path.display());
+        info!("PowerShell script saved to: {}", script_path.display());
         
         // Get current executable path
         let current_exe = std::env::current_exe()
@@ -262,7 +262,7 @@ impl OpenFrameClientUpdateService {
             .spawn()
             .context("Failed to spawn PowerShell updater")?;
         
-        info!("✅ PowerShell updater launched (PID: {})", child.id());
+        info!("PowerShell updater launched (PID: {})", child.id());
         
         Ok(())
     }
@@ -270,7 +270,7 @@ impl OpenFrameClientUpdateService {
     /// Launch shell script updater on Unix systems
     #[cfg(unix)]
     async fn launch_unix_updater(&self, archive_path: PathBuf) -> Result<()> {
-        info!("🐧 Launching Unix shell updater");
+        info!("Launching Unix shell updater");
         
         // TODO: Implement Unix updater with shell script or binary copy
         // For now, return error as not implemented
