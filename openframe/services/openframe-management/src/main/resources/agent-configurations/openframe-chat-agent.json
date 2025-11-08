@@ -9,10 +9,17 @@
     "--openframe-token-path", "${client.openframeTokenPath}"
   ],
   "agentToolIdCommandArgs": [],
-  "downloadConfiguration": {
-    "os": null,
-    "linkTemplate": null,
-    "fileName": null
-  }
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/openframe/openframe-chat/releases/download/v{version}/openframe-chat-windows-{version}.exe",
+      "fileName": "openframe-chat-windows-{version}.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/openframe/openframe-chat/releases/download/v{version}/openframe-chat-macos-{version}.dmg",
+      "fileName": "openframe-chat-macos-{version}.dmg"
+    }
+  ]
 }
 

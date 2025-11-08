@@ -13,11 +13,18 @@
   "agentToolIdCommandArgs": [
     "-nodeid-base64"
   ],
-  "downloadConfiguration": {
-    "os": null,
-    "linkTemplate": null,
-    "fileName": null
-  },
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/Ylianst/MeshAgent/releases/download/v{version}/meshagent-windows-{version}.exe",
+      "fileName": "meshagent-windows-{version}.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/Ylianst/MeshAgent/releases/download/v{version}/meshagent-macos-{version}",
+      "fileName": "meshagent-macos-{version}"
+    }
+  ],
   "assets": [
     {
       "id": "meshcentral-core-module",

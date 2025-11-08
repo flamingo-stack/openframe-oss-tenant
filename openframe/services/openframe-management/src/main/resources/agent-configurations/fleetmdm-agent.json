@@ -19,11 +19,18 @@
     "--openframe-mode",
     "--openframe-osquery-path", "${client.assetPath.osqueryd}"
   ],
-  "downloadConfiguration": {
-    "os": null,
-    "linkTemplate": null,
-    "fileName": null
-  },
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/fleetdm/fleet/releases/download/fleet-v{version}/orbit-windows-{version}.msi",
+      "fileName": "orbit-windows-{version}.msi"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/fleetdm/fleet/releases/download/fleet-v{version}/orbit-macos-{version}.pkg",
+      "fileName": "orbit-macos-{version}.pkg"
+    }
+  ],
   "assets": [
     {
       "id": "osqueryd",

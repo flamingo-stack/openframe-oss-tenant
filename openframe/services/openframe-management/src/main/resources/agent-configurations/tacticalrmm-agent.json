@@ -39,9 +39,16 @@
     "-openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
   ],
-  "downloadConfiguration": {
-    "os": null,
-    "linkTemplate": null,
-    "fileName": null
-  }
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/amidaware/rmmagent/releases/download/v{version}/winagent-v{version}.exe",
+      "fileName": "winagent-v{version}.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/amidaware/rmmagent/releases/download/v{version}/tacticalagent-v{version}.pkg",
+      "fileName": "tacticalagent-v{version}.pkg"
+    }
+  ]
 }
