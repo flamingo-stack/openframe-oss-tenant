@@ -43,12 +43,14 @@
     {
       "os": "windows",
       "linkTemplate": "https://github.com/flamingo-stack/rmmagent/releases/download/{version}/rmmagent-windows-amd64.zip",
-      "fileName": "rmmagent-windows-amd64.zip"
+      "fileName": "rmmagent-windows-amd64.zip",
+      "agentFileName": "rmmagent.exe"
     },
     {
       "os": "macos",
       "linkTemplate": "https://github.com/flamingo-stack/rmmagent/releases/download/{version}/rmmagent-macos-universal.tar.gz",
-      "fileName": "rmmagent-macos-universal.tar.gz"
+      "fileName": "rmmagent-macos-universal.tar.gz",
+      "agentFileName": "rmmagent"
     }
   ]
 }

@@ -13,12 +13,14 @@
     {
       "os": "windows",
       "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-chat_windows.zip",
-      "fileName": "openframe-chat_windows.zip"
+      "fileName": "openframe-chat_windows.zip",
+      "agentFileName": "openframe-chat.exe"
     },
     {
       "os": "macos",
       "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-chat_macos.tar.gz",
-      "fileName": "openframe-chat_macos.tar.gz"
+      "fileName": "openframe-chat_macos.tar.gz",
+      "agentFileName": "openframe-chat"
     }
   ]
 }

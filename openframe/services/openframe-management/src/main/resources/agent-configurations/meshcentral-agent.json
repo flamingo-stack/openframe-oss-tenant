@@ -17,12 +17,14 @@
     {
       "os": "windows",
       "linkTemplate": "https://github.com/flamingo-stack/MeshAgent/releases/download/{version}/meshagent-windows-amd64.zip",
-      "fileName": "meshagent-windows-amd64.zip"
+      "fileName": "meshagent-windows-amd64.zip",
+      "agentFileName": "meshagent.exe"
     },
     {
       "os": "macos",
       "linkTemplate": "https://github.com/flamingo-stack/MeshAgent/releases/download/{version}/meshagent-macos-universal.tar.gz",
-      "fileName": "meshagent-macos-universal.tar.gz"
+      "fileName": "meshagent-macos-universal.tar.gz",
+      "agentFileName": "meshagent"
     }
   ],
   "assets": [
