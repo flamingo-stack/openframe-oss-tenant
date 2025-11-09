@@ -59,11 +59,10 @@ impl ToolInstallationMessageListener {
         info!("Start listening for tool installation messages");
         let mut messages = consumer.messages().await?;
         while let Some(message) = messages.next().await {
-            info!("Received tool installation message: {:?}", message);
-
             let message = message?;
-
             let payload = String::from_utf8_lossy(&message.payload);
+            info!("Received tool installation message: {:?}", payload);
+
             let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
             let tool_agent_id = tool_installation_message.tool_agent_id.clone();
 

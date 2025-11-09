@@ -30,6 +30,9 @@ public class OpenFrameClientConfigurationInitializer {
         ClassPathResource resource = new ClassPathResource(CONFIG_FILE);
         OpenFrameClientConfiguration newConfiguration = objectMapper.readValue(resource.getInputStream(), OpenFrameClientConfiguration.class);
         
+        // Set the default ID
+        newConfiguration.setId(DEFAULT_ID);
+        
         clientConfigurationService.findById(DEFAULT_ID)
             .ifPresentOrElse(
                 existingConfiguration ->
