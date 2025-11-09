@@ -1,7 +1,7 @@
 {
   "id": "fleetmdm-agent",
   "toolId": "fleetmdm-server",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "status": "ENABLED",
   "sessionType": "SERVICE",
   "runCommandArgs": [
