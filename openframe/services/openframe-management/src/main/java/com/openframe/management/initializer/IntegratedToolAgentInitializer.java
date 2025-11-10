@@ -3,14 +3,13 @@ package com.openframe.management.initializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.document.toolagent.IntegratedToolAgent;
 import com.openframe.data.service.IntegratedToolAgentService;
-import com.openframe.management.service.ToolAgentUpdatePublisher;
+import com.openframe.data.service.ToolAgentUpdateUpdatePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public class IntegratedToolAgentInitializer {
 
     private final ObjectMapper objectMapper;
     private final IntegratedToolAgentService integratedToolAgentService;
-    private final ToolAgentUpdatePublisher toolAgentUpdatePublisher;
+    private final ToolAgentUpdateUpdatePublisher toolAgentUpdatePublisher;
 
     private static final List<String> AGENT_CONFIGURATION_FILE_PATHS = Arrays.asList(
             "agent-configurations/fleetmdm-agent.json",
