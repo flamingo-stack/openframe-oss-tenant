@@ -1,7 +1,7 @@
 {
   "id": "tacticalrmm-agent",
   "toolId": "tactical-rmm",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "status": "ENABLED",
   "sessionType": "SERVICE",
   "installationCommandArgs": [
@@ -38,5 +38,19 @@
     "--openframe-mode",
     "-openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
+  ],
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/flamingo-stack/rmmagent/releases/download/{version}/rmmagent-windows-amd64.zip",
+      "fileName": "rmmagent-windows-amd64.zip",
+      "agentFileName": "rmmagent.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/flamingo-stack/rmmagent/releases/download/{version}/rmmagent-macos-universal.tar.gz",
+      "fileName": "rmmagent-macos-universal.tar.gz",
+      "agentFileName": "rmmagent"
+    }
   ]
 }

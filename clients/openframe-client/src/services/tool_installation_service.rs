@@ -5,6 +5,9 @@ use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
 use crate::services::InstalledToolsService;
+use crate::services::GithubDownloadService;
+use crate::services::InstalledAgentMessagePublisher;
+use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
@@ -22,6 +25,7 @@ use std::os::unix::fs::PermissionsExt;
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
+    github_download_service: GithubDownloadService,
     tool_agent_file_client: ToolAgentFileClient,
     tool_api_client: ToolApiClient,
     command_params_resolver: ToolCommandParamsResolver,
@@ -30,10 +34,13 @@ pub struct ToolInstallationService {
     directory_manager: DirectoryManager,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
+    config_service: AgentConfigurationService,
+    installed_agent_publisher: InstalledAgentMessagePublisher,
 }
 
 impl ToolInstallationService {
     pub fn new(
+        github_download_service: GithubDownloadService,
         tool_agent_file_client: ToolAgentFileClient,
         tool_api_client: ToolApiClient,
         command_params_resolver: ToolCommandParamsResolver,
@@ -42,6 +49,8 @@ impl ToolInstallationService {
         directory_manager: DirectoryManager,
         tool_run_manager: ToolRunManager,
         tool_connection_processing_manager: ToolConnectionProcessingManager,
+        config_service: AgentConfigurationService,
+        installed_agent_publisher: InstalledAgentMessagePublisher,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -50,6 +59,7 @@ impl ToolInstallationService {
             .unwrap();
 
         Self {
+            github_download_service,
             tool_agent_file_client,
             tool_api_client,
             command_params_resolver,
@@ -58,6 +68,8 @@ impl ToolInstallationService {
             directory_manager,
             tool_run_manager,
             tool_connection_processing_manager,
+            config_service,
+            installed_agent_publisher,
         }
     }
 
@@ -91,11 +103,25 @@ impl ToolInstallationService {
             info!("Agent file for tool {} already exists at {}, skipping download", 
                   tool_agent_id, file_path.display());
         } else {
-            // Download and save main tool agent file
-            let tool_agent_file_bytes = self
-                .tool_agent_file_client
-                .get_tool_agent_file(tool_agent_id.clone())
-                .await?;
+            // Download main tool agent file
+            let tool_agent_file_bytes = if let Some(ref download_configs) = tool_installation_message.download_configurations {
+                // Use GithubDownloadService with download configurations
+                info!("Using download configurations to download tool agent");
+                let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
+                    .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
+                
+                self.github_download_service
+                    .download_and_extract(download_config)
+                    .await
+                    .with_context(|| format!("Failed to download and extract tool agent for: {}", tool_agent_id))?
+            } else {
+                // Fall back to legacy method (Artifactory)
+                info!("Using legacy method to download tool agent");
+                self.tool_agent_file_client
+                    .get_tool_agent_file(tool_agent_id.clone())
+                    .await
+                    .with_context(|| format!("Failed to download tool agent file for: {}", tool_agent_id))?
+            };
 
             // Save directly and set permissions (always executable)
             File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
@@ -199,7 +225,7 @@ impl ToolInstallationService {
             tool_agent_id: tool_agent_id.clone(),
             tool_id: tool_installation_message.tool_id.clone(),
             tool_type: tool_installation_message.tool_type.clone(),
-            version: version_clone,
+            version: version_clone.clone(),
             session_type: tool_installation_message.session_type.clone().unwrap_or(crate::models::SessionType::Service),
             run_command_args: run_args_clone,
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
@@ -220,6 +246,24 @@ impl ToolInstallationService {
         self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
             .await
             .context("Failed to process tool connection after installation")?;
+
+        // Publish installed agent message
+        info!("Publishing installed agent message for tool: {}", tool_agent_id);
+        match self.config_service.get_machine_id().await {
+            Ok(machine_id) => {
+                if let Err(e) = self.installed_agent_publisher
+                    .publish(machine_id, tool_agent_id.clone(), version_clone.clone())
+                    .await
+                {
+                    warn!("Failed to publish installed agent message for {}: {:#}", tool_agent_id, e);
+                    // Don't fail installation if publishing fails
+                }
+            }
+            Err(e) => {
+                warn!("Failed to get machine_id for installed agent message: {:#}", e);
+                // Don't fail installation if publishing fails
+            }
+        }
 
         Ok(())
     }

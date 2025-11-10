@@ -1,4 +1,18 @@
 {
   "id": "default",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-client_windows.zip",
+      "fileName": "openframe-client_windows.zip",
+      "agentFileName": "openframe-client.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-client_macos.tar.gz",
+      "fileName": "openframe-client_macos.tar.gz",
+      "agentFileName": "openframe-client"
+    }
+  ]
 }
