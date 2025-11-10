@@ -3,15 +3,15 @@ kind: ConfigMap
 metadata:
   name: openframe-config
 data:
-  SPRING_PROFILES_ACTIVE: "k8s"
+  SPRING_PROFILES_ACTIVE: "{{ .Values.deployment.oss.repository.profile }}"
 
   # OSS Environment Variables
-  CONFIG_GIT_REPO_0: "{{ .Values.deployment.oss.config.repoName }}"
-  CONFIG_GIT_BRANCH_0: "{{ .Values.deployment.oss.config.branch }}"
+  CONFIG_GIT_REPO_0: "{{ .Values.deployment.oss.repository.repoName }}"
+  CONFIG_GIT_BRANCH_0: "{{ .Values.deployment.oss.repository.branch }}"
 
   # Additional SaaS Environment Variables
   {{- if .Values.deployment.saas.enabled }}
-  CONFIG_GIT_REPO_1: "{{ .Values.deployment.saas.config.repoName }}"
-  CONFIG_GIT_BRANCH_1: "{{ .Values.deployment.saas.config.branch }}"
-  GITHUB_PASSWORD: "{{ .Values.deployment.saas.config.password }}"
+  CONFIG_GIT_REPO_1: "{{ .Values.deployment.saas.repository.repoName }}"
+  CONFIG_GIT_BRANCH_1: "{{ .Values.deployment.saas.repository.branch }}"
+  GITHUB_PASSWORD: "{{ .Values.deployment.saas.repository.password }}"
   {{- end }}

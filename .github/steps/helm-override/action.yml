@@ -113,10 +113,9 @@ runs:
         BRANCH_NAME: '${{ inputs.branch-name }}'
       run: |
         set -euo pipefail
-        yq eval ".deployment.saas.repository.password = \"$GITHUB_TOKEN\"" -i "$HELM_VALUES_FILE"
-        yq eval ".deployment.saas.repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
-        yq eval ".deployment.saas.config.password = \"$SAAS_CONFIG_TOKEN\"" -i "$HELM_VALUES_FILE"
-        echo "Updated deployment.saas.repository.branch to: $BRANCH_NAME"
+        yq eval ".deployment.oss.repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
+        yq eval ".deployment.saas.repository.password = \"$SAAS_CONFIG_TOKEN\"" -i "$HELM_VALUES_FILE"
+        echo "Updated deployment.oss.repository.branch to: $BRANCH_NAME"
 
     - name: Override registry
       shell: bash

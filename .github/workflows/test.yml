@@ -24,6 +24,7 @@ on:
       - '.github/**'
       - 'manifests/**'
       - 'clients/**'
+      - 'configs/**'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}

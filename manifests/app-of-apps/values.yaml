@@ -16,11 +16,11 @@ deployment:
       baseDir: manifests
       appsDir: apps
       URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
+      repoName: openframe-oss-tenant
       branch: main
-      autoSync: true
-    config:
-      repoName: openframe-oss-tenant-cfg
-      branch: main
+      profile: k8s
+      autoSync: true      
+      
   saas:
     enabled: false
     # Ingress configuration for SaaS deployment
@@ -40,13 +40,11 @@ deployment:
       baseDir: manifests
       appsDir: apps
       URL: https://github.com/flamingo-stack/openframe-saas-tenant.git
+      repoName: openframe-saas-tenant
       branch: main
+      password: ""  # GitHub PAT for private repo access      
+      profile: k8s
       autoSync: true
-      password: ""  # GitHub PAT for private repo access
-    config:
-      repoName: openframe-saas-tenant-cfg
-      branch: main
-      password: ""  # GitHub Token for private config repo access
   
 registry:
   docker:
