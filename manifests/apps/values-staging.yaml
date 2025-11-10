@@ -1,4 +1,4 @@
-environment: qa
+environment: staging
 
 apps:
   openframe-config:
