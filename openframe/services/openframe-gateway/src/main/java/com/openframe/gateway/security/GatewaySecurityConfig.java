@@ -42,7 +42,6 @@ public class GatewaySecurityConfig {
 
     private static final String ADMIN = "ADMIN";
     private static final String AGENT = "AGENT";
-    private static final String CHAT_ENDPOINT_PATH = "/chat";
 
     @Bean
     public ReactiveJwtAuthenticationConverter reactiveJwtAuthenticationConverter() {
