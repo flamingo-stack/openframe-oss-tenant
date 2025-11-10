@@ -46,6 +46,13 @@ public class NatsStreamConfigurationInitializer {
                     .subjects(List.of("machine.*.tool-connection"))
                     .storageType(StorageType.File)
                     .retentionPolicy(RetentionPolicy.Limits)
+                    .build(),
+            // installed agent stream
+            StreamConfiguration.builder()
+                    .name("INSTALLED_AGENTS")
+                    .subjects(List.of("machine.*.installed-agent"))
+                    .storageType(StorageType.File)
+                    .retentionPolicy(RetentionPolicy.Limits)
                     .build()
     );
 

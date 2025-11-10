@@ -446,13 +446,18 @@ impl ToolRunManager {
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
+        #[cfg(windows)]
+        let running_tools = self.running_tools.clone();
+
         let params_processor = self.params_processor.clone();
-        tokio::spawn(async move {
-            loop {
-                // exchange args placeholders to real values
-                let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
-                    Ok(args) => args,
-                    Err(e) => {
+        tokio::spawn({
+
+            async move {
+                loop {
+                    // exchange args placeholders to real values
+                    let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
+                        Ok(args) => args,
+                        Err(e) => {
                         error!("Failed to resolve tool {} run command args: {:#}", tool.tool_agent_id, e);
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
@@ -512,42 +517,12 @@ impl ToolRunManager {
                             }
                         }
                         SessionType::Console => {
-                            info!("Launching {} in CONSOLE session (console application)", tool.tool_agent_id);
-                            match launch_process_in_console_session(&command_path, &processed_args) {
-                                Ok((pid, process_handle)) => {
-                                    info!("{} launched successfully in CONSOLE session with PID: {}", tool.tool_agent_id, pid);
-                                    
-                                    // Wait for process to exit in blocking thread to avoid blocking async runtime
-                                    let exit_code = tokio::task::spawn_blocking(move || {
-                                        use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE};
-                                        
-                                        unsafe {
-                                            let _ = WaitForSingleObject(process_handle, INFINITE);
-                                            
-                                            // Get exit code
-                                            let mut exit_code: u32 = 0;
-                                            let _ = GetExitCodeProcess(process_handle, &mut exit_code);
-                                            let _ = CloseHandle(process_handle);
-                                            
-                                            exit_code
-                                        }
-                                    }).await.unwrap_or(1);
-                                    
-                                    warn!(tool_id = %tool.tool_agent_id,
-                                          "{} process exited with code {} - restarting in {} seconds",
-                                          tool.tool_agent_id, exit_code, RETRY_DELAY_SECONDS);
-                                    
-                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                    continue;
-                                }
-                                Err(e) => {
-                                    error!(tool_id = %tool.tool_agent_id, error = %e,
-                                           "Failed to launch {} in CONSOLE session - retrying in {} seconds", 
-                                           tool.tool_agent_id, RETRY_DELAY_SECONDS);
-                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                    continue;
-                                }
-                            }
+                            // Temporarily skipping console mode since in this mode only the mesh agent runs,
+                            // which is now installed separately as a service.
+                            info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
+                            let mut set = running_tools.write().await;
+                            set.remove(&tool.tool_agent_id);
+                            return;
                         }
                         SessionType::Service => {
                             info!("Launching {} as SERVICE (standard spawn)", tool.tool_agent_id);
@@ -621,6 +596,7 @@ impl ToolRunManager {
                                "Failed to wait for tool process - restarting in {} seconds: {:#}", RETRY_DELAY_SECONDS, e);
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                     }
+                }
                 }
             }
         });

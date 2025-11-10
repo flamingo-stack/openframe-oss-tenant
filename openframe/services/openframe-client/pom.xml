@@ -13,38 +13,13 @@
 
     <artifactId>openframe-client</artifactId>
     <name>OpenFrame Client Service</name>
+    <description>Client service for OpenFrame platform</description>
 
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data-mongo</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data-kafka</artifactId>
+            <artifactId>openframe-client-core</artifactId>
             <version>${openframe.libs.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-security-core</artifactId>
-        </dependency>
-        <!-- OpenFrame SDKs -->
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>tacticalrmm</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>fleetmdm</artifactId>
-        </dependency>
-        <!-- Spring Boot starters with Jackson excluded -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <!-- Spring Cloud -->
@@ -53,23 +28,19 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
-        <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- WebSocket -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
-        </dependency>
-
-        <!-- Spring AOP for repository event interception -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project> 

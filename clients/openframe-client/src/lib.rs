@@ -36,6 +36,7 @@ use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolUrlParamsResolver, ToolKillService, ToolRunManager, ToolConnectionProcessingManager};
 use crate::services::InstalledToolsService;
+use crate::services::github_download_service::GithubDownloadService;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
 use crate::services::device_data_fetcher::DeviceDataFetcher;
@@ -51,6 +52,7 @@ use crate::services::tool_agent_update_service::ToolAgentUpdateService;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
+use crate::services::installed_agent_message_publisher::InstalledAgentMessagePublisher;
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
@@ -249,6 +251,9 @@ impl Client {
         // Initialize NATS message publisher
         let nats_message_publisher = NatsMessagePublisher::new(nats_connection_manager.clone());
 
+        // Initialize installed agent message publisher
+        let installed_agent_message_publisher = InstalledAgentMessagePublisher::new(nats_message_publisher.clone());
+
         // Initialize tool connection message publisher
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
@@ -277,8 +282,16 @@ impl Client {
             tool_connection_service.clone(),
         );
 
+        // Initialize OpenFrame client info service
+        let openframe_client_info_service = OpenFrameClientInfoService::new(directory_manager.clone())
+            .context("Failed to initialize OpenFrame client info service")?;
+
+        // Initialize GitHub download service (used by update and installation services)
+        let github_download_service = GithubDownloadService::new(http_client.clone());
+
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
+            github_download_service.clone(),
             tool_agent_file_client.clone(),
             tool_api_client,
             tool_command_params_resolver.clone(),
@@ -287,24 +300,28 @@ impl Client {
             directory_manager.clone(),
             tool_run_manager.clone(),
             tool_connection_processing_manager.clone(),
+            config_service.clone(),
+            installed_agent_message_publisher.clone(),
         );
-
-        // Initialize OpenFrame client info service
-        let openframe_client_info_service = OpenFrameClientInfoService::new(directory_manager.clone())
-            .context("Failed to initialize OpenFrame client info service")?;
-
+        
         // Initialize OpenFrame client update service
         let openframe_client_update_service = OpenFrameClientUpdateService::new(
             directory_manager.clone(),
-            openframe_client_info_service.clone()
+            openframe_client_info_service.clone(),
+            github_download_service.clone(),
+            config_service.clone(),
+            installed_agent_message_publisher.clone(),
         );
 
         // Initialize tool agent update service
         let tool_agent_update_service = ToolAgentUpdateService::new(
+            github_download_service.clone(),
             tool_agent_file_client.clone(),
             installed_tools_service.clone(),
             tool_kill_service.clone(),
-            directory_manager.clone()
+            directory_manager.clone(),
+            config_service.clone(),
+            installed_agent_message_publisher.clone(),
         );
 
         // Initialize tool installation message listener
