@@ -8,7 +8,9 @@ import { ScriptsTable } from './components/scripts-table'
 export default function Scripts() {
   return (
     <AppLayout>
-      <ScriptsTable/>
+      <div className="h-full flex flex-col space-y-6">
+        <ScriptsTable/>
+      </div>
     </AppLayout>
   )
 }

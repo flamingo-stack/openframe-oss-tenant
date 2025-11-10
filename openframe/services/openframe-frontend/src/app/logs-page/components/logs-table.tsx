@@ -385,18 +385,27 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
           </h3>
         </div>
 
-        <div className="flex gap-4 items-stretch">
+        <div className="flex gap-4 items-stretch h-[48px]">
           <div className="flex-1">
             <Input
               type="text"
               placeholder="Search logs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-12"
+              className="h-[48px] min-h-[48px] bg-ods-card border border-ods-border"
+              style={{ height: 48 }}
             />
           </div>
           <div className="flex-shrink-0">
-            {headerActions}
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              leftIcon={<RefreshIcon size={20} />}
+              className="h-[48px] min-h-[48px] whitespace-nowrap py-0 flex items-center"
+              style={{ height: 48 }}
+            >
+              Refresh
+            </Button>
           </div>
         </div>
 

@@ -1,17 +1,34 @@
 {
   "id": "meshcentral-agent",
   "toolId": "meshcentral-server",
-  "version": "1.0.0",
+  "version": "0.0.3",
   "status": "ENABLED",
   "sessionType": "CONSOLE",
-  "runCommandArgs": [
-    "connect",
+  "installationCommandArgs": [
+    "-install",
     "--openframe-mode",
-    "--openframe-secret", "${client.openframeSecret}",
-    "--openframe-token-path", "${client.openframeTokenPath}"
+    "--openframe-secret",
+    "${client.openframeSecret}",
+    "--openframe-token-path",
+    "${client.openframeTokenPath}"
   ],
+  "runCommandArgs": [],
   "agentToolIdCommandArgs": [
     "-nodeid-base64"
+  ],
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/flamingo-stack/MeshAgent/releases/download/{version}/meshagent-windows-amd64.zip",
+      "fileName": "meshagent-windows-amd64.zip",
+      "agentFileName": "meshagent.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/flamingo-stack/MeshAgent/releases/download/{version}/meshagent-macos-universal.tar.gz",
+      "fileName": "meshagent-macos-universal.tar.gz",
+      "agentFileName": "meshagent"
+    }
   ],
   "assets": [
     {

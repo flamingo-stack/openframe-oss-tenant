@@ -48,6 +48,7 @@ clap = { version = "4.5", features = ["derive", "env", "std", "cargo", "string"]
 whoami = "1.4"
 tracing-appender = "0.2"
 flate2 = "1.0"
+tar = "0.4"
 service-manager = "0.8"
 plist = "1.7.1"
 # System information collection dependencies
