@@ -1,4 +1,4 @@
-environment: staging
+environment: stage
 
 apps:
   openframe-config:
