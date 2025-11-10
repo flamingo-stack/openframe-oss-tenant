@@ -1,7 +1,7 @@
 {
   "id": "meshcentral-agent",
   "toolId": "meshcentral-server",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "status": "ENABLED",
   "sessionType": "CONSOLE",
   "installationCommandArgs": [
