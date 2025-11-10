@@ -2,6 +2,8 @@ use anyhow::{Context, Result, anyhow};
 use tracing::{info, warn, error};
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 use crate::models::openframe_client_info::ClientUpdateStatus;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::github_download_service::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabledManagers": ["maven"],
+  "labels": ["dependencies", "openframe-libs"],
+  "prConcurrentLimit": 3,
+  "prCreation": "immediate",
+  "rangeStrategy": "replace",
+  "semanticCommits": "enabled",
+  "timezone": "UTC",
+  "commitMessagePrefix": "chore(deps):",
+
+  "packageRules": [
+    {
+      "description": "Auto-merge updates for OpenFrame OSS libs property",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": ["^com\\.openframe\\.oss"],
+      "groupName": "openframe-libs",
+      "groupSlug": "openframe-libs",
+      "commitMessageTopic": "OpenFrame libs",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "automergeType": "pr",
+      "automergeStrategy": "squash",
+      "labels": ["dependencies", "openframe-libs"],
+      "prPriority": 10,
+      "enabled": true
+    },
+    {
+      "description": "Ignore parent POM, prevent lookup errors",
+      "matchPackageNames": ["com.openframe:openframe-parent"],
+      "enabled": false
+    },
+    {
+      "description": "Disable all other dependencies - only update openframe libs",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": ["*"],
+      "excludePackagePatterns": ["^com\\.openframe\\.oss"],
+      "enabled": false
+    }
+  ],
+
+  "maven": {
+    "enabled": true
+  },
+
+  "hostRules": [
+    {
+      "hostType": "maven",
+      "matchHost": "maven.pkg.github.com",
+      "description": "GitHub Packages Maven registry"
+    },
+    {
+      "hostType": "maven",
+      "matchHost": "maven.pkg.github.com/flamingo-stack/openframe-oss-lib",
+      "description": "Specific registry for com.openframe.oss artifacts"
+    }
+  ],
+
+  "registryAliases": {
+    "github-packages": "https://maven.pkg.github.com"
+  }
+}
