@@ -1,0 +1,21 @@
+# API service docker environment configuration
+spring:
+  oss-tenant:
+    enabled: false
+  saas:
+    enabled: false
+
+oauth:
+  client:
+    default:
+      id: openframe_web_dashboard
+      secret: prod_secret
+
+fleet:
+  api:
+    url: http://fleetmdm-server.integrated-tools.svc.cluster.local:8070
+
+openframe:
+  management:
+    url: http://openframe-management.microservices.svc.cluster.local:8095
+    key: ${OPENFRAME_MANAGEMENT_KEY:docker-management-key-123}
