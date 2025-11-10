@@ -58,11 +58,6 @@ func (v *ConfigurationValidator) validateSaaSConfiguration(values map[string]int
 		return fmt.Errorf("SaaS repository password must be configured in helm-values.yaml")
 	}
 
-	// Check SaaS config password
-	if !v.hasPassword(values, "saas", "config") {
-		return fmt.Errorf("SaaS config repository password must be configured in helm-values.yaml")
-	}
-
 	// Check GHCR credentials
 	if !v.hasGHCRCredentials(values) {
 		return fmt.Errorf("GHCR registry credentials must be configured in helm-values.yaml")

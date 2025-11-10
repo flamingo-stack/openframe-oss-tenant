@@ -82,10 +82,9 @@ func TestConfigurationWizard_ShowConfigurationSummary_WithSaaSConfig(t *testing.
 	config := &types.ChartConfiguration{
 		DeploymentMode: &deploymentMode,
 		SaaSConfig: &types.SaaSConfig{
-			RepositoryPassword:       "repo-pass",
-			ConfigRepositoryPassword: "config-pass",
-			SaaSBranch:               "main",
-			OSSBranch:                "develop",
+			RepositoryPassword: "repo-pass",
+			SaaSBranch:         "main",
+			OSSBranch:          "develop",
 		},
 		ModifiedSections: []string{"deployment", "saas"},
 		ExistingValues:   map[string]interface{}{},
