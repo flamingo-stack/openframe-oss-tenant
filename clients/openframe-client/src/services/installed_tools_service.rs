@@ -47,6 +47,20 @@ impl InstalledToolsService {
         Ok(tools)
     }
 
+    /// Delete an installed tool by its tool_agent_id
+    pub async fn delete_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<bool> {
+        let mut tools = self.get_all().await?;
+        let initial_len = tools.len();
+        tools.retain(|t| t.tool_agent_id != tool_agent_id);
+        
+        if tools.len() != initial_len {
+            self.persist(&tools).await?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
     async fn persist(&self, tools: &[InstalledTool]) -> Result<()> {
         let json = serde_json::to_string_pretty(tools)
             .context("Failed to serialize installed tools to JSON")?;

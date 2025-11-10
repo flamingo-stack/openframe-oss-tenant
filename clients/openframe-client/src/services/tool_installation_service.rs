@@ -15,6 +15,8 @@ use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolUrlParamsResolver;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::tool_connection_processing_manager::ToolConnectionProcessingManager;
+use crate::services::tool_kill_service::ToolKillService;
+use crate::services::tool_connection_service::ToolConnectionService;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
@@ -36,6 +38,8 @@ pub struct ToolInstallationService {
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     config_service: AgentConfigurationService,
     installed_agent_publisher: InstalledAgentMessagePublisher,
+    tool_kill_service: ToolKillService,
+    tool_connection_service: ToolConnectionService,
 }
 
 impl ToolInstallationService {
@@ -51,6 +55,7 @@ impl ToolInstallationService {
         tool_connection_processing_manager: ToolConnectionProcessingManager,
         config_service: AgentConfigurationService,
         installed_agent_publisher: InstalledAgentMessagePublisher,
+        tool_connection_service: ToolConnectionService,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -70,6 +75,8 @@ impl ToolInstallationService {
             tool_connection_processing_manager,
             config_service,
             installed_agent_publisher,
+            tool_kill_service: ToolKillService::new(),
+            tool_connection_service,
         }
     }
 
@@ -77,20 +84,43 @@ impl ToolInstallationService {
         let tool_agent_id = &tool_installation_message.tool_agent_id;
         info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
-        // Check if tool is already installed
-        if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
-            info!("Tool {} is already installed with version {}, skipping installation", 
-                  tool_agent_id, installed_tool.version);
-            return Ok(());
-        }
-
         let version_clone = tool_installation_message.version.clone();
         let run_args_clone = tool_installation_message.run_command_args.clone();
-
+        let reinstall = tool_installation_message.reinstall.clone();
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
         let tool_folder_path = base_folder_path.join(tool_agent_id);
         
+        // Check if tool is already installed and reinstall is requested
+        if reinstall {
+            info!("Reinstalling tool {} with version {}", tool_agent_id, version_clone);
+            
+            if let Some(_installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
+                // Stop the tool process if it's running
+                info!("Stopping existing tool process for {}", tool_agent_id);
+                if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+                    warn!("Failed to stop tool process: {:#}", e);
+                    // Continue with uninstallation even if process kill fails
+                }
+            }
+                
+            info!("Removing existing tool directory: {}", tool_folder_path.display());
+            fs::remove_dir_all(&tool_folder_path)
+                .await
+                .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+ 
+            // Delete from both services
+            info!("Removing tool {} from services", tool_agent_id);
+            if let Err(e) = self.tool_connection_service.delete_by_tool_agent_id(tool_agent_id).await {
+                warn!("Failed to remove tool connection: {:#}", e);
+            }
+            if let Err(e) = self.installed_tools_service.delete_by_tool_agent_id(tool_agent_id).await {
+                warn!("Failed to remove from installed tools: {:#}", e);
+            }
+
+            info!("Previous installation of tool {} was uninstalled", tool_agent_id);
+        } 
+
         // Ensure tool-specific directory exists
         fs::create_dir_all(&tool_folder_path)
             .await
