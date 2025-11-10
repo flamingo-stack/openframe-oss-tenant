@@ -138,7 +138,7 @@ public class GatewaySecurityConfig {
             boolean isPrivate = path.startsWith(DASHBOARD_PREFIX + "/")
                     || path.startsWith(TOOLS_PREFIX + "/")
                     || path.startsWith(WS_TOOLS_PREFIX + "/")
-                    || path.equals(NATS_WS_ENDPOINT_PATH)
+                    || path.startsWith(NATS_WS_ENDPOINT_PATH)
                     || path.startsWith(CHAT_ENDPOINT_PATH + "/")
                     || clientPrivate;
 
