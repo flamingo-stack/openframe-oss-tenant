@@ -4,6 +4,7 @@ metadata:
   name: openframe-api
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: openframe-api

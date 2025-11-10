@@ -5,6 +5,7 @@ metadata:
 spec:
   serviceName: tactical-websockets
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: tactical-websockets

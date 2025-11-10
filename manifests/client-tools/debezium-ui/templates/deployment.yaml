@@ -6,6 +6,7 @@ metadata:
     app: debezium-ui
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: debezium-ui

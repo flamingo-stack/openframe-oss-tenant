@@ -5,6 +5,7 @@ metadata:
 spec:
   serviceName: authentik-postgres
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: authentik-postgres
