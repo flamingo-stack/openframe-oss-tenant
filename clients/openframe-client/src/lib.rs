@@ -302,6 +302,7 @@ impl Client {
             tool_connection_processing_manager.clone(),
             config_service.clone(),
             installed_agent_message_publisher.clone(),
+            tool_connection_service.clone(),
         );
         
         // Initialize OpenFrame client update service
