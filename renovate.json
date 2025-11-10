@@ -19,8 +19,6 @@
       "commitMessageTopic": "OpenFrame libs",
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps",
-      "automerge": true,
-      "platformAutomerge": true,
       "automergeType": "pr",
       "automergeStrategy": "squash",
       "labels": ["dependencies", "openframe-libs"],
