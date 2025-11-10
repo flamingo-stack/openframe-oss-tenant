@@ -70,6 +70,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [isPageReady, setIsPageReady] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [remoteSettings, setRemoteSettings] = useState<RemoteSettingsConfig>(DEFAULT_SETTINGS)
+  const [isReconnecting, setIsReconnecting] = useState(false)
+  const [reconnectAttempt, setReconnectAttempt] = useState(0)
   
   useEffect(() => {
     remoteSettingsRef.current = remoteSettings
@@ -123,7 +125,40 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           onBinaryData: (bytes) => { desktopRef.current?.onBinaryFrame(bytes) },
           onCtrlMessage: () => {},
           onConsoleMessage: (msg) => { toast({ title: 'Remote Desktop', description: msg, variant: 'default' }) },
-          onStateChange: (s) => setState(s)
+          onRequestPairing: async (relayId) => {
+            try {
+              const ctrl = controlRef.current
+              if (!ctrl) return
+              await ctrl.openSession()
+              ctrl.sendDesktopTunnel(meshcentralAgentId, relayId)
+            } catch {}
+          },
+          onStateChange: (s) => {
+            setState(s)
+            if (s === 1 && tunnelRef.current?.getState() === 0) {
+              setIsReconnecting(true)
+              setReconnectAttempt(prev => prev + 1)
+              toast({
+                title: 'Connection Lost',
+                description: 'Attempting to reconnect...',
+                variant: 'info'
+              })
+            } else if (s === 3 && isReconnecting) {
+              setIsReconnecting(false)
+              toast({
+                title: 'Reconnected',
+                description: 'Connection restored successfully',
+                variant: 'success'
+              })
+            } else if (s === 0 && isReconnecting) {
+              setIsReconnecting(false)
+              toast({
+                title: 'Reconnection Failed',
+                description: 'Unable to restore connection. Please try again.',
+                variant: 'destructive'
+              })
+            }
+          }
         })
         tunnelRef.current = tunnel
         desktopRef.current?.setSender((data) => {
@@ -168,8 +203,22 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     router.push(`/devices/details/${originalDeviceId}`)
   }
 
-  const statusText = state === 3 ? 'Connected' : state === 2 ? 'Open' : state === 1 ? 'Connecting' : 'Idle'
-  const statusColor = state === 3 ? 'text-ods-attention-green-success' : state === 1 || state === 2 ? 'text-ods-text-secondary' : 'text-ods-text-secondary'
+  const statusText = isReconnecting 
+    ? `Reconnecting... (Attempt ${reconnectAttempt})`
+    : state === 3 
+      ? 'Connected' 
+      : state === 2 
+        ? 'Open' 
+        : state === 1 
+          ? 'Connecting' 
+          : 'Idle'
+  const statusColor = isReconnecting
+    ? 'text-ods-text-secondary animate-pulse'
+    : state === 3 
+      ? 'text-ods-attention-green-success' 
+      : state === 1 || state === 2 
+        ? 'text-ods-text-secondary' 
+        : 'text-ods-text-secondary'
 
   const sendPower = async (action: 'wake' | 'sleep' | 'reset' | 'poweroff') => {
     try {
@@ -352,7 +401,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
         {/* Status indicator */}
         {connecting && (
-          <div className="bg-ods-card mx-6 mb-2 py-2 px-4 rounded-md border border-ods-border flex-shrink-0">
+          <div className="bg-ods-card mb-2 py-2 px-4 rounded-md border border-ods-border flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className={`text-sm ${statusColor}`}>{statusText}</span>
               <span className="text-ods-text-secondary text-sm">…</span>
