@@ -255,6 +255,8 @@ impl OpenFrameClientUpdateService {
     /// Launch PowerShell updater script on Windows
     #[cfg(windows)]
     async fn launch_windows_updater(&self, archive_path: PathBuf) -> Result<()> {
+        use std::os::windows::process::CommandExt;
+
         info!("Launching Windows PowerShell updater");
         
         // Save PowerShell script to temp file

@@ -116,7 +116,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       try {
         control = new MeshControlClient()
         controlRef.current = control
-        const { authCookie, relayCookie } = await control.getAuthCookies()
+        const { authCookie } = await control.getAuthCookies()
         const tunnel = new MeshTunnel({
           authCookie,
           nodeId: meshcentralAgentId,
@@ -166,8 +166,6 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         })
         try {
           await control.openSession()
-          const relayId = tunnel.getRelayId()
-          control.sendDesktopTunnel(meshcentralAgentId, relayId, relayCookie)
         } catch {}
         tunnel.start()
       } catch (e) {

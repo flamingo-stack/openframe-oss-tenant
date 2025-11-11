@@ -33,7 +33,7 @@ public class TacticalRmmScriptsInitializer implements ApplicationRunner {
             ScriptConfig.builder()
                     .name("OpenFrame Client Latest Update")
                     .resourcePath("classpath:scripts/openframe-client-update.ps1")
-                    .description("OpenFrame Client updatest to latest version")
+                    .description("OpenFrame Client update to latest version")
                     .shell("powershell")
                     .category("OpenFrame")
                     .defaultTimeout(30)
