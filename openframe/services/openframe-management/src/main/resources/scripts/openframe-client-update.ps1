@@ -271,27 +271,39 @@ function Main {
         Write-Log "Remote Session: $(Test-RemoteSession)"
         Write-Log "========================================" -Level INFO
 
-        # Step 1: Stop running processes
-        Write-Log "Step 1: Stopping client processes..."
-        if (-not (Stop-ClientProcesses)) {
-            throw "Failed to stop client processes"
-        }
-
-        # Step 2: Backup existing client
-        $targetPath = Join-Path $InstallPath $Config.ClientExecutable
-        Write-Log "Step 2: Backup..."
-        if (-not (Backup-Client -SourcePath $targetPath)) {
-            if ($CreateBackup) {
-                throw "Backup failed and was required"
-            }
-        }
-
-        # Step 3: Download new version
-        Write-Log "Step 3: Downloading latest version..."
+        # Step 1: Download new version first (before stopping service)
+        Write-Log "Step 1: Downloading latest version..."
         $tempFile = Join-Path $env:TEMP "openframe-client-update-$(Get-Date -Format 'yyyyMMddHHmmss').exe"
 
         if (-not (Get-ClientFromGitHub -DestinationPath $tempFile)) {
             throw "Download failed"
+        }
+
+        # Verify downloaded file before proceeding
+        if (-not (Test-Path $tempFile)) {
+            throw "Downloaded file not found"
+        }
+
+        $fileSize = (Get-Item $tempFile).Length
+        if ($fileSize -lt 1MB) {
+            throw "Downloaded file seems too small ($fileSize bytes). Download may have failed."
+        }
+
+        Write-Log "Downloaded file verified: $([math]::Round($fileSize / 1MB, 2)) MB" -Level SUCCESS
+
+        # Step 2: Stop running processes (only after successful download)
+        Write-Log "Step 2: Stopping client processes..."
+        if (-not (Stop-ClientProcesses)) {
+            throw "Failed to stop client processes"
+        }
+
+        # Step 3: Backup existing client
+        $targetPath = Join-Path $InstallPath $Config.ClientExecutable
+        Write-Log "Step 3: Backup..."
+        if (-not (Backup-Client -SourcePath $targetPath)) {
+            if ($CreateBackup) {
+                throw "Backup failed and was required"
+            }
         }
 
         # Step 4: Install
