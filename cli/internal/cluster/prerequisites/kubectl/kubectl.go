@@ -1,10 +1,12 @@
 package kubectl
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
+	"time"
 )
 
 type KubectlInstaller struct{}
@@ -18,7 +20,10 @@ func isKubectlInstalled() bool {
 	if !commandExists("kubectl") {
 		return false
 	}
-	cmd := exec.Command("kubectl", "version", "--client")
+	// Check kubectl with timeout to avoid hanging on Windows
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "kubectl", "version", "--client")
 	err := cmd.Run()
 	return err == nil
 }

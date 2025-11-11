@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,8 +26,10 @@ func IsDockerRunning() bool {
 	if !commandExists("docker") {
 		return false
 	}
-	// Check if Docker daemon is accessible by running docker ps
-	cmd := exec.Command("docker", "ps")
+	// Check if Docker daemon is accessible by running docker ps with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "docker", "ps")
 	err := cmd.Run()
 	return err == nil
 }
