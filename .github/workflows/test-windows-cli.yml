@@ -43,8 +43,10 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Checking WSL status..."
-          wsl --status || Write-Host "WSL not fully configured yet"
-          wsl --list --verbose || Write-Host "No WSL distributions installed"
+          wsl --status
+          if ($LASTEXITCODE -ne 0) { Write-Host "WSL not fully configured yet" }
+          wsl --list --verbose
+          if ($LASTEXITCODE -ne 0) { Write-Host "No WSL distributions installed" }
 
       - name: Test prerequisite check (should detect missing tools)
         shell: powershell
@@ -75,7 +77,8 @@ jobs:
           Write-Host "Setting up Ubuntu..."
 
           # Install Ubuntu
-          wsl --install -d Ubuntu --no-launch || Write-Host "Ubuntu already installed"
+          wsl --install -d Ubuntu --no-launch
+          if ($LASTEXITCODE -ne 0) { Write-Host "Ubuntu already installed" }
 
           # Set WSL2 as default version
           wsl --set-default-version 2
@@ -85,7 +88,8 @@ jobs:
           wsl -d Ubuntu -u root bash -c "echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
 
           # Set default user
-          ubuntu config --default-user testuser || Write-Host "Could not set default user"
+          ubuntu config --default-user testuser
+          if ($LASTEXITCODE -ne 0) { Write-Host "Could not set default user" }
 
           Write-Host "WSL2 Ubuntu setup complete"
           wsl --list --verbose
@@ -112,7 +116,11 @@ jobs:
         run: |
           cd cli
           Write-Host "Testing CLI version..."
-          .\openframe.exe --version || .\openframe.exe version || Write-Host "No version command"
+          .\openframe.exe --version
+          if ($LASTEXITCODE -ne 0) {
+            .\openframe.exe version
+            if ($LASTEXITCODE -ne 0) { Write-Host "No version command" }
+          }
 
           Write-Host "Testing CLI help..."
           .\openframe.exe --help
