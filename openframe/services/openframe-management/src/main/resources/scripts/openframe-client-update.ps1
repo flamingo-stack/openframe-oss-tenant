@@ -24,7 +24,7 @@ $ProgressPreference = 'SilentlyContinue'
 
 # Configuration
 $script:Config = @{
-    GitHubReleaseUrl = "https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client.exe"
+    GitHubReleaseUrl = "https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client_windows.zip"
     ClientExecutable = "openframe-client.exe"
     ProcessName = "openframe-client"
     Version = "1.0.0"
@@ -156,11 +156,11 @@ function Backup-Client {
     }
 }
 
-# Download client with retry logic
+# Download ZIP archive with retry logic
 function Get-ClientFromGitHub {
     param([string]$DestinationPath)
 
-    Write-Log "Downloading from: $($Config.GitHubReleaseUrl)"
+    Write-Log "Downloading ZIP archive from: $($Config.GitHubReleaseUrl)"
 
     for ($i = 1; $i -le $MaxRetries; $i++) {
         try {
@@ -179,7 +179,7 @@ function Get-ClientFromGitHub {
 
             if (Test-Path $DestinationPath) {
                 $fileSize = (Get-Item $DestinationPath).Length / 1MB
-                Write-Log "Downloaded successfully: $([math]::Round($fileSize, 2)) MB" -Level SUCCESS
+                Write-Log "ZIP archive downloaded successfully: $([math]::Round($fileSize, 2)) MB" -Level SUCCESS
                 return $true
             }
         }
@@ -195,6 +195,59 @@ function Get-ClientFromGitHub {
 
     Write-Log "Download failed after $MaxRetries attempts" -Level ERROR
     return $false
+}
+
+# Extract EXE from ZIP archive
+function Expand-ClientZip {
+    param(
+        [string]$ZipPath,
+        [string]$ExtractPath
+    )
+
+    try {
+        Write-Log "Extracting ZIP archive: $ZipPath"
+
+        if (-not (Test-Path $ZipPath)) {
+            Write-Log "ZIP file not found: $ZipPath" -Level ERROR
+            return $null
+        }
+
+        # Create extraction directory
+        if (-not (Test-Path $ExtractPath)) {
+            New-Item -ItemType Directory -Path $ExtractPath -Force | Out-Null
+            Write-Log "Created extraction directory: $ExtractPath"
+        }
+
+        # Extract ZIP archive
+        Expand-Archive -Path $ZipPath -DestinationPath $ExtractPath -Force -ErrorAction Stop
+        Write-Log "ZIP archive extracted successfully" -Level SUCCESS
+
+        # Find the EXE file in the extracted contents
+        $exePath = Join-Path $ExtractPath $Config.ClientExecutable
+
+        # Check if EXE is in root of extracted folder
+        if (-not (Test-Path $exePath)) {
+            # Search for EXE in subdirectories
+            $foundExe = Get-ChildItem -Path $ExtractPath -Filter $Config.ClientExecutable -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($foundExe) {
+                $exePath = $foundExe.FullName
+                Write-Log "Found EXE in subdirectory: $exePath"
+            }
+        }
+
+        if (Test-Path $exePath) {
+            Write-Log "EXE file found: $exePath" -Level SUCCESS
+            return $exePath
+        }
+        else {
+            Write-Log "EXE file not found in ZIP archive: $Config.ClientExecutable" -Level ERROR
+            return $null
+        }
+    }
+    catch {
+        Write-Log "Failed to extract ZIP archive: $_" -Level ERROR
+        return $null
+    }
 }
 
 # Install the client
@@ -271,64 +324,103 @@ function Main {
         Write-Log "Remote Session: $(Test-RemoteSession)"
         Write-Log "========================================" -Level INFO
 
-        # Step 1: Stop running processes
-        Write-Log "Step 1: Stopping client processes..."
-        if (-not (Stop-ClientProcesses)) {
-            throw "Failed to stop client processes"
-        }
+        # Initialize temporary file paths
+        $timestamp = Get-Date -Format 'yyyyMMddHHmmss'
+        $tempZipFile = Join-Path $env:TEMP "openframe-client-update-$timestamp.zip"
+        $tempExtractDir = Join-Path $env:TEMP "openframe-client-extract-$timestamp"
+        $extractedExePath = $null
 
-        # Step 2: Backup existing client
-        $targetPath = Join-Path $InstallPath $Config.ClientExecutable
-        Write-Log "Step 2: Backup..."
-        if (-not (Backup-Client -SourcePath $targetPath)) {
-            if ($CreateBackup) {
-                throw "Backup failed and was required"
-            }
-        }
-
-        # Step 3: Download new version
-        Write-Log "Step 3: Downloading latest version..."
-        $tempFile = Join-Path $env:TEMP "openframe-client-update-$(Get-Date -Format 'yyyyMMddHHmmss').exe"
-
-        if (-not (Get-ClientFromGitHub -DestinationPath $tempFile)) {
-            throw "Download failed"
-        }
-
-        # Step 4: Install
-        Write-Log "Step 4: Installing..."
-        if (-not (Install-Client -SourcePath $tempFile -TargetPath $targetPath)) {
-            throw "Installation failed"
-        }
-
-        # Step 5: Verify
-        Write-Log "Step 5: Verifying installation..."
-        if (-not (Test-ClientInstallation -ClientPath $targetPath)) {
-            throw "Installation verification failed"
-        }
-
-        # Step 6: Cleanup
-        Write-Log "Step 6: Cleaning up..."
         try {
-            Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
-            Write-Log "Temporary files removed"
-        }
-        catch {
-            Write-Log "Cleanup warning: $_" -Level WARNING
-        }
+            # Step 1: Download new version (ZIP archive) - BEFORE stopping processes
+            Write-Log "Step 1: Downloading latest version..."
+            if (-not (Get-ClientFromGitHub -DestinationPath $tempZipFile)) {
+                throw "Download failed"
+            }
 
-        # Step 7: Restart client if requested
-        if (-not $NoRestart -and -not (Test-RemoteSession)) {
-            Write-Log "Step 7: Restarting client..."
+            # Step 2: Extract EXE from ZIP - BEFORE stopping processes
+            Write-Log "Step 2: Extracting ZIP archive..."
+            $extractedExePath = Expand-ClientZip -ZipPath $tempZipFile -ExtractPath $tempExtractDir
+
+            if (-not $extractedExePath) {
+                throw "Failed to extract EXE from ZIP archive"
+            }
+
+            # Step 3: Stop running processes - AFTER successful download and extraction
+            Write-Log "Step 3: Stopping client processes..."
+            if (-not (Stop-ClientProcesses)) {
+                throw "Failed to stop client processes"
+            }
+
+            # Step 4: Backup existing client
+            $targetPath = Join-Path $InstallPath $Config.ClientExecutable
+            Write-Log "Step 4: Backup..."
+            if (-not (Backup-Client -SourcePath $targetPath)) {
+                if ($CreateBackup) {
+                    throw "Backup failed and was required"
+                }
+            }
+
+            # Step 5: Install
+            Write-Log "Step 5: Installing..."
+            if (-not (Install-Client -SourcePath $extractedExePath -TargetPath $targetPath)) {
+                throw "Installation failed"
+            }
+
+            # Step 6: Verify
+            Write-Log "Step 6: Verifying installation..."
+            if (-not (Test-ClientInstallation -ClientPath $targetPath)) {
+                throw "Installation verification failed"
+            }
+
+            # Step 7: Cleanup
+            Write-Log "Step 7: Cleaning up temporary files..."
             try {
-                Start-Process -FilePath $targetPath -ErrorAction Stop
-                Write-Log "Client started successfully" -Level SUCCESS
+                if (Test-Path $tempZipFile) {
+                    Remove-Item -Path $tempZipFile -Force -ErrorAction SilentlyContinue
+                    Write-Log "ZIP archive removed"
+                }
+                if (Test-Path $tempExtractDir) {
+                    Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Log "Extraction directory removed"
+                }
+                Write-Log "Temporary files cleaned up successfully"
             }
             catch {
-                Write-Log "Failed to start client: $_" -Level WARNING
+                Write-Log "Cleanup warning: $_" -Level WARNING
+            }
+
+            # Step 8: Restart client if requested
+            if (-not $NoRestart -and -not (Test-RemoteSession)) {
+                Write-Log "Step 8: Restarting client..."
+                try {
+                    Start-Process -FilePath $targetPath -ErrorAction Stop
+                    Write-Log "Client started successfully" -Level SUCCESS
+                }
+                catch {
+                    Write-Log "Failed to start client: $_" -Level WARNING
+                }
+            }
+            else {
+                Write-Log "Step 8: Client restart skipped"
             }
         }
-        else {
-            Write-Log "Step 7: Client restart skipped"
+        catch {
+            # Cleanup temporary files on error
+            Write-Log "Cleaning up temporary files after error..." -Level WARNING
+            try {
+                if (Test-Path $tempZipFile) {
+                    Remove-Item -Path $tempZipFile -Force -ErrorAction SilentlyContinue
+                    Write-Log "ZIP archive removed"
+                }
+                if (Test-Path $tempExtractDir) {
+                    Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Log "Extraction directory removed"
+                }
+            }
+            catch {
+                Write-Log "Cleanup error: $_" -Level WARNING
+            }
+            throw
         }
 
         Write-Log "========================================" -Level SUCCESS

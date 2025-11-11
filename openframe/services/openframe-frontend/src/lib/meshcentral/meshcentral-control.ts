@@ -47,7 +47,6 @@ export class MeshControlClient {
             this.cookies = null
             this.requestAuthCookies()
           }
-          this.resendActiveTunnels()
         } else if (state === 'disconnected' || state === 'failed') {
           this.isOpen = false
           this.clearPendingRequests('WebSocket disconnected')
