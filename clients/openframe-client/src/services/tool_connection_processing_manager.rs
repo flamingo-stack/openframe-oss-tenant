@@ -114,6 +114,11 @@ impl ToolConnectionProcessingManager {
         }
     }
 
+    pub async fn clear_running_tool(&self, tool_id: &str) {
+        let mut set = self.running_tools.write().await;
+        set.remove(tool_id);
+    }
+
     async fn process_tool(&self, tool: InstalledTool) -> Result<()> {
         let params_processor = self.params_processor.clone();
         let config_service = self.config_service.clone();
