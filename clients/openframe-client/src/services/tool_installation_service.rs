@@ -124,8 +124,9 @@ impl ToolInstallationService {
                     warn!("Failed to remove from installed tools: {:#}", e);
                 }
                 
-                // Clear from connection processing manager (use tool_id - running_tools stores tool_id)
+                // Clear from both manager tracking sets to allow tool restart after reinstall
                 self.tool_connection_processing_manager.clear_running_tool(&installed_tool.tool_id).await;
+                self.tool_run_manager.clear_running_tool(&installed_tool.tool_agent_id).await;
                 
                 info!("Previous installation of tool {} was uninstalled", tool_agent_id);
             } else {
