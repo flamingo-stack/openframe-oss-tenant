@@ -313,15 +313,13 @@ export class MeshDesktop implements DesktopInputHandlers {
       if (protocolAction === 1) protocolAction = 3
     }
     
-    const buf = new Uint8Array(8)
+    const buf = new Uint8Array(6)
     buf[0] = 0x00
     buf[1] = 0x01  // Command: MNG_KVM_KEY
     buf[2] = 0x00
-    buf[3] = 0x06  // Data Size: Always 6
+    buf[3] = 0x06  // Total message size: 6 bytes
     buf[4] = protocolAction & 0xff  // Protocol action (0=DOWN, 1=UP, 3=EXUP, 4=EXDOWN)
     buf[5] = vk & 0xff              // Virtual key code
-    buf[6] = 0x00  // Reserved
-    buf[7] = 0x00  // Reserved
     
     return buf
   }
