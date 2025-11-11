@@ -21,7 +21,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
 use tokio::process::Command;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 
@@ -103,20 +103,31 @@ impl ToolInstallationService {
                 // Continue with uninstallation even if process kill fails
                 }
         
-            info!("Removing existing tool directory: {}", tool_folder_path.display());
-            fs::remove_dir_all(&tool_folder_path)
-                .await
-                .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+                // Wait for process to fully terminate
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-            // Delete from both services
-            info!("Removing tool {} from services", tool_agent_id);
-            if let Err(e) = self.tool_connection_service.delete_by_tool_agent_id(tool_agent_id).await {
-                warn!("Failed to remove tool connection: {:#}", e);
-            }
-            if let Err(e) = self.installed_tools_service.delete_by_tool_agent_id(tool_agent_id).await {
-                warn!("Failed to remove from installed tools: {:#}", e);
-            }
-            info!("Previous installation of tool {} was uninstalled", tool_agent_id);
+                info!("Removing existing tool directory: {}", tool_folder_path.display());
+                if tool_folder_path.exists() {
+                    fs::remove_dir_all(&tool_folder_path)
+                        .await
+                        .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+                }
+                        
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+                // Delete from both services
+                info!("Removing tool {} from services", tool_agent_id);
+                if let Err(e) = self.tool_connection_service.delete_by_tool_agent_id(tool_agent_id).await {
+                    warn!("Failed to remove tool connection: {:#}", e);
+                }
+                if let Err(e) = self.installed_tools_service.delete_by_tool_agent_id(tool_agent_id).await {
+                    warn!("Failed to remove from installed tools: {:#}", e);
+                }
+                
+                // Clear from connection processing manager (use tool_id - running_tools stores tool_id)
+                self.tool_connection_processing_manager.clear_running_tool(&installed_tool.tool_id).await;
+                
+                info!("Previous installation of tool {} was uninstalled", tool_agent_id);
             } else {
                 info!("Tool {} is already installed with version {}, skipping installation", tool_agent_id, installed_tool.version);
                 return Ok(());
