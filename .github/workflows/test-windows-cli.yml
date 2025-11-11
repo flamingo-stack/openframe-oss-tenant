@@ -331,9 +331,20 @@ jobs:
             exit 1
           }
 
-          # Add Docker repository - using a bash script to avoid quoting issues
+          # Add Docker repository - using a reliable multi-step approach
           Write-Host "Step 6: Adding Docker repository..."
-          wsl -d Ubuntu bash -c 'ARCH=$(dpkg --print-architecture) && CODENAME=$(lsb_release -cs) && echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
+
+          # Get architecture and save to temp file
+          wsl -d Ubuntu bash -c "dpkg --print-architecture > /tmp/arch.txt"
+
+          # Get codename and save to temp file
+          wsl -d Ubuntu bash -c "lsb_release -cs > /tmp/codename.txt"
+
+          # Build the repository line from temp files
+          wsl -d Ubuntu bash -c 'ARCH=$(cat /tmp/arch.txt) && CODENAME=$(cat /tmp/codename.txt) && echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list'
+
+          # Clean up temp files
+          wsl -d Ubuntu bash -c "rm -f /tmp/arch.txt /tmp/codename.txt"
 
           # Verify repository was added
           Write-Host "Step 7: Verifying repository configuration..."
