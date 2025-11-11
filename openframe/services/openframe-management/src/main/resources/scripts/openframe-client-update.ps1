@@ -324,81 +324,103 @@ function Main {
         Write-Log "Remote Session: $(Test-RemoteSession)"
         Write-Log "========================================" -Level INFO
 
-        # Step 1: Stop running processes
-        Write-Log "Step 1: Stopping client processes..."
-        if (-not (Stop-ClientProcesses)) {
-            throw "Failed to stop client processes"
-        }
-
-        # Step 2: Backup existing client
-        $targetPath = Join-Path $InstallPath $Config.ClientExecutable
-        Write-Log "Step 2: Backup..."
-        if (-not (Backup-Client -SourcePath $targetPath)) {
-            if ($CreateBackup) {
-                throw "Backup failed and was required"
-            }
-        }
-
-        # Step 3: Download new version (ZIP archive)
-        Write-Log "Step 3: Downloading latest version..."
+        # Initialize temporary file paths
         $timestamp = Get-Date -Format 'yyyyMMddHHmmss'
         $tempZipFile = Join-Path $env:TEMP "openframe-client-update-$timestamp.zip"
         $tempExtractDir = Join-Path $env:TEMP "openframe-client-extract-$timestamp"
+        $extractedExePath = $null
 
-        if (-not (Get-ClientFromGitHub -DestinationPath $tempZipFile)) {
-            throw "Download failed"
-        }
-
-        # Step 4: Extract EXE from ZIP
-        Write-Log "Step 4: Extracting ZIP archive..."
-        $extractedExePath = Expand-ClientZip -ZipPath $tempZipFile -ExtractPath $tempExtractDir
-
-        if (-not $extractedExePath) {
-            throw "Failed to extract EXE from ZIP archive"
-        }
-
-        # Step 5: Install
-        Write-Log "Step 5: Installing..."
-        if (-not (Install-Client -SourcePath $extractedExePath -TargetPath $targetPath)) {
-            throw "Installation failed"
-        }
-
-        # Step 6: Verify
-        Write-Log "Step 6: Verifying installation..."
-        if (-not (Test-ClientInstallation -ClientPath $targetPath)) {
-            throw "Installation verification failed"
-        }
-
-        # Step 7: Cleanup
-        Write-Log "Step 7: Cleaning up temporary files..."
         try {
-            if (Test-Path $tempZipFile) {
-                Remove-Item -Path $tempZipFile -Force -ErrorAction SilentlyContinue
-                Write-Log "ZIP archive removed"
+            # Step 1: Download new version (ZIP archive) - BEFORE stopping processes
+            Write-Log "Step 1: Downloading latest version..."
+            if (-not (Get-ClientFromGitHub -DestinationPath $tempZipFile)) {
+                throw "Download failed"
             }
-            if (Test-Path $tempExtractDir) {
-                Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Log "Extraction directory removed"
-            }
-            Write-Log "Temporary files cleaned up successfully"
-        }
-        catch {
-            Write-Log "Cleanup warning: $_" -Level WARNING
-        }
 
-        # Step 8: Restart client if requested
-        if (-not $NoRestart -and -not (Test-RemoteSession)) {
-            Write-Log "Step 8: Restarting client..."
+            # Step 2: Extract EXE from ZIP - BEFORE stopping processes
+            Write-Log "Step 2: Extracting ZIP archive..."
+            $extractedExePath = Expand-ClientZip -ZipPath $tempZipFile -ExtractPath $tempExtractDir
+
+            if (-not $extractedExePath) {
+                throw "Failed to extract EXE from ZIP archive"
+            }
+
+            # Step 3: Stop running processes - AFTER successful download and extraction
+            Write-Log "Step 3: Stopping client processes..."
+            if (-not (Stop-ClientProcesses)) {
+                throw "Failed to stop client processes"
+            }
+
+            # Step 4: Backup existing client
+            $targetPath = Join-Path $InstallPath $Config.ClientExecutable
+            Write-Log "Step 4: Backup..."
+            if (-not (Backup-Client -SourcePath $targetPath)) {
+                if ($CreateBackup) {
+                    throw "Backup failed and was required"
+                }
+            }
+
+            # Step 5: Install
+            Write-Log "Step 5: Installing..."
+            if (-not (Install-Client -SourcePath $extractedExePath -TargetPath $targetPath)) {
+                throw "Installation failed"
+            }
+
+            # Step 6: Verify
+            Write-Log "Step 6: Verifying installation..."
+            if (-not (Test-ClientInstallation -ClientPath $targetPath)) {
+                throw "Installation verification failed"
+            }
+
+            # Step 7: Cleanup
+            Write-Log "Step 7: Cleaning up temporary files..."
             try {
-                Start-Process -FilePath $targetPath -ErrorAction Stop
-                Write-Log "Client started successfully" -Level SUCCESS
+                if (Test-Path $tempZipFile) {
+                    Remove-Item -Path $tempZipFile -Force -ErrorAction SilentlyContinue
+                    Write-Log "ZIP archive removed"
+                }
+                if (Test-Path $tempExtractDir) {
+                    Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Log "Extraction directory removed"
+                }
+                Write-Log "Temporary files cleaned up successfully"
             }
             catch {
-                Write-Log "Failed to start client: $_" -Level WARNING
+                Write-Log "Cleanup warning: $_" -Level WARNING
+            }
+
+            # Step 8: Restart client if requested
+            if (-not $NoRestart -and -not (Test-RemoteSession)) {
+                Write-Log "Step 8: Restarting client..."
+                try {
+                    Start-Process -FilePath $targetPath -ErrorAction Stop
+                    Write-Log "Client started successfully" -Level SUCCESS
+                }
+                catch {
+                    Write-Log "Failed to start client: $_" -Level WARNING
+                }
+            }
+            else {
+                Write-Log "Step 8: Client restart skipped"
             }
         }
-        else {
-            Write-Log "Step 8: Client restart skipped"
+        catch {
+            # Cleanup temporary files on error
+            Write-Log "Cleaning up temporary files after error..." -Level WARNING
+            try {
+                if (Test-Path $tempZipFile) {
+                    Remove-Item -Path $tempZipFile -Force -ErrorAction SilentlyContinue
+                    Write-Log "ZIP archive removed"
+                }
+                if (Test-Path $tempExtractDir) {
+                    Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Log "Extraction directory removed"
+                }
+            }
+            catch {
+                Write-Log "Cleanup error: $_" -Level WARNING
+            }
+            throw
         }
 
         Write-Log "========================================" -Level SUCCESS
