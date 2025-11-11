@@ -4,11 +4,14 @@ import com.openframe.security.cookie.CookieService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+import static com.openframe.gateway.config.ws.WebSocketGatewayConfig.NATS_WS_ENDPOINT_PATH;
+import static com.openframe.gateway.security.PathConstants.*;
 import static com.openframe.security.oauth.SecurityConstants.ACCESS_TOKEN_HEADER;
 import static com.openframe.security.oauth.SecurityConstants.AUTHORIZATION_QUERY_PARAM;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -20,15 +23,21 @@ import static org.springframework.util.StringUtils.hasText;
  * it to the request if missing. This allows the resource server to authenticate using
  * the standard Authorization header while supporting our multi-source token strategy.
  */
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class AddAuthorizationHeaderFilter implements WebFilter {
 
     private final CookieService cookieService;
+    private static final String CHAT_ENDPOINT_PATH = "/chat";
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+        String path = request.getPath().value();
+        if (!isPrivatePath(path)) {
+            return chain.filter(exchange);
+        }
         String existingAuth = request.getHeaders().getFirst(AUTHORIZATION);
         if (hasText(existingAuth)) {
             return chain.filter(exchange);
@@ -43,6 +52,23 @@ public class AddAuthorizationHeaderFilter implements WebFilter {
         }
 
         return chain.filter(exchange);
+    }
+
+    private boolean isPrivatePath(String path) {
+        boolean clientPrivate = path.startsWith(CLIENTS_PREFIX + "/")
+                && !(
+                path.startsWith(CLIENTS_PREFIX + "/metrics/")
+                        || path.equals(CLIENTS_PREFIX + "/api/agents/register")
+                        || path.equals(CLIENTS_PREFIX + "/oauth/token")
+                        || path.startsWith(CLIENTS_PREFIX + "/tool-agent/")
+        );
+
+        return path.startsWith(DASHBOARD_PREFIX + "/")
+                || path.startsWith(TOOLS_PREFIX + "/")
+                || path.startsWith(WS_TOOLS_PREFIX + "/")
+                || path.startsWith(NATS_WS_ENDPOINT_PATH)
+                || path.startsWith(CHAT_ENDPOINT_PATH + "/")
+                || clientPrivate;
     }
 
     private String resolveBearerToken(ServerWebExchange exchange) {
