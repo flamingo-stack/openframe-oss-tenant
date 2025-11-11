@@ -62,13 +62,14 @@ jobs:
         run: |
           Write-Host "Installing WSL2 and Ubuntu..."
 
-          # Enable WSL feature
-          wsl --install --no-launch
+          # Install WSL with Ubuntu in one command, with yes to all prompts
+          echo Y | wsl --install -d Ubuntu --no-launch
 
-          # Wait a bit for installation to complete
-          Start-Sleep -Seconds 10
+          # Wait for installation to complete
+          Start-Sleep -Seconds 15
 
           # Check status
+          Write-Host "Checking WSL status after installation..."
           wsl --status
           wsl --list --verbose
 
@@ -77,23 +78,32 @@ jobs:
         run: |
           Write-Host "Setting up Ubuntu..."
 
-          # Install Ubuntu
-          wsl --install -d Ubuntu --no-launch
-          if ($LASTEXITCODE -ne 0) { Write-Host "Ubuntu already installed" }
-
           # Set WSL2 as default version
           wsl --set-default-version 2
 
-          # Initialize Ubuntu with default user
-          wsl -d Ubuntu -u root bash -c "useradd -m -s /bin/bash testuser && echo 'testuser:testpass' | chpasswd && usermod -aG sudo testuser"
-          wsl -d Ubuntu -u root bash -c "echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
+          # Wait for Ubuntu to be ready
+          Start-Sleep -Seconds 5
 
-          # Set default user
-          ubuntu config --default-user testuser
-          if ($LASTEXITCODE -ne 0) { Write-Host "Could not set default user" }
+          # Verify Ubuntu is installed
+          wsl --list --verbose
+
+          # Initialize Ubuntu with default user (check if user exists first)
+          Write-Host "Creating testuser in Ubuntu..."
+          wsl -d Ubuntu -u root bash -c "id testuser || (useradd -m -s /bin/bash testuser && echo 'testuser:testpass' | chpasswd && usermod -aG sudo testuser)"
+
+          Write-Host "Configuring sudo for testuser..."
+          wsl -d Ubuntu -u root bash -c "grep -q '%sudo ALL=(ALL) NOPASSWD:ALL' /etc/sudoers || echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
+
+          # Set default user (ubuntu command might not be available)
+          Write-Host "Setting default user..."
+          ubuntu config --default-user testuser 2>&1 | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "ubuntu config command not available, will use -u flag with wsl"
+          }
 
           Write-Host "WSL2 Ubuntu setup complete"
           wsl --list --verbose
+          wsl -d Ubuntu -u testuser bash -c "whoami"
 
       - name: Test Docker installation in WSL2
         shell: powershell
@@ -175,14 +185,30 @@ jobs:
       - name: Install WSL2 and configure
         shell: powershell
         run: |
-          # Install WSL2
-          wsl --install --no-launch
-          wsl --install -d Ubuntu --no-launch
+          # Install WSL2 with Ubuntu (non-interactive)
+          Write-Host "Installing WSL2 with Ubuntu..."
+          echo Y | wsl --install -d Ubuntu --no-launch
+
+          # Wait for installation
+          Start-Sleep -Seconds 15
+
+          # Set WSL2 as default
           wsl --set-default-version 2
 
-          # Configure Ubuntu
-          wsl -d Ubuntu -u root bash -c "useradd -m -s /bin/bash runner && echo 'runner:runner' | chpasswd && usermod -aG sudo runner"
-          wsl -d Ubuntu -u root bash -c "echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
+          # Verify installation
+          Write-Host "Verifying WSL installation..."
+          wsl --list --verbose
+
+          # Wait for Ubuntu to be ready
+          Start-Sleep -Seconds 5
+
+          # Configure Ubuntu with runner user
+          Write-Host "Configuring Ubuntu user..."
+          wsl -d Ubuntu -u root bash -c "id runner || (useradd -m -s /bin/bash runner && echo 'runner:runner' | chpasswd && usermod -aG sudo runner)"
+          wsl -d Ubuntu -u root bash -c "grep -q '%sudo ALL=(ALL) NOPASSWD:ALL' /etc/sudoers || echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
+
+          # Verify user was created
+          wsl -d Ubuntu -u runner bash -c "whoami"
 
       - name: Install Docker in WSL2 manually (for testing)
         shell: powershell
@@ -192,58 +218,68 @@ jobs:
           # Check Ubuntu version
           wsl -d Ubuntu bash -c "lsb_release -a"
 
-          # Update packages
-          wsl -d Ubuntu bash -c "sudo apt-get update -qq"
+          # Update packages and install dependencies
+          wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq"
+          wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common"
 
-          # Install dependencies
-          wsl -d Ubuntu bash -c "sudo apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common"
+          # Remove any existing Docker GPG key
+          wsl -d Ubuntu bash -c "sudo rm -f /etc/apt/keyrings/docker.gpg /usr/share/keyrings/docker-archive-keyring.gpg"
 
-          # Add Docker GPG key
-          wsl -d Ubuntu bash -c "sudo mkdir -p /etc/apt/keyrings"
-          wsl -d Ubuntu bash -c "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
+          # Add Docker's official GPG key using the new method
+          wsl -d Ubuntu bash -c "sudo install -m 0755 -d /etc/apt/keyrings"
+          wsl -d Ubuntu bash -c "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg"
           wsl -d Ubuntu bash -c "sudo chmod a+r /etc/apt/keyrings/docker.gpg"
 
           # Add Docker repository using jammy (Ubuntu 22.04) which is stable and supported
           # Using jammy explicitly instead of lsb_release to avoid compatibility issues with newer Ubuntu releases
-          wsl -d Ubuntu bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
+          wsl -d Ubuntu bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | sudo tee /etc/apt/sources.list.d/docker.list'
+
+          # Verify repository was added
+          wsl -d Ubuntu bash -c "cat /etc/apt/sources.list.d/docker.list"
 
           # Update package index with new repository
-          wsl -d Ubuntu bash -c "sudo apt-get update -qq"
+          wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq"
+
+          # Check if Docker packages are available
+          wsl -d Ubuntu bash -c "apt-cache policy docker-ce"
 
           # Install Docker
-          wsl -d Ubuntu bash -c "sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+          wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
 
-          # Configure Docker service
+          # Configure Docker service for WSL2
           wsl -d Ubuntu bash -c "sudo mkdir -p /var/run"
-          wsl -d Ubuntu bash -c "sudo service docker start || sudo dockerd > /dev/null 2>&1 &"
+
+          # Start Docker daemon in background
+          wsl -d Ubuntu bash -c "sudo dockerd > /tmp/dockerd.log 2>&1 &"
 
           # Wait for Docker to be ready
-          Start-Sleep -Seconds 5
+          Write-Host "Waiting for Docker daemon to start..."
+          Start-Sleep -Seconds 10
 
           # Verify Docker installation
           wsl -d Ubuntu bash -c "sudo docker --version"
-          wsl -d Ubuntu bash -c "sudo docker ps"
+          wsl -d Ubuntu bash -c "sudo docker info || sudo docker ps"
 
       - name: Test Docker from Windows
         shell: powershell
         run: |
           Write-Host "Testing Docker access from Windows..."
-          wsl -d Ubuntu docker ps
-          wsl -d Ubuntu docker version
+          wsl -d Ubuntu -u runner bash -c "sudo docker ps"
+          wsl -d Ubuntu -u runner bash -c "sudo docker version"
 
       - name: Install kubectl in WSL2
         shell: powershell
         run: |
           Write-Host "Installing kubectl..."
-          wsl -d Ubuntu bash -c 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && rm kubectl'
-          wsl -d Ubuntu kubectl version --client
+          wsl -d Ubuntu -u runner bash -c 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && rm kubectl'
+          wsl -d Ubuntu -u runner kubectl version --client
 
       - name: Install k3d in WSL2
         shell: powershell
         run: |
           Write-Host "Installing k3d..."
-          wsl -d Ubuntu bash -c 'curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash'
-          wsl -d Ubuntu k3d version
+          wsl -d Ubuntu -u runner bash -c 'curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash'
+          wsl -d Ubuntu -u runner k3d version
 
       - name: Test k3d cluster creation
         shell: powershell
@@ -251,9 +287,9 @@ jobs:
         timeout-minutes: 10
         run: |
           Write-Host "Testing k3d cluster creation..."
-          wsl -d Ubuntu k3d cluster create test-cluster --wait --timeout 300s
-          wsl -d Ubuntu kubectl get nodes
-          wsl -d Ubuntu k3d cluster delete test-cluster
+          wsl -d Ubuntu -u runner bash -c "sudo k3d cluster create test-cluster --wait --timeout 300s"
+          wsl -d Ubuntu -u runner kubectl get nodes
+          wsl -d Ubuntu -u runner bash -c "sudo k3d cluster delete test-cluster"
 
       - name: Installation test summary
         if: always()
@@ -262,9 +298,9 @@ jobs:
           Write-Host "========================================"
           Write-Host "Full Installation Test Results"
           Write-Host "========================================"
-          wsl -d Ubuntu bash -c 'echo "Docker: $(docker --version 2>/dev/null || echo FAILED)"'
-          wsl -d Ubuntu bash -c 'echo "kubectl: $(kubectl version --client --short 2>/dev/null || echo FAILED)"'
-          wsl -d Ubuntu bash -c 'echo "k3d: $(k3d version 2>/dev/null || echo FAILED)"'
+          wsl -d Ubuntu -u runner bash -c 'echo "Docker: $(sudo docker --version 2>/dev/null || echo FAILED)"'
+          wsl -d Ubuntu -u runner bash -c 'echo "kubectl: $(kubectl version --client --short 2>/dev/null || echo FAILED)"'
+          wsl -d Ubuntu -u runner bash -c 'echo "k3d: $(k3d version 2>/dev/null || echo FAILED)"'
 
   # Comment on PR with results
   comment-results:
