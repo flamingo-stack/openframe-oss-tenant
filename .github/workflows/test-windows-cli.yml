@@ -191,7 +191,7 @@ jobs:
           wsl -d Ubuntu bash -c "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
 
           # Add Docker repository
-          wsl -d Ubuntu bash -c "echo \`"deb [arch=`$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu `$(lsb_release -cs) stable\`" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"
+          wsl -d Ubuntu bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
 
           # Install Docker
           wsl -d Ubuntu bash -c "sudo apt-get update -qq"
