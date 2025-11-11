@@ -44,10 +44,11 @@ jobs:
         continue-on-error: true
         run: |
           Write-Host "Checking WSL status..."
-          wsl --status
+          wsl --status 2>&1 | Out-Null
           if ($LASTEXITCODE -ne 0) { Write-Host "WSL not fully configured yet" }
-          wsl --list --verbose
+          wsl --list --verbose 2>&1 | Out-Null
           if ($LASTEXITCODE -ne 0) { Write-Host "No WSL distributions installed" }
+          exit 0  # Ensure step exits successfully
 
       - name: Test prerequisite check (should detect missing tools)
         shell: powershell
@@ -55,41 +56,85 @@ jobs:
         run: |
           cd cli
           Write-Host "Testing prerequisite checker..."
-          .\openframe.exe cluster diagnose
+          .\openframe.exe cluster diagnose 2>&1 | Out-Host
+          if ($LASTEXITCODE -ne 0) { Write-Host "Prerequisites check completed (missing tools detected as expected)" }
+          exit 0  # Ensure step exits successfully
 
       - name: Install WSL2 and Ubuntu
         shell: powershell
         run: |
           Write-Host "Installing WSL2 and Ubuntu..."
 
+          # Set error action to continue
+          $ErrorActionPreference = 'Continue'
+
           # Install WSL with Ubuntu in one command, with yes to all prompts
+          Write-Host "Running: wsl --install -d Ubuntu --no-launch"
           echo Y | wsl --install -d Ubuntu --no-launch
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Warning: WSL installation returned exit code $LASTEXITCODE"
+            Write-Host "This is expected on some systems. Continuing..."
+          }
+
           # Wait for installation to complete
-          Start-Sleep -Seconds 15
+          Write-Host "Waiting for installation to complete..."
+          Start-Sleep -Seconds 20
 
           # Check status
           Write-Host "Checking WSL status after installation..."
           wsl --status
           wsl --list --verbose
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: WSL installation may have failed"
+            Write-Host "Attempting to verify WSL availability..."
+            wsl --help
+            exit 1
+          }
+
+          # Initialize Ubuntu by running a simple command (this triggers first-time setup)
+          Write-Host "Initializing Ubuntu (first launch)..."
+          wsl -d Ubuntu -u root bash -c "echo 'Ubuntu initialized'" 2>&1 | Out-Host
+
+          # Wait for initialization to complete
+          Start-Sleep -Seconds 10
+
+          Write-Host "WSL installation completed successfully"
+
       - name: Set up Ubuntu in WSL2
         shell: powershell
         run: |
           Write-Host "Setting up Ubuntu..."
 
+          # Set error action to continue
+          $ErrorActionPreference = 'Continue'
+
           # Set WSL2 as default version
+          Write-Host "Setting WSL2 as default version..."
           wsl --set-default-version 2
 
           # Wait for Ubuntu to be ready
-          Start-Sleep -Seconds 5
+          Write-Host "Waiting for Ubuntu to initialize..."
+          Start-Sleep -Seconds 10
 
           # Verify Ubuntu is installed
+          Write-Host "Verifying Ubuntu installation..."
           wsl --list --verbose
 
           # Initialize Ubuntu with default user (check if user exists first)
           Write-Host "Creating testuser in Ubuntu..."
-          wsl -d Ubuntu -u root bash -c "id testuser || (useradd -m -s /bin/bash testuser && echo 'testuser:testpass' | chpasswd && usermod -aG sudo testuser)"
+          wsl -d Ubuntu -u root bash -c "id testuser 2>/dev/null || (useradd -m -s /bin/bash testuser && echo 'testuser:testpass' | chpasswd && usermod -aG sudo testuser)"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Failed to create user in Ubuntu"
+            Write-Host "Checking Ubuntu status..."
+            wsl -d Ubuntu -u root bash -c "echo 'Ubuntu is accessible'"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Error: Cannot access Ubuntu in WSL"
+              exit 1
+            }
+          }
 
           Write-Host "Configuring sudo for testuser..."
           wsl -d Ubuntu -u root bash -c "grep -q '%sudo ALL=(ALL) NOPASSWD:ALL' /etc/sudoers || echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
@@ -98,12 +143,20 @@ jobs:
           Write-Host "Setting default user..."
           ubuntu config --default-user testuser 2>&1 | Out-Null
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "ubuntu config command not available, will use -u flag with wsl"
+            Write-Host "Note: ubuntu config command not available, will use -u flag with wsl"
           }
 
           Write-Host "WSL2 Ubuntu setup complete"
+          Write-Host "Final verification..."
           wsl --list --verbose
           wsl -d Ubuntu -u testuser bash -c "whoami"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: User verification failed"
+            exit 1
+          }
+
+          Write-Host "✓ Ubuntu setup completed successfully"
 
       - name: Test Docker installation in WSL2
         shell: powershell
@@ -185,30 +238,64 @@ jobs:
       - name: Install WSL2 and configure
         shell: powershell
         run: |
+          # Set error action to continue
+          $ErrorActionPreference = 'Continue'
+
           # Install WSL2 with Ubuntu (non-interactive)
           Write-Host "Installing WSL2 with Ubuntu..."
           echo Y | wsl --install -d Ubuntu --no-launch
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Warning: WSL installation returned exit code $LASTEXITCODE"
+            Write-Host "This may be expected on some systems. Continuing..."
+          }
+
           # Wait for installation
-          Start-Sleep -Seconds 15
+          Write-Host "Waiting for installation to complete..."
+          Start-Sleep -Seconds 20
 
           # Set WSL2 as default
+          Write-Host "Setting WSL2 as default version..."
           wsl --set-default-version 2
 
           # Verify installation
           Write-Host "Verifying WSL installation..."
           wsl --list --verbose
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: WSL verification failed"
+            exit 1
+          }
+
+          # Initialize Ubuntu by running a simple command (this triggers first-time setup)
+          Write-Host "Initializing Ubuntu (first launch)..."
+          wsl -d Ubuntu -u root bash -c "echo 'Ubuntu initialized'" 2>&1 | Out-Host
+
           # Wait for Ubuntu to be ready
-          Start-Sleep -Seconds 5
+          Write-Host "Waiting for Ubuntu to initialize..."
+          Start-Sleep -Seconds 10
 
           # Configure Ubuntu with runner user
           Write-Host "Configuring Ubuntu user..."
-          wsl -d Ubuntu -u root bash -c "id runner || (useradd -m -s /bin/bash runner && echo 'runner:runner' | chpasswd && usermod -aG sudo runner)"
+          wsl -d Ubuntu -u root bash -c "id runner 2>/dev/null || (useradd -m -s /bin/bash runner && echo 'runner:runner' | chpasswd && usermod -aG sudo runner)"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Failed to create user"
+            exit 1
+          }
+
           wsl -d Ubuntu -u root bash -c "grep -q '%sudo ALL=(ALL) NOPASSWD:ALL' /etc/sudoers || echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
 
           # Verify user was created
+          Write-Host "Verifying user creation..."
           wsl -d Ubuntu -u runner bash -c "whoami"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: User verification failed"
+            exit 1
+          }
+
+          Write-Host "✓ WSL2 and Ubuntu configured successfully"
 
       - name: Install Docker in WSL2 manually (for testing)
         shell: powershell
