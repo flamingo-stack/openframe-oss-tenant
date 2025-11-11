@@ -156,7 +156,7 @@ jobs:
             exit 1
           }
 
-          Write-Host "✓ Ubuntu setup completed successfully"
+          Write-Host "[OK] Ubuntu setup completed successfully"
 
       - name: Test Docker installation in WSL2
         shell: powershell
@@ -203,10 +203,10 @@ jobs:
           Write-Host "========================================"
           Write-Host "Windows CLI Test Summary"
           Write-Host "========================================"
-          Write-Host "✓ CLI binary built successfully"
-          Write-Host "✓ WSL2 installation verified"
-          Write-Host "✓ Ubuntu in WSL2 configured"
-          Write-Host "✓ Ready for Docker/kubectl/k3d installation"
+          Write-Host "[OK] CLI binary built successfully"
+          Write-Host "[OK] WSL2 installation verified"
+          Write-Host "[OK] Ubuntu in WSL2 configured"
+          Write-Host "[OK] Ready for Docker/kubectl/k3d installation"
           Write-Host ""
           Write-Host "Next steps for manual testing:"
           Write-Host "1. Download the artifact 'openframe-windows-amd64'"
@@ -295,7 +295,7 @@ jobs:
             exit 1
           }
 
-          Write-Host "✓ WSL2 and Ubuntu configured successfully"
+          Write-Host "[OK] WSL2 and Ubuntu configured successfully"
 
       - name: Install Docker in WSL2 manually (for testing)
         shell: powershell
@@ -385,9 +385,28 @@ jobs:
           Write-Host "========================================"
           Write-Host "Full Installation Test Results"
           Write-Host "========================================"
-          wsl -d Ubuntu -u runner bash -c 'echo "Docker: $(sudo docker --version 2>/dev/null || echo FAILED)"'
-          wsl -d Ubuntu -u runner bash -c 'echo "kubectl: $(kubectl version --client --short 2>/dev/null || echo FAILED)"'
-          wsl -d Ubuntu -u runner bash -c 'echo "k3d: $(k3d version 2>/dev/null || echo FAILED)"'
+
+          # Check if Ubuntu distribution exists before running commands
+          $distroExists = $false
+          try {
+            wsl --list --verbose 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+              $distroExists = $true
+            }
+          } catch {
+            Write-Host "Warning: Could not verify WSL distributions"
+          }
+
+          if ($distroExists) {
+            wsl -d Ubuntu -u runner bash -c 'echo "Docker: $(sudo docker --version 2>/dev/null || echo FAILED)"' 2>&1 | Out-Host
+            wsl -d Ubuntu -u runner bash -c 'echo "kubectl: $(kubectl version --client --short 2>/dev/null || echo FAILED)"' 2>&1 | Out-Host
+            wsl -d Ubuntu -u runner bash -c 'echo "k3d: $(k3d version 2>/dev/null || echo FAILED)"' 2>&1 | Out-Host
+          } else {
+            Write-Host "Docker: FAILED (WSL distribution not found)"
+            Write-Host "kubectl: FAILED (WSL distribution not found)"
+            Write-Host "k3d: FAILED (WSL distribution not found)"
+            exit 1
+          }
 
   # Comment on PR with results
   comment-results:
@@ -404,8 +423,8 @@ jobs:
             const buildStatus = '${{ needs.test-windows-cli.result }}';
             const installStatus = '${{ needs.test-windows-cli-installation.result }}';
 
-            const buildIcon = buildStatus === 'success' ? '✅' : '❌';
-            const installIcon = installStatus === 'success' ? '✅' : '❌';
+            const buildIcon = buildStatus === 'success' ? ':white_check_mark:' : ':x:';
+            const installIcon = installStatus === 'success' ? ':white_check_mark:' : ':x:';
 
             const comment = `## Windows CLI Test Results
 
@@ -414,12 +433,12 @@ jobs:
 
             ### Summary
             - Windows binary compilation: ${buildIcon}
-            - WSL2 setup: ${buildStatus === 'success' ? '✅' : '❌'}
+            - WSL2 setup: ${buildStatus === 'success' ? ':white_check_mark:' : ':x:'}
             - Docker installation: ${installIcon}
             - kubectl installation: ${installIcon}
             - k3d installation: ${installIcon}
 
-            ${buildStatus === 'success' ? '✅ Windows CLI binary is available as an artifact!' : '❌ Build failed, please check logs'}
+            ${buildStatus === 'success' ? ':white_check_mark: Windows CLI binary is available as an artifact!' : ':x: Build failed, please check logs'}
 
             <details>
             <summary>View workflow run</summary>
