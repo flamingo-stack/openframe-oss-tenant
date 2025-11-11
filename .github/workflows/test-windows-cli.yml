@@ -41,6 +41,7 @@ jobs:
 
       - name: Check WSL2 status
         shell: powershell
+        continue-on-error: true
         run: |
           Write-Host "Checking WSL status..."
           wsl --status
@@ -188,27 +189,39 @@ jobs:
         run: |
           Write-Host "Installing Docker in WSL2..."
 
+          # Check Ubuntu version
+          wsl -d Ubuntu bash -c "lsb_release -a"
+
           # Update packages
           wsl -d Ubuntu bash -c "sudo apt-get update -qq"
 
           # Install dependencies
-          wsl -d Ubuntu bash -c "sudo apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release"
+          wsl -d Ubuntu bash -c "sudo apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common"
 
           # Add Docker GPG key
           wsl -d Ubuntu bash -c "sudo mkdir -p /etc/apt/keyrings"
           wsl -d Ubuntu bash -c "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
+          wsl -d Ubuntu bash -c "sudo chmod a+r /etc/apt/keyrings/docker.gpg"
 
-          # Add Docker repository
-          wsl -d Ubuntu bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
+          # Add Docker repository using jammy (Ubuntu 22.04) which is stable and supported
+          # Using jammy explicitly instead of lsb_release to avoid compatibility issues with newer Ubuntu releases
+          wsl -d Ubuntu bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
+
+          # Update package index with new repository
+          wsl -d Ubuntu bash -c "sudo apt-get update -qq"
 
           # Install Docker
-          wsl -d Ubuntu bash -c "sudo apt-get update -qq"
-          wsl -d Ubuntu bash -c "sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io"
+          wsl -d Ubuntu bash -c "sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
 
-          # Start Docker
-          wsl -d Ubuntu bash -c "sudo service docker start"
+          # Configure Docker service
+          wsl -d Ubuntu bash -c "sudo mkdir -p /var/run"
+          wsl -d Ubuntu bash -c "sudo service docker start || sudo dockerd > /dev/null 2>&1 &"
 
-          # Verify
+          # Wait for Docker to be ready
+          Start-Sleep -Seconds 5
+
+          # Verify Docker installation
+          wsl -d Ubuntu bash -c "sudo docker --version"
           wsl -d Ubuntu bash -c "sudo docker ps"
 
       - name: Test Docker from Windows
