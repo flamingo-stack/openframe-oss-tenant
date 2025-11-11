@@ -306,37 +306,72 @@ jobs:
           wsl -d Ubuntu bash -c "lsb_release -a"
 
           # Update packages and install dependencies
+          Write-Host "Step 1: Updating package lists..."
           wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq"
+
+          Write-Host "Step 2: Installing prerequisites..."
           wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common"
 
           # Remove any existing Docker GPG key
+          Write-Host "Step 3: Cleaning up old Docker keys..."
           wsl -d Ubuntu bash -c "sudo rm -f /etc/apt/keyrings/docker.gpg /usr/share/keyrings/docker-archive-keyring.gpg"
 
           # Add Docker's official GPG key using the new method
+          Write-Host "Step 4: Creating keyrings directory..."
           wsl -d Ubuntu bash -c "sudo install -m 0755 -d /etc/apt/keyrings"
+
+          Write-Host "Step 5: Adding Docker GPG key..."
           wsl -d Ubuntu bash -c "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg"
           wsl -d Ubuntu bash -c "sudo chmod a+r /etc/apt/keyrings/docker.gpg"
 
-          # Add Docker repository using jammy (Ubuntu 22.04) which is stable and supported
-          # Using jammy explicitly instead of lsb_release to avoid compatibility issues with newer Ubuntu releases
-          wsl -d Ubuntu bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | sudo tee /etc/apt/sources.list.d/docker.list'
+          # Verify GPG key was added
+          wsl -d Ubuntu bash -c "ls -la /etc/apt/keyrings/docker.gpg"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Docker GPG key was not created"
+            exit 1
+          }
+
+          # Add Docker repository - using a bash script to avoid quoting issues
+          Write-Host "Step 6: Adding Docker repository..."
+          wsl -d Ubuntu bash -c "sudo bash -c 'ARCH=\$(dpkg --print-architecture) && echo \"deb [arch=\$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable\" > /etc/apt/sources.list.d/docker.list'"
 
           # Verify repository was added
+          Write-Host "Step 7: Verifying repository configuration..."
           wsl -d Ubuntu bash -c "cat /etc/apt/sources.list.d/docker.list"
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Docker repository file was not created"
+            exit 1
+          }
+
           # Update package index with new repository
+          Write-Host "Step 8: Updating package index with Docker repository..."
           wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq"
 
           # Check if Docker packages are available
+          Write-Host "Step 9: Checking Docker package availability..."
           wsl -d Ubuntu bash -c "apt-cache policy docker-ce"
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Docker packages are not available"
+            exit 1
+          }
+
           # Install Docker
+          Write-Host "Step 10: Installing Docker packages..."
           wsl -d Ubuntu bash -c "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Docker installation failed"
+            exit 1
+          }
+
           # Configure Docker service for WSL2
+          Write-Host "Step 11: Configuring Docker for WSL2..."
           wsl -d Ubuntu bash -c "sudo mkdir -p /var/run"
 
           # Start Docker daemon in background
+          Write-Host "Step 12: Starting Docker daemon..."
           wsl -d Ubuntu bash -c "sudo dockerd > /tmp/dockerd.log 2>&1 &"
 
           # Wait for Docker to be ready
@@ -344,6 +379,7 @@ jobs:
           Start-Sleep -Seconds 10
 
           # Verify Docker installation
+          Write-Host "Step 13: Verifying Docker installation..."
           wsl -d Ubuntu bash -c "sudo docker --version"
           wsl -d Ubuntu bash -c "sudo docker info || sudo docker ps"
 
