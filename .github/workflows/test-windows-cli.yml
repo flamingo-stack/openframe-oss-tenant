@@ -333,7 +333,7 @@ jobs:
 
           # Add Docker repository - using a bash script to avoid quoting issues
           Write-Host "Step 6: Adding Docker repository..."
-          wsl -d Ubuntu bash -c "sudo bash -c 'ARCH=\$(dpkg --print-architecture) && echo \"deb [arch=\$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable\" > /etc/apt/sources.list.d/docker.list'"
+          wsl -d Ubuntu bash -c 'ARCH=$(dpkg --print-architecture) && CODENAME=$(lsb_release -cs) && echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $CODENAME stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
 
           # Verify repository was added
           Write-Host "Step 7: Verifying repository configuration..."
