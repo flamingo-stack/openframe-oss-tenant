@@ -1,5 +1,13 @@
 environment: prod
 
+deployment:
+  oss:
+    repository:
+      profile: prod
+  saas:
+    repository:
+      profile: prod
+
 apps:
   openframe-config:
     values:

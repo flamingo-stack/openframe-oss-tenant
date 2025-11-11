@@ -1,5 +1,13 @@
 environment: qa
 
+deployment:
+  oss:
+    repository:
+      profile: qa
+  saas:
+    repository:
+      profile: qa
+
 apps:
   openframe-config:
     values:
