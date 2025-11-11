@@ -3,8 +3,6 @@ kind: ConfigMap
 metadata:
   name: openframe-config
 data:
-  SPRING_PROFILES_ACTIVE: "{{ .Values.deployment.oss.repository.profile }}"
-
   # OSS Environment Variables
   CONFIG_GIT_REPO_0: "{{ .Values.deployment.oss.repository.repoName }}"
   CONFIG_GIT_BRANCH_0: "{{ .Values.deployment.oss.repository.branch }}"

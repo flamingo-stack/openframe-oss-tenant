@@ -45,7 +45,7 @@ spec:
               value: "https://localhost"
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
-              value: "k8s"
+              value: "{{ .Values.deployment.oss.repository.profile }}"
             - name: SPRING_CONFIG_IMPORT
               value: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
           livenessProbe:
