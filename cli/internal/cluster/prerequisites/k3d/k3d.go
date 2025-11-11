@@ -2,6 +2,7 @@ package k3d
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 )
@@ -54,7 +55,7 @@ func (k *K3dInstaller) Install() error {
 	case "linux":
 		return k.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic k3d installation on Windows not supported. Please install from https://k3d.io/v5.4.6/#installation")
+		return k.installWindows()
 	default:
 		return fmt.Errorf("automatic k3d installation not supported on %s", runtime.GOOS)
 	}
@@ -158,6 +159,81 @@ func (k *K3dInstaller) installBinary() error {
 		}
 	}
 
+	return nil
+}
+
+func (k *K3dInstaller) installWindows() error {
+	fmt.Println("Installing k3d inside WSL2...")
+
+	// Install k3d inside WSL2 Ubuntu using the official install script
+	installScript := `#!/bin/bash
+set -e
+
+# Check if k3d is already installed
+if command -v k3d &> /dev/null; then
+    echo "k3d already installed in WSL2"
+    exit 0
+fi
+
+echo "Installing k3d..."
+
+# Use the official k3d install script
+curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+echo "k3d installed successfully"
+`
+
+	cmd := exec.Command("wsl", "-d", "Ubuntu", "bash", "-c", installScript)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install k3d in WSL2: %w", err)
+	}
+
+	// Create Windows wrapper
+	if err := k.createK3dWrapper(); err != nil {
+		return fmt.Errorf("failed to create k3d wrapper: %w", err)
+	}
+
+	fmt.Println("✓ k3d installed successfully in WSL2!")
+	return nil
+}
+
+func (k *K3dInstaller) createK3dWrapper() error {
+	fmt.Println("Creating k3d command for Windows...")
+
+	// Create a batch file wrapper that calls k3d in WSL2
+	wrapperDir := os.Getenv("USERPROFILE") + "\\bin"
+	os.MkdirAll(wrapperDir, 0755)
+
+	wrapperPath := wrapperDir + "\\k3d.bat"
+	wrapperContent := `@echo off
+wsl -d Ubuntu k3d %*
+`
+
+	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
+		return fmt.Errorf("failed to create k3d wrapper: %w", err)
+	}
+
+	// Add to PATH if not already there
+	addPathScript := fmt.Sprintf(`
+$binDir = "%s"
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($currentPath -notlike "*$binDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$binDir", "User")
+    $env:Path = "$env:Path;$binDir"
+    Write-Host "Added $binDir to PATH"
+} else {
+    Write-Host "PATH already contains $binDir"
+}
+`, wrapperDir)
+
+	cmd := exec.Command("powershell", "-Command", addPathScript)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run() // Ignore errors
+
+	fmt.Printf("✓ k3d wrapper created at: %s\n", wrapperPath)
 	return nil
 }
 

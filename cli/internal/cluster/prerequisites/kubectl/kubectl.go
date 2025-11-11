@@ -55,7 +55,7 @@ func (k *KubectlInstaller) Install() error {
 	case "linux":
 		return k.installLinux()
 	case "windows":
-		return fmt.Errorf("automatic kubectl installation on Windows not supported. Please install from https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/")
+		return k.installWindows()
 	default:
 		return fmt.Errorf("automatic kubectl installation not supported on %s", runtime.GOOS)
 	}
@@ -217,6 +217,87 @@ func (k *KubectlInstaller) installBinary() error {
 		}
 	}
 
+	return nil
+}
+
+func (k *KubectlInstaller) installWindows() error {
+	fmt.Println("Installing kubectl inside WSL2...")
+
+	// Install kubectl inside WSL2 Ubuntu
+	installScript := `#!/bin/bash
+set -e
+
+# Check if kubectl is already installed
+if command -v kubectl &> /dev/null; then
+    echo "kubectl already installed in WSL2"
+    exit 0
+fi
+
+echo "Installing kubectl..."
+
+# Download the latest stable kubectl binary
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+# Install kubectl
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Clean up
+rm kubectl
+
+echo "kubectl installed successfully"
+`
+
+	cmd := exec.Command("wsl", "-d", "Ubuntu", "bash", "-c", installScript)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install kubectl in WSL2: %w", err)
+	}
+
+	// Create Windows wrapper
+	if err := k.createKubectlWrapper(); err != nil {
+		return fmt.Errorf("failed to create kubectl wrapper: %w", err)
+	}
+
+	fmt.Println("✓ kubectl installed successfully in WSL2!")
+	return nil
+}
+
+func (k *KubectlInstaller) createKubectlWrapper() error {
+	fmt.Println("Creating kubectl command for Windows...")
+
+	// Create a batch file wrapper that calls kubectl in WSL2
+	wrapperDir := os.Getenv("USERPROFILE") + "\\bin"
+	os.MkdirAll(wrapperDir, 0755)
+
+	wrapperPath := wrapperDir + "\\kubectl.bat"
+	wrapperContent := `@echo off
+wsl -d Ubuntu kubectl %*
+`
+
+	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
+		return fmt.Errorf("failed to create kubectl wrapper: %w", err)
+	}
+
+	// Add to PATH if not already there
+	addPathScript := fmt.Sprintf(`
+$binDir = "%s"
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($currentPath -notlike "*$binDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$binDir", "User")
+    $env:Path = "$env:Path;$binDir"
+    Write-Host "Added $binDir to PATH"
+} else {
+    Write-Host "PATH already contains $binDir"
+}
+`, wrapperDir)
+
+	cmd := exec.Command("powershell", "-Command", addPathScript)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run() // Ignore errors
+
+	fmt.Printf("✓ kubectl wrapper created at: %s\n", wrapperPath)
 	return nil
 }
 

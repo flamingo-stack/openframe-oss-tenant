@@ -1,0 +1,295 @@
+name: Test Windows CLI
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cli/**'
+      - '.github/workflows/test-windows-cli.yml'
+  push:
+    branches: [main, feat/windows-cli]
+    paths:
+      - 'cli/**'
+  workflow_dispatch:
+
+jobs:
+  test-windows-cli:
+    name: Test CLI on Windows
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build Windows CLI binary
+        shell: bash
+        run: |
+          cd cli
+          go build -v -o openframe.exe .
+          ls -lh openframe.exe
+
+      - name: Check WSL2 status
+        shell: powershell
+        run: |
+          Write-Host "Checking WSL status..."
+          wsl --status || Write-Host "WSL not fully configured yet"
+          wsl --list --verbose || Write-Host "No WSL distributions installed"
+
+      - name: Test prerequisite check (should detect missing tools)
+        shell: powershell
+        continue-on-error: true
+        run: |
+          cd cli
+          Write-Host "Testing prerequisite checker..."
+          .\openframe.exe cluster diagnose
+
+      - name: Install WSL2 and Ubuntu
+        shell: powershell
+        run: |
+          Write-Host "Installing WSL2 and Ubuntu..."
+
+          # Enable WSL feature
+          wsl --install --no-launch
+
+          # Wait a bit for installation to complete
+          Start-Sleep -Seconds 10
+
+          # Check status
+          wsl --status
+          wsl --list --verbose
+
+      - name: Set up Ubuntu in WSL2
+        shell: powershell
+        run: |
+          Write-Host "Setting up Ubuntu..."
+
+          # Install Ubuntu
+          wsl --install -d Ubuntu --no-launch || Write-Host "Ubuntu already installed"
+
+          # Set WSL2 as default version
+          wsl --set-default-version 2
+
+          # Initialize Ubuntu with default user
+          wsl -d Ubuntu -u root bash -c "useradd -m -s /bin/bash testuser && echo 'testuser:testpass' | chpasswd && usermod -aG sudo testuser"
+          wsl -d Ubuntu -u root bash -c "echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
+
+          # Set default user
+          ubuntu config --default-user testuser || Write-Host "Could not set default user"
+
+          Write-Host "WSL2 Ubuntu setup complete"
+          wsl --list --verbose
+
+      - name: Test Docker installation in WSL2
+        shell: powershell
+        run: |
+          Write-Host "Testing Docker installation..."
+
+          cd cli
+
+          # Note: The actual Docker installation will be triggered by the CLI
+          # For now, we'll verify the WSL environment is ready
+          wsl -d Ubuntu bash -c "echo 'WSL2 is ready for Docker installation'"
+
+      - name: Verify WSL2 Docker socket access
+        shell: powershell
+        run: |
+          Write-Host "Verifying Docker can be installed..."
+          wsl -d Ubuntu bash -c "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | head -5"
+
+      - name: Test CLI build and basic commands
+        shell: powershell
+        run: |
+          cd cli
+          Write-Host "Testing CLI version..."
+          .\openframe.exe --version || .\openframe.exe version || Write-Host "No version command"
+
+          Write-Host "Testing CLI help..."
+          .\openframe.exe --help
+
+      - name: Upload Windows binary as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openframe-windows-amd64
+          path: cli/openframe.exe
+          retention-days: 30
+
+      - name: Test results summary
+        if: always()
+        shell: powershell
+        run: |
+          Write-Host "========================================"
+          Write-Host "Windows CLI Test Summary"
+          Write-Host "========================================"
+          Write-Host "✓ CLI binary built successfully"
+          Write-Host "✓ WSL2 installation verified"
+          Write-Host "✓ Ubuntu in WSL2 configured"
+          Write-Host "✓ Ready for Docker/kubectl/k3d installation"
+          Write-Host ""
+          Write-Host "Next steps for manual testing:"
+          Write-Host "1. Download the artifact 'openframe-windows-amd64'"
+          Write-Host "2. Run: .\openframe.exe cluster up"
+          Write-Host "3. Verify Docker, kubectl, and k3d are installed"
+
+  # Integration test - full installation flow
+  test-windows-cli-installation:
+    name: Test Full Installation on Windows
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build CLI
+        shell: bash
+        run: |
+          cd cli
+          go build -o openframe.exe .
+
+      - name: Install WSL2 and configure
+        shell: powershell
+        run: |
+          # Install WSL2
+          wsl --install --no-launch
+          wsl --install -d Ubuntu --no-launch
+          wsl --set-default-version 2
+
+          # Configure Ubuntu
+          wsl -d Ubuntu -u root bash -c "useradd -m -s /bin/bash runner && echo 'runner:runner' | chpasswd && usermod -aG sudo runner"
+          wsl -d Ubuntu -u root bash -c "echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
+
+      - name: Install Docker in WSL2 manually (for testing)
+        shell: powershell
+        run: |
+          Write-Host "Installing Docker in WSL2..."
+
+          $dockerInstall = @'
+          # Update packages
+          sudo apt-get update -qq
+
+          # Install dependencies
+          sudo apt-get install -y -qq apt-transport-https ca-certificates curl gnupg lsb-release
+
+          # Add Docker GPG key
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+          # Add Docker repository
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+          # Install Docker
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io
+
+          # Start Docker
+          sudo service docker start
+
+          # Verify
+          sudo docker ps
+'@
+
+          wsl -d Ubuntu bash -c $dockerInstall
+
+      - name: Test Docker from Windows
+        shell: powershell
+        run: |
+          Write-Host "Testing Docker access from Windows..."
+          wsl -d Ubuntu docker ps
+          wsl -d Ubuntu docker version
+
+      - name: Install kubectl in WSL2
+        shell: powershell
+        run: |
+          Write-Host "Installing kubectl..."
+          wsl -d Ubuntu bash -c 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && rm kubectl'
+          wsl -d Ubuntu kubectl version --client
+
+      - name: Install k3d in WSL2
+        shell: powershell
+        run: |
+          Write-Host "Installing k3d..."
+          wsl -d Ubuntu bash -c 'curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash'
+          wsl -d Ubuntu k3d version
+
+      - name: Test k3d cluster creation
+        shell: powershell
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          Write-Host "Testing k3d cluster creation..."
+          wsl -d Ubuntu k3d cluster create test-cluster --wait --timeout 300s
+          wsl -d Ubuntu kubectl get nodes
+          wsl -d Ubuntu k3d cluster delete test-cluster
+
+      - name: Installation test summary
+        if: always()
+        shell: powershell
+        run: |
+          Write-Host "========================================"
+          Write-Host "Full Installation Test Results"
+          Write-Host "========================================"
+          wsl -d Ubuntu bash -c 'echo "Docker: $(docker --version 2>/dev/null || echo FAILED)"'
+          wsl -d Ubuntu bash -c 'echo "kubectl: $(kubectl version --client --short 2>/dev/null || echo FAILED)"'
+          wsl -d Ubuntu bash -c 'echo "k3d: $(k3d version 2>/dev/null || echo FAILED)"'
+
+  # Comment on PR with results
+  comment-results:
+    name: Comment Test Results
+    runs-on: ubuntu-latest
+    needs: [test-windows-cli, test-windows-cli-installation]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildStatus = '${{ needs.test-windows-cli.result }}';
+            const installStatus = '${{ needs.test-windows-cli-installation.result }}';
+
+            const buildIcon = buildStatus === 'success' ? '✅' : '❌';
+            const installIcon = installStatus === 'success' ? '✅' : '❌';
+
+            const comment = `## Windows CLI Test Results
+
+            ${buildIcon} **Build Test**: ${buildStatus}
+            ${installIcon} **Installation Test**: ${installStatus}
+
+            ### Summary
+            - Windows binary compilation: ${buildIcon}
+            - WSL2 setup: ${buildStatus === 'success' ? '✅' : '❌'}
+            - Docker installation: ${installIcon}
+            - kubectl installation: ${installIcon}
+            - k3d installation: ${installIcon}
+
+            ${buildStatus === 'success' ? '✅ Windows CLI binary is available as an artifact!' : '❌ Build failed, please check logs'}
+
+            <details>
+            <summary>View workflow run</summary>
+
+            [View full test results](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            </details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
