@@ -82,7 +82,19 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterCon
 		}
 	}
 
-	args := []string{"cluster", "create", "--config", configFile, "--timeout", m.timeout}
+	// Convert Windows path to WSL path if running on Windows
+	configFilePath := configFile
+	if runtime.GOOS == "windows" {
+		configFilePath, err = m.convertWindowsPathToWSL(configFile)
+		if err != nil {
+			return models.NewClusterOperationError("create", config.Name, fmt.Errorf("failed to convert config file path for WSL: %w", err))
+		}
+		if m.verbose {
+			fmt.Printf("DEBUG: Converted Windows path '%s' to WSL path '%s'\n", configFile, configFilePath)
+		}
+	}
+
+	args := []string{"cluster", "create", "--config", configFilePath, "--timeout", m.timeout}
 	if m.verbose {
 		args = append(args, "--verbose")
 	}
@@ -439,6 +451,26 @@ func (m *K3dManager) isPortAvailable(port int) bool {
 	}
 	defer listener.Close()
 	return true
+}
+
+// convertWindowsPathToWSL converts a Windows path to a WSL path format
+// Example: C:\Users\foo\file.txt -> /mnt/c/Users/foo/file.txt
+func (m *K3dManager) convertWindowsPathToWSL(windowsPath string) (string, error) {
+	if windowsPath == "" {
+		return "", fmt.Errorf("empty path provided")
+	}
+
+	// Replace backslashes with forward slashes
+	path := strings.ReplaceAll(windowsPath, "\\", "/")
+
+	// Convert drive letter (e.g., C: -> /mnt/c)
+	if len(path) >= 2 && path[1] == ':' {
+		driveLetter := strings.ToLower(string(path[0]))
+		// Remove the drive letter and colon, then prepend /mnt/<drive>
+		path = "/mnt/" + driveLetter + path[2:]
+	}
+
+	return path, nil
 }
 
 // k3dClusterInfo represents the JSON structure returned by k3d cluster list

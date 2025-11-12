@@ -665,3 +665,64 @@ func TestParseNodeCount(t *testing.T) {
 		})
 	}
 }
+
+func TestK3dManager_convertWindowsPathToWSL(t *testing.T) {
+	manager := &K3dManager{}
+
+	tests := []struct {
+		name          string
+		windowsPath   string
+		expectedPath  string
+		expectedError string
+	}{
+		{
+			name:         "standard Windows path with backslashes",
+			windowsPath:  `C:\Users\foo\file.txt`,
+			expectedPath: "/mnt/c/Users/foo/file.txt",
+		},
+		{
+			name:         "Windows path with short names",
+			windowsPath:  `C:\Users\RUNNER~1\AppData\Local\Temp\k3d-config-712914388.yaml`,
+			expectedPath: "/mnt/c/Users/RUNNER~1/AppData/Local/Temp/k3d-config-712914388.yaml",
+		},
+		{
+			name:         "Windows path with forward slashes already",
+			windowsPath:  `C:/Users/foo/file.txt`,
+			expectedPath: "/mnt/c/Users/foo/file.txt",
+		},
+		{
+			name:         "different drive letter",
+			windowsPath:  `D:\Projects\myproject\config.yaml`,
+			expectedPath: "/mnt/d/Projects/myproject/config.yaml",
+		},
+		{
+			name:         "uppercase drive letter",
+			windowsPath:  `E:\Data\file.txt`,
+			expectedPath: "/mnt/e/Data/file.txt",
+		},
+		{
+			name:          "empty path",
+			windowsPath:   "",
+			expectedError: "empty path provided",
+		},
+		{
+			name:         "path without drive letter",
+			windowsPath:  `\Users\foo\file.txt`,
+			expectedPath: "/Users/foo/file.txt",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := manager.convertWindowsPathToWSL(tt.windowsPath)
+
+			if tt.expectedError != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedPath, result)
+			}
+		})
+	}
+}
