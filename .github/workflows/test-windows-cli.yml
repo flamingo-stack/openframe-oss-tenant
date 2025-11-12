@@ -304,17 +304,17 @@ jobs:
           Write-Host "Installing Docker in WSL2 using installation script..."
 
           # Create installation script content
-          $installScript = @'
+          $installScript = @"
           #!/bin/bash
           set -e
 
           # Check if docker is already installed
           if command -v docker &> /dev/null; then
-              echo "Docker already installed in WSL2"
+              echo 'Docker already installed in WSL2'
               exit 0
           fi
 
-          echo "Installing Docker CE..."
+          echo 'Installing Docker CE...'
 
           # Update package index
           sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
@@ -328,17 +328,17 @@ jobs:
           sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
           # Add Docker repository
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          echo 'deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable' | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
           # Install Docker CE
           sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
           # Add current user to docker group
-          sudo usermod -aG docker $USER
+          sudo usermod -aG docker `$USER
 
-          echo "Docker CE installed successfully"
-'@
+          echo 'Docker CE installed successfully'
+"@
 
           # Write script to WSL
           Write-Host "Copying installation script to WSL..."
@@ -351,7 +351,7 @@ jobs:
           Write-Host "Configuring Docker daemon..."
 
           # Configure Docker
-          $configureScript = @'
+          $configureScript = @"
           #!/bin/bash
           set -e
 
@@ -359,7 +359,7 @@ jobs:
           sudo mkdir -p /etc/docker
           sudo tee /etc/docker/daemon.json > /dev/null <<EOF
           {
-            "iptables": false
+            \`"iptables\`": false
           }
           EOF
 
@@ -379,14 +379,14 @@ jobs:
           # Wait for Docker to be ready
           for i in {1..30}; do
               if sudo docker ps > /dev/null 2>&1; then
-                  echo "Docker is running"
+                  echo 'Docker is running'
                   break
               fi
               sleep 1
           done
 
-          echo "Docker configured successfully"
-'@
+          echo 'Docker configured successfully'
+"@
 
           # Write and execute configuration script
           Write-Host "Copying configuration script to WSL..."
