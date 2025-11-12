@@ -1,6 +1,7 @@
 import React from 'react'
-import { Keyboard, Copy, Sunrise, Moon, RotateCcw, Power } from 'lucide-react'
+import { Keyboard, Copy, Sunrise, Moon, RotateCcw, Power, Monitor, MonitorSpeaker } from 'lucide-react'
 import { ActionsMenuGroup } from '@flamingo/ui-kit'
+import { DisplayInfo } from '@lib/meshcentral/meshcentral-desktop'
 
 // Virtual key codes based on Windows Virtual-Key Codes
 export const VK = {
@@ -21,6 +22,7 @@ export interface ActionHandlers {
   sendKeyCombo: (keys: number[]) => void
   sendPower: (action: 'wake' | 'sleep' | 'reset' | 'poweroff') => void
   setEnableInput: (enabled: boolean) => void
+  switchDisplay: (displayId: number) => void
   toast: (options: {
     title: string
     description: string
@@ -29,9 +31,25 @@ export interface ActionHandlers {
   }) => void
 }
 
+const createDisplaySubmenu = (displays: DisplayInfo[], currentDisplay: number, handlers: ActionHandlers) => {
+  if (displays.length <= 1) return []
+  
+  return displays.map((display) => ({
+    id: `display-${display.id}`,
+    label: `Display ${display.id}${display.primary ? ' (Primary)' : ''} - ${display.w && display.h ? `${display.w} × ${display.h}` : 'Unknown'}`,
+    icon: display.primary ? <MonitorSpeaker className="w-4 h-4" /> : <Monitor className="w-4 h-4" />,
+    checked: currentDisplay === display.id,
+    onClick: () => {
+      handlers.switchDisplay(display.id)
+    }
+  }))
+}
+
 export const createActionsMenuGroups = (
   handlers: ActionHandlers,
-  enableInput: boolean
+  enableInput: boolean,
+  displays: DisplayInfo[] = [],
+  currentDisplay: number = 0
 ): ActionsMenuGroup[] => [
   {
     items: [
@@ -144,6 +162,18 @@ export const createActionsMenuGroups = (
     ],
     separator: true
   },
+  ...(displays.length > 1 ? [{
+    items: [
+      {
+        id: 'display-selector',
+        label: 'Display',
+        icon: <Monitor className="w-6 h-6" />,
+        type: 'submenu' as const,
+        submenu: createDisplaySubmenu(displays, currentDisplay, handlers)
+      }
+    ],
+    separator: true
+  }] : []),
   {
     items: [
       {

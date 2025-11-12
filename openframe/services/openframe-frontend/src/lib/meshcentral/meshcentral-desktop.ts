@@ -1,3 +1,12 @@
+export interface DisplayInfo {
+  id: number
+  x: number
+  y: number
+  w: number
+  h: number
+  primary: boolean
+}
+
 export type DesktopInputHandlers = {
   attach(canvas: HTMLCanvasElement): void
   detach(): void
@@ -5,6 +14,10 @@ export type DesktopInputHandlers = {
   sendCtrlAltDel?(): void
   sendKeyCombo?(combo: string): void
   requestRefresh?(): void
+  requestDisplayList?(): void
+  switchDisplay?(displayId: number): void
+  getDisplayList?(): DisplayInfo[]
+  onDisplayListChange?(callback: (displays: DisplayInfo[]) => void): void
 }
 
 export class MeshDesktop implements DesktopInputHandlers {
@@ -29,6 +42,10 @@ export class MeshDesktop implements DesktopInputHandlers {
   private readonly maxConcurrentDecodes = 3
   private drawQueue: Array<{ x: number; y: number; bitmap: ImageBitmap | HTMLImageElement; url?: string }> = []
   private drawScheduled = false
+  
+  private displayList: DisplayInfo[] = []
+  private currentDisplay = 0
+  private onDisplayListCallback: ((displays: DisplayInfo[]) => void) | null = null
 
   attach(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -203,6 +220,9 @@ export class MeshDesktop implements DesktopInputHandlers {
     refreshView.setUint16(0, 0x0006, false)  // Command: REFRESH
     refreshView.setUint16(2, 0x0000, false)  // Size: 0 bytes
     this.send(refreshBuffer)
+    
+    // Command 5: Request Display List for Multiscreen Support
+    this.requestDisplayList()
   }
 
   private send(bytes: Uint8Array) {
@@ -459,6 +479,34 @@ export class MeshDesktop implements DesktopInputHandlers {
     this.send(refreshBuffer)
   }
   
+  requestDisplayList() {
+    // Command 11 (0x000B): Request Display List
+    const displayListBuffer = new Uint8Array(4)
+    const displayListView = new DataView(displayListBuffer.buffer)
+    displayListView.setUint16(0, 0x000B, false)  // Command: DISPLAY_LIST
+    displayListView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    this.send(displayListBuffer)
+  }
+  
+  switchDisplay(displayId: number) {
+    // Command 12 (0x000C): Switch Display
+    const switchBuffer = new Uint8Array(6)
+    const switchView = new DataView(switchBuffer.buffer)
+    switchView.setUint16(0, 0x000C, false)  // Command: SWITCH_DISPLAY
+    switchView.setUint16(2, 0x0002, false)  // Size: 2 bytes
+    switchView.setUint16(4, displayId, false)  // Display ID
+    this.send(switchBuffer)
+    this.currentDisplay = displayId
+  }
+  
+  getDisplayList(): DisplayInfo[] {
+    return this.displayList
+  }
+  
+  onDisplayListChange(callback: (displays: DisplayInfo[]) => void) {
+    this.onDisplayListCallback = callback
+  }
+  
   sendKeyCombo(combo: string) {
     const sequences: Record<string, Array<{ action: number; keyCode: number; extended: boolean }>> = {
       'ctrl+c': [
@@ -656,6 +704,12 @@ export class MeshDesktop implements DesktopInputHandlers {
               this.tileQueue.push({ x: fx, y: fy, bytes: bytesCopy })
             }
           }
+        } else if (cmd === 11) {
+          // Command 11: Display List Response
+          this.parseDisplayList(frame)
+        } else if (cmd === 82) {
+          // Command 82: Display Location Info
+          this.parseDisplayLocationInfo(frame)
         }
 
         offset += headerSkip + totalSize
@@ -729,6 +783,87 @@ export class MeshDesktop implements DesktopInputHandlers {
         if (it.url) { try { URL.revokeObjectURL(it.url) } catch {} }
       }
     })
+  }
+  
+  private parseDisplayList(frame: Uint8Array) {
+    // Display List Response Format (from Command 11):
+    // Bytes 0-3: Standard header (cmd=11, size)
+    // Bytes 4-5: Number of displays (uint16, big-endian)
+    // For each display (8 bytes):
+    //   Bytes 0-1: Display ID (uint16, big-endian)
+    //   Bytes 2-3: X position (uint16, big-endian)
+    //   Bytes 4-5: Y position (uint16, big-endian) 
+    //   Bytes 6-7: Flags (uint16, big-endian) - bit 0 = primary display
+    if (frame.length < 6) return
+
+    console.log({frame})
+    
+    const displayCount = (frame[4] << 8) | frame[5]
+    const displays: DisplayInfo[] = []
+    
+    for (let i = 0; i < displayCount && (6 + i * 8 + 8) <= frame.length; i++) {
+      const offset = 6 + i * 8
+      const id = (frame[offset] << 8) | frame[offset + 1]
+      const x = (frame[offset + 2] << 8) | frame[offset + 3]
+      const y = (frame[offset + 4] << 8) | frame[offset + 5]
+      const flags = (frame[offset + 6] << 8) | frame[offset + 7]
+      
+      displays.push({
+        id,
+        x,
+        y,
+        w: 0, // Width/height will be updated by Command 82 responses
+        h: 0,
+        primary: (flags & 1) === 1
+      })
+    }
+
+    console.log({displays});
+    
+    this.displayList = displays
+    if (this.onDisplayListCallback) {
+      this.onDisplayListCallback(displays)
+    }
+  }
+  
+  private parseDisplayLocationInfo(frame: Uint8Array) {
+    // Display Location Info Format (from Command 82):
+    // Bytes 0-3: Standard header (cmd=82, size)
+    // Bytes 4-5: Display ID (uint16, big-endian)
+    // Bytes 6-7: X position (uint16, big-endian)
+    // Bytes 8-9: Y position (uint16, big-endian)
+    // Bytes 10-11: Width (uint16, big-endian)
+    // Bytes 12-13: Height (uint16, big-endian)
+    // Bytes 14-15: Flags (uint16, big-endian) - bit 0 = primary display
+    if (frame.length < 16) return
+    
+    const displayId = (frame[4] << 8) | frame[5]
+    const x = (frame[6] << 8) | frame[7]
+    const y = (frame[8] << 8) | frame[9]
+    const width = (frame[10] << 8) | frame[11]
+    const height = (frame[12] << 8) | frame[13]
+    const flags = (frame[14] << 8) | frame[15]
+    
+    // Update existing display in the list or add new one
+    const existingIndex = this.displayList.findIndex(d => d.id === displayId)
+    const displayInfo: DisplayInfo = {
+      id: displayId,
+      x,
+      y,
+      w: width,
+      h: height,
+      primary: (flags & 1) === 1
+    }
+    
+    if (existingIndex >= 0) {
+      this.displayList[existingIndex] = displayInfo
+    } else {
+      this.displayList.push(displayInfo)
+    }
+    
+    if (this.onDisplayListCallback) {
+      this.onDisplayListCallback([...this.displayList])
+    }
   }
 }
 
