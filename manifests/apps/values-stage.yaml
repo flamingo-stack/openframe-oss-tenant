@@ -1,5 +1,13 @@
 environment: stage
 
+deployment:
+  oss:
+    repository:
+      profile: stage
+  saas:
+    repository:
+      profile: stage
+
 apps:
   openframe-config:
     values:

@@ -29,7 +29,7 @@ deployment:
       URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
       repoName: openframe-oss-tenant
       branch: main
-      profile: k8s
+      profile: dev
       autoSync: true
   saas:
     enabled: false
@@ -49,7 +49,7 @@ deployment:
       repoName: openframe-saas-tenant
       branch: main
       password: ""  # GitHub PAT for private repo access
-      profile: k8s
+      profile: dev
       autoSync: true
   
 registry:

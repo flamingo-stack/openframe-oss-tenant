@@ -3,7 +3,7 @@ environment: dev
 deployment:
   oss:
     repository:
-      profile: k8s
+      profile: dev
 
 registry:
   docker:

@@ -63,7 +63,7 @@ spring:
   config:
     url: http://openframe-config.microservices.svc.cluster.local:8888
     activate:
-      on-profile: k8s
+      on-profile: dev
     import: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
 ```
 

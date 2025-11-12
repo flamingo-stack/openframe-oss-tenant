@@ -3,13 +3,4 @@ kind: ConfigMap
 metadata:
   name: openframe-config
 data:
-  # OSS Environment Variables
-  CONFIG_GIT_REPO_0: "{{ .Values.deployment.oss.repository.repoName }}"
-  CONFIG_GIT_BRANCH_0: "{{ .Values.deployment.oss.repository.branch }}"
-
-  # Additional SaaS Environment Variables
-  {{- if .Values.deployment.saas.enabled }}
-  CONFIG_GIT_REPO_1: "{{ .Values.deployment.saas.repository.repoName }}"
-  CONFIG_GIT_BRANCH_1: "{{ .Values.deployment.saas.repository.branch }}"
-  GITHUB_PASSWORD: "{{ .Values.deployment.saas.repository.password }}"
-  {{- end }}
+  CONFIG_GIT_BRANCH: "{{ .Values.deployment.oss.repository.branch }}"
