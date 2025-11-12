@@ -70,7 +70,7 @@ export class MeshTunnel {
     this.wsManager = new WebSocketManager({
       url: buildUrl,
       binaryType: 'arraybuffer',
-      enableMessageQueue: false,
+      enableMessageQueue: true,
       maxReconnectAttempts: 10,
       reconnectBackoff: [1000, 2000, 4000, 8000, 16000, 30000],
       refreshTokenBeforeReconnect: true,

@@ -110,7 +110,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel, shell
       setConnecting(true)
       try {
         control = new MeshControlClient()
-        const { authCookie, relayCookie } = await control.getAuthCookies()
+        const { authCookie } = await control.getAuthCookies()
         const term = termRef.current
         if (!term) throw new Error('Terminal not initialized')
         const tunnel = new MeshTunnel({
@@ -136,11 +136,8 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel, shell
           onStateChange: (s) => setState(s)
         })
         tunnelRef.current = tunnel
-        // Reuse the same control connection to send the tunnel pairing message
         try {
           await control.openSession()
-          const relayId = tunnel.getRelayId()
-          control.sendRelayTunnel(deviceId, relayId, 1, relayCookie)
         } catch {}
         tunnel.start()
       } catch (e) {

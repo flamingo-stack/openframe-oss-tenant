@@ -1,0 +1,78 @@
+server:
+  port: 8095
+
+# Management service common configuration
+spring:
+  data:
+    mongodb:
+      enabled: true
+    cassandra:
+      enabled: false
+    redis:
+      host: redis-master.datasources.svc.cluster.local
+      port: 6379
+  cloud:
+    config:
+      fail-fast: false
+    stream:
+      enabled: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.cassandra.CassandraHealthContributorAutoConfiguration
+
+# Management server configuration
+management:
+  server:
+    port: 8096
+  health:
+    cassandra:
+      enabled: false
+
+  # API Key Statistics configuration
+openframe:
+  api-key-stats:
+    enabled: true
+    sync-interval: 300000  # 5 minutes in milliseconds
+    lock-at-most-for: "10m"  # Maximum lock duration
+    lock-at-least-for: "1m"
+
+  gateway:
+    oauth:
+      client-id: ${OPENFRAME_AUTH_CLIENT_ID:openframe-gateway}
+      client-secret: ${OPENFRAME_AUTH_SECRET:openframe-gateway-secret}
+      redirect-uri: ${TENANT_HOST_URL:https://localhost}/oauth/callback
+
+  debezium:
+    base-url: http://debezium-connect.datasources:8083
+
+  integration:
+    tool:
+      enabled: true
+
+  management:
+    idp:
+      init:
+        enabled: true
+security:
+  oauth2:
+    token:
+      access:
+        expiration-seconds: 900
+      refresh:
+        expiration-seconds: 604800
+
+nats:
+  spring:
+    server: nats://nats.datasources.svc.cluster.local:4222
+    username: service
+    password: service_pass
+    connection-timeout: 30s
+    max-reconnect: 10
+    reconnect-wait: 5s
+    ping-interval: 30s
+    no-echo: true

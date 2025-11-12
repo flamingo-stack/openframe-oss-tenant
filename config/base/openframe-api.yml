@@ -1,0 +1,107 @@
+server:
+  port: 8090
+
+# API service common configuration
+spring:
+  main:
+    web-application-type: servlet
+  data:
+    mongodb:
+      enabled: true
+    cassandra:
+      enabled: true
+  redis:
+    enabled: true
+    timeout: 2000
+    connect-timeout: 2000
+    lettuce:
+      shutdown-timeout: 2000ms
+      pool:
+        enabled: true
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
+    client-type: lettuce
+  oss-tenant:
+    enabled: false
+  saas:
+    enabled: false
+  cloud:
+    config:
+      fail-fast: false
+    stream:
+      enabled: true
+  graphql:
+    graphiql:
+      enabled: true
+    schema:
+      printer:
+        enabled: true
+    path: /graphql
+
+  mail:
+    host: localhost
+    port: 25
+
+# Management server configuration
+management:
+  server:
+    port: 8091
+
+# GraphQL configuration
+dgs:
+  graphql:
+    path: /graphql
+    graphiql:
+      enabled: true
+
+openframe:
+  security:
+    jwt:
+      cache:
+        expire-after: PT30M
+        refresh-after: PT10M
+        maximum-size: 1
+  invitations:
+    ttl-hours: 24h
+    link-template: "${TENANT_HOST_URL:https://localhost}/invitations?invitationId={id}"
+  mail:
+    provider: smtp
+  saas:
+    kafka:
+      topics:
+        outbound:
+          user-events: user-events
+  integration:
+    tool:
+      enabled: true
+
+#Available SSO providers to setup
+sso:
+  providers:
+    - displayName: Google SSO
+      provider: google
+    - displayName: Microsoft SSO
+      provider: microsoft
+
+nats:
+  spring:
+    server: nats://nats.datasources.svc.cluster.local:4222
+    username: service
+    password: service_pass
+    connection-timeout: 30s
+    max-reconnect: -1
+    reconnect-wait: 5s
+    ping-interval: 30s
+    no-echo: true
+
+oauth:
+  client:
+    default:
+      id: openframe_web_dashboard
+      secret: prod_secret
+
+fleet:
+  api:
+    url: http://fleetmdm-server.integrated-tools.svc.cluster.local:8070

@@ -161,7 +161,7 @@ tests:
       deployment.oss.ingress.ngrok.enabled: false
       deployment.saas.enabled: false
       apps.openframe-config.values.config.branch: "feature-branch"
-      apps.openframe-config.values.config.environment: "staging"
+      apps.openframe-config.values.config.environment: "stage"
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
@@ -171,7 +171,7 @@ tests:
           pattern: "branch: feature-branch"
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "environment: staging"
+          pattern: "environment: stage"
 
   # ========================================
   # NGROK CREDENTIALS PROPAGATION

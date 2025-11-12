@@ -32,8 +32,8 @@ jobs:
         env:
           VALUES_PATH: manifests/apps
         run: |
-          cp ${VALUES_PATH}/values-qa.yaml ${VALUES_PATH}/values-prod.yaml
-          sed -i "s/environment: qa/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
+          cp ${VALUES_PATH}/values-stage.yaml ${VALUES_PATH}/values-prod.yaml
+          sed -i "s/environment: stage/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
 
       - name: Create Prod Release PR
         env:
@@ -41,9 +41,9 @@ jobs:
           GH_PR_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
         run: |
           git checkout -b release/prod-$(date +%Y-%m-%d-%H%M)
-          git commit -am "Release QA to Prod"
+          git commit -am "Release Stage to Prod"
           git push -u origin HEAD --force
-          PR_URL=$(gh pr create --draft --title "Openframe Release Prod (automatically generated PR)" --body "Update Prod with QA values" --base main)
+          PR_URL=$(gh pr create --draft --title "Openframe Release Prod (automatically generated PR)" --body "Update Prod with Stage values" --base main)
           GH_TOKEN=$GH_PR_TOKEN gh pr ready "${PR_URL}"  # to trigger the workflow
           GH_TOKEN=$GH_PR_TOKEN gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto

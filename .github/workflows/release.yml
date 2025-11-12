@@ -1,4 +1,4 @@
-name: Openframe Release QA
+name: Openframe Release Stage
 
 # =============================================================================
 # WORKFLOW CONFIGURATION
@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to Release to QA (e.g., v1.2.3)"
+        description: "Version to Release to Stage (e.g., v1.2.3)"
         required: true
         type: string
 
@@ -365,17 +365,17 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
 
-      - name: Create QA Release PR
+      - name: Create Stage Release PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_PR_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
           VALUES_PATH: manifests/apps
         run: |
-          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-qa.yaml
-          git checkout -b release/qa-${{ inputs.version }}
-          git commit -am "Release ${{ inputs.version }} to QA"
+          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-stage.yaml
+          git checkout -b release/stage-${{ inputs.version }}
+          git commit -am "Release ${{ inputs.version }} to Stage"
           git push -u origin HEAD --force
-          PR_URL=$(gh pr create --draft --title "Openframe Release QA ${{ inputs.version }} (automatically generated PR)" --body "Update QA tags to ${{ inputs.version }}" --base main)
+          PR_URL=$(gh pr create --draft --title "Openframe Release Stage ${{ inputs.version }} (automatically generated PR)" --body "Update Stage tags to ${{ inputs.version }}" --base main)
           GH_TOKEN=$GH_PR_TOKEN gh pr ready "${PR_URL}"  # to trigger the workflow
           GH_TOKEN=$GH_PR_TOKEN gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto

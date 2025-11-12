@@ -443,6 +443,11 @@ impl ToolRunManager {
         }
     }
 
+    pub async fn clear_running_tool(&self, tool_id: &str) {
+        let mut set = self.running_tools.write().await;
+        set.remove(tool_id);
+    }
+
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 

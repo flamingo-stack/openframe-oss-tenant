@@ -50,6 +50,20 @@ impl ToolConnectionService {
         Ok(list)
     }
 
+    /// Delete a tool connection by its tool_agent_id
+    pub async fn delete_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<bool> {
+        let mut list = self.get_all().await?;
+        let initial_len = list.len();
+        list.retain(|c| c.tool_agent_id != tool_agent_id);
+        
+        if list.len() != initial_len {
+            self.persist(&list).await?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
     async fn persist(&self, list: &[ToolConnection]) -> Result<()> {
         let json = serde_json::to_string_pretty(list)
             .context("Failed to serialize tool connections to JSON")?;

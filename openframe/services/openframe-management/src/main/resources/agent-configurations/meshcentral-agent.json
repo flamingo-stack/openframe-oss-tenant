@@ -13,6 +13,9 @@
     "${client.openframeTokenPath}"
   ],
   "runCommandArgs": [],
+  "uninstallationCommandArgs": [
+    "-uninstall"
+  ],
   "agentToolIdCommandArgs": [
     "-nodeid-base64"
   ],
