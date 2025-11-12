@@ -82,6 +82,16 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterCon
 		}
 	}
 
+	// On Windows/WSL, prepare kubeconfig directory before k3d operations
+	if runtime.GOOS == "windows" {
+		if err := m.prepareKubeconfigDirectory(ctx); err != nil {
+			if m.verbose {
+				fmt.Printf("Warning: Could not prepare kubeconfig directory: %v\n", err)
+			}
+			// Don't fail - k3d will create it, but log the warning
+		}
+	}
+
 	// Convert Windows path to WSL path if running on Windows
 	configFilePath := configFile
 	if runtime.GOOS == "windows" {
@@ -107,6 +117,17 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterCon
 
 	if _, err := m.executor.Execute(ctx, "k3d", args...); err != nil {
 		return models.NewClusterOperationError("create", config.Name, fmt.Errorf("failed to create cluster %s: %w", config.Name, err))
+	}
+
+	// On Windows/WSL, fix kubeconfig permissions if k3d ran with sudo
+	// This is necessary because k3d creates ~/.kube/config with root ownership when run with sudo
+	if runtime.GOOS == "windows" {
+		if err := m.fixKubeconfigPermissions(ctx); err != nil {
+			if m.verbose {
+				fmt.Printf("Warning: Could not fix kubeconfig permissions: %v\n", err)
+			}
+			// Don't fail - this is not critical, just log the warning
+		}
 	}
 
 	// Set kubectl context to the newly created cluster
@@ -510,6 +531,62 @@ type k3dNode struct {
 type PortMapping struct {
 	HostIP   string `json:"HostIp"`
 	HostPort string `json:"HostPort"`
+}
+
+// prepareKubeconfigDirectory ensures ~/.kube directory exists with proper permissions on Windows/WSL
+func (m *K3dManager) prepareKubeconfigDirectory(ctx context.Context) error {
+	if runtime.GOOS != "windows" {
+		return nil // Only needed on Windows
+	}
+
+	// Get the current WSL user
+	userResult, err := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "whoami")
+	if err != nil {
+		return fmt.Errorf("failed to get WSL user: %w", err)
+	}
+	username := strings.TrimSpace(userResult.Stdout)
+
+	// Create .kube directory with proper permissions
+	createCmd := "mkdir -p ~/.kube && chmod 755 ~/.kube"
+	_, err = m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "-u", username, "bash", "-c", createCmd)
+	if err != nil {
+		return fmt.Errorf("failed to create .kube directory: %w", err)
+	}
+
+	if m.verbose {
+		fmt.Println("✓ Prepared kubeconfig directory in WSL")
+	}
+
+	return nil
+}
+
+// fixKubeconfigPermissions fixes kubeconfig file permissions on Windows/WSL
+// This is needed because k3d running with sudo creates ~/.kube/config with root ownership
+func (m *K3dManager) fixKubeconfigPermissions(ctx context.Context) error {
+	if runtime.GOOS != "windows" {
+		return nil // Only needed on Windows
+	}
+
+	// Get the current WSL user
+	userResult, err := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "whoami")
+	if err != nil {
+		return fmt.Errorf("failed to get WSL user: %w", err)
+	}
+	username := strings.TrimSpace(userResult.Stdout)
+
+	// Fix ownership and permissions of kubeconfig file
+	// Use bash -c to run multiple commands together
+	fixCmd := fmt.Sprintf("test -f ~/.kube/config && sudo chown %s:%s ~/.kube/config && sudo chmod 600 ~/.kube/config", username, username)
+	_, err = m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "-u", username, "bash", "-c", fixCmd)
+	if err != nil {
+		return fmt.Errorf("failed to fix kubeconfig permissions: %w", err)
+	}
+
+	if m.verbose {
+		fmt.Println("✓ Fixed kubeconfig permissions for WSL user")
+	}
+
+	return nil
 }
 
 // Factory functions for backward compatibility

@@ -235,14 +235,14 @@ jobs:
         timeout-minutes: 10
         run: |
           Write-Host "Testing k3d cluster creation..."
-          wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d cluster create test-cluster --wait --timeout 300s"
+          wsl.exe -d Ubuntu -u runner bash -c "sudo -E k3d cluster create test-cluster --wait --timeout 300s"
 
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Cluster created successfully. Checking nodes..."
-            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get nodes"
+            wsl.exe -d Ubuntu -u runner kubectl get nodes
 
             Write-Host "Deleting test cluster..."
-            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d cluster delete test-cluster"
+            wsl.exe -d Ubuntu -u runner bash -c "sudo -E k3d cluster delete test-cluster"
 
             Write-Host "[OK] k3d cluster creation test passed"
           } else {
@@ -273,13 +273,13 @@ jobs:
 
           $kubectlWrapper = @"
           @echo off
-          wsl -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl %*"
+          wsl -d Ubuntu -u runner kubectl %*
           "@
           Set-Content -Path "$wrapperDir\kubectl.bat" -Value $kubectlWrapper
 
           $k3dWrapper = @"
           @echo off
-          wsl -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d %*"
+          wsl -d Ubuntu -u runner sudo -E k3d %*
           "@
           Set-Content -Path "$wrapperDir\k3d.bat" -Value $k3dWrapper
 
@@ -298,19 +298,19 @@ jobs:
 
             Write-Host ""
             Write-Host "Verifying cluster in WSL2..."
-            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get nodes"
-            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get namespaces"
+            wsl.exe -d Ubuntu -u runner kubectl get nodes
+            wsl.exe -d Ubuntu -u runner kubectl get namespaces
 
             Write-Host ""
             Write-Host "Checking ArgoCD installation..."
-            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get pods -n argocd" 2>&1 | Out-Host
+            wsl.exe -d Ubuntu -u runner kubectl get pods -n argocd 2>&1 | Out-Host
 
             Write-Host ""
             Write-Host "Cleaning up bootstrap test cluster..."
             .\openframe.exe cluster delete openframe-test 2>&1 | Out-Host
             if ($LASTEXITCODE -ne 0) {
               Write-Host "Cleanup via CLI failed, trying k3d directly..."
-              wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d cluster delete openframe-test"
+              wsl.exe -d Ubuntu -u runner bash -c "sudo -E k3d cluster delete openframe-test"
             }
 
             Write-Host "[OK] Bootstrap test completed successfully"
