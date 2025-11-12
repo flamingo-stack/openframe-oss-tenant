@@ -21,6 +21,16 @@ func NewManager(exec executor.CommandExecutor) *Manager {
 	}
 }
 
+// getHelmEnv returns environment variables for Helm to use writable directories
+// This is especially important in CI environments where home directory may not have write permissions
+func (m *Manager) getHelmEnv() map[string]string {
+	return map[string]string{
+		"HELM_CACHE_HOME":  "/tmp/helm/cache",
+		"HELM_CONFIG_HOME": "/tmp/helm/config",
+		"HELM_DATA_HOME":   "/tmp/helm/data",
+	}
+}
+
 // Application represents an ArgoCD application status
 type Application struct {
 	Name   string
@@ -126,7 +136,11 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 	}
 
 	// Method 2: Check helm values to count applications defined
-	helmResult, err := m.executor.Execute(ctx, "helm", "get", "values", "app-of-apps", "-n", "argocd")
+	helmResult, err := m.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    []string{"get", "values", "app-of-apps", "-n", "argocd"},
+		Env:     m.getHelmEnv(),
+	})
 	if err == nil && helmResult.Stdout != "" {
 		// Count application definitions in various formats
 		// Look for patterns that indicate application definitions

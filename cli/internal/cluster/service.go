@@ -53,6 +53,16 @@ func NewClusterServiceSuppressed(exec executor.CommandExecutor) *ClusterService 
 	}
 }
 
+// getHelmEnv returns environment variables for Helm to use writable directories
+// This is especially important in CI environments where home directory may not have write permissions
+func (s *ClusterService) getHelmEnv() map[string]string {
+	return map[string]string{
+		"HELM_CACHE_HOME":  "/tmp/helm/cache",
+		"HELM_CONFIG_HOME": "/tmp/helm/config",
+		"HELM_DATA_HOME":   "/tmp/helm/data",
+	}
+}
+
 // NewClusterServiceWithOptions creates a cluster service with custom options
 func NewClusterServiceWithOptions(exec executor.CommandExecutor, manager *k3d.K3dManager) *ClusterService {
 	return &ClusterService{
@@ -236,7 +246,11 @@ func (s *ClusterService) cleanupK3dCluster(clusterName string, verbose bool, for
 // cleanupHelmReleases removes all Helm releases
 func (s *ClusterService) cleanupHelmReleases(ctx context.Context, verbose bool, force bool) error {
 	// List all helm releases
-	result, err := s.executor.Execute(ctx, "helm", "list", "--all-namespaces", "--short")
+	result, err := s.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    []string{"list", "--all-namespaces", "--short"},
+		Env:     s.getHelmEnv(),
+	})
 	if err != nil {
 		return fmt.Errorf("failed to list Helm releases: %w", err)
 	}
@@ -261,7 +275,11 @@ func (s *ClusterService) cleanupHelmReleases(ctx context.Context, verbose bool, 
 		}
 
 		// Get release info to determine namespace
-		releaseInfo, err := s.executor.Execute(ctx, "helm", "list", "--filter", release, "--all-namespaces", "--output", "json")
+		releaseInfo, err := s.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+			Command: "helm",
+			Args:    []string{"list", "--filter", release, "--all-namespaces", "--output", "json"},
+			Env:     s.getHelmEnv(),
+		})
 		if err != nil {
 			if verbose {
 				pterm.Warning.Printf("Failed to get info for release %s: %v\n", release, err)
@@ -290,7 +308,11 @@ func (s *ClusterService) cleanupHelmReleases(ctx context.Context, verbose bool, 
 					// Add even more aggressive flags when force is enabled
 					args = append(args, "--ignore-not-found")
 				}
-				_, err := s.executor.Execute(ctx, "helm", args...)
+				_, err := s.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+					Command: "helm",
+					Args:    args,
+					Env:     s.getHelmEnv(),
+				})
 				if err != nil {
 					if verbose {
 						pterm.Warning.Printf("Failed to uninstall release %s: %v\n", release, err)

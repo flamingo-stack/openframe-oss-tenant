@@ -26,9 +26,23 @@ func NewHelmManager(exec executor.CommandExecutor) *HelmManager {
 	}
 }
 
+// getHelmEnv returns environment variables for Helm to use writable directories
+// This is especially important in CI environments where home directory may not have write permissions
+func (h *HelmManager) getHelmEnv() map[string]string {
+	return map[string]string{
+		"HELM_CACHE_HOME":  "/tmp/helm/cache",
+		"HELM_CONFIG_HOME": "/tmp/helm/config",
+		"HELM_DATA_HOME":   "/tmp/helm/data",
+	}
+}
+
 // IsHelmInstalled checks if Helm is available
 func (h *HelmManager) IsHelmInstalled(ctx context.Context) error {
-	_, err := h.executor.Execute(ctx, "helm", "version", "--short")
+	_, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    []string{"version", "--short"},
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		return errors.ErrHelmNotAvailable
 	}
@@ -42,7 +56,11 @@ func (h *HelmManager) IsChartInstalled(ctx context.Context, releaseName, namespa
 		args = append(args, "-f", releaseName)
 	}
 
-	result, err := h.executor.Execute(ctx, "helm", args...)
+	result, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    args,
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		return false, err
 	}
@@ -60,13 +78,21 @@ func (h *HelmManager) IsChartInstalled(ctx context.Context, releaseName, namespa
 // InstallArgoCD installs ArgoCD using Helm with exact commands specified
 func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInstallConfig) error {
 	// Add ArgoCD Helm repository
-	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
+	_, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    []string{"repo", "add", "argo", "https://argoproj.github.io/argo-helm"},
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		return fmt.Errorf("failed to add ArgoCD repository: %w", err)
 	}
 
 	// Update repositories
-	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
+	_, err = h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    []string{"repo", "update"},
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		return fmt.Errorf("failed to update Helm repositories: %w", err)
 	}
@@ -99,7 +125,11 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 		args = append(args, "--dry-run")
 	}
 
-	result, err := h.executor.Execute(ctx, "helm", args...)
+	result, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    args,
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		// Check if the error is due to context cancellation (CTRL-C)
 		if ctx.Err() == context.Canceled {
@@ -127,7 +157,11 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	}
 
 	// Add ArgoCD repository silently
-	_, err := h.executor.Execute(ctx, "helm", "repo", "add", "argo", "https://argoproj.github.io/argo-helm")
+	_, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    []string{"repo", "add", "argo", "https://argoproj.github.io/argo-helm"},
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		// Ignore if already exists
 		if !strings.Contains(err.Error(), "already exists") {
@@ -139,7 +173,11 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	}
 
 	// Update repositories silently
-	_, err = h.executor.Execute(ctx, "helm", "repo", "update")
+	_, err = h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    []string{"repo", "update"},
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		if spinner != nil {
 			spinner.Stop()
@@ -196,7 +234,11 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		pterm.Debug.Printf("Executing: helm %s\n", strings.Join(args, " "))
 	}
 
-	result, err := h.executor.Execute(ctx, "helm", args...)
+	result, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    args,
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		// Check if the error is due to context cancellation (CTRL-C)
 		if ctx.Err() == context.Canceled {
@@ -266,7 +308,11 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 	}
 
 	// Execute helm command with local chart path
-	result, err := h.executor.Execute(ctx, "helm", args...)
+	result, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    args,
+		Env:     h.getHelmEnv(),
+	})
 
 	if err != nil {
 		// Check if the error is due to context cancellation (CTRL-C)
@@ -288,7 +334,11 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 func (h *HelmManager) GetChartStatus(ctx context.Context, releaseName, namespace string) (models.ChartInfo, error) {
 	args := []string{"status", releaseName, "-n", namespace, "--output", "json"}
 
-	_, err := h.executor.Execute(ctx, "helm", args...)
+	_, err := h.executor.ExecuteWithOptions(ctx, executor.ExecuteOptions{
+		Command: "helm",
+		Args:    args,
+		Env:     h.getHelmEnv(),
+	})
 	if err != nil {
 		return models.ChartInfo{}, fmt.Errorf("failed to get chart status: %w", err)
 	}
