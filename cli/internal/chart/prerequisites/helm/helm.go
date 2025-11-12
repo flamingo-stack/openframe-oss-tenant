@@ -199,13 +199,51 @@ echo "Helm installed successfully"
 func (h *HelmInstaller) createHelmWrapper() error {
 	fmt.Println("Creating helm command for Windows...")
 
-	// Create a batch file wrapper that calls helm in WSL2
+	// First, create a bash helper script in WSL2 that converts Windows paths
+	helperScript := `#!/bin/bash
+# Helper script to run helm with Windows path conversion
+
+args=()
+for arg in "$@"; do
+    # Check if argument looks like a Windows path (contains : after first char)
+    if [[ "$arg" =~ ^[A-Za-z]: ]]; then
+        # Convert Windows path to WSL path
+        converted=$(wslpath -a "$arg" 2>/dev/null || echo "$arg")
+        args+=("$converted")
+    else
+        args+=("$arg")
+    fi
+done
+
+# Execute helm with converted arguments
+exec helm "${args[@]}"
+`
+
+	// Write the helper script to WSL2 (write to temp location first, then move with sudo)
+	writeCmd := fmt.Sprintf(`
+cat > /tmp/helm-wrapper.sh << 'EOFSCRIPT'
+%s
+EOFSCRIPT
+sudo mv /tmp/helm-wrapper.sh /usr/local/bin/helm-wrapper.sh
+sudo chmod +x /usr/local/bin/helm-wrapper.sh
+`, helperScript)
+
+	cmd := exec.Command("wsl", "-d", "Ubuntu", "bash", "-c", writeCmd)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create helm helper script in WSL2: %w", err)
+	}
+
+	// Create a batch file wrapper that calls the helper script
 	wrapperDir := os.Getenv("USERPROFILE") + "\\bin"
 	os.MkdirAll(wrapperDir, 0755)
 
 	wrapperPath := wrapperDir + "\\helm.bat"
+
+	// Simple batch wrapper that calls the bash helper
 	wrapperContent := `@echo off
-wsl -d Ubuntu helm %*
+wsl -d Ubuntu /usr/local/bin/helm-wrapper.sh %*
 `
 
 	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
@@ -225,10 +263,10 @@ if ($currentPath -notlike "*$binDir*") {
 }
 `, wrapperDir)
 
-	cmd := exec.Command("powershell", "-Command", addPathScript)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Run() // Ignore errors
+	pathCmd := exec.Command("powershell", "-Command", addPathScript)
+	pathCmd.Stdout = os.Stdout
+	pathCmd.Stderr = os.Stderr
+	pathCmd.Run() // Ignore errors
 
 	// Update PATH for current process so helm can be found immediately
 	currentPath := os.Getenv("PATH")
