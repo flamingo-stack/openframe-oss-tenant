@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -282,6 +283,87 @@ func TestRealCommandExecutor_Execute_ContextCancellation(t *testing.T) {
 // Test interface compliance
 func TestCommandExecutorInterface(t *testing.T) {
 	var _ CommandExecutor = NewRealCommandExecutor(false, false)
+}
+
+func TestRealCommandExecutor_wrapCommandForWindows(t *testing.T) {
+	executor := &RealCommandExecutor{}
+
+	tests := []struct {
+		name                   string
+		command                string
+		args                   []string
+		expectedCommandWindows string
+		expectedArgsWindows    []string
+		expectedCommandUnix    string
+		expectedArgsUnix       []string
+		description            string
+	}{
+		{
+			name:                   "kubectl command",
+			command:                "kubectl",
+			args:                   []string{"-n", "argocd", "get", "pods"},
+			expectedCommandWindows: "wsl",
+			expectedArgsWindows:    []string{"-d", "Ubuntu", "kubectl", "-n", "argocd", "get", "pods"},
+			expectedCommandUnix:    "kubectl",
+			expectedArgsUnix:       []string{"-n", "argocd", "get", "pods"},
+			description:            "kubectl commands should be wrapped to run in WSL on Windows",
+		},
+		{
+			name:                   "kubectl with jsonpath",
+			command:                "kubectl",
+			args:                   []string{"-n", "argocd", "get", "applications.argoproj.io", "-o", `jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}`},
+			expectedCommandWindows: "wsl",
+			expectedArgsWindows:    []string{"-d", "Ubuntu", "kubectl", "-n", "argocd", "get", "applications.argoproj.io", "-o", `jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}`},
+			expectedCommandUnix:    "kubectl",
+			expectedArgsUnix:       []string{"-n", "argocd", "get", "applications.argoproj.io", "-o", `jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}`},
+			description:            "kubectl commands with complex jsonpath should preserve special characters",
+		},
+		{
+			name:                   "helm command",
+			command:                "helm",
+			args:                   []string{"install", "my-app", "./chart"},
+			expectedCommandWindows: "wsl",
+			expectedArgsWindows:    []string{"-d", "Ubuntu", "helm", "install", "my-app", "./chart"},
+			expectedCommandUnix:    "helm",
+			expectedArgsUnix:       []string{"install", "my-app", "./chart"},
+			description:            "helm commands should be wrapped to run in WSL on Windows",
+		},
+		{
+			name:                   "non-kubectl command",
+			command:                "docker",
+			args:                   []string{"ps"},
+			expectedCommandWindows: "docker",
+			expectedArgsWindows:    []string{"ps"},
+			expectedCommandUnix:    "docker",
+			expectedArgsUnix:       []string{"ps"},
+			description:            "non-kubectl/helm commands should not be wrapped",
+		},
+		{
+			name:                   "empty args",
+			command:                "kubectl",
+			args:                   []string{},
+			expectedCommandWindows: "wsl",
+			expectedArgsWindows:    []string{"-d", "Ubuntu", "kubectl"},
+			expectedCommandUnix:    "kubectl",
+			expectedArgsUnix:       []string{},
+			description:            "kubectl with no args should still be wrapped on Windows",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualCommand, actualArgs := executor.wrapCommandForWindows(tt.command, tt.args)
+
+			// Test behavior based on current OS
+			if runtime.GOOS == "windows" {
+				assert.Equal(t, tt.expectedCommandWindows, actualCommand, tt.description)
+				assert.Equal(t, tt.expectedArgsWindows, actualArgs, tt.description)
+			} else {
+				assert.Equal(t, tt.expectedCommandUnix, actualCommand, tt.description)
+				assert.Equal(t, tt.expectedArgsUnix, actualArgs, tt.description)
+			}
+		})
+	}
 }
 
 func TestExecuteOptions(t *testing.T) {

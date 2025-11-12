@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -70,18 +71,21 @@ func (e *RealCommandExecutor) Execute(ctx context.Context, name string, args ...
 // ExecuteWithOptions implements CommandExecutor.ExecuteWithOptions
 func (e *RealCommandExecutor) ExecuteWithOptions(ctx context.Context, options ExecuteOptions) (*CommandResult, error) {
 	start := time.Now()
-	
-	// Build full command string for logging
+
+	// Wrap command for Windows if needed (kubectl/helm via WSL)
+	command, args := e.wrapCommandForWindows(options.Command, options.Args)
+
+	// Build full command string for logging (use original command for readability)
 	fullCommand := options.Command
 	if len(options.Args) > 0 {
 		fullCommand += " " + strings.Join(options.Args, " ")
 	}
-	
+
 	result := &CommandResult{
 		Stdout: "",
 		Stderr: "",
 	}
-	
+
 	// Handle dry-run mode
 	if e.dryRun {
 		if e.verbose {
@@ -90,9 +94,9 @@ func (e *RealCommandExecutor) ExecuteWithOptions(ctx context.Context, options Ex
 		result.Duration = time.Since(start)
 		return result, nil
 	}
-	
-	// Create the command
-	cmd := exec.CommandContext(ctx, options.Command, options.Args...)
+
+	// Create the command with wrapped command/args
+	cmd := exec.CommandContext(ctx, command, args...)
 	
 	// Set working directory if specified
 	if options.Dir != "" {
@@ -110,8 +114,8 @@ func (e *RealCommandExecutor) ExecuteWithOptions(ctx context.Context, options Ex
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, options.Timeout)
 		defer cancel()
-		cmd = exec.CommandContext(ctx, options.Command, options.Args...)
-		
+		cmd = exec.CommandContext(ctx, command, args...)
+
 		// Reapply directory and env since we recreated the command
 		if options.Dir != "" {
 			cmd.Dir = options.Dir
@@ -168,4 +172,25 @@ func (e *RealCommandExecutor) buildEnvStrings(env map[string]string) []string {
 		envStrings = append(envStrings, fmt.Sprintf("%s=%s", key, value))
 	}
 	return envStrings
+}
+
+// wrapCommandForWindows wraps kubectl and helm commands to run directly in WSL2
+// This avoids issues with batch file wrappers not preserving special characters
+func (e *RealCommandExecutor) wrapCommandForWindows(command string, args []string) (string, []string) {
+	// Only wrap on Windows
+	if runtime.GOOS != "windows" {
+		return command, args
+	}
+
+	// Only wrap kubectl and helm commands
+	if command != "kubectl" && command != "helm" {
+		return command, args
+	}
+
+	// Build new arguments: -d Ubuntu <command> <original-args>
+	newArgs := make([]string, 0, len(args)+3)
+	newArgs = append(newArgs, "-d", "Ubuntu", command)
+	newArgs = append(newArgs, args...)
+
+	return "wsl", newArgs
 }
