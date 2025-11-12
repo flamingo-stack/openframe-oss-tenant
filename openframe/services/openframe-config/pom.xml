@@ -15,7 +15,6 @@
     <name>OpenFrame Config Server</name>
 
     <dependencies>
-        <!-- OpenFrame Config Core (enables Config Server) -->
         <dependency>
             <groupId>com.openframe.oss</groupId>
             <artifactId>openframe-config-core</artifactId>
