@@ -97,7 +97,7 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 2 && args[0] == "-c" && args[1] == "mkdir -p ~/.kube && chmod 755 ~/.kube"
 				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
-				// Mock cleanupStaleLockFiles calls
+				// Mock cleanupStaleLockFiles calls (before cluster creation)
 				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 2 && args[0] == "-c" && args[1] == "rm -f ~/.kube/config.lock ~/.kube/config.lock.* 2>/dev/null || true"
 				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
@@ -113,10 +113,10 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 2 && args[0] == "-c" && args[1] == "test -f ~/.kube/config && chmod 600 ~/.kube/config || true"
 				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
-				// Mock kubectl context switch
-				m.On("Execute", mock.Anything, "kubectl", mock.MatchedBy(func(args []string) bool {
-					return len(args) == 3 && args[0] == "config" && args[1] == "use-context"
-				})).Return(&execPkg.CommandResult{Stdout: "Switched to context \"k3d-test-cluster\"."}, nil).Once()
+				// Mock cleanupStaleLockFiles calls (after fixing permissions)
+				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
+					return len(args) == 2 && args[0] == "-c" && args[1] == "rm -f ~/.kube/config.lock ~/.kube/config.lock.* 2>/dev/null || true"
+				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
 				// Mock verifyClusterReachable - get-contexts
 				m.On("Execute", mock.Anything, "kubectl", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 3 && args[0] == "config" && args[1] == "get-contexts"
@@ -140,7 +140,7 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 2 && args[0] == "-c" && args[1] == "mkdir -p ~/.kube && chmod 755 ~/.kube"
 				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
-				// Mock cleanupStaleLockFiles calls
+				// Mock cleanupStaleLockFiles calls (before cluster creation)
 				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 2 && args[0] == "-c" && args[1] == "rm -f ~/.kube/config.lock ~/.kube/config.lock.* 2>/dev/null || true"
 				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
@@ -156,10 +156,10 @@ func TestK3dManager_CreateCluster(t *testing.T) {
 				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 2 && args[0] == "-c" && args[1] == "test -f ~/.kube/config && chmod 600 ~/.kube/config || true"
 				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
-				// Mock kubectl context switch
-				m.On("Execute", mock.Anything, "kubectl", mock.MatchedBy(func(args []string) bool {
-					return len(args) == 3 && args[0] == "config" && args[1] == "use-context"
-				})).Return(&execPkg.CommandResult{Stdout: "Switched to context \"k3d-test-cluster\"."}, nil).Once()
+				// Mock cleanupStaleLockFiles calls (after fixing permissions)
+				m.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
+					return len(args) == 2 && args[0] == "-c" && args[1] == "rm -f ~/.kube/config.lock ~/.kube/config.lock.* 2>/dev/null || true"
+				})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
 				// Mock verifyClusterReachable - get-contexts
 				m.On("Execute", mock.Anything, "kubectl", mock.MatchedBy(func(args []string) bool {
 					return len(args) == 3 && args[0] == "config" && args[1] == "get-contexts"
@@ -254,7 +254,7 @@ func TestK3dManager_CreateCluster_VerboseMode(t *testing.T) {
 	executor.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 		return len(args) == 2 && args[0] == "-c" && args[1] == "mkdir -p ~/.kube && chmod 755 ~/.kube"
 	})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
-	// Mock cleanupStaleLockFiles calls
+	// Mock cleanupStaleLockFiles calls (before cluster creation)
 	executor.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 		return len(args) == 2 && args[0] == "-c" && args[1] == "rm -f ~/.kube/config.lock ~/.kube/config.lock.* 2>/dev/null || true"
 	})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
@@ -270,10 +270,10 @@ func TestK3dManager_CreateCluster_VerboseMode(t *testing.T) {
 	executor.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
 		return len(args) == 2 && args[0] == "-c" && args[1] == "test -f ~/.kube/config && chmod 600 ~/.kube/config || true"
 	})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
-	// Mock kubectl context switch
-	executor.On("Execute", mock.Anything, "kubectl", mock.MatchedBy(func(args []string) bool {
-		return len(args) == 3 && args[0] == "config" && args[1] == "use-context"
-	})).Return(&execPkg.CommandResult{Stdout: "Switched to context \"k3d-test-cluster\"."}, nil).Once()
+	// Mock cleanupStaleLockFiles calls (after fixing permissions)
+	executor.On("Execute", mock.Anything, "bash", mock.MatchedBy(func(args []string) bool {
+		return len(args) == 2 && args[0] == "-c" && args[1] == "rm -f ~/.kube/config.lock ~/.kube/config.lock.* 2>/dev/null || true"
+	})).Return(&execPkg.CommandResult{Stdout: ""}, nil).Once()
 	// Mock verifyClusterReachable - get-contexts
 	executor.On("Execute", mock.Anything, "kubectl", mock.MatchedBy(func(args []string) bool {
 		return len(args) == 3 && args[0] == "config" && args[1] == "get-contexts"

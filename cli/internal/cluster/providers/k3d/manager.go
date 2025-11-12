@@ -134,13 +134,13 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterCon
 		// Don't fail - this is not critical, just log the warning
 	}
 
-	// Set kubectl context to the newly created cluster
-	contextName := fmt.Sprintf("k3d-%s", config.Name)
-	if _, err := m.executor.Execute(ctx, "kubectl", "config", "use-context", contextName); err != nil {
-		// Log warning but don't fail immediately - k3d's --kubeconfig-switch-context should handle this
+	// Clean up any lock files after fixing permissions to ensure kubectl can access the config
+	// This is critical because lock files may have been created with root ownership
+	if err := m.cleanupStaleLockFiles(ctx); err != nil {
 		if m.verbose {
-			fmt.Printf("Warning: Could not switch kubectl context: %v\n", err)
+			fmt.Printf("Warning: Could not cleanup lock files after permission fix: %v\n", err)
 		}
+		// Don't fail - this is not critical
 	}
 
 	// Verify the cluster is reachable
@@ -611,16 +611,17 @@ func (m *K3dManager) fixKubeconfigPermissions(ctx context.Context) error {
 			return fmt.Errorf("failed to get WSL user: %w", err)
 		}
 
-		// Fix ownership and permissions of kubeconfig file in WSL
-		// Use bash -c to run multiple commands together
-		fixCmd := fmt.Sprintf("test -f ~/.kube/config && sudo chown %s:%s ~/.kube/config && sudo chmod 600 ~/.kube/config", username, username)
+		// Fix ownership and permissions of both .kube directory and kubeconfig file in WSL
+		// This is critical because k3d runs with sudo and creates files as root,
+		// but kubectl needs to run as the regular user
+		fixCmd := fmt.Sprintf("test -d ~/.kube && sudo chown -R %s:%s ~/.kube && sudo chmod 755 ~/.kube && test -f ~/.kube/config && sudo chmod 600 ~/.kube/config", username, username)
 		_, err = m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "-u", username, "bash", "-c", fixCmd)
 		if err != nil {
 			return fmt.Errorf("failed to fix kubeconfig permissions: %w", err)
 		}
 
 		if m.verbose {
-			fmt.Println("✓ Fixed kubeconfig permissions for WSL user")
+			fmt.Println("✓ Fixed kubeconfig directory and file permissions for WSL user")
 		}
 	} else {
 		// Linux/macOS: Fix permissions without changing ownership (assuming we're the owner)
