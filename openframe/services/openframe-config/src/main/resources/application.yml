@@ -6,8 +6,6 @@ loki:
 spring:
   application:
     name: config-server
-  config:
-    url: http://openframe-config.microservices.svc.cluster.local:8888
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
