@@ -174,22 +174,51 @@ func (e *RealCommandExecutor) buildEnvStrings(env map[string]string) []string {
 	return envStrings
 }
 
-// wrapCommandForWindows wraps kubectl and helm commands to run directly in WSL2
+// wrapCommandForWindows wraps kubectl, helm, and k3d commands to run directly in WSL2
 // This avoids issues with batch file wrappers not preserving special characters
+// and ensures all Kubernetes tools run in the same environment
 func (e *RealCommandExecutor) wrapCommandForWindows(command string, args []string) (string, []string) {
 	// Only wrap on Windows
 	if runtime.GOOS != "windows" {
 		return command, args
 	}
 
-	// Only wrap kubectl and helm commands
-	if command != "kubectl" && command != "helm" {
+	// Only wrap kubectl, helm, and k3d commands
+	if command != "kubectl" && command != "helm" && command != "k3d" {
 		return command, args
 	}
 
-	// Build new arguments: -d Ubuntu <command> <original-args>
-	newArgs := make([]string, 0, len(args)+3)
-	newArgs = append(newArgs, "-d", "Ubuntu", command)
+	// Determine WSL user - try to detect from environment or use default
+	wslUser := os.Getenv("WSL_USER")
+	if wslUser == "" {
+		// Default to "runner" for CI environments, but could be configured
+		wslUser = "runner"
+	}
+
+	// For k3d, we need Docker access which requires the docker group
+	// Use 'sg docker -c' to run k3d with docker group permissions without sudo
+	// This ensures kubeconfig is created in the user's home directory, not root's
+	if command == "k3d" {
+		// Build command string for sg: sg docker -c "k3d <args>"
+		// We need to properly escape arguments that contain spaces or special characters
+		escapedArgs := make([]string, len(args))
+		for i, arg := range args {
+			// Quote arguments that contain spaces or special characters
+			if strings.ContainsAny(arg, " \t\n\"'$`\\") {
+				// Escape single quotes and wrap in single quotes
+				escapedArgs[i] = "'" + strings.ReplaceAll(arg, "'", "'\"'\"'") + "'"
+			} else {
+				escapedArgs[i] = arg
+			}
+		}
+		cmdString := command + " " + strings.Join(escapedArgs, " ")
+		newArgs := []string{"-d", "Ubuntu", "-u", wslUser, "sg", "docker", "-c", cmdString}
+		return "wsl", newArgs
+	}
+
+	// For kubectl and helm, run directly as user
+	newArgs := make([]string, 0, len(args)+5)
+	newArgs = append(newArgs, "-d", "Ubuntu", "-u", wslUser, command)
 	newArgs = append(newArgs, args...)
 
 	return "wsl", newArgs
