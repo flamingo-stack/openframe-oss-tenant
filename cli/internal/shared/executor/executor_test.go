@@ -323,10 +323,10 @@ func TestRealCommandExecutor_wrapCommandForWindows(t *testing.T) {
 			command:                "helm",
 			args:                   []string{"install", "my-app", "./chart"},
 			expectedCommandWindows: "wsl",
-			expectedArgsWindows:    []string{"-d", "Ubuntu", "-u", "runner", "helm", "install", "my-app", "./chart"},
+			expectedArgsWindows:    []string{"-d", "Ubuntu", "-u", "runner", "/usr/local/bin/helm-wrapper.sh", "install", "my-app", "./chart"},
 			expectedCommandUnix:    "helm",
 			expectedArgsUnix:       []string{"install", "my-app", "./chart"},
-			description:            "helm commands should be wrapped to run in WSL on Windows",
+			description:            "helm commands should use helm-wrapper.sh in WSL on Windows to set proper environment variables",
 		},
 		{
 			name:                   "non-kubectl command",

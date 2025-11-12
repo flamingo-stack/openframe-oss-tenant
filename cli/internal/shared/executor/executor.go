@@ -206,7 +206,16 @@ func (e *RealCommandExecutor) wrapCommandForWindows(command string, args []strin
 		return "wsl", newArgs
 	}
 
-	// For kubectl and helm, run directly as user
+	// For helm, use the helm-wrapper.sh script which sets proper environment variables
+	// This ensures Helm has access to writable directories in CI environments
+	if command == "helm" {
+		newArgs := make([]string, 0, len(args)+5)
+		newArgs = append(newArgs, "-d", "Ubuntu", "-u", wslUser, "/usr/local/bin/helm-wrapper.sh")
+		newArgs = append(newArgs, args...)
+		return "wsl", newArgs
+	}
+
+	// For kubectl, run directly as user
 	newArgs := make([]string, 0, len(args)+5)
 	newArgs = append(newArgs, "-d", "Ubuntu", "-u", wslUser, command)
 	newArgs = append(newArgs, args...)
