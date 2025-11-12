@@ -650,8 +650,13 @@ func (m *K3dManager) verifyClusterReachable(ctx context.Context, clusterName str
 		return fmt.Errorf("kubectl context not found: %w", err)
 	}
 
-	// Then verify we can reach the cluster API
-	result, err := m.executor.Execute(ctx, "kubectl", "cluster-info")
+	// Set the current context to the cluster (in case k3d didn't switch it properly)
+	if _, err := m.executor.Execute(ctx, "kubectl", "config", "use-context", contextName); err != nil {
+		return fmt.Errorf("failed to switch kubectl context: %w", err)
+	}
+
+	// Then verify we can reach the cluster API using the explicit context
+	result, err := m.executor.Execute(ctx, "kubectl", "--context", contextName, "cluster-info")
 	if err != nil {
 		return fmt.Errorf("cluster not reachable: %w", err)
 	}
