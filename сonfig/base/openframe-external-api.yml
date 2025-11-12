@@ -1,0 +1,43 @@
+server:
+  port: 8092
+
+spring:
+  application:
+    name: openframe-external-api
+  main:
+    web-application-type: servlet
+  data:
+    mongodb:
+      enabled: true
+    cassandra:
+      enabled: true
+    redis:
+      enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration'
+
+management:
+  server:
+    port: 8093
+
+# OpenAPI/Swagger Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+    filter: true
+    displayRequestDuration: true
+    
+openframe:
+  oss-tenant:
+    kafka:
+      topics:
+        outbound:
+          openframe-events: openframe.events
