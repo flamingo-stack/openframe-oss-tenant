@@ -15,8 +15,8 @@ spring:
     config:
       server:
         git:
-          uri: ${CONFIG_GIT_URI:https://github.com/flamingo-stack/openframe-oss-tenant-cfg}
-          default-label: ${CONFIG_GIT_BRANCH:main}
+          uri: ${CONFIG_GIT_URI:https://github.com/flamingo-stack/openframe-oss-tenant}
+          default-label: ${CONFIG_GIT_BRANCH:feature/base-config}
           # Load base first, then let profile override base
           search-paths: "config/base,config/{profile}"
           clone-on-start: true
