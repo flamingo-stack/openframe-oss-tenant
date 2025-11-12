@@ -203,6 +203,15 @@ func (h *HelmInstaller) createHelmWrapper() error {
 	helperScript := `#!/bin/bash
 # Helper script to run helm with Windows path conversion
 
+# Set Helm environment variables to use writable directories
+# This is especially important in CI environments where home directory may not have write permissions
+export HELM_CACHE_HOME="/tmp/helm/cache"
+export HELM_CONFIG_HOME="/tmp/helm/config"
+export HELM_DATA_HOME="/tmp/helm/data"
+
+# Create directories if they don't exist
+mkdir -p "$HELM_CACHE_HOME" "$HELM_CONFIG_HOME" "$HELM_DATA_HOME"
+
 args=()
 for arg in "$@"; do
     # Check if argument looks like a Windows path (contains : after first char)
