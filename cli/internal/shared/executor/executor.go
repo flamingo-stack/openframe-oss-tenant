@@ -195,24 +195,14 @@ func (e *RealCommandExecutor) wrapCommandForWindows(command string, args []strin
 		wslUser = "runner"
 	}
 
-	// For k3d, we need Docker access which requires the docker group
-	// Use 'sg docker -c' to run k3d with docker group permissions without sudo
-	// This ensures kubeconfig is created in the user's home directory, not root's
+	// For k3d, we need Docker access which requires elevated permissions
+	// Use 'sudo -E' to run k3d with necessary permissions while preserving environment
+	// The -E flag preserves environment variables like KUBECONFIG
 	if command == "k3d" {
-		// Build command string for sg: sg docker -c "k3d <args>"
-		// We need to properly escape arguments that contain spaces or special characters
-		escapedArgs := make([]string, len(args))
-		for i, arg := range args {
-			// Quote arguments that contain spaces or special characters
-			if strings.ContainsAny(arg, " \t\n\"'$`\\") {
-				// Escape single quotes and wrap in single quotes
-				escapedArgs[i] = "'" + strings.ReplaceAll(arg, "'", "'\"'\"'") + "'"
-			} else {
-				escapedArgs[i] = arg
-			}
-		}
-		cmdString := command + " " + strings.Join(escapedArgs, " ")
-		newArgs := []string{"-d", "Ubuntu", "-u", wslUser, "sg", "docker", "-c", cmdString}
+		// Build command with sudo -E prefix
+		newArgs := make([]string, 0, len(args)+6)
+		newArgs = append(newArgs, "-d", "Ubuntu", "-u", wslUser, "sudo", "-E", command)
+		newArgs = append(newArgs, args...)
 		return "wsl", newArgs
 	}
 
