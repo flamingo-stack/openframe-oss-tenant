@@ -3,6 +3,7 @@ name: Openframe Test
 # =============================================================================
 # WORKFLOW CONFIGURATION
 # =============================================================================
+# NOTE: This workflow is currently disabled. Uncomment the 'on:' section to re-enable.
 
 permissions:
   contents: write
@@ -13,17 +14,21 @@ permissions:
   id-token: write
   pages: write
 
+# Disabled - uncomment to re-enable
+# on:
+#   pull_request:
+#     types: [opened, synchronize, reopened, ready_for_review]
+#     branches: [main]
+#     paths:
+#       - 'openframe/**'
+#       - 'integrated-tools/**'
+#       - 'pom.xml'
+#       - '.github/**'
+#       - 'manifests/**'
+#       - 'clients/**'
+
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    branches: [main]
-    paths:
-      - 'openframe/**'
-      - 'integrated-tools/**'
-      - 'pom.xml'
-      - '.github/**'
-      - 'manifests/**'
-      - 'clients/**'
+  workflow_dispatch:
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}

@@ -338,7 +338,7 @@ jobs:
           sudo usermod -aG docker `$USER
 
           echo 'Docker CE installed successfully'
-"@
+          "@
 
           # Write script to WSL
           Write-Host "Copying installation script to WSL..."
@@ -386,7 +386,7 @@ jobs:
           done
 
           echo 'Docker configured successfully'
-"@
+          "@
 
           # Write and execute configuration script
           Write-Host "Copying configuration script to WSL..."
