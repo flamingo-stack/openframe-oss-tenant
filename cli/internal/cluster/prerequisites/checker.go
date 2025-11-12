@@ -1,6 +1,7 @@
 package prerequisites
 
 import (
+	"os"
 	"strings"
 
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/docker"
@@ -80,5 +81,11 @@ func (pc *PrerequisiteChecker) GetInstallInstructions(missingTools []string) []s
 
 func CheckPrerequisites() error {
 	installer := NewInstaller()
-	return installer.CheckAndInstall()
+	// Check if we're in a CI environment (GitHub Actions, GitLab CI, CircleCI, etc.)
+	nonInteractive := os.Getenv("CI") != "" ||
+		os.Getenv("GITHUB_ACTIONS") != "" ||
+		os.Getenv("GITLAB_CI") != "" ||
+		os.Getenv("CIRCLECI") != ""
+
+	return installer.CheckAndInstallNonInteractive(nonInteractive)
 }

@@ -56,7 +56,8 @@ jobs:
         run: |
           cd cli
           Write-Host "Testing prerequisite checker..."
-          .\openframe.exe cluster diagnose 2>&1 | Out-Host
+          # Use cluster list to trigger prerequisite check (CI env var is set automatically by GitHub Actions)
+          .\openframe.exe cluster list 2>&1 | Out-Host
           if ($LASTEXITCODE -ne 0) { Write-Host "Prerequisites check completed (missing tools detected as expected)" }
           exit 0  # Ensure step exits successfully
 
@@ -334,8 +335,8 @@ jobs:
           # Add Docker repository - using a reliable single command approach
           Write-Host "Step 6: Adding Docker repository..."
 
-          # Build the repository line directly in one command with proper quoting
-          wsl -d Ubuntu bash -c "echo \`"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable\`" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"
+          # Build the repository line directly in bash (not PowerShell) to avoid variable interpolation issues
+          wsl -d Ubuntu bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
 
           # Verify repository was added
           Write-Host "Step 7: Verifying repository configuration..."

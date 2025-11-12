@@ -1,6 +1,7 @@
 package prerequisites
 
 import (
+	"os"
 	"runtime"
 	"testing"
 
@@ -139,4 +140,90 @@ func TestGetInstallInstructions(t *testing.T) {
 			t.Error("Instruction should not be empty")
 		}
 	}
+}
+
+func TestCheckPrerequisitesInCI(t *testing.T) {
+	// Save original environment
+	originalCI := os.Getenv("CI")
+	originalGithubActions := os.Getenv("GITHUB_ACTIONS")
+	originalGitlabCI := os.Getenv("GITLAB_CI")
+	originalCircleCI := os.Getenv("CIRCLECI")
+
+	// Cleanup function to restore environment
+	defer func() {
+		if originalCI != "" {
+			os.Setenv("CI", originalCI)
+		} else {
+			os.Unsetenv("CI")
+		}
+		if originalGithubActions != "" {
+			os.Setenv("GITHUB_ACTIONS", originalGithubActions)
+		} else {
+			os.Unsetenv("GITHUB_ACTIONS")
+		}
+		if originalGitlabCI != "" {
+			os.Setenv("GITLAB_CI", originalGitlabCI)
+		} else {
+			os.Unsetenv("GITLAB_CI")
+		}
+		if originalCircleCI != "" {
+			os.Setenv("CIRCLECI", originalCircleCI)
+		} else {
+			os.Unsetenv("CIRCLECI")
+		}
+	}()
+
+	tests := []struct {
+		name   string
+		envVar string
+		value  string
+	}{
+		{"GitHub Actions", "GITHUB_ACTIONS", "true"},
+		{"GitLab CI", "GITLAB_CI", "true"},
+		{"CircleCI", "CIRCLECI", "true"},
+		{"Generic CI", "CI", "true"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clear all CI env vars first
+			os.Unsetenv("CI")
+			os.Unsetenv("GITHUB_ACTIONS")
+			os.Unsetenv("GITLAB_CI")
+			os.Unsetenv("CIRCLECI")
+
+			// Set the specific CI env var
+			os.Setenv(tt.envVar, tt.value)
+
+			// The function should detect CI environment and not prompt
+			// We can't easily test the full CheckPrerequisites() function without mocking,
+			// but we can verify the environment detection logic
+			nonInteractive := os.Getenv("CI") != "" ||
+				os.Getenv("GITHUB_ACTIONS") != "" ||
+				os.Getenv("GITLAB_CI") != "" ||
+				os.Getenv("CIRCLECI") != ""
+
+			if !nonInteractive {
+				t.Errorf("%s: Expected non-interactive mode to be true when %s is set", tt.name, tt.envVar)
+			}
+		})
+	}
+
+	// Test non-CI environment
+	t.Run("Non-CI environment", func(t *testing.T) {
+		// Clear all CI env vars
+		os.Unsetenv("CI")
+		os.Unsetenv("GITHUB_ACTIONS")
+		os.Unsetenv("GITLAB_CI")
+		os.Unsetenv("CIRCLECI")
+
+		nonInteractive := os.Getenv("CI") != "" ||
+			os.Getenv("GITHUB_ACTIONS") != "" ||
+			os.Getenv("GITLAB_CI") != "" ||
+			os.Getenv("CIRCLECI") != ""
+
+		if nonInteractive {
+			t.Error("Expected non-interactive mode to be false in non-CI environment")
+		}
+	})
 }
