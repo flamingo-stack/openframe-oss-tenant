@@ -17,210 +17,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-windows-cli:
-    name: Test CLI on Windows
-    runs-on: windows-latest
-    timeout-minutes: 45
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache-dependency-path: cli/go.sum
-
-      - name: Build Windows CLI binary
-        shell: bash
-        run: |
-          cd cli
-          go build -v -o openframe.exe .
-          ls -lh openframe.exe
-
-      - name: Check WSL2 status
-        shell: powershell
-        continue-on-error: true
-        run: |
-          Write-Host "Checking WSL status..."
-          wsl --status 2>&1 | Out-Null
-          if ($LASTEXITCODE -ne 0) { Write-Host "WSL not fully configured yet" }
-          wsl --list --verbose 2>&1 | Out-Null
-          if ($LASTEXITCODE -ne 0) { Write-Host "No WSL distributions installed" }
-          exit 0  # Ensure step exits successfully
-
-      - name: Install WSL2 and Ubuntu
-        shell: powershell
-        run: |
-          Write-Host "Installing WSL2 and Ubuntu..."
-
-          # Set error action to continue
-          $ErrorActionPreference = 'Continue'
-
-          # Install WSL with Ubuntu in one command, with yes to all prompts
-          Write-Host "Running: wsl --install -d Ubuntu --no-launch"
-          echo Y | wsl --install -d Ubuntu --no-launch
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Warning: WSL installation returned exit code $LASTEXITCODE"
-            Write-Host "This is expected on some systems. Continuing..."
-          }
-
-          # Wait for installation to complete
-          Write-Host "Waiting for installation to complete..."
-          Start-Sleep -Seconds 20
-
-          # Check status
-          Write-Host "Checking WSL status after installation..."
-          wsl --status
-          wsl --list --verbose
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Error: WSL installation may have failed"
-            Write-Host "Attempting to verify WSL availability..."
-            wsl --help
-            exit 1
-          }
-
-          # Initialize Ubuntu by running a simple command (this triggers first-time setup)
-          Write-Host "Initializing Ubuntu (first launch)..."
-          wsl -d Ubuntu -u root bash -c "echo 'Ubuntu initialized'" 2>&1 | Out-Host
-
-          # Wait for initialization to complete
-          Start-Sleep -Seconds 10
-
-          Write-Host "WSL installation completed successfully"
-
-      - name: Set up Ubuntu in WSL2
-        shell: powershell
-        run: |
-          Write-Host "Setting up Ubuntu..."
-
-          # Set error action to continue
-          $ErrorActionPreference = 'Continue'
-
-          # Set WSL2 as default version
-          Write-Host "Setting WSL2 as default version..."
-          wsl --set-default-version 2
-
-          # Wait for Ubuntu to be ready
-          Write-Host "Waiting for Ubuntu to initialize..."
-          Start-Sleep -Seconds 10
-
-          # Verify Ubuntu is installed
-          Write-Host "Verifying Ubuntu installation..."
-          wsl --list --verbose
-
-          # Initialize Ubuntu with default user (check if user exists first)
-          Write-Host "Creating testuser in Ubuntu..."
-          wsl -d Ubuntu -u root bash -c "id testuser 2>/dev/null || (useradd -m -s /bin/bash testuser && echo 'testuser:testpass' | chpasswd && usermod -aG sudo testuser)"
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Error: Failed to create user in Ubuntu"
-            Write-Host "Checking Ubuntu status..."
-            wsl -d Ubuntu -u root bash -c "echo 'Ubuntu is accessible'"
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "Error: Cannot access Ubuntu in WSL"
-              exit 1
-            }
-          }
-
-          Write-Host "Configuring sudo for testuser..."
-          wsl -d Ubuntu -u root bash -c "grep -q '%sudo ALL=(ALL) NOPASSWD:ALL' /etc/sudoers || echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
-
-          # Set default user (ubuntu command might not be available)
-          Write-Host "Setting default user..."
-          try {
-            & ubuntu config --default-user testuser 2>&1 | Out-Null
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "Note: ubuntu config command not available, will use -u flag with wsl"
-            }
-          } catch {
-            Write-Host "Note: ubuntu config command not available, will use -u flag with wsl"
-          }
-
-          Write-Host "WSL2 Ubuntu setup complete"
-          Write-Host "Final verification..."
-          wsl --list --verbose
-          wsl -d Ubuntu -u testuser bash -c "whoami"
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Error: User verification failed"
-            exit 1
-          }
-
-          Write-Host "[OK] Ubuntu setup completed successfully"
-
-      - name: Test prerequisite check (should detect missing tools)
-        shell: powershell
-        continue-on-error: true
-        run: |
-          cd cli
-          Write-Host "Testing prerequisite checker..."
-          # Use cluster list to trigger prerequisite check (CI env var is set automatically by GitHub Actions)
-          .\openframe.exe cluster list 2>&1 | Out-Host
-          if ($LASTEXITCODE -ne 0) { Write-Host "Prerequisites check completed (missing tools detected as expected)" }
-          exit 0  # Ensure step exits successfully
-
-      - name: Test Docker installation in WSL2
-        shell: powershell
-        run: |
-          Write-Host "Testing Docker installation..."
-
-          cd cli
-
-          # Note: The actual Docker installation will be triggered by the CLI
-          # For now, we'll verify the WSL environment is ready
-          wsl -d Ubuntu bash -c "echo 'WSL2 is ready for Docker installation'"
-
-      - name: Verify WSL2 Docker socket access
-        shell: powershell
-        run: |
-          Write-Host "Verifying Docker can be installed..."
-          wsl -d Ubuntu bash -c "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | head -5"
-
-      - name: Test CLI build and basic commands
-        shell: powershell
-        run: |
-          cd cli
-          Write-Host "Testing CLI version..."
-          .\openframe.exe --version
-          if ($LASTEXITCODE -ne 0) {
-            .\openframe.exe version
-            if ($LASTEXITCODE -ne 0) { Write-Host "No version command" }
-          }
-
-          Write-Host "Testing CLI help..."
-          .\openframe.exe --help
-
-      - name: Upload Windows binary as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: openframe-windows-amd64
-          path: cli/openframe.exe
-          retention-days: 30
-
-      - name: Test results summary
-        if: always()
-        shell: powershell
-        run: |
-          Write-Host "========================================"
-          Write-Host "Windows CLI Test Summary"
-          Write-Host "========================================"
-          Write-Host "[OK] CLI binary built successfully"
-          Write-Host "[OK] WSL2 installation verified"
-          Write-Host "[OK] Ubuntu in WSL2 configured"
-          Write-Host "[OK] Ready for Docker/kubectl/k3d installation"
-          Write-Host ""
-          Write-Host "Next steps for manual testing:"
-          Write-Host "1. Download the artifact 'openframe-windows-amd64'"
-          Write-Host "2. Run: .\openframe.exe cluster up"
-          Write-Host "3. Verify Docker, kubectl, and k3d are installed"
-
-  # Integration test - full installation flow
-  test-windows-cli-installation:
-    name: Test Full Installation on Windows
+  test-windows-cli-bootstrap:
+    name: Test Bootstrap on Windows
     runs-on: windows-latest
     timeout-minutes: 60
 
@@ -437,14 +235,14 @@ jobs:
         timeout-minutes: 10
         run: |
           Write-Host "Testing k3d cluster creation..."
-          wsl.exe -d Ubuntu -u runner bash -c "sudo k3d cluster create test-cluster --wait --timeout 300s"
+          wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d cluster create test-cluster --wait --timeout 300s"
 
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Cluster created successfully. Checking nodes..."
-            wsl.exe -d Ubuntu -u runner kubectl get nodes
+            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get nodes"
 
             Write-Host "Deleting test cluster..."
-            wsl.exe -d Ubuntu -u runner bash -c "sudo k3d cluster delete test-cluster"
+            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d cluster delete test-cluster"
 
             Write-Host "[OK] k3d cluster creation test passed"
           } else {
@@ -475,13 +273,13 @@ jobs:
 
           $kubectlWrapper = @"
           @echo off
-          wsl -d Ubuntu -u runner kubectl %*
+          wsl -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl %*"
           "@
           Set-Content -Path "$wrapperDir\kubectl.bat" -Value $kubectlWrapper
 
           $k3dWrapper = @"
           @echo off
-          wsl -d Ubuntu -u runner sudo k3d %*
+          wsl -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d %*"
           "@
           Set-Content -Path "$wrapperDir\k3d.bat" -Value $k3dWrapper
 
@@ -500,19 +298,19 @@ jobs:
 
             Write-Host ""
             Write-Host "Verifying cluster in WSL2..."
-            wsl.exe -d Ubuntu -u runner kubectl get nodes
-            wsl.exe -d Ubuntu -u runner kubectl get namespaces
+            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get nodes"
+            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get namespaces"
 
             Write-Host ""
             Write-Host "Checking ArgoCD installation..."
-            wsl.exe -d Ubuntu -u runner kubectl get pods -n argocd 2>&1 | Out-Host
+            wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && kubectl get pods -n argocd" 2>&1 | Out-Host
 
             Write-Host ""
             Write-Host "Cleaning up bootstrap test cluster..."
             .\openframe.exe cluster delete openframe-test 2>&1 | Out-Host
             if ($LASTEXITCODE -ne 0) {
               Write-Host "Cleanup via CLI failed, trying k3d directly..."
-              wsl.exe -d Ubuntu -u runner bash -c "sudo k3d cluster delete openframe-test"
+              wsl.exe -d Ubuntu -u runner bash -c "export KUBECONFIG=/tmp/k3d-kubeconfig && sudo -E k3d cluster delete openframe-test"
             }
 
             Write-Host "[OK] Bootstrap test completed successfully"
@@ -521,17 +319,22 @@ jobs:
             Write-Host "This is acceptable in CI environment"
           }
 
-      - name: Installation test summary
+      - name: Bootstrap test summary
         if: always()
         shell: powershell
         run: |
           Write-Host "========================================"
-          Write-Host "Full Installation Test Results"
+          Write-Host "Bootstrap Test Results"
           Write-Host "========================================"
 
           # Check if Ubuntu distribution exists
           wsl.exe --list --verbose 2>&1 | Out-Null
           if ($LASTEXITCODE -eq 0) {
+            Write-Host ""
+            Write-Host "Environment Setup:"
+            Write-Host "=================="
+            Write-Host "[OK] WSL2 and Ubuntu configured"
+
             Write-Host ""
             Write-Host "Tool Versions:"
             Write-Host "=============="
@@ -552,8 +355,14 @@ jobs:
             Write-Host "k3d: $k3d_version"
 
             Write-Host ""
+            Write-Host "Bootstrap Command:"
+            Write-Host "=================="
+            Write-Host "Command: openframe bootstrap openframe-test --deployment-mode=oss-tenant --non-interactive"
+            Write-Host "Expected: Create k3d cluster + Install ArgoCD + Install OpenFrame charts"
+
+            Write-Host ""
             Write-Host "========================================"
-            Write-Host "[OK] Installation test completed"
+            Write-Host "[OK] Bootstrap test completed"
             Write-Host "========================================"
           } else {
             Write-Host "ERROR: WSL distribution not found"
@@ -567,7 +376,7 @@ jobs:
   comment-results:
     name: Comment Test Results
     runs-on: ubuntu-latest
-    needs: [test-windows-cli, test-windows-cli-installation]
+    needs: [test-windows-cli-bootstrap]
     if: always() && github.event_name == 'pull_request'
 
     steps:
@@ -575,29 +384,25 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const buildStatus = '${{ needs.test-windows-cli.result }}';
-            const installStatus = '${{ needs.test-windows-cli-installation.result }}';
+            const bootstrapStatus = '${{ needs.test-windows-cli-bootstrap.result }}';
+            const statusIcon = bootstrapStatus === 'success' ? ':white_check_mark:' : ':x:';
 
-            const buildIcon = buildStatus === 'success' ? ':white_check_mark:' : ':x:';
-            const installIcon = installStatus === 'success' ? ':white_check_mark:' : ':x:';
+            const comment = `## Windows CLI Bootstrap Test Results
 
-            const comment = `## Windows CLI Test Results
-
-            ${buildIcon} **Build Test**: ${buildStatus}
-            ${installIcon} **Installation Test**: ${installStatus}
+            ${statusIcon} **Bootstrap Test**: ${bootstrapStatus}
 
             ### Summary
-            - Windows binary compilation: ${buildIcon}
-            - WSL2 setup: ${buildStatus === 'success' ? ':white_check_mark:' : ':x:'}
-            - Docker installation: ${installIcon}
-            - kubectl installation: ${installIcon}
-            - k3d installation: ${installIcon}
-            - Bootstrap OSS tenant workflow: ${installIcon}
+            - Windows binary build: ${statusIcon}
+            - WSL2 Ubuntu setup: ${statusIcon}
+            - Docker installation: ${statusIcon}
+            - kubectl installation: ${statusIcon}
+            - k3d installation: ${statusIcon}
+            - Bootstrap OSS tenant workflow: ${statusIcon}
 
-            ### Bootstrap Test
-            ${installStatus === 'success' ? ':white_check_mark: Bootstrap command successfully created cluster and installed ArgoCD!' : ':warning: Bootstrap test may have encountered issues (check logs)'}
+            ### Test Details
+            ${bootstrapStatus === 'success' ? ':white_check_mark: Bootstrap command successfully created k3d cluster and installed ArgoCD!' : ':warning: Bootstrap test encountered issues (check logs for details)'}
 
-            ${buildStatus === 'success' ? ':white_check_mark: Windows CLI binary is available as an artifact!' : ':x: Build failed, please check logs'}
+            ${bootstrapStatus === 'success' ? ':white_check_mark: Windows CLI binary is available as an artifact!' : ''}
 
             <details>
             <summary>View workflow run</summary>

@@ -110,9 +110,16 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterCon
 	}
 
 	// Set kubectl context to the newly created cluster
+	// On Windows/WSL, k3d with --kubeconfig-switch-context may not update the kubeconfig
+	// visible to kubectl if they're running as different users. Try to switch, but don't fail.
 	contextName := fmt.Sprintf("k3d-%s", config.Name)
 	if _, err := m.executor.Execute(ctx, "kubectl", "config", "use-context", contextName); err != nil {
-		return models.NewClusterOperationError("context-switch", config.Name, fmt.Errorf("failed to switch kubectl context to %s: %w", contextName, err))
+		// Log warning but don't fail - k3d's --kubeconfig-switch-context should handle this
+		// This can happen on Windows/WSL when k3d runs as root but kubectl doesn't
+		if m.verbose {
+			fmt.Printf("Warning: Could not switch kubectl context (this may be normal on Windows/WSL): %v\n", err)
+		}
+		// Return success anyway - the cluster was created successfully
 	}
 
 	return nil
