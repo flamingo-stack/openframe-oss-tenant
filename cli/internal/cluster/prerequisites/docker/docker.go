@@ -343,24 +343,65 @@ func (d *DockerInstaller) ensureWSL2() error {
 }
 
 func (d *DockerInstaller) ensureUbuntuWSL() error {
-	// Check if Ubuntu is already installed
-	cmd := exec.Command("wsl", "-l", "-q")
-	output, _ := cmd.Output()
-	if strings.Contains(string(output), "Ubuntu") {
+	// Check if Ubuntu is already installed using multiple methods
+	// Method 1: Check using wsl -l -v (more reliable, includes version info)
+	cmd := exec.Command("wsl", "-l", "-v")
+	output, err := cmd.Output()
+
+	// Convert output handling potential UTF-16 encoding on Windows
+	outputStr := d.decodeWSLOutput(output)
+
+	if err == nil && (strings.Contains(outputStr, "Ubuntu") || strings.Contains(outputStr, "ubuntu")) {
 		fmt.Println("✓ Ubuntu already installed in WSL2")
 		return nil
 	}
 
+	// Method 2: Try to run a command in Ubuntu distribution
+	cmd = exec.Command("wsl", "-d", "Ubuntu", "echo", "test")
+	if err := cmd.Run(); err == nil {
+		fmt.Println("✓ Ubuntu already installed in WSL2")
+		return nil
+	}
+
+	// Ubuntu not found, install it
 	fmt.Println("Installing Ubuntu in WSL2...")
-	cmd = exec.Command("wsl", "--install", "-d", "Ubuntu")
+	cmd = exec.Command("wsl", "--install", "-d", "Ubuntu", "--no-launch")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
+		// Check if error is because distribution already exists
+		if strings.Contains(err.Error(), "already exists") || strings.Contains(err.Error(), "ERROR_ALREADY_EXISTS") {
+			fmt.Println("✓ Ubuntu already exists in WSL2")
+			return nil
+		}
 		return fmt.Errorf("failed to install Ubuntu: %w", err)
 	}
 
 	fmt.Println("✓ Ubuntu installed successfully")
 	return nil
+}
+
+// decodeWSLOutput handles UTF-16 LE with BOM encoding that WSL sometimes uses on Windows
+func (d *DockerInstaller) decodeWSLOutput(data []byte) string {
+	// Check for UTF-16 LE BOM
+	if len(data) >= 2 && data[0] == 0xFF && data[1] == 0xFE {
+		// UTF-16 LE with BOM detected
+		// Convert UTF-16 to UTF-8
+		u16 := make([]uint16, 0, len(data)/2)
+		for i := 2; i < len(data)-1; i += 2 {
+			u16 = append(u16, uint16(data[i])|uint16(data[i+1])<<8)
+		}
+		runes := make([]rune, 0, len(u16))
+		for _, v := range u16 {
+			if v == 0 {
+				continue
+			}
+			runes = append(runes, rune(v))
+		}
+		return string(runes)
+	}
+	// Regular UTF-8
+	return string(data)
 }
 
 func (d *DockerInstaller) installDockerInWSL() error {
