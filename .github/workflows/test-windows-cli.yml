@@ -344,9 +344,9 @@ jobs:
           echo 'Docker CE installed successfully'
           "@
 
-          # Write script to WSL
+          # Write script to WSL (convert line endings)
           Write-Host "Copying installation script to WSL..."
-          $installScript | wsl.exe -d Ubuntu bash -c "cat > /tmp/install-docker.sh"
+          $installScript | wsl.exe -d Ubuntu bash -c "tr -d '\r' > /tmp/install-docker.sh"
 
           # Execute installation script
           Write-Host "Running Docker installation..."
@@ -392,9 +392,9 @@ jobs:
           echo 'Docker configured successfully'
           "@
 
-          # Write and execute configuration script
+          # Write and execute configuration script (convert line endings)
           Write-Host "Copying configuration script to WSL..."
-          $configureScript | wsl.exe -d Ubuntu bash -c "cat > /tmp/configure-docker.sh"
+          $configureScript | wsl.exe -d Ubuntu bash -c "tr -d '\r' > /tmp/configure-docker.sh"
 
           Write-Host "Running Docker configuration..."
           wsl.exe -d Ubuntu bash /tmp/configure-docker.sh

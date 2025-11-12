@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -238,8 +239,27 @@ if ($currentPath -notlike "*$binDir*") {
 	cmd.Stderr = os.Stderr
 	cmd.Run() // Ignore errors
 
+	// Update PATH for current process so k3d can be found immediately
+	currentPath := os.Getenv("PATH")
+	if !containsPath(currentPath, wrapperDir) {
+		newPath := currentPath + ";" + wrapperDir
+		os.Setenv("PATH", newPath)
+		fmt.Printf("Updated current process PATH to include: %s\n", wrapperDir)
+	}
+
 	fmt.Printf("✓ k3d wrapper created at: %s\n", wrapperPath)
 	return nil
+}
+
+// containsPath checks if a PATH string contains a specific directory
+func containsPath(pathEnv, dir string) bool {
+	paths := strings.Split(pathEnv, ";")
+	for _, p := range paths {
+		if strings.EqualFold(strings.TrimSpace(p), strings.TrimSpace(dir)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (k *K3dInstaller) runCommand(name string, args ...string) error {
