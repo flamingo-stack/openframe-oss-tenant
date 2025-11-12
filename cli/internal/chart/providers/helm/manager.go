@@ -29,11 +29,19 @@ func NewHelmManager(exec executor.CommandExecutor) *HelmManager {
 // getHelmEnv returns environment variables for Helm to use writable directories
 // This is especially important in CI environments where home directory may not have write permissions
 func (h *HelmManager) getHelmEnv() map[string]string {
-	return map[string]string{
+	// Define the directories
+	helmDirs := map[string]string{
 		"HELM_CACHE_HOME":  "/tmp/helm/cache",
 		"HELM_CONFIG_HOME": "/tmp/helm/config",
 		"HELM_DATA_HOME":   "/tmp/helm/data",
 	}
+
+	// Ensure directories exist
+	for _, dir := range helmDirs {
+		os.MkdirAll(dir, 0755)
+	}
+
+	return helmDirs
 }
 
 // IsHelmInstalled checks if Helm is available
