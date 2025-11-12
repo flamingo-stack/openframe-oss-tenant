@@ -197,13 +197,41 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 	return 0
 }
 
+// checkCRDReady verifies that the ArgoCD Application CRD is installed and ready
+func (m *Manager) checkCRDReady(ctx context.Context) bool {
+	// Check if the applications.argoproj.io CRD exists
+	result, err := m.executor.Execute(ctx, "kubectl", "get", "crd", "applications.argoproj.io", "-o", "name")
+	if err != nil || result == nil || result.Stdout == "" {
+		return false
+	}
+
+	// Verify the CRD is actually usable by checking if we can list resources
+	// (even if the list is empty)
+	listResult, err := m.executor.Execute(ctx, "kubectl", "api-resources", "--api-group=argoproj.io", "-o", "name")
+	if err != nil || listResult == nil {
+		return false
+	}
+
+	// Check if "applications" appears in the list of available resources
+	return strings.Contains(listResult.Stdout, "applications")
+}
+
 // parseApplications gets ArgoCD applications and their status directly via kubectl
 func (m *Manager) parseApplications(ctx context.Context, verbose bool) ([]Application, error) {
-	// First, get the list of application names (this always succeeds even for new apps)
+	// First check if the CRD is ready to avoid spammy warnings during bootstrap
+	if !m.checkCRDReady(ctx) {
+		// CRD not ready yet - return empty list without warning
+		// This is expected during initial ArgoCD installation
+		return []Application{}, nil
+	}
+
+	// Now get the list of application names (this should succeed if CRD is ready)
 	namesResult, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io",
 		"-o", "jsonpath={.items[*].metadata.name}")
 
 	if err != nil {
+		// Only show warning if verbose mode is enabled
+		// During bootstrap, CRDs might not be ready yet and warnings are just noise
 		if verbose {
 			pterm.Warning.Printf("kubectl get applications failed: %v\n", err)
 		}

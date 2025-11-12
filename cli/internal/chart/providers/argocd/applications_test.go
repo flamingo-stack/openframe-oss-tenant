@@ -134,6 +134,13 @@ func TestParseApplications(t *testing.T) {
 		{
 			name: "successfully parses healthy applications",
 			setupMock: func(m *executor.MockCommandExecutor) {
+				// CRD readiness checks
+				m.SetResponse("kubectl get crd applications.argoproj.io -o name", &executor.CommandResult{
+					Stdout: "customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io\n",
+				})
+				m.SetResponse("kubectl api-resources --api-group=argoproj.io -o name", &executor.CommandResult{
+					Stdout: "applications\napplicationsets\n",
+				})
 				// First query: get application names
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
 					Stdout: "app1 app2 app3",
@@ -152,6 +159,13 @@ func TestParseApplications(t *testing.T) {
 		{
 			name: "handles applications with unknown status",
 			setupMock: func(m *executor.MockCommandExecutor) {
+				// CRD readiness checks
+				m.SetResponse("kubectl get crd applications.argoproj.io -o name", &executor.CommandResult{
+					Stdout: "customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io\n",
+				})
+				m.SetResponse("kubectl api-resources --api-group=argoproj.io -o name", &executor.CommandResult{
+					Stdout: "applications\napplicationsets\n",
+				})
 				// First query: get application names
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
 					Stdout: "app1 app2 app3",
@@ -170,6 +184,13 @@ func TestParseApplications(t *testing.T) {
 		{
 			name: "handles applications without status fields (newly created)",
 			setupMock: func(m *executor.MockCommandExecutor) {
+				// CRD readiness checks
+				m.SetResponse("kubectl get crd applications.argoproj.io -o name", &executor.CommandResult{
+					Stdout: "customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io\n",
+				})
+				m.SetResponse("kubectl api-resources --api-group=argoproj.io -o name", &executor.CommandResult{
+					Stdout: "applications\napplicationsets\n",
+				})
 				// First query succeeds: applications exist
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
 					ExitCode: 0,
@@ -190,9 +211,27 @@ func TestParseApplications(t *testing.T) {
 		{
 			name: "returns empty list when no applications exist",
 			setupMock: func(m *executor.MockCommandExecutor) {
+				// CRD readiness checks
+				m.SetResponse("kubectl get crd applications.argoproj.io -o name", &executor.CommandResult{
+					Stdout: "customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io\n",
+				})
+				m.SetResponse("kubectl api-resources --api-group=argoproj.io -o name", &executor.CommandResult{
+					Stdout: "applications\napplicationsets\n",
+				})
 				// First query returns empty (no applications)
 				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
 					Stdout: "",
+				})
+			},
+			expectedApps: []Application{},
+		},
+		{
+			name: "returns empty list when CRDs are not ready",
+			setupMock: func(m *executor.MockCommandExecutor) {
+				// CRD readiness check fails - CRD doesn't exist yet
+				m.SetResponse("kubectl get crd applications.argoproj.io -o name", &executor.CommandResult{
+					ExitCode: 1,
+					Stderr:   "Error from server (NotFound): customresourcedefinitions.apiextensions.k8s.io \"applications.argoproj.io\" not found",
 				})
 			},
 			expectedApps: []Application{},

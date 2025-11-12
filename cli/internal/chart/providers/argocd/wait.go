@@ -117,21 +117,54 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	// Ensure spinner is stopped when function exits
 	defer stopSpinner()
 
-	// Bootstrap wait (30 seconds)
+	// Bootstrap wait (30 seconds) - wait for ArgoCD CRDs to be ready
 	bootstrapEnd := time.Now().Add(30 * time.Second)
+	crdCheckInterval := 2 * time.Second
+	lastCRDCheck := time.Now()
+	crdReady := false
+
+	// Show info message about bootstrap (unless in silent mode)
+	if !config.Silent {
+		if config.Verbose {
+			pterm.Info.Println("Waiting for ArgoCD CRDs to be ready...")
+		} else {
+			// Brief message in non-verbose mode
+			pterm.Info.Println("Initializing ArgoCD resources...")
+		}
+	}
 
 	// Check every 10ms for immediate response
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 
-	// Bootstrap phase
+	// Bootstrap phase - wait for CRDs to be ready
 	for time.Now().Before(bootstrapEnd) {
 		select {
 		case <-localCtx.Done():
 			return fmt.Errorf("operation cancelled: %w", localCtx.Err())
 		case <-ticker.C:
-			// Continue waiting
+			// Check CRD readiness every 2 seconds
+			if time.Since(lastCRDCheck) >= crdCheckInterval {
+				lastCRDCheck = time.Now()
+				if m.checkCRDReady(localCtx) {
+					crdReady = true
+					if config.Verbose && !config.Silent {
+						pterm.Success.Println("ArgoCD CRDs are ready")
+					}
+					// Break out of bootstrap once CRDs are ready
+					break
+				}
+			}
 		}
+		// If CRDs are ready, exit bootstrap early
+		if crdReady {
+			break
+		}
+	}
+
+	// If CRDs still aren't ready after bootstrap, warn user
+	if !crdReady && config.Verbose {
+		pterm.Warning.Println("ArgoCD CRDs not yet ready after bootstrap period, continuing anyway...")
 	}
 
 	// Main monitoring phase
