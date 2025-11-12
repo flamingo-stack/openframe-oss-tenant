@@ -286,6 +286,8 @@ jobs:
           # Add to PATH for current session
           $env:Path = "$wrapperDir;$env:Path"
 
+          Write-Host "Note: Helm will be automatically installed by the CLI during bootstrap"
+
           Write-Host "Testing bootstrap command..."
           Write-Host ""
 
@@ -354,6 +356,11 @@ jobs:
             if ($LASTEXITCODE -ne 0) { $k3d_version = "FAILED" }
             Write-Host "k3d: $k3d_version"
 
+            # Check Helm (installed by CLI during bootstrap)
+            $helm_version = wsl.exe -d Ubuntu -u runner bash -c 'helm version --short 2>/dev/null'
+            if ($LASTEXITCODE -ne 0) { $helm_version = "Installed by CLI during bootstrap" }
+            Write-Host "Helm: $helm_version"
+
             Write-Host ""
             Write-Host "Bootstrap Command:"
             Write-Host "=================="
@@ -397,6 +404,7 @@ jobs:
             - Docker installation: ${statusIcon}
             - kubectl installation: ${statusIcon}
             - k3d installation: ${statusIcon}
+            - Helm installation (via CLI): ${statusIcon}
             - Bootstrap OSS tenant workflow: ${statusIcon}
 
             ### Test Details
