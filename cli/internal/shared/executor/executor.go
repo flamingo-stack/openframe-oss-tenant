@@ -174,6 +174,32 @@ func (e *RealCommandExecutor) buildEnvStrings(env map[string]string) []string {
 	return envStrings
 }
 
+// shellEscape escapes an argument for safe use in a bash shell
+// Arguments containing special characters are wrapped in single quotes
+// Single quotes within the argument are properly escaped
+func shellEscape(arg string) string {
+	// Check if the argument needs escaping
+	needsEscape := false
+	for _, ch := range arg {
+		if ch == '{' || ch == '}' || ch == '$' || ch == '\\' || ch == '"' ||
+		   ch == '\'' || ch == '`' || ch == '\n' || ch == '\t' || ch == ' ' ||
+		   ch == '*' || ch == '?' || ch == '[' || ch == ']' || ch == '|' ||
+		   ch == '&' || ch == ';' || ch == '<' || ch == '>' || ch == '(' || ch == ')' {
+			needsEscape = true
+			break
+		}
+	}
+
+	if !needsEscape {
+		return arg
+	}
+
+	// Use single quotes and escape any single quotes in the argument
+	// by ending the single-quoted string, adding an escaped single quote, and starting again
+	escaped := strings.ReplaceAll(arg, "'", "'\"'\"'")
+	return "'" + escaped + "'"
+}
+
 // wrapCommandForWindows wraps kubectl, helm, and k3d commands to run directly in WSL2
 // This avoids issues with batch file wrappers not preserving special characters
 // and ensures all Kubernetes tools run in the same environment
@@ -195,30 +221,36 @@ func (e *RealCommandExecutor) wrapCommandForWindows(command string, args []strin
 		wslUser = "runner"
 	}
 
+	// Escape arguments that contain special characters for shell interpretation
+	escapedArgs := make([]string, len(args))
+	for i, arg := range args {
+		escapedArgs[i] = shellEscape(arg)
+	}
+
 	// For k3d, we need Docker access which requires elevated permissions
 	// Use 'sudo -E' to run k3d with necessary permissions while preserving environment
 	// The -E flag preserves environment variables like KUBECONFIG
 	if command == "k3d" {
 		// Build command with sudo -E prefix
-		newArgs := make([]string, 0, len(args)+6)
+		newArgs := make([]string, 0, len(escapedArgs)+6)
 		newArgs = append(newArgs, "-d", "Ubuntu", "-u", wslUser, "sudo", "-E", command)
-		newArgs = append(newArgs, args...)
+		newArgs = append(newArgs, escapedArgs...)
 		return "wsl", newArgs
 	}
 
 	// For helm, use the helm-wrapper.sh script which sets proper environment variables
 	// This ensures Helm has access to writable directories in CI environments
 	if command == "helm" {
-		newArgs := make([]string, 0, len(args)+5)
+		newArgs := make([]string, 0, len(escapedArgs)+5)
 		newArgs = append(newArgs, "-d", "Ubuntu", "-u", wslUser, "/usr/local/bin/helm-wrapper.sh")
-		newArgs = append(newArgs, args...)
+		newArgs = append(newArgs, escapedArgs...)
 		return "wsl", newArgs
 	}
 
 	// For kubectl, run directly as user
-	newArgs := make([]string, 0, len(args)+5)
+	newArgs := make([]string, 0, len(escapedArgs)+5)
 	newArgs = append(newArgs, "-d", "Ubuntu", "-u", wslUser, command)
-	newArgs = append(newArgs, args...)
+	newArgs = append(newArgs, escapedArgs...)
 
 	return "wsl", newArgs
 }

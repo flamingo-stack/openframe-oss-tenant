@@ -313,10 +313,10 @@ func TestRealCommandExecutor_wrapCommandForWindows(t *testing.T) {
 			command:                "kubectl",
 			args:                   []string{"-n", "argocd", "get", "applications.argoproj.io", "-o", `jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}`},
 			expectedCommandWindows: "wsl",
-			expectedArgsWindows:    []string{"-d", "Ubuntu", "-u", "runner", "kubectl", "-n", "argocd", "get", "applications.argoproj.io", "-o", `jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}`},
+			expectedArgsWindows:    []string{"-d", "Ubuntu", "-u", "runner", "kubectl", "-n", "argocd", "get", "applications.argoproj.io", "-o", `'jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}'`},
 			expectedCommandUnix:    "kubectl",
 			expectedArgsUnix:       []string{"-n", "argocd", "get", "applications.argoproj.io", "-o", `jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}`},
-			description:            "kubectl commands with complex jsonpath should preserve special characters",
+			description:            "kubectl commands with complex jsonpath should be shell-escaped on Windows",
 		},
 		{
 			name:                   "helm command",
@@ -363,10 +363,10 @@ func TestRealCommandExecutor_wrapCommandForWindows(t *testing.T) {
 			command:                "k3d",
 			args:                   []string{"cluster", "create", "my cluster", "--config", "/path with spaces/config.yaml"},
 			expectedCommandWindows: "wsl",
-			expectedArgsWindows:    []string{"-d", "Ubuntu", "-u", "runner", "sudo", "-E", "k3d", "cluster", "create", "my cluster", "--config", "/path with spaces/config.yaml"},
+			expectedArgsWindows:    []string{"-d", "Ubuntu", "-u", "runner", "sudo", "-E", "k3d", "cluster", "create", "'my cluster'", "--config", "'/path with spaces/config.yaml'"},
 			expectedCommandUnix:    "k3d",
 			expectedArgsUnix:       []string{"cluster", "create", "my cluster", "--config", "/path with spaces/config.yaml"},
-			description:            "k3d with spaces in arguments should be properly passed through",
+			description:            "k3d with spaces in arguments should be shell-escaped on Windows",
 		},
 		{
 			name:                   "empty args",
@@ -392,6 +392,97 @@ func TestRealCommandExecutor_wrapCommandForWindows(t *testing.T) {
 				assert.Equal(t, tt.expectedCommandUnix, actualCommand, tt.description)
 				assert.Equal(t, tt.expectedArgsUnix, actualArgs, tt.description)
 			}
+		})
+	}
+}
+
+func TestShellEscape(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "simple string without special chars",
+			input:    "hello",
+			expected: "hello",
+		},
+		{
+			name:     "string with spaces",
+			input:    "hello world",
+			expected: "'hello world'",
+		},
+		{
+			name:     "string with curly braces",
+			input:    "{range .items[*]}",
+			expected: "'{range .items[*]}'",
+		},
+		{
+			name:     "jsonpath with tabs and newlines",
+			input:    `jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}`,
+			expected: `'jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.health.status}{"\n"}{end}'`,
+		},
+		{
+			name:     "string with dollar sign",
+			input:    "$VAR",
+			expected: "'$VAR'",
+		},
+		{
+			name:     "string with backticks",
+			input:    "`command`",
+			expected: "'`command`'",
+		},
+		{
+			name:     "string with single quote",
+			input:    "it's",
+			expected: "'it'\"'\"'s'",
+		},
+		{
+			name:     "string with multiple single quotes",
+			input:    "don't can't won't",
+			expected: "'don'\"'\"'t can'\"'\"'t won'\"'\"'t'",
+		},
+		{
+			name:     "string with pipes and ampersands",
+			input:    "cmd1 | cmd2 && cmd3",
+			expected: "'cmd1 | cmd2 && cmd3'",
+		},
+		{
+			name:     "string with semicolons",
+			input:    "cmd1; cmd2",
+			expected: "'cmd1; cmd2'",
+		},
+		{
+			name:     "string with redirection",
+			input:    "cmd > file",
+			expected: "'cmd > file'",
+		},
+		{
+			name:     "string with parentheses",
+			input:    "(cmd)",
+			expected: "'(cmd)'",
+		},
+		{
+			name:     "string with wildcards",
+			input:    "*.txt",
+			expected: "'*.txt'",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "path without special chars",
+			input:    "/usr/local/bin",
+			expected: "/usr/local/bin",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := shellEscape(tt.input)
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
