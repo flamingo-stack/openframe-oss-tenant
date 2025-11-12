@@ -14,7 +14,11 @@ func GenerateTestClusterName() string {
 
 // CreateTestCluster creates a k3d cluster for testing with shorter timeout
 func CreateTestCluster(name string) error {
-	cmd := exec.Command("k3d", "cluster", "create", name, "--agents", "1", "--timeout", "60s")
+	cmd := exec.Command("k3d", "cluster", "create", name,
+		"--agents", "1",
+		"--timeout", "60s",
+		"--kubeconfig-update-default",
+		"--kubeconfig-switch-context")
 	return cmd.Run()
 }
 

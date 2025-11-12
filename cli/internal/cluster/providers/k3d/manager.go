@@ -94,7 +94,13 @@ func (m *K3dManager) CreateCluster(ctx context.Context, config models.ClusterCon
 		}
 	}
 
-	args := []string{"cluster", "create", "--config", configFilePath, "--timeout", m.timeout}
+	args := []string{
+		"cluster", "create",
+		"--config", configFilePath,
+		"--timeout", m.timeout,
+		"--kubeconfig-update-default", // Update default kubeconfig with new cluster context
+		"--kubeconfig-switch-context", // Automatically switch to new cluster context
+	}
 	if m.verbose {
 		args = append(args, "--verbose")
 	}
