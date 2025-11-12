@@ -18,11 +18,21 @@ func commandExists(cmd string) bool {
 }
 
 func isDockerInstalled() bool {
+	// On Windows, check if Docker is installed in WSL2
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("wsl", "-d", "Ubuntu", "command", "-v", "docker")
+		return cmd.Run() == nil
+	}
 	// Just check if docker command exists, don't try to connect to daemon
 	return commandExists("docker")
 }
 
 func IsDockerRunning() bool {
+	// On Windows, check Docker in WSL2 directly
+	if runtime.GOOS == "windows" {
+		return isDockerRunningWSL()
+	}
+
 	if !commandExists("docker") {
 		return false
 	}
@@ -32,6 +42,21 @@ func IsDockerRunning() bool {
 	cmd := exec.CommandContext(ctx, "docker", "ps")
 	err := cmd.Run()
 	return err == nil
+}
+
+// isDockerRunningWSL checks if Docker is running in WSL2 on Windows
+func isDockerRunningWSL() bool {
+	// First check if WSL and Ubuntu are available
+	cmd := exec.Command("wsl", "-d", "Ubuntu", "command", "-v", "docker")
+	if err := cmd.Run(); err != nil {
+		return false
+	}
+
+	// Check if Docker daemon is running in WSL2
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd = exec.CommandContext(ctx, "wsl", "-d", "Ubuntu", "bash", "-c", "sudo docker ps > /dev/null 2>&1")
+	return cmd.Run() == nil
 }
 
 func IsDockerInstalledButNotRunning() bool {

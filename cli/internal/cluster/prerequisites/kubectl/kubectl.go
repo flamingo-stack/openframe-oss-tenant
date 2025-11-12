@@ -17,10 +17,16 @@ func commandExists(cmd string) bool {
 }
 
 func isKubectlInstalled() bool {
+	// On Windows, check kubectl in WSL2
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("wsl", "-d", "Ubuntu", "command", "-v", "kubectl")
+		return cmd.Run() == nil
+	}
+
 	if !commandExists("kubectl") {
 		return false
 	}
-	// Check kubectl with timeout to avoid hanging on Windows
+	// Check kubectl with timeout to avoid hanging
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "kubectl", "version", "--client")
@@ -240,8 +246,8 @@ fi
 
 echo "Installing kubectl..."
 
-# Download the latest stable kubectl binary
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+# Download the latest stable kubectl binary (silent mode to avoid progress output)
+curl -fsSLO "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
 # Install kubectl
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl

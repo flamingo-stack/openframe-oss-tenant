@@ -18,10 +18,16 @@ func commandExists(cmd string) bool {
 }
 
 func isK3dInstalled() bool {
+	// On Windows, check k3d in WSL2
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("wsl", "-d", "Ubuntu", "command", "-v", "k3d")
+		return cmd.Run() == nil
+	}
+
 	if !commandExists("k3d") {
 		return false
 	}
-	// Check k3d with timeout to avoid hanging on Windows
+	// Check k3d with timeout to avoid hanging
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "k3d", "version")
@@ -183,8 +189,8 @@ fi
 
 echo "Installing k3d..."
 
-# Use the official k3d install script
-curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+# Use the official k3d install script (redirect stderr to suppress progress output)
+curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash 2>/dev/null || curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
 echo "k3d installed successfully"
 `
