@@ -134,7 +134,12 @@ func TestParseApplications(t *testing.T) {
 		{
 			name: "successfully parses healthy applications",
 			setupMock: func(m *executor.MockCommandExecutor) {
-				m.SetResponse("kubectl -n argocd get applications.argoproj.io", &executor.CommandResult{
+				// First query: get application names
+				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
+					Stdout: "app1 app2 app3",
+				})
+				// Second query: get full status
+				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={range .items[*]}", &executor.CommandResult{
 					Stdout: "app1\tHealthy\tSynced\napp2\tProgressing\tSynced\napp3\tHealthy\tOutOfSync\n",
 				})
 			},
@@ -147,7 +152,12 @@ func TestParseApplications(t *testing.T) {
 		{
 			name: "handles applications with unknown status",
 			setupMock: func(m *executor.MockCommandExecutor) {
-				m.SetResponse("kubectl -n argocd get applications.argoproj.io", &executor.CommandResult{
+				// First query: get application names
+				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
+					Stdout: "app1 app2 app3",
+				})
+				// Second query: get full status
+				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={range .items[*]}", &executor.CommandResult{
 					Stdout: "app1\tHealthy\tSynced\napp2\t\t\napp3\tUnknown\tUnknown\n",
 				})
 			},
@@ -156,6 +166,36 @@ func TestParseApplications(t *testing.T) {
 				{Name: "app2", Health: "Unknown", Sync: "Unknown"},
 				{Name: "app3", Health: "Unknown", Sync: "Unknown"},
 			},
+		},
+		{
+			name: "handles applications without status fields (newly created)",
+			setupMock: func(m *executor.MockCommandExecutor) {
+				// First query succeeds: applications exist
+				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
+					ExitCode: 0,
+					Stdout:   "app1 app2 app3",
+				})
+				// Second query fails: status fields don't exist yet
+				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={range .items[*]}", &executor.CommandResult{
+					ExitCode: 1,
+					Stderr:   "error: error executing jsonpath",
+				})
+			},
+			expectedApps: []Application{
+				{Name: "app1", Health: "Unknown", Sync: "Unknown"},
+				{Name: "app2", Health: "Unknown", Sync: "Unknown"},
+				{Name: "app3", Health: "Unknown", Sync: "Unknown"},
+			},
+		},
+		{
+			name: "returns empty list when no applications exist",
+			setupMock: func(m *executor.MockCommandExecutor) {
+				// First query returns empty (no applications)
+				m.SetResponse("kubectl -n argocd get applications.argoproj.io -o jsonpath={.items[*].metadata.name}", &executor.CommandResult{
+					Stdout: "",
+				})
+			},
+			expectedApps: []Application{},
 		},
 		{
 			name: "returns empty list on kubectl error",

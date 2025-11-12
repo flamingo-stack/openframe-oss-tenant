@@ -199,18 +199,43 @@ func (m *Manager) getTotalExpectedApplications(ctx context.Context, config confi
 
 // parseApplications gets ArgoCD applications and their status directly via kubectl
 func (m *Manager) parseApplications(ctx context.Context, verbose bool) ([]Application, error) {
-	// Use direct kubectl command instead of parsing JSON string to avoid control character issues
-	// Use conditional jsonpath to handle missing status fields
+	// First, get the list of application names (this always succeeds even for new apps)
+	namesResult, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io",
+		"-o", "jsonpath={.items[*].metadata.name}")
+
+	if err != nil {
+		if verbose {
+			pterm.Warning.Printf("kubectl get applications failed: %v\n", err)
+		}
+		// Return empty apps list instead of failing - applications may still be initializing
+		return []Application{}, nil
+	}
+
+	// If no applications exist yet, return early
+	if namesResult.Stdout == "" {
+		return []Application{}, nil
+	}
+
+	// Now try to get status fields with a more robust query
+	// Use a separate query that handles missing status fields gracefully
 	result, err := m.executor.Execute(ctx, "kubectl", "-n", "argocd", "get", "applications.argoproj.io",
 		"-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\t\"}{.status.health.status}{\"\\t\"}{.status.sync.status}{\"\\n\"}{end}")
 
 	if err != nil {
-		// If kubectl fails, try fallback approach
-		if verbose {
-			pterm.Warning.Printf("kubectl jsonpath failed: %v\n", err)
+		// If status query fails, applications exist but don't have status fields yet
+		// Build application list with "Unknown" status from the names we got earlier
+		apps := make([]Application, 0)
+		names := strings.Fields(namesResult.Stdout)
+		for _, name := range names {
+			if name != "" {
+				apps = append(apps, Application{
+					Name:   name,
+					Health: "Unknown",
+					Sync:   "Unknown",
+				})
+			}
 		}
-		// Return empty apps list instead of failing - applications may still be initializing
-		return []Application{}, nil
+		return apps, nil
 	}
 
 	apps := make([]Application, 0)
