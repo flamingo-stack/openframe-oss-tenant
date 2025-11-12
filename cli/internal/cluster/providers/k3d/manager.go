@@ -533,18 +533,44 @@ type PortMapping struct {
 	HostPort string `json:"HostPort"`
 }
 
+// getWSLUser determines the correct WSL user to use for kubeconfig operations
+// It tries to detect the non-root user that k3d/kubectl will run as
+func (m *K3dManager) getWSLUser(ctx context.Context) (string, error) {
+	// First, try to get the user specified for the runner user (standard in GitHub Actions)
+	result, err := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "-u", "runner", "whoami")
+	if err == nil && strings.TrimSpace(result.Stdout) == "runner" {
+		return "runner", nil
+	}
+
+	// If runner doesn't exist, try to find the first non-root user with a home directory
+	result, err = m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "bash", "-c", "getent passwd | grep '/home/' | head -1 | cut -d: -f1")
+	if err == nil && strings.TrimSpace(result.Stdout) != "" {
+		username := strings.TrimSpace(result.Stdout)
+		// Verify this user exists and has a home directory
+		if verifyResult, verifyErr := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "-u", username, "whoami"); verifyErr == nil {
+			if strings.TrimSpace(verifyResult.Stdout) == username {
+				return username, nil
+			}
+		}
+	}
+
+	// If we can't detect a proper user, default to "runner" (common in CI environments)
+	// This is safer than using root, which causes permission issues
+	return "runner", nil
+}
+
 // prepareKubeconfigDirectory ensures ~/.kube directory exists with proper permissions on Windows/WSL
 func (m *K3dManager) prepareKubeconfigDirectory(ctx context.Context) error {
 	if runtime.GOOS != "windows" {
 		return nil // Only needed on Windows
 	}
 
-	// Get the current WSL user
-	userResult, err := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "whoami")
+	// Get the WSL user that k3d will run as
+	// The wrappers in the workflow use "runner", so we should detect or default to that
+	username, err := m.getWSLUser(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get WSL user: %w", err)
 	}
-	username := strings.TrimSpace(userResult.Stdout)
 
 	// Create .kube directory with proper permissions
 	createCmd := "mkdir -p ~/.kube && chmod 755 ~/.kube"
@@ -567,12 +593,12 @@ func (m *K3dManager) fixKubeconfigPermissions(ctx context.Context) error {
 		return nil // Only needed on Windows
 	}
 
-	// Get the current WSL user
-	userResult, err := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "whoami")
+	// Get the WSL user that k3d will run as
+	// The wrappers in the workflow use "runner", so we should detect or default to that
+	username, err := m.getWSLUser(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get WSL user: %w", err)
 	}
-	username := strings.TrimSpace(userResult.Stdout)
 
 	// Fix ownership and permissions of kubeconfig file
 	// Use bash -c to run multiple commands together
