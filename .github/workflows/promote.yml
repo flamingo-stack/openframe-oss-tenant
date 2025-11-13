@@ -28,12 +28,16 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
       
-      - name: Make Prod values changes
+      - name: Make Stage -> Prod changes
         env:
           VALUES_PATH: manifests/apps
+          CONFIGS_PATH: configs
         run: |
           cp ${VALUES_PATH}/values-stage.yaml ${VALUES_PATH}/values-prod.yaml
           sed -i "s/environment: stage/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
+          sed -i "s/profile: stage/profile: prod/g" ${VALUES_PATH}/values-prod.yaml
+          rm -rf ${CONFIGS_PATH}/prod
+          cp -r ${CONFIGS_PATH}/stage ${CONFIGS_PATH}/prod
 
       - name: Create Prod Release PR
         env:
