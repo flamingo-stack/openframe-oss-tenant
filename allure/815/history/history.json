@@ -1,0 +1,1 @@
+{"c37edf80a4e5943fbb9cbaa3d503a77b":{"statistic":{"failed":0,"broken":0,"skipped":1,"passed":0,"unknown":0,"total":1},"items":[{"uid":"bd1d44bab05bd522","status":"skipped","statusDetails":"void com.openframe.tests.integration.GraphQLDeviceQueryTest.deviceRegistrationStoresAndIndexesCorrectly() is @Disabled","time":{"start":1763055139856,"stop":1763055139859,"duration":3}}]}}

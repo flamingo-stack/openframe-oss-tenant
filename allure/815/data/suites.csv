@@ -1,0 +1,2 @@
+"Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
+"skipped","Thu Nov 13 17:32:19 UTC 2025","Thu Nov 13 17:32:19 UTC 2025","3","","GraphQL Device Query Integration Tests","","com.openframe.tests.integration.GraphQLDeviceQueryTest","deviceRegistrationStoresAndIndexesCorrectly","Device registration stores and indexes correctly","Verify device registration stores in MongoDB and indexes in Pinot"
