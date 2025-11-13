@@ -31,12 +31,13 @@ jobs:
       - name: Make Stage -> Prod changes
         env:
           VALUES_PATH: manifests/apps
+          CONFIGS_PATH: configs
         run: |
           cp ${VALUES_PATH}/values-stage.yaml ${VALUES_PATH}/values-prod.yaml
           sed -i "s/environment: stage/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
           sed -i "s/profile: stage/profile: prod/g" ${VALUES_PATH}/values-prod.yaml
-          rm -rf configs/prod
-          cp -r configs/stage configs/prod
+          rm -rf ${CONFIGS_PATH}/prod
+          cp -r ${CONFIGS_PATH}/stage ${CONFIGS_PATH}/prod
 
       - name: Create Prod Release PR
         env:
