@@ -252,7 +252,7 @@ jobs:
       - name: Test bootstrap OSS tenant workflow
         shell: powershell
         continue-on-error: true
-        timeout-minutes: 20
+        timeout-minutes: 40
         run: |
           Write-Host "========================================"
           Write-Host "Testing Bootstrap OSS Tenant Workflow"
@@ -347,7 +347,7 @@ jobs:
             Write-Host "Docker: $docker_version"
 
             # Check kubectl
-            $kubectl_version = wsl.exe -d Ubuntu -u runner bash -c 'kubectl version --client --short 2>/dev/null'
+            $kubectl_version = wsl.exe -d Ubuntu -u runner bash -c 'kubectl version --client 2>/dev/null | head -n1'
             if ($LASTEXITCODE -ne 0) { $kubectl_version = "FAILED" }
             Write-Host "kubectl: $kubectl_version"
 

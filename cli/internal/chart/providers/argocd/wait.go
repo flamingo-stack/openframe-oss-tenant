@@ -169,7 +169,17 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 
 	// Main monitoring phase
 	startTime := time.Now()
+
+	// Use shorter timeout in CI environments to avoid workflow timeouts
 	timeout := 60 * time.Minute
+	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+		// In CI, use 30 minutes to fit within typical workflow timeouts
+		timeout = 30 * time.Minute
+		if config.Verbose {
+			pterm.Debug.Println("CI environment detected, using 30-minute timeout")
+		}
+	}
+
 	checkInterval := 2 * time.Second
 	lastCheck := time.Now()
 	lastProgressUpdate := time.Now() // Track when we last showed progress in non-interactive mode
