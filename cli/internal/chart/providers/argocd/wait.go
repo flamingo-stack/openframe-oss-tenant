@@ -146,6 +146,10 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	defer ticker.Stop()
 
 	// Bootstrap phase - wait for CRDs to be ready
+	lastPodCheck := time.Now()
+	podCheckInterval := 15 * time.Second
+	bootstrapCheckCount := 0
+
 	for time.Now().Before(bootstrapEnd) {
 		select {
 		case <-localCtx.Done():
@@ -161,6 +165,22 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 					}
 					// Break out of bootstrap once CRDs are ready
 					break
+				}
+
+				// Check for failed ArgoCD pods every 15 seconds during bootstrap
+				if time.Since(lastPodCheck) >= podCheckInterval {
+					lastPodCheck = time.Now()
+					bootstrapCheckCount++
+
+					// After 30 seconds (2 checks), start checking if pods are in a failed state
+					if bootstrapCheckCount >= 2 {
+						if failureReason := m.checkArgoCDPodFailures(localCtx); failureReason != "" {
+							pterm.Error.Printf("ArgoCD installation appears to have failed: %s\n", failureReason)
+							pterm.Info.Println("Showing ArgoCD pod status for debugging:")
+							m.showArgoCDPodStatus(localCtx, true)
+							return fmt.Errorf("ArgoCD installation failed: %s", failureReason)
+						}
+					}
 				}
 			}
 		}
@@ -181,10 +201,10 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	// Use shorter timeout in CI environments to avoid workflow timeouts
 	timeout := 60 * time.Minute
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		// In CI, use 30 minutes to fit within typical workflow timeouts
-		timeout = 30 * time.Minute
+		// In CI, use 15 minutes to fail faster on issues (especially for Windows tests)
+		timeout = 15 * time.Minute
 		if config.Verbose {
-			pterm.Debug.Println("CI environment detected, using 30-minute timeout")
+			pterm.Debug.Println("CI environment detected, using 15-minute timeout")
 		}
 	}
 
@@ -239,6 +259,9 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 					// Show periodic message in non-interactive mode so users know we're still waiting
 					if config.Silent && time.Since(startTime) > 10*time.Second && int(time.Since(startTime).Seconds())%30 == 0 {
 						pterm.Info.Printf("Still waiting for ArgoCD CRDs to become ready... (%s elapsed)\n", time.Since(startTime).Round(time.Second))
+
+						// Add diagnostic information to help troubleshoot
+						m.showArgoCDPodStatus(localCtx, config.Verbose)
 					}
 				}
 			}
@@ -510,6 +533,143 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 				spinnerMutex.Unlock()
 				pterm.Success.Println("All ArgoCD applications installed")
 				return nil
+			}
+		}
+	}
+}
+
+// checkArgoCDPodFailures checks if ArgoCD pods are in a clearly failed state
+// Returns an error message if pods are failing, empty string otherwise
+func (m *Manager) checkArgoCDPodFailures(ctx context.Context) string {
+	// Get pods with their status
+	podResult, err := m.executor.Execute(ctx, "kubectl", "get", "pods", "-n", "argocd",
+		"-o", "jsonpath={range .items[*]}{.metadata.name}{'\\t'}{.status.phase}{'\\t'}{.status.containerStatuses[*].state}{'\\n'}{end}")
+	if err != nil || podResult == nil || podResult.Stdout == "" {
+		// Can't determine pod status - don't fail
+		return ""
+	}
+
+	podLines := strings.Split(strings.TrimSpace(podResult.Stdout), "\n")
+	crashLoopCount := 0
+	imagePullCount := 0
+	errorCount := 0
+	totalPods := 0
+
+	for _, line := range podLines {
+		if line == "" {
+			continue
+		}
+		totalPods++
+		parts := strings.Split(line, "\t")
+		if len(parts) >= 2 {
+			phase := parts[1]
+			stateInfo := ""
+			if len(parts) >= 3 {
+				stateInfo = parts[2]
+			}
+
+			// Check for obvious failure states
+			if strings.Contains(stateInfo, "CrashLoopBackOff") || strings.Contains(stateInfo, "crashLoopBackOff") {
+				crashLoopCount++
+			}
+			if strings.Contains(stateInfo, "ImagePullBackOff") || strings.Contains(stateInfo, "ErrImagePull") {
+				imagePullCount++
+			}
+			if phase == "Failed" || phase == "Error" {
+				errorCount++
+			}
+		}
+	}
+
+	// If no pods found, don't fail yet (might still be creating)
+	if totalPods == 0 {
+		return ""
+	}
+
+	// If majority of pods are in CrashLoopBackOff, fail fast
+	if crashLoopCount > 0 && crashLoopCount >= totalPods/2 {
+		return fmt.Sprintf("%d/%d pods in CrashLoopBackOff", crashLoopCount, totalPods)
+	}
+
+	// If any pods have image pull errors, fail fast
+	if imagePullCount > 0 {
+		return fmt.Sprintf("%d/%d pods have ImagePullBackOff", imagePullCount, totalPods)
+	}
+
+	// If majority of pods are in Failed/Error state
+	if errorCount > 0 && errorCount >= totalPods/2 {
+		return fmt.Sprintf("%d/%d pods in Failed/Error state", errorCount, totalPods)
+	}
+
+	return ""
+}
+
+// showArgoCDPodStatus shows diagnostic information about ArgoCD pods when CRDs aren't ready
+func (m *Manager) showArgoCDPodStatus(ctx context.Context, verbose bool) {
+	// Get ArgoCD pod status
+	podResult, err := m.executor.Execute(ctx, "kubectl", "get", "pods", "-n", "argocd", "-o", "jsonpath={range .items[*]}{.metadata.name}{'\\t'}{.status.phase}{'\\t'}{.status.conditions[?(@.type=='Ready')].status}{'\\n'}{end}")
+	if err != nil || podResult == nil {
+		pterm.Warning.Println("  Unable to check ArgoCD pod status")
+		return
+	}
+
+	podLines := strings.Split(strings.TrimSpace(podResult.Stdout), "\n")
+	if len(podLines) == 0 || (len(podLines) == 1 && podLines[0] == "") {
+		pterm.Warning.Println("  No ArgoCD pods found in 'argocd' namespace")
+		return
+	}
+
+	// Count pod statuses
+	runningCount := 0
+	notReadyPods := make([]string, 0)
+
+	pterm.Info.Println("  ArgoCD Pod Status:")
+	for _, line := range podLines {
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) >= 2 {
+			podName := parts[0]
+			phase := parts[1]
+			ready := "Unknown"
+			if len(parts) >= 3 {
+				ready = parts[2]
+			}
+
+			pterm.Info.Printf("    - %s: %s (Ready: %s)\n", podName, phase, ready)
+
+			if phase == "Running" && ready == "True" {
+				runningCount++
+			} else {
+				notReadyPods = append(notReadyPods, podName)
+			}
+		}
+	}
+
+	pterm.Info.Printf("  Summary: %d/%d pods running and ready\n", runningCount, len(podLines))
+
+	// If pods are not ready and verbose mode is on, show recent events
+	if len(notReadyPods) > 0 && verbose {
+		pterm.Info.Println("  Checking recent events for pods not ready:")
+		for _, podName := range notReadyPods {
+			eventsResult, err := m.executor.Execute(ctx, "kubectl", "get", "events", "-n", "argocd",
+				"--field-selector", fmt.Sprintf("involvedObject.name=%s", podName),
+				"--sort-by=.lastTimestamp", "--no-headers", "-o", "custom-columns=TIME:.lastTimestamp,REASON:.reason,MESSAGE:.message")
+
+			if err == nil && eventsResult != nil && eventsResult.Stdout != "" {
+				eventLines := strings.Split(strings.TrimSpace(eventsResult.Stdout), "\n")
+				if len(eventLines) > 3 {
+					eventLines = eventLines[len(eventLines)-3:]
+				}
+				if len(eventLines) > 0 && eventLines[0] != "" {
+					pterm.Info.Printf("    %s (last 3 events):\n", podName)
+					for _, event := range eventLines {
+						if event != "" {
+							pterm.Info.Printf("      %s\n", event)
+						}
+					}
+				}
 			}
 		}
 	}

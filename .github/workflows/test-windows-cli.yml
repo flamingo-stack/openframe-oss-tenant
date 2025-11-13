@@ -252,7 +252,7 @@ jobs:
       - name: Test bootstrap OSS tenant workflow
         shell: powershell
         continue-on-error: true
-        timeout-minutes: 40
+        timeout-minutes: 20
         run: |
           Write-Host "========================================"
           Write-Host "Testing Bootstrap OSS Tenant Workflow"
@@ -422,51 +422,3 @@ jobs:
             Write-Host "k3d: FAILED (WSL not available)"
             exit 1
           }
-
-  # Comment on PR with results
-  comment-results:
-    name: Comment Test Results
-    runs-on: ubuntu-latest
-    needs: [test-windows-cli-bootstrap]
-    if: always() && github.event_name == 'pull_request'
-
-    steps:
-      - name: Comment PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const bootstrapStatus = '${{ needs.test-windows-cli-bootstrap.result }}';
-            const statusIcon = bootstrapStatus === 'success' ? ':white_check_mark:' : ':x:';
-
-            const comment = `## Windows CLI Bootstrap Test Results
-
-            ${statusIcon} **Bootstrap Test**: ${bootstrapStatus}
-
-            ### Summary
-            - Windows binary build: ${statusIcon}
-            - WSL2 Ubuntu setup: ${statusIcon}
-            - Docker installation: ${statusIcon}
-            - kubectl installation: ${statusIcon}
-            - k3d installation: ${statusIcon}
-            - Helm installation (via CLI): ${statusIcon}
-            - Bootstrap OSS tenant workflow: ${statusIcon}
-            - ArgoCD application installation: ${statusIcon}
-
-            ### Test Details
-            ${bootstrapStatus === 'success' ? ':white_check_mark: Bootstrap command successfully created k3d cluster, installed ArgoCD, and deployed applications!' : ':warning: Bootstrap test encountered issues (check logs for details)'}
-            ${bootstrapStatus === 'success' ? ':white_check_mark: Verified that app-of-apps created multiple ArgoCD applications!' : ''}
-
-            ${bootstrapStatus === 'success' ? ':white_check_mark: Windows CLI binary is available as an artifact!' : ''}
-
-            <details>
-            <summary>View workflow run</summary>
-
-            [View full test results](${context.payload.repository.html_url}/actions/runs/${context.runId})
-            </details>`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
