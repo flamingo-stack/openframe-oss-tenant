@@ -104,7 +104,7 @@ spec:
       env:
         - name: SPRING_PROFILES_ACTIVE
           value: "dev"
-        - name: CONFIG_URL
+        - name: SPRING_CONFIG_URL
           value: "http://openframe-config.microservices.svc.cluster.local:8888"
       resources:
         requests:
