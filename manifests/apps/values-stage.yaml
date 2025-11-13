@@ -4,64 +4,64 @@ apps:
   openframe-config:
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-management:
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-external-api: 
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-api: 
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-authorization-server:
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-gateway: 
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-client: 
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-stream: 
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
   openframe-frontend: 
     values:
       image:
-        tag: 0.1.0
+        tag: 0.1.1
 
   # authentik: 
   #   values:
   #     postgres:
   #       image: 
-  #         tag: 0.1.0
+  #         tag: 0.1.1
   fleetmdm: 
     values:
       server:
         image: 
-          tag: 0.1.0
+          tag: 0.1.1
   meshcentral: 
     values:
       server:
         image: 
-          tag: 0.1.0
+          tag: 0.1.1
   tactical-rmm: 
     values:
       tactical:
         frontend:
           image:
-            tag: 0.1.0
+            tag: 0.1.1
         nginx:
           image:
-            tag: 0.1.0
+            tag: 0.1.1
         base:
           image:
-            tag: 0.1.0
+            tag: 0.1.1
