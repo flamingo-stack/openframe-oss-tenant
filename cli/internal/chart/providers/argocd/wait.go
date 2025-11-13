@@ -172,6 +172,7 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	timeout := 60 * time.Minute
 	checkInterval := 2 * time.Second
 	lastCheck := time.Now()
+	lastProgressUpdate := time.Now() // Track when we last showed progress in non-interactive mode
 
 	// Get expected applications count
 	totalAppsExpected := m.getTotalExpectedApplications(localCtx, config)
@@ -222,9 +223,14 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 			totalApps := len(apps)
 			if totalApps > maxAppsSeenTotal {
 				maxAppsSeenTotal = totalApps
-				// Show initial application count when first detected (verbose mode)
-				if config.Verbose && totalApps > 0 {
-					pterm.Info.Printf("Detected %d ArgoCD applications to synchronize\n", totalApps)
+				// Show initial application count when first detected (verbose mode or non-interactive mode)
+				if totalApps > 0 {
+					if config.Verbose {
+						pterm.Info.Printf("Detected %d ArgoCD applications to synchronize\n", totalApps)
+					} else if config.Silent {
+						// In non-interactive mode, show initial count so users know what to expect
+						pterm.Info.Printf("Synchronizing %d ArgoCD applications...\n", totalApps)
+					}
 				}
 			}
 
@@ -273,11 +279,11 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 				}
 			}
 
-			// Show verbose logging if enabled
-			if config.Verbose && totalApps > 0 {
-				elapsed := time.Since(startTime)
+			// Calculate elapsed time
+			elapsed := time.Since(startTime)
 
-				// Update spinner message with current status
+			// Update spinner message with current status (if spinner exists)
+			if totalApps > 0 {
 				spinnerMutex.Lock()
 				if !spinnerStopped && spinner != nil && spinner.IsActive {
 					progress := ""
@@ -289,7 +295,31 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 						currentlyReady, totalApps, progress, elapsed.Round(time.Second)))
 				}
 				spinnerMutex.Unlock()
+			}
 
+			// Show periodic progress updates in non-interactive mode
+			// Update every 30 seconds to show that progress is happening
+			if config.Silent && !config.Verbose && totalApps > 0 {
+				if time.Since(lastProgressUpdate) >= 30*time.Second {
+					lastProgressUpdate = time.Now()
+					progressPercent := float64(currentlyReady) / float64(totalApps) * 100
+					pterm.Info.Printf("ArgoCD Progress: %d/%d applications ready (%.0f%%) - %s elapsed\n",
+						currentlyReady, totalApps, progressPercent, elapsed.Round(time.Second))
+
+					// Show a few waiting applications if there are any
+					if len(notReadyApps) > 0 {
+						if len(notReadyApps) <= 5 {
+							pterm.Info.Printf("  Waiting for: %v\n", notReadyApps)
+						} else {
+							pterm.Info.Printf("  Waiting for %d apps (first 3): %v...\n",
+								len(notReadyApps), notReadyApps[:3])
+						}
+					}
+				}
+			}
+
+			// Show verbose logging if enabled
+			if config.Verbose && totalApps > 0 {
 				// Only show detailed status every 10 seconds to avoid spam
 				if int(elapsed.Seconds())%10 == 0 {
 					pterm.Info.Printf("ArgoCD Sync Progress: %d/%d applications ready (%s elapsed)\n",
