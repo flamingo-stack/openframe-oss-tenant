@@ -59,7 +59,15 @@ func (r *Repository) CloneChartRepository(ctx context.Context, config *models.Ap
 	}
 
 	// Build the path to the chart within the cloned repository
-	chartPath := filepath.Join(tempDir, config.ChartPath)
+	// IMPORTANT: config.ChartPath should ALWAYS be a relative path (e.g., "manifests/app-of-apps")
+	// If it's somehow absolute (which indicates a bug), use it as-is instead of joining
+	var chartPath string
+	if filepath.IsAbs(config.ChartPath) {
+		// This shouldn't happen, but handle it defensively to avoid path concatenation bugs on Windows
+		chartPath = config.ChartPath
+	} else {
+		chartPath = filepath.Join(tempDir, config.ChartPath)
+	}
 
 	// Verify the chart directory exists
 	if _, err := os.Stat(chartPath); os.IsNotExist(err) {

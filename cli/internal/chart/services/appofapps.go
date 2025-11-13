@@ -73,9 +73,21 @@ func (a *AppOfApps) Install(ctx context.Context, config config.ChartInstallConfi
 	certFile, keyFile := a.pathResolver.GetCertificateFiles()
 
 	// Create a modified config with the local chart path
+	// IMPORTANT: Create a TRUE deep copy of AppOfApps to avoid mutating the original config
+	// This is critical for retry logic - if we modify the original, retries will fail with concatenated paths
 	localConfig := config
-	localConfig.AppOfApps.ChartPath = cloneResult.ChartPath
-	localConfig.AppOfApps.ValuesFile = valuesFile
+
+	// Create a completely new AppOfAppsConfig instance (not just a copy)
+	appOfAppsCopy := models.AppOfAppsConfig{
+		GitHubRepo:   appConfig.GitHubRepo,
+		GitHubBranch: appConfig.GitHubBranch,
+		ChartPath:    cloneResult.ChartPath, // Use the absolute cloned path
+		CertDir:      appConfig.CertDir,
+		ValuesFile:   valuesFile,
+		Namespace:    appConfig.Namespace,
+		Timeout:      appConfig.Timeout,
+	}
+	localConfig.AppOfApps = &appOfAppsCopy
 
 	// Show details only in verbose mode
 	if config.Verbose {
