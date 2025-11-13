@@ -36,11 +36,11 @@ spec:
   syncPolicy:
     retry:
       # limit: -1
-      limit: 3
+      limit: 5
       backoff:
         duration: 15s
         factor: 2
-        maxDuration: 1m
+        maxDuration: 10m
     automated:
       prune: true
       selfHeal: true
