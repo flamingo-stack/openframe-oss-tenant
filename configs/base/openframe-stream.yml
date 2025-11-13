@@ -9,13 +9,13 @@ management:
 
 spring:
   data:
-    mongodb:
-      enabled: false
-    cassandra:
-      enabled: true
     redis:
       host: redis-master.datasources.svc.cluster.local
       port: 6379
+    mongodb:
+      enabled: true
+    cassandra:
+      enabled: true
   autoconfigure:
     exclude:
       - org.apache.pinot.client.PinotClientAutoConfiguration
