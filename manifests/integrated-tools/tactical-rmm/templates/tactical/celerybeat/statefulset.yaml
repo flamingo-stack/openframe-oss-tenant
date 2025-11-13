@@ -5,7 +5,7 @@ metadata:
 spec:
   serviceName: tactical-celerybeat
   replicas: 1
-  revisionHistoryLimit: 2
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: tactical-celerybeat
