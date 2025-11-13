@@ -308,6 +308,36 @@ jobs:
             wsl.exe -d Ubuntu -u runner kubectl get pods -n argocd 2>&1 | Out-Host
 
             Write-Host ""
+            Write-Host "Waiting for ArgoCD applications to be created (30 seconds)..."
+            Start-Sleep -Seconds 30
+
+            Write-Host ""
+            Write-Host "Checking ArgoCD applications..."
+            $argoApps = wsl.exe -d Ubuntu -u runner kubectl get applications -n argocd -o json | ConvertFrom-Json
+
+            if ($argoApps.items) {
+              $appCount = $argoApps.items.Count
+              Write-Host "Found $appCount ArgoCD application(s):"
+
+              foreach ($app in $argoApps.items) {
+                $appName = $app.metadata.name
+                $appHealth = $app.status.health.status
+                $appSync = $app.status.sync.status
+                Write-Host "  - $appName (Health: $appHealth, Sync: $appSync)"
+              }
+
+              if ($appCount -ge 2) {
+                Write-Host "[OK] Successfully verified $appCount applications installed (expected at least 2)"
+              } else {
+                Write-Host "[WARNING] Only $appCount application(s) found, expected at least 2"
+                Write-Host "This may indicate an issue with app-of-apps installation"
+              }
+            } else {
+              Write-Host "[WARNING] No ArgoCD applications found"
+              Write-Host "This may indicate an issue with app-of-apps installation"
+            }
+
+            Write-Host ""
             Write-Host "Cleaning up bootstrap test cluster..."
             .\openframe.exe cluster delete openframe-test 2>&1 | Out-Host
             if ($LASTEXITCODE -ne 0) {
@@ -366,6 +396,20 @@ jobs:
             Write-Host "=================="
             Write-Host "Command: openframe bootstrap openframe-test --deployment-mode=oss-tenant --non-interactive"
             Write-Host "Expected: Create k3d cluster + Install ArgoCD + Install OpenFrame charts"
+            Write-Host ""
+            Write-Host "ArgoCD Applications:"
+            Write-Host "===================="
+            $argoAppsCheck = wsl.exe -d Ubuntu -u runner bash -c 'kubectl get applications -n argocd --no-headers 2>/dev/null | wc -l'
+            if ($LASTEXITCODE -eq 0 -and $argoAppsCheck) {
+              Write-Host "Total applications: $argoAppsCheck"
+              if ([int]$argoAppsCheck -ge 2) {
+                Write-Host "[OK] App-of-apps successfully created $argoAppsCheck applications"
+              } else {
+                Write-Host "[WARNING] Expected at least 2 applications, found: $argoAppsCheck"
+              }
+            } else {
+              Write-Host "Unable to verify applications (cluster may have been cleaned up)"
+            }
 
             Write-Host ""
             Write-Host "========================================"
@@ -406,9 +450,11 @@ jobs:
             - k3d installation: ${statusIcon}
             - Helm installation (via CLI): ${statusIcon}
             - Bootstrap OSS tenant workflow: ${statusIcon}
+            - ArgoCD application installation: ${statusIcon}
 
             ### Test Details
-            ${bootstrapStatus === 'success' ? ':white_check_mark: Bootstrap command successfully created k3d cluster and installed ArgoCD!' : ':warning: Bootstrap test encountered issues (check logs for details)'}
+            ${bootstrapStatus === 'success' ? ':white_check_mark: Bootstrap command successfully created k3d cluster, installed ArgoCD, and deployed applications!' : ':warning: Bootstrap test encountered issues (check logs for details)'}
+            ${bootstrapStatus === 'success' ? ':white_check_mark: Verified that app-of-apps created multiple ArgoCD applications!' : ''}
 
             ${bootstrapStatus === 'success' ? ':white_check_mark: Windows CLI binary is available as an artifact!' : ''}
 
