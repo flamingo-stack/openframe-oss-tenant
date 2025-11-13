@@ -117,8 +117,16 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	// Ensure spinner is stopped when function exits
 	defer stopSpinner()
 
-	// Bootstrap wait (30 seconds) - wait for ArgoCD CRDs to be ready
-	bootstrapEnd := time.Now().Add(30 * time.Second)
+	// Bootstrap wait - wait for ArgoCD CRDs to be ready
+	// Use longer timeout in CI environments (2 minutes vs 30 seconds)
+	bootstrapTimeout := 30 * time.Second
+	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+		bootstrapTimeout = 2 * time.Minute
+		if config.Verbose {
+			pterm.Debug.Println("CI environment detected, using 2-minute CRD bootstrap timeout")
+		}
+	}
+	bootstrapEnd := time.Now().Add(bootstrapTimeout)
 	crdCheckInterval := 2 * time.Second
 	lastCRDCheck := time.Now()
 	crdReady := false
@@ -219,6 +227,21 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 				continue
 			}
 			lastCheck = time.Now()
+
+			// Check if CRDs are ready before parsing applications
+			if !crdReady {
+				crdReady = m.checkCRDReady(localCtx)
+				if crdReady {
+					if config.Verbose {
+						pterm.Success.Println("ArgoCD CRDs are now ready")
+					}
+				} else {
+					// Show periodic message in non-interactive mode so users know we're still waiting
+					if config.Silent && time.Since(startTime) > 10*time.Second && int(time.Since(startTime).Seconds())%30 == 0 {
+						pterm.Info.Printf("Still waiting for ArgoCD CRDs to become ready... (%s elapsed)\n", time.Since(startTime).Round(time.Second))
+					}
+				}
+			}
 
 			// Parse applications
 			apps, err := m.parseApplications(localCtx, config.Verbose)
