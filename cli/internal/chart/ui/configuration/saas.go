@@ -23,15 +23,6 @@ func (w *ConfigurationWizard) configureSaaSDefaults(config *types.ChartConfigura
 		return fmt.Errorf("repository password input failed: %w", err)
 	}
 
-	// Collect config repository password
-	configRepoPassword, err := pterm.DefaultInteractiveTextInput.
-		WithMask("*").
-		WithMultiLine(false).
-		Show("Read Contents token for SaaS Config repository")
-	if err != nil {
-		return fmt.Errorf("config repository password input failed: %w", err)
-	}
-
 	// Configure GitHub container registry credentials (same UI as interactive mode)
 	ghcrUsername, ghcrPassword, ghcrEmail, err := w.configureGHCRCredentials(config)
 	if err != nil {
@@ -44,10 +35,9 @@ func (w *ConfigurationWizard) configureSaaSDefaults(config *types.ChartConfigura
 
 	// Set configurations
 	config.SaaSConfig = &types.SaaSConfig{
-		RepositoryPassword:       strings.TrimSpace(repoPassword),
-		ConfigRepositoryPassword: strings.TrimSpace(configRepoPassword),
-		SaaSBranch:               strings.TrimSpace(saasBranch),
-		OSSBranch:                strings.TrimSpace(ossBranch),
+		RepositoryPassword: strings.TrimSpace(repoPassword),
+		SaaSBranch:         strings.TrimSpace(saasBranch),
+		OSSBranch:          strings.TrimSpace(ossBranch),
 	}
 
 	config.DockerRegistry = &types.DockerRegistryConfig{
@@ -75,15 +65,6 @@ func (w *ConfigurationWizard) configureSaaSInteractive(config *types.ChartConfig
 		return fmt.Errorf("repository password input failed: %w", err)
 	}
 
-	// Collect config repository password
-	configRepoPassword, err := pterm.DefaultInteractiveTextInput.
-		WithMask("*").
-		WithMultiLine(false).
-		Show("Read Contents token for SaaS Config repository")
-	if err != nil {
-		return fmt.Errorf("config repository password input failed: %w", err)
-	}
-
 	// Configure GitHub container registry credentials
 	ghcrUsername, ghcrPassword, ghcrEmail, err := w.configureGHCRCredentials(config)
 	if err != nil {
@@ -104,10 +85,9 @@ func (w *ConfigurationWizard) configureSaaSInteractive(config *types.ChartConfig
 
 	// Set configurations
 	config.SaaSConfig = &types.SaaSConfig{
-		RepositoryPassword:       strings.TrimSpace(repoPassword),
-		ConfigRepositoryPassword: strings.TrimSpace(configRepoPassword),
-		SaaSBranch:               strings.TrimSpace(saasBranch),
-		OSSBranch:                strings.TrimSpace(ossBranch),
+		RepositoryPassword: strings.TrimSpace(repoPassword),
+		SaaSBranch:         strings.TrimSpace(saasBranch),
+		OSSBranch:          strings.TrimSpace(ossBranch),
 	}
 
 	config.DockerRegistry = &types.DockerRegistryConfig{
