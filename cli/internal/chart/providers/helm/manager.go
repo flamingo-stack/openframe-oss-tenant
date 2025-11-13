@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
@@ -118,6 +119,15 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 	}
 	tmpFile.Close()
 
+	// Convert Windows path to WSL path if needed (for Helm running in WSL2)
+	valuesFilePath := tmpFile.Name()
+	if runtime.GOOS == "windows" {
+		valuesFilePath, err = h.convertWindowsPathToWSL(tmpFile.Name())
+		if err != nil {
+			return fmt.Errorf("failed to convert values file path for WSL: %w", err)
+		}
+	}
+
 	// Install ArgoCD with upgrade --install
 	args := []string{
 		"upgrade", "--install", "argo-cd", "argo/argo-cd",
@@ -126,7 +136,7 @@ func (h *HelmManager) InstallArgoCD(ctx context.Context, config config.ChartInst
 		"--create-namespace",
 		"--wait",
 		"--timeout", "5m",
-		"-f", tmpFile.Name(),
+		"-f", valuesFilePath,
 	}
 
 	if config.DryRun {
@@ -212,11 +222,26 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 	}
 	tmpFile.Close()
 
+	// Convert Windows path to WSL path if needed (for Helm running in WSL2)
+	valuesFilePath := tmpFile.Name()
+	if runtime.GOOS == "windows" {
+		valuesFilePath, err = h.convertWindowsPathToWSL(tmpFile.Name())
+		if err != nil {
+			if spinner != nil {
+				spinner.Stop()
+			}
+			return fmt.Errorf("failed to convert values file path for WSL: %w", err)
+		}
+	}
+
 	// Installation details are now silent - just show in verbose mode
 	if config.Verbose {
 		pterm.Info.Printf("   Version: 8.2.7\n")
 		pterm.Info.Printf("   Namespace: argocd\n")
-		pterm.Info.Printf("   Values file: %s\n", tmpFile.Name())
+		pterm.Info.Printf("   Values file (Windows): %s\n", tmpFile.Name())
+		if runtime.GOOS == "windows" {
+			pterm.Info.Printf("   Values file (WSL): %s\n", valuesFilePath)
+		}
 	}
 
 	// Install ArgoCD with upgrade --install
@@ -227,7 +252,7 @@ func (h *HelmManager) InstallArgoCDWithProgress(ctx context.Context, config conf
 		"--create-namespace",
 		"--wait",
 		"--timeout", "5m",
-		"-f", tmpFile.Name(),
+		"-f", valuesFilePath,
 	}
 
 	if config.DryRun {
@@ -285,27 +310,59 @@ func (h *HelmManager) InstallAppOfAppsFromLocal(ctx context.Context, config conf
 		return fmt.Errorf("chart path is required for app-of-apps installation")
 	}
 
+	// Convert Windows paths to WSL paths if needed (for Helm running in WSL2)
+	valuesFilePath := appConfig.ValuesFile
+	certFilePath := certFile
+	keyFilePath := keyFile
+
+	if runtime.GOOS == "windows" {
+		var err error
+
+		// Convert values file path
+		if valuesFilePath != "" {
+			valuesFilePath, err = h.convertWindowsPathToWSL(appConfig.ValuesFile)
+			if err != nil {
+				return fmt.Errorf("failed to convert values file path for WSL: %w", err)
+			}
+		}
+
+		// Convert certificate file paths
+		if certFile != "" {
+			certFilePath, err = h.convertWindowsPathToWSL(certFile)
+			if err != nil {
+				return fmt.Errorf("failed to convert cert file path for WSL: %w", err)
+			}
+		}
+
+		if keyFile != "" {
+			keyFilePath, err = h.convertWindowsPathToWSL(keyFile)
+			if err != nil {
+				return fmt.Errorf("failed to convert key file path for WSL: %w", err)
+			}
+		}
+	}
+
 	// Install app-of-apps using the local chart path
 	args := []string{
 		"upgrade", "--install", "app-of-apps", appConfig.ChartPath,
 		"--namespace", appConfig.Namespace,
 		"--wait",
 		"--timeout", appConfig.Timeout,
-		"-f", appConfig.ValuesFile,
+		"-f", valuesFilePath,
 	}
 
 	// Only add certificate files if they exist and are not empty paths
 	if certFile != "" && keyFile != "" {
-		// Check if files actually exist before adding them
+		// Check if files actually exist before adding them (use original Windows paths for os.Stat)
 		if _, err := os.Stat(certFile); err == nil {
 			if _, err := os.Stat(keyFile); err == nil {
 				args = append(args,
-					// OSS mode certificates
-					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFile),
-					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFile),
-					// SaaS mode certificates
-					"--set-file", fmt.Sprintf("deployment.saas.ingress.localhost.tls.cert=%s", certFile),
-					"--set-file", fmt.Sprintf("deployment.saas.ingress.localhost.tls.key=%s", keyFile),
+					// OSS mode certificates (use WSL paths for Helm)
+					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.cert=%s", certFilePath),
+					"--set-file", fmt.Sprintf("deployment.oss.ingress.localhost.tls.key=%s", keyFilePath),
+					// SaaS mode certificates (use WSL paths for Helm)
+					"--set-file", fmt.Sprintf("deployment.saas.ingress.localhost.tls.cert=%s", certFilePath),
+					"--set-file", fmt.Sprintf("deployment.saas.ingress.localhost.tls.key=%s", keyFilePath),
 				)
 			}
 		}
@@ -359,4 +416,25 @@ func (h *HelmManager) GetChartStatus(ctx context.Context, releaseName, namespace
 		Status:    "deployed", // Parse from JSON
 		Version:   "1.0.0",    // Parse from JSON
 	}, nil
+}
+
+// convertWindowsPathToWSL converts a Windows path to a WSL path format
+// Example: C:\Users\foo\file.txt -> /mnt/c/Users/foo/file.txt
+// This is necessary when passing file paths from Windows to commands running in WSL2
+func (h *HelmManager) convertWindowsPathToWSL(windowsPath string) (string, error) {
+	if windowsPath == "" {
+		return "", fmt.Errorf("empty path provided")
+	}
+
+	// Replace backslashes with forward slashes
+	path := strings.ReplaceAll(windowsPath, "\\", "/")
+
+	// Convert drive letter (e.g., C: -> /mnt/c)
+	if len(path) >= 2 && path[1] == ':' {
+		driveLetter := strings.ToLower(string(path[0]))
+		// Remove the drive letter and colon, then prepend /mnt/<drive>
+		path = "/mnt/" + driveLetter + path[2:]
+	}
+
+	return path, nil
 }
