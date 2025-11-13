@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/docker"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/helm"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/k3d"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/kubectl"
 )
@@ -45,6 +46,12 @@ func NewPrerequisiteChecker() *PrerequisiteChecker {
 				Command:     "k3d",
 				IsInstalled: func() bool { return k3d.NewK3dInstaller().IsInstalled() },
 				InstallHelp: func() string { return k3d.NewK3dInstaller().GetInstallHelp() },
+			},
+			{
+				Name:        "helm",
+				Command:     "helm",
+				IsInstalled: func() bool { return helm.NewHelmInstaller().IsInstalled() },
+				InstallHelp: func() string { return helm.NewHelmInstaller().GetInstallHelp() },
 			},
 		},
 	}

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/docker"
+	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/helm"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/k3d"
 	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/kubectl"
 	"github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
@@ -88,6 +89,10 @@ func (i *Installer) installSpecificTools(tools []string) error {
 			if !k3d.NewK3dInstaller().IsInstalled() {
 				stillMissing = append(stillMissing, "k3d")
 			}
+		case "helm":
+			if !helm.NewHelmInstaller().IsInstalled() {
+				stillMissing = append(stillMissing, "helm")
+			}
 		}
 	}
 
@@ -110,6 +115,9 @@ func (i *Installer) installTool(tool string) error {
 		return installer.Install()
 	case "k3d":
 		installer := k3d.NewK3dInstaller()
+		return installer.Install()
+	case "helm":
+		installer := helm.NewHelmInstaller()
 		return installer.Install()
 	default:
 		return fmt.Errorf("unknown tool: %s", tool)
@@ -261,6 +269,7 @@ func (i *Installer) showManualInstructions() {
 		docker.NewDockerInstaller().GetInstallHelp(),
 		kubectl.NewKubectlInstaller().GetInstallHelp(),
 		k3d.NewK3dInstaller().GetInstallHelp(),
+		helm.NewHelmInstaller().GetInstallHelp(),
 	}
 
 	tableData := pterm.TableData{{"Tool", "Installation Instructions"}}
