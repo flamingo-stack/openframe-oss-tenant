@@ -287,7 +287,7 @@ jobs:
         uses: azure/setup-helm@v4.3.0
       
       - name: Install Helm unittest plugin
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest --verify=false
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
       
       - name: Test Chart
         run: |
