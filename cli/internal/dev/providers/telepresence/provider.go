@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe-cli/internal/dev/models"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 

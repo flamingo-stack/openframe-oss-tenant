@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )

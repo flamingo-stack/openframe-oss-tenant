@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	chartServices "github.com/flamingo-stack/openframe/openframe/internal/chart/services"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	chartServices "github.com/flamingo-stack/openframe-cli/internal/chart/services"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/executor"
 	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 )

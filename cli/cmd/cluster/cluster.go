@@ -1,10 +1,10 @@
 package cluster
 
 import (
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites"
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/utils"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/models"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/prerequisites"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/utils"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/types"
 )
 
 // ConfigurationValidator validates helm-values.yaml for non-interactive mode

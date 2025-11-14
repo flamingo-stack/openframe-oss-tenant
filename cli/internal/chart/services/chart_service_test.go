@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
-	clusterDomain "github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/types"
+	clusterDomain "github.com/flamingo-stack/openframe-cli/internal/cluster/models"
 	"github.com/stretchr/testify/assert"
 )
 

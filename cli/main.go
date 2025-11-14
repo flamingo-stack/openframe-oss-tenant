@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flamingo-stack/openframe/openframe/cmd"
+	"github.com/flamingo-stack/openframe-cli/cmd"
 )
 
 func main() {

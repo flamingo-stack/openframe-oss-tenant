@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/models"
 )
 
 func TestOperationsUI_SelectClusterForOperation(t *testing.T) {

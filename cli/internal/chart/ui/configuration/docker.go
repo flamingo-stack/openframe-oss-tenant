@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/ui/templates"
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
-	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/types"
+	sharedUI "github.com/flamingo-stack/openframe-cli/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 

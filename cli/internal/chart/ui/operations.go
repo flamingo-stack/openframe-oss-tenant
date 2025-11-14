@@ -3,11 +3,11 @@ package ui
 import (
 	"fmt"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
-	clusterUI "github.com/flamingo-stack/openframe/openframe/internal/cluster/ui"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/config"
-	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui/messages"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/models"
+	clusterUI "github.com/flamingo-stack/openframe-cli/internal/cluster/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/config"
+	sharedUI "github.com/flamingo-stack/openframe-cli/internal/shared/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/ui/messages"
 	"github.com/pterm/pterm"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/executor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

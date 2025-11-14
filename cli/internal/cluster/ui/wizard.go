@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/models"
 	"github.com/manifoldco/promptui"
 	"github.com/pterm/pterm"
 )

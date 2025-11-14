@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
-	sharedConfig "github.com/flamingo-stack/openframe/openframe/internal/shared/config"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/models"
+	sharedConfig "github.com/flamingo-stack/openframe-cli/internal/shared/config"
 )
 
 // Service provides centralized configuration management for chart operations

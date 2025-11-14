@@ -3,8 +3,8 @@ package config
 import (
 	"os"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
-	chartUI "github.com/flamingo-stack/openframe/openframe/internal/chart/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/models"
+	chartUI "github.com/flamingo-stack/openframe-cli/internal/chart/ui"
 	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 )

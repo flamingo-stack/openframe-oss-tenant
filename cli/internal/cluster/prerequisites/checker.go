@@ -3,9 +3,9 @@ package prerequisites
 import (
 	"strings"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/docker"
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/k3d"
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/prerequisites/kubectl"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/prerequisites/docker"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/prerequisites/k3d"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/prerequisites/kubectl"
 )
 
 type PrerequisiteChecker struct {

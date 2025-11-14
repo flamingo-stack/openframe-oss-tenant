@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/config"
 	"github.com/pterm/pterm"
 )
 

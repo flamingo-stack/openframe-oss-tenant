@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo-stack/openframe/openframe/tests/integration/common"
+	"github.com/flamingo-stack/openframe-cli/tests/integration/common"
 	"github.com/stretchr/testify/require"
 )
 

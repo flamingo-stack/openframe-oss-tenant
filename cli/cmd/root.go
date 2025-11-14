@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/flamingo-stack/openframe/openframe/cmd/bootstrap"
-	"github.com/flamingo-stack/openframe/openframe/cmd/chart"
-	"github.com/flamingo-stack/openframe/openframe/cmd/cluster"
-	"github.com/flamingo-stack/openframe/openframe/cmd/dev"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/config"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe-cli/cmd/bootstrap"
+	"github.com/flamingo-stack/openframe-cli/cmd/chart"
+	"github.com/flamingo-stack/openframe-cli/cmd/cluster"
+	"github.com/flamingo-stack/openframe-cli/cmd/dev"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/config"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/ui"
 	"github.com/spf13/cobra"
 )
 

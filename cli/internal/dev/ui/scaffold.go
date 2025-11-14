@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	sharedUI "github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
+	sharedUI "github.com/flamingo-stack/openframe-cli/internal/shared/ui"
 	"github.com/pterm/pterm"
 )
 
@@ -48,8 +48,8 @@ var ErrNoSkaffoldFiles = fmt.Errorf("no skaffold files found")
 
 // DiscoverAndSelectService discovers skaffold files and prompts user to select one
 func (su *SkaffoldUI) DiscoverAndSelectService() (*ServiceSelection, error) {
-	// Search for skaffold.yaml files recursively in parent directory
-	skaffoldFiles := su.findSkaffoldYamlFiles("../")
+	// Search for skaffold.yaml files recursively in current directory
+	skaffoldFiles := su.findSkaffoldYamlFiles(".")
 
 	if len(skaffoldFiles) == 0 {
 		pterm.Warning.Println("No skaffold.yaml files found in project directory")

@@ -3,7 +3,7 @@ package root_integration
 import (
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/tests/integration/common"
+	"github.com/flamingo-stack/openframe-cli/tests/integration/common"
 	"github.com/stretchr/testify/require"
 )
 

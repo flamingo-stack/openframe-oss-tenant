@@ -1,8 +1,8 @@
 package configuration
 
 import (
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/ui/templates"
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/types"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/ui/templates"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/types"
 )
 
 // ConfigurationWizard handles the chart configuration workflow

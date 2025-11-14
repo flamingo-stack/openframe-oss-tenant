@@ -3,8 +3,8 @@ package dev
 import (
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
-	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe-cli/internal/dev/models"
+	"github.com/flamingo-stack/openframe-cli/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

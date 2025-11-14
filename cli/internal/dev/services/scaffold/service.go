@@ -12,14 +12,14 @@ import (
 	"syscall"
 	"time"
 
-	clusterUI "github.com/flamingo-stack/openframe/openframe/internal/cluster/ui"
-	clusterUtils "github.com/flamingo-stack/openframe/openframe/internal/cluster/utils"
-	"github.com/flamingo-stack/openframe/openframe/internal/dev/models"
-	"github.com/flamingo-stack/openframe/openframe/internal/dev/prerequisites/scaffold"
-	"github.com/flamingo-stack/openframe/openframe/internal/dev/providers/chart"
-	"github.com/flamingo-stack/openframe/openframe/internal/dev/providers/kubectl"
-	"github.com/flamingo-stack/openframe/openframe/internal/dev/ui"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	clusterUI "github.com/flamingo-stack/openframe-cli/internal/cluster/ui"
+	clusterUtils "github.com/flamingo-stack/openframe-cli/internal/cluster/utils"
+	"github.com/flamingo-stack/openframe-cli/internal/dev/models"
+	"github.com/flamingo-stack/openframe-cli/internal/dev/prerequisites/scaffold"
+	"github.com/flamingo-stack/openframe-cli/internal/dev/providers/chart"
+	"github.com/flamingo-stack/openframe-cli/internal/dev/providers/kubectl"
+	"github.com/flamingo-stack/openframe-cli/internal/dev/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 

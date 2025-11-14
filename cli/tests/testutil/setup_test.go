@@ -3,8 +3,8 @@ package testutil
 import (
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/ui"
 	"github.com/stretchr/testify/assert"
 )
 

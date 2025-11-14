@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 

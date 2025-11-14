@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/errors"
-	sharedErrors "github.com/flamingo-stack/openframe/openframe/internal/shared/errors"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/models"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/utils/errors"
+	sharedErrors "github.com/flamingo-stack/openframe-cli/internal/shared/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

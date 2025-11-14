@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/ui"
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/utils"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/models"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/ui"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/utils"
 	"github.com/spf13/cobra"
 )
 

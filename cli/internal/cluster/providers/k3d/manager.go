@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/models"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/executor"
 )
 
 // Constants for configuration

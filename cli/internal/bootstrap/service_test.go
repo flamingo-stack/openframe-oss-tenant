@@ -3,9 +3,9 @@ package bootstrap
 import (
 	"testing"
 
-	chartCmd "github.com/flamingo-stack/openframe/openframe/cmd/chart"
-	clusterCmd "github.com/flamingo-stack/openframe/openframe/cmd/cluster"
-	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
+	chartCmd "github.com/flamingo-stack/openframe-cli/cmd/chart"
+	clusterCmd "github.com/flamingo-stack/openframe-cli/cmd/cluster"
+	"github.com/flamingo-stack/openframe-cli/tests/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )

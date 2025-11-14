@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/tests/testutil"
+	"github.com/flamingo-stack/openframe-cli/tests/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

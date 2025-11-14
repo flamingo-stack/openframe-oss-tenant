@@ -1,9 +1,9 @@
 package cluster
 
 import (
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/models"
-	"github.com/flamingo-stack/openframe/openframe/internal/cluster/providers/k3d"
-	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/models"
+	"github.com/flamingo-stack/openframe-cli/internal/cluster/providers/k3d"
+	"github.com/flamingo-stack/openframe-cli/internal/shared/executor"
 )
 
 // FlagContainer holds all flag structures needed by cluster commands

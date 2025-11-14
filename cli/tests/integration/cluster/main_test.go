@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/tests/integration/common"
+	"github.com/flamingo-stack/openframe-cli/tests/integration/common"
 )
 
 // TestMain sets up and tears down the test environment

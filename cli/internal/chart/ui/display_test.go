@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/flamingo-stack/openframe/openframe/internal/chart/models"
+	"github.com/flamingo-stack/openframe-cli/internal/chart/models"
 	"github.com/stretchr/testify/assert"
 )
 
