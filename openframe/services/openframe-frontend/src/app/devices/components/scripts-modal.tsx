@@ -112,7 +112,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
   const filteredScripts = platformCompatibleScripts.filter(script => {
     const matchesSearch = script.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          script.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = !selectedCategory || script.category.toUpperCase() === selectedCategory
+    const matchesCategory = !selectedCategory || (script.category && script.category.toUpperCase() === selectedCategory)
     return matchesSearch && matchesCategory
   })
 
