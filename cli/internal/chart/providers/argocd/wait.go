@@ -125,18 +125,43 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		}
 	}
 
-	// Retry cluster connectivity check to handle transient issues (especially in Windows/WSL2)
-	// Use more generous retry parameters for Windows CI environments
-	maxRetries := 5
-	retryDelay := 2 * time.Second
+	// First, verify k3d cluster is actually running (especially important for CI/CD environments)
+	if config.Verbose {
+		pterm.Debug.Println("Checking k3d cluster status...")
+	}
+	k3dCheckResult, k3dCheckErr := m.executor.Execute(localCtx, "k3d", "cluster", "list", "--output", "json")
+	if k3dCheckErr == nil && k3dCheckResult != nil && k3dCheckResult.Stdout != "" {
+		// Check if cluster exists and is running
+		if !strings.Contains(k3dCheckResult.Stdout, "openframe-test") {
+			return fmt.Errorf("k3d cluster 'openframe-test' not found in cluster list - cluster may have been deleted")
+		}
+		// Parse JSON to check cluster status if possible
+		if strings.Contains(k3dCheckResult.Stdout, "\"name\":\"openframe-test\"") {
+			if config.Verbose {
+				pterm.Success.Println("k3d cluster 'openframe-test' is present")
+			}
+		}
+	} else {
+		pterm.Warning.Println("Could not verify k3d cluster status (k3d command failed)")
+		if config.Verbose && k3dCheckErr != nil {
+			pterm.Warning.Printf("  k3d error: %v\n", k3dCheckErr)
+		}
+	}
 
-	// Windows environments need more retries and longer delays due to WSL2 networking overhead
+	// Retry cluster connectivity check to handle transient issues (especially in Windows/WSL2)
+	// Use more generous retry parameters for Windows CI environments with exponential backoff
+	maxRetries := 5
+	baseRetryDelay := 2 * time.Second
+	maxRetryDelay := 30 * time.Second
+
+	// Windows environments need more retries due to WSL2 networking overhead
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
 		if strings.Contains(strings.ToLower(os.Getenv("RUNNER_OS")), "windows") {
-			maxRetries = 10
-			retryDelay = 5 * time.Second
+			maxRetries = 15
+			baseRetryDelay = 3 * time.Second
+			maxRetryDelay = 60 * time.Second
 			if config.Verbose {
-				pterm.Debug.Println("Windows CI environment detected, using extended cluster connectivity retry (10 attempts, 5s delay)")
+				pterm.Debug.Println("Windows CI environment detected, using extended cluster connectivity retry (15 attempts with exponential backoff)")
 			}
 		}
 	}
@@ -153,7 +178,21 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 
 		// If this is not the last attempt, wait and retry
 		if attempt < maxRetries {
+			// Calculate exponential backoff: base * 2^(attempt-1), capped at max
+			retryDelay := baseRetryDelay * time.Duration(1<<uint(attempt-1))
+			if retryDelay > maxRetryDelay {
+				retryDelay = maxRetryDelay
+			}
+
 			if config.Verbose {
+				pterm.Warning.Printf("Cluster connectivity check failed (attempt %d/%d), retrying in %v...\n",
+					attempt, maxRetries, retryDelay)
+				// Add diagnostic information on failures (every 3 attempts or after 5 attempts)
+				if attempt%3 == 0 || attempt >= 5 {
+					m.diagnoseCluserConnectivityIssue(localCtx, config)
+				}
+			} else if !config.Silent {
+				// Show warning in non-verbose mode for visibility
 				pterm.Warning.Printf("Cluster connectivity check failed (attempt %d/%d), retrying in %v...\n",
 					attempt, maxRetries, retryDelay)
 			}
@@ -168,8 +207,10 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 		}
 	}
 
-	// If still failing after retries, return error
+	// If still failing after retries, show comprehensive diagnostics and return error
 	if err != nil || clusterCheckResult == nil {
+		pterm.Error.Println("Cluster connectivity check failed - running diagnostics...")
+		m.diagnoseCluserConnectivityIssue(localCtx, config)
 		return fmt.Errorf("cluster connectivity check failed after %d attempts - kubectl cannot reach cluster: %w", maxRetries, err)
 	}
 
@@ -849,5 +890,105 @@ func (m *Manager) showArgoCDPodStatus(ctx context.Context, verbose bool) {
 				}
 			}
 		}
+	}
+}
+
+// diagnoseCluserConnectivityIssue runs comprehensive diagnostics when cluster connectivity fails
+func (m *Manager) diagnoseCluserConnectivityIssue(ctx context.Context, config config.ChartInstallConfig) {
+	pterm.Info.Println("  Running cluster connectivity diagnostics...")
+
+	// 1. Check if k3d cluster is running
+	k3dResult, k3dErr := m.executor.Execute(ctx, "k3d", "cluster", "list", "--output", "json")
+	if k3dErr == nil && k3dResult != nil && k3dResult.Stdout != "" {
+		pterm.Info.Println("  ✓ k3d cluster list accessible")
+		// Check if our specific cluster appears in the list
+		if strings.Contains(k3dResult.Stdout, "openframe-test") {
+			pterm.Info.Println("  ✓ openframe-test cluster found in k3d list")
+		} else {
+			pterm.Error.Println("  ✗ openframe-test cluster NOT found in k3d list")
+		}
+	} else {
+		pterm.Error.Println("  ✗ k3d cluster list failed")
+		if k3dErr != nil {
+			pterm.Error.Printf("    Error: %v\n", k3dErr)
+		}
+	}
+
+	// 2. Check kubectl config
+	configResult, configErr := m.executor.Execute(ctx, "kubectl", "config", "current-context")
+	if configErr == nil && configResult != nil && configResult.Stdout != "" {
+		currentContext := strings.TrimSpace(configResult.Stdout)
+		pterm.Info.Printf("  ✓ kubectl context: %s\n", currentContext)
+	} else {
+		pterm.Error.Println("  ✗ kubectl config current-context failed")
+		if configErr != nil {
+			pterm.Error.Printf("    Error: %v\n", configErr)
+		}
+	}
+
+	// 3. Check if we can reach nodes (basic cluster health)
+	nodesResult, nodesErr := m.executor.Execute(ctx, "kubectl", "get", "nodes", "-o", "wide")
+	if nodesErr == nil && nodesResult != nil && nodesResult.Stdout != "" {
+		pterm.Info.Println("  ✓ kubectl can list nodes:")
+		for _, line := range strings.Split(strings.TrimSpace(nodesResult.Stdout), "\n") {
+			if line != "" {
+				pterm.Info.Printf("    %s\n", line)
+			}
+		}
+	} else {
+		pterm.Error.Println("  ✗ kubectl cannot list nodes - cluster unreachable")
+		if nodesErr != nil {
+			pterm.Error.Printf("    Error: %v\n", nodesErr)
+		}
+	}
+
+	// 4. Check system pods in kube-system namespace
+	systemPodsResult, systemPodsErr := m.executor.Execute(ctx, "kubectl", "get", "pods", "-n", "kube-system", "--no-headers")
+	if systemPodsErr == nil && systemPodsResult != nil && systemPodsResult.Stdout != "" {
+		lines := strings.Split(strings.TrimSpace(systemPodsResult.Stdout), "\n")
+		runningCount := 0
+		for _, line := range lines {
+			if strings.Contains(line, "Running") {
+				runningCount++
+			}
+		}
+		pterm.Info.Printf("  ✓ kube-system pods: %d/%d running\n", runningCount, len(lines))
+	} else {
+		pterm.Error.Println("  ✗ Cannot check kube-system pods")
+	}
+
+	// 5. Check for WSL2-specific issues on Windows
+	if strings.Contains(strings.ToLower(os.Getenv("RUNNER_OS")), "windows") {
+		pterm.Info.Println("  Windows/WSL2 environment detected - checking for known issues:")
+
+		// Check WSL2 memory usage
+		wslResult, wslErr := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "-u", "runner", "free", "-h")
+		if wslErr == nil && wslResult != nil && wslResult.Stdout != "" {
+			pterm.Info.Println("  WSL2 Memory Status:")
+			for _, line := range strings.Split(strings.TrimSpace(wslResult.Stdout), "\n") {
+				if line != "" {
+					pterm.Info.Printf("    %s\n", line)
+				}
+			}
+		}
+
+		// Check for kubeconfig lock files
+		lockCheckResult, _ := m.executor.Execute(ctx, "wsl", "-d", "Ubuntu", "-u", "runner", "bash", "-c", "ls -la ~/.kube/config.lock* 2>/dev/null || echo 'No lock files'")
+		if lockCheckResult != nil && lockCheckResult.Stdout != "" {
+			pterm.Info.Printf("  Kubeconfig locks: %s\n", strings.TrimSpace(lockCheckResult.Stdout))
+		}
+	}
+
+	// 6. Check docker/container runtime
+	dockerResult, dockerErr := m.executor.Execute(ctx, "docker", "ps", "--filter", "name=openframe-test")
+	if dockerErr == nil && dockerResult != nil && dockerResult.Stdout != "" {
+		pterm.Info.Println("  ✓ Docker containers for openframe-test:")
+		for _, line := range strings.Split(strings.TrimSpace(dockerResult.Stdout), "\n") {
+			if line != "" {
+				pterm.Info.Printf("    %s\n", line)
+			}
+		}
+	} else {
+		pterm.Error.Println("  ✗ Cannot list Docker containers")
 	}
 }
