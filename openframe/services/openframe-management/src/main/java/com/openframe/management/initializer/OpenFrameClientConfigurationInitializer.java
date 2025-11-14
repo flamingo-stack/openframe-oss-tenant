@@ -6,6 +6,7 @@ import com.openframe.data.service.OpenFrameClientConfigurationService;
 import com.openframe.data.service.OpenFrameClientUpdatePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,9 @@ public class OpenFrameClientConfigurationInitializer {
 
     private static final String DEFAULT_ID = "default";
     private static final String CONFIG_FILE = "agent-configurations/client-configuration.json";
+
+    @Value("${openframe.client.update.feature.enabled:false}")
+    private boolean clientUpdateFeatureEnabled;
 
     private final ObjectMapper objectMapper;
     private final OpenFrameClientConfigurationService clientConfigurationService;
@@ -60,8 +64,13 @@ public class OpenFrameClientConfigurationInitializer {
     ) {
         String existingVersion = existingConfiguration.getVersion();
         String newVersion = newConfiguration.getVersion();
+        // TODO: integrate with version env variable
         if (!existingVersion.equals(newVersion)) {
             log.info("Detected version update from {} to {}", existingVersion, newVersion);
+            if (!clientUpdateFeatureEnabled) {
+                log.info("Client update publishing is disabled, skipping publish");
+                return;
+            }
             clientUpdateService.publish(newConfiguration);
             log.info("Processed version update");
         }
