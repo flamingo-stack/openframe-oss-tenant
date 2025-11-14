@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/flamingo-stack/openframe/openframe/internal/chart/utils/config"
+	"github.com/flamingo-stack/openframe/openframe/internal/shared/executor"
 	"github.com/pterm/pterm"
 )
 
@@ -117,16 +118,48 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	// Ensure spinner is stopped when function exits
 	defer stopSpinner()
 
-	// Verify cluster connectivity before waiting for CRDs
+	// Verify cluster connectivity before waiting for CRDs (with retries for transient issues)
 	if !config.Silent {
 		if config.Verbose {
 			pterm.Info.Println("Verifying cluster connectivity...")
 		}
 	}
-	clusterCheckResult, err := m.executor.Execute(localCtx, "kubectl", "cluster-info")
-	if err != nil || clusterCheckResult == nil {
-		return fmt.Errorf("cluster connectivity check failed - kubectl cannot reach cluster: %w", err)
+
+	// Retry cluster connectivity check to handle transient issues (especially in Windows/WSL2)
+	maxRetries := 5
+	retryDelay := 2 * time.Second
+	var clusterCheckResult *executor.CommandResult
+	var err error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		clusterCheckResult, err = m.executor.Execute(localCtx, "kubectl", "cluster-info")
+		if err == nil && clusterCheckResult != nil {
+			// Success
+			break
+		}
+
+		// If this is not the last attempt, wait and retry
+		if attempt < maxRetries {
+			if config.Verbose {
+				pterm.Warning.Printf("Cluster connectivity check failed (attempt %d/%d), retrying in %v...\n",
+					attempt, maxRetries, retryDelay)
+			}
+
+			// Wait before retrying (with context cancellation support)
+			select {
+			case <-localCtx.Done():
+				return fmt.Errorf("operation cancelled during cluster connectivity check: %w", localCtx.Err())
+			case <-time.After(retryDelay):
+				// Continue to next attempt
+			}
+		}
 	}
+
+	// If still failing after retries, return error
+	if err != nil || clusterCheckResult == nil {
+		return fmt.Errorf("cluster connectivity check failed after %d attempts - kubectl cannot reach cluster: %w", maxRetries, err)
+	}
+
 	if config.Verbose {
 		pterm.Success.Println("Cluster is accessible")
 	}
