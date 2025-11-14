@@ -93,7 +93,7 @@ tests:
           value: true
       - equal:
           path: spec.syncPolicy.retry.limit
-          value: 5
+          value: 7
 
   - it: should have sync policy structure
     set:
