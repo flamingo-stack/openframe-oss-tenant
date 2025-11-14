@@ -23,6 +23,7 @@ export interface OrganizationDetails {
   contractEnd: string | null
   notes: string[]
   isDefault: boolean
+  imageUrl?: string | null
 }
 
 function formatAddress(addr?: any): string {
@@ -79,6 +80,7 @@ export function useOrganizationDetails() {
         contractEnd: org.contractEndDate || null,
         notes: (org.notes ? [org.notes] : []),
         isDefault: org.isDefault || false,
+        imageUrl: org.image?.imageUrl
       }
 
       setOrganization(mapped)

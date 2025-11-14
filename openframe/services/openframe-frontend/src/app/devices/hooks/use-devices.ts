@@ -91,6 +91,7 @@ function createDeviceListItem(node: DevicesGraphQLNode): Device {
     // Organization
     organizationId: node.organization?.organizationId,
     organization: node.organization?.name,
+    organizationImageUrl: node.organization?.image?.imageUrl || null,
 
     // Tags
     tags: node.tags,

@@ -1,4 +1,4 @@
-export type StandardToolKey = 'TACTICAL' | 'FLEET' | 'MESHCENTRAL'
+export type StandardToolKey = 'TACTICAL' | 'FLEET' | 'MESHCENTRAL' | 'OPENFRAME_CHAT'
 
 // Map of common variants to a canonical key
 const toolAliasToKey: Record<string, StandardToolKey> = {
@@ -10,6 +10,7 @@ const toolAliasToKey: Record<string, StandardToolKey> = {
   'tactical': 'TACTICAL',
   'tactical_rmm': 'TACTICAL',
   'tactical-rmm': 'TACTICAL',
+  'tacticalrmm-agent': 'TACTICAL',
 
   // Fleet
   'FLEET': 'FLEET',
@@ -18,24 +19,34 @@ const toolAliasToKey: Record<string, StandardToolKey> = {
   'fleet': 'FLEET',
   'fleet_mdm': 'FLEET',
   'fleet-mdm': 'FLEET',
+  'fleetmdm-agent': 'FLEET',
 
   // MeshCentral
   'MESHCENTRAL': 'MESHCENTRAL',
   'MESH': 'MESHCENTRAL',
   'mesh': 'MESHCENTRAL',
   'meshcentral': 'MESHCENTRAL',
+  'meshcentral-agent': 'MESHCENTRAL',
+
+  // OpenFrame Chat
+  'OPENFRAME_CHAT': 'OPENFRAME_CHAT',
+  'OPENFRAME-CHAT': 'OPENFRAME_CHAT',
+  'openframe_chat': 'OPENFRAME_CHAT',
+  'openframe-chat': 'OPENFRAME_CHAT',
 }
 
 const keyToLabel: Record<StandardToolKey, string> = {
   TACTICAL: 'Tactical',
   FLEET: 'Fleet',
   MESHCENTRAL: 'MeshCentral',
+  OPENFRAME_CHAT: 'OpenFrame Chat',
 }
 
-const keyToUiKitType: Record<StandardToolKey, 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL'> = {
+const keyToUiKitType: Record<StandardToolKey, 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'OPENFRAME_CHAT'> = {
   TACTICAL: 'TACTICAL_RMM',
   FLEET: 'FLEET_MDM',
   MESHCENTRAL: 'MESHCENTRAL',
+  OPENFRAME_CHAT: 'OPENFRAME_CHAT',
 }
 
 export function normalizeToolKey(input?: string): StandardToolKey | undefined {
@@ -59,7 +70,7 @@ export function toStandardToolLabel(input?: string): string {
   return key ? keyToLabel[key] : input || ''
 }
 
-export function toUiKitToolType(input?: string): 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'AUTHENTIK' | 'OPENFRAME' | 'SYSTEM' {
+export function toUiKitToolType(input?: string): 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'AUTHENTIK' | 'OPENFRAME' | 'OPENFRAME_CHAT' | 'SYSTEM' {
   const key = normalizeToolKey(input)
   if (key) return keyToUiKitType[key]
 
