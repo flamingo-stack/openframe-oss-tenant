@@ -126,8 +126,21 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	}
 
 	// Retry cluster connectivity check to handle transient issues (especially in Windows/WSL2)
+	// Use more generous retry parameters for Windows CI environments
 	maxRetries := 5
 	retryDelay := 2 * time.Second
+
+	// Windows environments need more retries and longer delays due to WSL2 networking overhead
+	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
+		if strings.Contains(strings.ToLower(os.Getenv("RUNNER_OS")), "windows") {
+			maxRetries = 10
+			retryDelay = 5 * time.Second
+			if config.Verbose {
+				pterm.Debug.Println("Windows CI environment detected, using extended cluster connectivity retry (10 attempts, 5s delay)")
+			}
+		}
+	}
+
 	var clusterCheckResult *executor.CommandResult
 	var err error
 
