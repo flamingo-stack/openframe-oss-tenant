@@ -117,13 +117,109 @@ func (m *Manager) WaitForApplications(ctx context.Context, config config.ChartIn
 	// Ensure spinner is stopped when function exits
 	defer stopSpinner()
 
+	// Verify cluster connectivity before waiting for CRDs
+	if !config.Silent {
+		if config.Verbose {
+			pterm.Info.Println("Verifying cluster connectivity...")
+		}
+	}
+	clusterCheckResult, err := m.executor.Execute(localCtx, "kubectl", "cluster-info")
+	if err != nil || clusterCheckResult == nil {
+		return fmt.Errorf("cluster connectivity check failed - kubectl cannot reach cluster: %w", err)
+	}
+	if config.Verbose {
+		pterm.Success.Println("Cluster is accessible")
+	}
+
+	// Wait for ArgoCD namespace to exist
+	if !config.Silent && config.Verbose {
+		pterm.Info.Println("Waiting for ArgoCD namespace...")
+	}
+	namespaceWaitEnd := time.Now().Add(2 * time.Minute)
+	namespaceReady := false
+namespaceWaitLoop:
+	for time.Now().Before(namespaceWaitEnd) {
+		select {
+		case <-localCtx.Done():
+			return fmt.Errorf("operation cancelled: %w", localCtx.Err())
+		case <-time.After(2 * time.Second):
+			nsResult, nsErr := m.executor.Execute(localCtx, "kubectl", "get", "namespace", "argocd", "-o", "name")
+			if nsErr == nil && nsResult != nil && nsResult.Stdout != "" {
+				namespaceReady = true
+				if config.Verbose {
+					pterm.Success.Println("ArgoCD namespace is ready")
+				}
+				break namespaceWaitLoop
+			}
+		}
+	}
+	if !namespaceReady {
+		return fmt.Errorf("ArgoCD namespace did not become ready within timeout")
+	}
+
+	// Wait for ArgoCD pods to be created and running before checking CRDs
+	if !config.Silent {
+		if config.Verbose {
+			pterm.Info.Println("Waiting for ArgoCD pods to start...")
+		} else {
+			pterm.Info.Println("Waiting for ArgoCD to be ready...")
+		}
+	}
+
+	// Use generous timeout for Windows/WSL2 environments
+	podWaitTimeout := 5 * time.Minute
+	podWaitEnd := time.Now().Add(podWaitTimeout)
+	podWaitStart := time.Now()
+	podsRunning := false
+
+podWaitLoop:
+	for time.Now().Before(podWaitEnd) {
+		select {
+		case <-localCtx.Done():
+			return fmt.Errorf("operation cancelled: %w", localCtx.Err())
+		case <-time.After(5 * time.Second):
+			// Check if ArgoCD pods exist and at least one is Running
+			podResult, podErr := m.executor.Execute(localCtx, "kubectl", "get", "pods", "-n", "argocd",
+				"-o", "jsonpath={.items[?(@.status.phase==\"Running\")].metadata.name}")
+			if podErr == nil && podResult != nil && strings.TrimSpace(podResult.Stdout) != "" {
+				podsRunning = true
+				if config.Verbose {
+					runningPods := strings.Fields(podResult.Stdout)
+					pterm.Success.Printf("ArgoCD pods are running (%d pod(s))\n", len(runningPods))
+				}
+				break podWaitLoop
+			}
+
+			// Show periodic status updates in verbose mode
+			elapsed := time.Since(podWaitStart)
+			if config.Verbose && int(elapsed.Seconds())%30 == 0 && elapsed > 30*time.Second {
+				pterm.Info.Println("  Still waiting for ArgoCD pods to start...")
+				m.showArgoCDPodStatus(localCtx, false) // Show brief status
+			}
+		}
+	}
+
+	if !podsRunning {
+		pterm.Error.Println("ArgoCD pods did not start within timeout")
+		m.showArgoCDPodStatus(localCtx, config.Verbose) // Show detailed status
+		return fmt.Errorf("ArgoCD pods did not start within %v", podWaitTimeout)
+	}
+
 	// Bootstrap wait - wait for ArgoCD CRDs to be ready
-	// Use longer timeout in CI environments (2 minutes vs 30 seconds)
+	// Use longer timeout in CI environments, with extra time for Windows/WSL2
 	bootstrapTimeout := 30 * time.Second
 	if os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != "" {
-		bootstrapTimeout = 2 * time.Minute
-		if config.Verbose {
-			pterm.Debug.Println("CI environment detected, using 2-minute CRD bootstrap timeout")
+		// Windows environments need more time due to WSL2 overhead
+		if strings.Contains(strings.ToLower(os.Getenv("RUNNER_OS")), "windows") {
+			bootstrapTimeout = 5 * time.Minute
+			if config.Verbose {
+				pterm.Debug.Println("Windows CI environment detected, using 5-minute CRD bootstrap timeout")
+			}
+		} else {
+			bootstrapTimeout = 2 * time.Minute
+			if config.Verbose {
+				pterm.Debug.Println("CI environment detected, using 2-minute CRD bootstrap timeout")
+			}
 		}
 	}
 	bootstrapEnd := time.Now().Add(bootstrapTimeout)
@@ -606,10 +702,45 @@ func (m *Manager) checkArgoCDPodFailures(ctx context.Context) string {
 
 // showArgoCDPodStatus shows diagnostic information about ArgoCD pods when CRDs aren't ready
 func (m *Manager) showArgoCDPodStatus(ctx context.Context, verbose bool) {
+	// First check if ArgoCD namespace exists
+	nsResult, nsErr := m.executor.Execute(ctx, "kubectl", "get", "namespace", "argocd", "-o", "name")
+	if nsErr != nil || nsResult == nil || nsResult.Stdout == "" {
+		pterm.Warning.Println("  ArgoCD namespace does not exist yet")
+		if verbose {
+			pterm.Info.Println("  This usually means Helm installation hasn't created the namespace yet")
+		}
+		return
+	}
+
 	// Get ArgoCD pod status
 	podResult, err := m.executor.Execute(ctx, "kubectl", "get", "pods", "-n", "argocd", "-o", "jsonpath={range .items[*]}{.metadata.name}{'\\t'}{.status.phase}{'\\t'}{.status.conditions[?(@.type=='Ready')].status}{'\\n'}{end}")
 	if err != nil || podResult == nil {
-		pterm.Warning.Println("  Unable to check ArgoCD pod status")
+		pterm.Warning.Printf("  Unable to check ArgoCD pod status: %v\n", err)
+
+		// Additional diagnostics
+		if verbose {
+			pterm.Info.Println("  Running additional diagnostics...")
+
+			// Check if kubectl can list any resources
+			testResult, testErr := m.executor.Execute(ctx, "kubectl", "get", "nodes")
+			if testErr == nil && testResult != nil && testResult.Stdout != "" {
+				pterm.Info.Println("  ✓ kubectl can list nodes")
+			} else {
+				pterm.Error.Println("  ✗ kubectl cannot list nodes - cluster connectivity issue")
+				if testErr != nil {
+					pterm.Error.Printf("    Error: %v\n", testErr)
+				}
+			}
+
+			// Check if we can see any pods in the namespace
+			allPodsResult, _ := m.executor.Execute(ctx, "kubectl", "get", "pods", "-n", "argocd", "--no-headers")
+			if allPodsResult != nil && allPodsResult.Stdout != "" {
+				pterm.Info.Println("  Found pods in argocd namespace (but status query failed):")
+				pterm.Info.Printf("    %s\n", strings.ReplaceAll(strings.TrimSpace(allPodsResult.Stdout), "\n", "\n    "))
+			} else {
+				pterm.Warning.Println("  No pods found in argocd namespace yet")
+			}
+		}
 		return
 	}
 
