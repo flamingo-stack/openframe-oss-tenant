@@ -1,7 +1,7 @@
 {
   "id": "default",
-  "version": "1.0.0",
-  "downloadConfigurations": [
+  "version": "0.1.1",
+  "downloadConfiguration": [
     {
       "os": "windows",
       "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-client_windows.zip",
