@@ -36,8 +36,13 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "{{ .Values.deployment.oss.repository.profile }}"
+            {{- if .Values.deployment.saas.enabled }}
+            - name: SPRING_CONFIG_URL
+              value: "http://openframe-saas-config.microservices.svc.cluster.local:8888"
+            {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
             - name: SPRING_CONFIG_URL
               value: "http://openframe-config.microservices.svc.cluster.local:8888"
+            {{- end }}
           resources:
             requests:
               memory: "512Mi"
