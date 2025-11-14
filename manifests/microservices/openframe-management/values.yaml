@@ -5,6 +5,11 @@ deployment:
     enabled: true    
     repository:
       profile: dev
+    ingress:
+      localhost:
+        enabled: true
+      ngrok:
+        enabled: false 
   saas:
     enabled: false
 
