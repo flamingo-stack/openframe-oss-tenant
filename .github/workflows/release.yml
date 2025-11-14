@@ -325,14 +325,6 @@ jobs:
           ## Images
           $IMAGES
 
-          ## OpenFrame CLI
-          - **Linux (x64)**: \`openframe-cli_linux_amd64.tar.gz\`
-          - **Linux (ARM64)**: \`openframe-cli_linux_arm64.tar.gz\`
-          - **macOS (x64)**: \`openframe-cli_darwin_amd64.tar.gz\`
-          - **macOS (ARM64)**: \`openframe-cli_darwin_arm64.tar.gz\`
-          - **Windows (x64)**: \`openframe-cli_windows_amd64.zip\`
-          - **Windows (ARM64)**: \`openframe-cli_windows_arm64.zip\`
-
           ## OpenFrame Clients
           - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
           - **Windows** (x64): \`openframe-client_windows.zip\`
@@ -344,22 +336,19 @@ jobs:
           ---
           EOF
 
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          install-only: true
-
-      - name: Run GoReleaser (release)
+      - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ inputs.version }}
         run: |
-          git tag ${GORELEASER_CURRENT_TAG}
-          export RELEASE_HEADER="$(cat RELEASE_HEADER.md)"
-          goreleaser release --clean --skip=validate
+          git tag ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
 
-          set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
-      
+          gh release create ${{ inputs.version }} \
+            --title "🦩 ${{ inputs.version }}" \
+            --notes "$(cat RELEASE_HEADER.md)" \
+            final-artifacts/clients/*.tar.gz \
+            final-artifacts/clients/*.zip
+
       - name: Configure Git
         run: |
           git config user.name "github-actions"
