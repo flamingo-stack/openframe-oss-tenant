@@ -64,6 +64,7 @@ public class OpenFrameClientConfigurationInitializer {
     ) {
         String existingVersion = existingConfiguration.getVersion();
         String newVersion = newConfiguration.getVersion();
+        // TODO: integrate with version env variable
         if (!existingVersion.equals(newVersion)) {
             log.info("Detected version update from {} to {}", existingVersion, newVersion);
             if (!clientUpdateFeatureEnabled) {
