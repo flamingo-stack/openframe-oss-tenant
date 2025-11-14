@@ -284,8 +284,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Helm
+      - name: Install Helm v4
         uses: azure/setup-helm@v4
+        with:
+          version: v4.0.4
       
       - name: Install Helm unittest plugin
         run: helm plugin install --verify=false https://github.com/helm-unittest/helm-unittest.git
