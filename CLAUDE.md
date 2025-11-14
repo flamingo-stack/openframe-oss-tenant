@@ -317,3 +317,16 @@ Current integrations include:
 - **Authentik**: Identity provider
 
 Each tool has dedicated documentation in `docs/reference/tools/` and API documentation in `docs/api/tools/`.
+## CLI Tool
+
+The OpenFrame CLI has been moved to a separate repository:
+- Repository: https://github.com/flamingo-stack/openframe-cli
+- Installation: See CLI repository README for installation instructions
+- Documentation: Available in CLI repository
+
+To install the CLI:
+```bash
+# Latest release
+curl -fL "https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m).tar.gz" | tar -xz
+sudo mv openframe /usr/local/bin/
+```
