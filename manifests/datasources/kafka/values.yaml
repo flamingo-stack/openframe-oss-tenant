@@ -4,6 +4,13 @@ registerJob:
 
 kafka:
   # bitnamilegacy
+  auth:
+    sasl:
+      enabled: false
+      existingSecret: kafka-auth
+
+  kraft:
+    existingClusterIdSecret: kafka-auth
   image:
     repository: bitnamilegacy/kafka
     tag: 4.0.0-debian-12-r10
