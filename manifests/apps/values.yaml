@@ -1,4 +1,5 @@
 environment: dev
+empty: ""
 
 deployment:
   oss:

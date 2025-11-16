@@ -1,3 +1,13 @@
+deployment:
+  oss:
+    enabled: false
+  saas:
+    enabled: true
+    ingress:
+      gcp:
+        enabled: true
+        tenantID: tenant-example
+
 registerJob:
   enabled: true
 
@@ -13,10 +23,12 @@ kafka:
     security:
       allowInsecureImages: true
 
+  existingKraftSecret: "kafka-kraft"
+
   broker:
     resourcesPreset: medium
     replicaCount: 1
-    podAntiAffinityPreset: hard
+    podAntiAffinityPreset: soft
 
     resources:
       requests:
@@ -48,6 +60,7 @@ kafka:
   controller:
     resourcesPreset: medium
     replicaCount: 1
+    podAntiAffinityPreset: soft
 
     resources:
       requests:
