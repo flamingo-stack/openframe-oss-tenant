@@ -21,6 +21,8 @@ spec:
       helm:
         values: |
           environment: {{ $.Values.environment }}
+          global:
+{{ toYaml $.Values.global | indent 12 }}
           deployment:
 {{ toYaml $.Values.deployment | indent 12 }}
           registry:

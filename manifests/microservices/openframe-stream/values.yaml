@@ -2,8 +2,11 @@ environment: dev
 
 deployment:
   oss:
+    enabled: true    
     repository:
       profile: dev
+  saas:
+    enabled: false
 
 registry:
   docker:

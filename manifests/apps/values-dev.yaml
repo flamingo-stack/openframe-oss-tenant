@@ -8,6 +8,10 @@ deployment:
     repository:
       profile: dev
 
+global:
+  image:
+    tag: latest
+
 apps:
   openframe-config:
     values:

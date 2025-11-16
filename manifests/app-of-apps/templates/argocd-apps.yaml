@@ -35,8 +35,7 @@ spec:
 
   syncPolicy:
     retry:
-      # limit: -1
-      limit: 7
+      limit: 5
       backoff:
         duration: 15s
         factor: 2

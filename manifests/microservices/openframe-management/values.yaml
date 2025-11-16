@@ -2,8 +2,16 @@ environment: dev
 
 deployment:
   oss:
+    enabled: true    
     repository:
       profile: dev
+    ingress:
+      localhost:
+        enabled: true
+      ngrok:
+        enabled: false 
+  saas:
+    enabled: false
 
 registry:
   docker:
