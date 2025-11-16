@@ -180,7 +180,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENFRAME_CLI_URL: "https://github.com/${{ env.ORGANISATION }}/openframe-cli/releases/latest/download/openframe-cli_linux_amd64.tar.gz"
         run: |
-          curl -fL -H "Authorization: token ${GITHUB_TOKEN}" "$OPENFRAME_CLI_URL" | tar -xz -C /tmp && install -m 0755 /tmp/openframe /usr/local/bin/openframe
+          curl -fL "$OPENFRAME_CLI_URL" | tar -xz -C /tmp && install -m 0755 /tmp/openframe /usr/local/bin/openframe
           openframe bootstrap --deployment-mode=oss-tenant --non-interactive --verbose
 
       - name: Setup Telepresence
