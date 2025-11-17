@@ -48,7 +48,7 @@ export function useOrganizationsOverview(limit: number = 10) {
   useEffect(() => {
     let mounted = true
 
-    const activeStatuses = ['ACTIVE', 'ONLINE']
+    const activeStatuses = ['ONLINE']
 
     const fetchAll = async () => {
       setLoading(true)
