@@ -1,13 +1,3 @@
-deployment:
-  oss:
-    enabled: false
-  saas:
-    enabled: true
-    ingress:
-      gcp:
-        enabled: true
-        tenantID: tenant-example
-
 registerJob:
   enabled: true
 
