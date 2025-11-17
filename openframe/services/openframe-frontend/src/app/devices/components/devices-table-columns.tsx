@@ -45,7 +45,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       filterable: true,
       filterOptions: deviceFilters?.statuses?.map((status: any) => ({
         id: status.value,
-        label: status.value.charAt(0).toUpperCase() + status.value.slice(1).toLowerCase(),
+        label: getDeviceStatusConfig(status.value).label,
         value: status.value
       })) || [],
       renderCell: (device) => {

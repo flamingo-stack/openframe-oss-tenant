@@ -21,16 +21,26 @@ export interface DeviceStatusConfig {
 export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
   switch(status.toUpperCase()) {
     case 'ONLINE':
-    case 'ACTIVE':
       return { 
-        label: 'ACTIVE', 
+        label: 'ONLINE', 
         variant: 'success',
         cardStatus: 'active'
       }
+    case 'ACTIVE':
+      return { 
+        label: 'PENDING', 
+        variant: 'warning',
+        cardStatus: 'warning'
+      }
     case 'OFFLINE':
+      return { 
+        label: 'OFFLINE', 
+        variant: 'error',
+        cardStatus: 'offline'
+      }
     case 'DECOMMISSIONED':
       return { 
-        label: status.toUpperCase(), 
+        label: 'DECOMMISSIONED', 
         variant: 'error',
         cardStatus: 'offline'
       }

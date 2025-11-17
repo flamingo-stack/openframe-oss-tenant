@@ -89,7 +89,7 @@ export function OrganizationsOverviewSection() {
 
               {/* Active devices */}
               <DashboardInfoCard
-                title="Active Devices"
+                title="Online Devices"
                 value={org.active}
                 percentage={org.activePct}
                 showProgress
@@ -98,7 +98,7 @@ export function OrganizationsOverviewSection() {
 
               {/* Inactive devices */}
               <DashboardInfoCard
-                title="Inactive Devices"
+                title="Offline Devices"
                 value={org.inactive}
                 percentage={org.inactivePct}
                 showProgress
