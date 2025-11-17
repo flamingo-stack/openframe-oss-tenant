@@ -21,7 +21,7 @@ kafka:
   broker:
     resourcesPreset: medium
     replicaCount: 1
-    podAntiAffinityPreset: hard
+    podAntiAffinityPreset: soft
 
     resources:
       requests:
@@ -53,6 +53,7 @@ kafka:
   controller:
     resourcesPreset: medium
     replicaCount: 1
+    podAntiAffinityPreset: soft
 
     resources:
       requests:
