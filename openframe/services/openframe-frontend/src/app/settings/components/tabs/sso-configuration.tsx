@@ -30,8 +30,8 @@ export function SsoConfigurationTab() {
   const [providers, setProviders] = useState<UIProviderRow[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [editing, setEditing] = useState<{ open: boolean; providerKey: string; displayName: string; clientId?: string | null; clientSecret?: string | null } | null>(null)
-  const [details, setDetails] = useState<{ open: boolean; providerKey: string; displayName: string; status: { label: string; variant: 'success' | 'info' }; clientId?: string | null; clientSecret?: string | null } | null>(null)
+  const [editing, setEditing] = useState<{ open: boolean; providerKey: string; displayName: string; clientId?: string | null; clientSecret?: string | null; msTenantId?: string | null } | null>(null)
+  const [details, setDetails] = useState<{ open: boolean; providerKey: string; displayName: string; status: { label: string; variant: 'success' | 'info' }; clientId?: string | null; clientSecret?: string | null; msTenantId?: string | null } | null>(null)
 
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig()
 
@@ -126,7 +126,8 @@ export function SsoConfigurationTab() {
           providerKey: row.provider,
           displayName: row.displayName,
           clientId: row.original?.config?.clientId,
-          clientSecret: row.original?.config?.clientSecret
+          clientSecret: row.original?.config?.clientSecret,
+          msTenantId: row.original?.config?.msTenantId
         })
       },
       variant: 'outline',
@@ -141,7 +142,8 @@ export function SsoConfigurationTab() {
           displayName: row.displayName,
           status: row.status,
           clientId: row.original?.config?.clientId,
-          clientSecret: row.original?.config?.clientSecret
+          clientSecret: row.original?.config?.clientSecret,
+          msTenantId: row.original?.config?.msTenantId
         })
       },
       variant: 'outline',
@@ -185,9 +187,10 @@ export function SsoConfigurationTab() {
         providerDisplayName={editing?.displayName || ''}
         initialClientId={editing?.clientId}
         initialClientSecret={editing?.clientSecret}
-        onSubmit={async ({ clientId, clientSecret }) => {
+        initialMsTenantId={editing?.msTenantId}
+        onSubmit={async ({ clientId, clientSecret, msTenantId }) => {
           if (!editing?.providerKey) return
-          await updateProviderConfig(editing.providerKey, { clientId, clientSecret })
+          await updateProviderConfig(editing.providerKey, { clientId, clientSecret, msTenantId })
           await loadData()
         }}
       />
@@ -199,6 +202,7 @@ export function SsoConfigurationTab() {
         status={details?.status || { label: 'INACTIVE', variant: 'info' }}
         clientId={details?.clientId}
         clientSecret={details?.clientSecret}
+        msTenantId={details?.msTenantId}
         onToggle={async (enabled) => {
           if (!details?.providerKey) return
           await toggleProviderEnabled(details.providerKey, enabled)
