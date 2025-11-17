@@ -5,6 +5,7 @@ metadata:
 spec:
   serviceName: tactical-nginx
   replicas: 1
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: tactical-nginx

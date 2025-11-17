@@ -13,10 +13,9 @@ runs:
         echo "certutil version: $(certutil --version)"
 
     - name: Install Helm
-      shell: bash
-      run: |
-        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash -s -- --version v3.17.3
-        command -v helm >/dev/null 2>&1 || { echo "Error: helm not installed"; exit 1; }
+      uses: azure/setup-helm@v4
+      with:
+        version: 'v3.17.3'
 
     - name: Install yq
       shell: bash

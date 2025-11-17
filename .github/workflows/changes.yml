@@ -136,6 +136,6 @@ jobs:
             openframe-chat:
               - './clients/openframe-chat/**'
             client:
-              - './clients/client/**'
+              - './clients/openframe-client/**'
             helm:
               - './manifests/app-of-apps/**'

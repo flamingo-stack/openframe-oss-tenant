@@ -4,6 +4,7 @@ metadata:
   name: openframe-client
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: openframe-client
@@ -34,9 +35,9 @@ spec:
               name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "k8s"
-            - name: SPRING_CONFIG_IMPORT
-              value: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
+              value: "{{ .Values.deployment.oss.repository.profile }}"
+            - name: SPRING_CONFIG_URL
+              value: "http://openframe-config.microservices.svc.cluster.local:8888"
             - name: OPENFRAME_MANAGEMENT_KEY
               valueFrom:
                 secretKeyRef:

@@ -1,12 +1,24 @@
 server:
   port: 8888
-
+loki:
+  url: http://loki.platform.svc.cluster.local:3100/loki/api/v1/push
 spring:
   application:
     name: config-server
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/flamingo-stack/openframe-oss-tenant
+          default-label: ${CONFIG_GIT_BRANCH:main}
+          # Load base first, then let profile override base
+          search-paths: "configs/base,configs/{profile}"
+          clone-on-start: true
+          username: ${GITHUB_ACTOR:}
+          password: ${GITHUB_PASSWORD:}
   mvc:
     problemdetails:
       enabled: true
@@ -14,18 +26,6 @@ spring:
       favor-parameter: true
       media-types:
         actuator: application/vnd.spring-boot.actuator.v3+json
-
-# Enable dynamic repository configuration
-openframe:
-  config:
-    dynamic-repos: true
-    git-repo-base-url: ${GITHUB_BASE_URL:https://github.com/flamingo-stack/}
-    git-repo-0: ${CONFIG_GIT_REPO_0:openframe-oss-tenant-cfg}
-    git-branch-0: ${CONFIG_GIT_BRANCH_0:main}
-    git-repo-1: ${CONFIG_GIT_REPO_1:}
-    git-branch-1: ${CONFIG_GIT_BRANCH_1:main}
-    password: ${GITHUB_PASSWORD:}
-
 
 # Management server configuration
 management:
@@ -59,6 +59,7 @@ management:
 logging:
   config: classpath:logging/shared-logback-spring.xml
   level:
+    org.springframework.cloud.config.server: DEBUG
     root: INFO
     org.springframework.boot.actuator: DEBUG
     org.springframework.boot.actuate.metrics: DEBUG

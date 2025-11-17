@@ -39,6 +39,12 @@
             <artifactId>openframe-data</artifactId>
         </dependency>
 
+        <!-- OpenFrame SDKs -->
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>tacticalrmm</artifactId>
+        </dependency>
+
         <!-- Spring Cloud -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

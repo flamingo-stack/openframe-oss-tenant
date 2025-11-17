@@ -5,6 +5,7 @@ metadata:
 spec:
   serviceName: fleetmdm-mysql
   replicas: 1
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: fleetmdm-mysql

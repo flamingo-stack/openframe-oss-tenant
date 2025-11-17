@@ -93,7 +93,6 @@ public class GatewaySecurityConfig {
                                 CLIENTS_PREFIX + "/metrics/**",
                                 CLIENTS_PREFIX + "/api/agents/register",
                                 CLIENTS_PREFIX + "/oauth/token",
-                                DASHBOARD_PREFIX + "/sso/providers",
                                 managementContextPath + "/**",
                                 // TODO: removxxe after migration artifacts to GitHub
                                 CLIENTS_PREFIX + "/tool-agent/**"

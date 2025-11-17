@@ -1,7 +1,7 @@
 {
   "id": "fleetmdm-agent",
   "toolId": "fleetmdm-server",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "status": "ENABLED",
   "sessionType": "SERVICE",
   "runCommandArgs": [
@@ -18,6 +18,20 @@
     "uuid",
     "--openframe-mode",
     "--openframe-osquery-path", "${client.assetPath.osqueryd}"
+  ],
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/flamingo-stack/fleet/releases/download/{version}/fleet-windows-amd64.zip",
+      "fileName": "fleet-windows-amd64.zip",
+      "agentFileName": "fleet.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/flamingo-stack/fleet/releases/download/{version}/fleet-macos-universal.tar.gz",
+      "fileName": "fleet-macos-universal.tar.gz",
+      "agentFileName": "fleet"
+    }
   ],
   "assets": [
     {

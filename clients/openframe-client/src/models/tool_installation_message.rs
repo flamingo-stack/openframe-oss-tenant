@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use super::download_configuration::DownloadConfiguration;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -7,8 +8,11 @@ pub struct ToolInstallationMessage {
     pub tool_id: String,
     pub tool_type: String,
     pub version: String,
+    pub reinstall: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_type: Option<SessionType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub download_configurations: Option<Vec<DownloadConfiguration>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installation_command_args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]

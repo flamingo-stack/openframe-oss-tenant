@@ -3,9 +3,10 @@ package com.openframe.management.initializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openframe.data.document.clientconfiguration.OpenFrameClientConfiguration;
 import com.openframe.data.service.OpenFrameClientConfigurationService;
-import com.openframe.management.service.OpenFrameClientUpdatePublisher;
+import com.openframe.data.service.OpenFrameClientUpdatePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -20,15 +21,21 @@ public class OpenFrameClientConfigurationInitializer {
     private static final String DEFAULT_ID = "default";
     private static final String CONFIG_FILE = "agent-configurations/client-configuration.json";
 
+    @Value("${openframe.client.update.feature.enabled:false}")
+    private boolean clientUpdateFeatureEnabled;
+
     private final ObjectMapper objectMapper;
     private final OpenFrameClientConfigurationService clientConfigurationService;
-    private final OpenFrameClientUpdatePublisher clientUpdatePublisher;
+    private final OpenFrameClientUpdatePublisher clientUpdateService;
 
     @PostConstruct
     public void init() throws IOException {
         log.info("Initializing OpenFrame client configuration");
         ClassPathResource resource = new ClassPathResource(CONFIG_FILE);
         OpenFrameClientConfiguration newConfiguration = objectMapper.readValue(resource.getInputStream(), OpenFrameClientConfiguration.class);
+        
+        // Set the default ID
+        newConfiguration.setId(DEFAULT_ID);
         
         clientConfigurationService.findById(DEFAULT_ID)
             .ifPresentOrElse(
@@ -57,9 +64,14 @@ public class OpenFrameClientConfigurationInitializer {
     ) {
         String existingVersion = existingConfiguration.getVersion();
         String newVersion = newConfiguration.getVersion();
+        // TODO: integrate with version env variable
         if (!existingVersion.equals(newVersion)) {
             log.info("Detected version update from {} to {}", existingVersion, newVersion);
-            clientUpdatePublisher.publish(newVersion);
+            if (!clientUpdateFeatureEnabled) {
+                log.info("Client update publishing is disabled, skipping publish");
+                return;
+            }
+            clientUpdateService.publish(newConfiguration);
             log.info("Processed version update");
         }
     }

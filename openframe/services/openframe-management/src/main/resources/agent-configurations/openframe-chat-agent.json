@@ -1,6 +1,6 @@
 {
   "id": "openframe-chat",
-  "version": "0.1.0",
+  "version": "0.0.16",
   "status": "ENABLED",
   "sessionType": "USER",
   "runCommandArgs": [
@@ -8,6 +8,20 @@
     "--openframe-secret", "${client.openframeSecret}",
     "--openframe-token-path", "${client.openframeTokenPath}"
   ],
-  "agentToolIdCommandArgs": []
+  "agentToolIdCommandArgs": [],
+  "downloadConfigurations": [
+    {
+      "os": "windows",
+      "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-chat_windows.zip",
+      "fileName": "openframe-chat_windows.zip",
+      "agentFileName": "openframe-chat.exe"
+    },
+    {
+      "os": "macos",
+      "linkTemplate": "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/{version}/openframe-chat_macos.tar.gz",
+      "fileName": "openframe-chat_macos.tar.gz",
+      "agentFileName": "openframe-chat"
+    }
+  ]
 }
 

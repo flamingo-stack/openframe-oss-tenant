@@ -3,15 +3,15 @@ environment: dev
 deployment:
   oss:
     enabled: true    
-    config:
-      repoName: openframe-oss-tenant-cfg
+    repository:
       branch: main
+      profile: dev
   saas:
     enabled: false
-    config:
-      repoName: openframe-saas-tenant-cfg
+    repository:
       branch: main
       password: ""  # GitHub Token for private config repo access
+      profile: dev 
 
 registry:
   docker:

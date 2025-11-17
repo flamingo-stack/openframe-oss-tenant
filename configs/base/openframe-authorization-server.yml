@@ -1,0 +1,93 @@
+# OpenFrame Authorization Server Configuration
+# Server Configuration
+server:
+  port: 9005
+  forward-headers-strategy: native
+  servlet:
+    context-path: /sas
+spring:
+  main:
+    web-application-type: servlet
+  data:
+    mongodb:
+      enabled: true
+    redis:
+      host: redis-master.datasources.svc.cluster.local
+      port: 6379
+  redis:
+    enabled: true
+    timeout: 2000
+    connect-timeout: 2000
+    lettuce:
+      shutdown-timeout: 2000ms
+      pool:
+        enabled: true
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
+    client-type: lettuce
+  mail:
+    host: localhost
+    port: 25
+
+openframe:
+
+  # SSO Configuration
+  tenancy:
+    local-tenant: true
+
+  sso:
+    google:
+      registration-redirect-uri: "https://localhost/sas/register/login/oauth2/code/google"
+      login-redirect-uri: "https://localhost/sas/login/oauth2/code/google"
+      authorization-url: https://accounts.google.com/o/oauth2/v2/auth
+      token-url: https://oauth2.googleapis.com/token
+      user-info-url: https://openidconnect.googleapis.com/v1/userinfo
+      issuer-uri: https://accounts.google.com
+      jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+      scopes:
+        - openid
+        - profile
+        - email
+    microsoft:
+      login-redirect-uri: "https://localhost/sas/login/oauth2/code/microsoft"
+
+      # Tenant-specific (will be used when msTenantId is present in sso_configs)
+      authorization-url: "https://login.microsoftonline.com/{msTenantId}/oauth2/v2.0/authorize"
+      token-url: "https://login.microsoftonline.com/{msTenantId}/oauth2/v2.0/token"
+      jwk-set-uri: "https://login.microsoftonline.com/{msTenantId}/discovery/v2.0/keys"
+      issuer-uri: "https://login.microsoftonline.com/{msTenantId}/v2.0"
+
+      # Common (used when msTenantId is absent)
+      common-authorization-url: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+      common-token-url: "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+      common-jwk-set-uri: "https://login.microsoftonline.com/common/discovery/v2.0/keys"
+      common-issuer-uri: "https://login.microsoftonline.com/common/v2.0"
+
+      scopes:
+        - openid
+        - profile
+        - email
+
+  password-reset:
+    link-template: "${TENANT_HOST_URL:https://localhost}/reset-password?token={token}"
+  mail:
+    provider: smtp
+# Security OAuth2 Token Configuration
+security:
+  oauth2:
+    token:
+      access:
+        expiration-seconds: 900
+      refresh:
+        expiration-seconds: 604800
+
+  encryption:
+    password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
+    salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
+
+# Management server configuration
+management:
+  server:
+    port: 9006

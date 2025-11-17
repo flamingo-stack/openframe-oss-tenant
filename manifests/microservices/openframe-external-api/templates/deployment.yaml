@@ -4,6 +4,7 @@ metadata:
   name: openframe-external-api
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: openframe-external-api
@@ -22,7 +23,11 @@ spec:
       initContainers:
         - name: wait-for-config-server
           image: curlimages/curl:latest
+          {{- if .Values.deployment.saas.enabled }}
+          command: ["sh", "-c", "until curl -f http://openframe-saas-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
+          {{- else }}
           command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
+          {{- end }}
           
       containers:
         - name: openframe-external-api
@@ -34,9 +39,13 @@ spec:
               name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "k8s"
-            - name: SPRING_CONFIG_IMPORT
-              value: "optional:configserver:http://openframe-config.microservices.svc.cluster.local:8888"
+              value: "{{ .Values.deployment.oss.repository.profile }}"
+            - name: SPRING_CONFIG_URL
+              {{- if .Values.deployment.saas.enabled }}
+              value: "http://openframe-saas-config.microservices.svc.cluster.local:8888"
+              {{- else }}
+              value: "http://openframe-config.microservices.svc.cluster.local:8888"
+              {{- end }}
           resources:
             requests:
               memory: "512Mi"

@@ -13,10 +13,13 @@ kafka:
     security:
       allowInsecureImages: true
 
+  existingKraftSecret: "kafka-kraft"
+
   broker:
     resourcesPreset: medium
     replicaCount: 1
-    podAntiAffinityPreset: hard
+    podAntiAffinityPreset: soft
+    priorityClassName: kafka
 
     resources:
       requests:
@@ -48,6 +51,8 @@ kafka:
   controller:
     resourcesPreset: medium
     replicaCount: 1
+    podAntiAffinityPreset: soft
+    priorityClassName: kafka
 
     resources:
       requests:

@@ -5,6 +5,9 @@ use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
 use crate::services::InstalledToolsService;
+use crate::services::GithubDownloadService;
+use crate::services::InstalledAgentMessagePublisher;
+use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
@@ -12,16 +15,19 @@ use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolUrlParamsResolver;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::tool_connection_processing_manager::ToolConnectionProcessingManager;
+use crate::services::tool_kill_service::ToolKillService;
+use crate::services::tool_connection_service::ToolConnectionService;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::fs;
 use tokio::process::Command;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
+    github_download_service: GithubDownloadService,
     tool_agent_file_client: ToolAgentFileClient,
     tool_api_client: ToolApiClient,
     command_params_resolver: ToolCommandParamsResolver,
@@ -30,10 +36,15 @@ pub struct ToolInstallationService {
     directory_manager: DirectoryManager,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
+    config_service: AgentConfigurationService,
+    installed_agent_publisher: InstalledAgentMessagePublisher,
+    tool_kill_service: ToolKillService,
+    tool_connection_service: ToolConnectionService,
 }
 
 impl ToolInstallationService {
     pub fn new(
+        github_download_service: GithubDownloadService,
         tool_agent_file_client: ToolAgentFileClient,
         tool_api_client: ToolApiClient,
         command_params_resolver: ToolCommandParamsResolver,
@@ -42,6 +53,9 @@ impl ToolInstallationService {
         directory_manager: DirectoryManager,
         tool_run_manager: ToolRunManager,
         tool_connection_processing_manager: ToolConnectionProcessingManager,
+        config_service: AgentConfigurationService,
+        installed_agent_publisher: InstalledAgentMessagePublisher,
+        tool_connection_service: ToolConnectionService,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -50,6 +64,7 @@ impl ToolInstallationService {
             .unwrap();
 
         Self {
+            github_download_service,
             tool_agent_file_client,
             tool_api_client,
             command_params_resolver,
@@ -58,6 +73,10 @@ impl ToolInstallationService {
             directory_manager,
             tool_run_manager,
             tool_connection_processing_manager,
+            config_service,
+            installed_agent_publisher,
+            tool_kill_service: ToolKillService::new(),
+            tool_connection_service,
         }
     }
 
@@ -65,20 +84,57 @@ impl ToolInstallationService {
         let tool_agent_id = &tool_installation_message.tool_agent_id;
         info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
-        // Check if tool is already installed
-        if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
-            info!("Tool {} is already installed with version {}, skipping installation", 
-                  tool_agent_id, installed_tool.version);
-            return Ok(());
-        }
-
         let version_clone = tool_installation_message.version.clone();
         let run_args_clone = tool_installation_message.run_command_args.clone();
-
+        let reinstall = tool_installation_message.reinstall.clone();
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
         let tool_folder_path = base_folder_path.join(tool_agent_id);
         
+        // Check if tool is already installed
+        if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
+            if reinstall {
+                info!("Reinstalling tool {} with version {}", tool_agent_id, version_clone);
+        
+                // Stop the tool process if it's running
+                info!("Stopping existing tool process for {}", tool_agent_id);
+                if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+                    warn!("Failed to stop tool process: {:#}", e);
+                // Continue with uninstallation even if process kill fails
+                }
+        
+                // Wait for process to fully terminate
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+                info!("Removing existing tool directory: {}", tool_folder_path.display());
+                if tool_folder_path.exists() {
+                    fs::remove_dir_all(&tool_folder_path)
+                        .await
+                        .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+                }
+                        
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+                // Delete from both services
+                info!("Removing tool {} from services", tool_agent_id);
+                if let Err(e) = self.tool_connection_service.delete_by_tool_agent_id(tool_agent_id).await {
+                    warn!("Failed to remove tool connection: {:#}", e);
+                }
+                if let Err(e) = self.installed_tools_service.delete_by_tool_agent_id(tool_agent_id).await {
+                    warn!("Failed to remove from installed tools: {:#}", e);
+                }
+                
+                // Clear from both manager tracking sets to allow tool restart after reinstall
+                self.tool_connection_processing_manager.clear_running_tool(&installed_tool.tool_id).await;
+                self.tool_run_manager.clear_running_tool(&installed_tool.tool_agent_id).await;
+                
+                info!("Previous installation of tool {} was uninstalled", tool_agent_id);
+            } else {
+                info!("Tool {} is already installed with version {}, skipping installation", tool_agent_id, installed_tool.version);
+                return Ok(());
+            }
+        }
+
         // Ensure tool-specific directory exists
         fs::create_dir_all(&tool_folder_path)
             .await
@@ -91,11 +147,25 @@ impl ToolInstallationService {
             info!("Agent file for tool {} already exists at {}, skipping download", 
                   tool_agent_id, file_path.display());
         } else {
-            // Download and save main tool agent file
-            let tool_agent_file_bytes = self
-                .tool_agent_file_client
-                .get_tool_agent_file(tool_agent_id.clone())
-                .await?;
+            // Download main tool agent file
+            let tool_agent_file_bytes = if let Some(ref download_configs) = tool_installation_message.download_configurations {
+                // Use GithubDownloadService with download configurations
+                info!("Using download configurations to download tool agent");
+                let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
+                    .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
+                
+                self.github_download_service
+                    .download_and_extract(download_config)
+                    .await
+                    .with_context(|| format!("Failed to download and extract tool agent for: {}", tool_agent_id))?
+            } else {
+                // Fall back to legacy method (Artifactory)
+                info!("Using legacy method to download tool agent");
+                self.tool_agent_file_client
+                    .get_tool_agent_file(tool_agent_id.clone())
+                    .await
+                    .with_context(|| format!("Failed to download tool agent file for: {}", tool_agent_id))?
+            };
 
             // Save directly and set permissions (always executable)
             File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
@@ -199,7 +269,7 @@ impl ToolInstallationService {
             tool_agent_id: tool_agent_id.clone(),
             tool_id: tool_installation_message.tool_id.clone(),
             tool_type: tool_installation_message.tool_type.clone(),
-            version: version_clone,
+            version: version_clone.clone(),
             session_type: tool_installation_message.session_type.clone().unwrap_or(crate::models::SessionType::Service),
             run_command_args: run_args_clone,
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
@@ -220,6 +290,24 @@ impl ToolInstallationService {
         self.tool_connection_processing_manager.run_new_tool(installed_tool.clone())
             .await
             .context("Failed to process tool connection after installation")?;
+
+        // Publish installed agent message
+        info!("Publishing installed agent message for tool: {}", tool_agent_id);
+        match self.config_service.get_machine_id().await {
+            Ok(machine_id) => {
+                if let Err(e) = self.installed_agent_publisher
+                    .publish(machine_id, tool_agent_id.clone(), version_clone.clone())
+                    .await
+                {
+                    warn!("Failed to publish installed agent message for {}: {:#}", tool_agent_id, e);
+                    // Don't fail installation if publishing fails
+                }
+            }
+            Err(e) => {
+                warn!("Failed to get machine_id for installed agent message: {:#}", e);
+                // Don't fail installation if publishing fails
+            }
+        }
 
         Ok(())
     }

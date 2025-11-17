@@ -4,6 +4,7 @@ metadata:
   name: authentik-server
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: authentik-server
@@ -104,6 +105,7 @@ metadata:
   name: authentik-worker
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: authentik-worker

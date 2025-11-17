@@ -1,5 +1,10 @@
 environment: dev
 
+deployment:
+  oss:
+    repository:
+      profile: dev
+
 registry:
   docker:
     server: https://index.docker.io/v1/
