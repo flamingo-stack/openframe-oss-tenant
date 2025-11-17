@@ -15,6 +15,7 @@ import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
 import { useBatchImages } from '@lib/batch-image-fetcher'
+import { featureFlags } from '@lib/feature-flags'
 
 export function DevicesView() {
   const router = useRouter()
@@ -27,7 +28,9 @@ export function DevicesView() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const organizationImageUrls = useMemo(() => 
-    devices.map(device => device.organizationImageUrl).filter(Boolean), 
+    featureFlags.organizationImages.displayEnabled()
+      ? devices.map(device => device.organizationImageUrl).filter(Boolean)
+      : [], 
     [devices]
   )
   const fetchedImageUrls = useBatchImages(organizationImageUrls)

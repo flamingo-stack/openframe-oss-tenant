@@ -17,6 +17,9 @@ type OrganizationsQuery = {
       organizationId: string
       name: string
       websiteUrl?: string
+      image?: {
+        imageUrl?: string
+      }
     }>
   }
 }
@@ -33,6 +36,7 @@ export interface OrganizationOverviewRow {
   organizationId: string
   name: string
   websiteUrl: string
+  imageUrl?: string | null
   total: number
   active: number
   inactive: number
@@ -69,6 +73,7 @@ export function useOrganizationsOverview(limit: number = 10) {
         const perOrgPromises = top.map(async (org) => {
           const orgId = org.organizationId
           const websiteUrl = org.websiteUrl || ''
+          const imageUrl = org.image?.imageUrl || null
 
           const filtersRes = await apiClient.post<GraphQLResponse<DeviceFiltersResponse>>('/api/graphql', {
             query: GET_DEVICE_FILTERS_QUERY,
@@ -89,6 +94,7 @@ export function useOrganizationsOverview(limit: number = 10) {
             organizationId: orgId,
             name: org.name,
             websiteUrl,
+            imageUrl,
             total,
             active,
             inactive,

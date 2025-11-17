@@ -13,6 +13,7 @@ import { useDebounce } from '@flamingo/ui-kit/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
 import { useBatchImages } from '@lib/batch-image-fetcher'
+import { featureFlags } from '@lib/feature-flags'
 
 interface UIOrganizationEntry {
   id: string
@@ -35,7 +36,7 @@ function OrganizationNameCell({ org, fetchedImageUrls }: {
   
   return (
     <div className="flex items-center gap-3">
-      {fetchedImageUrl && (
+      {featureFlags.organizationImages.displayEnabled() && fetchedImageUrl && (
         <img 
           src={fetchedImageUrl} 
           alt={org.name}
@@ -60,7 +61,9 @@ export function OrganizationsTable() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const imageUrls = useMemo(() => 
-    organizations.map(org => org.imageUrl).filter(Boolean), 
+    featureFlags.organizationImages.displayEnabled()
+      ? organizations.map(org => org.imageUrl).filter(Boolean)
+      : [], 
     [organizations]
   )
   const fetchedImageUrls = useBatchImages(imageUrls)

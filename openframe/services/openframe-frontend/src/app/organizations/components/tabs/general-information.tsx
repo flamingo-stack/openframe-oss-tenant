@@ -7,6 +7,7 @@ import { useAuthenticatedImage } from '@lib/use-authenticated-image'
 import { uploadWithAuth, deleteWithAuth } from '@lib/upload-with-auth'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { runtimeEnv } from '@lib/runtime-config'
+import { featureFlags } from '@lib/feature-flags'
 
 export type GeneralInfoState = {
   name: string
@@ -168,7 +169,7 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
         </div>
 
         {/* Image Uploader */}
-        {isSaasTenant && (
+        {isSaasTenant && featureFlags.organizationImages.uploadEnabled() && (
           <div className="w-full lg:w-80 shrink-0 self-start">
             <div className="flex flex-col gap-2">
               <Label>Organization Logo</Label>

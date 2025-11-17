@@ -5,6 +5,7 @@ import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
+import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area
 export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode) {
@@ -27,7 +28,7 @@ function OrganizationCell({ device, fetchedImageUrls }: {
   
   return (
     <div className="flex items-center gap-3">
-      {fetchedImageUrl && (
+      {featureFlags.organizationImages.displayEnabled() && fetchedImageUrl && (
         <img 
           src={fetchedImageUrl} 
           alt={device.organization || 'Organization'}
