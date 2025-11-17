@@ -56,5 +56,9 @@ registry:
     password: ""
     email: ""
 
+global:  # not working yet
+  image:
+    tag: latest
+
 registerJob:
   enabled: true
