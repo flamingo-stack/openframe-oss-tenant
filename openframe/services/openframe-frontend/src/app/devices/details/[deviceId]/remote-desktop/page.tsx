@@ -12,6 +12,7 @@ import { MeshDesktop } from '@lib/meshcentral/meshcentral-desktop'
 import { RemoteSettingsModal } from './remote-settings-modal'
 import { RemoteSettingsConfig, DEFAULT_SETTINGS, RemoteDesktopSettings } from '@lib/meshcentral/remote-settings'
 import { createActionsMenuGroups, ActionHandlers } from './actions-menu-config'
+import { DisplayInfo } from '@lib/meshcentral/meshcentral-desktop'
 
 interface RemoteDesktopPageProps {
   params: Promise<{
@@ -72,6 +73,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [remoteSettings, setRemoteSettings] = useState<RemoteSettingsConfig>(DEFAULT_SETTINGS)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const [displays, setDisplays] = useState<DisplayInfo[]>([])
+  const [currentDisplay, setCurrentDisplay] = useState(0)
   
   useEffect(() => {
     remoteSettingsRef.current = remoteSettings
@@ -96,6 +99,17 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     
     const desktop = new MeshDesktop()
     desktopRef.current = desktop
+    
+    // Set up display list change callback
+    desktop.onDisplayListChange?.((newDisplays) => {
+      setDisplays(newDisplays)
+      // Auto-select primary display if available
+      const primaryDisplay = newDisplays.find(d => d.primary)
+      if (primaryDisplay && currentDisplay === 0) {
+        setCurrentDisplay(primaryDisplay.id)
+      }
+    })
+    
     const canvas = canvasRef.current
     if (canvas) {
       desktop.attach(canvas)
@@ -290,6 +304,26 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     })
   }
 
+  const handleDisplayChange = (displayId: number) => {
+    try {
+      desktopRef.current?.switchDisplay?.(displayId)
+      setCurrentDisplay(displayId)
+      toast({
+        title: "Display Switched",
+        description: `Switched to display ${displayId}`,
+        variant: "success",
+        duration: 2000
+      })
+    } catch (error) {
+      toast({
+        title: "Display Switch Failed",
+        description: error instanceof Error ? error.message : "Unable to switch display",
+        variant: "destructive",
+        duration: 4000
+      })
+    }
+  }
+
   const actionHandlers: ActionHandlers = {
     sendCtrlAltDel,
     sendKeyCombo,
@@ -298,10 +332,11 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       setEnableInput(enabled)
       desktopRef.current?.setViewOnly(!enabled)
     },
+    switchDisplay: handleDisplayChange,
     toast
   }
 
-  const actionsMenuGroups = createActionsMenuGroups(actionHandlers, enableInput)
+  const actionsMenuGroups = createActionsMenuGroups(actionHandlers, enableInput, displays, currentDisplay)
 
   if (!meshcentralAgentId) return null
 

@@ -5,22 +5,77 @@ import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } fr
 import { ToolBadge } from '@flamingo/ui-kit/components/platform'
 import { Info as InfoIcon } from 'lucide-react'
 import { toUiKitToolType } from '@lib/tool-labels'
+import type { Device, ToolConnection, InstalledAgent } from '../../types/device.types'
 
 interface AgentsTabProps {
-  device: any
+  device: Device
+}
+
+const agentTypeToToolType: Record<string, string> = {
+  'fleetmdm-agent': 'FLEET_MDM',
+  'tacticalrmm-agent': 'TACTICAL_RMM',
+  'meshcentral-agent': 'MESHCENTRAL',
+  'openframe-chat': 'OPENFRAME_CHAT'
 }
 
 export function AgentsTab({ device }: AgentsTabProps) {
   const toolConnections = Array.isArray(device?.toolConnections) ? device.toolConnections : []
+  const installedAgents = Array.isArray(device?.installedAgents) ? device.installedAgents : []
+
+  const connectionMap = new Map<string, ToolConnection>()
+  toolConnections.forEach((tc: ToolConnection) => {
+    connectionMap.set(tc.toolType, tc)
+  })
+
+  const combinedAgents = installedAgents.map((agent: InstalledAgent) => {
+    const mappedToolType = agentTypeToToolType[agent.agentType]
+    const connection = mappedToolType ? connectionMap.get(mappedToolType) : null
+    
+    return {
+      agentType: agent.agentType,
+      version: agent.version,
+      toolType: mappedToolType || agent.agentType.toUpperCase().replace(/-/g, '_'),
+      agentToolId: connection?.agentToolId,
+      hasConnection: !!connection
+    }
+  })
+
+  toolConnections.forEach((tc: ToolConnection) => {
+    const hasInstalledAgent = installedAgents.some((agent: InstalledAgent) => 
+      agentTypeToToolType[agent.agentType] === tc.toolType
+    )
+    
+    if (!hasInstalledAgent) {
+      combinedAgents.push({
+        agentType: tc.toolType.toLowerCase().replace(/_/g, '-'),
+        version: undefined,
+        toolType: tc.toolType,
+        agentToolId: tc.agentToolId,
+        hasConnection: true
+      })
+    }
+  })
+
+  const hasAgents = combinedAgents.length > 0
 
   return (
     <TooltipProvider delayDuration={0}>
     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {toolConnections.length > 0 ? (
-        toolConnections.map((tc: any, idx: number) => {
-          const toolType = toUiKitToolType(tc?.toolType)
+      {hasAgents ? (
+        combinedAgents.map((agent: any, idx: number) => {
+          const toolType = toUiKitToolType(agent.toolType)
+          const items = []
+          
+          if (agent.agentToolId) {
+            items.push({ label: 'ID', value: agent.agentToolId, copyable: true })
+          }
+          
+          if (agent.version) {
+            items.push({ label: 'Version', value: agent.version })
+          }
+
           return (
-            <div key={`${tc?.toolType || 'unknown'}-${tc?.agentToolId || idx}`} className="relative">
+            <div key={`${agent.agentType}-${agent.agentToolId || idx}`} className="relative">
               <div className="absolute top-4 left-4 z-10">
                 <ToolBadge toolType={toolType} />
               </div>
@@ -30,15 +85,18 @@ export function AgentsTab({ device }: AgentsTabProps) {
                     <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[500px] min-w-[400px]">
-                    <p>Integrated agent connection from Tactical RMM or Fleet MDM. Shows the unique agent ID for this device in the connected management platform.</p>
+                    <p>
+                      {agent.hasConnection 
+                        ? `Connected agent from ${toolType}. Shows the unique agent ID and version for this device.`
+                        : `${toolType} agent installed.`
+                      }
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>
               <InfoCard
                 data={{
-                  items: [
-                    { label: 'ID', value: tc?.agentToolId || 'Unknown', copyable: true },
-                  ]
+                  items: items
                 }}
                 className="pt-16"
               />
@@ -55,7 +113,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
                   <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-[500px] min-w-[400px]">
-                  <p>No management agents are currently connected to this device. Agents provide remote management capabilities through Tactical RMM and Fleet MDM.</p>
+                  <p>No management agents are currently installed on this device. Agents provide remote management capabilities through Tactical RMM, Fleet MDM, and other platforms.</p>
                 </TooltipContent>
               </Tooltip>
             ),
