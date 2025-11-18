@@ -1,11 +1,12 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: openframe-management
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
     "argocd.argoproj.io/sync-options": Replace=true
 spec:
   backoffLimit: 3
@@ -45,7 +46,7 @@ spec:
                   "toolUrls": [
                     {
                       "url": "http://openframe-management.microservices.svc.cluster.local",
-                      "port": "8096",
+                      "port": "8095",
                       "type": "API"
                     }
                   ],
@@ -75,4 +76,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "OpenFrame Management Registration failed..."; exit 1; }
             echo "OpenFrame Management Registration complete."
+
 {{- end }}
