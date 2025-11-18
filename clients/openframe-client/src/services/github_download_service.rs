@@ -1,9 +1,15 @@
 use anyhow::{Context, Result, anyhow};
-use tracing::{info, debug};
+use tracing::{info, debug, warn};
 use crate::models::download_configuration::DownloadConfiguration;
+use crate::config::update_config::{
+    MAX_DOWNLOAD_RETRIES,
+    DOWNLOAD_TIMEOUT_SECS,
+    MIN_BINARY_SIZE_BYTES,
+};
 use reqwest::Client;
 use bytes::Bytes;
 use std::io::Cursor;
+use tokio::time::Duration;
 
 #[derive(Clone)]
 pub struct GithubDownloadService {
@@ -19,13 +25,22 @@ impl GithubDownloadService {
     /// Returns the binary bytes ready to be written to disk
     pub async fn download_and_extract(&self, config: &DownloadConfiguration) -> Result<Bytes> {
         info!("Downloading from: {}", config.link);
-        
-        // Download the archive
-        let archive_bytes = self.download(&config.link).await
+
+        // Download the archive with retry
+        let archive_bytes = self.download_with_retry(&config.link).await
             .with_context(|| format!("Failed to download from: {}", config.link))?;
-        
+
         info!("Downloaded {} bytes", archive_bytes.len());
-        
+
+        // Validate archive size
+        if archive_bytes.len() < MIN_BINARY_SIZE_BYTES as usize {
+            return Err(anyhow!(
+                "Downloaded file too small ({} bytes), minimum expected: {} bytes",
+                archive_bytes.len(),
+                MIN_BINARY_SIZE_BYTES
+            ));
+        }
+
         // Extract based on file extension
         let binary_bytes = if config.file_name.ends_with(".zip") {
             self.extract_from_zip(archive_bytes, &config.agent_file_name)
@@ -36,10 +51,101 @@ impl GithubDownloadService {
         } else {
             return Err(anyhow!("Unsupported archive format: {}", config.file_name));
         };
-        
+
+        // Validate extracted binary size
+        if binary_bytes.len() < MIN_BINARY_SIZE_BYTES as usize {
+            return Err(anyhow!(
+                "Extracted binary too small ({} bytes), minimum expected: {} bytes",
+                binary_bytes.len(),
+                MIN_BINARY_SIZE_BYTES
+            ));
+        }
+
         info!("Extracted binary: {} ({} bytes)", config.agent_file_name, binary_bytes.len());
-        
+
         Ok(binary_bytes)
+    }
+
+    /// Download with retry logic and timeout
+    /// Falls back to jsDelivr CDN if GitHub returns 429 (rate limit)
+    async fn download_with_retry(&self, url: &str) -> Result<Bytes> {
+        let mut last_error = None;
+
+        for attempt in 1..=MAX_DOWNLOAD_RETRIES {
+            info!("Download attempt {}/{} for: {}", attempt, MAX_DOWNLOAD_RETRIES, url);
+
+            match tokio::time::timeout(
+                Duration::from_secs(DOWNLOAD_TIMEOUT_SECS),
+                self.download(url)
+            ).await {
+                Ok(Ok(bytes)) => {
+                    info!("Download successful on attempt {}", attempt);
+                    return Ok(bytes);
+                }
+                Ok(Err(e)) => {
+                    // Check if this is a rate limit error (HTTP 429)
+                    if e.to_string().contains("429") {
+                        warn!("GitHub rate limit (429) detected on attempt {}", attempt);
+                        warn!("Attempting fallback to jsDelivr CDN...");
+                        
+                        // Convert GitHub URL to jsDelivr CDN URL
+                        let cdn_url = self.github_to_cdn_url(url);
+                        info!("CDN URL: {}", cdn_url);
+                        
+                        // Try downloading from CDN
+                        match tokio::time::timeout(
+                            Duration::from_secs(DOWNLOAD_TIMEOUT_SECS),
+                            self.download(&cdn_url)
+                        ).await {
+                            Ok(Ok(bytes)) => {
+                                info!("Successfully downloaded from jsDelivr CDN");
+                                return Ok(bytes);
+                            }
+                            Ok(Err(cdn_err)) => {
+                                warn!("CDN fallback also failed: {:#}", cdn_err);
+                                return Err(anyhow!(
+                                    "GitHub rate limit (429) and CDN fallback failed. GitHub: {:#}, CDN: {:#}",
+                                    e, cdn_err
+                                ));
+                            }
+                            Err(_) => {
+                                warn!("CDN fallback timed out");
+                                return Err(anyhow!(
+                                    "GitHub rate limit (429) and CDN fallback timed out"
+                                ));
+                            }
+                        }
+                    }
+                    
+                    warn!("Download attempt {} failed: {:#}", attempt, e);
+                    last_error = Some(e);
+                }
+                Err(_) => {
+                    let timeout_err = anyhow!("Download timeout after {} seconds", DOWNLOAD_TIMEOUT_SECS);
+                    warn!("Download attempt {} timed out", attempt);
+                    last_error = Some(timeout_err);
+                }
+            }
+
+            // Wait before retry (except on last attempt)
+            if attempt < MAX_DOWNLOAD_RETRIES {
+                let delay_secs = attempt * 2; // 2, 4, 6 seconds
+                info!("Retrying in {} seconds...", delay_secs);
+                tokio::time::sleep(Duration::from_secs(delay_secs as u64)).await;
+            }
+        }
+
+        Err(last_error.unwrap_or_else(|| anyhow!("Download failed after {} attempts", MAX_DOWNLOAD_RETRIES)))
+    }
+
+    /// Convert GitHub release URL to jsDelivr CDN URL
+    /// Example:
+    ///   GitHub:   https://github.com/owner/repo/releases/download/v1.0/file.zip
+    ///   jsDelivr: https://cdn.jsdelivr.net/gh/owner/repo@v1.0/file.zip
+    fn github_to_cdn_url(&self, github_url: &str) -> String {
+        github_url
+            .replace("github.com/", "cdn.jsdelivr.net/gh/")
+            .replace("/releases/download/", "@")
     }
 
     /// Downloads file from URL and returns bytes

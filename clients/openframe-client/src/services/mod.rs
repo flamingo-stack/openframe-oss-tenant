@@ -27,6 +27,9 @@ pub mod openframe_client_info_service;
 pub mod machine_heartbeat_publisher;
 pub mod machine_heartbeat_run_manager;
 pub mod github_download_service;
+pub mod update_state_service;
+pub mod update_cleanup_service;
+pub mod update_handler_service;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
@@ -54,3 +57,6 @@ pub use tool_agent_update_service::ToolAgentUpdateService;
 pub use openframe_client_info_service::OpenFrameClientInfoService;
 pub use machine_heartbeat_publisher::MachineHeartbeatPublisher;
 pub use machine_heartbeat_run_manager::MachineHeartbeatRunManager;
+pub use update_state_service::UpdateStateService;
+pub use update_cleanup_service::UpdateCleanupService;
+pub use update_handler_service::UpdateHandlerService;

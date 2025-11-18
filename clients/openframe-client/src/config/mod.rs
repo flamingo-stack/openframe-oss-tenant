@@ -1,4 +1,9 @@
+/// Configuration module for OpenFrame client
+/// Contains constants and settings for various subsystems
+
 use serde::{Deserialize, Serialize};
+
+pub mod update_config;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Configuration {
