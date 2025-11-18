@@ -17,72 +17,12 @@
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data-mongo</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-security-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-security-oauth</artifactId>
+            <artifactId>openframe-gateway-service-core</artifactId>
             <version>${openframe.libs.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data</artifactId>
-        </dependency>
-
-        <!-- Spring Cloud -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway</artifactId>
-        </dependency>
-
-        <!-- gRPC dependencies -->
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty</artifactId>
-        </dependency>
-
-        <!-- Spring WebFlux -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-        <!-- Spring Security -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-jose</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-resource-server</artifactId>
-        </dependency>
-
-        <!-- Caffeine cache for issuer managers -->
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
         </dependency>
     </dependencies>
 </project>

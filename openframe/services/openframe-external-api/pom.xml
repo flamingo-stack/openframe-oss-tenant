@@ -20,37 +20,12 @@
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data-mongo</artifactId>
+            <artifactId>openframe-external-api-service-core</artifactId>
+            <version>${openframe.libs.version}</version>
         </dependency>
-        <!-- Spring Boot Starters -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- OpenFrame Dependencies -->
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-api-lib</artifactId>
-        </dependency>
-
-        <!-- Spring Cloud Config -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
-        </dependency>
-
-        <!-- HTTP Client -->
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-        </dependency>
-
-        <!-- Swagger/OpenAPI Documentation -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version>
         </dependency>
     </dependencies>
 </project>
