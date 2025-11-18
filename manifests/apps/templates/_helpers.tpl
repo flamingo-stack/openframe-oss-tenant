@@ -49,7 +49,7 @@ Rules:
   true
 {{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
   true
-{{- else if and $saas (or (and (eq $environment "stage") (eq $name "openframe-gateway")) (and (eq $environment "stage") (eq $name "openframe-external-api")) (and (eq $environment "stage") (eq $name "openframe-stream")) (eq $name "openframe-config") (eq $name "openframe-client") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
+{{- else if and $saas (or (and (eq $vals.environment "stage") (eq $name "openframe-gateway")) (and (eq $vals.environment "stage") (eq $name "openframe-external-api")) (and (eq $vals.environment "stage") (eq $name "openframe-stream")) (eq $name "openframe-config") (eq $name "openframe-client") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
   true
 {{- else if and $saas $saasGcp (eq $name "ingress-nginx") }}
   true
