@@ -118,7 +118,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         desktop.detach()
       }
     }
-  }, [isPageReady, currentDisplay])
+  }, [isPageReady])
 
   useEffect(() => {
     if (!isPageReady || !meshcentralAgentId || initializingRef.current) return

@@ -191,7 +191,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const initBuffer = new Uint8Array(8)
     const initView = new DataView(initBuffer.buffer)
     initView.setUint16(0, 0x000E, false)  // Command: KVM_INIT
-    initView.setUint16(2, 0x0004, false)  // Size: 4 bytes
+    initView.setUint16(2, 0x0008, false)  // Size: 8 bytes total
     initView.setUint32(4, 0, false)       // Flags: 0 for normal mode
     this.send(initBuffer)
     
@@ -199,7 +199,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const compBuffer = new Uint8Array(10)
     const compView = new DataView(compBuffer.buffer)
     compView.setUint16(0, 0x0005, false)  // Command: COMPRESSION
-    compView.setUint16(2, 0x0006, false)  // Size: 6 bytes
+    compView.setUint16(2, 0x000A, false)  // Size: 10 bytes total
     compView.setUint8(4, 1)               // Type: 1=JPEG, 2=PNG, 3=TIFF, 4=WebP
     compView.setUint8(5, 50)              // Quality: 1-100 (50 recommended)
     compView.setUint16(6, 1024, false)    // Scaling: 1024=100%, 512=50%
@@ -210,7 +210,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const unpauseBuffer = new Uint8Array(5)
     const unpauseView = new DataView(unpauseBuffer.buffer)
     unpauseView.setUint16(0, 0x0008, false)  // Command: PAUSE
-    unpauseView.setUint16(2, 0x0001, false)  // Size: 1 byte
+    unpauseView.setUint16(2, 0x0005, false)  // Size: 5 bytes total
     unpauseView.setUint8(4, 0)               // 0=unpause, 1=pause
     this.send(unpauseBuffer)
     
@@ -218,7 +218,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const refreshBuffer = new Uint8Array(4)
     const refreshView = new DataView(refreshBuffer.buffer)
     refreshView.setUint16(0, 0x0006, false)  // Command: REFRESH
-    refreshView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    refreshView.setUint16(2, 0x0004, false)  // Size: 4 bytes total
     this.send(refreshBuffer)
     
     // Command 5: Request Display List for Multiscreen Support
@@ -475,7 +475,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const refreshBuffer = new Uint8Array(4)
     const refreshView = new DataView(refreshBuffer.buffer)
     refreshView.setUint16(0, 0x0006, false)  // Command: REFRESH
-    refreshView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    refreshView.setUint16(2, 0x0004, false)  // Size: 4 bytes total
     this.send(refreshBuffer)
   }
   
@@ -484,19 +484,38 @@ export class MeshDesktop implements DesktopInputHandlers {
     const displayListBuffer = new Uint8Array(4)
     const displayListView = new DataView(displayListBuffer.buffer)
     displayListView.setUint16(0, 0x000B, false)  // Command: DISPLAY_LIST
-    displayListView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    displayListView.setUint16(2, 0x0004, false)  // Size: 4 bytes total
     this.send(displayListBuffer)
   }
   
   switchDisplay(displayId: number) {
-    // Command 12 (0x000C): Switch Display
+    // Pause the current stream
+    const pauseBuffer = new Uint8Array(5)
+    const pauseView = new DataView(pauseBuffer.buffer)
+    pauseView.setUint16(0, 0x0008, false)  // Command: PAUSE
+    pauseView.setUint16(2, 0x0005, false)  // Size: 5 bytes
+    pauseView.setUint8(4, 1)               // 1=pause
+    this.send(pauseBuffer)
+    
+    // Switch display
     const switchBuffer = new Uint8Array(6)
     const switchView = new DataView(switchBuffer.buffer)
     switchView.setUint16(0, 0x000C, false)  // Command: SWITCH_DISPLAY
-    switchView.setUint16(2, 0x0002, false)  // Size: 2 bytes
+    switchView.setUint16(2, 0x0006, false)  // Size: 6 bytes
     switchView.setUint16(4, displayId, false)  // Display ID
     this.send(switchBuffer)
     this.currentDisplay = displayId
+    
+    // Unpause the stream
+    const unpauseBuffer = new Uint8Array(5)
+    const unpauseView = new DataView(unpauseBuffer.buffer)
+    unpauseView.setUint16(0, 0x0008, false)  // Command: PAUSE
+    unpauseView.setUint16(2, 0x0005, false)  // Size: 5 bytes
+    unpauseView.setUint8(4, 0)               // 0=unpause
+    this.send(unpauseBuffer)
+    
+    // Refresh after switching
+    this.requestRefresh()
   }
   
   getDisplayList(): DisplayInfo[] {
@@ -789,36 +808,87 @@ export class MeshDesktop implements DesktopInputHandlers {
     // Display List Response Format (from Command 11):
     // Bytes 0-3: Standard header (cmd=11, size)
     // Bytes 4-5: Number of displays (uint16, big-endian)
-    // For each display (8 bytes):
-    //   Bytes 0-1: Display ID (uint16, big-endian)
-    //   Bytes 2-3: X position (uint16, big-endian)
-    //   Bytes 4-5: Y position (uint16, big-endian) 
-    //   Bytes 6-7: Flags (uint16, big-endian) - bit 0 = primary display
+    // Then variable format based on data size
     if (frame.length < 6) return
-
-    console.log({frame})
     
     const displayCount = (frame[4] << 8) | frame[5]
     const displays: DisplayInfo[] = []
     
-    for (let i = 0; i < displayCount && (6 + i * 8 + 8) <= frame.length; i++) {
-      const offset = 6 + i * 8
-      const id = (frame[offset] << 8) | frame[offset + 1]
-      const x = (frame[offset + 2] << 8) | frame[offset + 3]
-      const y = (frame[offset + 4] << 8) | frame[offset + 5]
-      const flags = (frame[offset + 6] << 8) | frame[offset + 7]
-      
-      displays.push({
-        id,
-        x,
-        y,
-        w: 0, // Width/height will be updated by Command 82 responses
-        h: 0,
-        primary: (flags & 1) === 1
-      })
+    const dataBytes = frame.length - 6
+    const bytesPerDisplay = displayCount > 0 ? Math.floor(dataBytes / displayCount) : 0
+    
+    if (bytesPerDisplay === 2 || bytesPerDisplay === 4) {
+      // Simple format: just display IDs (2 bytes) or IDs + current display marker (4 bytes)
+      for (let i = 0; i < displayCount; i++) {
+        const offset = 6 + i * bytesPerDisplay
+        if (offset + 2 > frame.length) break
+        
+        const id = (frame[offset] << 8) | frame[offset + 1]
+        
+        // 0xFFFF (65535) represents "all displays" view
+        if (id === 0xFFFF) {
+          // Add "all displays" as display ID 0
+          const display = {
+            id: 0,
+            x: 0,
+            y: 0,
+            w: 0,
+            h: 0,
+            primary: false
+          }
+          displays.push(display)
+          continue
+        }
+        
+        // For 4-byte format, bytes 2-3 might indicate current/primary display
+        let isPrimary = i === 0 // Default: first display is primary
+        if (bytesPerDisplay === 4 && offset + 4 <= frame.length) {
+          const flags = (frame[offset + 2] << 8) | frame[offset + 3]
+          isPrimary = flags === 0xFFFF || flags === 1
+        }
+        
+        const display = {
+          id,
+          x: 0,
+          y: 0,
+          w: 0,
+          h: 0,
+          primary: isPrimary
+        }
+        
+        displays.push(display)
+      }
+    } else if (bytesPerDisplay >= 8) {
+      // Full format with position data (8+ bytes per display)
+      for (let i = 0; i < displayCount; i++) {
+        const offset = 6 + i * bytesPerDisplay
+        if (offset + 8 > frame.length) break
+        
+        const id = (frame[offset] << 8) | frame[offset + 1]
+        const x = (frame[offset + 2] << 8) | frame[offset + 3]
+        const y = (frame[offset + 4] << 8) | frame[offset + 5]
+        
+        let w = 0, h = 0, flags = 0
+        if (bytesPerDisplay >= 12) {
+          w = (frame[offset + 6] << 8) | frame[offset + 7]
+          h = (frame[offset + 8] << 8) | frame[offset + 9]
+          flags = (frame[offset + 10] << 8) | frame[offset + 11]
+        } else {
+          flags = (frame[offset + 6] << 8) | frame[offset + 7]
+        }
+        
+        const display = {
+          id,
+          x,
+          y,
+          w,
+          h,
+          primary: (flags & 1) === 1
+        }
+        
+        displays.push(display)
+      }
     }
-
-    console.log({displays});
     
     this.displayList = displays
     if (this.onDisplayListCallback) {
@@ -844,7 +914,6 @@ export class MeshDesktop implements DesktopInputHandlers {
     const height = (frame[12] << 8) | frame[13]
     const flags = (frame[14] << 8) | frame[15]
     
-    // Update existing display in the list or add new one
     const existingIndex = this.displayList.findIndex(d => d.id === displayId)
     const displayInfo: DisplayInfo = {
       id: displayId,
@@ -866,5 +935,3 @@ export class MeshDesktop implements DesktopInputHandlers {
     }
   }
 }
-
-
