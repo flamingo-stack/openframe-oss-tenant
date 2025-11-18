@@ -5,6 +5,7 @@ metadata:
   name: openframe-config
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: openframe-config
@@ -25,6 +26,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: openframe-config
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "{{ .Values.deployment.oss.repository.profile }}"
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml

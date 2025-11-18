@@ -1,0 +1,149 @@
+server:
+  port: 8097
+
+spring:
+  main:
+    web-application-type: servlet
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.cassandra.CassandraHealthContributorAutoConfiguration
+  data:
+    mongodb:
+      enabled: true
+    cassandra:
+      enabled: false
+  redis:
+    enabled: true
+    timeout: 2000
+    connect-timeout: 2000
+    lettuce:
+      shutdown-timeout: 2000ms
+      pool:
+        enabled: true
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 1000ms
+    client-type: lettuce
+  oss-tenant:
+    kafka:
+      bootstrap-servers: kafka.datasources.svc.cluster.local:9092
+      enabled: true
+  cloud:
+    config:
+      fail-fast: false
+    function:
+      definition: machineConnectedConsumer;machineDisconnectionConsumer;toolConnectionConsumer
+    stream:
+      enabled: true
+      bindings:
+        machineConnectedConsumer-in-0:
+          destination: $SYS.ACCOUNT.DEVICES.CONNECT
+          group: client-service-machine-connected
+          content-type: application/json
+        machineDisconnectionConsumer-in-0:
+          destination: $SYS.ACCOUNT.DEVICES.DISCONNECT
+          group: client-service-machine-disconnected
+          content-type: application/json
+        toolConnectionConsumer-in-0:
+          destination: machine.*.tool-connection
+          group: client-service-machine-tool-connection
+          content-type: application/json
+      binders:
+        nats:
+          type: nats
+      default-binder: nats
+
+management:
+  server:
+    port: 8102
+  endpoints:
+    web:
+      base-path: /management/v1
+  endpoint:
+    health:
+      show-details: always
+      group:
+        readiness:
+          include: mongo,redis
+          show-details: always
+        liveness:
+          include: ping
+          show-details: always
+
+nats:
+  spring:
+    server: nats://nats.datasources.svc.cluster.local:4222
+    username: service
+    password: service_pass
+    connection-timeout: 30s
+    max-reconnect: -1
+    reconnect-wait: 5s
+    ping-interval: 30s
+    no-echo: true
+
+jwt:
+  issuer: https://auth.openframe.com
+  audience: openframe-client
+  publicKey:
+    value: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2hOutXmTOhEp7FHCXRpn
+      6rkyeQRStHcNe5GF/+6fejfP7N4lIAe33YGyrlLB8++p2/RcWYd6ZBNb7mYX/XaI
+      cRpsgraHxMjsQ8Lyio8QkuDX7HFzW5W4MFGMSBYv8zK95FNPGGK2LEdRf+DtaYzk
+      XpqrkJTgfw7jFqEVCiC9Eg6ryHO0UppDjb8ho2XZIpWgAcW4Qf+iXaRWCR+FN4tR
+      9LF/vBmqH13CQD9jazqSTR5mMp9ih9sG0SqEAYxAhENXtLjf+yH2uDplu0RaFkuv
+      ec8Qg5aglrDzTK4wpF1avJXCmndDt2VbfMMCehiLI31LPm8qNoJo87KF71gvE+kW
+      cQIDAQAB
+      -----END PUBLIC KEY-----
+  privateKey:
+    value: |
+      -----BEGIN PRIVATE KEY-----
+      MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDaE661eZM6ESns
+      UcJdGmfquTJ5BFK0dw17kYX/7p96N8/s3iUgB7fdgbKuUsHz76nb9FxZh3pkE1vu
+      Zhf9dohxGmyCtofEyOxDwvKKjxCS4NfscXNblbgwUYxIFi/zMr3kU08YYrYsR1F/
+      4O1pjORemquQlOB/DuMWoRUKIL0SDqvIc7RSmkONvyGjZdkilaABxbhB/6JdpFYJ
+      H4U3i1H0sX+8GaofXcJAP2NrOpJNHmYyn2KH2wbRKoQBjECEQ1e0uN/7Ifa4OmW7
+      RFoWS695zxCDlqCWsPNMrjCkXVq8lcKad0O3ZVt8wwJ6GIsjfUs+byo2gmjzsoXv
+      WC8T6RZxAgMBAAECggEAGsiuaAaJtmjeQR1HkGofrOdYaMmcTiLjH96fL8Wt255t
+      kKuLXBQ77l4xb7ylVUxbDIibgQ7P0ZPDx5N4IH7Fl5KbFNt4mwrhuG7XSCegbacP
+      jgWJxAwERmxK8khF/7TR4sWioh2ZlKBLxQzUoTvsiSauVKscVC6kEHxHRRUBSRgU
+      bW+yj6ZzMzA7Eh12JnnYSJDt5IFvNC3Isx/L/xlEsSId4AE5YQDWZeM+9C0pD9Xi
+      aVaF4CZZQo7S3yJzHOBw3GbMJzw04ZuVvpQndgTd8AKOPD4wJQWT08LMq+s1hXT8
+      GIJ5mGrQnw9S7AZDN9dPOL0XjR//4VjACOv64nLCywKBgQD3M9dVI4bc6Y5QKc4+
+      iefeh13GPK9DOS+EjGNlyOuwmamdIn2TXxBq3kQn2hfRt8aP6pJUJllc/paOQKwo
+      Kj9BXeE3MRgP0F/e+M+F8BCR5tVlFz/Tsh6O1KEBFHnqeVebBhiq94Ohd66LLJ9k
+      88bdAlbXKtPledT8I4YnyMD5fwKBgQDh1n1tE6ODFgw+0uiuXWqbr8Rsdwlcgncy
+      aMBJC99mVbWqNOyMJSRhV0u4Fubo5qtEtHw/prYZ78Arpx/rQMWlvCfxXbo9Dzkx
+      Jwk/pKYYxS8q6weReFLHEBbMV0OmLpXm0gaRqRoZVNeXvMs5QVTaMDuIjMOa6QdY
+      AuUR1XGIDwKBgB3164hHGQZXTEdM+dE8l5yx3Vy0aC2GlcrD1Rw2ANLTnOoNjxi4
+      cd3x+GK4HSDu3CL/NCL8zuHlfUvabMMlc6sxfKVazubDw4rbrxM1qFx2lLB+4959
+      fRSkkqr111zivgps77pw60Q7pCz8CImMvjJ1IR9M8oeif3zbtVvHChRzAoGBAIix
+      vzFqlaoeikLsfhIsUP7zIL1WP8BS57sHVHviR9I1RsRDTHp3cNHKePZwRkvqcvgf
+      FqWgTtDcIUFK4zMN/ZQXk0WxKa0TrdZmfl6bVj3f/HDJ2cbfQZtjzajZmQTZZbpU
+      nc1EwZtbkzMw/wEk3itCzoYUTcFSEzPebLCitRlZAoGBAMiJvEEuXOnRR/8M2znW
+      RW8sW+h2Y7z4VyCUe0uWcwQ8m9SSIvxGrQScBAgSFIvucH2O2ViXXPL9ysiKvDab
+      M1L84p9zp0LUoEKCkInzRxey0rPLjRSiYRoqiJpSXisX4uUZ8H/paG17p9vNRYM8
+      WCF8tQL1/DdeHALwemnWrgyc
+      -----END PRIVATE KEY-----
+
+oauth:
+  client:
+    default:
+      grant-types:
+        - client_credentials
+      scopes:
+        - agent
+
+openframe:
+  oss-tenant:
+    kafka:
+      topics:
+        outbound:
+          devices-topic: devices-topic
+  integration:
+    tool:
+      enabled: true

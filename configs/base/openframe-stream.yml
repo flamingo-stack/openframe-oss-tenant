@@ -1,0 +1,63 @@
+# Stream service common configuration
+server:
+  port: 8082
+
+# Management server configuration
+management:
+  server:
+    port: 8083
+
+spring:
+  data:
+    redis:
+      host: redis-master.datasources.svc.cluster.local
+      port: 6379
+    mongodb:
+      enabled: true
+    cassandra:
+      enabled: true
+  autoconfigure:
+    exclude:
+      - org.apache.pinot.client.PinotClientAutoConfiguration
+      - org.apache.pinot.spring.boot.PinotAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+  redis:
+    enabled: true
+  oss-tenant:
+    kafka:
+      enabled: true
+      bootstrap-servers: kafka.datasources.svc.cluster.local:9092
+      producer:
+        client-id: oss-tenant-producer
+      consumer:
+        auto-offset-reset: earliest
+        group-id: openframe-oss-tenant-stream
+        properties:
+          spring.json.trusted.packages: "com.openframe.kafka.model.*"
+  cloud:
+    config:
+      fail-fast: false
+# Fleet MDM Configuration
+fleet:
+  mdm:
+    # Base URL for Fleet MDM server
+    base-url: http://fleetmdm-server.integrated-tools.svc.cluster.local:8070
+
+openframe:
+  oss-tenant:
+    kafka:
+      topics:
+        inbound:
+          meshcentral-events: meshcentral.mongodb.events
+          tactical-rmm-events: tactical-rmm.postgres.events
+          fleet-mdm-events: fleet.mysql.events
+          fleet-mdm-activities: fleet.activities.events
+          fleet-mdm-host-activities: fleet.host_activities.events
+          fleet-mdm-query-result-events: fleet.query_results.events
+        outbound:
+          integrated-tool-events: integrated-tool.events.pinot
+  integration:
+    tool:
+      enabled: true

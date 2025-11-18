@@ -23,7 +23,7 @@ export function DevicesOverviewSection() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <DashboardInfoCard
-          title="Active Devices"
+          title="Online"
           value={devices.active}
           percentage={devices.activePercentage}
           showProgress
@@ -32,7 +32,7 @@ export function DevicesOverviewSection() {
           className="cursor-pointer hover:bg-ods-bg-hover"
         />
         <DashboardInfoCard
-          title="Inactive"
+          title="Offline"
           value={devices.inactive}
           percentage={devices.inactivePercentage}
           showProgress

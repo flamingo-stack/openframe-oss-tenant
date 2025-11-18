@@ -45,7 +45,7 @@ spec:
                   "toolUrls": [
                     {
                       "url": "http://openframe-config.microservices.svc.cluster.local",
-                      "port": "8090",
+                      "port": "8888",
                       "type": "API"
                     }
                   ],

@@ -1,4 +1,3 @@
-// services/openframe-stream/src/main/java/com/openframe/stream/StreamApplication.java
 package com.openframe.stream;
 
 import org.springframework.boot.SpringApplication;

@@ -5,6 +5,7 @@ metadata:
 spec:
   serviceName: meshcentral-mongodb
   replicas: 1
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: meshcentral-mongodb

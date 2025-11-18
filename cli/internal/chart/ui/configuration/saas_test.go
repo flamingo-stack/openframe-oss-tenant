@@ -98,9 +98,6 @@ func TestConfigurationWizard_SaaSBranchExtraction(t *testing.T) {
 					"password": "hidden",
 					"url":      "https://github.com/org/saas-repo.git",
 				},
-				"config": map[string]interface{}{
-					"password": "config-pass",
-				},
 			},
 			"oss": map[string]interface{}{
 				"enabled": false,

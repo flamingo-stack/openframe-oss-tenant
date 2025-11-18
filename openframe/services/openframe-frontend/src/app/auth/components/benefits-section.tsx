@@ -55,15 +55,29 @@ export function AuthBenefitsSection() {
         })
         setEmail('')
       } else {
-        throw new Error('Failed to join waitlist')
+        const errorData = await response.json()
+        
+        if (errorData.code === 'DUPLICATE_EMAIL') {
+          toast({
+            title: "Already Registered",
+            description: "This email is already on the waitlist",
+            variant: "info",
+            duration: 5000
+          })
+          return
+        }
+        
+        throw new Error(errorData.error || 'Failed to join waitlist')
       }
     } catch (error) {
-      toast({
-        title: "Submission Failed",
-        description: "Unable to join the waitlist. Please try again later.",
-        variant: "destructive",
-        duration: 5000
-      })
+      if (error instanceof Error && !error.message.includes('DUPLICATE_EMAIL')) {
+        toast({
+          title: "Submission Failed",
+          description: "Unable to join the waitlist. Please try again later.",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
     } finally {
       setIsSubmitting(false)
     }
