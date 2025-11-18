@@ -39,8 +39,8 @@ openframe:
 
   sso:
     google:
-      registration-redirect-uri: "https://localhost/sas/register/login/oauth2/code/google"
-      login-redirect-uri: "https://localhost/sas/login/oauth2/code/google"
+      registration-redirect-uri: "${TENANT_HOST_URL:https://localhost}/sas/register/login/oauth2/code/google"
+      login-redirect-uri: "${TENANT_HOST_URL:https://localhost}/sas/login/oauth2/code/google"
       authorization-url: https://accounts.google.com/o/oauth2/v2/auth
       token-url: https://oauth2.googleapis.com/token
       user-info-url: https://openidconnect.googleapis.com/v1/userinfo
@@ -51,7 +51,7 @@ openframe:
         - profile
         - email
     microsoft:
-      login-redirect-uri: "https://localhost/sas/login/oauth2/code/microsoft"
+      login-redirect-uri: "${TENANT_HOST_URL:https://localhost}/sas/login/oauth2/code/microsoft"
 
       # Tenant-specific (will be used when msTenantId is present in sso_configs)
       authorization-url: "https://login.microsoftonline.com/{msTenantId}/oauth2/v2.0/authorize"
