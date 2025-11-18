@@ -20,6 +20,7 @@ export interface OrganizationEntry {
   mrrUsd: number
   contractDue: string
   lastActivity: string
+  imageUrl?: string | null
 }
 
 export interface OrganizationsState {

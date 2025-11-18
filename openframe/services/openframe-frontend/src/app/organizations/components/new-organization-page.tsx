@@ -9,6 +9,7 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { useCreateOrganization } from '../hooks/use-create-organization'
 import { useOrganizationDetails } from '../hooks/use-organization-details'
 import { useUpdateOrganization } from '../hooks/use-update-organization'
+import { apiClient } from '@lib/api-client'
 
 interface NewOrganizationPageProps {
   organizationId: string | null
@@ -64,7 +65,8 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         website: organization.website || '',
         contractStart: organization.contractStart ? new Date(organization.contractStart).toISOString().slice(0, 10) : '',
         contractEnd: organization.contractEnd ? new Date(organization.contractEnd).toISOString().slice(0, 10) : '',
-        notes: (organization.notes || []).join('\n')
+        notes: (organization.notes || []).join('\n'),
+        imageUrl: organization.imageUrl || undefined
       }))
 
       setContact((prev) => ({
@@ -148,10 +150,38 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         contractEndDate: general.contractEnd || undefined
       }
 
+      let createdOrganizationId: string | null = null
+
       if (organizationId) {
         await updateOrganization(organizationId, payload)
       } else {
-        await createOrganization(payload)
+        const response = await createOrganization(payload)
+        createdOrganizationId = response?.organizationId || response?.id || null
+      }
+
+      if (!organizationId && createdOrganizationId && general.logoUrl && general.logoUrl.startsWith('data:')) {
+        try {
+          const response = await fetch(general.logoUrl)
+          const blob = await response.blob()
+          
+          const formData = new FormData()
+          formData.append('file', blob, 'logo.png')
+          
+          const uploadResponse = await apiClient.request(`/organizations/${createdOrganizationId}/image`, {
+            method: 'POST',
+            body: formData
+          })
+
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to upload logo')
+          }
+        } catch (imageError) {
+          toast({ 
+            title: 'Warning', 
+            description: 'Organization was created but logo upload failed', 
+            variant: 'warning' 
+          })
+        }
       }
 
       toast({ title: organizationId ? 'Organization updated' : 'Organization created', description: `${general.name} has been ${organizationId ? 'updated' : 'created'}` })
@@ -186,7 +216,11 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
           {(activeTab) => (
             <>
               {activeTab === 'general' && (
-                <GeneralInformationTab value={general} onChange={setGeneral} />
+                <GeneralInformationTab 
+                  value={general} 
+                  onChange={setGeneral} 
+                  organizationId={organization?.organizationId || undefined}
+                />
               )}
 
               {activeTab === 'contact' && (
