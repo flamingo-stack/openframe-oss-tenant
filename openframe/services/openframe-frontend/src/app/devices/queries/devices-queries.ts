@@ -57,6 +57,9 @@ export const GET_DEVICES_QUERY = `
             id
             organizationId
             name
+            image {
+              imageUrl
+            }
           }
           serialNumber
           manufacturer
@@ -125,6 +128,9 @@ export const GET_DEVICE_QUERY = `
         id
         organizationId
         name
+        image {
+          imageUrl
+        }
       }
       serialNumber
       manufacturer
@@ -155,6 +161,14 @@ export const GET_DEVICE_QUERY = `
         connectedAt
         lastSyncAt
         disconnectedAt
+      }
+      installedAgents {
+        id
+        machineId
+        agentType
+        version
+        createdAt
+        updatedAt
       }
     }
   }

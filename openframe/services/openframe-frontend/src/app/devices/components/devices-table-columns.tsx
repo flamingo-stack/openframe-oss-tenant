@@ -5,6 +5,7 @@ import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
+import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area
 export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode) {
@@ -19,7 +20,31 @@ export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode
   return DeviceRowActions
 }
 
-export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[] {
+function OrganizationCell({ device, fetchedImageUrls }: { 
+  device: Device; 
+  fetchedImageUrls: Record<string, string | undefined>; 
+}) {
+  const fetchedImageUrl = device.organizationImageUrl ? fetchedImageUrls[device.organizationImageUrl] : undefined
+  
+  return (
+    <div className="flex items-center gap-3">
+      {featureFlags.organizationImages.displayEnabled() && fetchedImageUrl && (
+        <img 
+          src={fetchedImageUrl} 
+          alt={device.organization || 'Organization'}
+          className="w-8 h-8 object-cover rounded-md border border-ods-border flex-shrink-0"
+        />
+      )}
+      <div className="flex flex-col justify-center flex-1 min-w-0">
+        <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
+          {device.organization || ''}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Record<string, string | undefined> = {}): TableColumn<Device>[] {
   return [
     {
       key: 'device',
@@ -94,13 +119,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
         label: org.label,
         value: org.value
       })) || [],
-      renderCell: (device) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-            {device.organization ||''}
-          </span>
-        </div>
-      )
+      renderCell: (device) => <OrganizationCell device={device} fetchedImageUrls={fetchedImageUrls} />
     }
   ]
 }

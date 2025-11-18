@@ -17,6 +17,9 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
         monthlyRevenue
         contractStartDate
         contractEndDate
+        image {
+          imageUrl
+        }
         createdAt
         updatedAt
       }
@@ -71,6 +74,9 @@ export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
           postalCode
           country
         }
+      }
+      image {
+        imageUrl
       }
       monthlyRevenue
       contractStartDate
