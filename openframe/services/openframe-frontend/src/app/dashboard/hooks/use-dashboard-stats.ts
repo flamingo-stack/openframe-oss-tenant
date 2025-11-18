@@ -35,7 +35,7 @@ export function useDevicesOverview() {
         const total = devRes.data?.data?.deviceFilters?.filteredCount || 0
         const statuses = devRes.data?.data?.deviceFilters?.statuses || []
         const active = statuses
-          .filter(s => ['ACTIVE', 'ONLINE'].includes((s.value || '').toUpperCase()))
+          .filter(s => ['ONLINE'].includes((s.value || '').toUpperCase()))
           .reduce((sum, s) => sum + (s.count || 0), 0)
         const inactive = Math.max(0, total - active)
 

@@ -14,6 +14,8 @@ import { useDebounce } from "@flamingo/ui-kit/hooks"
 import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
+import { useBatchImages } from '@lib/batch-image-fetcher'
+import { featureFlags } from '@lib/feature-flags'
 
 export function DevicesView() {
   const router = useRouter()
@@ -25,7 +27,15 @@ export function DevicesView() {
   const { devices, deviceFilters, isLoading, error, searchDevices, pageInfo, fetchNextPage, fetchFirstPage, hasLoadedBeyondFirst } = useDevices(filters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
-  const columns = useMemo(() => getDeviceTableColumns(deviceFilters), [deviceFilters])
+  const organizationImageUrls = useMemo(() => 
+    featureFlags.organizationImages.displayEnabled()
+      ? devices.map(device => device.organizationImageUrl).filter(Boolean)
+      : [], 
+    [devices]
+  )
+  const fetchedImageUrls = useBatchImages(organizationImageUrls)
+
+  const columns = useMemo(() => getDeviceTableColumns(deviceFilters, fetchedImageUrls), [deviceFilters, fetchedImageUrls])
 
   const renderRowActions = useMemo(
     () => getDeviceTableRowActions(),

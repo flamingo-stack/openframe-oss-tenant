@@ -1,3 +1,12 @@
+export interface DisplayInfo {
+  id: number
+  x: number
+  y: number
+  w: number
+  h: number
+  primary: boolean
+}
+
 export type DesktopInputHandlers = {
   attach(canvas: HTMLCanvasElement): void
   detach(): void
@@ -5,6 +14,10 @@ export type DesktopInputHandlers = {
   sendCtrlAltDel?(): void
   sendKeyCombo?(combo: string): void
   requestRefresh?(): void
+  requestDisplayList?(): void
+  switchDisplay?(displayId: number): void
+  getDisplayList?(): DisplayInfo[]
+  onDisplayListChange?(callback: (displays: DisplayInfo[]) => void): void
 }
 
 export class MeshDesktop implements DesktopInputHandlers {
@@ -29,6 +42,10 @@ export class MeshDesktop implements DesktopInputHandlers {
   private readonly maxConcurrentDecodes = 3
   private drawQueue: Array<{ x: number; y: number; bitmap: ImageBitmap | HTMLImageElement; url?: string }> = []
   private drawScheduled = false
+  
+  private displayList: DisplayInfo[] = []
+  private currentDisplay = 0
+  private onDisplayListCallback: ((displays: DisplayInfo[]) => void) | null = null
 
   attach(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -174,7 +191,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const initBuffer = new Uint8Array(8)
     const initView = new DataView(initBuffer.buffer)
     initView.setUint16(0, 0x000E, false)  // Command: KVM_INIT
-    initView.setUint16(2, 0x0004, false)  // Size: 4 bytes
+    initView.setUint16(2, 0x0008, false)  // Size: 8 bytes total
     initView.setUint32(4, 0, false)       // Flags: 0 for normal mode
     this.send(initBuffer)
     
@@ -182,7 +199,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const compBuffer = new Uint8Array(10)
     const compView = new DataView(compBuffer.buffer)
     compView.setUint16(0, 0x0005, false)  // Command: COMPRESSION
-    compView.setUint16(2, 0x0006, false)  // Size: 6 bytes
+    compView.setUint16(2, 0x000A, false)  // Size: 10 bytes total
     compView.setUint8(4, 1)               // Type: 1=JPEG, 2=PNG, 3=TIFF, 4=WebP
     compView.setUint8(5, 50)              // Quality: 1-100 (50 recommended)
     compView.setUint16(6, 1024, false)    // Scaling: 1024=100%, 512=50%
@@ -193,7 +210,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     const unpauseBuffer = new Uint8Array(5)
     const unpauseView = new DataView(unpauseBuffer.buffer)
     unpauseView.setUint16(0, 0x0008, false)  // Command: PAUSE
-    unpauseView.setUint16(2, 0x0001, false)  // Size: 1 byte
+    unpauseView.setUint16(2, 0x0005, false)  // Size: 5 bytes total
     unpauseView.setUint8(4, 0)               // 0=unpause, 1=pause
     this.send(unpauseBuffer)
     
@@ -201,8 +218,11 @@ export class MeshDesktop implements DesktopInputHandlers {
     const refreshBuffer = new Uint8Array(4)
     const refreshView = new DataView(refreshBuffer.buffer)
     refreshView.setUint16(0, 0x0006, false)  // Command: REFRESH
-    refreshView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    refreshView.setUint16(2, 0x0004, false)  // Size: 4 bytes total
     this.send(refreshBuffer)
+    
+    // Command 5: Request Display List for Multiscreen Support
+    this.requestDisplayList()
   }
 
   private send(bytes: Uint8Array) {
@@ -455,8 +475,55 @@ export class MeshDesktop implements DesktopInputHandlers {
     const refreshBuffer = new Uint8Array(4)
     const refreshView = new DataView(refreshBuffer.buffer)
     refreshView.setUint16(0, 0x0006, false)  // Command: REFRESH
-    refreshView.setUint16(2, 0x0000, false)  // Size: 0 bytes
+    refreshView.setUint16(2, 0x0004, false)  // Size: 4 bytes total
     this.send(refreshBuffer)
+  }
+  
+  requestDisplayList() {
+    // Command 11 (0x000B): Request Display List
+    const displayListBuffer = new Uint8Array(4)
+    const displayListView = new DataView(displayListBuffer.buffer)
+    displayListView.setUint16(0, 0x000B, false)  // Command: DISPLAY_LIST
+    displayListView.setUint16(2, 0x0004, false)  // Size: 4 bytes total
+    this.send(displayListBuffer)
+  }
+  
+  switchDisplay(displayId: number) {
+    // Pause the current stream
+    const pauseBuffer = new Uint8Array(5)
+    const pauseView = new DataView(pauseBuffer.buffer)
+    pauseView.setUint16(0, 0x0008, false)  // Command: PAUSE
+    pauseView.setUint16(2, 0x0005, false)  // Size: 5 bytes
+    pauseView.setUint8(4, 1)               // 1=pause
+    this.send(pauseBuffer)
+    
+    // Switch display
+    const switchBuffer = new Uint8Array(6)
+    const switchView = new DataView(switchBuffer.buffer)
+    switchView.setUint16(0, 0x000C, false)  // Command: SWITCH_DISPLAY
+    switchView.setUint16(2, 0x0006, false)  // Size: 6 bytes
+    switchView.setUint16(4, displayId, false)  // Display ID
+    this.send(switchBuffer)
+    this.currentDisplay = displayId
+    
+    // Unpause the stream
+    const unpauseBuffer = new Uint8Array(5)
+    const unpauseView = new DataView(unpauseBuffer.buffer)
+    unpauseView.setUint16(0, 0x0008, false)  // Command: PAUSE
+    unpauseView.setUint16(2, 0x0005, false)  // Size: 5 bytes
+    unpauseView.setUint8(4, 0)               // 0=unpause
+    this.send(unpauseBuffer)
+    
+    // Refresh after switching
+    this.requestRefresh()
+  }
+  
+  getDisplayList(): DisplayInfo[] {
+    return this.displayList
+  }
+  
+  onDisplayListChange(callback: (displays: DisplayInfo[]) => void) {
+    this.onDisplayListCallback = callback
   }
   
   sendKeyCombo(combo: string) {
@@ -656,6 +723,12 @@ export class MeshDesktop implements DesktopInputHandlers {
               this.tileQueue.push({ x: fx, y: fy, bytes: bytesCopy })
             }
           }
+        } else if (cmd === 11) {
+          // Command 11: Display List Response
+          this.parseDisplayList(frame)
+        } else if (cmd === 82) {
+          // Command 82: Display Location Info
+          this.parseDisplayLocationInfo(frame)
         }
 
         offset += headerSkip + totalSize
@@ -730,6 +803,135 @@ export class MeshDesktop implements DesktopInputHandlers {
       }
     })
   }
+  
+  private parseDisplayList(frame: Uint8Array) {
+    // Display List Response Format (from Command 11):
+    // Bytes 0-3: Standard header (cmd=11, size)
+    // Bytes 4-5: Number of displays (uint16, big-endian)
+    // Then variable format based on data size
+    if (frame.length < 6) return
+    
+    const displayCount = (frame[4] << 8) | frame[5]
+    const displays: DisplayInfo[] = []
+    
+    const dataBytes = frame.length - 6
+    const bytesPerDisplay = displayCount > 0 ? Math.floor(dataBytes / displayCount) : 0
+    
+    if (bytesPerDisplay === 2 || bytesPerDisplay === 4) {
+      // Simple format: just display IDs (2 bytes) or IDs + current display marker (4 bytes)
+      for (let i = 0; i < displayCount; i++) {
+        const offset = 6 + i * bytesPerDisplay
+        if (offset + 2 > frame.length) break
+        
+        const id = (frame[offset] << 8) | frame[offset + 1]
+        
+        // 0xFFFF (65535) represents "all displays" view
+        if (id === 0xFFFF) {
+          // Add "all displays" as display ID 0
+          const display = {
+            id: 0,
+            x: 0,
+            y: 0,
+            w: 0,
+            h: 0,
+            primary: false
+          }
+          displays.push(display)
+          continue
+        }
+        
+        // For 4-byte format, bytes 2-3 might indicate current/primary display
+        let isPrimary = i === 0 // Default: first display is primary
+        if (bytesPerDisplay === 4 && offset + 4 <= frame.length) {
+          const flags = (frame[offset + 2] << 8) | frame[offset + 3]
+          isPrimary = flags === 0xFFFF || flags === 1
+        }
+        
+        const display = {
+          id,
+          x: 0,
+          y: 0,
+          w: 0,
+          h: 0,
+          primary: isPrimary
+        }
+        
+        displays.push(display)
+      }
+    } else if (bytesPerDisplay >= 8) {
+      // Full format with position data (8+ bytes per display)
+      for (let i = 0; i < displayCount; i++) {
+        const offset = 6 + i * bytesPerDisplay
+        if (offset + 8 > frame.length) break
+        
+        const id = (frame[offset] << 8) | frame[offset + 1]
+        const x = (frame[offset + 2] << 8) | frame[offset + 3]
+        const y = (frame[offset + 4] << 8) | frame[offset + 5]
+        
+        let w = 0, h = 0, flags = 0
+        if (bytesPerDisplay >= 12) {
+          w = (frame[offset + 6] << 8) | frame[offset + 7]
+          h = (frame[offset + 8] << 8) | frame[offset + 9]
+          flags = (frame[offset + 10] << 8) | frame[offset + 11]
+        } else {
+          flags = (frame[offset + 6] << 8) | frame[offset + 7]
+        }
+        
+        const display = {
+          id,
+          x,
+          y,
+          w,
+          h,
+          primary: (flags & 1) === 1
+        }
+        
+        displays.push(display)
+      }
+    }
+    
+    this.displayList = displays
+    if (this.onDisplayListCallback) {
+      this.onDisplayListCallback(displays)
+    }
+  }
+  
+  private parseDisplayLocationInfo(frame: Uint8Array) {
+    // Display Location Info Format (from Command 82):
+    // Bytes 0-3: Standard header (cmd=82, size)
+    // Bytes 4-5: Display ID (uint16, big-endian)
+    // Bytes 6-7: X position (uint16, big-endian)
+    // Bytes 8-9: Y position (uint16, big-endian)
+    // Bytes 10-11: Width (uint16, big-endian)
+    // Bytes 12-13: Height (uint16, big-endian)
+    // Bytes 14-15: Flags (uint16, big-endian) - bit 0 = primary display
+    if (frame.length < 16) return
+    
+    const displayId = (frame[4] << 8) | frame[5]
+    const x = (frame[6] << 8) | frame[7]
+    const y = (frame[8] << 8) | frame[9]
+    const width = (frame[10] << 8) | frame[11]
+    const height = (frame[12] << 8) | frame[13]
+    const flags = (frame[14] << 8) | frame[15]
+    
+    const existingIndex = this.displayList.findIndex(d => d.id === displayId)
+    const displayInfo: DisplayInfo = {
+      id: displayId,
+      x,
+      y,
+      w: width,
+      h: height,
+      primary: (flags & 1) === 1
+    }
+    
+    if (existingIndex >= 0) {
+      this.displayList[existingIndex] = displayInfo
+    } else {
+      this.displayList.push(displayInfo)
+    }
+    
+    if (this.onDisplayListCallback) {
+      this.onDisplayListCallback([...this.displayList])
+    }
+  }
 }
-
-

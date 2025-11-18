@@ -94,7 +94,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
-                  "debeziumConnector": [{
+                  "debeziumConnectors": [{
                     "name": "fleet-mysql-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.mysql.MySqlConnector",

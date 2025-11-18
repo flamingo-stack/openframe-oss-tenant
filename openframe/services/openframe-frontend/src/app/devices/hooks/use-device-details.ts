@@ -218,12 +218,14 @@ function createDevice(
     // Organization
     organizationId: node.organization?.organizationId,
     organization: node.organization?.name || tacticalData?.client_name,
+    organizationImageUrl: node.organization?.image?.imageUrl || null,
 
     // Tags
     tags: node.tags || tacticalData?.custom_fields || [],
 
     // Tool Connections
     toolConnections: node.toolConnections,
+    installedAgents: node.installedAgents,
 
     // Misc
     type: node.type || tacticalData?.monitoring_type,
