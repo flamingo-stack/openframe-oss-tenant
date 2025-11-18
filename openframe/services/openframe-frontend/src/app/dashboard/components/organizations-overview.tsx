@@ -3,6 +3,9 @@
 import { DashboardInfoCard, Skeleton } from '@flamingo/ui-kit'
 import { useOrganizationsOverview } from '../hooks/use-organizations-overview'
 import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
+import { useBatchImages } from '@lib/batch-image-fetcher'
+import { featureFlags } from '@lib/feature-flags'
 
 const OrganizationsSkeleton = () => (
   <div className="flex flex-col gap-3">
@@ -41,6 +44,14 @@ export function OrganizationsOverviewSection() {
   const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(10)
   const router = useRouter()
 
+  const imageUrls = useMemo(() => 
+    featureFlags.organizationImages.displayEnabled()
+      ? rows.map(org => org.imageUrl).filter(Boolean)
+      : [], 
+    [rows]
+  )
+  const fetchedImageUrls = useBatchImages(imageUrls)
+
   return (
     <div className="space-y-4">
       <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
@@ -71,6 +82,13 @@ export function OrganizationsOverviewSection() {
                 onClick={() => router.push(`/organizations/details/${org.id}`)}
               >
                 <div className="flex items-start gap-3">
+                  {featureFlags.organizationImages.displayEnabled() && org.imageUrl && fetchedImageUrls[org.imageUrl] && (
+                    <img 
+                      src={fetchedImageUrls[org.imageUrl]} 
+                      alt={org.name}
+                      className="w-10 h-10 object-cover rounded-md border border-ods-border flex-shrink-0"
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="font-['DM_Sans'] font-bold text-[18px] leading-[24px] text-ods-text-primary truncate">
                       {org.name}

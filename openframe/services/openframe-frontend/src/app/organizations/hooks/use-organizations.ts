@@ -57,6 +57,7 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
         mrrUsd: o.monthlyRevenue ?? 0,
         contractDue: o.contractEndDate ?? '',
         lastActivity: new Date().toISOString(),
+        imageUrl: o.image?.imageUrl || null,
       }))
 
       setOrganizations(mapped)
@@ -79,11 +80,11 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
   const searchOrganizations = useCallback(async (searchTerm: string) => {
     setSearch(searchTerm)
     return fetchOrganizations(searchTerm, activeFilters)
-  }, [setSearch, fetchOrganizations, activeFilters])
+  }, [setSearch, fetchOrganizations])
 
   const refreshOrganizations = useCallback(async () => {
     return fetchOrganizations(search, activeFilters)
-  }, [fetchOrganizations, search, activeFilters])
+  }, [fetchOrganizations, search, activeFilters.tiers?.join(','), activeFilters.industries?.join(',')])
 
   return {
     organizations,

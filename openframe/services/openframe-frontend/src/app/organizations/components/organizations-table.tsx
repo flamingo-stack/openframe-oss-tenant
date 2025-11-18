@@ -12,6 +12,8 @@ import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
 import { useDebounce } from '@flamingo/ui-kit/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
+import { useBatchImages } from '@lib/batch-image-fetcher'
+import { featureFlags } from '@lib/feature-flags'
 
 interface UIOrganizationEntry {
   id: string
@@ -23,17 +25,48 @@ interface UIOrganizationEntry {
   mrrDisplay: string
   contractDueDisplay: string
   lastActivityDisplay: string
+  imageUrl?: string | null
+}
+
+function OrganizationNameCell({ org, fetchedImageUrls }: { 
+  org: UIOrganizationEntry; 
+  fetchedImageUrls: Record<string, string | undefined>; 
+}) {
+  const fetchedImageUrl = org.imageUrl ? fetchedImageUrls[org.imageUrl] : undefined
+  
+  return (
+    <div className="flex items-center gap-3">
+      {featureFlags.organizationImages.displayEnabled() && fetchedImageUrl && (
+        <img 
+          src={fetchedImageUrl} 
+          alt={org.name}
+          className="w-10 h-10 object-cover rounded-md border border-ods-border flex-shrink-0"
+        />
+      )}
+      <div className="flex flex-col justify-center shrink-0 min-w-0">
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">{org.name}</span>
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">{org.websiteUrl}</span>
+      </div>
+    </div>
+  )
 }
 
 export function OrganizationsTable() {
   const [searchTerm, setSearchTerm] = useState('')
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
-  const [isInitialized, setIsInitialized] = useState(false)
   const router = useRouter()
 
   const stableFilters = useMemo(() => ({}), [])
   const { organizations, isLoading, error, searchOrganizations } = useOrganizations(stableFilters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  const imageUrls = useMemo(() => 
+    featureFlags.organizationImages.displayEnabled()
+      ? organizations.map(org => org.imageUrl).filter(Boolean)
+      : [], 
+    [organizations]
+  )
+  const fetchedImageUrls = useBatchImages(imageUrls)
 
   const transformed: UIOrganizationEntry[] = useMemo(() => {
     const toMoney = (n: number) => `$${n.toLocaleString()}`
@@ -62,6 +95,7 @@ export function OrganizationsTable() {
       mrrDisplay: toMoney(org.mrrUsd),
       contractDueDisplay: dateFmt(org.contractDue),
       lastActivityDisplay: `${new Date(org.lastActivity).toLocaleString()}\n${timeAgo(org.lastActivity)}`,
+      imageUrl: org.imageUrl,
     }))
   }, [organizations])
 
@@ -70,12 +104,7 @@ export function OrganizationsTable() {
       key: 'name',
       label: 'Name',
       width: 'w-2/5',
-      renderCell: (org) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">{org.name}</span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">{org.websiteUrl}</span>
-        </div>
-      )
+      renderCell: (org) => <OrganizationNameCell org={org} fetchedImageUrls={fetchedImageUrls} />
     },
     {
       key: 'tier',
@@ -118,20 +147,11 @@ export function OrganizationsTable() {
         )
       }
     }
-  ], [])
+  ], [fetchedImageUrls])
 
   useEffect(() => {
-    if (!isInitialized) {
-      searchOrganizations('')
-      setIsInitialized(true)
-    }
-  }, [isInitialized, searchOrganizations])
-
-  useEffect(() => {
-    if (isInitialized) {
-      searchOrganizations(debouncedSearchTerm)
-    }
-  }, [debouncedSearchTerm, isInitialized, searchOrganizations])
+    searchOrganizations(debouncedSearchTerm)
+  }, [debouncedSearchTerm])
 
   const handleAddOrganization = () => {
     router.push('/organizations/edit/new')
