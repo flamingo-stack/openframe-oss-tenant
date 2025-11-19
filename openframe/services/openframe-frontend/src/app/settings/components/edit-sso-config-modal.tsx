@@ -119,12 +119,13 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
             <span className="font-['DM_Sans'] font-medium text-[12px] leading-[16px] text-ods-text-primary flex-1 truncate">
               {redirectUrl}
             </span>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              centerIcon={<Copy className="h-5 w-5" />}
               onClick={handleCopyRedirectUrl}
-              className="text-ods-text-secondary hover:text-ods-text-primary p-0"
-            >
-              <Copy className="h-4 w-4" />
-            </button>
+              className="text-ods-text-secondary hover:text-ods-text-primary h-0 !p-0"
+            />
           </div>
           <p className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
             The callback URL must match exactly. Authentication will fail if not properly configured in your SSO provider.
@@ -161,14 +162,13 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientSecret(e.target.value)}
               className="h-10 bg-ods-card border-ods-border text-[14px] font-['DM_Sans'] font-medium placeholder:text-ods-text-secondary pr-12"
             />
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              centerIcon={showSecret ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               onClick={() => setShowSecret(!showSecret)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ods-text-secondary hover:text-ods-text-primary p-0 z-10"
-              aria-label={showSecret ? "Hide password" : "Show password"}
-            >
-              {showSecret ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
+              className="absolute right-3 top-1/2 text-ods-text-secondary hover:text-ods-text-primary z-10 h-0 !p-0"
+            />
           </div>
         </div>
 
