@@ -8,6 +8,7 @@ import { Toaster } from '@flamingo/ui-kit/components/ui'
 import { DevTicketObserver } from './auth/components/dev-ticket-observer'
 import { DeploymentInitializer } from './components/deployment-initializer'
 import { GoogleTagManager } from './components/google-tag-manager'
+import { ImageConfigInitializer } from '../components/image-config-initializer'
 import { RouteGuard } from '../components/route-guard'
 import { isAuthEnabled } from '../lib/app-mode'
 
@@ -96,6 +97,7 @@ export default function RootLayout({
       >
         <GoogleTagManager />
         <DeploymentInitializer />
+        <ImageConfigInitializer />
         {isAuthEnabled() && (
           <Suspense fallback={null}>
             <DevTicketObserver />

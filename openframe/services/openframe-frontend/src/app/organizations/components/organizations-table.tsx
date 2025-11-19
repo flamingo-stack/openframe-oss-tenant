@@ -9,10 +9,10 @@ import {
   type TableColumn,
 } from '@flamingo/ui-kit/components/ui'
 import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
-import { useDebounce } from '@flamingo/ui-kit/hooks'
+import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
+import { useDebounce, useBatchImages } from '@flamingo/ui-kit/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
-import { useBatchImages } from '@lib/batch-image-fetcher'
 import { featureFlags } from '@lib/feature-flags'
 
 interface UIOrganizationEntry {
@@ -28,19 +28,20 @@ interface UIOrganizationEntry {
   imageUrl?: string | null
 }
 
-function OrganizationNameCell({ org, fetchedImageUrls }: { 
-  org: UIOrganizationEntry; 
-  fetchedImageUrls: Record<string, string | undefined>; 
+function OrganizationNameCell({ org, fetchedImageUrls }: {
+  org: UIOrganizationEntry;
+  fetchedImageUrls: Record<string, string | undefined>;
 }) {
   const fetchedImageUrl = org.imageUrl ? fetchedImageUrls[org.imageUrl] : undefined
-  
+
   return (
     <div className="flex items-center gap-3">
-      {featureFlags.organizationImages.displayEnabled() && fetchedImageUrl && (
-        <img 
-          src={fetchedImageUrl} 
-          alt={org.name}
-          className="w-10 h-10 object-cover rounded-md border border-ods-border flex-shrink-0"
+      {featureFlags.organizationImages.displayEnabled() && (
+        <OrganizationIcon
+          imageUrl={fetchedImageUrl}
+          organizationName={org.name}
+          size="md"
+          preFetched={true}
         />
       )}
       <div className="flex flex-col justify-center shrink-0 min-w-0">

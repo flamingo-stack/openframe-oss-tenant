@@ -10,11 +10,10 @@ import {
 import type { CursorPaginationProps } from "@flamingo/ui-kit/components/ui"
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
-import { useDebounce } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useBatchImages } from "@flamingo/ui-kit/hooks"
 import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
-import { useBatchImages } from '@lib/batch-image-fetcher'
 import { featureFlags } from '@lib/feature-flags'
 
 export function DevicesView() {

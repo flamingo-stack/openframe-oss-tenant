@@ -1,10 +1,11 @@
 'use client'
 
 import { DashboardInfoCard, Skeleton } from '@flamingo/ui-kit'
+import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
+import { useBatchImages } from '@flamingo/ui-kit/hooks'
 import { useOrganizationsOverview } from '../hooks/use-organizations-overview'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
-import { useBatchImages } from '@lib/batch-image-fetcher'
 import { featureFlags } from '@lib/feature-flags'
 
 const OrganizationsSkeleton = () => (
@@ -82,11 +83,12 @@ export function OrganizationsOverviewSection() {
                 onClick={() => router.push(`/organizations/details/${org.id}`)}
               >
                 <div className="flex items-start gap-3">
-                  {featureFlags.organizationImages.displayEnabled() && org.imageUrl && fetchedImageUrls[org.imageUrl] && (
-                    <img 
-                      src={fetchedImageUrls[org.imageUrl]} 
-                      alt={org.name}
-                      className="w-10 h-10 object-cover rounded-md border border-ods-border flex-shrink-0"
+                  {featureFlags.organizationImages.displayEnabled() && (
+                    <OrganizationIcon
+                      imageUrl={org.imageUrl ? fetchedImageUrls[org.imageUrl] : undefined}
+                      organizationName={org.name}
+                      size="md"
+                      preFetched={true}
                     />
                   )}
                   <div className="flex-1 min-w-0">
