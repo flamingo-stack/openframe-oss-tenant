@@ -46,13 +46,6 @@ spec:
               {{- else }}
               value: "http://openframe-config.microservices.svc.cluster.local:8888"
               {{- end }}
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "0.5"
-            limits:
-              memory: "1Gi"
-              cpu: "1"
           livenessProbe:
             httpGet:
               path: /management/v1/health
@@ -69,3 +62,10 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.5"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
