@@ -101,9 +101,13 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
           <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
             Edit SSO Configuration
           </h2>
-          <button onClick={onClose} className="text-ods-text-secondary hover:text-white p-0">
-            <X className="h-5 w-5" />
-          </button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose} 
+            className="text-ods-text-secondary hover:text-white p-0" 
+            centerIcon={<X className="h-5 w-5" />}
+          />  
         </div>
 
         {/* Redirect URL Section */}
