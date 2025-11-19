@@ -118,7 +118,7 @@ export function SsoConfigurationTab() {
 
   const rowActions: RowAction<UIProviderRow>[] = useMemo(() => [
     {
-      label: '',
+      label: ' ',
       icon: <EditProfileIcon className="h-6 w-6 text-ods-text-primary" />,
       onClick: (row) => {
         setEditing({
@@ -131,7 +131,7 @@ export function SsoConfigurationTab() {
         })
       },
       variant: 'outline',
-      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
+      className: '!h-12 !w-12 !min-w-[48px] !p-0 flex items-center justify-center'
     },
     {
       label: 'Details',
