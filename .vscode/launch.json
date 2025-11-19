@@ -7,9 +7,13 @@
             "name": "OpenFrame Client Debug",
             "preLaunchTask": "rust-build",
             "program": "${workspaceFolder}/client/target/debug/openframe",
-            "args": ["run-as-service"],
+            "args": [
+                "run-as-service"
+            ],
             "cwd": "${workspaceFolder}/client",
-            "sourceLanguages": ["rust"],
+            "sourceLanguages": [
+                "rust"
+            ],
             "env": {
                 "RUST_LOG": "debug",
                 "RUST_BACKTRACE": "1",
@@ -23,9 +27,13 @@
             "name": "OpenFrame Client Debug (Service Mode)",
             "preLaunchTask": "rust-build",
             "program": "${workspaceFolder}/client/target/debug/openframe",
-            "args": ["run-as-service"],
+            "args": [
+                "run-as-service"
+            ],
             "cwd": "${workspaceFolder}/client",
-            "sourceLanguages": ["rust"],
+            "sourceLanguages": [
+                "rust"
+            ],
             "env": {
                 "RUST_LOG": "debug",
                 "RUST_BACKTRACE": "1",
@@ -39,9 +47,13 @@
             "name": "OpenFrame Client Release",
             "preLaunchTask": "rust-build-release",
             "program": "${workspaceFolder}/client/target/release/openframe",
-            "args": ["run"],
+            "args": [
+                "run"
+            ],
             "cwd": "${workspaceFolder}/client",
-            "sourceLanguages": ["rust"],
+            "sourceLanguages": [
+                "rust"
+            ],
             "env": {
                 "RUST_LOG": "info",
                 "OPENFRAME_DEV_MODE": "true",
@@ -56,7 +68,9 @@
             "program": "${workspaceFolder}/client/target/debug/openframe-test",
             "args": [],
             "cwd": "${workspaceFolder}/client",
-            "sourceLanguages": ["rust"],
+            "sourceLanguages": [
+                "rust"
+            ],
             "env": {
                 "RUST_LOG": "debug",
                 "RUST_BACKTRACE": "1",
@@ -142,7 +156,10 @@
             "name": "OpenFrame UI on Local Kubernetes",
             "cwd": "${workspaceFolder}/openframe/services/openframe-ui",
             "runtimeExecutable": "npm",
-            "runtimeArgs": ["run", "dev"],
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
             "env": {
                 "PORT": "5177",
                 "VITE_API_URL": "https://localhost/api",
@@ -159,7 +176,10 @@
             "name": "OpenFrame UI on Debug Localhost Apps",
             "cwd": "${workspaceFolder}/openframe/services/openframe-ui",
             "runtimeExecutable": "npm",
-            "runtimeArgs": ["run", "dev"],
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
             "env": {
                 "PORT": "5177",
                 "VITE_API_URL": "https://localhost:8100/api",
@@ -177,7 +197,10 @@
             "preLaunchTask": "frontend-with-port-cleanup",
             "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
             "runtimeExecutable": "npm",
-            "runtimeArgs": ["run", "dev"],
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
             "env": {
                 "NODE_ENV": "development",
                 "PORT": "4000",
@@ -187,6 +210,33 @@
                 "NEXT_PUBLIC_APP_TYPE": "openframe",
                 "NEXT_PUBLIC_CLIENT_ID": "openframe_web_dashboard",
                 "NEXT_PUBLIC_CLIENT_SECRET": "prod_secret"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "OpenFrame Frontend with Stage Configuration",
+            "preLaunchTask": "frontend-with-port-cleanup",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "env": {
+                "NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER": "true",
+                "NEXT_PUBLIC_AUTH_CHECK_INTERVAL": "60000",
+                "NEXT_PUBLIC_APP_MODE": "saas-tenant",
+                "NEXT_PUBLIC_TENANT_HOST_URL": "https://test.openframe.miami",
+                "NEXT_PUBLIC_SHARED_HOST_URL": "https://openframe.miami",
+                "NEXT_PUBLIC_FEATURE_ORG_IMAGES":"true"
             },
             "console": "integratedTerminal",
             "sourceMaps": true,

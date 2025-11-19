@@ -9,10 +9,10 @@ import {
   type TableColumn,
 } from '@flamingo/ui-kit/components/ui'
 import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
-import { useDebounce } from '@flamingo/ui-kit/hooks'
+import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
+import { useDebounce, useBatchImages } from '@flamingo/ui-kit/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
-import { useBatchImages } from '@lib/batch-image-fetcher'
 import { featureFlags } from '@lib/feature-flags'
 
 interface UIOrganizationEntry {
@@ -23,24 +23,24 @@ interface UIOrganizationEntry {
   tier: string
   industry: string
   mrrDisplay: string
-  contractDueDisplay: string
   lastActivityDisplay: string
   imageUrl?: string | null
 }
 
-function OrganizationNameCell({ org, fetchedImageUrls }: { 
-  org: UIOrganizationEntry; 
-  fetchedImageUrls: Record<string, string | undefined>; 
+function OrganizationNameCell({ org, fetchedImageUrls }: {
+  org: UIOrganizationEntry;
+  fetchedImageUrls: Record<string, string | undefined>;
 }) {
   const fetchedImageUrl = org.imageUrl ? fetchedImageUrls[org.imageUrl] : undefined
-  
+
   return (
     <div className="flex items-center gap-3">
-      {featureFlags.organizationImages.displayEnabled() && fetchedImageUrl && (
-        <img 
-          src={fetchedImageUrl} 
-          alt={org.name}
-          className="w-10 h-10 object-cover rounded-md border border-ods-border flex-shrink-0"
+      {featureFlags.organizationImages.displayEnabled() && (
+        <OrganizationIcon
+          imageUrl={fetchedImageUrl}
+          organizationName={org.name}
+          size="md"
+          preFetched={true}
         />
       )}
       <div className="flex flex-col justify-center shrink-0 min-w-0">
@@ -93,7 +93,6 @@ export function OrganizationsTable() {
       tier: org.tier,
       industry: org.industry,
       mrrDisplay: toMoney(org.mrrUsd),
-      contractDueDisplay: dateFmt(org.contractDue),
       lastActivityDisplay: `${new Date(org.lastActivity).toLocaleString()}\n${timeAgo(org.lastActivity)}`,
       imageUrl: org.imageUrl,
     }))
@@ -126,17 +125,9 @@ export function OrganizationsTable() {
       )
     },
     {
-      key: 'contractDueDisplay',
-      label: 'Contract Due',
-      width: 'w-1/6',
-      renderCell: (org) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">{org.contractDueDisplay}</span>
-      )
-    },
-    {
       key: 'lastActivityDisplay',
       label: 'Last Activity',
-      width: 'w-1/5',
+      width: 'w-1/4',
       renderCell: (org) => {
         const [first, second] = org.lastActivityDisplay.split('\n')
         return (
