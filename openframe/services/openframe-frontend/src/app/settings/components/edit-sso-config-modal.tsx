@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
-import { Button, Label } from '@flamingo/ui-kit'
+import { Button, Label, Checkbox } from '@flamingo/ui-kit'
 import { Input } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
 
@@ -13,23 +13,36 @@ interface EditSsoConfigModalProps {
   providerDisplayName: string
   initialClientId?: string | null
   initialClientSecret?: string | null
-  onSubmit: (data: { clientId: string; clientSecret: string }) => Promise<void>
+  initialMsTenantId?: string | null
+  onSubmit: (data: { clientId: string; clientSecret: string; msTenantId?: string | null }) => Promise<void>
 }
 
-export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDisplayName, initialClientId, initialClientSecret, onSubmit }: EditSsoConfigModalProps) {
+export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDisplayName, initialClientId, initialClientSecret, initialMsTenantId, onSubmit }: EditSsoConfigModalProps) {
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
+  const [isSingleTenant, setIsSingleTenant] = useState(false)
+  const [msTenantId, setMsTenantId] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  
+  const isMicrosoft = providerKey.toLowerCase() === 'microsoft'
 
   useEffect(() => {
     if (isOpen) {
       setClientId(initialClientId || '')
       setClientSecret(initialClientSecret || '')
+      setMsTenantId(initialMsTenantId || '')
+      setIsSingleTenant(!!initialMsTenantId)
     }
-  }, [isOpen, initialClientId, initialClientSecret])
+  }, [isOpen, initialClientId, initialClientSecret, initialMsTenantId])
 
-  const canSubmit = useMemo(() => clientId.trim().length > 0 && clientSecret.trim().length > 0, [clientId, clientSecret])
+  const canSubmit = useMemo(() => {
+    const hasBasicFields = clientId.trim().length > 0 && clientSecret.trim().length > 0
+    if (isMicrosoft && isSingleTenant) {
+      return hasBasicFields && msTenantId.trim().length > 0
+    }
+    return hasBasicFields
+  }, [clientId, clientSecret, isMicrosoft, isSingleTenant, msTenantId])
 
   if (!isOpen) return null
 
@@ -37,7 +50,14 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
     if (!canSubmit) return
     setIsSubmitting(true)
     try {
-      await onSubmit({ clientId: clientId.trim(), clientSecret: clientSecret.trim() })
+      const data: { clientId: string; clientSecret: string; msTenantId?: string | null } = {
+        clientId: clientId.trim(),
+        clientSecret: clientSecret.trim()
+      }
+      if (isMicrosoft) {
+        data.msTenantId = isSingleTenant && msTenantId.trim() ? msTenantId.trim() : null
+      }
+      await onSubmit(data)
       toast({ title: 'SSO updated', description: `${providerDisplayName} configuration saved`, variant: 'success' })
       onClose()
     } catch (err) {
@@ -90,6 +110,40 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
             className="h-14"
           />
         </div>
+
+        {/* Microsoft-specific: Single Tenant Configuration */}
+        {isMicrosoft && (
+          <>
+            <div className="flex items-center gap-3">
+              <Label htmlFor="single-tenant" className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
+                Single Tenant
+              </Label>
+              <Checkbox
+                id="single-tenant"
+                checked={isSingleTenant}
+                onCheckedChange={(checked) => {
+                  setIsSingleTenant(!!checked)
+                  if (!checked) {
+                    setMsTenantId('')
+                  }
+                }}
+                className="border-ods-text-primary data-[state=checked]:bg-ods-accent data-[state=checked]:border-ods-accent"
+              />
+            </div>
+
+            {isSingleTenant && (
+              <div className="flex flex-col gap-2">
+                <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Tenant ID</Label>
+                <Input
+                  placeholder="Enter Tenant ID"
+                  value={msTenantId}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMsTenantId(e.target.value)}
+                  className="h-14"
+                />
+              </div>
+            )}
+          </>
+        )}
 
         {/* Footer */}
         <div className="flex gap-6 pt-2">

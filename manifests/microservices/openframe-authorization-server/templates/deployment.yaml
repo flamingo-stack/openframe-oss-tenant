@@ -33,9 +33,6 @@ spec:
               name: http
             - containerPort: 9006
               name: management
-          envFrom:
-            - secretRef:
-                name: openframe-management
           env:
             {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
             - name: TENANT_HOST_URL

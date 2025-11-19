@@ -5,7 +5,7 @@ metadata:
   name: fleetmdm-server
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
     "argocd.argoproj.io/sync-options": Replace=true
 spec:
   backoffLimit: 3
@@ -94,7 +94,7 @@ spec:
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
                   "allowedEndpoints": ["/api/v1/*","/metrics"],
-                  "debeziumConnector": [{
+                  "debeziumConnectors": [{
                     "name": "fleet-mysql-connector",
                     "config": {
                       "connector.class": "io.debezium.connector.mysql.MySqlConnector",

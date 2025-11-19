@@ -13,11 +13,14 @@ interface SsoConfigDetailsModalProps {
   status: { label: string; variant: 'success' | 'info' }
   clientId?: string | null
   clientSecret?: string | null
+  msTenantId?: string | null
   onToggle: (enabled: boolean) => Promise<void>
 }
 
-export function SsoConfigDetailsModal({ isOpen, onClose, providerKey, providerDisplayName, status, clientId, clientSecret, onToggle }: SsoConfigDetailsModalProps) {
+export function SsoConfigDetailsModal({ isOpen, onClose, providerKey, providerDisplayName, status, clientId, clientSecret, msTenantId, onToggle }: SsoConfigDetailsModalProps) {
   if (!isOpen) return null
+  
+  const isMicrosoft = providerKey.toLowerCase() === 'microsoft'
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -45,6 +48,9 @@ export function SsoConfigDetailsModal({ isOpen, onClose, providerKey, providerDi
           <InfoRow label="OAuth Provider" value={providerDisplayName} />
           <InfoRow label="OAuth Client ID" value={clientId || '—'} />
           <InfoRow label="Client Secret" value={'********'} />
+          {isMicrosoft && (
+            <InfoRow label="Tenant ID" value={msTenantId || 'Multi-tenant'} />
+          )}
         </div>
 
         {/* Footer */}

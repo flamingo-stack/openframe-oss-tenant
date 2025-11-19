@@ -17,9 +17,6 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
     )
   }
 
-  // Log the entire parsed device model
-  console.log('=== Parsed Device Model ===', device)
-
   return (
     <div className="bg-ods-card border border-ods-border rounded-lg p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">

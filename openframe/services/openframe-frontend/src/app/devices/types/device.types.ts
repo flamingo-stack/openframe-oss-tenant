@@ -96,6 +96,18 @@ export interface ToolConnection {
 }
 
 /**
+ * Installed Agent type
+ */
+export interface InstalledAgent {
+  id: string
+  machineId: string
+  agentType: string
+  version?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/**
  * UNIFIED DEVICE TYPE
  * Single source of truth - all fields at root level, no nesting
  */
@@ -186,12 +198,16 @@ export interface Device {
   // Organization
   organizationId?: string
   organization?: string
+  organizationImageUrl?: string | null
 
   // Tags
   tags?: DeviceTag[]
 
   // Tool Connections
   toolConnections?: ToolConnection[]
+  
+  // Installed Agents
+  installedAgents?: InstalledAgent[]
 
   // Misc
   type?: string
@@ -299,6 +315,9 @@ export type DevicesGraphQLNode = {
     id: string
     organizationId: string
     name: string
+    image?: {
+      imageUrl: string
+    }
   }
   serialNumber?: string
   manufacturer?: string
@@ -320,6 +339,7 @@ export type DevicesGraphQLNode = {
     createdBy: string
   }>
   toolConnections?: ToolConnection[]
+  installedAgents?: InstalledAgent[]
 }
 
 export type DeviceGraphQLNode = {
@@ -337,6 +357,9 @@ export type DeviceGraphQLNode = {
     id: string
     organizationId: string
     name: string
+    image?: {
+      imageUrl: string
+    }
   }
   serialNumber?: string
   manufacturer?: string
@@ -358,4 +381,5 @@ export type DeviceGraphQLNode = {
     createdBy: string
   }>
   toolConnections?: ToolConnection[]
+  installedAgents?: InstalledAgent[]
 }
