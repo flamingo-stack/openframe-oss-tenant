@@ -381,9 +381,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="device-action"
                   leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}
-                  className="bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
                 >
                   Actions
                 </Button>
@@ -406,9 +405,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
             {/* Expand Button */}
             <Button
-              variant="outline"
+              variant="device-action"
               leftIcon={<Maximize2 className="w-6 h-6 mr-2" />}
-              className="bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
               onClick={() => {
                 toast({
                   title: "Expand",
@@ -422,9 +420,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
             {/* Settings Button */}
             <Button
-              variant="outline"
+              variant="device-action"
               leftIcon={<Settings className="w-6 h-6 mr-2" />}
-              className="bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
               onClick={() => setSettingsOpen(true)}
             >
               Settings

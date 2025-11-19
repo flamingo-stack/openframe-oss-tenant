@@ -236,7 +236,34 @@
                 "NEXT_PUBLIC_APP_MODE": "saas-tenant",
                 "NEXT_PUBLIC_TENANT_HOST_URL": "https://test.openframe.miami",
                 "NEXT_PUBLIC_SHARED_HOST_URL": "https://openframe.miami",
-                "NEXT_PUBLIC_FEATURE_ORG_IMAGES":"true"
+                "NEXT_PUBLIC_FEATURE_ORG_IMAGES": "true"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "OpenFrame Frontend with Prod Configuration",
+            "preLaunchTask": "frontend-with-port-cleanup",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "env": {
+                "NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER": "true",
+                "NEXT_PUBLIC_AUTH_CHECK_INTERVAL": "60000",
+                "NEXT_PUBLIC_APP_MODE": "saas-tenant",
+                "NEXT_PUBLIC_TENANT_HOST_URL": "https://test.openframe.ai",
+                "NEXT_PUBLIC_SHARED_HOST_URL": "https://openframe.ai",
+                "NEXT_PUBLIC_FEATURE_ORG_IMAGES": "true"
             },
             "console": "integratedTerminal",
             "sourceMaps": true,
