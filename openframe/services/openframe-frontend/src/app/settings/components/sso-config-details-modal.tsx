@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { Button, StatusTag, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit/components/ui'
-import { MicrosoftIcon, GoogleLogo, SlackIcon } from '@flamingo/ui-kit/components/icons'
 import { InfoRow } from '@flamingo/ui-kit'
+import { getProviderIcon } from '../utils/get-provider-icon'
 
 interface SsoConfigDetailsModalProps {
   isOpen: boolean
@@ -20,28 +20,11 @@ interface SsoConfigDetailsModalProps {
 export function SsoConfigDetailsModal({ isOpen, onClose, providerKey, providerDisplayName, status, clientId, clientSecret, msTenantId, onToggle }: SsoConfigDetailsModalProps) {
   const isMicrosoft = providerKey.toLowerCase() === 'microsoft'
 
-  // Helper function to get provider icon
-  const getProviderIcon = () => {
-    const provider = providerKey.toLowerCase()
-    const iconClass = "h-6 w-6 shrink-0"
-
-    switch (provider) {
-      case 'microsoft':
-        return <MicrosoftIcon className={iconClass} />
-      case 'google':
-        return <GoogleLogo className={iconClass} />
-      case 'slack':
-        return <SlackIcon className={iconClass} />
-      default:
-        return null
-    }
-  }
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <ModalHeader>
         <div className="flex items-center gap-3">
-          {getProviderIcon()}
+          {getProviderIcon(providerKey)}
           <ModalTitle>Configuration Details</ModalTitle>
         </div>
         <p className="text-ods-text-secondary text-sm mt-1">

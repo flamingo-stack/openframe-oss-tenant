@@ -11,10 +11,11 @@ import {
   type TableColumn,
   type RowAction
 } from '@flamingo/ui-kit/components/ui'
-import { EditProfileIcon, RefreshIcon, MicrosoftIcon, GoogleLogo, SlackIcon } from '@flamingo/ui-kit/components/icons'
+import { EditProfileIcon, RefreshIcon } from '@flamingo/ui-kit/components/icons'
 import { EditSsoConfigModal } from '../edit-sso-config-modal'
 import { SsoConfigDetailsModal } from '../sso-config-details-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
+import { getProviderIcon } from '../../utils/get-provider-icon'
 
 type UIProviderRow = {
   id: string
@@ -34,23 +35,6 @@ export function SsoConfigurationTab() {
   const [details, setDetails] = useState<{ open: boolean; providerKey: string; displayName: string; status: { label: string; variant: 'success' | 'info' }; clientId?: string | null; clientSecret?: string | null; msTenantId?: string | null } | null>(null)
 
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig()
-
-  // Helper function to get provider icon
-  const getProviderIcon = (providerKey: string) => {
-    const provider = providerKey.toLowerCase()
-    const iconClass = "h-6 w-6 shrink-0"
-
-    switch (provider) {
-      case 'microsoft':
-        return <MicrosoftIcon className={iconClass} />
-      case 'google':
-        return <GoogleLogo className={iconClass} />
-      case 'slack':
-        return <SlackIcon className={iconClass} />
-      default:
-        return null
-    }
-  }
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -125,7 +109,7 @@ export function SsoConfigurationTab() {
         </div>
       )
     },
-  ], [getProviderIcon])
+  ], [])
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()

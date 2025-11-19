@@ -4,9 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Copy, Eye, EyeOff } from 'lucide-react'
 import { Button, Label, Checkbox, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit'
 import { Input } from '@flamingo/ui-kit/components/ui'
-import { MicrosoftIcon, GoogleLogo, SlackIcon } from '@flamingo/ui-kit/components/icons'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { runtimeEnv } from '@lib/runtime-config'
+import { getProviderIcon } from '../utils/get-provider-icon'
 
 interface EditSsoConfigModalProps {
   isOpen: boolean
@@ -30,23 +30,6 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
 
   const isMicrosoft = providerKey.toLowerCase() === 'microsoft'
 
-  // Helper function to get provider icon
-  const getProviderIcon = () => {
-    const provider = providerKey.toLowerCase()
-    const iconClass = "h-6 w-6 shrink-0"
-
-    switch (provider) {
-      case 'microsoft':
-        return <MicrosoftIcon className={iconClass} />
-      case 'google':
-        return <GoogleLogo className={iconClass} />
-      case 'slack':
-        return <SlackIcon className={iconClass} />
-      default:
-        return null
-    }
-  }
-  
   const redirectUrl = useMemo(() => {
     const sharedHost = runtimeEnv.sharedHostUrl() || (typeof window !== 'undefined' ? window.location.origin : '')
     return `${sharedHost}/sas/login/oauth2/code/${providerKey.toLowerCase()}`
@@ -113,7 +96,7 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <ModalHeader>
         <div className="flex items-center gap-3">
-          {getProviderIcon()}
+          {getProviderIcon(providerKey)}
           <ModalTitle>Edit SSO Configuration</ModalTitle>
         </div>
         <p className="text-ods-text-secondary text-sm mt-1">
