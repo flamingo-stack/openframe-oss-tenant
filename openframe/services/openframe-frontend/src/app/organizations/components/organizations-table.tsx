@@ -23,7 +23,6 @@ interface UIOrganizationEntry {
   tier: string
   industry: string
   mrrDisplay: string
-  contractDueDisplay: string
   lastActivityDisplay: string
   imageUrl?: string | null
 }
@@ -94,7 +93,6 @@ export function OrganizationsTable() {
       tier: org.tier,
       industry: org.industry,
       mrrDisplay: toMoney(org.mrrUsd),
-      contractDueDisplay: dateFmt(org.contractDue),
       lastActivityDisplay: `${new Date(org.lastActivity).toLocaleString()}\n${timeAgo(org.lastActivity)}`,
       imageUrl: org.imageUrl,
     }))
@@ -127,17 +125,9 @@ export function OrganizationsTable() {
       )
     },
     {
-      key: 'contractDueDisplay',
-      label: 'Contract Due',
-      width: 'w-1/6',
-      renderCell: (org) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">{org.contractDueDisplay}</span>
-      )
-    },
-    {
       key: 'lastActivityDisplay',
       label: 'Last Activity',
-      width: 'w-1/5',
+      width: 'w-1/4',
       renderCell: (org) => {
         const [first, second] = org.lastActivityDisplay.split('\n')
         return (
