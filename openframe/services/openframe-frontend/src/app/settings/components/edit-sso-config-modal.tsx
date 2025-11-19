@@ -104,65 +104,60 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
         </p>
       </ModalHeader>
 
-      <div className="p-6 space-y-4">
+      <div className="px-6 py-4 space-y-4">
         {/* Redirect URL Section */}
-        <div className="bg-ods-card border border-ods-border rounded-[6px] p-3 flex flex-col gap-2">
-          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
-            Authorized redirect URL for your SSO provider settings:
-          </Label>
-          <div className="bg-ods-bg border border-ods-border rounded-[6px] p-3 flex items-center gap-3">
-            <span className="font-['DM_Sans'] font-medium text-[12px] leading-[16px] text-ods-text-primary flex-1 truncate">
+        <div className="bg-ods-card border border-ods-border rounded-lg p-4 space-y-3">
+          <Label>Authorized redirect URL for your SSO provider settings:</Label>
+          <div className="bg-ods-bg border border-ods-border rounded-lg p-3 flex items-center gap-3">
+            <code className="flex-1 text-sm text-ods-text-primary font-mono truncate">
               {redirectUrl}
-            </span>
+            </code>
             <Button
               variant="ghost"
               size="sm"
-              centerIcon={<Copy className="h-5 w-5" />}
+              centerIcon={<Copy className="h-4 w-4" />}
               onClick={handleCopyRedirectUrl}
-              className="text-ods-text-secondary hover:text-ods-text-primary h-0 !p-0"
             />
           </div>
-          <p className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
+          <p className="text-sm text-ods-text-secondary">
             The callback URL must match exactly. Authentication will fail if not properly configured in your SSO provider.
           </p>
         </div>
 
         {/* Provider (read-only) */}
-        <div className="flex flex-col gap-1">
-          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">OAuth Provider</Label>
-          <div className="bg-ods-card border border-ods-border rounded-[6px] h-10 px-3 flex items-center text-[14px] text-ods-text-secondary">
-            {providerDisplayName}
-          </div>
+        <div className="space-y-2">
+          <Label>OAuth Provider</Label>
+          <Input value={providerDisplayName} disabled className="bg-ods-card" />
         </div>
 
         {/* Client ID */}
-        <div className="flex flex-col gap-1">
-          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">OAuth Client ID</Label>
+        <div className="space-y-2">
+          <Label>OAuth Client ID *</Label>
           <Input
             placeholder="Enter OAuth Client ID"
             value={clientId}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientId(e.target.value)}
-            className="h-10 bg-ods-card border-ods-border text-[14px] font-['DM_Sans'] font-medium placeholder:text-ods-text-secondary"
+            className="bg-ods-card"
           />
         </div>
 
         {/* Client Secret */}
-        <div className="flex flex-col gap-1">
-          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">Client Secret</Label>
-          <div className="relative flex items-center">
+        <div className="space-y-2">
+          <Label>Client Secret *</Label>
+          <div className="relative">
             <Input
               type={showSecret ? "text" : "password"}
               placeholder="Enter OAuth Client Secret"
               value={clientSecret}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientSecret(e.target.value)}
-              className="h-10 bg-ods-card border-ods-border text-[14px] font-['DM_Sans'] font-medium placeholder:text-ods-text-secondary pr-12"
+              className="bg-ods-card pr-10"
             />
             <Button
               variant="ghost"
               size="sm"
-              centerIcon={showSecret ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              centerIcon={showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               onClick={() => setShowSecret(!showSecret)}
-              className="absolute right-3 top-1/2 text-ods-text-secondary hover:text-ods-text-primary z-10 h-0 !p-0"
+              className="absolute right-2 top-1/2 -translate-y-1/2"
             />
           </div>
         </div>
@@ -170,10 +165,7 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
         {/* Microsoft-specific: Single Tenant Configuration */}
         {isMicrosoft && (
           <>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="single-tenant" className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-primary">
-                Single Tenant
-              </Label>
+            <div className="flex items-center space-x-3 p-4 bg-ods-card border border-ods-border rounded-lg">
               <Checkbox
                 id="single-tenant"
                 checked={isSingleTenant}
@@ -183,18 +175,23 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
                     setMsTenantId('')
                   }
                 }}
-                className="border-ods-text-primary data-[state=checked]:bg-ods-accent data-[state=checked]:border-ods-accent"
               />
+              <div className="flex-1">
+                <Label htmlFor="single-tenant" className="cursor-pointer">
+                  Single Tenant
+                </Label>
+                <p className="text-sm text-ods-text-secondary">Use single-tenant authentication for this provider</p>
+              </div>
             </div>
 
             {isSingleTenant && (
-              <div className="flex flex-col gap-1">
-                <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">Tenant ID</Label>
+              <div className="space-y-2">
+                <Label>Tenant ID *</Label>
                 <Input
                   placeholder="Enter Tenant ID"
                   value={msTenantId}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMsTenantId(e.target.value)}
-                  className="h-10 bg-ods-card border-ods-border text-[14px] font-['DM_Sans'] font-medium placeholder:text-ods-text-secondary"
+                  className="bg-ods-card"
                 />
               </div>
             )}

@@ -1,8 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Button, StatusTag, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit/components/ui'
-import { InfoRow } from '@flamingo/ui-kit'
+import { Button, StatusTag, Modal, ModalHeader, ModalTitle, ModalFooter, Label, Input } from '@flamingo/ui-kit/components/ui'
 import { getProviderIcon } from '../utils/get-provider-icon'
 
 interface SsoConfigDetailsModalProps {
@@ -32,24 +31,35 @@ export function SsoConfigDetailsModal({ isOpen, onClose, providerKey, providerDi
         </p>
       </ModalHeader>
 
-      <div className="p-6 space-y-4">
-        {/* Provider and Status Row */}
-        <div className="flex items-center justify-between">
-          <div className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary">
-            {providerDisplayName}
-          </div>
+      <div className="px-6 py-4 space-y-4">
+        {/* Provider Name and Status */}
+        <div className="flex items-center justify-between pb-2 border-b border-ods-border">
+          <span className="text-lg font-semibold text-ods-text-primary">{providerDisplayName}</span>
           <StatusTag label={status.label} variant={status.variant} />
         </div>
 
         {/* Details Card */}
-        <div className="p-6 bg-ods-card border border-ods-border rounded-[6px] space-y-6">
-          <InfoRow label="OAuth Provider" value={providerDisplayName} />
-          <InfoRow label="OAuth Client ID" value={clientId || '—'} />
-          <InfoRow label="Client Secret" value={'********'} />
-          {isMicrosoft && (
-            <InfoRow label="Tenant ID" value={msTenantId || 'Multi-tenant'} />
-          )}
+        <div className="space-y-2">
+          <Label>OAuth Provider</Label>
+          <Input value={providerDisplayName} disabled className="bg-ods-card" />
         </div>
+
+        <div className="space-y-2">
+          <Label>OAuth Client ID</Label>
+          <Input value={clientId || '—'} disabled className="bg-ods-card" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Client Secret</Label>
+          <Input value="********" disabled className="bg-ods-card" />
+        </div>
+
+        {isMicrosoft && (
+          <div className="space-y-2">
+            <Label>Tenant ID</Label>
+            <Input value={msTenantId || 'Multi-tenant'} disabled className="bg-ods-card" />
+          </div>
+        )}
       </div>
 
       <ModalFooter>
