@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { X } from 'lucide-react'
+import { X, Copy, Eye, EyeOff } from 'lucide-react'
 import { Button, Label, Checkbox } from '@flamingo/ui-kit'
 import { Input } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
+import { runtimeEnv } from '@lib/runtime-config'
 
 interface EditSsoConfigModalProps {
   isOpen: boolean
@@ -23,9 +24,34 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
   const [isSingleTenant, setIsSingleTenant] = useState(false)
   const [msTenantId, setMsTenantId] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSecret, setShowSecret] = useState(false)
   const { toast } = useToast()
   
   const isMicrosoft = providerKey.toLowerCase() === 'microsoft'
+  
+  const redirectUrl = useMemo(() => {
+    const sharedHost = runtimeEnv.sharedHostUrl() || (typeof window !== 'undefined' ? window.location.origin : '')
+    return `${sharedHost}/sas/login/oauth2/code/${providerKey.toLowerCase()}`
+  }, [providerKey])
+  
+  const handleCopyRedirectUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(redirectUrl)
+      toast({
+        title: 'Copied',
+        description: 'Redirect URL copied to clipboard',
+        variant: 'success',
+        duration: 2000
+      })
+    } catch (error) {
+      toast({
+        title: 'Copy Failed',
+        description: 'Unable to copy redirect URL',
+        variant: 'destructive',
+        duration: 3000
+      })
+    }
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -69,53 +95,88 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[720px] flex flex-col p-10 gap-6">
+      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[480px] flex flex-col p-6 gap-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] tracking-[-0.8px] text-ods-text-primary">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
             Edit SSO Configuration
           </h2>
-          <Button onClick={onClose} variant="ghost" className="text-ods-text-secondary hover:text-white p-1">
-            <X className="h-6 w-6" />
-          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose} 
+            className="text-ods-text-secondary hover:text-white p-0" 
+            centerIcon={<X className="h-5 w-5" />}
+          />  
+        </div>
+
+        {/* Redirect URL Section */}
+        <div className="bg-ods-card border border-ods-border rounded-[6px] p-3 flex flex-col gap-2">
+          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
+            Authorized redirect URL for your SSO provider settings:
+          </Label>
+          <div className="bg-ods-bg border border-ods-border rounded-[6px] p-3 flex items-center gap-3">
+            <span className="font-['DM_Sans'] font-medium text-[12px] leading-[16px] text-ods-text-primary flex-1 truncate">
+              {redirectUrl}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              centerIcon={<Copy className="h-5 w-5" />}
+              onClick={handleCopyRedirectUrl}
+              className="text-ods-text-secondary hover:text-ods-text-primary h-0 !p-0"
+            />
+          </div>
+          <p className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
+            The callback URL must match exactly. Authentication will fail if not properly configured in your SSO provider.
+          </p>
         </div>
 
         {/* Provider (read-only) */}
-        <div className="flex flex-col gap-2">
-          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">OAuth Provider</Label>
-          <div className="bg-ods-card border border-ods-border rounded-[6px] h-14 px-4 flex items-center text-ods-text-secondary">
+        <div className="flex flex-col gap-1">
+          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">OAuth Provider</Label>
+          <div className="bg-ods-card border border-ods-border rounded-[6px] h-10 px-3 flex items-center text-[14px] text-ods-text-secondary">
             {providerDisplayName}
           </div>
         </div>
 
         {/* Client ID */}
-        <div className="flex flex-col gap-2">
-          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">OAuth Client ID</Label>
+        <div className="flex flex-col gap-1">
+          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">OAuth Client ID</Label>
           <Input
             placeholder="Enter OAuth Client ID"
             value={clientId}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientId(e.target.value)}
-            className="h-14"
+            className="h-10 bg-ods-card border-ods-border text-[14px] font-['DM_Sans'] font-medium placeholder:text-ods-text-secondary"
           />
         </div>
 
         {/* Client Secret */}
-        <div className="flex flex-col gap-2">
-          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Client Secret</Label>
-          <Input
-            type="password"
-            placeholder="Enter Client Secret"
-            value={clientSecret}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientSecret(e.target.value)}
-            className="h-14"
-          />
+        <div className="flex flex-col gap-1">
+          <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">Client Secret</Label>
+          <div className="relative flex items-center">
+            <Input
+              type={showSecret ? "text" : "password"}
+              placeholder="Enter OAuth Client Secret"
+              value={clientSecret}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientSecret(e.target.value)}
+              className="h-10 bg-ods-card border-ods-border text-[14px] font-['DM_Sans'] font-medium placeholder:text-ods-text-secondary pr-12"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              centerIcon={showSecret ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              onClick={() => setShowSecret(!showSecret)}
+              className="absolute right-3 top-1/2 text-ods-text-secondary hover:text-ods-text-primary z-10 h-0 !p-0"
+            />
+          </div>
         </div>
 
         {/* Microsoft-specific: Single Tenant Configuration */}
         {isMicrosoft && (
           <>
-            <div className="flex items-center gap-3">
-              <Label htmlFor="single-tenant" className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="single-tenant" className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-primary">
                 Single Tenant
               </Label>
               <Checkbox
@@ -132,13 +193,13 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
             </div>
 
             {isSingleTenant && (
-              <div className="flex flex-col gap-2">
-                <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Tenant ID</Label>
+              <div className="flex flex-col gap-1">
+                <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">Tenant ID</Label>
                 <Input
                   placeholder="Enter Tenant ID"
                   value={msTenantId}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMsTenantId(e.target.value)}
-                  className="h-14"
+                  className="h-10 bg-ods-card border-ods-border text-[14px] font-['DM_Sans'] font-medium placeholder:text-ods-text-secondary"
                 />
               </div>
             )}
@@ -146,12 +207,19 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
         )}
 
         {/* Footer */}
-        <div className="flex gap-6 pt-2">
-          <Button onClick={onClose} className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface transition-colors">
+        <div className="flex gap-3 mt-2">
+          <Button 
+            onClick={onClose} 
+            className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[14px] leading-[20px] tracking-[-0.28px] px-3 py-2.5 rounded-[6px] hover:bg-ods-bg-surface transition-colors"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting} className="flex-1 bg-ods-accent text-text-on-accent font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ods-accent-hover transition-colors">
-            Update Configuration
+          <Button 
+            onClick={handleSubmit} 
+            disabled={!canSubmit || isSubmitting} 
+            className="flex-1 bg-ods-system-greys-soft-grey text-ods-bg-surface font-['DM_Sans'] font-bold text-[14px] leading-[20px] tracking-[-0.28px] px-3 py-2.5 rounded-[6px] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ods-text-secondary transition-colors"
+          >
+            Save Configuration
           </Button>
         </div>
       </div>

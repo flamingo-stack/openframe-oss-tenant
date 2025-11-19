@@ -118,7 +118,7 @@ export function SsoConfigurationTab() {
 
   const rowActions: RowAction<UIProviderRow>[] = useMemo(() => [
     {
-      label: '',
+      label: ' ',
       icon: <EditProfileIcon className="h-6 w-6 text-ods-text-primary" />,
       onClick: (row) => {
         setEditing({
