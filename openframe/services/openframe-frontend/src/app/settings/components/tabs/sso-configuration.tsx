@@ -15,6 +15,7 @@ import { EditProfileIcon, RefreshIcon } from '@flamingo/ui-kit/components/icons'
 import { EditSsoConfigModal } from '../edit-sso-config-modal'
 import { SsoConfigDetailsModal } from '../sso-config-details-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
+import { getProviderIcon } from '../../utils/get-provider-icon'
 
 type UIProviderRow = {
   id: string
@@ -79,9 +80,12 @@ export function SsoConfigurationTab() {
       label: 'OAUTH PROVIDER',
       width: 'w-1/3',
       renderCell: (row) => (
-        <div className="flex flex-col justify-center w-80 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
-          <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+        <div className="flex items-center gap-3 w-80 shrink-0">
+          {getProviderIcon(row.provider)}
+          <div className="flex flex-col justify-center">
+            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
+            <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+          </div>
         </div>
       )
     },

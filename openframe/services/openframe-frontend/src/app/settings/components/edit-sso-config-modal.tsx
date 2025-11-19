@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { X, Copy, Eye, EyeOff } from 'lucide-react'
-import { Button, Label, Checkbox } from '@flamingo/ui-kit'
+import { Copy, Eye, EyeOff } from 'lucide-react'
+import { Button, Label, Checkbox, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit'
 import { Input } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { runtimeEnv } from '@lib/runtime-config'
+import { getProviderIcon } from '../utils/get-provider-icon'
 
 interface EditSsoConfigModalProps {
   isOpen: boolean
@@ -26,9 +27,9 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
   const { toast } = useToast()
-  
+
   const isMicrosoft = providerKey.toLowerCase() === 'microsoft'
-  
+
   const redirectUrl = useMemo(() => {
     const sharedHost = runtimeEnv.sharedHostUrl() || (typeof window !== 'undefined' ? window.location.origin : '')
     return `${sharedHost}/sas/login/oauth2/code/${providerKey.toLowerCase()}`
@@ -70,8 +71,6 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
     return hasBasicFields
   }, [clientId, clientSecret, isMicrosoft, isSingleTenant, msTenantId])
 
-  if (!isOpen) return null
-
   const handleSubmit = async () => {
     if (!canSubmit) return
     setIsSubmitting(true)
@@ -94,22 +93,18 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[480px] flex flex-col p-6 gap-4">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-            Edit SSO Configuration
-          </h2>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onClose} 
-            className="text-ods-text-secondary hover:text-white p-0" 
-            centerIcon={<X className="h-5 w-5" />}
-          />  
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
+      <ModalHeader>
+        <div className="flex items-center gap-3">
+          {getProviderIcon(providerKey)}
+          <ModalTitle>Edit SSO Configuration</ModalTitle>
         </div>
+        <p className="text-ods-text-secondary text-sm mt-1">
+          Configure OAuth credentials for {providerDisplayName}
+        </p>
+      </ModalHeader>
 
+      <div className="p-6 space-y-4">
         {/* Redirect URL Section */}
         <div className="bg-ods-card border border-ods-border rounded-[6px] p-3 flex flex-col gap-2">
           <Label className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
@@ -205,25 +200,23 @@ export function EditSsoConfigModal({ isOpen, onClose, providerKey, providerDispl
             )}
           </>
         )}
-
-        {/* Footer */}
-        <div className="flex gap-3 mt-2">
-          <Button 
-            onClick={onClose} 
-            className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[14px] leading-[20px] tracking-[-0.28px] px-3 py-2.5 rounded-[6px] hover:bg-ods-bg-surface transition-colors"
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={!canSubmit || isSubmitting} 
-            className="flex-1 bg-ods-system-greys-soft-grey text-ods-bg-surface font-['DM_Sans'] font-bold text-[14px] leading-[20px] tracking-[-0.28px] px-3 py-2.5 rounded-[6px] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ods-text-secondary transition-colors"
-          >
-            Save Configuration
-          </Button>
-        </div>
       </div>
-    </div>
+
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={!canSubmit || isSubmitting}
+        >
+          {isSubmitting ? 'Saving...' : 'Save Configuration'}
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }
 
