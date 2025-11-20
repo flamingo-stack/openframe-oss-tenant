@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Search, Check } from 'lucide-react'
-import { Button } from '@flamingo/ui-kit'
+import { Search, Check } from 'lucide-react'
+import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { getOSPlatformId, OS_TYPES } from '@flamingo/ui-kit'
 import { useScripts } from '../../scripts/hooks/use-scripts'
@@ -238,45 +238,25 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
     setSelectedCategory(null)
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[600px] h-[90vh] max-h-[800px] flex flex-col p-10 gap-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] text-ods-text-primary tracking-[-0.64px] leading-[40px]">
-            {isRedirecting ? 'Scripts Running' : 'Select Script'}
-          </h2>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            className="text-ods-text-secondary hover:text-white transition-colors p-1"
-            disabled={isRedirecting}
-          >
-            <X className="h-6 w-6" />
-          </Button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl h-[90vh] max-h-[800px] flex flex-col">
+      <ModalHeader>
+        <ModalTitle>{isRedirecting ? 'Scripts Running' : 'Select Script'}</ModalTitle>
+        <p className="text-ods-text-secondary text-sm mt-1">
+          {isRedirecting ? 'Redirecting to device logs...' : 'Choose scripts to execute on this device'}
+        </p>
+      </ModalHeader>
 
+      <div className="flex-1 min-h-0 overflow-hidden">
         {isRedirecting ? (
           /* Loading State with Skeletons */
-          <>
+          <div className="p-6 space-y-4">
             {/* Search Input Skeleton */}
-            <div className="flex flex-col gap-1">
-              <div className="bg-ods-card border border-ods-border rounded-[6px] h-[52px] animate-pulse"></div>
-            </div>
+            <div className="bg-ods-card border border-ods-border rounded-[6px] h-[52px] animate-pulse"></div>
 
             {/* Script List Skeleton */}
-            <div className="flex flex-col gap-2 flex-1 min-h-0">
-              <div className="bg-ods-card border border-ods-border rounded-[6px] flex-1 min-h-0 p-4">
-                <ListLoader />
-              </div>
-            </div>
-
-            {/* Footer Skeleton */}
-            <div className="flex gap-6">
-              <div className="flex-1 bg-ods-card border border-ods-border rounded-[6px] h-[48px] animate-pulse"></div>
-              <div className="flex-1 bg-ods-accent/20 rounded-[6px] h-[48px] animate-pulse"></div>
+            <div className="bg-ods-card border border-ods-border rounded-[6px] h-64 p-4">
+              <ListLoader />
             </div>
 
             {/* Redirecting Message */}
@@ -285,128 +265,122 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                 Redirecting to device logs...
               </p>
             </div>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="p-6 space-y-4 h-full flex flex-col">
             {/* Search Input */}
             <div className="flex flex-col gap-1">
-          <div className="bg-ods-card border border-ods-border rounded-[6px] flex items-center gap-2 p-3">
-            <Search className="h-6 w-6 text-ods-text-secondary" />
-            <input
-              type="text"
-              placeholder="Search for Script"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent text-ods-text-secondary font-['DM_Sans'] font-medium text-[18px] leading-[24px] flex-1 placeholder-ods-text-secondary focus:outline-none"
-            />
-          </div>
-          
-          {/* Category Filters */}
-          <div className="flex items-center gap-1">
-            <div className="flex flex-wrap gap-1 flex-1">
-              {categories.map(category => (
+              <div className="bg-ods-card border border-ods-border rounded-[6px] flex items-center gap-2 p-3">
+                <Search className="h-6 w-6 text-ods-text-secondary" />
+                <input
+                  type="text"
+                  placeholder="Search for Script"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-transparent text-ods-text-secondary font-['DM_Sans'] font-medium text-[18px] leading-[24px] flex-1 placeholder-ods-text-secondary focus:outline-none"
+                />
+              </div>
+
+              {/* Category Filters */}
+              <div className="flex items-center gap-1">
+                <div className="flex flex-wrap gap-1 flex-1">
+                  {categories.map(category => (
+                    <Button
+                      key={category}
+                      onClick={() => handleCategoryFilter(category)}
+                      variant="outline"
+                      className="bg-ods-card border border-ods-border rounded-[6px] px-2 py-2 h-8 flex items-center justify-center"
+                    >
+                      <span className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-primary tracking-[-0.28px] leading-[20px] uppercase">
+                        {category}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
                 <Button
-                  key={category}
-                  onClick={() => handleCategoryFilter(category)}
-                  variant="outline"
-                  className="bg-ods-card border border-ods-border rounded-[6px] px-2 py-2 h-8 flex items-center justify-center"
+                  onClick={handleShowAll}
+                  variant="link"
+                  className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary underline leading-[20px] ml-2 p-0 h-auto"
                 >
-                  <span className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-primary tracking-[-0.28px] leading-[20px] uppercase">
-                    {category}
-                  </span>
+                  Show All
                 </Button>
-              ))}
+              </div>
             </div>
-            <Button
-              onClick={handleShowAll}
-              variant="link"
-              className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary underline leading-[20px] ml-2 p-0 h-auto"
-            >
-              Show All
-            </Button>
-          </div>
-        </div>
 
-        {/* Script List */}
-        <div className="flex flex-col gap-2 flex-1 min-h-0">
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSelectAll}
-              variant="link"
-              className="font-['DM_Sans'] font-medium text-[14px] text-ods-accent underline leading-[20px] p-0 h-auto"
-            >
-              Select All
-            </Button>
-          </div>
+            {/* Script List */}
+            <div className="flex flex-col gap-2 flex-1 min-h-0">
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSelectAll}
+                  variant="link"
+                  className="font-['DM_Sans'] font-medium text-[14px] text-ods-accent underline leading-[20px] p-0 h-auto"
+                >
+                  Select All
+                </Button>
+              </div>
 
-          <div className="bg-ods-card border border-ods-border rounded-[6px] flex-1 min-h-0 overflow-hidden">
-            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-ods-border scrollbar-track-transparent">
-              {isLoading ? (
-                <div className="py-8">
-                  <ListLoader />
-                </div>
-              ) : error ? (
-                <div className="py-4">
-                  <PageError message={`Error loading scripts: ${error}`} />
-                </div>
-              ) : filteredScripts.length === 0 ? (
-                <div className="text-center text-ods-text-secondary py-8">
-                  No scripts found matching your criteria
-                </div>
-              ) : (
-                <div className="flex flex-col">
-                  {filteredScripts.map((script, index) => {
-                    const isSelected = selectedScripts.includes(script.id.toString())
-                    return (
-                      <div
-                        key={script.id}
-                        onClick={() => handleScriptToggle(script.id)}
-                        className={`flex gap-4 items-center justify-start px-4 py-3 cursor-pointer border-b border-ods-border ${
-                          isSelected ? 'bg-accent-active' : 'bg-ods-bg'
-                        } ${index === filteredScripts.length - 1 ? 'border-b-0' : ''}`}
-                      >
-                        <div className="flex flex-col flex-1">
-                          <div className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary leading-[24px] mb-1">
-                            {script.name}
+              <div className="bg-ods-card border border-ods-border rounded-[6px] flex-1 min-h-0 overflow-hidden">
+                <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-ods-border scrollbar-track-transparent">
+                  {isLoading ? (
+                    <div className="py-8">
+                      <ListLoader />
+                    </div>
+                  ) : error ? (
+                    <div className="py-4">
+                      <PageError message={`Error loading scripts: ${error}`} />
+                    </div>
+                  ) : filteredScripts.length === 0 ? (
+                    <div className="text-center text-ods-text-secondary py-8">
+                      No scripts found matching your criteria
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {filteredScripts.map((script, index) => {
+                        const isSelected = selectedScripts.includes(script.id.toString())
+                        return (
+                          <div
+                            key={script.id}
+                            onClick={() => handleScriptToggle(script.id)}
+                            className={`flex gap-4 items-center justify-start px-4 py-3 cursor-pointer border-b border-ods-border ${
+                              isSelected ? 'bg-accent-active' : 'bg-ods-bg'
+                            } ${index === filteredScripts.length - 1 ? 'border-b-0' : ''}`}
+                          >
+                            <div className="flex flex-col flex-1">
+                              <div className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary leading-[24px] mb-1">
+                                {script.name}
+                              </div>
+                              <div className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
+                                isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'
+                              }`}>
+                                {script.description}
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0">
+                              <CustomCheckbox active={isSelected} />
+                            </div>
                           </div>
-                          <div className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
-                            isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'
-                          }`}>
-                            {script.description}
-                          </div>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <CustomCheckbox active={isSelected} />
-                        </div>
-                      </div>
-                    )
-                  })}
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
-        </div>
-
-
-        {/* Footer */}
-        <div className="flex gap-6">
-          <Button
-            onClick={onClose}
-            className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface transition-colors"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleRunScripts}
-            disabled={selectedScripts.length === 0}
-            className="flex-1 bg-ods-accent text-text-on-accent font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ods-accent-hover transition-colors"
-          >
-            Run Script{selectedScripts.length !== 1 ? 's' : ''}
-          </Button>
-        </div>
-          </>
         )}
       </div>
-    </div>
+
+      <ModalFooter>
+        <Button variant="outline" onClick={onClose} disabled={isRedirecting}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleRunScripts}
+          disabled={selectedScripts.length === 0 || isRedirecting}
+        >
+          {isRedirecting ? 'Redirecting...' : `Run Script${selectedScripts.length !== 1 ? 's' : ''}`}
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }

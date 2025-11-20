@@ -15,3 +15,5 @@ server:
   image: 
     repo: ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral
     tag: latest
+
+empty: ""

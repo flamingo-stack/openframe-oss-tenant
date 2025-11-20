@@ -1,12 +1,20 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
+use crate::config::update_config::{
+    MAX_CONSUMER_CREATE_RETRIES,
+    INITIAL_RETRY_DELAY_MS,
+    MAX_RETRY_DELAY_MS,
+    RECONNECTION_DELAY_MS,
+    CONSUMER_ACK_WAIT_SECS,
+};
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
+use async_nats::jetstream::consumer::DeliverPolicy;
 use tokio::time::Duration;
-use anyhow::Result;
+use anyhow::{Result, Context};
 use async_nats::jetstream;
 use futures::StreamExt;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use crate::services::AgentConfigurationService;
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 
@@ -37,9 +45,24 @@ impl OpenFrameClientUpdateListener {
     pub async fn start(&self) -> Result<tokio::task::JoinHandle<()>> {
         let listener = self.clone();
         let handle = tokio::spawn(async move {
-            // TODO: add reconnection and consumer creation loop after token fallback is implemented
-            if let Err(e) = listener.listen().await {
-                error!("OpenFrame client update message listener error: {:#}", e);
+            // Reconnection loop - keeps trying to reconnect on failure
+            loop {
+                info!("Starting OpenFrame client update listener...");
+                match listener.listen().await {
+                    Ok(_) => {
+                        warn!("OpenFrame client update listener exited normally (unexpected)");
+                    }
+                    Err(e) => {
+                        error!("OpenFrame client update listener error: {:#}", e);
+                    }
+                }
+
+                // Wait before reconnecting
+                info!(
+                    "Reconnecting OpenFrame client update listener in {} seconds...",
+                    RECONNECTION_DELAY_MS / 1000
+                );
+                tokio::time::sleep(Duration::from_millis(RECONNECTION_DELAY_MS)).await;
             }
         });
         Ok(handle)
@@ -86,12 +109,62 @@ impl OpenFrameClientUpdateListener {
     }
 
     async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> Result<PushConsumer> {
-        // TODO: retry if failed to create
         let consumer_configuration = Self::build_consumer_configuration(machine_id);
-        info!("Creating consumer for stream {}  ", Self::STREAM_NAME);
-        let consumer = js.create_consumer_on_stream(consumer_configuration, Self::STREAM_NAME).await?;
-        info!("Consumer created for stream: {}", Self::STREAM_NAME);
-        Ok(consumer)
+
+        // Retry loop with exponential backoff
+        let mut retry_count = 0;
+        let mut delay_ms = INITIAL_RETRY_DELAY_MS;
+
+        loop {
+            info!(
+                "Creating consumer for stream {} (attempt {}/{})",
+                Self::STREAM_NAME,
+                retry_count + 1,
+                MAX_CONSUMER_CREATE_RETRIES
+            );
+
+            // Try to create consumer directly on stream - if it exists, it will return the existing one
+            match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
+                Ok(consumer) => {
+                    info!("Consumer ready for stream: {}", Self::STREAM_NAME);
+                    return Ok(consumer);
+                }
+                Err(e) => {
+                    // Check if this is a "consumer already exists" type error - we can try to get existing consumer
+                    let error_msg = format!("{:?}", e);
+                    if error_msg.contains("consumer name already in use") || error_msg.contains("10013") {
+                        warn!("Consumer already exists, attempting to get existing consumer");
+                        // Try to get the existing consumer
+                        let durable_name = Self::build_durable_name(machine_id);
+                        if let Ok(existing_consumer) = js.get_consumer_from_stream(Self::STREAM_NAME, &durable_name).await {
+                            info!("Retrieved existing consumer for stream: {}", Self::STREAM_NAME);
+                            return Ok(existing_consumer);
+                        }
+                    }
+
+                    retry_count += 1;
+
+                    if retry_count >= MAX_CONSUMER_CREATE_RETRIES {
+                        error!(
+                            "Failed to create consumer after {} attempts: {:#}",
+                            MAX_CONSUMER_CREATE_RETRIES, e
+                        );
+                        return Err(e).context(format!(
+                            "Failed to create consumer after {} retries",
+                            MAX_CONSUMER_CREATE_RETRIES
+                        ));
+                    }
+
+                    warn!(
+                        "Failed to create consumer (attempt {}/{}): {:#}. Retrying in {} ms...",
+                        retry_count, MAX_CONSUMER_CREATE_RETRIES, e, delay_ms
+                    );
+
+                    tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                    delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
+                }
+            }
+        }
     }
 
     fn build_consumer_configuration(machine_id: &str) -> push::Config {
@@ -105,7 +178,8 @@ impl OpenFrameClientUpdateListener {
             filter_subject,
             deliver_subject,
             durable_name: Some(durable_name),
-            ack_wait: Duration::from_secs(60),
+            ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
+            deliver_policy: DeliverPolicy::Last,
             ..Default::default()
         }
     }
@@ -119,7 +193,9 @@ impl OpenFrameClientUpdateListener {
     }
 
     fn build_durable_name(machine_id: &str) -> String {
-        format!("machine_{}_client-update_consumer", machine_id)
+        // v2 suffix forces recreation of consumer with proper DeliverPolicy::Last
+        // Remove v2 suffix once old consumers are cleaned up
+        format!("machine_{}_client-update_consumer_v2", machine_id)
     }
 
 }
