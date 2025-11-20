@@ -2,17 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, RemoteControlIcon, ShellIcon, StatusTag } from '@flamingo/ui-kit'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@flamingo/ui-kit/components/ui'
-import { CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
+import { Button, StatusTag, ActionsMenu, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DetailPageContainer, RemoteControlIcon, ShellIcon, ScriptIcon } from '@flamingo/ui-kit'
 import { normalizeOSType } from '@flamingo/ui-kit'
 import { RemoteShellModal } from './remote-shell-modal'
-import { ScriptIcon, DetailPageContainer } from '@flamingo/ui-kit'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
 import { CardLoader, LoadError, NotFoundError } from '@flamingo/ui-kit'
@@ -20,6 +12,7 @@ import { ScriptsModal } from './scripts-modal'
 import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
 import { DEVICE_TABS } from './tabs/device-tabs'
 import { getDeviceStatusConfig } from '../utils/device-status'
+import { CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
 
 interface DeviceDetailsViewProps {
   deviceId: string
@@ -43,10 +36,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const normalizedDevice = deviceDetails
 
   const tacticalAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId
-    || normalizedDevice?.agent_id
 
   const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
-    || normalizedDevice?.agent_id
 
   const handleBack = () => {
     router.push('/devices')
@@ -86,9 +77,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   }
 
   const isWindows = useMemo(() => {
-    const osType = normalizedDevice?.platform || 
-                   normalizedDevice?.osType || 
-                   normalizedDevice?.operating_system
+    const osType = normalizedDevice?.platform ||
+      normalizedDevice?.osType ||
+      normalizedDevice?.operating_system
     return normalizeOSType(osType) === 'WINDOWS'
   }, [normalizedDevice])
 
@@ -104,61 +95,62 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     return <NotFoundError message="Device not found" />
   }
 
+  const remoteShellMenuGroups = isWindows ? [{
+    items: [
+      {
+        id: 'cmd',
+        label: 'CMD',
+        icon: <CmdIcon className="w-6 h-6" />,
+        onClick: () => handleRemoteShell('cmd')
+      },
+      {
+        id: 'powershell',
+        label: 'PowerShell',
+        icon: <PowerShellIcon className="w-6 h-6" />,
+        onClick: () => handleRemoteShell('powershell')
+      }
+    ]
+  }] : []
+
   const headerActions = (
     <>
       <Button
         onClick={handleRunScript}
-        variant="outline"
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+        variant="device-action"
         leftIcon={<ScriptIcon className="h-6 w-6" />}
+        disabled={!tacticalAgentId || deviceDetails?.status !== 'ONLINE'}
       >
         Run Script
       </Button>
       <Button
         onClick={handleRemoteControl}
-        variant="outline"
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+        variant="device-action"
         leftIcon={<RemoteControlIcon className="h-6 w-6" />}
-        disabled={!meshcentralAgentId}
+        disabled={!meshcentralAgentId || deviceDetails?.status !== 'ONLINE'}
       >
         Remote Control
       </Button>
       {isWindows ? (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="outline"
+              variant="device-action"
               leftIcon={<ShellIcon className="h-6 w-6" />}
-              className="bg-ods-card focus-visible:ring-0"
-              disabled={!meshcentralAgentId}
+              disabled={!meshcentralAgentId || deviceDetails?.status !== 'ONLINE'}
             >
               Remote Shell
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-ods-card border-ods-border">
-            <DropdownMenuItem 
-              onClick={() => handleRemoteShell('cmd')}
-              className="text-ods-text-primary focus:bg-ods-accent cursor-pointer"
-            >
-              <CmdIcon className="h-5 w-5 mr-2" />
-              CMD
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => handleRemoteShell('powershell')}
-              className="text-ods-text-primary focus:bg-ods-accent cursor-pointer"
-            >
-              <PowerShellIcon className="h-5 w-5 mr-2" />
-              PowerShell
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end" className="p-0 border-none">
+            <ActionsMenu groups={remoteShellMenuGroups} />
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
         <Button
           onClick={() => handleRemoteShell('cmd')}
-          variant="outline"
-          className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center gap-2"
+          variant="device-action"
           leftIcon={<ShellIcon className="h-6 w-6" />}
-          disabled={!meshcentralAgentId}
+          disabled={!meshcentralAgentId || deviceDetails?.status !== 'ONLINE'}
         >
           Remote Shell
         </Button>

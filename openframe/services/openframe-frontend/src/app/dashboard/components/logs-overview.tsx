@@ -47,10 +47,6 @@ export function LogsOverviewSection() {
     navigateToLogDetails(router, log)
   }
 
-  const handleInfoCardClick = () => {
-    router.push(`/logs-page`)
-  }
-
   return (
     <div className="space-y-4">
       <div>
@@ -71,7 +67,7 @@ export function LogsOverviewSection() {
             percentage={logs.infoPercentage}
             showProgress
             progressColor="#5ea62e"
-            onClick={handleInfoCardClick}
+            href="/logs-page"
           />
           <DashboardInfoCard
             title="Warning Logs"
@@ -79,7 +75,7 @@ export function LogsOverviewSection() {
             percentage={logs.warningPercentage}
             showProgress
             progressColor="#d29b2e"
-            onClick={handleInfoCardClick}
+            href="/logs-page"
           />
           <DashboardInfoCard
             title="Critical Logs"
@@ -87,7 +83,7 @@ export function LogsOverviewSection() {
             percentage={logs.criticalPercentage}
             showProgress
             progressColor="#b43b3b"
-            onClick={handleInfoCardClick}
+            href="/logs-page"
           />
         </div>
 

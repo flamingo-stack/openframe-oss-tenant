@@ -1,10 +1,9 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { Button } from '@flamingo/ui-kit'
+import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit'
 import { Input, Label, Textarea } from '@flamingo/ui-kit/components/ui'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { X } from 'lucide-react'
 
 interface CreateApiKeyModalProps {
   isOpen: boolean
@@ -40,8 +39,6 @@ export function CreateApiKeyModal({ isOpen, onClose, onCreated, create, mode = '
 
   const canSubmit = useMemo(() => name.trim().length > 0, [name])
 
-  if (!isOpen) return null
-  
   const handleSubmit = async () => {
     if (!canSubmit) return
     setIsSubmitting(true)
@@ -70,63 +67,60 @@ export function CreateApiKeyModal({ isOpen, onClose, onCreated, create, mode = '
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[720px] flex flex-col p-10 gap-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] tracking-[-0.8px] text-ods-text-primary">{mode === 'edit' ? 'Edit API Key' : 'Create API Key'}</h2>
-          <Button onClick={onClose} variant="ghost" className="text-ods-text-secondary hover:text-white p-1">
-            <X className="h-6 w-6" />
-          </Button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
+      <ModalHeader>
+        <ModalTitle>{mode === 'edit' ? 'Edit API Key' : 'Create API Key'}</ModalTitle>
+        <p className="text-ods-text-secondary text-sm mt-1">
+          {mode === 'edit' ? 'Update API key details' : 'Create a new API key for authentication'}
+        </p>
+      </ModalHeader>
 
+      <div className="px-6 py-4 space-y-4">
         {/* Name */}
-        <div className="flex flex-col gap-2">
-          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">API Key Name</Label>
+        <div className="space-y-2">
+          <Label>API Key Name *</Label>
           <Input
             placeholder="Enter Name Here"
             value={name}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-            className="h-14 bg-ods-card border-ods-border"
+            className="bg-ods-card"
           />
         </div>
 
         {/* Description */}
-        <div className="flex flex-col gap-2">
-          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Description</Label>
+        <div className="space-y-2">
+          <Label>Description</Label>
           <Textarea
             placeholder="Enter Description Here"
             value={description}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-            className="h-32 rounded-lg border border-ods-border bg-ods-card text-ods-text-primary p-3"
+            rows={4}
+            className="bg-ods-card"
           />
         </div>
 
         {/* Expiration */}
-        <div className="flex flex-col gap-2">
-          <Label className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary">Expiration Date</Label>
-          <div className="relative">
-            <Input
-              type="datetime-local"
-              placeholder="Select Expiration Date"
-              value={expiresAt}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExpiresAt(e.target.value)}
-              className="h-14 bg-ods-card border-ods-border pl-10"
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex gap-6 pt-2">
-          <Button onClick={onClose} className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface transition-colors">
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting} className="flex-1 bg-ods-accent text-text-on-accent font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ods-accent-hover transition-colors">
-            {mode === 'edit' ? 'Save Changes' : 'Create API Key'}
-          </Button>
+        <div className="space-y-2">
+          <Label>Expiration Date (Optional)</Label>
+          <Input
+            type="datetime-local"
+            placeholder="Select Expiration Date"
+            value={expiresAt}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExpiresAt(e.target.value)}
+            className="bg-ods-card"
+          />
         </div>
       </div>
-    </div>
+
+      <ModalFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
+          {isSubmitting ? 'Saving...' : (mode === 'edit' ? 'Save Changes' : 'Create API Key')}
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }
 

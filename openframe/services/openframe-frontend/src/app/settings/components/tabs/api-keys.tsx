@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { ListPageContainer, Table, type TableColumn, StatusTag, Button, MoreActionsMenu } from '@flamingo/ui-kit/components/ui'
-import { EyeIcon, PlusCircleIcon, DocumentIcon } from '@flamingo/ui-kit/components/icons'
+import { PlusCircleIcon, DocumentIcon } from '@flamingo/ui-kit/components/icons'
 import { useApiKeys, type ApiKeyRecord } from '../../hooks/use-api-keys'
 import { CreateApiKeyModal } from '../../components/create-api-key-modal'
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal'
@@ -84,39 +84,6 @@ export function ApiKeysTab() {
           <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">{row.expiresAt ? new Date(row.expiresAt).toLocaleTimeString() : '—'}</span>
         </div>
       )
-    },
-    {
-      key: 'actions',
-      label: '',
-      width: 'w-40',
-      renderCell: (row) => (
-        <div className="flex items-center gap-2 justify-end">
-          <MoreActionsMenu
-            className="px-0"
-            items={[
-              { label: 'Edit', onClick: () => { setSelectedKey(row); setIsEditOpen(true) } },
-              { label: 'Regenerate', onClick: () => { setSelectedKey(row); setIsRegenOpen(true) } },
-              { label: row.enabled ? 'Disable' : 'Enable', onClick: () => {
-                if (row.enabled) {
-                  setSelectedKey(row); setIsDisableOpen(true)
-                } else {
-                  // Enable without confirmation
-                  setApiKeyEnabled(row.id, true).then(() => fetchApiKeys())
-                }
-              }, danger: row.enabled }
-            ]}
-          />
-          <Button
-            variant="outline"
-            className="bg-ods-card border-ods-border hover:bg-ods-bg-hover h-10 w-10 p-0 flex items-center justify-center"
-            onClick={() => { setSelectedKey(row); setDetailsOpen(true) }}
-            aria-label="View API Key Details"
-            title="View"
-          >
-            <EyeIcon className="h-5 w-5" />
-          </Button>
-        </div>
-      )
     }
   ]
 
@@ -148,6 +115,31 @@ export function ApiKeysTab() {
         loading={isLoading}
         emptyMessage={error || 'No API keys found.'}
         showFilters={false}
+        actionsWidth={140}
+        renderRowActions={(row) => (
+          <div className='flex items-center gap-3'>
+            <MoreActionsMenu
+              items={[
+                { label: 'Edit', onClick: () => { setSelectedKey(row); setIsEditOpen(true) } },
+                { label: 'Regenerate', onClick: () => { setSelectedKey(row); setIsRegenOpen(true) } },
+                { label: row.enabled ? 'Disable' : 'Enable', onClick: () => {
+                  if (row.enabled) {
+                    setSelectedKey(row); setIsDisableOpen(true)
+                  } else {
+                    // Enable without confirmation
+                    setApiKeyEnabled(row.id, true).then(() => fetchApiKeys())
+                  }
+                }, danger: row.enabled }
+              ]}
+            />
+            <Button
+              variant="outline"
+              onClick={() => { setSelectedKey(row); setDetailsOpen(true) }}
+            >
+              Details
+            </Button>
+          </div>
+        )}
       />
       <CreateApiKeyModal
         isOpen={isCreateOpen}

@@ -1,8 +1,9 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { DeviceCard, ListLoader, StatusTag } from "@flamingo/ui-kit/components/ui"
+import { DeviceCard, StatusTag } from "@flamingo/ui-kit/components/ui"
 import { type Device } from '../types/device.types'
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device-status'
+import { ContentLoadingContainer, DeviceCardSkeletonGrid } from "@flamingo/ui-kit/components/loading"
 
 interface DevicesGridProps {
   devices: Device[]
@@ -49,48 +50,54 @@ export function DevicesGrid({
           ))}
         </div>
       ) : null}
-      
-      {isLoading ? (
-        <ListLoader />
-      ) : devices.length === 0 ? (
-        <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-          <p className="text-ods-text-secondary">No devices found. Try adjusting your search or filters.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {devices.map(device => {
-            const statusConfig = getDeviceStatusConfig(device.status)
-            return (
-              <DeviceCard
-                key={device.id || device.machineId}
-                device={{
-                  id: device.id,
-                  machineId: device.machineId,
-                  name: device.displayName || device.hostname || device.description || '',
-                  organization: device.organization || device.machineId,
-                  lastSeen: device.lastSeen,
-                  operatingSystem: getDeviceOperatingSystem(device.osType),
-                }}
-                statusBadgeComponent={
-                  device.status && (
-                    <StatusTag
-                      label={statusConfig.label}
-                      variant={statusConfig.variant}
-                    />
-                  )
-                }
-                onDeviceClick={() => handleDeviceClick(device)}
-                actions={{
-                  moreButton: {
-                    visible: false
+
+      <ContentLoadingContainer
+        isLoading={isLoading}
+        skeletonComponent={
+          <DeviceCardSkeletonGrid count={12} />
+        }
+        minHeight="min-h-[400px] md:min-h-[900px]"
+      >
+        {devices.length === 0 ? (
+          <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
+            <p className="text-ods-text-secondary">No devices found. Try adjusting your search or filters.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {devices.map(device => {
+              const statusConfig = getDeviceStatusConfig(device.status)
+              return (
+                <DeviceCard
+                  key={device.id || device.machineId}
+                  device={{
+                    id: device.id,
+                    machineId: device.machineId,
+                    name: device.displayName || device.hostname || device.description || '',
+                    organization: device.organization || device.machineId,
+                    lastSeen: device.lastSeen,
+                    operatingSystem: getDeviceOperatingSystem(device.osType),
+                  }}
+                  statusBadgeComponent={
+                    device.status && (
+                      <StatusTag
+                        label={statusConfig.label}
+                        variant={statusConfig.variant}
+                      />
+                    )
                   }
-                }}
-                className="h-full"
-              />
-            )
-          })}
-        </div>
-      )}
+                  onDeviceClick={() => handleDeviceClick(device)}
+                  actions={{
+                    moreButton: {
+                      visible: false
+                    }
+                  }}
+                  className="h-full"
+                />
+              )
+            })}
+          </div>
+        )}
+      </ContentLoadingContainer>
     </div>
   )
 }

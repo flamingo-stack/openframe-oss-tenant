@@ -2,12 +2,12 @@
 
 import React, { useEffect } from 'react'
 import { Button, DetailPageContainer, CardLoader, LoadError, NotFoundError, InfoCard } from '@flamingo/ui-kit'
+import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
 import { useRouter } from 'next/navigation'
 import { useOrganizationDetails } from '../hooks/use-organization-details'
 import { PencilIcon } from 'lucide-react'
 import { useDeleteOrganization } from '../hooks/use-delete-organization'
 import { useToast } from '@flamingo/ui-kit/hooks'
-import { useAuthenticatedImage } from '@lib/use-authenticated-image'
 import { featureFlags } from '@lib/feature-flags'
 
 interface OrganizationDetailsViewProps {
@@ -19,12 +19,6 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   const { organization, isLoading, error, fetchOrganizationById } = useOrganizationDetails()
   const { deleteOrganization } = useDeleteOrganization()
   const { toast } = useToast()
-  
-  const shouldFetchImage = featureFlags.organizationImages.displayEnabled() && organization?.imageUrl
-  const { imageUrl } = useAuthenticatedImage(
-    shouldFetchImage ? organization.imageUrl : undefined,
-    shouldFetchImage ? organization.id : undefined
-  )
 
   useEffect(() => {
     if (id) {
@@ -94,11 +88,12 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       <div className="bg-ods-card border border-ods-border rounded-lg p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="flex items-center gap-3">
-            {featureFlags.organizationImages.displayEnabled() && imageUrl && (
-              <img 
-                src={imageUrl} 
-                alt={organization?.name || 'Organization'} 
-                className="w-16 h-16 object-cover rounded-md border border-ods-border"
+            {featureFlags.organizationImages.displayEnabled() && (
+              <OrganizationIcon
+                imageUrl={organization?.imageUrl}
+                organizationName={organization?.name || 'Organization'}
+                size="lg"
+                refreshKey={organization?.id}
               />
             )}
             <div>

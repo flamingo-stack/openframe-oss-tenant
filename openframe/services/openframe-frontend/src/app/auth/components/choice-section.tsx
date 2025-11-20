@@ -253,7 +253,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               <Button
                 onClick={() => setShowForgotPassword(true)}
                 variant="ghost"
-                className="text-ods-text-secondary hover:text-ods-accent font-body text-[14px] font-medium leading-5 p-0 h-auto"
+                className="!w-full sm:!w-full"
               >
                 Forgot password?
               </Button>
