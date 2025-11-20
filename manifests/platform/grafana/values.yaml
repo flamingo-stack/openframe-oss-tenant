@@ -140,3 +140,50 @@ grafana:
     - name: integrated-tools
       configMap:
         name: integrated-tools
+
+  image:
+  registry: docker.io
+  repository: grafana/grafana
+  tag: "11.1.0"
+  sha: ""
+  pullPolicy: IfNotPresent
+
+testFramework:
+  image:
+    registry: docker.io
+    repository: bats/bats
+    tag: "v1.4.1"
+  imagePullPolicy: IfNotPresent
+
+
+downloadDashboardsImage:
+  registry: docker.io
+  repository: curlimages/curl
+  tag: 8.9.1
+  sha: ""
+  pullPolicy: IfNotPresent
+
+initChownData:
+  image:
+    registry: docker.io
+    repository: library/busybox
+    tag: "1.31.1"
+    sha: ""
+    pullPolicy: IfNotPresent
+
+sidecar:
+  image:
+    registry: quay.io
+    repository: kiwigrid/k8s-sidecar
+    tag: 1.30.10
+    sha: ""
+    pullPolicy: IfNotPresent
+
+imageRenderer:
+  image:
+    registry: docker.io
+    repository: grafana/grafana-image-renderer
+    tag: latest
+    sha: ""
+    pullSecrets: []
+    pullPolicy: Always
