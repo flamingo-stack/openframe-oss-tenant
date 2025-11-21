@@ -149,7 +149,7 @@ grafana:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: grafana/grafana
-    tag: "11.1.13"
+    tag: "11.1.0"
     sha: ""
     pullPolicy: Always
 
@@ -163,7 +163,7 @@ grafana:
   downloadDashboardsImage:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
-    tag: 8.5.0
+    tag: "8.9.1"
     sha: ""
     pullPolicy: Always
 
@@ -171,15 +171,16 @@ grafana:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: library/busybox
-      tag: "1.32.1"
+      tag: "1.31.1"
       sha: ""
       pullPolicy: Always
 
+
   sidecar:
     image:
-      registry: quay.io
+      registry: ghcr.io/flamingo-stack/registry
       repository: kiwigrid/k8s-sidecar
-      tag: 1.30.10
+      tag: "1.30.10"
       sha: ""
     imagePullPolicy: Always
 
