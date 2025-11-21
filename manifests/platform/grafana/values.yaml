@@ -1,3 +1,6 @@
+registerJob:
+  enabled: true
+
 grafana:
   ingress:
     enabled: false
@@ -23,7 +26,7 @@ grafana:
 
   admin:
     existingSecret: "grafana"
-    userKey: user         
+    userKey: user
     passwordKey: password
 
   grafana.ini:
@@ -73,13 +76,70 @@ grafana:
     dashboardproviders.yaml:
       apiVersion: 1
       providers:
-        ...
+        - name: 'home'
+          folder: 'home'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/home
+        - name: 'platform'
+          folder: 'platform'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/platform
+        - name: 'microservices'
+          folder: 'microservices'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/microservices
+        - name: 'datasources'
+          folder: 'datasources'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/datasources
+        - name: 'integrated-tools'
+          folder: 'integrated-tools'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/integrated-tools
 
   extraVolumeMounts:
-    ...
+    - name: home
+      mountPath: /var/lib/grafana/dashboards/home
+    - name: platform
+      mountPath: /var/lib/grafana/dashboards/platform
+    - name: microservices
+      mountPath: /var/lib/grafana/dashboards/microservices
+    - name: datasources
+      mountPath: /var/lib/grafana/dashboards/datasources
+    - name: integrated-tools
+      mountPath: /var/lib/grafana/dashboards/integrated-tools
 
   extraVolumes:
-    ...
+    - name: home
+      configMap:
+        name: home
+    - name: platform
+      configMap:
+        name: platform
+    - name: microservices
+      configMap:
+        name: microservices
+    - name: datasources
+      configMap:
+        name: datasources
+    - name: integrated-tools
+      configMap:
+        name: integrated-tools
 
   image:
     registry: docker.io
@@ -116,7 +176,7 @@ grafana:
       repository: kiwigrid/k8s-sidecar
       tag: 1.30.10
       sha: ""
-      pullPolicy: IfNotPresent
+    imagePullPolicy: IfNotPresent
 
   imageRenderer:
     image:
