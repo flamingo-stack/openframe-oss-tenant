@@ -11,16 +11,15 @@ import {
   UsersGroupIcon,
   DocumentIcon
 } from '@flamingo/ui-kit'
-import { apiClient } from '@lib/api-client'
-import { GET_ORGANIZATIONS_QUERY } from '../../organizations/queries/organizations-queries'
-import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
+import { useOnboardingCompletion } from '../hooks/use-onboarding-completion'
 
 /**
- * Dashboard onboarding section with direct API completion checks
- * Each check makes its own fresh API call
+ * Dashboard onboarding section using existing hooks for completion detection
+ * Eliminates duplicate API calls by leveraging dashboard hooks
  */
 export function OnboardingSection() {
   const router = useRouter()
+  const { completionStatus, isLoading } = useOnboardingCompletion()
 
   const onboardingSteps: OnboardingStepConfig[] = [
     {
@@ -32,11 +31,6 @@ export function OnboardingSection() {
       completedText: 'SSO Configurations',
       onAction: async () => {
         router.push('/settings?tab=sso-configuration')
-      },
-      checkComplete: async () => {
-        const res = await apiClient.get<{ provider: string, displayName: string }[]>('api/sso/providers/available')
-        console.log('✓ SSO Check:', res.data?.length || 0, 'providers')
-        return res.ok && res.data ? res.data.length > 0 : false
       }
     },
     {
@@ -48,15 +42,6 @@ export function OnboardingSection() {
       completedText: 'Manage Organizations',
       onAction: async () => {
         router.push('/organizations')
-      },
-      checkComplete: async () => {
-        const res = await apiClient.post<any>('/api/graphql', {
-          query: GET_ORGANIZATIONS_QUERY,
-          variables: { search: '' }
-        })
-        const orgs = res.data?.data?.organizations?.organizations || []
-        console.log('✓ Organizations Check:', orgs.length, 'organizations')
-        return orgs.length > 0
       }
     },
     {
@@ -68,15 +53,6 @@ export function OnboardingSection() {
       completedText: 'Manage Devices',
       onAction: async () => {
         router.push('/devices')
-      },
-      checkComplete: async () => {
-        const res = await apiClient.post<any>('/api/graphql', {
-          query: GET_DEVICE_FILTERS_QUERY,
-          variables: { filter: {} }
-        })
-        const count = res.data?.data?.deviceFilters?.filteredCount || 0
-        console.log('✓ Devices Check:', count, 'devices')
-        return count > 0
       }
     },
     {
@@ -88,11 +64,6 @@ export function OnboardingSection() {
       completedText: 'Manage Users',
       onAction: async () => {
         router.push('/settings?tab=company-and-users')
-      },
-      checkComplete: async () => {
-        const res = await apiClient.get<{ items: any[], totalElements: number }>('api/users?page=0&size=5')
-        console.log('✓ Users Check:', res.data?.totalElements || 0, 'users')
-        return res.ok && res.data ? res.data.totalElements > 1 : false
       }
     },
     {
@@ -105,7 +76,7 @@ export function OnboardingSection() {
       onAction: async () => {
         window.open('https://www.flamingo.run/knowledge-base', '_blank', 'noopener,noreferrer')
       }
-      // No checkComplete - will auto-mark as complete when clicked
+      // No checkComplete - auto-completes when clicked
     }
   ]
 
@@ -114,6 +85,8 @@ export function OnboardingSection() {
       steps={onboardingSteps}
       storageKey="openframe-dashboard-onboarding"
       spacing="space-y-4"
+      completionStatus={completionStatus}
+      isLoadingCompletion={isLoading}
     />
   )
 }
