@@ -7,5 +7,5 @@ appVersion: "1.0"
 
 dependencies:
   - name: grafana
-    version: ">=9.2.10"
+    version: "10.2.0"
     repository: oci://ghcr.io/flamingo-stack/registry/grafana/helm-charts
