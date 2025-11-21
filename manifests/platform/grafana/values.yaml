@@ -149,7 +149,7 @@ grafana:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: grafana/grafana
-    tag: "11.1.0"
+    tag: "11.1.13"
     sha: ""
     pullPolicy: Always
 
