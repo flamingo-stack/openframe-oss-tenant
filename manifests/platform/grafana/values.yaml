@@ -2,7 +2,7 @@ registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: curlimages/curl
+    repository: curl
     tag: "8.5.0"
     pullPolicy: IfNotPresent
 
@@ -148,7 +148,7 @@ grafana:
 
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: grafana/grafana
+    repository: grafana
     tag: "11.1.0"
     sha: ""
     pullPolicy: IfNotPresent
@@ -156,13 +156,13 @@ grafana:
   testFramework:
     image:
       registry: ghcr.io/flamingo-stack/registry
-      repository: bats/bats
+      repository: bats
       tag: "v1.4.1"
     imagePullPolicy: IfNotPresent
 
   downloadDashboardsImage:
     registry: ghcr.io/flamingo-stack/registry
-    repository: curlimages/curl
+    repository: curl
     tag: 8.9.1
     sha: ""
     pullPolicy: IfNotPresent
@@ -170,7 +170,7 @@ grafana:
   initChownData:
     image:
       registry: ghcr.io/flamingo-stack/registry
-      repository: library/busybox
+      repository: busybox
       tag: "1.31.1"
       sha: ""
       pullPolicy: IfNotPresent
@@ -178,7 +178,7 @@ grafana:
   sidecar:
     image:
       registry: quay.io
-      repository: kiwigrid/k8s-sidecar
+      repository: k8s-sidecar
       tag: 1.30.10
       sha: ""
     imagePullPolicy: IfNotPresent
@@ -186,7 +186,7 @@ grafana:
   imageRenderer:
     image:
       registry: ghcr.io/flamingo-stack/registry
-      repository: grafana/grafana-image-renderer
+      repository: grafana-image-renderer
       tag: latest
       sha: ""
       pullSecrets: []
