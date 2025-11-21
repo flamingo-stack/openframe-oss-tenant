@@ -151,21 +151,21 @@ grafana:
     repository: grafana/grafana
     tag: "11.1.0"
     sha: ""
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   testFramework:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: bats/bats
       tag: "v1.4.1"
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
 
   downloadDashboardsImage:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
     tag: 8.9.1
     sha: ""
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   initChownData:
     image:
@@ -173,7 +173,7 @@ grafana:
       repository: library/busybox
       tag: "1.31.1"
       sha: ""
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
 
   sidecar:
     image:
@@ -181,7 +181,7 @@ grafana:
       repository: kiwigrid/k8s-sidecar
       tag: 1.30.10
       sha: ""
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
 
   imageRenderer:
     image:
