@@ -147,8 +147,8 @@ grafana:
         name: integrated-tools
 
   image:
-    registry: ghcr.io/flamingo-stack/registry
-    repository: grafana/grafana
+ #   registry: ghcr.io/flamingo-stack/registry
+    repository: ghcr.io/flamingo-stack/registry/grafana/grafana
     tag: "11.1.0"
     sha: ""
     pullPolicy: Always
