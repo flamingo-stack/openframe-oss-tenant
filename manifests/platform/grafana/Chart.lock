@@ -1,0 +1,6 @@
+dependencies:
+- name: grafana
+  repository: oci://ghcr.io/flamingo-stack/registry/grafana/helm-charts
+  version: 10.2.0
+digest: sha256:4df863baf69d1dff7625731484ed9f372d7490ad74de3902201136091379b623
+generated: "2025-11-21T19:42:20.232688+02:00"
