@@ -360,7 +360,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         showFilters={true}
         mobileColumns={embedded ? ['logId', 'status'] : ['logId', 'status', 'device']}
         rowClassName="mb-1"
-        actionsWidth={100}
         cursorPagination={!embedded ? cursorPagination : undefined}
       />
 

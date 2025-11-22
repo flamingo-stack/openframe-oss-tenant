@@ -127,7 +127,6 @@ export function CurrentChats() {
         showFilters={true}
         mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
-        actionsWidth={100}
         cursorPagination={cursorPagination}
       />
     </ListPageLayout>

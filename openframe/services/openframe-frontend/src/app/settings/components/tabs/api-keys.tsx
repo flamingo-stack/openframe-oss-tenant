@@ -115,7 +115,6 @@ export function ApiKeysTab() {
         loading={isLoading}
         emptyMessage={error || 'No API keys found.'}
         showFilters={false}
-        actionsWidth={140}
         renderRowActions={(row) => (
           <div className='flex items-center gap-3'>
             <MoreActionsMenu

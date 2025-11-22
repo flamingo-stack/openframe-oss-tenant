@@ -10,7 +10,7 @@ import {
   TableDescriptionCell,
   type TableColumn,
   type RowAction,
-  type PagePagination
+  type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
 import { CirclePlusIcon } from "lucide-react"
 import { useDebounce } from "@flamingo/ui-kit/hooks"
@@ -40,7 +40,7 @@ export function ScriptsTable() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize] = useState(20)
   const prevFilterKeyRef = React.useRef<string | null>(null)
-  
+
   const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
@@ -75,27 +75,27 @@ export function ScriptsTable() {
 
   const filteredScripts = useMemo(() => {
     let filtered = transformedScripts
-    
+
     if (debouncedSearchTerm && debouncedSearchTerm.trim() !== '') {
       const searchLower = debouncedSearchTerm.toLowerCase().trim()
-      filtered = filtered.filter(script => 
+      filtered = filtered.filter(script =>
         script.name.toLowerCase().includes(searchLower) ||
         script.description.toLowerCase().includes(searchLower)
       )
     }
-    
+
     if (tableFilters.shellType && tableFilters.shellType.length > 0) {
-      filtered = filtered.filter(script => 
+      filtered = filtered.filter(script =>
         tableFilters.shellType.includes(script.shellType)
       )
     }
-    
+
     if (tableFilters.addedBy && tableFilters.addedBy.length > 0) {
-      filtered = filtered.filter(script => 
+      filtered = filtered.filter(script =>
         tableFilters.addedBy.includes(script.addedBy)
       )
     }
-    
+
     return filtered
   }, [transformedScripts, debouncedSearchTerm, tableFilters])
 
@@ -113,7 +113,7 @@ export function ScriptsTable() {
     {
       key: 'name',
       label: 'Name',
-      width: 'w-1/3',
+      width: 'w-[25%]',
       renderCell: (script) => (
         <div className="flex flex-col justify-center shrink-0">
           <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary line-clamp-2 break-words">
@@ -125,7 +125,7 @@ export function ScriptsTable() {
     {
       key: 'shellType',
       label: 'Shell Type',
-      width: 'w-[15%]',
+      width: 'w-[12%]',
       filterable: true,
       filterOptions: uniqueShellTypes,
       renderCell: (script) => (
@@ -135,7 +135,7 @@ export function ScriptsTable() {
     {
       key: 'supportedPlatforms',
       label: 'OS',
-      width: 'w-[15%]',
+      width: 'w-[12%]',
       renderCell: (script) => (
         <OSTypeBadgeGroup
           osTypes={script.supportedPlatforms}
@@ -145,7 +145,7 @@ export function ScriptsTable() {
     {
       key: 'addedBy',
       label: 'Added By',
-      width: 'w-[15%]',
+      width: 'w-[12%]',
       filterable: true,
       filterOptions: uniqueAddedBy,
       renderCell: (script) => (
@@ -155,9 +155,11 @@ export function ScriptsTable() {
     {
       key: 'description',
       label: 'Description',
-      width: 'w-1/2',
+      width: 'w-[39%]',
       renderCell: (script) => (
-        <TableDescriptionCell text={script.description} />
+        <span className="w-full pr-4 font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 block break-words">
+          {script.description || 'No description provided.'}
+        </span>
       )
     }
   ], [uniqueShellTypes, uniqueAddedBy])
@@ -185,7 +187,7 @@ export function ScriptsTable() {
       setCurrentPage(1)
     }
   }, [debouncedSearchTerm, isInitialized])
-  
+
   useEffect(() => {
     if (isInitialized) {
       const filterKey = JSON.stringify({
@@ -193,7 +195,7 @@ export function ScriptsTable() {
         addedBy: filters.addedBy?.sort() || [],
         category: filters.category?.sort() || [],
       })
-      
+
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
         refreshScripts()
         setCurrentPage(1)
@@ -211,16 +213,18 @@ export function ScriptsTable() {
     setCurrentPage(1)
   }, [])
 
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page)
-  }, [])
-
-  const pagePagination: PagePagination | undefined = totalPages > 1 ? {
-    currentPage,
-    totalPages,
-    pageSize,
-    totalItems: filteredScripts.length,
-    onPageChange: handlePageChange
+  const cursorPagination: CursorPaginationProps | undefined = totalPages > 1 ? {
+    hasNextPage: currentPage < totalPages,
+    isFirstPage: currentPage === 1,
+    startCursor: (currentPage - 1).toString(),
+    endCursor: currentPage.toString(),
+    currentCount: paginatedScripts.length,
+    itemName: 'scripts',
+    onNext: () => setCurrentPage(prev => Math.min(prev + 1, totalPages)),
+    onReset: () => setCurrentPage(1),
+    showInfo: true,
+    resetButtonLabel: 'First',
+    resetButtonIcon: 'home'
   } : undefined
 
 
@@ -256,7 +260,7 @@ export function ScriptsTable() {
         rowKey="id"
         loading={isLoading}
         emptyMessage={
-          debouncedSearchTerm 
+          debouncedSearchTerm
             ? `No scripts found matching "${debouncedSearchTerm}". Try adjusting your search.`
             : "No scripts found. Try adjusting your filters or add a new script."
         }
@@ -266,8 +270,7 @@ export function ScriptsTable() {
         showFilters={true}
         mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
-        actionsWidth={100}
-        pagePagination={pagePagination}
+        cursorPagination={cursorPagination}
       />
 
       {/* New Script Modal - Now handled by routing */}
