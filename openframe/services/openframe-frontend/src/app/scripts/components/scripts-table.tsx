@@ -156,7 +156,7 @@ export function ScriptsTable() {
       label: 'Description',
       width: 'w-[39%]',
       renderCell: (script) => (
-        <span className="w-full pr-4 font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 truncate block break-words">
+        <span className="w-full pr-4 font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 break-words">
           {script.description || 'No description provided.'}
         </span>
       )
