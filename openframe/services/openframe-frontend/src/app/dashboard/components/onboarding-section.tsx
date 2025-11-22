@@ -23,25 +23,14 @@ export function OnboardingSection() {
 
   const onboardingSteps: OnboardingStepConfig[] = [
     {
-      id: 'sso-configuration',
-      title: 'SSO Configuration',
-      description: 'Link Microsoft 365, Google Workspace, and other identity providers',
-      actionIcon: (color = 'black') => <SSOConfigurationIcon color={color} className="w-6 h-6" />,
-      actionText: 'Setup SSO',
-      completedText: 'SSO Configurations',
-      onAction: async () => {
-        router.push('/settings?tab=sso-configuration')
-      }
-    },
-    {
       id: 'organizations-setup',
       title: 'Organizations Setup',
       description: 'Create and configure your organizational structure',
       actionIcon: (color = 'black') => <OrganizationsIcon color={color} className="w-6 h-6" />,
       actionText: 'Add Organization',
-      completedText: 'Manage Organizations',
+      completedText: 'Add Organization',
       onAction: async () => {
-        router.push('/organizations')
+        router.push('/organizations/edit/new')
       }
     },
     {
@@ -49,10 +38,10 @@ export function OnboardingSection() {
       title: 'Device Management',
       description: 'Connect and monitor your fleet of devices',
       actionIcon: (color = 'black') => <DevicesIcon color={color} className="w-6 h-6" />,
-      actionText: 'Add Devices',
-      completedText: 'Manage Devices',
+      actionText: 'Add Device',
+      completedText: 'Add Device',
       onAction: async () => {
-        router.push('/devices')
+        router.push('/devices/new')
       }
     },
     {
@@ -60,10 +49,21 @@ export function OnboardingSection() {
       title: 'Company & Team',
       description: 'Invite team members and set up roles',
       actionIcon: (color = 'black') => <UsersGroupIcon color={color} className="w-6 h-6" />,
-      actionText: 'Add Team Members',
-      completedText: 'Manage Users',
+      actionText: 'Invite Users',
+      completedText: 'Invite Users',
       onAction: async () => {
         router.push('/settings?tab=company-and-users')
+      }
+    },
+    {
+      id: 'sso-configuration',
+      title: 'SSO Configuration',
+      description: 'Link Microsoft 365, Google Workspace, and other identity providers',
+      actionIcon: (color = 'black') => <SSOConfigurationIcon color={color} className="w-6 h-6" />,
+      actionText: 'Add SSO IdP',
+      completedText: 'Add SSO IdP',
+      onAction: async () => {
+        router.push('/settings?tab=sso-configuration')
       }
     },
     {
