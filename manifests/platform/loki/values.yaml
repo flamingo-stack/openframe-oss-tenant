@@ -1,12 +1,17 @@
 registerJob:
-  enabled: true
+  enabled: false
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.5.0"
+    pullPolicy: Always
 servicemonitor:
   enabled: true
 
 loki:
   loki:
     image:
-      registry: docker.io
+      registry: ghcr.io/flamingo-stack/registry
       repository: grafana/loki
       tag: "3.5.7"
       digest: null
