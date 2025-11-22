@@ -7,10 +7,9 @@ import {
   Button,
   ListPageLayout
 } from "@flamingo/ui-kit/components/ui"
-import type { CursorPaginationProps } from "@flamingo/ui-kit/components/ui"
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
-import { useDebounce, useBatchImages } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useBatchImages, useTablePagination } from "@flamingo/ui-kit/hooks"
 import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
@@ -71,25 +70,26 @@ export function DevicesView() {
     if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
       await fetchNextPage(searchTerm)
     }
-  }, [pageInfo, fetchNextPage])
+  }, [pageInfo, fetchNextPage, searchTerm])
 
   const handleResetToFirstPage = useCallback(async () => {
     await fetchFirstPage(searchTerm)
-  }, [fetchFirstPage])
+  }, [fetchFirstPage, searchTerm])
 
-  const cursorPagination: CursorPaginationProps | undefined = pageInfo ? {
-    hasNextPage: pageInfo.hasNextPage,
-    isFirstPage: !hasLoadedBeyondFirst,
-    startCursor: pageInfo.startCursor,
-    endCursor: pageInfo.endCursor,
-    currentCount: devices.length,
-    itemName: 'devices',
-    onNext: () => handleNextPage(),
-    onReset: handleResetToFirstPage,
-    showInfo: true,
-    resetButtonLabel: 'First',
-    resetButtonIcon: 'home'
-  } : undefined
+  const cursorPagination = useTablePagination(
+    pageInfo ? {
+      type: 'server',
+      hasNextPage: pageInfo.hasNextPage,
+      hasLoadedBeyondFirst,
+      startCursor: pageInfo.startCursor,
+      endCursor: pageInfo.endCursor,
+      itemCount: devices.length,
+      itemName: 'devices',
+      onNext: handleNextPage,
+      onReset: handleResetToFirstPage,
+      showInfo: true
+    } : null
+  )
 
 
   const viewToggle = (

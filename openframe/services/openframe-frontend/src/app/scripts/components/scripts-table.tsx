@@ -9,11 +9,10 @@ import {
   ListPageLayout,
   TableDescriptionCell,
   type TableColumn,
-  type RowAction,
-  type CursorPaginationProps
+  type RowAction
 } from "@flamingo/ui-kit/components/ui"
 import { CirclePlusIcon } from "lucide-react"
-import { useDebounce } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useTablePagination } from "@flamingo/ui-kit/hooks"
 import { useScripts } from "../hooks/use-scripts"
 import { ToolBadge, ShellTypeBadge } from "@flamingo/ui-kit/components/platform"
 import { OSTypeBadgeGroup } from "@flamingo/ui-kit/components/features"
@@ -157,7 +156,7 @@ export function ScriptsTable() {
       label: 'Description',
       width: 'w-[39%]',
       renderCell: (script) => (
-        <span className="w-full pr-4 font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 block break-words">
+        <span className="w-full pr-4 font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 truncate block break-words">
           {script.description || 'No description provided.'}
         </span>
       )
@@ -213,19 +212,18 @@ export function ScriptsTable() {
     setCurrentPage(1)
   }, [])
 
-  const cursorPagination: CursorPaginationProps | undefined = totalPages > 1 ? {
-    hasNextPage: currentPage < totalPages,
-    isFirstPage: currentPage === 1,
-    startCursor: (currentPage - 1).toString(),
-    endCursor: currentPage.toString(),
-    currentCount: paginatedScripts.length,
-    itemName: 'scripts',
-    onNext: () => setCurrentPage(prev => Math.min(prev + 1, totalPages)),
-    onReset: () => setCurrentPage(1),
-    showInfo: true,
-    resetButtonLabel: 'First',
-    resetButtonIcon: 'home'
-  } : undefined
+  const cursorPagination = useTablePagination(
+    totalPages > 1 ? {
+      type: 'client',
+      currentPage,
+      totalPages,
+      itemCount: paginatedScripts.length,
+      itemName: 'scripts',
+      onNext: () => setCurrentPage(prev => Math.min(prev + 1, totalPages)),
+      onPrevious: () => setCurrentPage(prev => Math.max(prev - 1, 1)),
+      showInfo: true
+    } : null
+  )
 
 
   const headerActions = (
