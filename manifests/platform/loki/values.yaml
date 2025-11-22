@@ -3,17 +3,23 @@ registerJob:
 servicemonitor:
   enabled: true
 
-
 loki:
   loki:
+    image:
+      registry: docker.io
+      repository: grafana/loki
+      tag: "3.5.7"
+      digest: null
+      pullPolicy: IfNotPresent
+
     auth_enabled: false
     server:
       http_listen_port: 3100
     revisionHistoryLimit: 2
-    
+
     commonConfig:
       replication_factor: 1
-    
+
     limits_config:
       allow_structured_metadata: false
 
@@ -34,31 +40,28 @@ loki:
         active_index_directory: /var/loki/index
         cache_location: /var/loki/index_cache
         cache_ttl: 24h
-    
+
     schemaConfig:
       configs:
         - from: 2024-04-01
-          object_store: filesystem         
-          store: boltdb-shipper  
+          object_store: filesystem
+          store: boltdb-shipper
           schema: v13
           index:
             prefix: index_
             period: 24h
-          
+
     ingester:
       chunk_encoding: snappy
+
     tracing:
       enabled: true
-    querier:
-      # Default is 4, if you have enough memory and CPU you can increase, reduce if OOMing
-      max_concurrent: 2
-    
-    extraMemberlistConfig:  # for SingleBinary mode
-      join_members: []
 
-  # gateway:
-  #   service:
-  #     type: LoadBalancer
+    querier:
+      max_concurrent: 2
+
+    extraMemberlistConfig:
+      join_members: []
 
   deploymentMode: SingleBinary
 
@@ -79,14 +82,14 @@ loki:
       requests:
         cpu: 500m
         memory: 500Mi
+
     extraEnv:
-      # Keep a little bit lower than memory limits
       - name: GOMEMLIMIT
         value: 1750MiB
 
   chunksCache:
-    allocatedMemory: 1000  # in Mb
-    writebackSizeLimit: 10MB  # default is 500MB, with limited memory keep this smaller
+    allocatedMemory: 1000
+    writebackSizeLimit: 10MB
 
   test:
     enabled: false
@@ -98,7 +101,6 @@ loki:
   serviceMonitor:
     enabled: true
 
-  # Zero out replica counts of other deployment modes
   backend:
     replicas: 0
   read:
