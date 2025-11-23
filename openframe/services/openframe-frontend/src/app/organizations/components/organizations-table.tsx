@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Table,
   StatusTag,
@@ -10,7 +10,7 @@ import {
 } from '@flamingo/ui-kit/components/ui'
 import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
 import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
-import { useDebounce, useBatchImages } from '@flamingo/ui-kit/hooks'
+import { useDebounce, useBatchImages, useTablePagination } from '@flamingo/ui-kit/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
 import { featureFlags } from '@lib/feature-flags'
@@ -57,7 +57,16 @@ export function OrganizationsTable() {
   const router = useRouter()
 
   const stableFilters = useMemo(() => ({}), [])
-  const { organizations, isLoading, error, searchOrganizations } = useOrganizations(stableFilters)
+  const {
+    organizations,
+    isLoading,
+    error,
+    pageInfo,
+    hasLoadedBeyondFirst,
+    fetchFirstPage,
+    fetchNextPage,
+    searchOrganizations
+  } = useOrganizations(stableFilters)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const imageUrls = useMemo(() => 
@@ -144,6 +153,33 @@ export function OrganizationsTable() {
     searchOrganizations(debouncedSearchTerm)
   }, [debouncedSearchTerm])
 
+  // Pagination handlers
+  const handleNextPage = useCallback(async () => {
+    if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
+      await fetchNextPage(searchTerm)
+    }
+  }, [pageInfo, fetchNextPage, searchTerm])
+
+  const handleResetToFirstPage = useCallback(async () => {
+    await fetchFirstPage(searchTerm)
+  }, [fetchFirstPage, searchTerm])
+
+  // Configure table pagination
+  const cursorPagination = useTablePagination(
+    pageInfo ? {
+      type: 'server',
+      hasNextPage: pageInfo.hasNextPage,
+      hasLoadedBeyondFirst,
+      startCursor: pageInfo.startCursor ?? undefined,
+      endCursor: pageInfo.endCursor ?? undefined,
+      itemCount: organizations.length,
+      itemName: 'organizations',
+      onNext: handleNextPage,
+      onReset: handleResetToFirstPage,
+      showInfo: true
+    } : null
+  )
+
   const handleAddOrganization = () => {
     router.push('/organizations/edit/new')
   }
@@ -182,6 +218,7 @@ export function OrganizationsTable() {
         mobileColumns={['name', 'tier', 'mrrDisplay']}
         rowClassName="mb-1"
         onRowClick={(row) => router.push(`/organizations/details/${row.id}`)}
+        cursorPagination={cursorPagination}
       />
     </ListPageLayout>
   )

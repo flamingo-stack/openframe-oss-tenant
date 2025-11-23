@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { apiClient } from '@lib/api-client'
 import { useOrganizationsStore, OrganizationEntry } from '../stores/organizations-store'
@@ -9,6 +9,13 @@ import { GET_ORGANIZATIONS_QUERY } from '../queries/organizations-queries'
 interface OrganizationsFilterInput {
   tiers?: Array<OrganizationEntry['tier']>
   industries?: string[]
+}
+
+interface PageInfo {
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  startCursor: string | null
+  endCursor: string | null
 }
 
 export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
@@ -26,8 +33,13 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
     reset
   } = useOrganizationsStore()
 
+  // Pagination state (local to hook, not persisted)
+  const [pageInfo, setPageInfo] = useState<PageInfo | null>(null)
+  const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
+
   const fetchOrganizations = useCallback(async (
     searchTerm: string,
+    cursor?: string | null,
     filters: OrganizationsFilterInput = {},
   ) => {
     setLoading(true)
@@ -36,7 +48,13 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
     try {
       const response = await apiClient.post<any>('/api/graphql', {
         query: GET_ORGANIZATIONS_QUERY,
-        variables: { search: searchTerm || '', category: undefined }
+        variables: {
+          search: searchTerm || '',
+          pagination: {
+            limit: 20,
+            cursor: cursor || null
+          }
+        }
       })
 
       if (!response.ok) {
@@ -44,7 +62,10 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
       }
 
       const payload = (response.data as any)?.data?.organizations
-      const items = Array.isArray(payload?.organizations) ? payload.organizations : []
+
+      // Handle paginated response structure
+      const edges = Array.isArray(payload?.edges) ? payload.edges : []
+      const items = edges.map((edge: any) => edge.node)
 
       const mapped: OrganizationEntry[] = items.map((o: any): OrganizationEntry => ({
         id: o.id,
@@ -61,6 +82,17 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
       }))
 
       setOrganizations(mapped)
+
+      // Update pagination info
+      if (payload?.pageInfo) {
+        setPageInfo({
+          hasNextPage: payload.pageInfo.hasNextPage ?? false,
+          hasPreviousPage: payload.pageInfo.hasPreviousPage ?? false,
+          startCursor: payload.pageInfo.startCursor ?? null,
+          endCursor: payload.pageInfo.endCursor ?? null
+        })
+      }
+
       return mapped
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch organizations'
@@ -77,13 +109,27 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
     }
   }, [setOrganizations, setLoading, setError, toast])
 
+  const fetchNextPage = useCallback(async (searchTerm: string) => {
+    if (!pageInfo?.hasNextPage || !pageInfo?.endCursor) {
+      return
+    }
+    setHasLoadedBeyondFirst(true)
+    return fetchOrganizations(searchTerm, pageInfo.endCursor, activeFilters)
+  }, [pageInfo, fetchOrganizations, activeFilters])
+
+  const fetchFirstPage = useCallback(async (searchTerm: string) => {
+    setHasLoadedBeyondFirst(false)
+    return fetchOrganizations(searchTerm, null, activeFilters)
+  }, [fetchOrganizations, activeFilters])
+
   const searchOrganizations = useCallback(async (searchTerm: string) => {
     setSearch(searchTerm)
-    return fetchOrganizations(searchTerm, activeFilters)
-  }, [setSearch, fetchOrganizations])
+    setHasLoadedBeyondFirst(false)
+    return fetchOrganizations(searchTerm, null, activeFilters)
+  }, [setSearch, fetchOrganizations, activeFilters])
 
   const refreshOrganizations = useCallback(async () => {
-    return fetchOrganizations(search, activeFilters)
+    return fetchOrganizations(search, null, activeFilters)
   }, [fetchOrganizations, search, activeFilters.tiers?.join(','), activeFilters.industries?.join(',')])
 
   return {
@@ -91,7 +137,11 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
     search,
     isLoading,
     error,
+    pageInfo,
+    hasLoadedBeyondFirst,
     fetchOrganizations,
+    fetchNextPage,
+    fetchFirstPage,
     searchOrganizations,
     refreshOrganizations,
     clearOrganizations,
