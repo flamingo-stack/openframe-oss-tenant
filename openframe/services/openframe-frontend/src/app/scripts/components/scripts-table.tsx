@@ -8,8 +8,7 @@ import {
   Button,
   ListPageLayout,
   TableDescriptionCell,
-  type TableColumn,
-  type RowAction
+  type TableColumn
 } from "@flamingo/ui-kit/components/ui"
 import { CirclePlusIcon } from "lucide-react"
 import { useDebounce, useTablePagination } from "@flamingo/ui-kit/hooks"
@@ -163,17 +162,6 @@ export function ScriptsTable() {
     }
   ], [uniqueShellTypes, uniqueAddedBy])
 
-  const rowActions: RowAction<UIScriptEntry>[] = useMemo(() => [
-    {
-      label: 'Details',
-      onClick: (script) => {
-        router.push(`/scripts/details/${script.id}`)
-      },
-      variant: 'outline',
-      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
-    }
-  ], [router])
-
   useEffect(() => {
     if (!isInitialized) {
       searchScripts('')
@@ -202,6 +190,10 @@ export function ScriptsTable() {
       prevFilterKeyRef.current = filterKey
     }
   }, [filters, refreshScripts, isInitialized])
+
+  const handleRowClick = (script: UIScriptEntry) => {
+    router.push(`/scripts/details/${script.id}`)
+  }
 
   const handleNewScript = () => {
     router.push('/scripts/edit/new')
@@ -262,12 +254,12 @@ export function ScriptsTable() {
             ? `No scripts found matching "${debouncedSearchTerm}". Try adjusting your search.`
             : "No scripts found. Try adjusting your filters or add a new script."
         }
-        rowActions={rowActions}
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}
         mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
+        onRowClick={handleRowClick}
         cursorPagination={cursorPagination}
       />
 
