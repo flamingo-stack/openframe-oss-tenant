@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import {
   Table,
   StatusTag,
@@ -10,7 +10,7 @@ import {
 } from '@flamingo/ui-kit/components/ui'
 import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
 import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
-import { useDebounce, useBatchImages } from '@flamingo/ui-kit/hooks'
+import { useDebounce, useBatchImages, useTablePagination } from '@flamingo/ui-kit/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
 import { featureFlags } from '@lib/feature-flags'
@@ -54,6 +54,8 @@ function OrganizationNameCell({ org, fetchedImageUrls }: {
 export function OrganizationsTable() {
   const [searchTerm, setSearchTerm] = useState('')
   const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize] = useState(20)
   const router = useRouter()
 
   const stableFilters = useMemo(() => ({}), [])
@@ -97,6 +99,34 @@ export function OrganizationsTable() {
       imageUrl: org.imageUrl,
     }))
   }, [organizations])
+
+  const filteredOrganizations = useMemo(() => {
+    let filtered = transformed
+
+    if (tableFilters.tier && tableFilters.tier.length > 0) {
+      filtered = filtered.filter(org =>
+        tableFilters.tier.includes(org.tier)
+      )
+    }
+
+    if (tableFilters.industry && tableFilters.industry.length > 0) {
+      filtered = filtered.filter(org =>
+        tableFilters.industry.includes(org.industry)
+      )
+    }
+
+    return filtered
+  }, [transformed, tableFilters])
+
+  const paginatedOrganizations = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    const endIndex = startIndex + pageSize
+    return filteredOrganizations.slice(startIndex, endIndex)
+  }, [filteredOrganizations, currentPage, pageSize])
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredOrganizations.length / pageSize)
+  }, [filteredOrganizations.length, pageSize])
 
   const columns: TableColumn<UIOrganizationEntry>[] = useMemo(() => [
     {
@@ -144,6 +174,30 @@ export function OrganizationsTable() {
     searchOrganizations(debouncedSearchTerm)
   }, [debouncedSearchTerm])
 
+  useEffect(() => {
+    if (debouncedSearchTerm !== undefined) {
+      setCurrentPage(1)
+    }
+  }, [debouncedSearchTerm])
+
+  const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
+    setTableFilters(columnFilters)
+    setCurrentPage(1)
+  }, [])
+
+  const cursorPagination = useTablePagination(
+    totalPages > 1 ? {
+      type: 'client',
+      currentPage,
+      totalPages,
+      itemCount: paginatedOrganizations.length,
+      itemName: 'organizations',
+      onNext: () => setCurrentPage(prev => Math.min(prev + 1, totalPages)),
+      onPrevious: () => setCurrentPage(prev => Math.max(prev - 1, 1)),
+      showInfo: true
+    } : null
+  )
+
   const handleAddOrganization = () => {
     router.push('/organizations/edit/new')
   }
@@ -171,17 +225,18 @@ export function OrganizationsTable() {
       className="pt-6"
     >
       <Table
-        data={transformed}
+        data={paginatedOrganizations}
         columns={columns}
         rowKey="id"
         loading={isLoading}
         emptyMessage="No organizations found. Try adjusting your search or filters."
         filters={tableFilters}
-        onFilterChange={setTableFilters}
+        onFilterChange={handleFilterChange}
         showFilters={false}
         mobileColumns={['name', 'tier', 'mrrDisplay']}
         rowClassName="mb-1"
         onRowClick={(row) => router.push(`/organizations/details/${row.id}`)}
+        cursorPagination={cursorPagination}
       />
     </ListPageLayout>
   )
