@@ -5,7 +5,13 @@ servicemonitor:
 
 
 loki:
+  # Image configuration
   loki:
+    image:
+      repository: docker.io/grafana/loki
+      tag: "3.5.7"
+      pullPolicy: IfNotPresent
+
     auth_enabled: false
     server:
       http_listen_port: 3100
