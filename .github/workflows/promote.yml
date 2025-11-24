@@ -33,9 +33,8 @@ jobs:
           VALUES_PATH: manifests/apps
           CONFIGS_PATH: configs
         run: |
-          cp ${VALUES_PATH}/values-stage.yaml ${VALUES_PATH}/values-prod.yaml
-          sed -i "s/environment: stage/environment: prod/g" ${VALUES_PATH}/values-prod.yaml
-          sed -i "s/profile: stage/profile: prod/g" ${VALUES_PATH}/values-prod.yaml
+          STAGE_TAG=$(grep -m 1 "tag:" ${VALUES_PATH}/values-stage.yaml | awk '{print $2}')
+          sed -i "s/tag: .*/tag: ${STAGE_TAG}/g" ${VALUES_PATH}/values-prod.yaml
           rm -rf ${CONFIGS_PATH}/prod
           cp -r ${CONFIGS_PATH}/stage ${CONFIGS_PATH}/prod
 
