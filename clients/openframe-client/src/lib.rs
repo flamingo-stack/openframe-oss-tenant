@@ -59,6 +59,7 @@ use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
+use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -131,6 +132,7 @@ pub struct Client {
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
+    update_handler_service: UpdateHandlerService,
 }
 
 impl Client {
@@ -289,6 +291,12 @@ impl Client {
         // Initialize GitHub download service (used by update and installation services)
         let github_download_service = GithubDownloadService::new(http_client.clone());
 
+        // Initialize update state and cleanup services (needed by update service)
+        let update_state_service = UpdateStateService::new(directory_manager.clone())
+            .context("Failed to initialize update state service")?;
+        let update_cleanup_service = UpdateCleanupService::new()
+            .context("Failed to initialize update cleanup service")?;
+
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
             github_download_service.clone(),
@@ -304,7 +312,7 @@ impl Client {
             installed_agent_message_publisher.clone(),
             tool_connection_service.clone(),
         );
-        
+
         // Initialize OpenFrame client update service
         let openframe_client_update_service = OpenFrameClientUpdateService::new(
             directory_manager.clone(),
@@ -312,6 +320,8 @@ impl Client {
             github_download_service.clone(),
             config_service.clone(),
             installed_agent_message_publisher.clone(),
+            update_state_service.clone(),
+            update_cleanup_service.clone(),
         );
 
         // Initialize tool agent update service
@@ -353,6 +363,15 @@ impl Client {
         );
         let machine_heartbeat_run_manager = MachineHeartbeatRunManager::new(machine_heartbeat_publisher);
 
+        // Initialize update handler service
+        let update_handler_service = UpdateHandlerService::new(
+            update_state_service.clone(),
+            openframe_client_info_service.clone(),
+            update_cleanup_service.clone(),
+            installed_agent_message_publisher.clone(),
+            config_service.clone(),
+        );
+
         Ok(Self {
             config,
             directory_manager,
@@ -365,6 +384,7 @@ impl Client {
             tool_run_manager,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
+            update_handler_service,
         })
     }
 
@@ -379,6 +399,12 @@ impl Client {
 
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
+
+        // Handle any pending update from previous run (after NATS is connected)
+        if let Err(e) = self.update_handler_service.handle_pending_update().await {
+            error!("Failed to handle pending update: {:#}", e);
+            // Continue startup even if update handling fails - don't block the client
+        }
 
         // Start machine heartbeat run manager
         self.machine_heartbeat_run_manager.start();

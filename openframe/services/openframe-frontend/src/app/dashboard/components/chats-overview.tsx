@@ -22,20 +22,24 @@ export function ChatsOverviewSection() {
           percentage={chats.activePercentage}
           showProgress
           progressColor="#5ea62e"
+          href="/mingo"
         />
         <DashboardInfoCard
           title="Resolved Chats"
           value={chats.resolved}
           percentage={chats.resolvedPercentage}
           showProgress
+          href="/mingo"
         />
         <DashboardInfoCard
           title="Avg. Resolve Time"
           value={chats.avgResolveTime}
+          href="/mingo"
         />
         <DashboardInfoCard
           title="Avg. Fae Rate"
           value={`${chats.avgFaeRate}/5`}
+          href="/mingo"
         />
       </div>
     </div>

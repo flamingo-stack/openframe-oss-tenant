@@ -1,9 +1,14 @@
 'use client'
 
-import { TabItem } from '@flamingo/ui-kit'
-import { MessageCircleIcon, ArchiveIcon } from '@flamingo/ui-kit'
+import React from 'react'
+import { TabNavigation, TabItem, MessageCircleIcon, ArchiveIcon } from '@flamingo/ui-kit'
 import { CurrentChats } from './current-chats'
 import { ArchivedChats } from './archived-chats'
+
+interface MingoTabNavigationProps {
+  activeTab: string
+  onTabChange: (tabId: string) => void
+}
 
 export const MINGO_TABS: TabItem[] = [
   {
@@ -26,4 +31,14 @@ export const getMingoTab = (tabId: string): TabItem | undefined =>
 export const getTabComponent = (tabId: string): React.ComponentType | null => {
   const tab = getMingoTab(tabId)
   return tab?.component || null
+}
+
+export function MingoTabNavigation() {
+  return (
+    <TabNavigation
+      urlSync={true}
+      defaultTab="current"
+      tabs={MINGO_TABS}
+    />
+  )
 }
