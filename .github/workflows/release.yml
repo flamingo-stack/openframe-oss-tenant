@@ -286,8 +286,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -325,14 +323,6 @@ jobs:
           ## Images
           $IMAGES
 
-          ## OpenFrame CLI
-          - **Linux (x64)**: \`openframe-cli_linux_amd64.tar.gz\`
-          - **Linux (ARM64)**: \`openframe-cli_linux_arm64.tar.gz\`
-          - **macOS (x64)**: \`openframe-cli_darwin_amd64.tar.gz\`
-          - **macOS (ARM64)**: \`openframe-cli_darwin_arm64.tar.gz\`
-          - **Windows (x64)**: \`openframe-cli_windows_amd64.zip\`
-          - **Windows (ARM64)**: \`openframe-cli_windows_arm64.zip\`
-
           ## OpenFrame Clients
           - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
           - **Windows** (x64): \`openframe-client_windows.zip\`
@@ -343,23 +333,20 @@ jobs:
           - \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`
           ---
           EOF
-
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          install-only: true
-
-      - name: Run GoReleaser (release)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ inputs.version }}
-        run: |
-          git tag ${GORELEASER_CURRENT_TAG}
-          export RELEASE_HEADER="$(cat RELEASE_HEADER.md)"
-          goreleaser release --clean --skip=validate
-
-          set -e && ls -lh dist/*.tar.gz dist/*.zip dist/checksums.txt
       
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "🦩 ${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body_path: RELEASE_HEADER.md
+          files: |
+            final-artifacts/clients/*.zip
+            final-artifacts/clients/*.tar.gz
+
       - name: Configure Git
         run: |
           git config user.name "github-actions"

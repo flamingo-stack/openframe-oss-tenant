@@ -32,12 +32,6 @@ openframe/.DS_Store
 **/loki-chunks
 **/loki-index
 
-# Go CLI build artifacts
-cli/build/
-cli/coverage.out
-cli/coverage.html
-cli/releases/
-
 **/openframe-stream/logs
 **/jmx_exporter/jmx_prometheus_javaagent.jar
 **/target/
