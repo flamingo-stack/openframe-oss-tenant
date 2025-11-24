@@ -14,14 +14,6 @@ const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
 
 /// Remove a directory with retry logic for locked files
-///
-/// This is especially important on Windows where file locks can prevent
-/// immediate deletion after process termination.
-///
-/// Strategy:
-/// 1. Try normal removal with exponential backoff
-/// 2. On second-to-last attempt, try changing file attributes
-/// 3. On last attempt, use system commands for force deletion
 pub async fn remove_directory_with_retry(path: &Path, max_retries: u32) -> Result<()> {
     if !path.exists() {
         info!("Directory does not exist: {}", path.display());
@@ -29,13 +21,11 @@ pub async fn remove_directory_with_retry(path: &Path, max_retries: u32) -> Resul
     }
 
     for attempt in 1..=max_retries {
-        // Check if directory still exists before attempting removal
         if !path.exists() {
             info!("Directory no longer exists: {}", path.display());
             return Ok(());
         }
 
-        // On second-to-last attempt, try to unlock files
         if attempt == max_retries - 1 {
             info!("Attempting to unlock files in directory: {}", path.display());
             if let Err(e) = unlock_directory_files(path).await {
@@ -43,7 +33,6 @@ pub async fn remove_directory_with_retry(path: &Path, max_retries: u32) -> Resul
             }
         }
 
-        // Try standard removal
         match std::fs::remove_dir_all(path) {
             Ok(_) => {
                 info!("Successfully removed directory: {}", path.display());
@@ -170,7 +159,7 @@ async fn force_remove_directory(path: &Path) -> Result<()> {
         }
     }
 
-    // Wait a bit for permissions to take effect
+    // Wait for permissions to take effect
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
     // Use rd (rmdir) command with force and recursive flags
@@ -308,14 +297,12 @@ pub async fn uninstall_windows(
 
     info!("Step 2: Gracefully uninstalling integrated tools...");
     match uninstall_integrated_tools(dir_manager).await {
-        Ok(_) => info!("✓ Tools uninstalled successfully"),
+        Ok(_) => info!("Tools uninstalled successfully"),
         Err(e) => warn!("Tools uninstall warning: {} (continuing with cleanup)", e),
     }
 
     info!("Step 3: Cleaning up directories and files...");
 
-    // Clean up directories with retry logic
-    // First, remove logs directory if it exists as a separate directory
     if dir_manager.logs_dir().exists()
         && dir_manager.logs_dir() != dir_manager.app_support_dir()
     {
@@ -328,7 +315,6 @@ pub async fn uninstall_windows(
         }
     }
 
-    // Then remove app support directory (this will remove logs if it's a subdirectory)
     if dir_manager.app_support_dir().exists() {
         info!(
             "Cleaning up app support directory: {}",
@@ -423,7 +409,6 @@ pub async fn uninstall_macos(dir_manager: &DirectoryManager, install_path: &Path
         }
     }
 
-    // Remove binary with retry (macOS can usually delete running binaries, but retry for safety)
     if install_path.exists() {
         info!("Removing installed binary: {}", install_path.display());
 
