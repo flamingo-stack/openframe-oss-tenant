@@ -82,7 +82,7 @@ const initialState = {
   edges: [],
   search: '',
   pageInfo: null,
-  pageSize: 50,
+  pageSize: 20,
   isLoading: false,
   error: null,
 }
@@ -110,8 +110,16 @@ export const useLogsStore = create<LogsState>()(
         
         appendEdges: (edges) =>
           set((state) => {
-            state.edges = [...state.edges, ...edges]
-            state.logs = [...state.logs, ...edges.map(edge => edge.node)]
+            // Defensive: Filter out duplicates before appending
+            const existingIds = new Set(state.logs.map(log => log.toolEventId))
+            const newEdges = edges.filter(edge => !existingIds.has(edge.node.toolEventId))
+
+            if (newEdges.length < edges.length) {
+              console.warn(`[LogsStore] Filtered ${edges.length - newEdges.length} duplicate logs before appending`)
+            }
+
+            state.edges = [...state.edges, ...newEdges]
+            state.logs = [...state.logs, ...newEdges.map(edge => edge.node)]
           }),
         
         setSearch: (search) =>
@@ -154,10 +162,9 @@ export const useLogsStore = create<LogsState>()(
           set(() => initialState),
       })),
       {
-        name: 'logs-storage', // Storage key
-        partialize: (state) => ({
-          // Only persist these fields
-          pageSize: state.pageSize,
+        name: 'logs-storage-v2', // Storage key (v2 to invalidate old cache)
+        partialize: () => ({
+          // Don't persist anything - URL is source of truth now
         }),
       }
     ),

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { fleetApiClient } from '@lib/fleet-api-client'
@@ -273,14 +273,19 @@ export function useDeviceDetails() {
   const [deviceDetails, setDeviceDetails] = useState<Device | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null)
+  const isPollingRef = useRef(false)
 
-  const fetchDeviceById = useCallback(async (machineId: string) => {
+  const fetchDeviceById = useCallback(async (machineId: string, silent = false) => {
     if (!machineId) {
       setError('machineId is required')
       return
     }
 
-    setIsLoading(true)
+    // Only show loading state for initial (non-silent) fetches
+    if (!silent) {
+      setIsLoading(true)
+    }
     setError(null)
 
     try {
@@ -330,31 +335,67 @@ export function useDeviceDetails() {
       const merged: Device = createDevice(node, tacticalData, fleetData)
 
       setDeviceDetails(merged)
-      
+      setLastUpdated(Date.now())
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details'
       setError(errorMessage)
-      
-      toast({
-        title: "Failed to Load Device Details",
-        description: errorMessage,
-        variant: "destructive"
-      })
+
+      // Only show toast for initial (non-silent) fetches
+      if (!silent) {
+        toast({
+          title: "Failed to Load Device Details",
+          description: errorMessage,
+          variant: "destructive"
+        })
+      }
     } finally {
-      setIsLoading(false)
+      if (!silent) {
+        setIsLoading(false)
+      }
     }
   }, [toast])
 
   const clearDeviceDetails = useCallback(() => {
     setDeviceDetails(null)
     setError(null)
+    setLastUpdated(null)
   }, [])
+
+  // Polling logic with adaptive intervals
+  useEffect(() => {
+    if (!deviceDetails?.machineId) return
+
+    // Extract agent IDs from toolConnections
+    const tacticalAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId
+    const meshcentralAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
+
+    // Adaptive interval based on agent connection status
+    // Fast polling (5s) when agents are missing, slow polling (10s) when all connected
+    const hasAllAgents = Boolean(tacticalAgentId && meshcentralAgentId)
+    const pollingInterval = hasAllAgents ? 10000 : 5000 // 10s or 5s
+
+    isPollingRef.current = true
+
+    const intervalId = setInterval(() => {
+      if (isPollingRef.current) {
+        // Silent refresh - no loading states or error toasts
+        fetchDeviceById(deviceDetails.machineId, true)
+      }
+    }, pollingInterval)
+
+    return () => {
+      clearInterval(intervalId)
+      isPollingRef.current = false
+    }
+  }, [deviceDetails?.machineId, deviceDetails?.toolConnections, fetchDeviceById])
 
   return {
     deviceDetails,
     isLoading,
     error,
     fetchDeviceById,
-    clearDeviceDetails
+    clearDeviceDetails,
+    lastUpdated
   }
 }

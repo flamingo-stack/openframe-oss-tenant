@@ -13,6 +13,7 @@ import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
 import { DEVICE_TABS } from './tabs/device-tabs'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
+import { formatRelativeTime } from '@flamingo/ui-kit/utils/format-relative-time'
 
 interface DeviceDetailsViewProps {
   deviceId: string
@@ -21,17 +22,27 @@ interface DeviceDetailsViewProps {
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter()
 
-  const { deviceDetails, isLoading, error, fetchDeviceById } = useDeviceDetails()
+  const { deviceDetails, isLoading, error, fetchDeviceById, lastUpdated } = useDeviceDetails()
 
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false)
   const [isRemoteShellOpen, setIsRemoteShellOpen] = useState(false)
   const [shellType, setShellType] = useState<'cmd' | 'powershell'>('cmd')
+  const [, forceUpdate] = useState({})
 
   useEffect(() => {
     if (deviceId) {
       fetchDeviceById(deviceId)
     }
   }, [deviceId, fetchDeviceById])
+
+  // Force re-render every second to update relative time display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      forceUpdate({})
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   const normalizedDevice = deviceDetails
 
@@ -167,7 +178,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           onClick: handleBack
         }}
         subtitle={
-          <div className={`flex gap-2 items-center ${isRemoteShellOpen ? 'hidden' : ''}`}>
+          <div className={`flex gap-3 items-center ${isRemoteShellOpen ? 'hidden' : ''}`}>
             {normalizedDevice?.status && (() => {
               const statusConfig = getDeviceStatusConfig(normalizedDevice.status)
               return (
@@ -178,6 +189,11 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                 />
               )
             })()}
+            {lastUpdated && (
+              <span className="text-ods-text-secondary text-xs">
+                Updated {formatRelativeTime(lastUpdated)}
+              </span>
+            )}
           </div>}
         headerActions={headerActions}
         padding='none'

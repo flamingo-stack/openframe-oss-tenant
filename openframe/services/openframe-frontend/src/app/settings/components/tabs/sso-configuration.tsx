@@ -178,7 +178,6 @@ export function SsoConfigurationTab() {
         loading={isLoading}
         emptyMessage="No SSO providers found."
         rowActions={rowActions}
-        actionsWidth={140}
         showFilters={false}
         rowClassName="mb-1"
       />

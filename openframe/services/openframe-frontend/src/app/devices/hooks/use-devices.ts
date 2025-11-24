@@ -124,7 +124,9 @@ export function useDevices(filters: DeviceFilterInput = {}) {
   const [filteredCount, setFilteredCount] = useState(0)
   const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
   
-  const stableFilters = useMemo(() => filters, [JSON.stringify(filters)])
+  // Stabilize filters to prevent infinite loops while still detecting changes
+  const filtersKey = JSON.stringify(filters)
+  const stableFilters = useMemo(() => filters, [filtersKey])
   const filtersRef = useRef(stableFilters)
   filtersRef.current = stableFilters
 
@@ -239,12 +241,17 @@ export function useDevices(filters: DeviceFilterInput = {}) {
     return fetchDevices(searchTerm)
   }, [fetchDevices])
 
+  // Refetch when filters change (after initial load)
   useEffect(() => {
     if (initialLoadDone.current) {
-      fetchDevices()
-      fetchDeviceFilters()
+      // Call functions directly without adding to dependencies
+      const refetch = async () => {
+        await fetchDevices()
+        await fetchDeviceFilters()
+      }
+      refetch()
     }
-  }, [stableFilters, fetchDevices, fetchDeviceFilters])
+  }, [filtersKey])
 
   return {
     devices,

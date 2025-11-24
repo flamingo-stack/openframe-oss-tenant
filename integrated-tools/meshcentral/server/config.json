@@ -5,6 +5,9 @@
       "enabled": false
     },
     "mongodb": "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@meshcentral-mongodb.integrated-tools.svc.cluster.local:27017/${MONGO_INITDB_DATABASE}?replicaSet=rs0&authSource=admin",
+    "dbExpire": {
+      "events": 157680000
+    },
     "certUrl": [
       "${MESH_NGINX_HOST}:${MESH_EXTERNAL_PORT}",
       "${MESH_NGINX_NAT_HOST}:${MESH_EXTERNAL_PORT}"
