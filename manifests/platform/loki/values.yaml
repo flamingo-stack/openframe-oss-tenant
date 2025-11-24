@@ -1,7 +1,7 @@
 registerJob:
-  enabled: true
+  enabled: false
 servicemonitor:
-  enabled: true
+  enabled: false
 
 
 loki:
