@@ -5,13 +5,11 @@ servicemonitor:
 
 
 loki:
-  # Image configuration
-  loki:
-    image:
-      registry: docker.io
-      repository: grafana/loki
-      tag: "3.5.7"
-      pullPolicy: IfNotPresent
+  image:
+    registry: docker.io
+    repository: grafana/loki
+    tag: "3.5.7"
+    pullPolicy: IfNotPresent
 
     auth_enabled: false
     server:
