@@ -19,7 +19,8 @@ spec:
       
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        imagePullPolicy: {{ .Values.registerJob.image.pullPolicy }}
         command:
           - /bin/sh
           - -uc

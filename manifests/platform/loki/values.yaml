@@ -1,5 +1,10 @@
 registerJob:
   enabled: false
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
+    pullPolicy: Always
 servicemonitor:
   enabled: false
 
@@ -7,7 +12,7 @@ servicemonitor:
 loki:
   loki:
     image:
-      registry: docker.io
+      registry: ghcr.io/flamingo-stack/registry
       repository: grafana/loki
       tag: "3.5.7"
       pullPolicy: IfNotPresent
