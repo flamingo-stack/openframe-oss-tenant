@@ -1,8 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Button, StatusTag, InfoRow } from '@flamingo/ui-kit/components/ui'
-import { X } from 'lucide-react'
+import { Button, StatusTag, Modal, ModalHeader, ModalTitle, ModalFooter, Label, Input } from '@flamingo/ui-kit/components/ui'
 import type { ApiKeyRecord } from '../hooks/use-api-keys'
 
 interface ApiKeyDetailsModalProps {
@@ -12,7 +11,7 @@ interface ApiKeyDetailsModalProps {
 }
 
 export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsModalProps) {
-  if (!isOpen || !apiKey) return null
+  if (!apiKey) return null
 
   const createdDate = new Date(apiKey.createdAt)
   const expiresDate = apiKey.expiresAt ? new Date(apiKey.expiresAt) : null
@@ -20,58 +19,69 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
   const formatDateTime = (d: Date | null) => (d ? `${d.toLocaleDateString()} ${d.toLocaleTimeString()}` : '—')
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full max-w-[840px] flex flex-col p-10 gap-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] tracking-[-0.8px] text-ods-text-primary">API Key Details</h2>
-          <Button onClick={onClose} variant="ghost" className="text-ods-text-secondary hover:text-white p-1">
-            <X className="h-6 w-6" />
-          </Button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
+      <ModalHeader>
+        <ModalTitle>API Key Details</ModalTitle>
+        <p className="text-ods-text-secondary text-sm mt-1">
+          View API key information and usage statistics
+        </p>
+      </ModalHeader>
 
-        {/* Name and status */}
-        <div className="flex items-center justify-between">
+      <div className="px-6 py-4 space-y-4">
+        {/* Name and Status */}
+        <div className="flex items-center justify-between pb-2 border-b border-ods-border">
           <div>
-            <div className="font-['DM_Sans'] font-semibold text-[22px] text-ods-text-primary">{apiKey.name}</div>
-            <div className="font-['DM_Sans'] text-[16px] text-ods-text-secondary mt-1">{apiKey.description || '—'}</div>
+            <div className="text-lg font-semibold text-ods-text-primary">{apiKey.name}</div>
+            <div className="text-sm text-ods-text-secondary mt-1">{apiKey.description || '—'}</div>
           </div>
           <StatusTag label={apiKey.enabled ? 'ACTIVE' : 'INACTIVE'} variant={apiKey.enabled ? 'success' : 'info'} />
         </div>
 
-        {/* Details */}
-        <div className="bg-ods-card border border-ods-border rounded-[6px]">
-          <div className="p-2 sm:p-4">
-            <InfoRow label="Key ID" value={apiKey.id} />
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Key ID</Label>
+            <Input value={apiKey.id} disabled className="bg-ods-card" />
           </div>
-          <div className="p-2 sm:p-4">
-            <InfoRow label="Created" value={formatDateTime(createdDate)} />
-          </div>
-          <div className="p-2 sm:p-4">
-            <InfoRow label="Expires" value={formatDateTime(expiresDate)} />
-          </div>
-        </div>
 
-        {/* Usage */}
-        <div>
-          <div className="font-['Azeret_Mono'] text-ods-text-secondary mb-3">USAGE STATISTICS</div>
-          <div className="bg-ods-card border border-ods-border rounded-[6px]">
-            <div className="p-2 sm:p-4">
-              <InfoRow label="Total Requests" value={apiKey.totalRequests.toLocaleString()} />
-            </div>
-            <div className="p-2 sm:p-4">
-              <InfoRow label="Successful Requests" value={apiKey.successfulRequests.toLocaleString()} />
-            </div>
-            <div className="p-2 sm:p-4">
-              <InfoRow label="Failed Requests" value={apiKey.failedRequests.toLocaleString()} />
-            </div>
-            <div className="p-2 sm:p-4">
-              <InfoRow label="Last Used" value={formatDateTime(lastUsed)} />
-            </div>
+          <div className="space-y-2">
+            <Label>Created</Label>
+            <Input value={formatDateTime(createdDate)} disabled className="bg-ods-card" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Expires</Label>
+            <Input value={formatDateTime(expiresDate)} disabled className="bg-ods-card" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Total Requests</Label>
+            <Input value={apiKey.totalRequests.toLocaleString()} disabled className="bg-ods-card" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Successful Requests</Label>
+            <Input value={apiKey.successfulRequests.toLocaleString()} disabled className="bg-ods-card" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Failed Requests</Label>
+            <Input value={apiKey.failedRequests.toLocaleString()} disabled className="bg-ods-card" />
+          </div>
+
+          <div className="space-y-2 col-span-2">
+            <Label>Last Used</Label>
+            <Input value={formatDateTime(lastUsed)} disabled className="bg-ods-card" />
           </div>
         </div>
       </div>
-    </div>
+
+      <ModalFooter>
+        <Button onClick={onClose}>
+          Close
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }
 

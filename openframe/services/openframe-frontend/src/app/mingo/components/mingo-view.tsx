@@ -1,24 +1,18 @@
 'use client'
 
 import React from "react"
-import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
-import { MINGO_TABS } from './tabs/mingo-tabs'
+import { useSearchParams } from 'next/navigation'
+import { MingoTabNavigation } from './tabs'
+import { MingoTabContent } from './tabs/mingo-tab-content'
 
 export function MingoView() {
+  const searchParams = useSearchParams()
+  const activeTab = searchParams?.get('tab') || 'current'
+
   return (
     <div className="flex flex-col w-full">
-      <TabNavigation
-        tabs={MINGO_TABS}
-        defaultTab="current"
-        urlSync={true}
-      >
-        {(activeTab) => (
-          <TabContent
-            activeTab={activeTab}
-            TabComponent={getTabComponent(MINGO_TABS, activeTab)}
-          />
-        )}
-      </TabNavigation>
+      <MingoTabNavigation />
+      <MingoTabContent activeTab={activeTab} />
     </div>
   )
 }

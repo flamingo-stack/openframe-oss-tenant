@@ -1,10 +1,11 @@
 import React from 'react'
 import { StatusTag, type TableColumn } from "@flamingo/ui-kit/components/ui"
-import { OSTypeBadge } from "@flamingo/ui-kit/components/features"
+import { OSTypeBadge, OrganizationIcon } from "@flamingo/ui-kit/components/features"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
+import { deduplicateFilterOptions } from '@lib/filter-utils'
 import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area
@@ -20,19 +21,20 @@ export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode
   return DeviceRowActions
 }
 
-function OrganizationCell({ device, fetchedImageUrls }: { 
-  device: Device; 
-  fetchedImageUrls: Record<string, string | undefined>; 
+function OrganizationCell({ device, fetchedImageUrls }: {
+  device: Device;
+  fetchedImageUrls: Record<string, string | undefined>;
 }) {
   const fetchedImageUrl = device.organizationImageUrl ? fetchedImageUrls[device.organizationImageUrl] : undefined
-  
+
   return (
     <div className="flex items-center gap-3">
-      {featureFlags.organizationImages.displayEnabled() && fetchedImageUrl && (
-        <img 
-          src={fetchedImageUrl} 
-          alt={device.organization || 'Organization'}
-          className="w-8 h-8 object-cover rounded-md border border-ods-border flex-shrink-0"
+      {featureFlags.organizationImages.displayEnabled() && (
+        <OrganizationIcon
+          imageUrl={fetchedImageUrl}
+          organizationName={device.organization || 'Organization'}
+          size="sm"
+          preFetched={true}
         />
       )}
       <div className="flex flex-col justify-center flex-1 min-w-0">
@@ -114,11 +116,13 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
       label: 'ORGANIZATION',
       width: 'w-1/6',
       filterable: true,
-      filterOptions: deviceFilters?.organizationIds?.map((org: any) => ({
-        id: org.value,
-        label: org.label,
-        value: org.value
-      })) || [],
+      filterOptions: deduplicateFilterOptions(
+        deviceFilters?.organizationIds?.map((org: any) => ({
+          id: org.value,
+          label: org.label,
+          value: org.value
+        })) || []
+      ),
       renderCell: (device) => <OrganizationCell device={device} fetchedImageUrls={fetchedImageUrls} />
     }
   ]
