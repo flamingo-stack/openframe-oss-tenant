@@ -69,20 +69,20 @@ loki:
 
   sidecar:
     image:
-      registry: ghcr.io
-      repository: flamingo-stack/registry/k8s-sidecar
+      registry: ghcr.io/flamingo-stack/registry
+      repository: kiwigrid/k8s-sidecar
       tag: "1.30.10"
 
   memcached:
     image:
-      registry: ghcr.io
-      repository: flamingo-stack/registry/memcached
+      registry: ghcr.io/flamingo-stack/registry
+      repository: library/memcached
       tag: "1.6.39-alpine"
 
   memcachedExporter:
     image:
-      registry: ghcr.io
-      repository: flamingo-stack/registry/memcached-exporter
+      registry: ghcr.io/flamingo-stack/registry
+      repository: prom/memcached-exporter
       tag: "v0.15.3"
 
   # gateway:
