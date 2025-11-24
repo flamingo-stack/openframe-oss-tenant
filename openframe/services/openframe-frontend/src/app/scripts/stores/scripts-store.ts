@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { devtools, persist } from 'zustand/middleware'
+import { devtools } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
 /**
@@ -49,49 +49,44 @@ const initialState = {
 
 export const useScriptsStore = create<ScriptsState>()(
   devtools(
-    persist(
-      immer((set) => ({
-        // State
-        ...initialState,
-        
-        // Actions
-        setScripts: (scripts) =>
-          set((state) => {
-            state.scripts = scripts
-            state.error = null
-          }),
-        
-        setSearch: (search) =>
-          set((state) => {
-            state.search = search
-          }),
-        
-        setLoading: (loading) =>
-          set((state) => {
-            state.isLoading = loading
-          }),
-        
-        setError: (error) =>
-          set((state) => {
-            state.error = error
-            state.isLoading = false
-          }),
-        
-        clearScripts: () =>
-          set((state) => {
-            state.scripts = []
-            state.error = null
-          }),
-        
-        reset: () =>
-          set(() => initialState),
-      })),
-      {
-        name: 'scripts-storage', // Storage key
-      }
-    ),
+    immer((set) => ({
+      // State
+      ...initialState,
+
+      // Actions
+      setScripts: (scripts) =>
+        set((state) => {
+          state.scripts = scripts
+          state.error = null
+        }),
+
+      setSearch: (search) =>
+        set((state) => {
+          state.search = search
+        }),
+
+      setLoading: (loading) =>
+        set((state) => {
+          state.isLoading = loading
+        }),
+
+      setError: (error) =>
+        set((state) => {
+          state.error = error
+          state.isLoading = false
+        }),
+
+      clearScripts: () =>
+        set((state) => {
+          state.scripts = []
+          state.error = null
+        }),
+
+      reset: () =>
+        set(() => initialState),
+    })),
     {
-      name: 'scripts-store', // Redux DevTools name
+      name: 'scripts-store',
     }
   )
 )
