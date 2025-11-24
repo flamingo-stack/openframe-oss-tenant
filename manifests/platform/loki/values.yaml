@@ -8,7 +8,8 @@ loki:
   # Image configuration
   loki:
     image:
-      repository: docker.io/grafana/loki
+      registry: docker.io
+      repository: grafana/loki
       tag: "3.5.7"
       pullPolicy: IfNotPresent
 
