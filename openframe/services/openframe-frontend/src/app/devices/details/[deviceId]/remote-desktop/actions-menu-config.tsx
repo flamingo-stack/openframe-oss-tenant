@@ -1,5 +1,5 @@
 import React from 'react'
-import { Keyboard, Copy, Sunrise, Moon, RotateCcw, Power } from 'lucide-react'
+import { Keyboard, Sunrise, Moon, RotateCcw, Power } from 'lucide-react'
 import { ActionsMenuGroup } from '@flamingo/ui-kit'
 
 // Virtual key codes based on Windows Virtual-Key Codes

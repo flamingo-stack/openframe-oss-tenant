@@ -15,6 +15,7 @@ import { EditProfileIcon, RefreshIcon } from '@flamingo/ui-kit/components/icons'
 import { EditSsoConfigModal } from '../edit-sso-config-modal'
 import { SsoConfigDetailsModal } from '../sso-config-details-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
+import { getProviderIcon } from '../../utils/get-provider-icon'
 
 type UIProviderRow = {
   id: string
@@ -30,8 +31,8 @@ export function SsoConfigurationTab() {
   const [providers, setProviders] = useState<UIProviderRow[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [editing, setEditing] = useState<{ open: boolean; providerKey: string; displayName: string; clientId?: string | null; clientSecret?: string | null } | null>(null)
-  const [details, setDetails] = useState<{ open: boolean; providerKey: string; displayName: string; status: { label: string; variant: 'success' | 'info' }; clientId?: string | null; clientSecret?: string | null } | null>(null)
+  const [editing, setEditing] = useState<{ open: boolean; providerKey: string; displayName: string; clientId?: string | null; clientSecret?: string | null; msTenantId?: string | null } | null>(null)
+  const [details, setDetails] = useState<{ open: boolean; providerKey: string; displayName: string; status: { label: string; variant: 'success' | 'info' }; clientId?: string | null; clientSecret?: string | null; msTenantId?: string | null } | null>(null)
 
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig()
 
@@ -79,9 +80,12 @@ export function SsoConfigurationTab() {
       label: 'OAUTH PROVIDER',
       width: 'w-1/3',
       renderCell: (row) => (
-        <div className="flex flex-col justify-center w-80 shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
-          <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+        <div className="flex items-center gap-3 w-80 shrink-0">
+          {getProviderIcon(row.provider)}
+          <div className="flex flex-col justify-center">
+            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
+            <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+          </div>
         </div>
       )
     },
@@ -118,7 +122,7 @@ export function SsoConfigurationTab() {
 
   const rowActions: RowAction<UIProviderRow>[] = useMemo(() => [
     {
-      label: '',
+      label: ' ',
       icon: <EditProfileIcon className="h-6 w-6 text-ods-text-primary" />,
       onClick: (row) => {
         setEditing({
@@ -126,11 +130,11 @@ export function SsoConfigurationTab() {
           providerKey: row.provider,
           displayName: row.displayName,
           clientId: row.original?.config?.clientId,
-          clientSecret: row.original?.config?.clientSecret
+          clientSecret: row.original?.config?.clientSecret,
+          msTenantId: row.original?.config?.msTenantId
         })
       },
       variant: 'outline',
-      className: 'bg-ods-card border-ods-border hover:bg-ods-bg-hover h-12 w-12'
     },
     {
       label: 'Details',
@@ -141,11 +145,11 @@ export function SsoConfigurationTab() {
           displayName: row.displayName,
           status: row.status,
           clientId: row.original?.config?.clientId,
-          clientSecret: row.original?.config?.clientSecret
+          clientSecret: row.original?.config?.clientSecret,
+          msTenantId: row.original?.config?.msTenantId
         })
       },
       variant: 'outline',
-      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
     }
   ], [])
 
@@ -174,7 +178,6 @@ export function SsoConfigurationTab() {
         loading={isLoading}
         emptyMessage="No SSO providers found."
         rowActions={rowActions}
-        actionsWidth={140}
         showFilters={false}
         rowClassName="mb-1"
       />
@@ -185,9 +188,10 @@ export function SsoConfigurationTab() {
         providerDisplayName={editing?.displayName || ''}
         initialClientId={editing?.clientId}
         initialClientSecret={editing?.clientSecret}
-        onSubmit={async ({ clientId, clientSecret }) => {
+        initialMsTenantId={editing?.msTenantId}
+        onSubmit={async ({ clientId, clientSecret, msTenantId }) => {
           if (!editing?.providerKey) return
-          await updateProviderConfig(editing.providerKey, { clientId, clientSecret })
+          await updateProviderConfig(editing.providerKey, { clientId, clientSecret, msTenantId })
           await loadData()
         }}
       />
@@ -199,6 +203,7 @@ export function SsoConfigurationTab() {
         status={details?.status || { label: 'INACTIVE', variant: 'info' }}
         clientId={details?.clientId}
         clientSecret={details?.clientSecret}
+        msTenantId={details?.msTenantId}
         onToggle={async (enabled) => {
           if (!details?.providerKey) return
           await toggleProviderEnabled(details.providerKey, enabled)

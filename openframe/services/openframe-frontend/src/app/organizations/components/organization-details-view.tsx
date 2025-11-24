@@ -2,11 +2,13 @@
 
 import React, { useEffect } from 'react'
 import { Button, DetailPageContainer, CardLoader, LoadError, NotFoundError, InfoCard } from '@flamingo/ui-kit'
+import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
 import { useRouter } from 'next/navigation'
 import { useOrganizationDetails } from '../hooks/use-organization-details'
 import { PencilIcon } from 'lucide-react'
 import { useDeleteOrganization } from '../hooks/use-delete-organization'
 import { useToast } from '@flamingo/ui-kit/hooks'
+import { featureFlags } from '@lib/feature-flags'
 
 interface OrganizationDetailsViewProps {
   id: string
@@ -85,9 +87,19 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       {/* Top summary row */}
       <div className="bg-ods-card border border-ods-border rounded-lg p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div>
-            <div className="text-ods-text-primary text-[18px]">{organization?.industry || '-'}</div>
-            <div className="text-ods-text-secondary text-sm">Category</div>
+          <div className="flex items-center gap-3">
+            {featureFlags.organizationImages.displayEnabled() && (
+              <OrganizationIcon
+                imageUrl={organization?.imageUrl}
+                organizationName={organization?.name || 'Organization'}
+                size="lg"
+                refreshKey={organization?.id}
+              />
+            )}
+            <div>
+              <div className="text-ods-text-primary text-[18px]">{organization?.industry || '-'}</div>
+              <div className="text-ods-text-secondary text-sm">Category</div>
+            </div>
           </div>
           <div>
             <div className="text-ods-text-primary text-[18px]">{organization?.website || '-'}</div>

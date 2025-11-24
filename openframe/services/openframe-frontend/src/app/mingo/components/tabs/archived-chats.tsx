@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useMemo } from "react"
+import React, { useState, useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -8,7 +8,7 @@ import {
   ListPageLayout,
   type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
-import { useDebounce, useToast } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useToast, useApiParams, useTablePagination } from "@flamingo/ui-kit/hooks"
 import { useDialogsStore } from '../../stores/dialogs-store'
 import { Dialog } from '../../types/dialog.types'
 import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table-columns'
@@ -16,21 +16,32 @@ import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table
 export function ArchivedChats() {
   const router = useRouter()
   const { toast } = useToast()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
-  
-  const { 
-    archivedDialogs: dialogs, 
+
+  // URL state management for search
+  const { params, setParam } = useApiParams({
+    search: { type: 'string', default: '' },
+    cursor: { type: 'string', default: '' }
+  })
+
+  // Debounce search input for smoother UX
+  const [searchInput, setSearchInput] = useState(params.search)
+  const debouncedSearchInput = useDebounce(searchInput, 300)
+
+  // Update URL when debounced input changes
+  useEffect(() => {
+    setParam('search', debouncedSearchInput)
+  }, [debouncedSearchInput])
+
+  const {
+    archivedDialogs: dialogs,
     archivedPageInfo,
     archivedHasLoadedBeyondFirst,
-    isLoadingArchived: isLoading, 
+    isLoadingArchived: isLoading,
     archivedError: error,
     fetchDialogs,
     goToNextPage,
     goToFirstPage
   } = useDialogsStore()
-  
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const columns = useMemo(() => getDialogTableColumns(), [])
 
@@ -48,43 +59,51 @@ export function ArchivedChats() {
   }, [])
 
   React.useEffect(() => {
-    if (debouncedSearchTerm !== undefined) {
-      fetchDialogs(true, debouncedSearchTerm)
+    if (params.search !== undefined) {
+      fetchDialogs(true, params.search)
     }
-  }, [debouncedSearchTerm])
+  }, [params.search])
   
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    setTableFilters(columnFilters)
+    // Mingo doesn't use filters yet, but keep handler for future
   }, [])
-  
+
   const handleNextPage = useCallback(() => {
+    if (archivedPageInfo?.endCursor) {
+      setParam('cursor', archivedPageInfo.endCursor)
+    }
     goToNextPage(true)
-  }, [goToNextPage])
-  
+  }, [goToNextPage, archivedPageInfo, setParam])
+
   const handleResetToFirstPage = useCallback(() => {
+    setParam('cursor', '')
     goToFirstPage(true)
-  }, [goToFirstPage])
-  
-  const cursorPagination: CursorPaginationProps | undefined = archivedPageInfo ? {
-    hasNextPage: archivedPageInfo.hasNextPage,
-    isFirstPage: !archivedHasLoadedBeyondFirst,
-    startCursor: archivedPageInfo.startCursor,
-    endCursor: archivedPageInfo.endCursor,
-    currentCount: dialogs.length,
-    itemName: 'chats',
-    onNext: () => handleNextPage(),
-    onReset: handleResetToFirstPage,
-    showInfo: true,
-    resetButtonLabel: 'First',
-    resetButtonIcon: 'home'
-  } : undefined
+  }, [goToFirstPage, setParam])
+
+  const cursorPagination = useTablePagination(
+    archivedPageInfo ? {
+      type: 'server',
+      hasNextPage: archivedPageInfo.hasNextPage,
+      hasLoadedBeyondFirst: archivedHasLoadedBeyondFirst,
+      startCursor: archivedPageInfo.startCursor,
+      endCursor: archivedPageInfo.endCursor,
+      itemCount: dialogs.length,
+      itemName: 'chats',
+      onNext: handleNextPage,
+      onReset: handleResetToFirstPage,
+      showInfo: true
+    } : null
+  )
+
+  // Table filters (empty for now)
+  const tableFilters = useMemo(() => ({}), [])
 
   return (
     <ListPageLayout
       title="Archived Chats"
       searchPlaceholder="Search for Chat"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       padding="none"
       className="pt-6"

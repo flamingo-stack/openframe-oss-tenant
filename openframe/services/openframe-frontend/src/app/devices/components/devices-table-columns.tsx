@@ -1,10 +1,12 @@
 import React from 'react'
 import { StatusTag, type TableColumn } from "@flamingo/ui-kit/components/ui"
-import { OSTypeBadge } from "@flamingo/ui-kit/components/features"
+import { OSTypeBadge, OrganizationIcon } from "@flamingo/ui-kit/components/features"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
+import { deduplicateFilterOptions } from '@lib/filter-utils'
+import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area
 export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode) {
@@ -19,7 +21,32 @@ export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode
   return DeviceRowActions
 }
 
-export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[] {
+function OrganizationCell({ device, fetchedImageUrls }: {
+  device: Device;
+  fetchedImageUrls: Record<string, string | undefined>;
+}) {
+  const fetchedImageUrl = device.organizationImageUrl ? fetchedImageUrls[device.organizationImageUrl] : undefined
+
+  return (
+    <div className="flex items-center gap-3">
+      {featureFlags.organizationImages.displayEnabled() && (
+        <OrganizationIcon
+          imageUrl={fetchedImageUrl}
+          organizationName={device.organization || 'Organization'}
+          size="sm"
+          preFetched={true}
+        />
+      )}
+      <div className="flex flex-col justify-center flex-1 min-w-0">
+        <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
+          {device.organization || ''}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Record<string, string | undefined> = {}): TableColumn<Device>[] {
   return [
     {
       key: 'device',
@@ -45,7 +72,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       filterable: true,
       filterOptions: deviceFilters?.statuses?.map((status: any) => ({
         id: status.value,
-        label: status.value.charAt(0).toUpperCase() + status.value.slice(1).toLowerCase(),
+        label: getDeviceStatusConfig(status.value).label,
         value: status.value
       })) || [],
       renderCell: (device) => {
@@ -89,18 +116,14 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       label: 'ORGANIZATION',
       width: 'w-1/6',
       filterable: true,
-      filterOptions: deviceFilters?.organizationIds?.map((org: any) => ({
-        id: org.value,
-        label: org.label,
-        value: org.value
-      })) || [],
-      renderCell: (device) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-            {device.organization ||''}
-          </span>
-        </div>
-      )
+      filterOptions: deduplicateFilterOptions(
+        deviceFilters?.organizationIds?.map((org: any) => ({
+          id: org.value,
+          label: org.label,
+          value: org.value
+        })) || []
+      ),
+      renderCell: (device) => <OrganizationCell device={device} fetchedImageUrls={fetchedImageUrls} />
     }
   ]
 }

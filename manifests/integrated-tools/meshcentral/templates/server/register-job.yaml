@@ -5,7 +5,7 @@ metadata:
   name: meshcentral-server
   annotations:
     "argocd.argoproj.io/hook": PostSync
-    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
     "argocd.argoproj.io/sync-options": Replace=true
 spec:
   backoffLimit: 3
@@ -114,6 +114,7 @@ spec:
                       "mongodb.name": "meshcentral",
                       "topic.prefix": "meshcentral",
                       "collection.include.list": "meshcentral.events",
+                      "tombstones.on.delete": "false",
                       "transforms": "route,addHeaderMessageType,addHeaderJSONType",
                       "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
                       "transforms.route.regex": ".*",

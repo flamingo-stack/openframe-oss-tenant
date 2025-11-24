@@ -14,6 +14,7 @@ pub mod openframe_client_info;
 pub mod machine_heartbeat_message;
 pub mod download_configuration;
 pub mod installed_agent_message;
+pub mod update_state;
 
 pub use agent_registration_request::AgentRegistrationRequest;
 pub use agent_registration_response::AgentRegistrationResponse;
@@ -33,3 +34,4 @@ pub use openframe_client_info::OpenFrameClientInfo;
 pub use machine_heartbeat_message::MachineHeartbeatMessage;
 pub use download_configuration::DownloadConfiguration;
 pub use installed_agent_message::InstalledAgentMessage;
+pub use update_state::{UpdateState, UpdatePhase};

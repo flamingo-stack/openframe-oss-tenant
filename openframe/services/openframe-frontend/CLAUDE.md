@@ -400,6 +400,121 @@ export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
 }
 ```
 
+## URL State Management (Runtime Schema-Driven)
+
+OpenFrame uses a **runtime schema-driven URL state management system** that automatically handles pagination, filtering, and search parameters by parsing GraphQL queries and syncing with URL parameters.
+
+### Core Features
+
+- **Automatic Schema Detection**: Parses GraphQL queries at runtime to extract variable definitions
+- **Runtime Introspection**: Fetches GraphQL schema behind auth (no build-time codegen needed)
+- **Auto-Flattening**: Nested input types automatically flattened to simple URL params
+- **Bidirectional Sync**: URL ↔ GraphQL variables conversion
+- **Works Behind Auth**: Introspection happens at runtime after authentication
+- **Zero Build Dependencies**: No GraphQL CodeGen or build-time schema access required
+
+### Quick Example
+
+```typescript
+import { useQueryParams } from '@flamingo/ui-kit/hooks'
+
+const GET_LOGS_QUERY = `
+  query GetLogs($search: String, $filter: LogFilterInput, $cursor: String, $limit: Int) {
+    logs(search: $search, filter: $filter, after: $cursor, first: $limit) {
+      edges { node { id message } }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`
+
+export function LogsPage() {
+  // Hook automatically:
+  // 1. Parses query AST
+  // 2. Fetches GraphQL schema via introspection
+  // 3. Flattens nested types (filter.severity → severity)
+  // 4. Syncs with URL params
+  const { variables, setParam } = useQueryParams(GET_LOGS_QUERY, {
+    defaultValues: { limit: 20 }
+  })
+
+  // Fetch data using variables
+  const fetchLogs = async () => {
+    const response = await apiClient.post('/api/graphql', {
+      query: GET_LOGS_QUERY,
+      variables  // Ready to use!
+    })
+    return response.data
+  }
+
+  return (
+    <div>
+      <input onChange={(e) => setParam('search', e.target.value)} />
+      <select onChange={(e) => setParam('severity', [e.target.value])}>
+        <option>All</option>
+        <option>error</option>
+        <option>warning</option>
+      </select>
+    </div>
+  )
+}
+
+// URL: /logs?search=error&severity=critical&cursor=abc&limit=20
+// variables: { search: 'error', filter: { severity: ['critical'] }, cursor: 'abc', limit: 20 }
+```
+
+### How It Works
+
+1. **AST Parsing** - GraphQL query string parsed to extract variable definitions
+2. **Introspection** - Schema fetched at runtime to understand input types (cached 24h)
+3. **Flattening** - Nested types like `LogFilterInput.severity` → flat URL param `?severity=`
+4. **Conversion** - URL params ↔ GraphQL variables with automatic type coercion
+
+### Initialization
+
+Introspection must be initialized after authentication:
+
+```typescript
+// In auth provider or app layout
+import { initializeGraphQLIntrospection } from '@/lib/graphql-client'
+
+useEffect(() => {
+  if (isAuthenticated) {
+    initializeGraphQLIntrospection()
+  }
+}, [isAuthenticated])
+```
+
+### REST API Support
+
+For non-GraphQL APIs, use `useApiParams` with manual schema:
+
+```typescript
+import { useApiParams } from '@flamingo/ui-kit/hooks'
+
+const { params, urlSearchParams, setParam } = useApiParams({
+  search: { type: 'string', default: '' },
+  page: { type: 'number', default: 1 },
+  tags: { type: 'array', default: [] }
+})
+
+const response = await fetch(`/api/items?${urlSearchParams}`)
+```
+
+### Benefits
+
+✅ **Shareable URLs** - Users can bookmark and share filtered views
+✅ **State Persistence** - Page reloads preserve all filters/search/pagination
+✅ **Browser Navigation** - Back/forward buttons work correctly
+✅ **Zero Config** - Standard GraphQL queries work automatically
+✅ **Type Safe** - Full TypeScript support with generics
+✅ **Minimal Bundle** - ~5KB for all hooks, uses native browser APIs
+
+### Documentation
+
+- **Complete Guide**: `ui-kit/docs/hooks/runtime-url-state.md`
+- **API Reference**: Full documentation in ui-kit docs
+- **Examples**: See LogsTable and OrganizationsTable implementations
+
 ## Fleet MDM Integration
 
 OpenFrame integrates comprehensive device monitoring data from multiple sources with proper normalization and prioritization.

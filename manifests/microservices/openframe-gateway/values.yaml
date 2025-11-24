@@ -42,7 +42,6 @@ servicemonitor:
 registerJob:
   enabled: true
 
-# Application configuration
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
   tag: latest

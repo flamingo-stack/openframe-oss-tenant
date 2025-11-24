@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState, use } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Monitor, MoreHorizontal, Maximize2, Settings, ChevronLeft } from 'lucide-react'
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu } from '@flamingo/ui-kit'
+import { Monitor, MoreHorizontal, Settings, ChevronLeft } from 'lucide-react'
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { AppLayout } from '@app/components/app-layout'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
@@ -12,6 +12,7 @@ import { MeshDesktop } from '@lib/meshcentral/meshcentral-desktop'
 import { RemoteSettingsModal } from './remote-settings-modal'
 import { RemoteSettingsConfig, DEFAULT_SETTINGS, RemoteDesktopSettings } from '@lib/meshcentral/remote-settings'
 import { createActionsMenuGroups, ActionHandlers } from './actions-menu-config'
+import { DisplayInfo } from '@lib/meshcentral/meshcentral-desktop'
 
 interface RemoteDesktopPageProps {
   params: Promise<{
@@ -72,6 +73,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [remoteSettings, setRemoteSettings] = useState<RemoteSettingsConfig>(DEFAULT_SETTINGS)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const [displays, setDisplays] = useState<DisplayInfo[]>([])
+  const [currentDisplay, setCurrentDisplay] = useState(0)
   
   useEffect(() => {
     remoteSettingsRef.current = remoteSettings
@@ -96,6 +99,17 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     
     const desktop = new MeshDesktop()
     desktopRef.current = desktop
+    
+    // Set up display list change callback
+    desktop.onDisplayListChange?.((newDisplays) => {
+      setDisplays(newDisplays)
+      // Auto-select primary display if available
+      const primaryDisplay = newDisplays.find(d => d.primary)
+      if (primaryDisplay && currentDisplay === 0) {
+        setCurrentDisplay(primaryDisplay.id)
+      }
+    })
+    
     const canvas = canvasRef.current
     if (canvas) {
       desktop.attach(canvas)
@@ -290,6 +304,26 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     })
   }
 
+  const handleDisplayChange = (displayId: number) => {
+    try {
+      desktopRef.current?.switchDisplay?.(displayId)
+      setCurrentDisplay(displayId)
+      toast({
+        title: "Display Switched",
+        description: `Switched to display ${displayId}`,
+        variant: "success",
+        duration: 2000
+      })
+    } catch (error) {
+      toast({
+        title: "Display Switch Failed",
+        description: error instanceof Error ? error.message : "Unable to switch display",
+        variant: "destructive",
+        duration: 4000
+      })
+    }
+  }
+
   const actionHandlers: ActionHandlers = {
     sendCtrlAltDel,
     sendKeyCombo,
@@ -302,6 +336,29 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   }
 
   const actionsMenuGroups = createActionsMenuGroups(actionHandlers, enableInput)
+
+  const displayMenuGroups: ActionsMenuGroup[] = displays.length > 1 ? [
+    {
+      items: [
+        ...(displays.some(d => d.id === 0) || displays.length > 1 ? [{
+          id: 'display-all',
+          label: 'All Displays',
+          icon: <Monitor className="w-4 h-4" />,
+          type: 'checkbox' as const,
+          checked: currentDisplay === 0,
+          onClick: () => handleDisplayChange(0)
+        }] : []),
+        ...displays.filter(d => d.id !== 0).map((display) => ({
+          id: `display-${display.id}`,
+          label: `Display ${display.id}${display.primary ? ' (Primary)' : ''}`,
+          icon: <Monitor className="w-4 h-4" />,
+          type: 'checkbox' as const,
+          checked: currentDisplay === display.id,
+          onClick: () => handleDisplayChange(display.id)
+        }))
+      ]
+    }
+  ] : []
 
   if (!meshcentralAgentId) return null
 
@@ -346,9 +403,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="device-action"
                   leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}
-                  className="bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
                 >
                   Actions
                 </Button>
@@ -369,27 +425,38 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Expand Button */}
-            <Button
-              variant="outline"
-              leftIcon={<Maximize2 className="w-6 h-6 mr-2" />}
-              className="bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
-              onClick={() => {
-                toast({
-                  title: "Expand",
-                  description: "This feature will be implemented soon",
-                  variant: "info"
-                })
-              }}
-            >
-              Expand
-            </Button>
+            {/* Display Selector */}
+            {displays.length > 1 && (
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="device-action"
+                    leftIcon={<Monitor className="w-6 h-6 mr-2" />}
+                  >
+                    Display {currentDisplay === 0 ? 'All' : currentDisplay}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  className="p-0 border-none"
+                  onInteractOutside={(e) => {
+                    const target = e.target as HTMLElement
+                    if (target.closest('.fixed.z-\\[9999\\]')) {
+                      e.preventDefault()
+                    }
+                  }}
+                >
+                  <ActionsMenu 
+                    groups={displayMenuGroups}
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* Settings Button */}
             <Button
-              variant="outline"
+              variant="device-action"
               leftIcon={<Settings className="w-6 h-6 mr-2" />}
-              className="bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
               onClick={() => setSettingsOpen(true)}
             >
               Settings

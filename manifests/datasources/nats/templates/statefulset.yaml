@@ -28,7 +28,9 @@ spec:
               name: monitoring
             - containerPort: 8080
               name: websocket
-
+          env:
+            - name: empty
+              value: ""
           volumeMounts:
             - name: nats-config
               mountPath: /etc/nats/nats.conf
