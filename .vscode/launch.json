@@ -222,6 +222,33 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "OpenFrame Frontend with Dev Configuration",
+            "preLaunchTask": "frontend-with-port-cleanup",
+            "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "env": {
+                "NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER": "true",
+                "NEXT_PUBLIC_AUTH_CHECK_INTERVAL": "60000",
+                "NEXT_PUBLIC_APP_MODE": "saas-tenant",
+                "NEXT_PUBLIC_TENANT_HOST_URL": "https://michael.openframe.build",
+                "NEXT_PUBLIC_SHARED_HOST_URL": "https://openframe.build",
+                "NEXT_PUBLIC_FEATURE_ORG_IMAGES": "true"
+            },
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "OpenFrame Frontend with Stage Configuration",
             "preLaunchTask": "frontend-with-port-cleanup",
             "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",
