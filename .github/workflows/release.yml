@@ -286,8 +286,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -335,19 +333,19 @@ jobs:
           - \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`
           ---
           EOF
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git tag ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
-
-          gh release create ${{ inputs.version }} \
-            --title "🦩 ${{ inputs.version }}" \
-            --notes "$(cat RELEASE_HEADER.md)" \
-            final-artifacts/clients/*.tar.gz \
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "🦩 ${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body_path: RELEASE_HEADER.md
+          files: |
             final-artifacts/clients/*.zip
+            final-artifacts/clients/*.tar.gz
 
       - name: Configure Git
         run: |
