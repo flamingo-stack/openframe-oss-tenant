@@ -99,6 +99,26 @@ fn main() -> Result<()> {
                 process::exit(1);
             }
 
+            // Check if service is already installed
+            if Service::is_installed() {
+                error!("Previous installation detected");
+                eprintln!("\n╔═══════════════════════════════════════════════════════════╗");
+                eprintln!("║  Previous Installation Detected                           ║");
+                eprintln!("╠═══════════════════════════════════════════════════════════╣");
+                eprintln!("║                                                           ║");
+                eprintln!("║  OpenFrame client service is already installed.           ║");
+                eprintln!("║  Please run uninstall first before installing again.      ║");
+                eprintln!("║                                                           ║");
+                eprintln!("╚═══════════════════════════════════════════════════════════╝\n");
+
+                // Wait for user input before closing console
+                println!("Press Enter to exit...");
+                let mut input = String::new();
+                let _ = std::io::stdin().read_line(&mut input);
+
+                process::exit(1);
+            }
+
             let params = InstallConfigParams {
                 server_url: args.server_url.clone(),
                 initial_key: args.initial_key.clone(),
