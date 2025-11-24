@@ -15,9 +15,10 @@ import {
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { Input, ToolBadge } from "@flamingo/ui-kit"
-import { useDebounce } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useApiParams, useTablePagination } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { navigateToLogDetails } from '@lib/log-navigation'
+import { transformOrganizationFilters } from '@lib/filter-utils'
 import { useLogs, useLogFilters } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
 
@@ -57,40 +58,60 @@ export interface LogsTableRef {
 
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}, ref) {
   const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState<{ severities?: string[], toolTypes?: string[], organizationIds?: string[], deviceId?: string }>({
-    deviceId: deviceId
+
+  // URL state management - all filters, search, and cursor persist in URL
+  const { params, setParam, setParams } = useApiParams({
+    search: { type: 'string', default: '' },
+    severities: { type: 'array', default: [] },
+    toolTypes: { type: 'array', default: [] },
+    organizationIds: { type: 'array', default: [] },
+    cursor: { type: 'string', default: '' }
   })
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
-  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Debounce search input for smoother UX
+  const [searchInput, setSearchInput] = useState(params.search)
+  const debouncedSearchInput = useDebounce(searchInput, 300)
+
+  // Update URL when debounced input changes
+  useEffect(() => {
+    setParam('search', debouncedSearchInput)
+  }, [debouncedSearchInput])
+
   const [selectedLog, setSelectedLog] = useState<UILogEntry | null>(null)
   const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
-  const prevFilterKeyRef = React.useRef<string | null>(null)
+  const initialLoadDone = React.useRef(false)
 
   const { logFilters, fetchLogFilters } = useLogFilters()
 
   const backendFilters = useMemo(() => {
     return {
-      severities: filters.severities,
-      toolTypes: filters.toolTypes,
-      organizationIds: filters.organizationIds,
-      deviceId: filters.deviceId || deviceId
+      severities: params.severities,
+      toolTypes: params.toolTypes,
+      organizationIds: params.organizationIds,
+      deviceId: deviceId
     }
-  }, [filters, deviceId])
+  }, [params.severities, params.toolTypes, params.organizationIds, deviceId])
 
-  const { 
-    logs, 
+  // Stable filter key for detecting changes (like devices pattern)
+  const filtersKey = useMemo(() => JSON.stringify({
+    severities: params.severities?.sort() || [],
+    toolTypes: params.toolTypes?.sort() || [],
+    organizationIds: params.organizationIds?.sort() || [],
+    deviceId: deviceId || null
+  }), [params.severities, params.toolTypes, params.organizationIds, deviceId])
+
+  const {
+    logs,
     pageInfo,
-    isLoading, 
-    error, 
-    searchLogs, 
-    refreshLogs, 
+    isLoading,
+    error,
+    searchLogs,
+    refreshLogs,
     fetchLogDetails,
     fetchNextPage,
     fetchFirstPage,
     hasNextPage
   } = useLogs(backendFilters)
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   // Transform API logs to UI format
   const transformedLogs: UILogEntry[] = useMemo(() => {
@@ -180,11 +201,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         label: 'SOURCE',
         width: 'w-[240px]',
         filterable: true,
-        filterOptions: logFilters?.organizations?.map((org) => ({
-          id: org.id || 'system',
-          label: org.name === 'null' ? 'System' : org.name,
-          value: org.id
-        })),
+        filterOptions: transformOrganizationFilters(logFilters?.organizations),
         renderCell: (log) => (
           <DeviceCardCompact
             deviceName={log.device.name === 'null' ? 'System' : log.device.name}
@@ -221,46 +238,36 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     }
   ], [router])
 
-  useEffect(() => {
-    if (deviceId !== undefined) {
-      setFilters(prev => ({
-        ...prev,
-        deviceId: deviceId
-      }))
-    }
-  }, [deviceId])
+  // deviceId prop is handled in backendFilters, not in URL state
 
+  // Initialize once on mount (like devices)
   useEffect(() => {
-    if (!isInitialized) {
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true
       searchLogs('')
       fetchLogFilters()
-      setIsInitialized(true)
     }
-  }, [isInitialized, searchLogs, fetchLogFilters])
+  }, [])
 
+  // Fetch when search changes (like devices)
   useEffect(() => {
-    if (isInitialized && debouncedSearchTerm !== undefined) {
-      searchLogs(debouncedSearchTerm)
+    if (initialLoadDone.current && params.search !== undefined) {
+      searchLogs(params.search)
       setHasLoadedBeyondFirst(false)
     }
-  }, [debouncedSearchTerm, searchLogs, isInitialized])
-  
-  useEffect(() => {
-    if (isInitialized) {
-      const filterKey = JSON.stringify({
-        severities: filters.severities?.sort() || [],
-        toolTypes: filters.toolTypes?.sort() || [],
-        deviceId: deviceId || null
-      })
+  }, [params.search])
 
-      if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
-        refreshLogs()
-        fetchLogFilters(filters)
-        setHasLoadedBeyondFirst(false)
+  // Refetch when filters change (like devices pattern)
+  useEffect(() => {
+    if (initialLoadDone.current) {
+      const refetch = async () => {
+        await searchLogs(params.search)
+        await fetchLogFilters(backendFilters)
       }
-      prevFilterKeyRef.current = filterKey
+      refetch()
+      setHasLoadedBeyondFirst(false)
     }
-  }, [filters, deviceId, refreshLogs, fetchLogFilters, isInitialized])
+  }, [filtersKey])
 
   const handleRowClick = useCallback((log: UILogEntry) => {
     setSelectedLog(log)
@@ -282,57 +289,52 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   }), [handleRefresh])
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    setTableFilters(columnFilters)
-
-    const newFilters: any = {}
-
-    if (columnFilters.status?.length > 0) {
-      newFilters.severities = columnFilters.status
-    }
-
-    if (columnFilters.tool?.length > 0) {
-      newFilters.toolTypes = columnFilters.tool
-    }
-
-    if (columnFilters.source?.length > 0) {
-      newFilters.organizationIds = columnFilters.source
-    }
-    
-    setFilters(prev => {
-      if (JSON.stringify(prev.severities?.sort()) === JSON.stringify(newFilters.severities?.sort()) &&
-          JSON.stringify(prev.toolTypes?.sort()) === JSON.stringify(newFilters.toolTypes?.sort()) &&
-          JSON.stringify(prev.organizationIds?.sort()) === JSON.stringify(newFilters.organizationIds?.sort())) {
-        return prev
-      }
-      return newFilters
+    // Batch update all params at once - single router.replace call
+    setParams({
+      cursor: '', // Reset cursor when filters change
+      severities: columnFilters.status || [],
+      toolTypes: columnFilters.tool || [],
+      organizationIds: columnFilters.source || []
     })
-  }, [])
+
+    setHasLoadedBeyondFirst(false)
+  }, [setParams])
 
   const handleNextPage = useCallback(async () => {
     if (hasNextPage && pageInfo?.endCursor) {
+      setParam('cursor', pageInfo.endCursor)
       await fetchNextPage()
       setHasLoadedBeyondFirst(true)
     }
-  }, [hasNextPage, pageInfo, fetchNextPage])
+  }, [hasNextPage, pageInfo, fetchNextPage, setParam])
 
   const handleResetToFirstPage = useCallback(async () => {
+    setParam('cursor', '')
     await fetchFirstPage()
     setHasLoadedBeyondFirst(false)
-  }, [fetchFirstPage])
+  }, [fetchFirstPage, setParam])
 
-  const cursorPagination: CursorPaginationProps | undefined = pageInfo ? {
-    hasNextPage: hasNextPage,
-    isFirstPage: !hasLoadedBeyondFirst,
-    startCursor: pageInfo.startCursor,
-    endCursor: pageInfo.endCursor,
-    currentCount: logs.length,
-    itemName: 'logs',
-    onNext: () => handleNextPage(),
-    onReset: handleResetToFirstPage,
-    showInfo: true,
-    resetButtonLabel: 'First',
-    resetButtonIcon: 'home'
-  } : undefined
+  const cursorPagination = useTablePagination(
+    pageInfo ? {
+      type: 'server',
+      hasNextPage,
+      hasLoadedBeyondFirst,
+      startCursor: pageInfo.startCursor,
+      endCursor: pageInfo.endCursor,
+      itemCount: logs.length,
+      itemName: 'logs',
+      onNext: handleNextPage,
+      onReset: handleResetToFirstPage,
+      showInfo: true
+    } : null
+  )
+
+  // Convert URL params to table filters format for the Table component
+  const tableFilters = useMemo(() => ({
+    status: params.severities,
+    tool: params.toolTypes,
+    source: params.organizationIds
+  }), [params.severities, params.toolTypes, params.organizationIds])
 
   const headerActions = (
     <Button
@@ -389,8 +391,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
             <Input
               type="text"
               placeholder="Search logs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="h-[48px] min-h-[48px] bg-ods-card border border-ods-border"
               style={{ height: 48 }}
             />
@@ -426,8 +428,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       title="Logs"
       headerActions={headerActions}
       searchPlaceholder="Search for Logs"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       background="default"
       padding="none"

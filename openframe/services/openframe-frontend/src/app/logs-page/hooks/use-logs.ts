@@ -126,9 +126,20 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
         node: transformLogEntry(edge.node)
       }))
 
+      // DEBUG: Check for duplicate keys before updating store
+      const ids = transformedEdges.map(e => e.node.toolEventId)
+      const uniqueIds = new Set(ids)
+      if (ids.length !== uniqueIds.size) {
+        const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i)
+        console.error('⚠️ DUPLICATE LOG KEYS DETECTED from backend:', duplicates)
+        console.error('Full edge count:', transformedEdges.length, 'Unique IDs:', uniqueIds.size)
+      }
+
       if (append) {
+        console.log('[useLogs] Appending', transformedEdges.length, 'logs')
         appendEdges(transformedEdges)
       } else {
+        console.log('[useLogs] Replacing with', transformedEdges.length, 'logs')
         setEdges(transformedEdges)
       }
 

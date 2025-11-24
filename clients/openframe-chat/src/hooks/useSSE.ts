@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { MockChatService } from '../services/mockChatService'
 import { SSEService } from '../services/sseService'
 import { ChatApiService } from '../services/chatApiService'
+import { tokenService } from '../services/tokenService'
 import { MessageSegment } from '../types/chat.types'
 
 interface UseSSEOptions {
@@ -11,22 +12,52 @@ interface UseSSEOptions {
   apiToken?: string
   apiBaseUrl?: string
   debugMode?: boolean
+  onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void
 }
 
-export function useSSE({ url, useMock = false, useApi = true, debugMode = false }: UseSSEOptions = {}) {
+let sharedApiService: ChatApiService | null = null
+let isInitialized = false
+
+export function useSSE({ url, useMock = false, useApi = true, debugMode = false, onMetadataUpdate }: UseSSEOptions = {}) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   
   const mockService = useRef(new MockChatService())
-  const sseService = useRef(url ? new SSEService(url) : null)
-  const apiService = useRef(new ChatApiService(debugMode))
+  const sseService = useRef(url ? new SSEService(url, onMetadataUpdate, debugMode) : null)
+  
+  if (!sharedApiService) {
+    sharedApiService = new ChatApiService(debugMode)
+    
+    if (!isInitialized && useApi) {
+      isInitialized = true
+      Promise.all([
+        tokenService.requestToken().catch(() => null),
+        tokenService.initApiUrl().catch(() => null)
+      ]).catch(() => {
+        // Silent fail - tokens will be requested on-demand later
+      })
+    }
+  }
+  const apiService = useRef(sharedApiService)
   
   useEffect(() => {
     if (apiService.current) {
       apiService.current.setDebugMode(debugMode)
     }
   }, [debugMode])
+
+  useEffect(() => {
+    if (apiService.current) {
+      apiService.current.setMetadataCallback(onMetadataUpdate)
+    }
+  }, [onMetadataUpdate])
+
+  useEffect(() => {
+    if (url) {
+      sseService.current = new SSEService(url, onMetadataUpdate, debugMode)
+    }
+  }, [url, onMetadataUpdate, debugMode])
   
   const streamMessage = useCallback(async function* (
     message: string

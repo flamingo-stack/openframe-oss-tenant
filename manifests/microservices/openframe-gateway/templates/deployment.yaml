@@ -23,11 +23,7 @@ spec:
       initContainers:
         - name: wait-for-config-server
           image: curlimages/curl:latest
-          {{- if .Values.deployment.saas.enabled }}
-          command: ["sh", "-c", "until curl -f http://openframe-saas-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
-          {{- else }}
           command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
-          {{- end }}
 
       containers:
         - name: openframe-gateway
@@ -44,18 +40,11 @@ spec:
             {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
             - name: TENANT_HOST_URL
               value: "https://localhost"
-            {{- else if and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.gcp.enabled }}
-            - name: SHARED_HOST_URL
-              value: "{{ .Values.deployment.saas.ingress.gcp.publicDomain }}"
             {{- end }}
             - name: SPRING_PROFILES_ACTIVE
               value: "{{ .Values.deployment.oss.repository.profile }}"
             - name: SPRING_CONFIG_URL
-              {{- if .Values.deployment.saas.enabled }}
-              value: "http://openframe-saas-config.microservices.svc.cluster.local:8888"
-              {{- else }}
               value: "http://openframe-config.microservices.svc.cluster.local:8888"
-              {{- end }}
           livenessProbe:
             httpGet:
               path: /management/v1/health

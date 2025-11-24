@@ -13,13 +13,14 @@ interface UseChatOptions {
   useApi?: boolean
   apiToken?: string
   apiBaseUrl?: string
+  onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void
 }
 
 function isToolSegment(segment: MessageSegment): segment is { type: 'tool_execution'; data: ToolExecutionData } {
   return segment.type === 'tool_execution'
 }
 
-export function useChat({ sseUrl, useMock = false, useApi = true }: UseChatOptions = {}) {
+export function useChat({ sseUrl, useMock = false, useApi = true, onMetadataUpdate }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const currentAssistantSegmentsRef = useRef<MessageSegment[]>([])
@@ -29,7 +30,8 @@ export function useChat({ sseUrl, useMock = false, useApi = true }: UseChatOptio
     url: sseUrl, 
     useMock, 
     useApi,
-    debugMode
+    debugMode,
+    onMetadataUpdate
   })
   const { quickActions } = useChatConfig()
   

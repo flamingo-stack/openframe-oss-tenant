@@ -5,9 +5,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { SettingsTabNavigation, getSettingsTabs } from './tabs'
 import { SettingsTabContent } from './settings-tab-content'
 
-type TabId = 'architecture' | 'company-and-users' | 'api-keys' | 'sso-configuration' | 'profile'
+type TabId = 'ai-settings' | 'architecture' | 'company-and-users' | 'api-keys' | 'sso-configuration' | 'profile'
 
-const DEFAULT_TAB: TabId = 'architecture'
+const DEFAULT_TAB: TabId = 'ai-settings'
 const TAB_PARAM = 'tab'
 
 export function SettingsView() {

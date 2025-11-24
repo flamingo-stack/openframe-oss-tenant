@@ -5,6 +5,7 @@ import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
+import { deduplicateFilterOptions } from '@lib/filter-utils'
 import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area
@@ -115,11 +116,13 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
       label: 'ORGANIZATION',
       width: 'w-1/6',
       filterable: true,
-      filterOptions: deviceFilters?.organizationIds?.map((org: any) => ({
-        id: org.value,
-        label: org.label,
-        value: org.value
-      })) || [],
+      filterOptions: deduplicateFilterOptions(
+        deviceFilters?.organizationIds?.map((org: any) => ({
+          id: org.value,
+          label: org.label,
+          value: org.value
+        })) || []
+      ),
       renderCell: (device) => <OrganizationCell device={device} fetchedImageUrls={fetchedImageUrls} />
     }
   ]

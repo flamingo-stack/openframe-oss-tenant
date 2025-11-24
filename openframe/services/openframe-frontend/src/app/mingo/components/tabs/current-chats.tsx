@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useMemo } from "react"
+import React, { useState, useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -8,7 +8,7 @@ import {
   ListPageLayout,
   type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
-import { useDebounce, useToast } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useToast, useApiParams, useTablePagination } from "@flamingo/ui-kit/hooks"
 import { useDialogsStore } from '../../stores/dialogs-store'
 import { useArchiveResolved } from '../../hooks/use-archive-resolved'
 import { Dialog } from '../../types/dialog.types'
@@ -18,22 +18,34 @@ import { ArchiveIcon } from '@flamingo/ui-kit'
 export function CurrentChats() {
   const router = useRouter()
   const { toast } = useToast()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
-  
-  const { 
-    currentDialogs: dialogs, 
+
+  // URL state management for search and filters
+  const { params, setParam } = useApiParams({
+    search: { type: 'string', default: '' },
+    cursor: { type: 'string', default: '' }
+  })
+
+  // Debounce search input for smoother UX
+  const [searchInput, setSearchInput] = useState(params.search)
+  const debouncedSearchInput = useDebounce(searchInput, 300)
+
+  // Update URL when debounced input changes
+  useEffect(() => {
+    setParam('search', debouncedSearchInput)
+  }, [debouncedSearchInput])
+
+  const {
+    currentDialogs: dialogs,
     currentPageInfo,
     currentHasLoadedBeyondFirst,
-    isLoadingCurrent: isLoading, 
+    isLoadingCurrent: isLoading,
     currentError: error,
     fetchDialogs,
     goToNextPage,
     goToFirstPage
   } = useDialogsStore()
-  
+
   const { archiveResolvedDialogs, isArchiving } = useArchiveResolved()
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const columns = useMemo(() => getDialogTableColumns(), [])
 
@@ -51,20 +63,20 @@ export function CurrentChats() {
   }, [])
 
   React.useEffect(() => {
-    if (debouncedSearchTerm !== undefined) {
-      fetchDialogs(false, debouncedSearchTerm)
+    if (params.search !== undefined) {
+      fetchDialogs(false, params.search)
     }
-  }, [debouncedSearchTerm])
+  }, [params.search])
   
   const handleArchiveResolved = useCallback(async () => {
     const success = await archiveResolvedDialogs(dialogs)
     if (success) {
-      await fetchDialogs(false, searchTerm, true)
+      await fetchDialogs(false, params.search, true)
     }
-  }, [archiveResolvedDialogs, dialogs, fetchDialogs, searchTerm])
-  
+  }, [archiveResolvedDialogs, dialogs, fetchDialogs, params.search])
+
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    setTableFilters(columnFilters)
+    // Mingo doesn't seem to use filters yet, but keep handler for future
   }, [])
   
   const hasResolvedDialogs = useMemo(() => {
@@ -79,26 +91,30 @@ export function CurrentChats() {
     goToFirstPage(false)
   }, [goToFirstPage])
   
-  const cursorPagination: CursorPaginationProps | undefined = currentPageInfo ? {
-    hasNextPage: currentPageInfo.hasNextPage,
-    isFirstPage: !currentHasLoadedBeyondFirst,
-    startCursor: currentPageInfo.startCursor,
-    endCursor: currentPageInfo.endCursor,
-    currentCount: dialogs.length,
-    itemName: 'chats',
-    onNext: () => handleNextPage(),
-    onReset: handleResetToFirstPage,
-    showInfo: true,
-    resetButtonLabel: 'First',
-    resetButtonIcon: 'home'
-  } : undefined
+  const cursorPagination = useTablePagination(
+    currentPageInfo ? {
+      type: 'server',
+      hasNextPage: currentPageInfo.hasNextPage,
+      hasLoadedBeyondFirst: currentHasLoadedBeyondFirst,
+      startCursor: currentPageInfo.startCursor,
+      endCursor: currentPageInfo.endCursor,
+      itemCount: dialogs.length,
+      itemName: 'chats',
+      onNext: handleNextPage,
+      onReset: handleResetToFirstPage,
+      showInfo: true
+    } : null
+  )
+
+  // Table filters (empty for now, but ready for future use)
+  const tableFilters = useMemo(() => ({}), [])
 
   return (
     <ListPageLayout
       title="Current Chats"
       searchPlaceholder="Search for Chat"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       padding="none"
       className="pt-6"
