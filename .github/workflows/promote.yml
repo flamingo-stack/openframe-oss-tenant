@@ -35,8 +35,6 @@ jobs:
         run: |
           STAGE_TAG=$(grep -m 1 "tag:" ${VALUES_PATH}/values-stage.yaml | awk '{print $2}')
           sed -i "s/tag: .*/tag: ${STAGE_TAG}/g" ${VALUES_PATH}/values-prod.yaml
-          rm -rf ${CONFIGS_PATH}/prod
-          cp -r ${CONFIGS_PATH}/stage ${CONFIGS_PATH}/prod
 
       - name: Create Prod Release PR
         env:
