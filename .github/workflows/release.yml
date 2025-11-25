@@ -56,7 +56,7 @@ jobs:
   build_images:
     name: "Build: ${{ matrix.name }}"
     needs: [changes, matrix]
-    runs-on: Linux-x64
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
