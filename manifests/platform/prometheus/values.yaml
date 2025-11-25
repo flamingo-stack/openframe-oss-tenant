@@ -21,7 +21,13 @@ kube-prometheus-stack:
     ingress:
       enabled: false
 
-  kubeStateMetrics:
+  prometheus-node-exporter:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: prometheus/node-exporter
+      tag: v1.10.2
+
+  kube-state-metrics:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: kube-state-metrics/kube-state-metrics
