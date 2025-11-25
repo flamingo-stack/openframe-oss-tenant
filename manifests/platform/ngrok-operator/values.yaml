@@ -1,8 +1,16 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 ngrok-operator:
+  image:
+    repository: docker.io/ngrok/ngrok-operator
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
   credentials:
     apiKey: "2zXpZ8Ka8DYjdNKXYcv4VznABha_7Laa3fUvZX5gyTt3kEat"
     authtoken: "2yv5cuRsSW6gKpaaweVRzCNKYk9_6pozz69uPtSQT4vZ2uHpL"
