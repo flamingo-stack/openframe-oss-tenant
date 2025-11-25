@@ -59,6 +59,7 @@ registry:
 
 global:  # not working yet
   image:
+    registry: ghcr.io/flamingo-stack/registry
     tag: latest
 
 apps:
