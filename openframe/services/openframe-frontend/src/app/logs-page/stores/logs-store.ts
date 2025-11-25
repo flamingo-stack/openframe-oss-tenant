@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { devtools, persist } from 'zustand/middleware'
+import { devtools } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { Device } from '../../devices/types/device.types'
 
@@ -89,88 +89,78 @@ const initialState = {
 
 export const useLogsStore = create<LogsState>()(
   devtools(
-    persist(
-      immer((set) => ({
-        // State
-        ...initialState,
-        
-        // Actions
-        setLogs: (logs) =>
-          set((state) => {
-            state.logs = logs
-            state.error = null
-          }),
-        
-        setEdges: (edges) =>
-          set((state) => {
-            state.edges = edges
-            state.logs = edges.map(edge => edge.node)
-            state.error = null
-          }),
-        
-        appendEdges: (edges) =>
-          set((state) => {
-            // Defensive: Filter out duplicates before appending
-            const existingIds = new Set(state.logs.map(log => log.toolEventId))
-            const newEdges = edges.filter(edge => !existingIds.has(edge.node.toolEventId))
+    immer((set) => ({
+      // State
+      ...initialState,
 
-            if (newEdges.length < edges.length) {
-              console.warn(`[LogsStore] Filtered ${edges.length - newEdges.length} duplicate logs before appending`)
-            }
-
-            state.edges = [...state.edges, ...newEdges]
-            state.logs = [...state.logs, ...newEdges.map(edge => edge.node)]
-          }),
-        
-        setSearch: (search) =>
-          set((state) => {
-            state.search = search
-            state.pageInfo = null // Reset pagination on search change
-          }),
-        
-        setPageInfo: (pageInfo) =>
-          set((state) => {
-            state.pageInfo = pageInfo
-          }),
-        
-        setPageSize: (size) =>
-          set((state) => {
-            state.pageSize = size
-            state.pageInfo = null // Reset pagination on page size change
-          }),
-        
-        setLoading: (loading) =>
-          set((state) => {
-            state.isLoading = loading
-          }),
-        
-        setError: (error) =>
-          set((state) => {
-            state.error = error
-            state.isLoading = false
-          }),
-        
-        clearLogs: () =>
-          set((state) => {
-            state.logs = []
-            state.edges = []
-            state.pageInfo = null
-            state.error = null
-          }),
-        
-        reset: () =>
-          set(() => initialState),
-      })),
-      {
-        name: 'logs-storage-v2', // Storage key (v2 to invalidate old cache)
-        partialize: () => ({
-          // Don't persist anything - URL is source of truth now
+      // Actions
+      setLogs: (logs) =>
+        set((state) => {
+          state.logs = logs
+          state.error = null
         }),
-      }
-    ),
-    {
-      name: 'logs-store', // Redux DevTools name
-    }
+
+      setEdges: (edges) =>
+        set((state) => {
+          state.edges = edges
+          state.logs = edges.map(edge => edge.node)
+          state.error = null
+        }),
+
+      appendEdges: (edges) =>
+        set((state) => {
+          // Defensive: Filter out duplicates before appending
+          const existingIds = new Set(state.logs.map(log => log.toolEventId))
+          const newEdges = edges.filter(edge => !existingIds.has(edge.node.toolEventId))
+
+          if (newEdges.length < edges.length) {
+            console.warn(`[LogsStore] Filtered ${edges.length - newEdges.length} duplicate logs before appending`)
+          }
+
+          state.edges = [...state.edges, ...newEdges]
+          state.logs = [...state.logs, ...newEdges.map(edge => edge.node)]
+        }),
+
+      setSearch: (search) =>
+        set((state) => {
+          state.search = search
+          state.pageInfo = null // Reset pagination on search change
+        }),
+
+      setPageInfo: (pageInfo) =>
+        set((state) => {
+          state.pageInfo = pageInfo
+        }),
+
+      setPageSize: (size) =>
+        set((state) => {
+          state.pageSize = size
+          state.pageInfo = null // Reset pagination on page size change
+        }),
+
+      setLoading: (loading) =>
+        set((state) => {
+          state.isLoading = loading
+        }),
+
+      setError: (error) =>
+        set((state) => {
+          state.error = error
+          state.isLoading = false
+        }),
+
+      clearLogs: () =>
+        set((state) => {
+          state.logs = []
+          state.edges = []
+          state.pageInfo = null
+          state.error = null
+        }),
+
+      reset: () =>
+        set(() => initialState),
+    })),
+    { name: 'logs-store' }
   )
 )
 
