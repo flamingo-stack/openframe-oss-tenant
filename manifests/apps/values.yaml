@@ -58,6 +58,7 @@ registry:
     email: ""
 
 global:  # not working yet
+  imageRegistry: ghcr.io/flamingo-stack/registry
   image:
     tag: latest
 
