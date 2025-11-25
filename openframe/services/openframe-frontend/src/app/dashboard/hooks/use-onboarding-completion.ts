@@ -18,7 +18,7 @@ import { useUsers } from '../../settings/hooks/use-users'
  */
 export function useOnboardingCompletion() {
   // Use existing hooks to get data
-  const { organizations, isLoading: orgsLoading } = useOrganizations({})
+  const { organizations, isLoading: orgsLoading, fetchOrganizations } = useOrganizations({})
   const { total: deviceCount, isLoading: devicesLoading } = useDevicesOverview()
   const { totalElements, isLoading: usersLoading, fetchUsers } = useUsers()
   const { fetchAvailableProviders, fetchProviderConfig } = useSsoConfig()
@@ -29,6 +29,7 @@ export function useOnboardingCompletion() {
   // Refs to prevent duplicate fetches and track mount state
   const ssoFetchedRef = useRef(false)
   const usersFetchedRef = useRef(false)
+  const orgsFetchedRef = useRef(false)
   const isMountedRef = useRef(true)
 
   // Stable callback for SSO fetch
@@ -77,6 +78,18 @@ export function useOnboardingCompletion() {
     }
   }, [fetchUsers])
 
+  // Stable callback for organizations fetch
+  const fetchOrgsOnce = useCallback(async () => {
+    if (orgsFetchedRef.current) return
+    orgsFetchedRef.current = true
+
+    try {
+      await fetchOrganizations('', {})
+    } catch (err) {
+      console.error('Organizations fetch failed:', err)
+    }
+  }, [fetchOrganizations])
+
   // Fetch SSO providers once on mount
   useEffect(() => {
     fetchSsoProviders()
@@ -86,6 +99,11 @@ export function useOnboardingCompletion() {
   useEffect(() => {
     fetchUsersOnce()
   }, [fetchUsersOnce])
+
+  // Fetch organizations once on mount
+  useEffect(() => {
+    fetchOrgsOnce()
+  }, [fetchOrgsOnce])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -110,8 +128,9 @@ export function useOnboardingCompletion() {
   useEffect(() => {
     if (!isLoading) {
       console.log('📊 Onboarding completion status:', completionStatus)
+      console.log('📊 Raw values - orgs:', organizations.length, 'users:', totalElements, 'devices:', deviceCount, 'sso:', ssoProvidersCount)
     }
-  }, [isLoading, completionStatus])
+  }, [isLoading, completionStatus, organizations.length, totalElements, deviceCount, ssoProvidersCount])
 
   return {
     completionStatus,
