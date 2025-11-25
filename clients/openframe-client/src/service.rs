@@ -2,14 +2,12 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
-use tokio::time::{interval, Duration};
 use tracing::{error, info, warn};
 
 use crate::platform::permissions::{Capability, PermissionUtils};
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
-use crate::{logging, platform::DirectoryManager, Client};
+use crate::{platform::DirectoryManager, Client};
 use crate::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
-use crate::services::{InstalledToolsService, ToolCommandParamsResolver, ToolKillService, ToolUninstallService, InitialConfigurationService};
 
 #[cfg(windows)]
 use windows_service::{
@@ -21,6 +19,10 @@ use windows_service::{
 const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
+
+// Full service identifier used by all platforms
+// Format: "com.openframe.{SERVICE_NAME}" -> "com.openframe.client"
+pub const FULL_SERVICE_NAME: &str = "com.openframe.client";
 
 // Define the Windows service entry point
 #[cfg(windows)]
@@ -34,7 +36,7 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
     let shutdown_tx = Arc::new(std::sync::Mutex::new(Some(shutdown_tx)));
 
     // Register service control handler with PROPER stop handling
-    let status_handle = match service_control_handler::register("com.openframe.client", {
+    let status_handle = match service_control_handler::register(FULL_SERVICE_NAME, {
         let shutdown_tx = Arc::clone(&shutdown_tx);
         move |control_event| {
             match control_event {
@@ -130,6 +132,46 @@ impl Service {
         Self
     }
 
+    /// Check if the service is already installed on the system
+    pub fn is_installed() -> bool {
+        #[cfg(target_os = "windows")]
+        {
+            use std::process::Command;
+
+            // Check if Windows service exists using sc query
+            let output = Command::new("sc")
+                .args(&["query", FULL_SERVICE_NAME])
+                .output();
+
+            match output {
+                Ok(output) => output.status.success(),
+                Err(_) => false,
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            // Check if launchd plist exists
+            // Service manager creates plist as: /Library/LaunchDaemons/{service_label}.plist
+            let plist_path = std::path::PathBuf::from(format!(
+                "/Library/LaunchDaemons/{}.plist",
+                FULL_SERVICE_NAME
+            ));
+            plist_path.exists()
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            // Check if systemd service exists
+            // Service manager creates unit as: /etc/systemd/system/{service_label}.service
+            let service_path = std::path::PathBuf::from(format!(
+                "/etc/systemd/system/{}.service",
+                FULL_SERVICE_NAME
+            ));
+            service_path.exists()
+        }
+    }
+
     /// Install the service on the current platform
     pub async fn install(params: InstallConfigParams) -> Result<()> {
         // Check if we have admin privileges
@@ -140,7 +182,43 @@ impl Service {
             ));
         }
 
-        // Common code for all platforms
+        if Self::is_installed() {
+            info!("Existing Installation Detected\n");
+            info!("An existing OpenFrame installation was found\n");
+            info!("To proceed with the new installation, the old version must be removed\n");
+            info!("Uninstalling existing installation...");
+
+            let installed_binary_path = Self::get_install_location();
+
+            if !installed_binary_path.exists() {
+                warn!("Installed binary not found at expected location: {}", installed_binary_path.display());
+                info!("Proceeding with installation anyway...");
+            } else {
+                info!("Launching uninstall process: {}", installed_binary_path.display());
+
+                use tokio::process::Command;
+
+                let status = Command::new(&installed_binary_path)
+                    .arg("uninstall")
+                    .status()
+                    .await
+                    .context("Failed to launch uninstall process")?;
+
+                if !status.success() {
+                    warn!("Uninstall process returned non-zero exit code: {:?}", status.code());
+                    info!("Continuing with installation anyway...");
+                } else {
+                    info!("Uninstall process completed successfully");
+                }
+
+                // Wait additional time for cleanup script to complete
+                info!("Waiting for cleanup to complete...");
+                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            }
+
+            info!("Continuing with new installation...\n");
+        }
+
         info!("Installing OpenFrame service");
         let dir_manager = DirectoryManager::new();
         dir_manager
@@ -258,115 +336,21 @@ impl Service {
             ));
         }
 
-        // Common code for all platforms
         info!("Uninstalling OpenFrame service");
 
-        // Initialize directory manager
         let dir_manager = DirectoryManager::new();
-
-        // Uninstall all integrated tools first - fail immediately if this fails
-        info!("Uninstalling integrated tools...");
-        Self::uninstall_integrated_tools(&dir_manager).await
-            .context("Failed to uninstall integrated tools")?;
-        info!("Integrated tools uninstallation completed");
-
-        // Get the current executable path
-        let exec_path = std::env::current_exe().context("Failed to get current executable path")?;
-
-        // Create the service manager
-        let config = ServiceConfig {
-            name: SERVICE_NAME.to_string(),
-            display_name: DISPLAY_NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            exec_path,
-            ..ServiceConfig::default()
-        };
-
-        let service = CrossPlatformServiceManager::with_config(config);
-
-        // Call the cross-platform service manager to uninstall - fail immediately if this fails
-        service.uninstall().context("Failed to uninstall service")?;
-
-        // Clean up common directories - fail immediately if this fails
-        // Note: On Windows, logs_dir is typically inside app_support_dir, so we need to be careful about order
-        
-        // First, remove logs directory if it exists as a separate directory
-        if dir_manager.logs_dir().exists() && dir_manager.logs_dir() != dir_manager.app_support_dir() {
-            info!("Cleaning up logs directory: {}", dir_manager.logs_dir().display());
-            if let Err(e) = std::fs::remove_dir_all(dir_manager.logs_dir()) {
-                warn!("Failed to remove logs directory (may already be removed): {}", e);
-            }
-        }
-        
-        // Then remove app support directory (this will remove logs if it's a subdirectory)
-        if dir_manager.app_support_dir().exists() {
-            info!("Cleaning up app support directory: {}", dir_manager.app_support_dir().display());
-            std::fs::remove_dir_all(dir_manager.app_support_dir())
-                .with_context(|| format!("Failed to remove app support directory: {}", dir_manager.app_support_dir().display()))?;
-        }
-
-        // Remove the installed binary from the system PATH location - fail immediately if this fails
         let install_path = Self::get_install_location();
-        if install_path.exists() {
-            // Windows: удаляем bin директорию из PATH перед удалением файла
-            #[cfg(target_os = "windows")]
-            {
-                if let Some(bin_dir) = install_path.parent() {
-                    info!("Removing {} from system PATH", bin_dir.display());
-                    if let Err(e) = Self::remove_from_windows_path(bin_dir) {
-                        warn!("Failed to remove from PATH: {}", e);
-                    }
-                }
-            }
-            
-            info!("Removing installed binary: {}", install_path.display());
-            std::fs::remove_file(&install_path)
-                .with_context(|| format!("Failed to remove installed binary: {}", install_path.display()))?;
-            
-            // On Windows, also remove the parent directory if empty
-            #[cfg(target_os = "windows")]
-            {
-                if let Some(parent) = install_path.parent() {
-                    if parent.read_dir().map(|mut d| d.next().is_none()).unwrap_or(false) {
-                        std::fs::remove_dir(parent)
-                            .with_context(|| format!("Failed to remove parent directory: {}", parent.display()))?;
-                    }
-                }
-            }
+
+        // Call platform-specific uninstall implementation
+        #[cfg(target_os = "windows")]
+        {
+            crate::platform::uninstall::uninstall_windows(&dir_manager, &install_path).await
         }
 
-        info!("OpenFrame service uninstalled successfully");
-        Ok(())
-    }
-
-    /// Uninstall all integrated tools
-    async fn uninstall_integrated_tools(dir_manager: &DirectoryManager) -> Result<()> {
-        // Initialize services needed for tool uninstallation
-        let installed_tools_service = InstalledToolsService::new(dir_manager.clone())
-            .context("Failed to initialize InstalledToolsService")?;
-
-        let initial_config_service = InitialConfigurationService::new(dir_manager.clone())
-            .context("Failed to initialize InitialConfigurationService")?;
-
-        let command_params_resolver = ToolCommandParamsResolver::new(
-            dir_manager.clone(),
-            initial_config_service,
-        );
-
-        let tool_kill_service = ToolKillService::new();
-
-        let tool_uninstall_service = ToolUninstallService::new(
-            installed_tools_service,
-            command_params_resolver,
-            tool_kill_service,
-            dir_manager.clone(),
-        );
-
-        // Run tool uninstallation
-        tool_uninstall_service.uninstall_all().await
-            .context("Failed to uninstall integrated tools")?;
-
-        Ok(())
+        #[cfg(target_os = "macos")]
+        {
+            crate::platform::uninstall::uninstall_macos(&dir_manager, &install_path).await
+        }
     }
 
     /// Run the service core logic
@@ -454,7 +438,7 @@ impl Service {
             info!("Starting Windows service dispatcher");
             // This call blocks and never returns while the service is running
             // The actual service logic runs in windows_service_main()
-            service_dispatcher::start("com.openframe.client", ffi_service_main)
+            service_dispatcher::start(FULL_SERVICE_NAME, ffi_service_main)
                 .context("Failed to start service dispatcher")?;
             return Ok(());
         }
