@@ -1,70 +1,117 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useOrganizations } from '../../organizations/hooks/use-organizations'
-import { useDevices } from '../../devices/hooks/use-devices'
+import { useDevicesOverview } from './use-dashboard-stats'
 import { useSsoConfig } from '../../settings/hooks/use-sso-config'
 import { useUsers } from '../../settings/hooks/use-users'
 
 /**
  * Hook to check onboarding step completion using existing data hooks
  * Eliminates duplicate API calls by leveraging hooks already used by dashboard
+ *
+ * Race condition mitigations:
+ * - Uses refs to track fetch state and prevent duplicate calls
+ * - Includes proper loading states for all data sources
+ * - Uses useCallback for stable function references
+ * - Memoizes completion status to prevent unnecessary re-renders
  */
 export function useOnboardingCompletion() {
   // Use existing hooks to get data
   const { organizations, isLoading: orgsLoading } = useOrganizations({})
-  const { filteredCount, isLoading: devicesLoading } = useDevices({})
+  const { total: deviceCount, isLoading: devicesLoading } = useDevicesOverview()
   const { totalElements, isLoading: usersLoading, fetchUsers } = useUsers()
   const { fetchAvailableProviders, fetchProviderConfig } = useSsoConfig()
 
   const [ssoProvidersCount, setSsoProvidersCount] = useState(0)
-  const [ssoLoading, setSsoLoading] = useState(false)
+  const [ssoLoading, setSsoLoading] = useState(true) // Start as true to indicate initial load
 
-  // Fetch SSO providers once on mount and check which are active
-  useEffect(() => {
+  // Refs to prevent duplicate fetches and track mount state
+  const ssoFetchedRef = useRef(false)
+  const usersFetchedRef = useRef(false)
+  const isMountedRef = useRef(true)
+
+  // Stable callback for SSO fetch
+  const fetchSsoProviders = useCallback(async () => {
+    if (ssoFetchedRef.current) return
+    ssoFetchedRef.current = true
+
     setSsoLoading(true)
-    fetchAvailableProviders()
-      .then(async (providers) => {
-        // Fetch config for each provider to check enabled status
-        const configs = await Promise.all(
-          providers.map(p => fetchProviderConfig(p.provider))
-        )
-        // Count only providers that are enabled
-        const activeCount = configs.filter(cfg => cfg?.enabled === true).length
-        setSsoProvidersCount(activeCount)
-        console.log('✓ SSO providers loaded:', providers.length, 'active:', activeCount)
-      })
-      .catch(err => {
-        console.error('SSO providers fetch failed:', err)
+    try {
+      const providers = await fetchAvailableProviders()
+
+      if (!isMountedRef.current) return
+
+      // Fetch config for each provider to check enabled status
+      const configs = await Promise.all(
+        providers.map(p => fetchProviderConfig(p.provider))
+      )
+
+      if (!isMountedRef.current) return
+
+      // Count only providers that are enabled
+      const activeCount = configs.filter(cfg => cfg?.enabled === true).length
+      setSsoProvidersCount(activeCount)
+      console.log('✓ SSO providers loaded:', providers.length, 'active:', activeCount)
+    } catch (err) {
+      console.error('SSO providers fetch failed:', err)
+      if (isMountedRef.current) {
         setSsoProvidersCount(0)
-      })
-      .finally(() => setSsoLoading(false))
-  }, [])
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setSsoLoading(false)
+      }
+    }
+  }, [fetchAvailableProviders, fetchProviderConfig])
+
+  // Stable callback for users fetch
+  const fetchUsersOnce = useCallback(async () => {
+    if (usersFetchedRef.current) return
+    usersFetchedRef.current = true
+
+    try {
+      await fetchUsers(0, 10)
+    } catch (err) {
+      console.error('Users fetch failed:', err)
+    }
+  }, [fetchUsers])
+
+  // Fetch SSO providers once on mount
+  useEffect(() => {
+    fetchSsoProviders()
+  }, [fetchSsoProviders])
 
   // Fetch users once on mount
   useEffect(() => {
-    fetchUsers(0, 10).catch(err => {
-      console.error('Users fetch failed:', err)
-    })
+    fetchUsersOnce()
+  }, [fetchUsersOnce])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
   }, [])
 
-  // Combined loading state
+  // Combined loading state - includes all data sources
   const isLoading = orgsLoading || devicesLoading || usersLoading || ssoLoading
 
-  // Completion status for each step
-  const completionStatus = {
+  // Memoize completion status to prevent unnecessary re-renders and recalculations
+  const completionStatus = useMemo(() => ({
     'sso-configuration': ssoProvidersCount > 0,
     'organizations-setup': organizations.length > 1,
-    'device-management': filteredCount > 0,
+    'device-management': deviceCount > 0,
     'company-and-team': totalElements > 1
-  }
+  }), [ssoProvidersCount, organizations.length, deviceCount, totalElements])
 
-  // Log completion status
+  // Log completion status only when loading completes
   useEffect(() => {
     if (!isLoading) {
       console.log('📊 Onboarding completion status:', completionStatus)
     }
-  }, [isLoading, ssoProvidersCount, organizations.length, filteredCount, totalElements])
+  }, [isLoading, completionStatus])
 
   return {
     completionStatus,

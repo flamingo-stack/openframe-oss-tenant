@@ -15,9 +15,11 @@ export function useDevicesOverview() {
     activePercentage: 0,
     inactivePercentage: 0
   }))
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let isMounted = true
+    setIsLoading(true)
 
     const fetchStatusCounts = async () => {
       try {
@@ -50,6 +52,10 @@ export function useDevicesOverview() {
         })
       } catch (err) {
         // Swallow errors for now; keep zeros. Dashboard can still render.
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -57,7 +63,7 @@ export function useDevicesOverview() {
     return () => { isMounted = false }
   }, [])
 
-  return stats
+  return { ...stats, isLoading }
 }
 
 export function useChatsOverview() {
