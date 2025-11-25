@@ -7,7 +7,7 @@ registerJob:
 
 grafana:
   image:
-    registry: docker.io
+    registry: ghcr.io/flamingo-stack/registry
     repository: grafana/grafana
     tag: "12.2.0"        
     digest: ""          
@@ -17,12 +17,14 @@ grafana:
     dashboards:
       enabled: true
       image:
+        registry: ghcr.io/flamingo-stack/registry
         repository: kiwigrid/k8s-sidecar
         tag: "1.30.10"    
         digest: ""
     datasources:
       enabled: true
       image:
+        registry: ghcr.io/flamingo-stack/registry
         repository: kiwigrid/k8s-sidecar
         tag: "1.30.10"
         digest: ""
