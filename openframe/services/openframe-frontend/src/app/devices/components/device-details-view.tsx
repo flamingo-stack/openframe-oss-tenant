@@ -31,6 +31,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false)
   const [isRemoteShellOpen, setIsRemoteShellOpen] = useState(false)
   const [shellType, setShellType] = useState<'cmd' | 'powershell'>('cmd')
+  const [shellDropdownOpen, setShellDropdownOpen] = useState(false)
   const [, forceUpdate] = useState({})
 
   useEffect(() => {
@@ -143,7 +144,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
       {/* Remote Shell Button - with dropdown for Windows */}
       {isWindows ? (
-        <DropdownMenu>
+        <DropdownMenu open={shellDropdownOpen} onOpenChange={setShellDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="device-action"
@@ -162,16 +163,23 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                     id: 'cmd',
                     label: 'CMD',
                     icon: <CmdIcon className="w-6 h-6" />,
-                    onClick: () => handleRemoteShell('cmd')
+                    onClick: () => {
+                      setShellDropdownOpen(false)
+                      handleRemoteShell('cmd')
+                    }
                   },
                   {
                     id: 'powershell',
                     label: 'PowerShell',
                     icon: <PowerShellIcon className="w-6 h-6" />,
-                    onClick: () => handleRemoteShell('powershell')
+                    onClick: () => {
+                      setShellDropdownOpen(false)
+                      handleRemoteShell('powershell')
+                    }
                   }
                 ]
               }]}
+              onItemClick={() => setShellDropdownOpen(false)}
             />
           </DropdownMenuContent>
         </DropdownMenu>

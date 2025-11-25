@@ -264,7 +264,10 @@ export function DeviceActionsDropdown({
           {renderTrigger()}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="p-0 border-none">
-          <ActionsMenu groups={menuGroups} />
+          <ActionsMenu
+            groups={menuGroups}
+            onItemClick={() => setDropdownOpen(false)}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
 
