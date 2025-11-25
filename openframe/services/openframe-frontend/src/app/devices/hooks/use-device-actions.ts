@@ -25,9 +25,8 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
       }
 
       toast({
-        title: 'Device Archived',
-        description: `"${deviceName || deviceId}" has been archived.`,
-        variant: 'success'
+        title: 'Device archived',
+        description: `${deviceName || deviceId} has been archived`
       })
 
       options?.onSuccess?.()
@@ -35,7 +34,7 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to archive device'
       toast({
-        title: 'Archive Failed',
+        title: 'Archive failed',
         description: errorMessage,
         variant: 'destructive'
       })
@@ -57,9 +56,8 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
       }
 
       toast({
-        title: 'Device Deleted',
-        description: `"${deviceName || deviceId}" has been deleted.`,
-        variant: 'success'
+        title: 'Device deleted',
+        description: `${deviceName || deviceId} has been deleted`
       })
 
       options?.onSuccess?.()
@@ -67,7 +65,7 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete device'
       toast({
-        title: 'Delete Failed',
+        title: 'Delete failed',
         description: errorMessage,
         variant: 'destructive'
       })

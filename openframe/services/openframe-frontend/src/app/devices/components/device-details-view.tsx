@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button, StatusTag, ActionsMenu, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DetailPageContainer, RemoteControlIcon, ShellIcon, ScriptIcon } from '@flamingo/ui-kit'
-import { normalizeOSType } from '@flamingo/ui-kit'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { StatusTag, DetailPageContainer, Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, ActionsMenu, normalizeOSType } from '@flamingo/ui-kit'
+import type { ActionsMenuGroup } from '@flamingo/ui-kit'
+import { RemoteControlIcon, ShellIcon, CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
+import { ChevronDown } from 'lucide-react'
 import { RemoteShellModal } from './remote-shell-modal'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
@@ -12,9 +14,9 @@ import { ScriptsModal } from './scripts-modal'
 import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
 import { DEVICE_TABS } from './tabs/device-tabs'
 import { getDeviceStatusConfig } from '../utils/device-status'
-import { CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
 import { formatRelativeTime } from '@flamingo/ui-kit/utils/format-relative-time'
 import { DeviceActionsDropdown } from './device-actions-dropdown'
+import { getDeviceActionAvailability } from '../utils/device-action-utils'
 
 interface DeviceDetailsViewProps {
   deviceId: string
@@ -22,6 +24,7 @@ interface DeviceDetailsViewProps {
 
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const { deviceDetails, isLoading, error, fetchDeviceById, lastUpdated } = useDeviceDetails()
 
@@ -45,16 +48,36 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     return () => clearInterval(interval)
   }, [])
 
+  // Handle action params from URL (e.g., from table dropdown navigation)
+  useEffect(() => {
+    const action = searchParams.get('action')
+    if (!action || isLoading) return
+
+    if (action === 'runScript') {
+      setIsScriptsModalOpen(true)
+      // Clear the action param to avoid re-triggering
+      const newParams = new URLSearchParams(searchParams.toString())
+      newParams.delete('action')
+      router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ''}`)
+    } else if (action === 'remoteShell') {
+      const shellTypeParam = searchParams.get('shellType') as 'cmd' | 'powershell' | 'bash' | null
+      // Map 'bash' to 'cmd' for the shell modal
+      setShellType(shellTypeParam === 'powershell' ? 'powershell' : 'cmd')
+      setIsRemoteShellOpen(true)
+      // Clear the action params to avoid re-triggering
+      const newParams = new URLSearchParams(searchParams.toString())
+      newParams.delete('action')
+      newParams.delete('shellType')
+      router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ''}`)
+    }
+  }, [searchParams, isLoading, deviceId, router])
+
   const normalizedDevice = deviceDetails
 
-  const tacticalAgentId = useMemo(() =>
-    deviceDetails?.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId,
-    [deviceDetails?.toolConnections]
-  )
-
-  const meshcentralAgentId = useMemo(() =>
-    deviceDetails?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId,
-    [deviceDetails?.toolConnections]
+  // Get action availability for passing agent IDs to modals
+  const actionAvailability = useMemo(() =>
+    normalizedDevice ? getDeviceActionAvailability(normalizedDevice) : null,
+    [normalizedDevice]
   )
 
   const handleBack = () => {
@@ -67,18 +90,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const handleRunScripts = (scriptIds: string[]) => {
     console.log('Running scripts:', scriptIds, 'on device:', deviceId)
-  }
-
-  const handleRemoteControl = () => {
-    if (!meshcentralAgentId) return
-    const deviceData = {
-      id: deviceId,
-      meshcentralAgentId,
-      hostname: normalizedDevice?.hostname,
-      organization: normalizedDevice?.organization,
-    }
-    const url = `/devices/details/${deviceId}/remote-desktop?deviceData=${encodeURIComponent(JSON.stringify(deviceData))}`
-    router.push(url)
   }
 
   const handleRemoteShell = (type: 'cmd' | 'powershell' | 'bash' = 'cmd') => {
@@ -95,13 +106,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     router.push(`${window.location.pathname}?${params.toString()}`)
   }
 
-  const isWindows = useMemo(() => {
-    const osType = normalizedDevice?.platform ||
-      normalizedDevice?.osType ||
-      normalizedDevice?.operating_system
-    return normalizeOSType(osType) === 'WINDOWS'
-  }, [normalizedDevice])
-
   if (isLoading) {
     return <CardLoader items={4} />
   }
@@ -114,74 +118,81 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     return <NotFoundError message="Device not found" />
   }
 
-  const remoteShellMenuGroups = isWindows ? [{
-    items: [
-      {
-        id: 'cmd',
-        label: 'CMD',
-        icon: <CmdIcon className="w-6 h-6" />,
-        onClick: () => handleRemoteShell('cmd')
-      },
-      {
-        id: 'powershell',
-        label: 'PowerShell',
-        icon: <PowerShellIcon className="w-6 h-6" />,
-        onClick: () => handleRemoteShell('powershell')
-      }
-    ]
-  }] : []
+  // Check if Windows for shell type selection
+  const isWindows = (() => {
+    const osType = normalizedDevice.platform || normalizedDevice.osType || normalizedDevice.operating_system
+    return normalizeOSType(osType) === 'WINDOWS'
+  })()
 
+  // Header actions - separate buttons for Remote Control and Remote Shell, plus dropdown for more
   const headerActions = (
-    <>
+    <div className="flex items-center gap-2">
+      {/* Remote Control Button */}
       <Button
-        onClick={handleRunScript}
         variant="device-action"
-        leftIcon={<ScriptIcon className="h-6 w-6" />}
-        disabled={!tacticalAgentId || deviceDetails?.status !== 'ONLINE'}
-      >
-        Run Script
-      </Button>
-      <Button
-        onClick={handleRemoteControl}
-        variant="device-action"
-        leftIcon={<RemoteControlIcon className="h-6 w-6" />}
-        disabled={!meshcentralAgentId || deviceDetails?.status !== 'ONLINE'}
+        leftIcon={<RemoteControlIcon className="h-5 w-5" />}
+        onClick={() => {
+          if (actionAvailability?.meshcentralAgentId) {
+            router.push(`/devices/details/${deviceId}/remote-desktop`)
+          }
+        }}
+        disabled={!actionAvailability?.remoteControlEnabled}
       >
         Remote Control
       </Button>
+
+      {/* Remote Shell Button - with dropdown for Windows */}
       {isWindows ? (
-        <DropdownMenu modal={false}>
+        <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="device-action"
-              leftIcon={<ShellIcon className="h-6 w-6" />}
-              disabled={!meshcentralAgentId || deviceDetails?.status !== 'ONLINE'}
+              leftIcon={<ShellIcon className="h-5 w-5" />}
+              rightIcon={<ChevronDown className="h-4 w-4" />}
+              disabled={!actionAvailability?.remoteShellEnabled}
             >
               Remote Shell
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="p-0 border-none">
-            <ActionsMenu groups={remoteShellMenuGroups} />
+            <ActionsMenu
+              groups={[{
+                items: [
+                  {
+                    id: 'cmd',
+                    label: 'CMD',
+                    icon: <CmdIcon className="w-6 h-6" />,
+                    onClick: () => handleRemoteShell('cmd')
+                  },
+                  {
+                    id: 'powershell',
+                    label: 'PowerShell',
+                    icon: <PowerShellIcon className="w-6 h-6" />,
+                    onClick: () => handleRemoteShell('powershell')
+                  }
+                ]
+              }]}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
         <Button
-          onClick={() => handleRemoteShell('cmd')}
           variant="device-action"
-          leftIcon={<ShellIcon className="h-6 w-6" />}
-          disabled={!meshcentralAgentId || deviceDetails?.status !== 'ONLINE'}
+          leftIcon={<ShellIcon className="h-5 w-5" />}
+          onClick={() => handleRemoteShell('bash')}
+          disabled={!actionAvailability?.remoteShellEnabled}
         >
           Remote Shell
         </Button>
       )}
+
+      {/* More Actions Dropdown (3 dots) */}
       <DeviceActionsDropdown
         device={normalizedDevice}
         context="detail"
-        onRemoteControl={handleRemoteControl}
         onRunScript={handleRunScript}
-        onRemoteShell={handleRemoteShell}
       />
-    </>
+    </div>
   )
 
   return (
@@ -242,7 +253,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         <ScriptsModal
           isOpen={isScriptsModalOpen}
           onClose={() => setIsScriptsModalOpen(false)}
-          deviceId={tacticalAgentId || deviceId}
+          deviceId={actionAvailability?.tacticalAgentId || deviceId}
           device={normalizedDevice}
           onRunScripts={handleRunScripts}
           onDeviceLogs={handleDeviceLogs}
@@ -252,7 +263,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       <RemoteShellModal
         isOpen={isRemoteShellOpen}
         onClose={() => setIsRemoteShellOpen(false)}
-        deviceId={meshcentralAgentId || deviceId}
+        deviceId={actionAvailability?.meshcentralAgentId || deviceId}
         deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
         shellType={shellType}
       />

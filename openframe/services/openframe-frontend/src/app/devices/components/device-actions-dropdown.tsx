@@ -23,12 +23,12 @@ import {
   ScriptIcon,
   ArchiveIcon,
   CmdIcon,
-  PowerShellIcon,
-  BashIcon
+  PowerShellIcon
 } from '@flamingo/ui-kit/components/icons'
 import { normalizeOSType } from '@flamingo/ui-kit'
-import { MoreVertical, Trash2, Ellipsis } from 'lucide-react'
+import { MoreVertical, Trash2 } from 'lucide-react'
 import { useDeviceActions } from '../hooks/use-device-actions'
+import { getDeviceActionAvailability } from '../utils/device-action-utils'
 import type { Device } from '../types/device.types'
 import type { ActionsMenuGroup } from '@flamingo/ui-kit'
 
@@ -36,7 +36,7 @@ interface DeviceActionsDropdownProps {
   device: Device
   context: 'table' | 'detail'
   onActionComplete?: () => void
-  // Handlers for existing actions (used to integrate with parent component)
+  // Handlers for actions (used to integrate with parent component modals)
   onRemoteControl?: () => void
   onRunScript?: () => void
   onRemoteShell?: (type: 'cmd' | 'powershell' | 'bash') => void
@@ -60,19 +60,11 @@ export function DeviceActionsDropdown({
   const deviceName = device.displayName || device.hostname || 'this device'
   const deviceId = device.machineId || device.id
 
-  // Check tool connections
-  const meshcentralAgentId = useMemo(() =>
-    device.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId,
-    [device.toolConnections]
+  // Get unified action availability
+  const actionAvailability = useMemo(() =>
+    getDeviceActionAvailability(device),
+    [device]
   )
-
-  const tacticalAgentId = useMemo(() =>
-    device.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId,
-    [device.toolConnections]
-  )
-
-  // Check if device is online
-  const isOnline = device.status === 'ONLINE'
 
   // Check if Windows for shell type selection
   const isWindows = useMemo(() => {
@@ -80,21 +72,14 @@ export function DeviceActionsDropdown({
     return normalizeOSType(osType) === 'WINDOWS'
   }, [device.platform, device.osType, device.operating_system])
 
-  // Action handlers
+  // Action handlers - always use machineId for URL routing
   const handleRemoteControl = () => {
     setDropdownOpen(false)
     if (onRemoteControl) {
       onRemoteControl()
-    } else if (meshcentralAgentId) {
-      // Navigate to remote desktop
-      const deviceData = {
-        id: device.id,
-        meshcentralAgentId,
-        hostname: device.hostname,
-        organization: device.organization,
-      }
-      const url = `/devices/details/${device.id}/remote-desktop?deviceData=${encodeURIComponent(JSON.stringify(deviceData))}`
-      router.push(url)
+    } else if (actionAvailability.meshcentralAgentId) {
+      // Simple URL with just the OpenFrame machineId - remote desktop page fetches the rest
+      router.push(`/devices/details/${deviceId}/remote-desktop`)
     }
   }
 
@@ -102,18 +87,20 @@ export function DeviceActionsDropdown({
     setDropdownOpen(false)
     if (onRunScript) {
       onRunScript()
+    } else {
+      // Navigate to device details with action param to auto-open scripts modal
+      router.push(`/devices/details/${deviceId}?action=runScript`)
     }
-    // Note: For table context, this would need to open a scripts modal
-    // The parent component should handle this via onRunScript prop
   }
 
   const handleRemoteShell = (type: 'cmd' | 'powershell' | 'bash') => {
     setDropdownOpen(false)
     if (onRemoteShell) {
       onRemoteShell(type)
+    } else {
+      // Navigate to device details with action param to auto-open remote shell
+      router.push(`/devices/details/${deviceId}?action=remoteShell&shellType=${type}`)
     }
-    // Note: For table context, this would need to navigate to device details
-    // or open a shell modal. The parent component should handle this.
   }
 
   const handleArchive = async () => {
@@ -140,14 +127,14 @@ export function DeviceActionsDropdown({
     }
   }
 
-  // Build menu groups based on context
+  // Build menu groups - different items for table vs detail context
   const menuGroups = useMemo((): ActionsMenuGroup[] => {
     const groups: ActionsMenuGroup[] = []
+    const actionItems = []
 
+    // In table context, include all remote actions
+    // In detail context, Remote Shell and Remote Control are separate buttons, so exclude them
     if (context === 'table') {
-      // Table context: Include all actions
-      const actionItems = []
-
       // Remote Shell with submenu for Windows
       if (isWindows) {
         actionItems.push({
@@ -155,7 +142,7 @@ export function DeviceActionsDropdown({
           label: 'Remote Shell',
           icon: <ShellIcon className="w-6 h-6" />,
           type: 'submenu' as const,
-          disabled: !meshcentralAgentId || !isOnline,
+          disabled: !actionAvailability.remoteShellEnabled,
           submenu: [
             {
               id: 'cmd',
@@ -172,12 +159,12 @@ export function DeviceActionsDropdown({
           ]
         })
       } else {
-        // Non-Windows: single shell option
+        // Non-Windows: single shell option (bash)
         actionItems.push({
           id: 'remote-shell',
           label: 'Remote Shell',
           icon: <ShellIcon className="w-6 h-6" />,
-          disabled: !meshcentralAgentId || !isOnline,
+          disabled: !actionAvailability.remoteShellEnabled,
           onClick: () => handleRemoteShell('bash')
         })
       }
@@ -186,28 +173,31 @@ export function DeviceActionsDropdown({
         id: 'remote-control',
         label: 'Remote Control',
         icon: <RemoteControlIcon className="w-6 h-6" />,
-        disabled: !meshcentralAgentId || !isOnline,
+        disabled: !actionAvailability.remoteControlEnabled,
         onClick: handleRemoteControl
       })
+    }
 
-      actionItems.push({
-        id: 'run-script',
-        label: 'Run Script',
-        icon: <ScriptIcon className="w-6 h-6" />,
-        disabled: !tacticalAgentId || !isOnline,
-        onClick: handleRunScript
-      })
+    // Run Script is always in the dropdown
+    actionItems.push({
+      id: 'run-script',
+      label: 'Run Script',
+      icon: <ScriptIcon className="w-6 h-6" />,
+      disabled: !actionAvailability.runScriptEnabled,
+      onClick: handleRunScript
+    })
 
+    if (actionItems.length > 0) {
       groups.push({
         items: actionItems,
         separator: true
       })
     }
 
-    // Archive and Delete actions (both contexts)
+    // Destructive actions
     const destructiveItems = []
 
-    if (device.status !== 'ARCHIVED' && device.status !== 'DELETED') {
+    if (actionAvailability.archiveEnabled) {
       destructiveItems.push({
         id: 'archive',
         label: 'Archive Device',
@@ -219,7 +209,7 @@ export function DeviceActionsDropdown({
       })
     }
 
-    if (device.status !== 'DELETED') {
+    if (actionAvailability.deleteEnabled) {
       destructiveItems.push({
         id: 'delete',
         label: 'Delete Device',
@@ -238,28 +228,26 @@ export function DeviceActionsDropdown({
     }
 
     return groups
-  }, [context, isWindows, meshcentralAgentId, tacticalAgentId, isOnline, device.status])
+  }, [context, isWindows, actionAvailability])
 
-  // Render trigger based on context
+  // Render trigger based on context - both use 3 dots icon
   const renderTrigger = () => {
     if (context === 'table') {
       return (
         <Button
-          variant="ghost"
-          className="h-12 w-12 p-0 hover:bg-ods-bg-hover"
+          variant="outline"
+          centerIcon={<MoreVertical />}
         >
-          <MoreVertical className="h-5 w-5 text-ods-text-secondary" />
         </Button>
       )
     }
 
-    // Detail context: "Actions" button like Remote Shell
+    // Detail context: same 3 dots button style
     return (
       <Button
         variant="device-action"
-        leftIcon={<Ellipsis className="h-6 w-6" />}
+        centerIcon={<MoreVertical />}
       >
-        Actions
       </Button>
     )
   }

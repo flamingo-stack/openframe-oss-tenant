@@ -26,9 +26,10 @@ export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
         variant: 'success',
         cardStatus: 'active'
       }
+    case 'PENDING':
     case 'ACTIVE':
-      return { 
-        label: 'PENDING', 
+      return {
+        label: 'PENDING',
         variant: 'warning',
         cardStatus: 'warning'
       }
