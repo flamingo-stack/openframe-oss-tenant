@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useMemo, useEffect } from "react"
+import React, { useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -15,6 +15,9 @@ import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table
 import { DevicesGrid } from './devices-grid'
 import { featureFlags } from '@lib/feature-flags'
 
+// Default visible statuses (excludes ARCHIVED and DELETED)
+const DEFAULT_VISIBLE_STATUSES = ['ONLINE', 'OFFLINE', 'ACTIVE', 'INACTIVE', 'IDLE', 'MAINTENANCE', 'DECOMMISSIONED', 'PENDING']
+
 export function DevicesView() {
   const router = useRouter()
 
@@ -26,9 +29,9 @@ export function DevicesView() {
     viewMode: { type: 'string', default: 'table' }
   })
 
-  // Backend filters from URL params
+  // Backend filters from URL params (default excludes ARCHIVED and DELETED)
   const filters = useMemo(() => ({
-    statuses: extraParams.statuses,
+    statuses: extraParams.statuses.length > 0 ? extraParams.statuses : DEFAULT_VISIBLE_STATUSES,
     osTypes: extraParams.osTypes,
     organizationIds: extraParams.organizationIds
   }), [extraParams.statuses, extraParams.osTypes, extraParams.organizationIds])
@@ -68,9 +71,14 @@ export function DevicesView() {
 
   const columns = useMemo(() => getDeviceTableColumns(deviceFilters, fetchedImageUrls), [deviceFilters, fetchedImageUrls])
 
+  // Refresh callback for after archive/delete actions
+  const refreshDevices = useCallback(() => {
+    fetchDevices(paginationParams.search)
+  }, [fetchDevices, paginationParams.search])
+
   const renderRowActions = useMemo(
-    () => getDeviceTableRowActions(),
-    []
+    () => getDeviceTableRowActions(refreshDevices),
+    [refreshDevices]
   )
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {

@@ -5,17 +5,25 @@ import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
+import { DeviceActionsDropdown } from './device-actions-dropdown'
 import { deduplicateFilterOptions } from '@lib/filter-utils'
 import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area
-export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode) {
+export function getDeviceTableRowActions(onRefresh?: () => void): ((device: Device) => React.ReactNode) {
   const DeviceRowActions = (device: Device) => (
-    <DeviceDetailsButton
-      deviceId={device.id}
-      machineId={device.machineId}
-      className="h-12"
-    />
+    <div className="flex items-center gap-2">
+      <DeviceActionsDropdown
+        device={device}
+        context="table"
+        onActionComplete={onRefresh}
+      />
+      <DeviceDetailsButton
+        deviceId={device.id}
+        machineId={device.machineId}
+        className="h-12"
+      />
+    </div>
   )
   DeviceRowActions.displayName = 'DeviceRowActions'
   return DeviceRowActions

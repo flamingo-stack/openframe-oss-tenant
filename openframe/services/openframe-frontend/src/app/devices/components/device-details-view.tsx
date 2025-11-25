@@ -14,6 +14,7 @@ import { DEVICE_TABS } from './tabs/device-tabs'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
 import { formatRelativeTime } from '@flamingo/ui-kit/utils/format-relative-time'
+import { DeviceActionsDropdown } from './device-actions-dropdown'
 
 interface DeviceDetailsViewProps {
   deviceId: string
@@ -80,8 +81,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     router.push(url)
   }
 
-  const handleRemoteShell = (type: 'cmd' | 'powershell' = 'cmd') => {
-    setShellType(type)
+  const handleRemoteShell = (type: 'cmd' | 'powershell' | 'bash' = 'cmd') => {
+    // Map 'bash' to 'cmd' for the shell modal (uses same handler)
+    setShellType(type === 'bash' ? 'cmd' : type)
     setIsRemoteShellOpen(true)
   }
 
@@ -172,6 +174,13 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           Remote Shell
         </Button>
       )}
+      <DeviceActionsDropdown
+        device={normalizedDevice}
+        context="detail"
+        onRemoteControl={handleRemoteControl}
+        onRunScript={handleRunScript}
+        onRemoteShell={handleRemoteShell}
+      />
     </>
   )
 
