@@ -6,6 +6,8 @@ registerJob:
 
 
 grafana:
+  podAnnotations:
+    rolloutTimestamp: "{{ now | quote }}"
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: grafana/grafana
