@@ -7,8 +7,8 @@ registerJob:
 
 ngrok-operator:
   image:
-    repository: docker.io/ngrok/ngrok-operator
-    tag: "latest"
+    repository: ghcr.io/flamingo-stack/registry/ngrok/ngrok-operator
+    tag: "0.19.1"
     pullPolicy: IfNotPresent
 
   credentials:
