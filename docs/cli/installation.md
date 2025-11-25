@@ -20,9 +20,6 @@ curl -L https://github.com/flamingo-stack/openframe-cli/releases/latest/download
 sudo mv openframe /usr/local/bin/
 ```
 
-### Windows
-Download from [releases](https://github.com/flamingo-stack/openframe-cli/releases/latest) and add to PATH.
-
 ## Verify Installation
 ```bash
 openframe --help
