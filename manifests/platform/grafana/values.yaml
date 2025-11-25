@@ -1,12 +1,37 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 grafana:
+  image:
+    registry: docker.io
+    repository: grafana/grafana
+    tag: "12.2.0"        
+    digest: ""          
+    pullPolicy: IfNotPresent
+
+  sidecar:
+    dashboards:
+      enabled: true
+      image:
+        repository: kiwigrid/k8s-sidecar
+        tag: "1.30.10"    
+        digest: ""
+    datasources:
+      enabled: true
+      image:
+        repository: kiwigrid/k8s-sidecar
+        tag: "1.30.10"
+        digest: ""
+
   ingress:
     enabled: false
 
   revisionHistoryLimit: 2
+
   resources:
     requests:
       cpu: 200m
@@ -15,7 +40,7 @@ grafana:
       cpu: 400m
       memory: 500Mi
 
-  deploymentStrategy:  # fix bug Multi-Attach Error for Volume
+  deploymentStrategy:
     type: Recreate
 
   persistence:
@@ -24,9 +49,9 @@ grafana:
       - ReadWriteOnce
     size: 1Gi
 
-  admin: # pre applyed 
-    existingSecret: "grafana"
-    userKey: user         
+  admin:
+    existingSecret: grafana
+    userKey: user
     passwordKey: password
 
   grafana.ini:

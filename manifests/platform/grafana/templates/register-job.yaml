@@ -19,7 +19,7 @@ spec:
       
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.registerJob.image.tag }}
         env:
         - name: GRAFANA_USER
           valueFrom:
