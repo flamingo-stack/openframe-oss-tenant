@@ -2,9 +2,8 @@ registerJob:
   enabled: true
   image:
     tag: "8.9.1"
-    pullPolicy: Always
 servicemonitor:
-  enabled: false
+  enabled: true
 
 
 loki:
