@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { tokenService } from '../services/tokenService'
+import { supportedModelsService } from '../services/supportedModelsService'
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting'
 
@@ -17,6 +18,7 @@ interface UseConnectionStatusReturn {
   status: ConnectionStatus
   serverUrl: string | null
   aiConfiguration: AIConfiguration | null
+  isFullyLoaded: boolean
 }
 
 const RETRY_DELAYS = [1000, 3000, 5000, 10000, 20000, 30000]
@@ -26,6 +28,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected')
   const [serverUrl, setServerUrl] = useState<string | null>(null)
   const [aiConfiguration, setAiConfiguration] = useState<AIConfiguration | null>(null)
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false)
   const retryCountRef = useRef(0)
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isCheckingRef = useRef(false)
@@ -73,6 +76,9 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
           const config = await response.json()
           setAiConfiguration(config)
           
+          await supportedModelsService.loadSupportedModels()
+          setIsFullyLoaded(true)
+          
           if (currentStatusRef.current !== 'connected') {
             setStatus('connected')
           }
@@ -83,6 +89,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
             setStatus('disconnected')
           }
           setAiConfiguration(null)
+          setIsFullyLoaded(false)
           return false
         }
       } catch (error) {
@@ -90,6 +97,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
           setStatus('disconnected')
         }
         setAiConfiguration(null)
+        setIsFullyLoaded(false)
         return false
       } finally {
         isCheckingRef.current = false
@@ -212,5 +220,5 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
   
   const displayUrl = serverUrl?.replace(/^https?:\/\//, '') || null
   
-  return { status, serverUrl: displayUrl, aiConfiguration }
+  return { status, serverUrl: displayUrl, aiConfiguration, isFullyLoaded }
 }
