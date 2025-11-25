@@ -9,7 +9,17 @@ import { isSaasSharedMode } from './app-mode'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@app/auth/hooks/use-token-storage'
 import { forceLogout, clearStoredTokens } from './force-logout'
 
-export const SAAS_DOMAIN_SUFFIX = 'openframe.ai'
+function getDomainSuffix(): string {
+  const sharedUrl = runtimeEnv.sharedHostUrl()
+  if (!sharedUrl) return 'openframe.ai'
+  
+  const withoutProtocol = sharedUrl.replace(/^https?:\/\//, '')
+  const domain = withoutProtocol.split('/')[0].split(':')[0]
+  
+  return domain || 'openframe.ai'
+}
+
+export const SAAS_DOMAIN_SUFFIX = getDomainSuffix()
 
 export interface AuthApiResponse<T = any> {
   data?: T

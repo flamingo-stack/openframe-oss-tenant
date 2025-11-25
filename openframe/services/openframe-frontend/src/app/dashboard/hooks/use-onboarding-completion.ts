@@ -15,18 +15,24 @@ export function useOnboardingCompletion() {
   const { organizations, isLoading: orgsLoading } = useOrganizations({})
   const { filteredCount, isLoading: devicesLoading } = useDevices({})
   const { totalElements, isLoading: usersLoading, fetchUsers } = useUsers()
-  const { fetchAvailableProviders } = useSsoConfig()
+  const { fetchAvailableProviders, fetchProviderConfig } = useSsoConfig()
 
   const [ssoProvidersCount, setSsoProvidersCount] = useState(0)
   const [ssoLoading, setSsoLoading] = useState(false)
 
-  // Fetch SSO providers once on mount
+  // Fetch SSO providers once on mount and check which are active
   useEffect(() => {
     setSsoLoading(true)
     fetchAvailableProviders()
-      .then(providers => {
-        setSsoProvidersCount(providers.length)
-        console.log('✓ SSO providers loaded:', providers.length)
+      .then(async (providers) => {
+        // Fetch config for each provider to check enabled status
+        const configs = await Promise.all(
+          providers.map(p => fetchProviderConfig(p.provider))
+        )
+        // Count only providers that are enabled
+        const activeCount = configs.filter(cfg => cfg?.enabled === true).length
+        setSsoProvidersCount(activeCount)
+        console.log('✓ SSO providers loaded:', providers.length, 'active:', activeCount)
       })
       .catch(err => {
         console.error('SSO providers fetch failed:', err)
@@ -48,7 +54,7 @@ export function useOnboardingCompletion() {
   // Completion status for each step
   const completionStatus = {
     'sso-configuration': ssoProvidersCount > 0,
-    'organizations-setup': organizations.length > 0,
+    'organizations-setup': organizations.length > 1,
     'device-management': filteredCount > 0,
     'company-and-team': totalElements > 1
   }
