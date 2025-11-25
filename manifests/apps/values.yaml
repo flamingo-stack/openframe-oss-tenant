@@ -9,7 +9,7 @@ deployment:
       localhost:
         enabled: true   # Enable localhost ingress with nginx
       ngrok:
-        enabled: true  # Enable ngrok ingress for external access
+        enabled: false  # Enable ngrok ingress for external access
         credentials:
           apiKey: ""
           authtoken: ""
