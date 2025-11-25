@@ -46,9 +46,15 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const normalizedDevice = deviceDetails
 
-  const tacticalAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId
+  const tacticalAgentId = useMemo(() =>
+    deviceDetails?.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId,
+    [deviceDetails?.toolConnections]
+  )
 
-  const meshcentralAgentId = normalizedDevice?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
+  const meshcentralAgentId = useMemo(() =>
+    deviceDetails?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId,
+    [deviceDetails?.toolConnections]
+  )
 
   const handleBack = () => {
     router.push('/devices')
