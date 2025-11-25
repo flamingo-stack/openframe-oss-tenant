@@ -2,7 +2,6 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
-use tokio::time::{interval, Duration};
 use tracing::{error, info, warn};
 
 use crate::platform::permissions::{Capability, PermissionUtils};
@@ -181,6 +180,43 @@ impl Service {
             return Err(anyhow::anyhow!(
                 "Admin/root privileges required for service installation"
             ));
+        }
+
+        if Self::is_installed() {
+            info!("Existing Installation Detected\n");
+            info!("An existing OpenFrame installation was found\n");
+            info!("To proceed with the new installation, the old version must be removed\n");
+            info!("Uninstalling existing installation...");
+
+            let installed_binary_path = Self::get_install_location();
+
+            if !installed_binary_path.exists() {
+                warn!("Installed binary not found at expected location: {}", installed_binary_path.display());
+                info!("Proceeding with installation anyway...");
+            } else {
+                info!("Launching uninstall process: {}", installed_binary_path.display());
+
+                use tokio::process::Command;
+
+                let status = Command::new(&installed_binary_path)
+                    .arg("uninstall")
+                    .status()
+                    .await
+                    .context("Failed to launch uninstall process")?;
+
+                if !status.success() {
+                    warn!("Uninstall process returned non-zero exit code: {:?}", status.code());
+                    info!("Continuing with installation anyway...");
+                } else {
+                    info!("Uninstall process completed successfully");
+                }
+
+                // Wait additional time for cleanup script to complete
+                info!("Waiting for cleanup to complete...");
+                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            }
+
+            info!("Continuing with new installation...\n");
         }
 
         info!("Installing OpenFrame service");
