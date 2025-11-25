@@ -1,24 +1,29 @@
+# OpenFrame CLI Installation
 
-  # OpenFrame CLI Installation
+## Quick Install
 
-  ## Quick Install
+### macOS (ARM64 - Apple Silicon)
+```bash
+curl -L https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_darwin_arm64.tar.gz | tar xz
+sudo mv openframe /usr/local/bin/
+```
 
-  ### macOS (ARM64 - Apple Silicon)
-  ```bash
-  curl -L https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_darwin_arm64.tar.gz | tar xz
-  sudo mv openframe /usr/local/bin/
+### macOS (Intel)
+```bash
+curl -L https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_darwin_amd64.tar.gz | tar xz
+sudo mv openframe /usr/local/bin/
+```
 
-  macOS (Intel)
+### Linux (AMD64)
+```bash
+curl -L https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_linux_amd64.tar.gz | tar xz
+sudo mv openframe /usr/local/bin/
+```
 
-  curl -L https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_darwin_amd64.tar.gz | tar xz
-  sudo mv openframe /usr/local/bin/
+### Windows
+Download from [releases](https://github.com/flamingo-stack/openframe-cli/releases/latest) and add to PATH.
 
-  Linux (AMD64)
-
-  curl -L https://github.com/flamingo-stack/openframe-cli/releases/latest/download/openframe-cli_linux_amd64.tar.gz | tar xz
-  sudo mv openframe /usr/local/bin/
-
-
-  Verify Installation
-
-  openframe --help
+## Verify Installation
+```bash
+openframe --help
+```
