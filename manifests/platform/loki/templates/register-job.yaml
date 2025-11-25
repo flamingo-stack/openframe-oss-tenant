@@ -20,7 +20,6 @@ spec:
       containers:
       - name: register
         image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.registerJob.image.tag }}
-        imagePullPolicy: {{ .Values.registerJob.image.pullPolicy }}
         command:
           - /bin/sh
           - -uc
