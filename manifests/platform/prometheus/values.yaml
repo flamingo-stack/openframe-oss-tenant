@@ -1,5 +1,8 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 kube-prometheus-stack:
@@ -10,8 +13,24 @@ kube-prometheus-stack:
     enabled: false
 
   prometheus:
+    prometheusSpec:
+      image:
+        registry: quay.io
+        repository: prometheus/prometheus
+        tag: v3.7.3
     ingress:
       enabled: false
+
+  prometheusOperator:
+    image:
+      registry: quay.io
+      repository: prometheus-operator/prometheus-operator
+      tag: v0.86.2
+    prometheusConfigReloader:
+      image:
+        registry: quay.io
+        repository: prometheus-operator/prometheus-config-reloader
+        tag: v0.86.2
         
     prometheusSpec:
       serviceMonitorSelectorNilUsesHelmValues: false
