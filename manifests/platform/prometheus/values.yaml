@@ -15,20 +15,27 @@ kube-prometheus-stack:
   prometheus:
     prometheusSpec:
       image:
-        registry: quay.io
+        registry: ghcr.io/flamingo-stack/registry
         repository: prometheus/prometheus
         tag: v3.7.3
     ingress:
       enabled: false
 
+  kubeStateMetrics:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: kube-state-metrics/kube-state-metrics
+      tag: v2.17.0
+      pullPolicy: IfNotPresent
+
   prometheusOperator:
     image:
-      registry: quay.io
+      registry: ghcr.io/flamingo-stack/registry
       repository: prometheus-operator/prometheus-operator
       tag: v0.86.2
     prometheusConfigReloader:
       image:
-        registry: quay.io
+        registry: ghcr.io/flamingo-stack/registry
         repository: prometheus-operator/prometheus-config-reloader
         tag: v0.86.2
         
