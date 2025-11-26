@@ -13,7 +13,6 @@ loki:
       registry: ghcr.io/flamingo-stack/registry
       repository: loki
       tag: "3.5.7"
-      pullPolicy: IfNotPresent
 
     auth_enabled: false
     server:
