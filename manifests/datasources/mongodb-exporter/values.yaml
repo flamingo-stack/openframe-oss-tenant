@@ -1,8 +1,16 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 prometheus-mongodb-exporter:
+  image:
+    repository: docker.io/percona/mongodb_exporter
+    tag: "0.47.1"
+    pullPolicy: IfNotPresent
+
   mongodb:
     uri: "mongodb://openframe:password@mongodb:27017/openframe?authSource=admin"
 
