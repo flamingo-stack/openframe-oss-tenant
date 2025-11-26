@@ -67,10 +67,12 @@ export function OrganizationsTable() {
   const [searchInput, setSearchInput] = useState(params.search)
   const debouncedSearchInput = useDebounce(searchInput, 300)
 
-  // Update URL when debounced input changes
+  // Update URL when debounced input changes (only when value actually changed)
   useEffect(() => {
-    setParam('search', debouncedSearchInput)
-  }, [debouncedSearchInput])
+    if (debouncedSearchInput !== params.search) {
+      setParam('search', debouncedSearchInput)
+    }
+  }, [debouncedSearchInput, params.search, setParam])
 
   const stableFilters = useMemo(() => ({}), [])
   const { organizations, isLoading, error, searchOrganizations } = useOrganizations(stableFilters)

@@ -208,7 +208,7 @@ impl CrossPlatformServiceManager {
         #[cfg(target_os = "windows")]
         {
             info!("Waiting for service process to fully terminate...");
-            if let Err(e) = self.wait_for_service_process_to_stop(30) {
+            if let Err(e) = self.wait_for_service_process_to_stop(60) {
                 warn!("Service process did not stop cleanly: {}", e);
             }
         }
