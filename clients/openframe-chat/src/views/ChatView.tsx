@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import {
   ChatContainer,
   ChatHeader,
@@ -20,10 +20,6 @@ export function ChatView() {
     provider: string
     contextWindow: number
   } | null>(null)
-  
-  useEffect(() => {
-    supportedModelsService.loadSupportedModels()
-  }, [])
   
   const handleMetadataUpdate = useCallback((metadata: { modelName: string; providerName: string; contextWindow: number }) => {
     setCurrentModel({
@@ -48,7 +44,7 @@ export function ChatView() {
     onMetadataUpdate: handleMetadataUpdate
   })
   
-  const { status, serverUrl, aiConfiguration } = useConnectionStatus()
+  const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus()
   const isDisconnected = status !== 'connected'
   
   const displayModel = currentModel || (aiConfiguration ? {
@@ -116,7 +112,7 @@ export function ChatView() {
           reserveAvatarOffset={false}
           disabled={isDisconnected}
         />
-        {displayModel && (
+        {displayModel && isFullyLoaded && (
           <div className="flex justify-start mt-3 px-12">
             <ModelDisplay 
               provider={displayModel.provider}

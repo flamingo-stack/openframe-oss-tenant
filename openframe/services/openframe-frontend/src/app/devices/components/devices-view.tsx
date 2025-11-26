@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useMemo, useEffect } from "react"
+import React, { useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -9,7 +9,7 @@ import {
 } from "@flamingo/ui-kit/components/ui"
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
-import { useDebounce, useBatchImages, useTablePagination, useApiParams } from "@flamingo/ui-kit/hooks"
+import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
 import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
@@ -18,38 +18,50 @@ import { featureFlags } from '@lib/feature-flags'
 export function DevicesView() {
   const router = useRouter()
 
-  // URL state management - search, filters, and pagination persist in URL
-  const { params, setParam, setParams } = useApiParams({
-    search: { type: 'string', default: '' },
+  // Extra URL params not handled by cursor pagination hook (viewMode and filters)
+  const { params: extraParams, setParam: setExtraParam, setParams: setExtraParams } = useApiParams({
     statuses: { type: 'array', default: [] },
     osTypes: { type: 'array', default: [] },
     organizationIds: { type: 'array', default: [] },
-    viewMode: { type: 'string', default: 'table' },
-    cursor: { type: 'string', default: '' }
+    viewMode: { type: 'string', default: 'table' }
   })
-
-  // Debounce search input for smoother UX
-  const [searchInput, setSearchInput] = useState(params.search)
-  const debouncedSearchInput = useDebounce(searchInput, 300)
-
-  // Update URL when debounced input changes
-  useEffect(() => {
-    setParam('search', debouncedSearchInput)
-  }, [debouncedSearchInput])
 
   // Backend filters from URL params
   const filters = useMemo(() => ({
-    statuses: params.statuses,
-    osTypes: params.osTypes,
-    organizationIds: params.organizationIds
-  }), [params.statuses, params.osTypes, params.organizationIds])
+    statuses: extraParams.statuses,
+    osTypes: extraParams.osTypes,
+    organizationIds: extraParams.organizationIds
+  }), [extraParams.statuses, extraParams.osTypes, extraParams.organizationIds])
 
-  const { devices, deviceFilters, isLoading, error, searchDevices, pageInfo, fetchNextPage, fetchFirstPage, hasLoadedBeyondFirst } = useDevices(filters)
+  const { devices, deviceFilters, isLoading, error, searchDevices, pageInfo, fetchNextPage, fetchFirstPage, hasLoadedBeyondFirst, setHasLoadedBeyondFirst, fetchDevices, fetchDeviceFilters, markInitialLoadDone } = useDevices(filters)
 
-  const organizationImageUrls = useMemo(() => 
+  // Unified cursor pagination state management (no prefix, uses 'search' and 'cursor')
+  const {
+    searchInput,
+    setSearchInput,
+    hasLoadedBeyondFirst: hookHasLoadedBeyondFirst,
+    handleNextPage,
+    handleResetToFirstPage,
+    params: paginationParams,
+    setParams: setPaginationParams
+  } = useCursorPaginationState({
+    onInitialLoad: (search, cursor) => {
+      if (cursor) {
+        fetchDevices(search, cursor)
+        setHasLoadedBeyondFirst(true)
+      } else {
+        fetchDevices(search)
+      }
+      fetchDeviceFilters()
+      markInitialLoadDone()
+    },
+    onSearchChange: (search) => searchDevices(search)
+  })
+
+  const organizationImageUrls = useMemo(() =>
     featureFlags.organizationImages.displayEnabled()
       ? devices.map(device => device.organizationImageUrl).filter(Boolean)
-      : [], 
+      : [],
     [devices]
   )
   const fetchedImageUrls = useBatchImages(organizationImageUrls)
@@ -61,62 +73,54 @@ export function DevicesView() {
     []
   )
 
-  React.useEffect(() => {
-    if (params.search !== undefined) {
-      searchDevices(params.search)
-    }
-  }, [params.search])
-
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    // Batch update all params at once - single router.replace call
-    setParams({
-      cursor: '', // Reset cursor when filters change
+    // Reset cursor and update filter params
+    setPaginationParams({ cursor: '' })
+    setExtraParams({
       statuses: columnFilters.status || [],
       osTypes: columnFilters.os || [],
       organizationIds: columnFilters.organization || []
     })
-  }, [setParams])
+    setHasLoadedBeyondFirst(false)
+  }, [setExtraParams, setPaginationParams, setHasLoadedBeyondFirst])
 
-  const handleNextPage = useCallback(async () => {
+  const onNext = useCallback(async () => {
     if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
-      setParam('cursor', pageInfo.endCursor)
-      await fetchNextPage(params.search)
+      await handleNextPage(pageInfo.endCursor, () => fetchNextPage(paginationParams.search))
     }
-  }, [pageInfo, fetchNextPage, params.search, setParam])
+  }, [pageInfo, handleNextPage, fetchNextPage, paginationParams.search])
 
-  const handleResetToFirstPage = useCallback(async () => {
-    setParam('cursor', '')
-    await fetchFirstPage(params.search)
-  }, [fetchFirstPage, params.search, setParam])
+  const onReset = useCallback(async () => {
+    await handleResetToFirstPage(() => fetchFirstPage(paginationParams.search))
+  }, [handleResetToFirstPage, fetchFirstPage, paginationParams.search])
 
   const cursorPagination = useTablePagination(
     pageInfo ? {
       type: 'server',
       hasNextPage: pageInfo.hasNextPage,
-      hasLoadedBeyondFirst,
+      hasLoadedBeyondFirst: hasLoadedBeyondFirst || hookHasLoadedBeyondFirst,
       startCursor: pageInfo.startCursor,
       endCursor: pageInfo.endCursor,
       itemCount: devices.length,
       itemName: 'devices',
-      onNext: handleNextPage,
-      onReset: handleResetToFirstPage,
+      onNext,
+      onReset,
       showInfo: true
     } : null
   )
 
-
   // Convert URL params to table filters format
   const tableFilters = useMemo(() => ({
-    status: params.statuses,
-    os: params.osTypes,
-    organization: params.organizationIds
-  }), [params.statuses, params.osTypes, params.organizationIds])
+    status: extraParams.statuses,
+    os: extraParams.osTypes,
+    organization: extraParams.organizationIds
+  }), [extraParams.statuses, extraParams.osTypes, extraParams.organizationIds])
 
   const viewToggle = (
     <>
       <ViewToggle
-        value={params.viewMode as 'table' | 'grid'}
-        onValueChange={(value) => setParam('viewMode', value)}
+        value={extraParams.viewMode as 'table' | 'grid'}
+        onValueChange={(value) => setExtraParam('viewMode', value)}
         className="bg-ods-card border border-ods-border h-12"
       />
       <Button
@@ -141,7 +145,7 @@ export function DevicesView() {
       className="pt-6"
     >
       {/* Conditional View Rendering */}
-      {params.viewMode === 'table' ? (
+      {extraParams.viewMode === 'table' ? (
         // Table View
         <Table
           data={devices}

@@ -1,8 +1,11 @@
 pub mod directories;
 pub mod permissions;
+pub mod uninstall;
+
+#[cfg(target_os = "windows")]
+pub mod windows_cleanup;
 
 // Re-export commonly used items
 pub use directories::{DirectoryError, DirectoryManager};
 pub use permissions::{Capability, PermissionError, PermissionUtils, Permissions};
-// Explicitly re-export the run_command function if needed
-// pub use permissions::PermissionUtils::run_command;
+pub use uninstall::remove_directory_with_retry;

@@ -210,6 +210,7 @@ export function useDevices(filters: DeviceFilterInput = {}) {
   }, [])
 
   const searchDevices = useCallback((searchTerm: string) => {
+    setHasLoadedBeyondFirst(false) // Reset pagination state on new search
     fetchDevices(searchTerm)
   }, [fetchDevices])
 
@@ -218,15 +219,19 @@ export function useDevices(filters: DeviceFilterInput = {}) {
     fetchDeviceFilters()
   }, [fetchDevices, fetchDeviceFilters])
 
+  // Note: Initial fetch is controlled by the view component, not the hook
+  // This allows views to pass cursor from URL on initial load
+  // Track if first fetch has been done (set by view component)
   const initialLoadDone = useRef(false)
-  
-  useEffect(() => {
-    if (!initialLoadDone.current) {
-      initialLoadDone.current = true
-      fetchDevices()
-      fetchDeviceFilters()
-    }
-  }, [])
+  // Track previous filters to detect actual changes vs initial render
+  const prevFiltersKey = useRef<string | null>(null)
+
+  // Function to mark initial load as done (called by view component after first fetch)
+  const markInitialLoadDone = useCallback(() => {
+    initialLoadDone.current = true
+    // Also set the initial filters key so we don't refetch on first render
+    prevFiltersKey.current = filtersKey
+  }, [filtersKey])
 
   const fetchNextPage = useCallback(async (searchTerm: string) => {
     if (!pageInfo?.hasNextPage || !pageInfo?.endCursor) {
@@ -241,17 +246,24 @@ export function useDevices(filters: DeviceFilterInput = {}) {
     return fetchDevices(searchTerm)
   }, [fetchDevices])
 
-  // Refetch when filters change (after initial load)
+  // Refetch when filters change (after initial load, and only when filters ACTUALLY changed)
   useEffect(() => {
-    if (initialLoadDone.current) {
-      // Call functions directly without adding to dependencies
+    // Only refetch if:
+    // 1. Initial load is done
+    // 2. Previous filters key was set (not first render after initial load)
+    // 3. Filters actually changed
+    if (initialLoadDone.current && prevFiltersKey.current !== null && prevFiltersKey.current !== filtersKey) {
       const refetch = async () => {
         await fetchDevices()
         await fetchDeviceFilters()
       }
       refetch()
     }
-  }, [filtersKey])
+    // Update previous filters key (but only after initial load)
+    if (initialLoadDone.current) {
+      prevFiltersKey.current = filtersKey
+    }
+  }, [filtersKey, fetchDevices, fetchDeviceFilters])
 
   return {
     devices,
@@ -261,10 +273,13 @@ export function useDevices(filters: DeviceFilterInput = {}) {
     searchDevices,
     refreshDevices,
     fetchDevices,
+    fetchDeviceFilters,
     pageInfo,
     filteredCount,
     fetchNextPage,
     fetchFirstPage,
-    hasLoadedBeyondFirst
+    hasLoadedBeyondFirst,
+    setHasLoadedBeyondFirst,
+    markInitialLoadDone
   }
 }
