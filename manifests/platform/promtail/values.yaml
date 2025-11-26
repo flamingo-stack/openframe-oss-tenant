@@ -1,10 +1,17 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 servicemonitor:
   enabled: true
 
 
 promtail:
+  image:
+    repository: docker.io/grafana/promtail
+    tag: "3.5.1"
+
   revisionHistoryLimit: 1
 
   podsecurityContext:
