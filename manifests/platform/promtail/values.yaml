@@ -8,7 +8,7 @@ servicemonitor:
   enabled: true
 
 image:
-  registry: docker.io
+  registry: ghcr.io/flamingo-stack/registry
   repository: grafana/promtail
   tag: "3.5.1"
 
