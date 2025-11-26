@@ -7,11 +7,12 @@ registerJob:
 servicemonitor:
   enabled: true
 
+image:
+  registry: docker.io
+  repository: grafana/promtail
+  tag: "3.5.1"
+
 promtail:
-  image:
-    registry: docker.io
-    repository: grafana/promtail
-    tag: "3.5.1"
 
   revisionHistoryLimit: 1
 
