@@ -16,6 +16,9 @@ import { SsoConfigModal } from '../edit-sso-config-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
 import { getProviderIcon } from '../../utils/get-provider-icon'
 
+// Feature flag: enabled by default, can disable with env var
+const isDomainAllowlistEnabled = process.env.NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST !== 'false'
+
 type UIProviderRow = {
   id: string
   provider: string
@@ -86,50 +89,59 @@ export function SsoConfigurationTab() {
     loadData()
   }, [loadData])
 
-  const columns: TableColumn<UIProviderRow>[] = useMemo(() => [
-    {
-      key: 'provider',
-      label: 'OAUTH PROVIDER',
-      width: 'flex-[2] min-w-0',
-      renderCell: (row) => (
-        <div className="flex items-center gap-3">
-          {getProviderIcon(row.provider)}
-          <div className="flex flex-col justify-center min-w-0">
-            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
-            <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+  const columns: TableColumn<UIProviderRow>[] = useMemo(() => {
+    const baseColumns: TableColumn<UIProviderRow>[] = [
+      {
+        key: 'provider',
+        label: 'OAUTH PROVIDER',
+        width: 'flex-[2] min-w-0',
+        renderCell: (row) => (
+          <div className="flex items-center gap-3">
+            {getProviderIcon(row.provider)}
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
+              <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+            </div>
           </div>
-        </div>
-      )
-    },
-    {
-      key: 'status',
-      label: 'STATUS',
-      width: 'flex-1 min-w-0',
-      renderCell: (row) => (
-        <div className="w-fit">
-          <StatusTag label={row.status.label} variant={row.status.variant} />
-        </div>
-      )
-    },
-    {
-      key: 'allowedDomains',
-      label: 'ALLOWED DOMAINS',
-      width: 'flex-[1.5] min-w-0',
-      renderCell: (row) => (
-        <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
-          {row.allowedDomains.length > 0 ? row.allowedDomains.join(', ') : 'None'}
-        </span>
-      )
-    },
-    {
+        )
+      },
+      {
+        key: 'status',
+        label: 'STATUS',
+        width: 'flex-1 min-w-0',
+        renderCell: (row) => (
+          <div className="w-fit">
+            <StatusTag label={row.status.label} variant={row.status.variant} />
+          </div>
+        )
+      }
+    ]
+
+    // Only add allowed domains column if feature is enabled
+    if (isDomainAllowlistEnabled) {
+      baseColumns.push({
+        key: 'allowedDomains',
+        label: 'ALLOWED DOMAINS',
+        width: 'flex-[1.5] min-w-0',
+        renderCell: (row) => (
+          <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
+            {row.allowedDomains.length > 0 ? row.allowedDomains.join(', ') : 'None'}
+          </span>
+        )
+      })
+    }
+
+    baseColumns.push({
       key: 'hasConfig',
       label: 'CONFIGURATION',
       width: 'flex-1 min-w-0',
       renderCell: (row) => (
         <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary">{row.hasConfig ? 'Configured' : 'Not configured'}</span>
       )
-    },
-  ], [])
+    })
+
+    return baseColumns
+  }, [])
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()

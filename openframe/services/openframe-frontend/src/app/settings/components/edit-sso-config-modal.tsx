@@ -164,7 +164,7 @@ export function SsoConfigModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl w-full">
+    <Modal isOpen={isOpen} onClose={onClose} className={isDomainAllowlistEnabled ? "max-w-5xl w-full" : "max-w-2xl w-full"}>
       <ModalHeader>
         <div className="flex items-center gap-3">
           {getProviderIcon(providerKey)}
@@ -175,9 +175,9 @@ export function SsoConfigModal({
         </p>
       </ModalHeader>
 
-      {/* 2-Column Layout for entire modal content */}
+      {/* 2-Column Layout when domain allowlist is enabled, single column otherwise */}
       <div className="px-6 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className={isDomainAllowlistEnabled ? "grid grid-cols-1 lg:grid-cols-2 gap-8" : ""}>
           {/* Left Column: SSO Configuration */}
           <div className="space-y-6">
             {/* Redirect URL Section */}
