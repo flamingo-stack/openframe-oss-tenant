@@ -58,7 +58,6 @@ registry:
     email: ""
 
 global:  # not working yet
-  imageRegistry: registry.k8s.io/ingress-nginx/controller
   image:
     tag: latest
 
