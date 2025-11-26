@@ -1,6 +1,6 @@
 openframe:
   device:
     aspect:
-      enabled: true
+      enabled: false
 # empty profile override
 
