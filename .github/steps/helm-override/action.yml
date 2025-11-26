@@ -11,6 +11,10 @@ inputs:
   changes:
     description: 'Changes output'
     required: true
+  helm-values-file:
+    description: 'Path to helm-values.yaml file'
+    required: false
+    default: 'cli/helm-values.yaml'
   github-token:
     description: 'GitHub token for repository access'
     required: true
@@ -38,9 +42,6 @@ inputs:
     required: false
     default: 'CI@flamingo.cx'
 
-env:
-  HELM_VALUES_FILE: "cli/helm-values.yaml"
-
 runs:
   using: 'composite'
   steps:
@@ -50,7 +51,7 @@ runs:
         COMMIT_SHA: "${{ inputs.commit-sha }}"
         MATRIX: '${{ inputs.matrix }}'
         CHANGES: '${{ inputs.changes }}'
-        HELM_VALUES_FILE: ${{ env.HELM_VALUES_FILE }}
+        HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
       run: |
         set -euo pipefail
         
@@ -58,6 +59,7 @@ runs:
         [ -n "$COMMIT_SHA" ] || { echo "Error: COMMIT_SHA is required" >&2; exit 1; }
         [ -n "$MATRIX" ] || { echo "Error: MATRIX is required" >&2; exit 1; }
         [ -n "$CHANGES" ] || { echo "Error: CHANGES is required" >&2; exit 1; }
+        [ -n "$HELM_VALUES_FILE" ] || { echo "Error: HELM_VALUES_FILE is required" >&2; exit 1; }
 
         mkdir -p "$(dirname "$HELM_VALUES_FILE")" && touch "$HELM_VALUES_FILE"
 
@@ -107,10 +109,10 @@ runs:
     - name: Override repository passwords and branch
       shell: bash
       env:
+        HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
         GITHUB_TOKEN: '${{ inputs.github-token }}'
         SAAS_CONFIG_TOKEN: '${{ inputs.saas-config-token }}'
         BRANCH_NAME: '${{ inputs.branch-name }}'
-        HELM_VALUES_FILE: ${{ env.HELM_VALUES_FILE }}
       run: |
         set -euo pipefail
         yq eval ".deployment.oss.repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
@@ -120,13 +122,13 @@ runs:
     - name: Override registry
       shell: bash
       env:
+        HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
         DOCKER_USERNAME: '${{ inputs.docker-username }}'
         DOCKER_PASSWORD: '${{ inputs.docker-password }}'
         DOCKER_EMAIL: '${{ inputs.docker-email }}'
         GITHUB_ACTOR: '${{ inputs.github-actor }}'
         GITHUB_TOKEN: '${{ inputs.github-token }}'
         GHCR_EMAIL: '${{ inputs.ghcr-email }}'
-        HELM_VALUES_FILE: ${{ env.HELM_VALUES_FILE }}
       run: |
         set -euo pipefail
 
