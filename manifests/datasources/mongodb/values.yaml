@@ -1,2 +1,5 @@
 registerJob:
   enabled: true
+image:
+  repository: docker.io/library/mongo
+  tag: "7.0.18"
