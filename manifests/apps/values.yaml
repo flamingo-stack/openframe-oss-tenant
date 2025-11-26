@@ -256,3 +256,9 @@ apps:
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
+  
+  registration:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "4"
