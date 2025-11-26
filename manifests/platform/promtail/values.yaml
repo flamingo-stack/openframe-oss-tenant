@@ -12,43 +12,34 @@ image:
   repository: grafana/promtail
   tag: "3.5.1"
 
-promtail:
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
-  revisionHistoryLimit: 1
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
 
-  podsecurityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
+extraVolumes:
+  - name: varlog
+    hostPath:
+      path: /var/promtail-log
 
-  service:
-    enabled: true
-    labels:
-      app.kubernetes.io/instance: promtail
+extraVolumeMounts:
+  - name: varlog
+    mountPath: /var/promtail-log/host
+    readOnly: true
 
-  resources:
-    limits:
-      cpu: 200m
-      memory: 128Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
+config:
+  clients:
+    - url: http://loki.platform.svc.cluster.local:3100/loki/api/v1/push
 
-  extraVolumes:
-    - name: varlog
-      hostPath:
-        path: /var/promtail-log
-
-  extraVolumeMounts:
-    - name: varlog
-      mountPath: /var/promtail-log/host
-      readOnly: true
-
-  config:
-    clients:
-      - url: http://loki.platform.svc.cluster.local:3100/loki/api/v1/push
-
-    snippets:
-      extraRelabelConfigs:
-        - source_labels: [__meta_kubernetes_namespace]
-          action: drop
-          regex: (kube-system|gmp-system|loki|promtail)
+  snippets:
+    extraRelabelConfigs:
+      - source_labels: [__meta_kubernetes_namespace]
+        action: drop
+        regex: (kube-system|gmp-system|loki|promtail)
