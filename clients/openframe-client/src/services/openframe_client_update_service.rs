@@ -5,6 +5,8 @@ use crate::models::openframe_client_info::ClientUpdateStatus;
 use crate::models::update_state::{UpdateState, UpdatePhase};
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
+#[cfg(windows)]
+use crate::service::FULL_SERVICE_NAME;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::github_download_service::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;
@@ -475,8 +477,8 @@ impl OpenFrameClientUpdateService {
         update_state.set_phase(UpdatePhase::UpdaterLaunched);
         self.update_state_service.save(update_state).await?;
 
-        // Service name
-        let service_name = "com.openframe.client";
+        // Service name - use unified constant for all platforms
+        let service_name = FULL_SERVICE_NAME;
 
         // Get update state file path
         let update_state_path = self.update_state_service.get_state_file_path();

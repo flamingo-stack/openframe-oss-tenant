@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useMemo, useEffect } from "react"
+import React, { useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -8,7 +8,7 @@ import {
   ListPageLayout,
   type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
-import { useDebounce, useToast, useApiParams, useTablePagination } from "@flamingo/ui-kit/hooks"
+import { useToast, useTablePagination, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
 import { useDialogsStore } from '../../stores/dialogs-store'
 import { useArchiveResolved } from '../../hooks/use-archive-resolved'
 import { Dialog } from '../../types/dialog.types'
@@ -18,21 +18,6 @@ import { ArchiveIcon } from '@flamingo/ui-kit'
 export function CurrentChats() {
   const router = useRouter()
   const { toast } = useToast()
-
-  // URL state management for search and filters
-  const { params, setParam } = useApiParams({
-    search: { type: 'string', default: '' },
-    cursor: { type: 'string', default: '' }
-  })
-
-  // Debounce search input for smoother UX
-  const [searchInput, setSearchInput] = useState(params.search)
-  const debouncedSearchInput = useDebounce(searchInput, 300)
-
-  // Update URL when debounced input changes
-  useEffect(() => {
-    setParam('search', debouncedSearchInput)
-  }, [debouncedSearchInput])
 
   const {
     currentDialogs: dialogs,
@@ -44,6 +29,20 @@ export function CurrentChats() {
     goToNextPage,
     goToFirstPage
   } = useDialogsStore()
+
+  // Unified cursor pagination state management
+  const {
+    searchInput,
+    setSearchInput,
+    hasLoadedBeyondFirst,
+    handleNextPage,
+    handleResetToFirstPage,
+    params
+  } = useCursorPaginationState({
+    paramPrefix: 'current',
+    onInitialLoad: (search, cursor) => fetchDialogs(false, search, true, cursor),
+    onSearchChange: (search) => fetchDialogs(false, search)
+  })
 
   const { archiveResolvedDialogs, isArchiving } = useArchiveResolved()
 
@@ -58,50 +57,43 @@ export function CurrentChats() {
     [handleDialogDetails]
   )
 
-  React.useEffect(() => {
-    fetchDialogs(false, undefined, true)
-  }, [])
-
-  React.useEffect(() => {
-    if (params.search !== undefined) {
-      fetchDialogs(false, params.search)
-    }
-  }, [params.search])
-  
   const handleArchiveResolved = useCallback(async () => {
     const success = await archiveResolvedDialogs(dialogs)
     if (success) {
-      await fetchDialogs(false, params.search, true)
+      await fetchDialogs(false, params.currentSearch, true)
     }
-  }, [archiveResolvedDialogs, dialogs, fetchDialogs, params.search])
+  }, [archiveResolvedDialogs, dialogs, fetchDialogs, params.currentSearch])
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    // Mingo doesn't seem to use filters yet, but keep handler for future
+    // Mingo doesn't use filters yet, but keep handler for future
   }, [])
-  
+
   const hasResolvedDialogs = useMemo(() => {
     return dialogs.some(d => d.status === 'RESOLVED')
   }, [dialogs])
-  
-  const handleNextPage = useCallback(() => {
-    goToNextPage(false)
-  }, [goToNextPage])
-  
-  const handleResetToFirstPage = useCallback(() => {
-    goToFirstPage(false)
-  }, [goToFirstPage])
-  
+
+  const onNext = useCallback(() => {
+    if (currentPageInfo?.endCursor) {
+      handleNextPage(currentPageInfo.endCursor, () => goToNextPage(false))
+    }
+  }, [currentPageInfo, handleNextPage, goToNextPage])
+
+  const onReset = useCallback(() => {
+    handleResetToFirstPage(() => goToFirstPage(false))
+  }, [handleResetToFirstPage, goToFirstPage])
+
+  // Use store's hasLoadedBeyondFirst OR hook's (both track the same thing, store is source of truth for dialogs)
   const cursorPagination = useTablePagination(
     currentPageInfo ? {
       type: 'server',
       hasNextPage: currentPageInfo.hasNextPage,
-      hasLoadedBeyondFirst: currentHasLoadedBeyondFirst,
+      hasLoadedBeyondFirst: currentHasLoadedBeyondFirst || hasLoadedBeyondFirst,
       startCursor: currentPageInfo.startCursor,
       endCursor: currentPageInfo.endCursor,
       itemCount: dialogs.length,
       itemName: 'chats',
-      onNext: handleNextPage,
-      onReset: handleResetToFirstPage,
+      onNext,
+      onReset,
       showInfo: true
     } : null
   )
