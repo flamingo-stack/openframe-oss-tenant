@@ -7,7 +7,7 @@ servicemonitor:
   enabled: true
 
 image:
-  repository: docker.io/library/nats
+  repository: ghcr.io/flamingo-stack/registry/library/nats
   tag: "2.10-alpine"
 
 credentials:
