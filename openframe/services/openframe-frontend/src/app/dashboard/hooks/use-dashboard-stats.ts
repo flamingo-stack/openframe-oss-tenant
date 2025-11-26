@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiClient } from '@lib/api-client'
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
+import { DEFAULT_VISIBLE_STATUSES } from '../../devices/constants/device-statuses'
 import type { GraphQLResponse } from '../../devices/types/device.types'
 import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries'
 import { GET_DIALOG_STATISTICS_QUERY } from '../../mingo/queries/dialogs-queries'
@@ -15,9 +16,11 @@ export function useDevicesOverview() {
     activePercentage: 0,
     inactivePercentage: 0
   }))
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let isMounted = true
+    setIsLoading(true)
 
     const fetchStatusCounts = async () => {
       try {
@@ -25,7 +28,7 @@ export function useDevicesOverview() {
 
         const devRes: { ok: boolean, status: number, error?: string, data?: GraphQLResponse<DeviceFiltersResponse> } = await apiClient.post<GraphQLResponse<DeviceFiltersResponse>>('/api/graphql', {
           query: GET_DEVICE_FILTERS_QUERY,
-          variables: { filter: {} }
+          variables: { filter: { statuses: [...DEFAULT_VISIBLE_STATUSES] } }
         })
 
         if (!devRes.ok) {
@@ -50,6 +53,10 @@ export function useDevicesOverview() {
         })
       } catch (err) {
         // Swallow errors for now; keep zeros. Dashboard can still render.
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -57,7 +64,7 @@ export function useDevicesOverview() {
     return () => { isMounted = false }
   }, [])
 
-  return stats
+  return { ...stats, isLoading }
 }
 
 export function useChatsOverview() {
