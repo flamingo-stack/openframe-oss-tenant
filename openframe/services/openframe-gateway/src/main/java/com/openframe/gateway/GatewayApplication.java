@@ -11,8 +11,7 @@ import lombok.RequiredArgsConstructor;
         "com.openframe.gateway",
         "com.openframe.core",
         "com.openframe.data",
-        "com.openframe.security",
-        "com.openframe.kafka"
+        "com.openframe.security"
 })
 @RequiredArgsConstructor
 public class GatewayApplication {
