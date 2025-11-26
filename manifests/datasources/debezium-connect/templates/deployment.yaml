@@ -22,7 +22,7 @@ spec:
 
       containers:
         - name: debezium-connect
-          image: quay.io/debezium/connect:3.1.1.Final
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           ports:
             - containerPort: 8083
               name: connect-api
