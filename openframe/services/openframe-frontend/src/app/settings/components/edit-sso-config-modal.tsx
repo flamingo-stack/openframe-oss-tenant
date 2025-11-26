@@ -297,11 +297,8 @@ export function SsoConfigModal({
         </div>
       </div>
 
-      <ModalFooter>
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        {isEnabled && onDisable && (
+      <ModalFooter className="justify-between">
+        {isEnabled && onDisable ? (
           <Button
             onClick={handleDisable}
             variant="outline"
@@ -310,13 +307,20 @@ export function SsoConfigModal({
           >
             {isSubmitting ? 'Disabling...' : 'Disable'}
           </Button>
+        ) : (
+          <div />
         )}
-        <Button
-          onClick={handleSubmit}
-          disabled={!canSubmit || isSubmitting}
-        >
-          {isSubmitting ? 'Saving...' : 'Save & Enable'}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit || isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : 'Save & Enable'}
+          </Button>
+        </div>
       </ModalFooter>
     </Modal>
   )
