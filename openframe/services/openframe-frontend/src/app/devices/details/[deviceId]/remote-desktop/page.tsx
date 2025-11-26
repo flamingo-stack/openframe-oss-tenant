@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useRef, useState, use } from 'react'
+import React, { useEffect, useRef, useState, use, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Monitor, MoreHorizontal, Settings, ChevronLeft } from 'lucide-react'
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup } from '@flamingo/ui-kit'
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup, ContentLoader } from '@flamingo/ui-kit'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { AppLayout } from '@app/components/app-layout'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
@@ -13,6 +13,7 @@ import { RemoteSettingsModal } from './remote-settings-modal'
 import { RemoteSettingsConfig, DEFAULT_SETTINGS, RemoteDesktopSettings } from '@lib/meshcentral/remote-settings'
 import { createActionsMenuGroups, ActionHandlers } from './actions-menu-config'
 import { DisplayInfo } from '@lib/meshcentral/meshcentral-desktop'
+import { useDeviceDetails } from '@app/devices/hooks/use-device-details'
 
 interface RemoteDesktopPageProps {
   params: Promise<{
@@ -20,7 +21,7 @@ interface RemoteDesktopPageProps {
   }>
 }
 
-interface DeviceData {
+interface LegacyDeviceData {
   id: string
   meshcentralAgentId?: string
   hostname?: string
@@ -30,34 +31,57 @@ interface DeviceData {
 export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+  const { toast } = useToast()
+
   const resolvedParams = use(params)
-  
+  const deviceId = resolvedParams.deviceId
+
+  // Check for legacy deviceData query param (backward compatibility)
   const deviceDataParam = searchParams.get('deviceData')
-  let deviceData: DeviceData | null = null
-  try {
-    deviceData = deviceDataParam ? JSON.parse(deviceDataParam) : null
-  } catch {
-    // Ignore parsing errors
-  }
-  
-  const originalDeviceId = resolvedParams.deviceId
-  const meshcentralAgentId = deviceData?.meshcentralAgentId
-  
-  if (!meshcentralAgentId) {
-    return (
-      <AppLayout>
-        <div className="p-4">
-          <div className="text-ods-attention-red-error">Error: MeshCentral Agent ID is required for remote desktop functionality</div>
-        </div>
-      </AppLayout>
-    )
-  }
-  const hostname = deviceData?.hostname
-  const organizationName = typeof deviceData?.organization === 'string' 
-    ? deviceData.organization 
-    : deviceData?.organization?.name
-  
+  const legacyDeviceData = useMemo((): LegacyDeviceData | null => {
+    if (!deviceDataParam) return null
+    try {
+      return JSON.parse(deviceDataParam)
+    } catch {
+      return null
+    }
+  }, [deviceDataParam])
+
+  // Fetch device data internally if no legacy data provided
+  const { deviceDetails, isLoading: isDeviceLoading, error: deviceError, fetchDeviceById } = useDeviceDetails()
+
+  // Fetch device on mount if no legacy data
+  useEffect(() => {
+    if (!legacyDeviceData && deviceId) {
+      fetchDeviceById(deviceId)
+    }
+  }, [deviceId, legacyDeviceData, fetchDeviceById])
+
+  // Extract device info from either legacy data or fetched data
+  const meshcentralAgentId = useMemo(() => {
+    if (legacyDeviceData?.meshcentralAgentId) {
+      return legacyDeviceData.meshcentralAgentId
+    }
+    return deviceDetails?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
+  }, [legacyDeviceData, deviceDetails])
+
+  const hostname = useMemo(() => {
+    if (legacyDeviceData?.hostname) {
+      return legacyDeviceData.hostname
+    }
+    return deviceDetails?.hostname || deviceDetails?.displayName
+  }, [legacyDeviceData, deviceDetails])
+
+  const organizationName = useMemo(() => {
+    if (legacyDeviceData?.organization) {
+      return typeof legacyDeviceData.organization === 'string'
+        ? legacyDeviceData.organization
+        : legacyDeviceData.organization?.name
+    }
+    return deviceDetails?.organization
+  }, [legacyDeviceData, deviceDetails])
+
+  // Remote desktop state
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const desktopRef = useRef<MeshDesktop | null>(null)
   const tunnelRef = useRef<MeshTunnel | null>(null)
@@ -67,7 +91,6 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [state, setState] = useState<TunnelState>(0)
   const [connecting, setConnecting] = useState(false)
   const [enableInput, setEnableInput] = useState(true)
-  const { toast } = useToast()
   const [isPageReady, setIsPageReady] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [remoteSettings, setRemoteSettings] = useState<RemoteSettingsConfig>(DEFAULT_SETTINGS)
@@ -75,31 +98,25 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
   const [currentDisplay, setCurrentDisplay] = useState(0)
-  
+
   useEffect(() => {
     remoteSettingsRef.current = remoteSettings
   }, [remoteSettings])
 
+  // Set page ready when we have meshcentralAgentId
   useEffect(() => {
-    if (!meshcentralAgentId) {
-      toast({
-        title: 'Error',
-        description: 'MeshCentral Agent ID is required for remote desktop',
-        variant: 'destructive'
-      })
-      router.push(`/devices/details/${originalDeviceId}`)
-      return
+    if (meshcentralAgentId) {
+      const timer = setTimeout(() => setIsPageReady(true), 0)
+      return () => clearTimeout(timer)
     }
-    const timer = setTimeout(() => setIsPageReady(true), 0)
-    return () => clearTimeout(timer)
-  }, [meshcentralAgentId, originalDeviceId])
+  }, [meshcentralAgentId])
 
   useEffect(() => {
     if (!isPageReady) return
-    
+
     const desktop = new MeshDesktop()
     desktopRef.current = desktop
-    
+
     // Set up display list change callback
     desktop.onDisplayListChange?.((newDisplays) => {
       setDisplays(newDisplays)
@@ -109,7 +126,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         setCurrentDisplay(primaryDisplay.id)
       }
     })
-    
+
     const canvas = canvasRef.current
     if (canvas) {
       desktop.attach(canvas)
@@ -122,7 +139,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   useEffect(() => {
     if (!isPageReady || !meshcentralAgentId || initializingRef.current) return
-    
+
     initializingRef.current = true
     let control: MeshControlClient | undefined
     ;(async () => {
@@ -188,11 +205,11 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         setConnecting(false)
       }
     })()
-    return () => { 
+    return () => {
       initializingRef.current = false
       controlRef.current = null
-      control?.close(); 
-      tunnelRef.current?.stop() 
+      control?.close();
+      tunnelRef.current?.stop()
     }
   }, [isPageReady, meshcentralAgentId, toast])
 
@@ -200,7 +217,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     if (state !== 3) return
     const tunnel = tunnelRef.current
     if (!tunnel) return
-    
+
     try {
       const settingsManager = new RemoteDesktopSettings(remoteSettingsRef.current)
       settingsManager.setWebSocket(tunnel)
@@ -212,27 +229,28 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   const handleBack = () => {
     tunnelRef.current?.stop()
-    router.push(`/devices/details/${originalDeviceId}`)
+    router.push(`/devices/details/${deviceId}`)
   }
 
-  const statusText = isReconnecting 
+  const statusText = isReconnecting
     ? `Reconnecting... (Attempt ${reconnectAttempt})`
-    : state === 3 
-      ? 'Connected' 
-      : state === 2 
-        ? 'Open' 
-        : state === 1 
-          ? 'Connecting' 
+    : state === 3
+      ? 'Connected'
+      : state === 2
+        ? 'Open'
+        : state === 1
+          ? 'Connecting'
           : 'Idle'
   const statusColor = isReconnecting
     ? 'text-ods-text-secondary animate-pulse'
-    : state === 3 
-      ? 'text-ods-attention-green-success' 
-      : state === 1 || state === 2 
-        ? 'text-ods-text-secondary' 
+    : state === 3
+      ? 'text-ods-attention-green-success'
+      : state === 1 || state === 2
+        ? 'text-ods-text-secondary'
         : 'text-ods-text-secondary'
 
   const sendPower = async (action: 'wake' | 'sleep' | 'reset' | 'poweroff') => {
+    if (!meshcentralAgentId) return
     try {
       const client = controlRef.current || new MeshControlClient()
       if (!controlRef.current) controlRef.current = client
@@ -258,7 +276,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   const sendKeyCombo = (keys: number[]) => {
     if (!desktopRef.current) return
-    
+
     const keyMappings: Record<string, string> = {
       [`${0x5B},${0x4D}`]: 'win+m',
       [`${0x5B},${0x28}`]: 'win+down',
@@ -268,10 +286,10 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       [`${0x5B},${0x52}`]: 'win+r',
       [`${0x11},${0x57}`]: 'ctrl+w',
     }
-    
+
     const keyString = keys.join(',')
     const comboString = keyMappings[keyString]
-    
+
     if (comboString) {
       desktopRef.current.sendKeyCombo(comboString)
     } else {
@@ -292,10 +310,10 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     const view = new DataView(buffer)
     view.setUint16(0, 0x000A, false) // MNG_CTRLALTDEL command (big-endian)
     view.setUint16(2, 0x0000, false) // Size = 0 (no data payload)
-    
+
     const buf = new Uint8Array(buffer)
     tunnelRef.current.sendBinary(buf)
-    
+
     toast({
       title: "Ctrl+Alt+Del",
       description: "Shortcut sent",
@@ -360,7 +378,90 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     }
   ] : []
 
-  if (!meshcentralAgentId) return null
+  // Loading skeleton that matches the actual remote desktop layout
+  if (!legacyDeviceData && isDeviceLoading) {
+    return (
+      <AppLayout>
+        <div className="h-full flex flex-col overflow-hidden animate-pulse">
+          {/* Back Button Skeleton */}
+          <div className="bg-ods-system-greys-background py-2 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-ods-border rounded" />
+              <div className="w-28 h-5 bg-ods-border rounded" />
+            </div>
+          </div>
+
+          {/* Header Bar Skeleton */}
+          <div className="bg-ods-card border rounded-md border-ods-border flex items-center justify-between py-2 px-4 mb-2 flex-shrink-0">
+            {/* Device info skeleton */}
+            <div className="flex items-center gap-4">
+              {/* Device Icon Skeleton */}
+              <div className="bg-ods-card border border-ods-border rounded-md p-2">
+                <div className="w-4 h-4 bg-ods-border rounded" />
+              </div>
+
+              {/* Device Info Skeleton */}
+              <div className="flex flex-col gap-1">
+                <div className="w-48 h-5 bg-ods-border rounded" />
+                <div className="w-36 h-4 bg-ods-border rounded" />
+              </div>
+            </div>
+
+            {/* Action buttons skeleton */}
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-10 bg-ods-border rounded-md" />
+              <div className="w-24 h-10 bg-ods-border rounded-md" />
+            </div>
+          </div>
+
+          {/* Remote Desktop Canvas Skeleton */}
+          <div className="flex-1 min-h-0 pb-4">
+            <div className="h-full bg-ods-card rounded-lg border border-ods-border overflow-hidden flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <Monitor className="w-16 h-16 text-ods-border" />
+                <div className="w-48 h-4 bg-ods-border rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // Error state - device not found
+  if (!legacyDeviceData && deviceError) {
+    return (
+      <AppLayout>
+        <div className="h-full flex flex-col items-center justify-center gap-4">
+          <div className="text-ods-attention-red-error text-lg">
+            Error: {deviceError}
+          </div>
+          <Button onClick={() => router.push('/devices')}>
+            Back to Devices
+          </Button>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // Error state - MeshCentral agent not available
+  if (!meshcentralAgentId) {
+    return (
+      <AppLayout>
+        <div className="h-full flex flex-col items-center justify-center gap-4">
+          <div className="text-ods-attention-red-error text-lg">
+            Error: MeshCentral Agent ID not available for this device
+          </div>
+          <p className="text-ods-text-secondary">
+            Remote desktop requires MeshCentral agent to be connected.
+          </p>
+          <Button onClick={() => router.push(`/devices/details/${deviceId}`)}>
+            Back to Device
+          </Button>
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>
@@ -385,11 +486,11 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             <div className="bg-ods-card border border-ods-border rounded-md p-2">
               <Monitor className="w-4 h-4 text-ods-text-primary" />
             </div>
-            
+
             {/* Device Info */}
             <div className="flex flex-col">
               <h1 className="text-ods-text-primary text-lg font-medium">
-                {hostname || `Device ${originalDeviceId}`}
+                {hostname || `Device ${deviceId}`}
               </h1>
               <p className="text-ods-text-secondary text-sm">
                 Desktop • {organizationName || 'Unknown Organization'}
@@ -409,8 +510,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                   Actions
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="end" 
+              <DropdownMenuContent
+                align="end"
                 className="p-0 border-none"
                 onInteractOutside={(e) => {
                   const target = e.target as HTMLElement
@@ -419,7 +520,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                   }
                 }}
               >
-                <ActionsMenu 
+                <ActionsMenu
                   groups={actionsMenuGroups}
                 />
               </DropdownMenuContent>
@@ -436,8 +537,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                     Display {currentDisplay === 0 ? 'All' : currentDisplay}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="end" 
+                <DropdownMenuContent
+                  align="end"
                   className="p-0 border-none"
                   onInteractOutside={(e) => {
                     const target = e.target as HTMLElement
@@ -446,7 +547,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                     }
                   }}
                 >
-                  <ActionsMenu 
+                  <ActionsMenu
                     groups={displayMenuGroups}
                   />
                 </DropdownMenuContent>
