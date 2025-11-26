@@ -30,7 +30,7 @@ export function DisableApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }: D
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={onConfirm} className="bg-error text-white hover:opacity-90">
+        <Button onClick={onConfirm} variant="outline" className="border-error text-error hover:bg-error/10">
           Disable API Key
         </Button>
       </ModalFooter>
