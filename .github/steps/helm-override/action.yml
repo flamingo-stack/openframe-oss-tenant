@@ -38,11 +38,10 @@ inputs:
     required: false
     default: 'CI@flamingo.cx'
 
-env:
-  HELM_VALUES_FILE: "cli/helm-values.yaml"
-
 runs:
   using: 'composite'
+  env:
+    HELM_VALUES_FILE: "cli/helm-values.yaml"
   steps:
     - name: Override Helm values
       shell: bash
