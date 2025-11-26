@@ -14,10 +14,7 @@ import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
 import { featureFlags } from '@lib/feature-flags'
-
-// Default visible statuses (excludes ARCHIVED and DELETED)
-// Valid DeviceStatus values: PENDING, ACTIVE, INACTIVE, MAINTENANCE, DECOMMISSIONED, ONLINE, OFFLINE, DELETED, ARCHIVED
-const DEFAULT_VISIBLE_STATUSES = ['ONLINE', 'OFFLINE', 'ACTIVE', 'INACTIVE', 'MAINTENANCE', 'DECOMMISSIONED', 'PENDING']
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
 
 export function DevicesView() {
   const router = useRouter()
