@@ -69,8 +69,11 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
     }
 
     // Reset pagination when search term changes
+    // Normalize empty string and undefined to be equivalent for comparison
     const currentSearch = archived ? state.archivedSearchTerm : state.currentSearchTerm
-    const isNewSearch = searchParam !== undefined && searchParam !== currentSearch
+    const normalizedSearchParam = searchParam || ''
+    const normalizedCurrentSearch = currentSearch || ''
+    const isNewSearch = searchParam !== undefined && normalizedSearchParam !== normalizedCurrentSearch
     
     if (!force && !cursor && searchParam === undefined && (archived ? state.hasLoadedArchived : state.hasLoadedCurrent)) {
       return
@@ -146,22 +149,26 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
       }
       
       // Track if we've navigated beyond the first page
-      const hasLoadedBeyondFirst = !!cursor && !isNewSearch
-      
-      set(archived ? 
-        { 
+      // If this is a new search, reset hasLoadedBeyondFirst to false
+      // Otherwise, set to true if we have a cursor, or preserve previous value
+      const hasLoadedBeyondFirst = isNewSearch
+        ? false
+        : (!!cursor || (archived ? state.archivedHasLoadedBeyondFirst : state.currentHasLoadedBeyondFirst))
+
+      set(archived ?
+        {
           archivedDialogs: nodes,
           archivedPageInfo: pageInfo,
-          archivedHasLoadedBeyondFirst: hasLoadedBeyondFirst || state.archivedHasLoadedBeyondFirst,
+          archivedHasLoadedBeyondFirst: hasLoadedBeyondFirst,
           hasLoadedArchived: true,
-          isLoadingArchived: false 
-        } : 
-        { 
+          isLoadingArchived: false
+        } :
+        {
           currentDialogs: nodes,
           currentPageInfo: pageInfo,
-          currentHasLoadedBeyondFirst: hasLoadedBeyondFirst || state.currentHasLoadedBeyondFirst,
+          currentHasLoadedBeyondFirst: hasLoadedBeyondFirst,
           hasLoadedCurrent: true,
-          isLoadingCurrent: false 
+          isLoadingCurrent: false
         }
       )
     } catch (error) {

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useMemo } from "react"
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { useRouter } from "next/navigation"
 import {
@@ -11,7 +11,7 @@ import {
   type TableColumn
 } from "@flamingo/ui-kit/components/ui"
 import { CirclePlusIcon } from "lucide-react"
-import { useDebounce, useTablePagination } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useTablePagination, useApiParams } from "@flamingo/ui-kit/hooks"
 import { useScripts } from "../hooks/use-scripts"
 import { ToolBadge, ShellTypeBadge } from "@flamingo/ui-kit/components/platform"
 import { OSTypeBadgeGroup } from "@flamingo/ui-kit/components/features"
@@ -31,16 +31,40 @@ interface UIScriptEntry {
  */
 export function ScriptsTable() {
   const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState<{ shellType?: string[], addedBy?: string[], category?: string[] }>({})
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
+
+  // URL state management - search, filters, and pagination persist in URL
+  const { params, setParam, setParams } = useApiParams({
+    search: { type: 'string', default: '' },
+    shellType: { type: 'array', default: [] },
+    addedBy: { type: 'array', default: [] },
+    page: { type: 'number', default: 1 }
+  })
+  const pageSize = 20
+
   const [isInitialized, setIsInitialized] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(20)
   const prevFilterKeyRef = React.useRef<string | null>(null)
 
+  // Track last search to detect actual changes (not mount)
+  const lastSearchRef = React.useRef(params.search)
+
+  // Local state for debounced input
+  const [searchInput, setSearchInput] = useState(params.search)
+  const debouncedSearchInput = useDebounce(searchInput, 300)
+
+  // Sync debounced search to URL (only when value actually changed)
+  useEffect(() => {
+    if (debouncedSearchInput !== params.search) {
+      setParam('search', debouncedSearchInput)
+    }
+  }, [debouncedSearchInput, params.search, setParam])
+
+  // Backend filters from URL params (for useScripts hook)
+  const filters = useMemo(() => ({
+    shellType: params.shellType,
+    addedBy: params.addedBy
+  }), [params.shellType, params.addedBy])
+
   const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   const transformedScripts: UIScriptEntry[] = useMemo(() => {
     return scripts.map((script) => ({
@@ -74,34 +98,34 @@ export function ScriptsTable() {
   const filteredScripts = useMemo(() => {
     let filtered = transformedScripts
 
-    if (debouncedSearchTerm && debouncedSearchTerm.trim() !== '') {
-      const searchLower = debouncedSearchTerm.toLowerCase().trim()
+    if (params.search && params.search.trim() !== '') {
+      const searchLower = params.search.toLowerCase().trim()
       filtered = filtered.filter(script =>
         script.name.toLowerCase().includes(searchLower) ||
         script.description.toLowerCase().includes(searchLower)
       )
     }
 
-    if (tableFilters.shellType && tableFilters.shellType.length > 0) {
+    if (params.shellType && params.shellType.length > 0) {
       filtered = filtered.filter(script =>
-        tableFilters.shellType.includes(script.shellType)
+        params.shellType.includes(script.shellType)
       )
     }
 
-    if (tableFilters.addedBy && tableFilters.addedBy.length > 0) {
+    if (params.addedBy && params.addedBy.length > 0) {
       filtered = filtered.filter(script =>
-        tableFilters.addedBy.includes(script.addedBy)
+        params.addedBy.includes(script.addedBy)
       )
     }
 
     return filtered
-  }, [transformedScripts, debouncedSearchTerm, tableFilters])
+  }, [transformedScripts, params.search, params.shellType, params.addedBy])
 
   const paginatedScripts = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize
+    const startIndex = (params.page - 1) * pageSize
     const endIndex = startIndex + pageSize
     return filteredScripts.slice(startIndex, endIndex)
-  }, [filteredScripts, currentPage, pageSize])
+  }, [filteredScripts, params.page, pageSize])
 
   const totalPages = useMemo(() => {
     return Math.ceil(filteredScripts.length / pageSize)
@@ -170,26 +194,26 @@ export function ScriptsTable() {
   }, [isInitialized, searchScripts])
 
   useEffect(() => {
-    if (isInitialized && debouncedSearchTerm !== undefined) {
-      setCurrentPage(1)
+    if (isInitialized && params.search !== lastSearchRef.current) {
+      lastSearchRef.current = params.search
+      setParam('page', 1)
     }
-  }, [debouncedSearchTerm, isInitialized])
+  }, [params.search, isInitialized, setParam])
 
   useEffect(() => {
     if (isInitialized) {
       const filterKey = JSON.stringify({
-        shellType: filters.shellType?.sort() || [],
-        addedBy: filters.addedBy?.sort() || [],
-        category: filters.category?.sort() || [],
+        shellType: params.shellType?.sort() || [],
+        addedBy: params.addedBy?.sort() || [],
       })
 
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
         refreshScripts()
-        setCurrentPage(1)
+        setParam('page', 1)
       }
       prevFilterKeyRef.current = filterKey
     }
-  }, [filters, refreshScripts, isInitialized])
+  }, [params.shellType, params.addedBy, refreshScripts, isInitialized])
 
   const handleRowClick = (script: UIScriptEntry) => {
     router.push(`/scripts/details/${script.id}`)
@@ -200,23 +224,31 @@ export function ScriptsTable() {
   }
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    setTableFilters(columnFilters)
-    setCurrentPage(1)
-  }, [])
+    setParams({
+      page: 1,
+      shellType: columnFilters.shellType || [],
+      addedBy: columnFilters.addedBy || []
+    })
+  }, [setParams])
 
   const cursorPagination = useTablePagination(
     totalPages > 1 ? {
       type: 'client',
-      currentPage,
+      currentPage: params.page,
       totalPages,
       itemCount: paginatedScripts.length,
       itemName: 'scripts',
-      onNext: () => setCurrentPage(prev => Math.min(prev + 1, totalPages)),
-      onPrevious: () => setCurrentPage(prev => Math.max(prev - 1, 1)),
+      onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
+      onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
       showInfo: true
     } : null
   )
 
+  // Convert URL params to table filters format
+  const tableFilters = useMemo(() => ({
+    shellType: params.shellType,
+    addedBy: params.addedBy
+  }), [params.shellType, params.addedBy])
 
   const headerActions = (
     <>
@@ -236,8 +268,8 @@ export function ScriptsTable() {
       title="Scripts"
       headerActions={headerActions}
       searchPlaceholder="Search for Scripts"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       background="default"
       padding="none"
@@ -250,8 +282,8 @@ export function ScriptsTable() {
         rowKey="id"
         loading={isLoading}
         emptyMessage={
-          debouncedSearchTerm
-            ? `No scripts found matching "${debouncedSearchTerm}". Try adjusting your search.`
+          params.search
+            ? `No scripts found matching "${params.search}". Try adjusting your search.`
             : "No scripts found. Try adjusting your filters or add a new script."
         }
         filters={tableFilters}
