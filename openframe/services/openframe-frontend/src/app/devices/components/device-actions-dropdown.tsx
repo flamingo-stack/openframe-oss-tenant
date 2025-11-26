@@ -1,0 +1,331 @@
+'use client'
+
+import React, { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  ActionsMenu,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from '@flamingo/ui-kit'
+import {
+  ShellIcon,
+  RemoteControlIcon,
+  ScriptIcon,
+  ArchiveIcon,
+  CmdIcon,
+  PowerShellIcon
+} from '@flamingo/ui-kit/components/icons'
+import { normalizeOSType } from '@flamingo/ui-kit'
+import { MoreVertical, Trash2 } from 'lucide-react'
+import { useDeviceActions } from '../hooks/use-device-actions'
+import { getDeviceActionAvailability } from '../utils/device-action-utils'
+import type { Device } from '../types/device.types'
+import type { ActionsMenuGroup } from '@flamingo/ui-kit'
+
+interface DeviceActionsDropdownProps {
+  device: Device
+  context: 'table' | 'detail'
+  onActionComplete?: () => void
+  // Handlers for actions (used to integrate with parent component modals)
+  onRemoteControl?: () => void
+  onRunScript?: () => void
+  onRemoteShell?: (type: 'cmd' | 'powershell' | 'bash') => void
+}
+
+export function DeviceActionsDropdown({
+  device,
+  context,
+  onActionComplete,
+  onRemoteControl,
+  onRunScript,
+  onRemoteShell
+}: DeviceActionsDropdownProps) {
+  const router = useRouter()
+  const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions()
+
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  const deviceName = device.displayName || device.hostname || 'this device'
+  const deviceId = device.machineId || device.id
+
+  // Get unified action availability
+  const actionAvailability = useMemo(() =>
+    getDeviceActionAvailability(device),
+    [device]
+  )
+
+  // Check if Windows for shell type selection
+  const isWindows = useMemo(() => {
+    const osType = device.platform || device.osType || device.operating_system
+    return normalizeOSType(osType) === 'WINDOWS'
+  }, [device.platform, device.osType, device.operating_system])
+
+  // Action handlers - always use machineId for URL routing
+  const handleRemoteControl = () => {
+    setDropdownOpen(false)
+    if (onRemoteControl) {
+      onRemoteControl()
+    } else if (actionAvailability.meshcentralAgentId) {
+      // Simple URL with just the OpenFrame machineId - remote desktop page fetches the rest
+      router.push(`/devices/details/${deviceId}/remote-desktop`)
+    }
+  }
+
+  const handleRunScript = () => {
+    setDropdownOpen(false)
+    if (onRunScript) {
+      onRunScript()
+    } else {
+      // Navigate to device details with action param to auto-open scripts modal
+      router.push(`/devices/details/${deviceId}?action=runScript`)
+    }
+  }
+
+  const handleRemoteShell = (type: 'cmd' | 'powershell' | 'bash') => {
+    setDropdownOpen(false)
+    if (onRemoteShell) {
+      onRemoteShell(type)
+    } else {
+      // Navigate to device details with action param to auto-open remote shell
+      router.push(`/devices/details/${deviceId}?action=remoteShell&shellType=${type}`)
+    }
+  }
+
+  const handleArchive = async () => {
+    const success = await archiveDevice(deviceId, deviceName)
+    setShowArchiveConfirm(false)
+    if (success) {
+      if (context === 'detail') {
+        router.push('/devices')
+      } else {
+        onActionComplete?.()
+      }
+    }
+  }
+
+  const handleDelete = async () => {
+    const success = await deleteDevice(deviceId, deviceName)
+    setShowDeleteConfirm(false)
+    if (success) {
+      if (context === 'detail') {
+        router.push('/devices')
+      } else {
+        onActionComplete?.()
+      }
+    }
+  }
+
+  // Build menu groups - different items for table vs detail context
+  const menuGroups = useMemo((): ActionsMenuGroup[] => {
+    const groups: ActionsMenuGroup[] = []
+    const actionItems = []
+
+    // In table context, include all remote actions
+    // In detail context, Remote Shell and Remote Control are separate buttons, so exclude them
+    if (context === 'table') {
+      // Remote Shell with submenu for Windows
+      if (isWindows) {
+        actionItems.push({
+          id: 'remote-shell',
+          label: 'Remote Shell',
+          icon: <ShellIcon className="w-6 h-6" />,
+          type: 'submenu' as const,
+          disabled: !actionAvailability.remoteShellEnabled,
+          submenu: [
+            {
+              id: 'cmd',
+              label: 'CMD',
+              icon: <CmdIcon className="w-6 h-6" />,
+              onClick: () => handleRemoteShell('cmd')
+            },
+            {
+              id: 'powershell',
+              label: 'PowerShell',
+              icon: <PowerShellIcon className="w-6 h-6" />,
+              onClick: () => handleRemoteShell('powershell')
+            }
+          ]
+        })
+      } else {
+        // Non-Windows: single shell option (bash)
+        actionItems.push({
+          id: 'remote-shell',
+          label: 'Remote Shell',
+          icon: <ShellIcon className="w-6 h-6" />,
+          disabled: !actionAvailability.remoteShellEnabled,
+          onClick: () => handleRemoteShell('bash')
+        })
+      }
+
+      actionItems.push({
+        id: 'remote-control',
+        label: 'Remote Control',
+        icon: <RemoteControlIcon className="w-6 h-6" />,
+        disabled: !actionAvailability.remoteControlEnabled,
+        onClick: handleRemoteControl
+      })
+    }
+
+    // Run Script is always in the dropdown
+    actionItems.push({
+      id: 'run-script',
+      label: 'Run Script',
+      icon: <ScriptIcon className="w-6 h-6" />,
+      disabled: !actionAvailability.runScriptEnabled,
+      onClick: handleRunScript
+    })
+
+    if (actionItems.length > 0) {
+      groups.push({
+        items: actionItems,
+        separator: true
+      })
+    }
+
+    // Destructive actions
+    const destructiveItems = []
+
+    if (actionAvailability.archiveEnabled) {
+      destructiveItems.push({
+        id: 'archive',
+        label: 'Archive Device',
+        icon: <ArchiveIcon className="w-6 h-6" />,
+        onClick: () => {
+          setDropdownOpen(false)
+          setShowArchiveConfirm(true)
+        }
+      })
+    }
+
+    if (actionAvailability.deleteEnabled) {
+      destructiveItems.push({
+        id: 'delete',
+        label: 'Delete Device',
+        icon: <Trash2 className="w-6 h-6 text-ods-attention-red-error" />,
+        onClick: () => {
+          setDropdownOpen(false)
+          setShowDeleteConfirm(true)
+        }
+      })
+    }
+
+    if (destructiveItems.length > 0) {
+      groups.push({
+        items: destructiveItems
+      })
+    }
+
+    return groups
+  }, [context, isWindows, actionAvailability])
+
+  // Render trigger based on context - both use 3 dots icon
+  const renderTrigger = () => {
+    if (context === 'table') {
+      return (
+        <Button
+          variant="outline"
+          centerIcon={<MoreVertical />}
+        >
+        </Button>
+      )
+    }
+
+    // Detail context: same 3 dots button style
+    return (
+      <Button
+        variant="device-action"
+        centerIcon={<MoreVertical />}
+      >
+      </Button>
+    )
+  }
+
+  // Don't render if no actions available
+  if (menuGroups.length === 0 || menuGroups.every(g => g.items.length === 0)) {
+    return null
+  }
+
+  return (
+    <>
+      <DropdownMenu modal={false} open={dropdownOpen} onOpenChange={setDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          {renderTrigger()}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="p-0 border-none">
+          <ActionsMenu
+            groups={menuGroups}
+            onItemClick={() => setDropdownOpen(false)}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
+        <AlertDialogContent className="bg-ods-card border border-ods-border p-8 max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.5px] text-ods-text-primary">
+              Archive Device
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-['DM_Sans'] text-[16px] leading-[24px] text-ods-text-secondary mt-2">
+              Are you sure you want to archive{' '}
+              <span className="text-ods-accent font-medium">{deviceName}</span>?
+              This device will be hidden from the default view but can be restored later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 gap-4 flex-col sm:flex-row">
+            <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleArchive}
+              disabled={isArchiving}
+              className="flex-1 bg-ods-accent text-black hover:bg-ods-accent/90 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
+            >
+              {isArchiving ? 'Archiving...' : 'Archive Device'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="bg-ods-card border border-ods-border p-8 max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.5px] text-ods-text-primary">
+              Delete Device
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-['DM_Sans'] text-[16px] leading-[24px] text-ods-text-secondary mt-2">
+              Are you sure you want to delete{' '}
+              <span className="text-ods-attention-red-error font-medium">{deviceName}</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 gap-4 flex-col sm:flex-row">
+            <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="flex-1 bg-ods-attention-red-error text-white hover:bg-ods-attention-red-error/90 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Device'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}

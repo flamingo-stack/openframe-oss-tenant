@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiClient } from '@lib/api-client'
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
+import { DEFAULT_VISIBLE_STATUSES } from '../../devices/constants/device-statuses'
 import type { GraphQLResponse } from '../../devices/types/device.types'
 import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries'
 import { GET_DIALOG_STATISTICS_QUERY } from '../../mingo/queries/dialogs-queries'
@@ -27,7 +28,7 @@ export function useDevicesOverview() {
 
         const devRes: { ok: boolean, status: number, error?: string, data?: GraphQLResponse<DeviceFiltersResponse> } = await apiClient.post<GraphQLResponse<DeviceFiltersResponse>>('/api/graphql', {
           query: GET_DEVICE_FILTERS_QUERY,
-          variables: { filter: {} }
+          variables: { filter: { statuses: [...DEFAULT_VISIBLE_STATUSES] } }
         })
 
         if (!devRes.ok) {
