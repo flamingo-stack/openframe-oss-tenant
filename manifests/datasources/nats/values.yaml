@@ -8,7 +8,7 @@ servicemonitor:
 
 image:
   repository: ghcr.io/flamingo-stack/registry/library/nats
-  tag: "2.10-alpine"
+  tag: "2.10.10-alpine"
 
 credentials:
   admin_user: "admin"            
