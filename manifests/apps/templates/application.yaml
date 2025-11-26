@@ -20,7 +20,7 @@ spec:
       path: "{{ $.Values.deployment.oss.repository.baseDir }}/{{ $app.namespace }}/{{ $name }}"
       helm:
         valueFiles:
-          - "values-{{ .Values.environment }}.yaml"
+          - "values-{{ $.Values.environment }}.yaml"
         values: |
           environment: {{ $.Values.environment }}
           global:
