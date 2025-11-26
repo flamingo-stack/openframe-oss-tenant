@@ -1,3 +1,6 @@
+global:
+  imageRegistry: ghcr.io/flamingo-stack/registry
+
 registerJob:
   enabled: true
   image:
