@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: prometheus-mongodb-exporter
-    version: ">=3.12.0"
-    repository: https://prometheus-community.github.io/helm-charts
+    version: "~3.15.0"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

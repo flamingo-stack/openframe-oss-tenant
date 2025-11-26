@@ -7,7 +7,7 @@ registerJob:
 
 prometheus-mongodb-exporter:
   image:
-    repository: docker.io/percona/mongodb_exporter
+    repository: ghcr.io/flamingo-stack/registry/percona/mongodb_exporter
     tag: "0.47.1"
     pullPolicy: IfNotPresent
 
