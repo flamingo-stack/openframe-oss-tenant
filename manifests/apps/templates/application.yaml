@@ -21,6 +21,7 @@ spec:
       helm:
         valueFiles:
           - "values-{{ $.Values.environment }}.yaml"
+        ignoreMissingValueFiles: true
         values: |
           environment: {{ $.Values.environment }}
           global:
