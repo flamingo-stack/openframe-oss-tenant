@@ -15,9 +15,10 @@ import { EditProfileIcon, RefreshIcon } from '@flamingo/ui-kit/components/icons'
 import { SsoConfigModal } from '../edit-sso-config-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
 import { getProviderIcon } from '../../utils/get-provider-icon'
+import { featureFlags } from '@/src/lib/feature-flags'
 
 // Feature flag: enabled by default, can disable with env var
-const isDomainAllowlistEnabled = process.env.NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST !== 'false'
+const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
 
 type UIProviderRow = {
   id: string

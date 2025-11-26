@@ -8,9 +8,10 @@ import { useToast } from '@flamingo/ui-kit/hooks'
 import { validateEmailDomain } from '@flamingo/ui-kit/utils'
 import { runtimeEnv } from '@lib/runtime-config'
 import { getProviderIcon } from '../utils/get-provider-icon'
+import { featureFlags } from '@/src/lib/feature-flags'
 
 // Feature flag: enabled by default, can disable with env var
-const isDomainAllowlistEnabled = process.env.NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST !== 'false'
+const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
 
 interface SsoConfigModalProps {
   isOpen: boolean
