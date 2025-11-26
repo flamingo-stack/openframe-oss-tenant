@@ -1,11 +1,19 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 servicemonitor:
   enabled: true
 
 
 loki:
   loki:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: loki
+      tag: "3.5.7"
+
     auth_enabled: false
     server:
       http_listen_port: 3100
@@ -55,6 +63,24 @@ loki:
     
     extraMemberlistConfig:  # for SingleBinary mode
       join_members: []
+
+  sidecar:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: kiwigrid/k8s-sidecar
+      tag: "1.30.10"
+
+  memcached:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: library/memcached
+      tag: "1.6.39-alpine"
+
+  memcachedExporter:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: prom/memcached-exporter
+      tag: "v0.15.3"
 
   # gateway:
   #   service:
