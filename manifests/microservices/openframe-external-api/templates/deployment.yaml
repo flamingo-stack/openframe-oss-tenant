@@ -22,7 +22,7 @@ spec:
 
       initContainers:
         - name: wait-for-config-server
-          image: curlimages/curl:latest
+          image: {{ default .Values.curl.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.curl.image.tag }}
           command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
           
       containers:
