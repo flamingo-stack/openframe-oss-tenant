@@ -319,7 +319,7 @@ export function DeviceActionsDropdown({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="flex-1 bg-ods-attention-red-error text-white hover:bg-ods-attention-red-error/90 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
+              className="flex-1 border border-error text-error bg-transparent hover:bg-error/10 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
             >
               {isDeleting ? 'Deleting...' : 'Delete Device'}
             </AlertDialogAction>

@@ -3,6 +3,7 @@ import { StatusTag, type TableColumn } from "@flamingo/ui-kit/components/ui"
 import { OSTypeBadge, OrganizationIcon } from "@flamingo/ui-kit/components/features"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
 import { DeviceActionsDropdown } from './device-actions-dropdown'
@@ -78,11 +79,38 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
       label: 'STATUS',
       width: 'w-1/6',
       filterable: true,
-      filterOptions: deviceFilters?.statuses?.map((status: any) => ({
-        id: status.value,
-        label: getDeviceStatusConfig(status.value).label,
-        value: status.value
-      })) || [],
+      filterOptions: (() => {
+        const statuses = deviceFilters?.statuses || []
+        // Show only DEFAULT_VISIBLE_STATUSES (excludes ARCHIVED and DELETED)
+        const normalStatuses = statuses.filter((s: any) =>
+          (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value)
+        )
+        // ARCHIVED shown separately below a divider, DELETED is completely hidden
+        const archivedStatus = statuses.find((s: any) => s.value === 'ARCHIVED')
+
+        const options: any[] = normalStatuses.map((status: any) => ({
+          id: status.value,
+          label: getDeviceStatusConfig(status.value).label,
+          value: status.value
+        }))
+
+        // Add separator and archived if exists in data
+        if (archivedStatus) {
+          options.push({
+            id: 'separator-archived',
+            label: '',
+            value: '',
+            type: 'separator'
+          })
+          options.push({
+            id: archivedStatus.value,
+            label: getDeviceStatusConfig(archivedStatus.value).label,
+            value: archivedStatus.value
+          })
+        }
+
+        return options
+      })(),
       renderCell: (device) => {
         const statusConfig = getDeviceStatusConfig(device.status)
         return (

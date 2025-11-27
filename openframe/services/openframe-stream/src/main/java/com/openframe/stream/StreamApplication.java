@@ -9,7 +9,6 @@ import org.springframework.kafka.annotation.EnableKafka;
 @EnableKafka
 @ComponentScan(basePackages = {
         "com.openframe.stream",
-        "com.openframe.data.config",
         "com.openframe.data",
         "com.openframe.kafka.producer"
 })
