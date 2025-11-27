@@ -2,4 +2,4 @@ spring:
   application:
     name: openframe-client
   config:
-    import: "optional:configserver:${SPRING_CONFIG_URL:http://openframe-config.microservices.svc.cluster.local:8888}"
+    import: "optional:configserver:${SPRING_CONFIG_URL:http://localhost:8888}"

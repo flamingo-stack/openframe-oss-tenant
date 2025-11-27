@@ -1,2 +1,15 @@
+spring:
+  oss-tenant:
+    kafka:
+      bootstrap-servers: kafka.datasources.svc.cluster.local:9092
+      enabled: true
+
+openframe:
+  oss-tenant:
+    kafka:
+      topics:
+        outbound:
+          devices-topic: devices-topic
+
 # empty profile override
 

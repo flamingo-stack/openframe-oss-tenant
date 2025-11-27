@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { apiClient } from '@lib/api-client'
 import { GET_ORGANIZATIONS_QUERY } from '../../organizations/queries/organizations-queries'
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
+import { DEFAULT_VISIBLE_STATUSES } from '../../devices/constants/device-statuses'
 
 type GraphQLResponse<T> = {
   data?: T
@@ -77,7 +78,7 @@ export function useOrganizationsOverview(limit: number = 10) {
 
           const filtersRes = await apiClient.post<GraphQLResponse<DeviceFiltersResponse>>('/api/graphql', {
             query: GET_DEVICE_FILTERS_QUERY,
-            variables: { filter: { organizationIds: [orgId] } },
+            variables: { filter: { organizationIds: [orgId], statuses: [...DEFAULT_VISIBLE_STATUSES] } },
           })
 
           const total = filtersRes.ok ? (filtersRes.data?.data?.deviceFilters?.filteredCount || 0) : 0

@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: ngrok-operator
-    version: ">=0.20.0"
+    version: "~0.20.0"
     repository: https://charts.ngrok.com

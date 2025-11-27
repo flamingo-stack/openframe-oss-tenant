@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: promtail
-    version: ">=6.17.0"
-    repository: https://grafana.github.io/helm-charts
+    version: "~6.17.0"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

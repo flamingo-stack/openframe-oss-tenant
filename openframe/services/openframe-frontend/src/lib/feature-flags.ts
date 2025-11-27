@@ -19,6 +19,11 @@ export const featureFlags = {
     displayEnabled(): boolean {
       return this.enabled()
     }
+  },
+  ssoAutoAllow: {
+    enabled(): boolean {
+      return runtimeEnv.featureSSOAllowDomain()
+    }
   }
 } as const
 
