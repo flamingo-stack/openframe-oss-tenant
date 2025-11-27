@@ -10,7 +10,12 @@ kube-prometheus-stack:
     enabled: false
 
   alertmanager:
-    enabled: false
+    enabled: true
+    alertmanagerSpec:
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: prometheus/alertmanager
+        tag: v0.29.0
 
   prometheus:
     prometheusSpec:
@@ -44,6 +49,12 @@ kube-prometheus-stack:
         registry: ghcr.io/flamingo-stack/registry
         repository: prometheus-operator/prometheus-config-reloader
         tag: v0.86.2
+    admissionWebhooks:
+      patch:
+        image:
+          registry: ghcr.io/flamingo-stack/registry
+          repository: ingress-nginx/kube-webhook-certgen
+          tag: v1.6.4
         
     prometheusSpec:
       serviceMonitorSelectorNilUsesHelmValues: false
