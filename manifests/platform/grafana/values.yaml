@@ -10,7 +10,7 @@ grafana:
     enabled: false
   
   image:
-    registry: docker.io
+    registry: ghcr.io/flamingo-stack/registry
     repository: grafana/grafana
     tag: "12.3.0"
   
