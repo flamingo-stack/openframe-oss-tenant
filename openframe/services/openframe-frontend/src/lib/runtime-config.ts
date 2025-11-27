@@ -55,4 +55,7 @@ export const runtimeEnv = {
   featureOrganizationImages(): boolean {
     return (getEnvVar('NEXT_PUBLIC_FEATURE_ORG_IMAGES') || 'true') === 'true'
   },
+  featureSSOAllowDomain(): boolean {
+    return (getEnvVar('NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST') || 'true') === 'true'
+  },
 }

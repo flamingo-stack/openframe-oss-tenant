@@ -7,10 +7,11 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
-    "com.openframe.api",
-    "com.openframe.data",
-    "com.openframe.core",
-    "com.openframe.notification"
+        "com.openframe.api",
+        "com.openframe.data",
+        "com.openframe.core",
+        "com.openframe.notification",
+        "com.openframe.kafka"
 })
 @Slf4j
 public class ApiApplication {

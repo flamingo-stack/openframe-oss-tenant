@@ -325,9 +325,15 @@ export function useDeviceDetails() {
       const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM')
       let fleetData: any | null = null
       if (fleet?.agentToolId) {
-        const fResponse = await fleetApiClient.getHost(Number(fleet.agentToolId))
-        if (fResponse.ok && fResponse.data?.host) {
-          fleetData = fResponse.data.host
+        // Validate that agentToolId is a valid numeric string before calling Fleet API
+        const fleetHostId = Number(fleet.agentToolId)
+        if (Number.isInteger(fleetHostId) && fleetHostId > 0) {
+          const fResponse = await fleetApiClient.getHost(fleetHostId)
+          if (fResponse.ok && fResponse.data?.host) {
+            fleetData = fResponse.data.host
+          }
+        } else {
+          console.warn(`Invalid Fleet host ID format: "${fleet.agentToolId}" - expected numeric ID`)
         }
       }
 
