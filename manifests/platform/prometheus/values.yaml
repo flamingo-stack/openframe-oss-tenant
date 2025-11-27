@@ -18,7 +18,15 @@ kube-prometheus-stack:
         tag: v0.29.0
 
   prometheus:
+    ingress:
+      enabled: false
+
     prometheusSpec:
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: prometheus/prometheus
+        tag: v3.7.3
+        
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
@@ -45,13 +53,6 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 15Gi
-
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: prometheus/prometheus
-        tag: v3.7.3
-    ingress:
-      enabled: false
 
   prometheus-node-exporter:
     image:
