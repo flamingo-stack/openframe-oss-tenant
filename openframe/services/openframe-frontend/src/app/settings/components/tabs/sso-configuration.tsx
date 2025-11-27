@@ -12,10 +12,13 @@ import {
   type RowAction
 } from '@flamingo/ui-kit/components/ui'
 import { EditProfileIcon, RefreshIcon } from '@flamingo/ui-kit/components/icons'
-import { EditSsoConfigModal } from '../edit-sso-config-modal'
-import { SsoConfigDetailsModal } from '../sso-config-details-modal'
+import { SsoConfigModal } from '../edit-sso-config-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
 import { getProviderIcon } from '../../utils/get-provider-icon'
+import { featureFlags } from '@/src/lib/feature-flags'
+
+// Feature flag: enabled by default, can disable with env var
+const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
 
 type UIProviderRow = {
   id: string
@@ -23,6 +26,8 @@ type UIProviderRow = {
   displayName: string
   status: { label: string; variant: 'success' | 'info' }
   hasConfig: boolean
+  allowedDomains: string[]
+  autoProvisionUsers: boolean
   original?: { available: AvailableProvider; config?: ProviderConfig }
 }
 
@@ -31,8 +36,17 @@ export function SsoConfigurationTab() {
   const [providers, setProviders] = useState<UIProviderRow[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [editing, setEditing] = useState<{ open: boolean; providerKey: string; displayName: string; clientId?: string | null; clientSecret?: string | null; msTenantId?: string | null } | null>(null)
-  const [details, setDetails] = useState<{ open: boolean; providerKey: string; displayName: string; status: { label: string; variant: 'success' | 'info' }; clientId?: string | null; clientSecret?: string | null; msTenantId?: string | null } | null>(null)
+  const [modalState, setModalState] = useState<{
+    open: boolean
+    providerKey: string
+    displayName: string
+    isEnabled: boolean
+    clientId?: string | null
+    clientSecret?: string | null
+    msTenantId?: string | null
+    autoProvisionUsers?: boolean
+    allowedDomains?: string[]
+  } | null>(null)
 
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig()
 
@@ -58,6 +72,8 @@ export function SsoConfigurationTab() {
             variant: isEnabled ? 'success' : 'info'
           },
           hasConfig: Boolean(cfg?.clientId || cfg?.clientSecret),
+          allowedDomains: cfg?.allowedDomains || [],
+          autoProvisionUsers: cfg?.autoProvisionUsers || false,
           original: { available: p, config: cfg }
         }
       })
@@ -74,42 +90,59 @@ export function SsoConfigurationTab() {
     loadData()
   }, [loadData])
 
-  const columns: TableColumn<UIProviderRow>[] = useMemo(() => [
-    {
-      key: 'provider',
-      label: 'OAUTH PROVIDER',
-      width: 'w-1/3',
-      renderCell: (row) => (
-        <div className="flex items-center gap-3 w-80 shrink-0">
-          {getProviderIcon(row.provider)}
-          <div className="flex flex-col justify-center">
-            <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
-            <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+  const columns: TableColumn<UIProviderRow>[] = useMemo(() => {
+    const baseColumns: TableColumn<UIProviderRow>[] = [
+      {
+        key: 'provider',
+        label: 'OAUTH PROVIDER',
+        width: 'flex-[2] min-w-0',
+        renderCell: (row) => (
+          <div className="flex items-center gap-3">
+            {getProviderIcon(row.provider)}
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">{row.displayName}</span>
+              <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">{row.provider}</span>
+            </div>
           </div>
-        </div>
-      )
-    },
-    {
-      key: 'status',
-      label: 'STATUS',
-      width: 'w-1/3',
-      renderCell: (row) => (
-        <div className="w-32 shrink-0">
-          <StatusTag label={row.status.label} variant={row.status.variant} />
-        </div>
-      )
-    },
-    {
+        )
+      },
+      {
+        key: 'status',
+        label: 'STATUS',
+        width: 'flex-1 min-w-0',
+        renderCell: (row) => (
+          <div className="w-fit">
+            <StatusTag label={row.status.label} variant={row.status.variant} />
+          </div>
+        )
+      }
+    ]
+
+    // Only add allowed domains column if feature is enabled
+    if (isDomainAllowlistEnabled) {
+      baseColumns.push({
+        key: 'allowedDomains',
+        label: 'ALLOWED DOMAINS',
+        width: 'flex-[1.5] min-w-0',
+        renderCell: (row) => (
+          <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
+            {row.allowedDomains.length > 0 ? row.allowedDomains.join(', ') : 'None'}
+          </span>
+        )
+      })
+    }
+
+    baseColumns.push({
       key: 'hasConfig',
       label: 'CONFIGURATION',
-      width: 'w-1/3',
+      width: 'flex-1 min-w-0',
       renderCell: (row) => (
-        <div className="w-36 shrink-0">
-          <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary">{row.hasConfig ? 'Configured' : 'Not configured'}</span>
-        </div>
+        <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary">{row.hasConfig ? 'Configured' : 'Not configured'}</span>
       )
-    },
-  ], [])
+    })
+
+    return baseColumns
+  }, [])
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -122,31 +155,19 @@ export function SsoConfigurationTab() {
 
   const rowActions: RowAction<UIProviderRow>[] = useMemo(() => [
     {
-      label: ' ',
+      label: 'Edit',
       icon: <EditProfileIcon className="h-6 w-6 text-ods-text-primary" />,
       onClick: (row) => {
-        setEditing({
+        setModalState({
           open: true,
           providerKey: row.provider,
           displayName: row.displayName,
+          isEnabled: row.status.label === 'ACTIVE',
           clientId: row.original?.config?.clientId,
           clientSecret: row.original?.config?.clientSecret,
-          msTenantId: row.original?.config?.msTenantId
-        })
-      },
-      variant: 'outline',
-    },
-    {
-      label: 'Details',
-      onClick: (row) => {
-        setDetails({
-          open: true,
-          providerKey: row.provider,
-          displayName: row.displayName,
-          status: row.status,
-          clientId: row.original?.config?.clientId,
-          clientSecret: row.original?.config?.clientSecret,
-          msTenantId: row.original?.config?.msTenantId
+          msTenantId: row.original?.config?.msTenantId,
+          autoProvisionUsers: row.autoProvisionUsers,
+          allowedDomains: row.allowedDomains
         })
       },
       variant: 'outline',
@@ -181,33 +202,28 @@ export function SsoConfigurationTab() {
         showFilters={false}
         rowClassName="mb-1"
       />
-      <EditSsoConfigModal
-        isOpen={Boolean(editing?.open)}
-        onClose={() => setEditing(null)}
-        providerKey={editing?.providerKey || ''}
-        providerDisplayName={editing?.displayName || ''}
-        initialClientId={editing?.clientId}
-        initialClientSecret={editing?.clientSecret}
-        initialMsTenantId={editing?.msTenantId}
-        onSubmit={async ({ clientId, clientSecret, msTenantId }) => {
-          if (!editing?.providerKey) return
-          await updateProviderConfig(editing.providerKey, { clientId, clientSecret, msTenantId })
+      <SsoConfigModal
+        isOpen={Boolean(modalState?.open)}
+        onClose={() => setModalState(null)}
+        providerKey={modalState?.providerKey || ''}
+        providerDisplayName={modalState?.displayName || ''}
+        isEnabled={modalState?.isEnabled}
+        initialClientId={modalState?.clientId}
+        initialClientSecret={modalState?.clientSecret}
+        initialMsTenantId={modalState?.msTenantId}
+        initialAutoProvisionUsers={modalState?.autoProvisionUsers}
+        initialAllowedDomains={modalState?.allowedDomains}
+        onSubmit={async ({ clientId, clientSecret, msTenantId, autoProvisionUsers, allowedDomains }) => {
+          if (!modalState?.providerKey) return
+          await updateProviderConfig(modalState.providerKey, { clientId, clientSecret, msTenantId, autoProvisionUsers, allowedDomains })
+          // Also enable the provider after saving
+          await toggleProviderEnabled(modalState.providerKey, true)
           await loadData()
         }}
-      />
-      <SsoConfigDetailsModal
-        isOpen={Boolean(details?.open)}
-        onClose={() => setDetails(null)}
-        providerKey={details?.providerKey || ''}
-        providerDisplayName={details?.displayName || ''}
-        status={details?.status || { label: 'INACTIVE', variant: 'info' }}
-        clientId={details?.clientId}
-        clientSecret={details?.clientSecret}
-        msTenantId={details?.msTenantId}
-        onToggle={async (enabled) => {
-          if (!details?.providerKey) return
-          await toggleProviderEnabled(details.providerKey, enabled)
-          setDetails(null)
+        onDisable={async () => {
+          if (!modalState?.providerKey) return
+          await toggleProviderEnabled(modalState.providerKey, false)
+          setModalState(null)
           await loadData()
         }}
       />

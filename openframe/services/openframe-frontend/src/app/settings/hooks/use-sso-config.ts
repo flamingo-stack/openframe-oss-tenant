@@ -15,12 +15,16 @@ export type ProviderConfig = {
   clientSecret: string | null
   msTenantId?: string | null
   enabled: boolean
+  autoProvisionUsers?: boolean
+  allowedDomains?: string[]
 }
 
 export type UpdateSsoPayload = {
   clientId: string
   clientSecret: string
   msTenantId?: string | null
+  autoProvisionUsers?: boolean
+  allowedDomains?: string[]
 }
 
 export function useSsoConfig() {
