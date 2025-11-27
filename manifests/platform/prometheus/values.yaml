@@ -19,6 +19,33 @@ kube-prometheus-stack:
 
   prometheus:
     prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      probeSelectorNilUsesHelmValues: false
+      scrapeConfigSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false
+      externalPrefixNilUsesHelmValues: false
+      scrapeInterval: 30s
+      evaluationInterval: 15s
+      retention: 3d  
+      
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 2Gi
+          cpu: 1
+      
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: 
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 15Gi
+
       image:
         registry: ghcr.io/flamingo-stack/registry
         repository: prometheus/prometheus
@@ -55,30 +82,4 @@ kube-prometheus-stack:
           repository: ingress-nginx/kube-webhook-certgen
           tag: v1.6.4
         
-    prometheusSpec:
-      serviceMonitorSelectorNilUsesHelmValues: false
-      podMonitorSelectorNilUsesHelmValues: false
-      probeSelectorNilUsesHelmValues: false
-      scrapeConfigSelectorNilUsesHelmValues: false
-      ruleSelectorNilUsesHelmValues: false
-      externalPrefixNilUsesHelmValues: false
-      scrapeInterval: 30s
-      evaluationInterval: 15s
-      retention: 3d  
       
-      resources:
-        requests:
-          memory: 1Gi
-          cpu: 500m
-        limits:
-          memory: 2Gi
-          cpu: 1
-      
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            accessModes: 
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 15Gi
