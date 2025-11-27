@@ -26,9 +26,10 @@ export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
         variant: 'success',
         cardStatus: 'active'
       }
+    case 'PENDING':
     case 'ACTIVE':
-      return { 
-        label: 'PENDING', 
+      return {
+        label: 'PENDING',
         variant: 'warning',
         cardStatus: 'warning'
       }
@@ -52,10 +53,22 @@ export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
         cardStatus: 'inactive'
       }
     case 'MAINTENANCE':
-      return { 
-        label: 'MAINTENANCE', 
+      return {
+        label: 'MAINTENANCE',
         variant: 'warning',
         cardStatus: 'warning'
+      }
+    case 'ARCHIVED':
+      return {
+        label: 'ARCHIVED',
+        variant: 'info',
+        cardStatus: 'inactive'
+      }
+    case 'DELETED':
+      return {
+        label: 'DELETED',
+        variant: 'error',
+        cardStatus: 'offline'
       }
     default:
       return { 

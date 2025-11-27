@@ -1,2 +1,4 @@
-# empty profile override
-
+openframe:
+  device:
+    aspect:
+      enabled: false
