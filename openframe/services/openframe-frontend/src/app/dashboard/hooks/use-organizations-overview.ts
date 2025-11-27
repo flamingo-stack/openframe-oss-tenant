@@ -89,7 +89,7 @@ export function useOrganizationsOverview(limit: number = 10) {
     return { active, inactive, activePct, inactivePct }
   }, [])
 
-  // Fetch organization details by ID
+  // Fetch organization details by ID (accepts both internal id and organizationId)
   const fetchOrgDetails = useCallback(async (orgId: string): Promise<OrganizationNode | null> => {
     const res = await apiClient.post<GraphQLResponse<OrganizationByIdQuery>>('/api/graphql', {
       query: GET_ORGANIZATION_BY_ID_QUERY,
