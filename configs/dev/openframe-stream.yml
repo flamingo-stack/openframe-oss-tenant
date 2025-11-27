@@ -1,2 +1,7 @@
-# empty profile override
+openframe:
+  oss-tenant:
+    kafka:
+      topics:
+        outbound:
+          devices-topic: devices-topic
 

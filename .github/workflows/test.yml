@@ -34,7 +34,6 @@ env:
   REGISTRY: "ghcr.io"
   ORGANISATION: ${{ github.repository_owner }}
   REPOSITORY: ${{ github.event.repository.name }}
-  HELM_VALUES_FILE: "cli/helm-values.yaml"
 
 
 # =============================================================================
@@ -168,7 +167,6 @@ jobs:
           matrix: ${{ needs.matrix.outputs.images_matrix }}
           changes: ${{ toJSON(needs.changes.outputs) }}
           commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
-          helm-values-file: ${{ env.HELM_VALUES_FILE }}
           branch-name: ${{ github.head_ref }}
           docker-username: ${{ secrets.DOCKER_USERNAME }}
           docker-password: ${{ secrets.DOCKER_PASSWORD }}
@@ -327,21 +325,3 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
-
-
-  final-checks:
-    name: Final tests
-    needs: [test]
-    runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' && 
-      !github.event.pull_request.draft
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Verify values are clean
-        run: |
-          [ -f "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE not found"; exit 1; }
-          [ ! -s "$HELM_VALUES_FILE" ] || { echo "Error: $HELM_VALUES_FILE is not empty"; cat "$HELM_VALUES_FILE"; exit 1; }
-          echo "$HELM_VALUES_FILE is empty"
