@@ -10,7 +10,7 @@ kube-prometheus-stack:
     enabled: false
 
   alertmanager:
-    enabled: true
+    enabled: false
     alertmanagerSpec:
       image:
         registry: ghcr.io/flamingo-stack/registry
