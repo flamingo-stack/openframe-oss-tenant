@@ -37,7 +37,6 @@ kube-prometheus-stack:
       registry: ghcr.io/flamingo-stack/registry
       repository: kube-state-metrics/kube-state-metrics
       tag: v2.17.0
-      pullPolicy: IfNotPresent
 
   prometheusOperator:
     image:
