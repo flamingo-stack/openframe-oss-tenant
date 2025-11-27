@@ -52,9 +52,27 @@ function OrganizationNameCell({ org, fetchedImageUrls }: {
 }
 
 export function OrganizationsTable() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
+  // URL state management - search, page, and filters persist in URL
+  const { params, setParam, setParams } = useApiParams({
+    search: { type: 'string', default: '' },
+    page: { type: 'number', default: 1 },
+    limit: { type: 'number', default: 20 },
+    tier: { type: 'array', default: [] },
+    industry: { type: 'array', default: [] }
+  })
+
   const router = useRouter()
+
+  // Debounce search input for smoother UX
+  const [searchInput, setSearchInput] = useState(params.search)
+  const debouncedSearchInput = useDebounce(searchInput, 300)
+
+  // Update URL when debounced input changes (only when value actually changed)
+  useEffect(() => {
+    if (debouncedSearchInput !== params.search) {
+      setParam('search', debouncedSearchInput)
+    }
+  }, [debouncedSearchInput, params.search, setParam])
 
   const stableFilters = useMemo(() => ({}), [])
   const {
@@ -106,6 +124,36 @@ export function OrganizationsTable() {
       imageUrl: org.imageUrl,
     }))
   }, [organizations])
+
+  const filteredOrganizations = useMemo(() => {
+    let filtered = transformed
+
+    // Apply tier filter from URL params
+    if (params.tier && params.tier.length > 0) {
+      filtered = filtered.filter(org =>
+        params.tier.includes(org.tier)
+      )
+    }
+
+    // Apply industry filter from URL params
+    if (params.industry && params.industry.length > 0) {
+      filtered = filtered.filter(org =>
+        params.industry.includes(org.industry)
+      )
+    }
+
+    return filtered
+  }, [transformed, params.tier, params.industry])
+
+  const paginatedOrganizations = useMemo(() => {
+    const startIndex = (params.page - 1) * params.limit
+    const endIndex = startIndex + params.limit
+    return filteredOrganizations.slice(startIndex, endIndex)
+  }, [filteredOrganizations, params.page, params.limit])
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredOrganizations.length / params.limit)
+  }, [filteredOrganizations.length, params.limit])
 
   const columns: TableColumn<UIOrganizationEntry>[] = useMemo(() => [
     {
@@ -194,30 +242,37 @@ export function OrganizationsTable() {
     </Button>
   )
 
+  // Convert URL params to table filters format
+  const tableFilters = useMemo(() => ({
+    tier: params.tier,
+    industry: params.industry
+  }), [params.tier, params.industry])
+
   return (
     <ListPageLayout
       title="Organizations"
       headerActions={headerActions}
       searchPlaceholder="Search for Organization"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       background="default"
       padding="none"
       className="pt-6"
     >
       <Table
-        data={transformed}
+        data={paginatedOrganizations}
         columns={columns}
         rowKey="id"
         loading={isLoading}
         emptyMessage="No organizations found. Try adjusting your search or filters."
         filters={tableFilters}
-        onFilterChange={setTableFilters}
+        onFilterChange={handleFilterChange}
         showFilters={false}
         mobileColumns={['name', 'tier', 'mrrDisplay']}
         rowClassName="mb-1"
         onRowClick={(row) => router.push(`/organizations/details/${row.id}`)}
+        cursorPagination={cursorPagination}
         cursorPagination={cursorPagination}
       />
     </ListPageLayout>

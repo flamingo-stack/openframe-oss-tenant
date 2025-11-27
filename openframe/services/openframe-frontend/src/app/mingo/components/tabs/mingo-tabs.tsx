@@ -1,9 +1,15 @@
 'use client'
 
-import { TabItem } from '@flamingo/ui-kit'
-import { MessageCircleIcon, ArchiveIcon } from '@flamingo/ui-kit'
+import React, { useCallback } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { TabNavigation, TabItem, MessageCircleIcon, ArchiveIcon } from '@flamingo/ui-kit'
 import { CurrentChats } from './current-chats'
 import { ArchivedChats } from './archived-chats'
+
+interface MingoTabNavigationProps {
+  activeTab: string
+  onTabChange: (tabId: string) => void
+}
 
 export const MINGO_TABS: TabItem[] = [
   {
@@ -26,4 +32,24 @@ export const getMingoTab = (tabId: string): TabItem | undefined =>
 export const getTabComponent = (tabId: string): React.ComponentType | null => {
   const tab = getMingoTab(tabId)
   return tab?.component || null
+}
+
+export function MingoTabNavigation() {
+  const router = useRouter()
+  const pathname = usePathname()
+
+  // Clear all tab-specific params when switching tabs (clean slate for each tab)
+  const handleTabChange = useCallback((tabId: string) => {
+    // Navigate to clean URL with only the tab param
+    router.replace(`${pathname}?tab=${tabId}`)
+  }, [router, pathname])
+
+  return (
+    <TabNavigation
+      urlSync={true}
+      defaultTab="current"
+      tabs={MINGO_TABS}
+      onTabChange={handleTabChange}
+    />
+  )
 }

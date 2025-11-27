@@ -7,7 +7,12 @@ import org.springframework.context.annotation.ComponentScan;
 import lombok.RequiredArgsConstructor;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.openframe.gateway", "com.openframe.core", "com.openframe.data", "com.openframe.security"})
+@ComponentScan(basePackages = {
+        "com.openframe.gateway",
+        "com.openframe.core",
+        "com.openframe.data",
+        "com.openframe.security"
+})
 @RequiredArgsConstructor
 public class GatewayApplication {
 

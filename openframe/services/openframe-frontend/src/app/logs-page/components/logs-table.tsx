@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useMemo, useImperativeHandle, forwardRef } from "react"
+import React, { useState, useCallback, useMemo, useImperativeHandle, forwardRef, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -15,9 +15,10 @@ import {
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
 import { Input, ToolBadge } from "@flamingo/ui-kit"
-import { useDebounce } from "@flamingo/ui-kit/hooks"
+import { useApiParams, useTablePagination, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { navigateToLogDetails } from '@lib/log-navigation'
+import { transformOrganizationFilters } from '@lib/filter-utils'
 import { useLogs, useLogFilters } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
 
@@ -57,40 +58,72 @@ export interface LogsTableRef {
 
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}, ref) {
   const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState<{ severities?: string[], toolTypes?: string[], organizationIds?: string[], deviceId?: string }>({
-    deviceId: deviceId
+
+  // Extra URL params for filters (not search/cursor which are handled by pagination hook)
+  const { params: filterParams, setParams: setFilterParams } = useApiParams({
+    severities: { type: 'array', default: [] },
+    toolTypes: { type: 'array', default: [] },
+    organizationIds: { type: 'array', default: [] }
   })
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
-  const [isInitialized, setIsInitialized] = useState(false)
+
   const [selectedLog, setSelectedLog] = useState<UILogEntry | null>(null)
-  const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false)
-  const prevFilterKeyRef = React.useRef<string | null>(null)
+  const prevFiltersKeyRef = useRef<string | null>(null)
 
   const { logFilters, fetchLogFilters } = useLogFilters()
 
   const backendFilters = useMemo(() => {
     return {
-      severities: filters.severities,
-      toolTypes: filters.toolTypes,
-      organizationIds: filters.organizationIds,
-      deviceId: filters.deviceId || deviceId
+      severities: filterParams.severities,
+      toolTypes: filterParams.toolTypes,
+      organizationIds: filterParams.organizationIds,
+      deviceId: deviceId
     }
-  }, [filters, deviceId])
+  }, [filterParams.severities, filterParams.toolTypes, filterParams.organizationIds, deviceId])
 
-  const { 
-    logs, 
+  // Stable filter key for detecting changes
+  const filtersKey = useMemo(() => JSON.stringify({
+    severities: filterParams.severities?.sort() || [],
+    toolTypes: filterParams.toolTypes?.sort() || [],
+    organizationIds: filterParams.organizationIds?.sort() || [],
+    deviceId: deviceId || null
+  }), [filterParams.severities, filterParams.toolTypes, filterParams.organizationIds, deviceId])
+
+  const {
+    logs,
     pageInfo,
-    isLoading, 
-    error, 
-    searchLogs, 
-    refreshLogs, 
+    isLoading,
+    error,
+    searchLogs,
+    refreshLogs,
     fetchLogDetails,
     fetchNextPage,
     fetchFirstPage,
-    hasNextPage
+    hasNextPage,
+    fetchLogs
   } = useLogs(backendFilters)
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  // Unified cursor pagination state management (no prefix)
+  const {
+    searchInput,
+    setSearchInput,
+    hasLoadedBeyondFirst,
+    setHasLoadedBeyondFirst,
+    handleNextPage,
+    handleResetToFirstPage,
+    params: paginationParams,
+    setParams: setPaginationParams
+  } = useCursorPaginationState({
+    onInitialLoad: (search, cursor) => {
+      if (cursor) {
+        fetchLogs(search || '', backendFilters, cursor, false)
+        setHasLoadedBeyondFirst(true)
+      } else {
+        searchLogs(search || '')
+      }
+      fetchLogFilters()
+    },
+    onSearchChange: (search) => searchLogs(search)
+  })
 
   // Transform API logs to UI format
   const transformedLogs: UILogEntry[] = useMemo(() => {
@@ -180,11 +213,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         label: 'SOURCE',
         width: 'w-[240px]',
         filterable: true,
-        filterOptions: logFilters?.organizations?.map((org) => ({
-          id: org.id || 'system',
-          label: org.name === 'null' ? 'System' : org.name,
-          value: org.id
-        })),
+        filterOptions: transformOrganizationFilters(logFilters?.organizations),
         renderCell: (log) => (
           <DeviceCardCompact
             deviceName={log.device.name === 'null' ? 'System' : log.device.name}
@@ -221,46 +250,24 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     }
   ], [router])
 
-  useEffect(() => {
-    if (deviceId !== undefined) {
-      setFilters(prev => ({
-        ...prev,
-        deviceId: deviceId
-      }))
-    }
-  }, [deviceId])
-
-  useEffect(() => {
-    if (!isInitialized) {
-      searchLogs('')
-      fetchLogFilters()
-      setIsInitialized(true)
-    }
-  }, [isInitialized, searchLogs, fetchLogFilters])
-
-  useEffect(() => {
-    if (isInitialized && debouncedSearchTerm !== undefined) {
-      searchLogs(debouncedSearchTerm)
-      setHasLoadedBeyondFirst(false)
-    }
-  }, [debouncedSearchTerm, searchLogs, isInitialized])
-  
-  useEffect(() => {
-    if (isInitialized) {
-      const filterKey = JSON.stringify({
-        severities: filters.severities?.sort() || [],
-        toolTypes: filters.toolTypes?.sort() || [],
-        deviceId: deviceId || null
-      })
-
-      if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
-        refreshLogs()
-        fetchLogFilters(filters)
+  // Refetch when filters change
+  const initialFilterLoadDone = useRef(false)
+  React.useEffect(() => {
+    if (initialFilterLoadDone.current) {
+      // Only refetch if filters actually changed (not on mount)
+      if (prevFiltersKeyRef.current !== null && prevFiltersKeyRef.current !== filtersKey) {
+        const refetch = async () => {
+          await searchLogs(paginationParams.search)
+          await fetchLogFilters(backendFilters)
+        }
+        refetch()
         setHasLoadedBeyondFirst(false)
       }
-      prevFilterKeyRef.current = filterKey
+    } else {
+      initialFilterLoadDone.current = true
     }
-  }, [filters, deviceId, refreshLogs, fetchLogFilters, isInitialized])
+    prevFiltersKeyRef.current = filtersKey
+  }, [filtersKey])
 
   const handleRowClick = useCallback((log: UILogEntry) => {
     setSelectedLog(log)
@@ -274,7 +281,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     refreshLogs()
     fetchLogFilters()
     setHasLoadedBeyondFirst(false)
-  }, [refreshLogs, fetchLogFilters])
+  }, [refreshLogs, fetchLogFilters, setHasLoadedBeyondFirst])
 
   // Expose refresh method via ref
   useImperativeHandle(ref, () => ({
@@ -282,57 +289,47 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   }), [handleRefresh])
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    setTableFilters(columnFilters)
-
-    const newFilters: any = {}
-
-    if (columnFilters.status?.length > 0) {
-      newFilters.severities = columnFilters.status
-    }
-
-    if (columnFilters.tool?.length > 0) {
-      newFilters.toolTypes = columnFilters.tool
-    }
-
-    if (columnFilters.source?.length > 0) {
-      newFilters.organizationIds = columnFilters.source
-    }
-    
-    setFilters(prev => {
-      if (JSON.stringify(prev.severities?.sort()) === JSON.stringify(newFilters.severities?.sort()) &&
-          JSON.stringify(prev.toolTypes?.sort()) === JSON.stringify(newFilters.toolTypes?.sort()) &&
-          JSON.stringify(prev.organizationIds?.sort()) === JSON.stringify(newFilters.organizationIds?.sort())) {
-        return prev
-      }
-      return newFilters
+    // Reset cursor and update filter params
+    setPaginationParams({ cursor: '' })
+    setFilterParams({
+      severities: columnFilters.status || [],
+      toolTypes: columnFilters.tool || [],
+      organizationIds: columnFilters.source || []
     })
-  }, [])
-
-  const handleNextPage = useCallback(async () => {
-    if (hasNextPage && pageInfo?.endCursor) {
-      await fetchNextPage()
-      setHasLoadedBeyondFirst(true)
-    }
-  }, [hasNextPage, pageInfo, fetchNextPage])
-
-  const handleResetToFirstPage = useCallback(async () => {
-    await fetchFirstPage()
     setHasLoadedBeyondFirst(false)
-  }, [fetchFirstPage])
+  }, [setFilterParams, setPaginationParams, setHasLoadedBeyondFirst])
 
-  const cursorPagination: CursorPaginationProps | undefined = pageInfo ? {
-    hasNextPage: hasNextPage,
-    isFirstPage: !hasLoadedBeyondFirst,
-    startCursor: pageInfo.startCursor,
-    endCursor: pageInfo.endCursor,
-    currentCount: logs.length,
-    itemName: 'logs',
-    onNext: () => handleNextPage(),
-    onReset: handleResetToFirstPage,
-    showInfo: true,
-    resetButtonLabel: 'First',
-    resetButtonIcon: 'home'
-  } : undefined
+  const onNext = useCallback(async () => {
+    if (hasNextPage && pageInfo?.endCursor) {
+      await handleNextPage(pageInfo.endCursor, fetchNextPage)
+    }
+  }, [hasNextPage, pageInfo, handleNextPage, fetchNextPage])
+
+  const onReset = useCallback(async () => {
+    await handleResetToFirstPage(fetchFirstPage)
+  }, [handleResetToFirstPage, fetchFirstPage])
+
+  const cursorPagination = useTablePagination(
+    pageInfo ? {
+      type: 'server',
+      hasNextPage,
+      hasLoadedBeyondFirst,
+      startCursor: pageInfo.startCursor,
+      endCursor: pageInfo.endCursor,
+      itemCount: logs.length,
+      itemName: 'logs',
+      onNext,
+      onReset,
+      showInfo: true
+    } : null
+  )
+
+  // Convert URL params to table filters format for the Table component
+  const tableFilters = useMemo(() => ({
+    status: filterParams.severities,
+    tool: filterParams.toolTypes,
+    source: filterParams.organizationIds
+  }), [filterParams.severities, filterParams.toolTypes, filterParams.organizationIds])
 
   const headerActions = (
     <Button
@@ -389,8 +386,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
             <Input
               type="text"
               placeholder="Search logs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="h-[48px] min-h-[48px] bg-ods-card border border-ods-border"
               style={{ height: 48 }}
             />
@@ -426,8 +423,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       title="Logs"
       headerActions={headerActions}
       searchPlaceholder="Search for Logs"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       background="default"
       padding="none"

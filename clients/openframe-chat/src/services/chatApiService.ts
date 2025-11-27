@@ -20,9 +20,11 @@ export class ChatApiService {
   private debugMode: boolean
   private tokenUnsubscribe?: () => void
   private apiUrlUnsubscribe?: () => void
+  private onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void
 
-  constructor(debug: boolean = false) {
+  constructor(debug: boolean = false, onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void) {
     this.debugMode = debug
+    this.onMetadataUpdate = onMetadataUpdate
 
     this.tokenUnsubscribe = tokenService.onTokenUpdate(() => {
       if (this.debugMode) {
@@ -33,12 +35,6 @@ export class ChatApiService {
     this.apiUrlUnsubscribe = tokenService.onApiUrlUpdate((apiUrl) => {
       if (this.debugMode) {
         console.log('[ChatApiService] API URL updated:', apiUrl)
-      }
-    })
-
-    tokenService.requestToken().catch(err => {
-      if (this.debugMode) {
-        console.error('[ChatApiService] Initial token request failed:', err)
       }
     })
   }
@@ -184,7 +180,7 @@ export class ChatApiService {
       yield { type: 'text', text: `[DEBUG] Creating dialog with initial message: "${initialMessage.substring(0, 50)}${initialMessage.length > 50 ? '...' : ''}"\n` }
       yield { type: 'text', text: `[DEBUG] Endpoint: ${this.getApiBaseUrl()}/chat/api/v1/dialogs\n` }
       yield { type: 'text', text: `[DEBUG] Token status: ${token ? 'Available' : 'Missing'}\n` }
-      yield { type: 'text', text: `[DEBUG] Authorization: Bearer ${token ? token.substring(0, 10) + '...' : 'null'}\n` }
+      yield { type: 'text', text: `[DEBUG] Authorization: Bearer ${token}\n` }
     }
     
     const response = await fetch(`${this.getApiBaseUrl()}/chat/api/v1/dialogs`, {
@@ -272,6 +268,32 @@ export class ChatApiService {
         continue
       }
 
+      if (event === 'metadata') {
+        try {
+          const parsed = JSON.parse(data)
+          if (this.debugMode) {
+            yield { type: 'text', text: `[DEBUG] Metadata event received: ${JSON.stringify(parsed)}` }
+          }
+          
+          if (this.onMetadataUpdate && parsed.modelName && (parsed.providerName || parsed.provider)) {
+            const providerName = parsed.providerName || parsed.provider
+            if (this.debugMode) {
+              yield { type: 'text', text: `[DEBUG] Calling metadata callback: modelName=${parsed.modelName}, providerName=${providerName}` }
+            }
+            this.onMetadataUpdate({
+              modelName: parsed.modelName,
+              providerName: providerName,
+              contextWindow: parsed.contextWindow || 0
+            })
+          } else if (this.debugMode) {
+            yield { type: 'text', text: `[DEBUG] Metadata callback not called - hasCallback: ${!!this.onMetadataUpdate}, modelName: ${parsed.modelName}, providerName: ${parsed.providerName || parsed.provider}` }
+          }
+        } catch {
+          // ignore malformed event
+        }
+        continue
+      }
+
       if (event === 'message') {
         try {
           const msg = JSON.parse(data) as MessageEventData
@@ -326,6 +348,10 @@ export class ChatApiService {
   
   setDebugMode(enabled: boolean) {
     this.debugMode = enabled
+  }
+
+  setMetadataCallback(callback?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void) {
+    this.onMetadataUpdate = callback
   }
 
   reset() {

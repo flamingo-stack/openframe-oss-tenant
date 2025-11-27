@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { devtools, persist } from 'zustand/middleware'
+import { devtools } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
 /**
@@ -48,47 +48,42 @@ const initialState = {
 
 export const useOrganizationsStore = create<OrganizationsState>()(
   devtools(
-    persist(
-      immer((set) => ({
-        // State
-        ...initialState,
-        
-        // Actions
-        setOrganizations: (organizations) =>
-          set((state) => {
-            state.organizations = organizations
-            state.error = null
-          }),
-        
-        setSearch: (search) =>
-          set((state) => {
-            state.search = search
-          }),
-        
-        setLoading: (loading) =>
-          set((state) => {
-            state.isLoading = loading
-          }),
-        
-        setError: (error) =>
-          set((state) => {
-            state.error = error
-            state.isLoading = false
-          }),
-        
-        clearOrganizations: () =>
-          set((state) => {
-            state.organizations = []
-            state.error = null
-          }),
-        
-        reset: () =>
-          set(() => initialState),
-      })),
-      {
-        name: 'organizations-storage',
-      }
-    ),
+    immer((set) => ({
+      // State
+      ...initialState,
+
+      // Actions
+      setOrganizations: (organizations) =>
+        set((state) => {
+          state.organizations = organizations
+          state.error = null
+        }),
+
+      setSearch: (search) =>
+        set((state) => {
+          state.search = search
+        }),
+
+      setLoading: (loading) =>
+        set((state) => {
+          state.isLoading = loading
+        }),
+
+      setError: (error) =>
+        set((state) => {
+          state.error = error
+          state.isLoading = false
+        }),
+
+      clearOrganizations: () =>
+        set((state) => {
+          state.organizations = []
+          state.error = null
+        }),
+
+      reset: () =>
+        set(() => initialState),
+    })),
     {
       name: 'organizations-store',
     }

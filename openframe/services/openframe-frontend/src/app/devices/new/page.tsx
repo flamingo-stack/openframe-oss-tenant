@@ -82,10 +82,10 @@ export default function NewDevicePage() {
 
     if (platform === 'windows') {
       const argString = `${baseArgs}${extras}`
-      return `Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.'; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
+      return `Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
     }
 
-    return `curl -L -o openframe-client_macos.tar.gz '${MACOS_BINARY_URL}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`
+    return `rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${MACOS_BINARY_URL}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`
   }, [initialKey, args, platform, selectedOrgId, serverUrl])
 
   const copyCommand = useCallback(async () => {

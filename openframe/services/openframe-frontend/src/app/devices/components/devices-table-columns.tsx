@@ -3,18 +3,28 @@ import { StatusTag, type TableColumn } from "@flamingo/ui-kit/components/ui"
 import { OSTypeBadge, OrganizationIcon } from "@flamingo/ui-kit/components/features"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
 import { DeviceDetailsButton } from './device-details-button'
+import { DeviceActionsDropdown } from './device-actions-dropdown'
+import { deduplicateFilterOptions } from '@lib/filter-utils'
 import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area
-export function getDeviceTableRowActions(): ((device: Device) => React.ReactNode) {
+export function getDeviceTableRowActions(onRefresh?: () => void): ((device: Device) => React.ReactNode) {
   const DeviceRowActions = (device: Device) => (
-    <DeviceDetailsButton
-      deviceId={device.id}
-      machineId={device.machineId}
-      className="h-12"
-    />
+    <div className="flex items-center gap-2">
+      <DeviceActionsDropdown
+        device={device}
+        context="table"
+        onActionComplete={onRefresh}
+      />
+      <DeviceDetailsButton
+        deviceId={device.id}
+        machineId={device.machineId}
+        className="h-12"
+      />
+    </div>
   )
   DeviceRowActions.displayName = 'DeviceRowActions'
   return DeviceRowActions
@@ -69,11 +79,38 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
       label: 'STATUS',
       width: 'w-1/6',
       filterable: true,
-      filterOptions: deviceFilters?.statuses?.map((status: any) => ({
-        id: status.value,
-        label: getDeviceStatusConfig(status.value).label,
-        value: status.value
-      })) || [],
+      filterOptions: (() => {
+        const statuses = deviceFilters?.statuses || []
+        // Show only DEFAULT_VISIBLE_STATUSES (excludes ARCHIVED and DELETED)
+        const normalStatuses = statuses.filter((s: any) =>
+          (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value)
+        )
+        // ARCHIVED shown separately below a divider, DELETED is completely hidden
+        const archivedStatus = statuses.find((s: any) => s.value === 'ARCHIVED')
+
+        const options: any[] = normalStatuses.map((status: any) => ({
+          id: status.value,
+          label: getDeviceStatusConfig(status.value).label,
+          value: status.value
+        }))
+
+        // Add separator and archived if exists in data
+        if (archivedStatus) {
+          options.push({
+            id: 'separator-archived',
+            label: '',
+            value: '',
+            type: 'separator'
+          })
+          options.push({
+            id: archivedStatus.value,
+            label: getDeviceStatusConfig(archivedStatus.value).label,
+            value: archivedStatus.value
+          })
+        }
+
+        return options
+      })(),
       renderCell: (device) => {
         const statusConfig = getDeviceStatusConfig(device.status)
         return (
@@ -115,11 +152,13 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
       label: 'ORGANIZATION',
       width: 'w-1/6',
       filterable: true,
-      filterOptions: deviceFilters?.organizationIds?.map((org: any) => ({
-        id: org.value,
-        label: org.label,
-        value: org.value
-      })) || [],
+      filterOptions: deduplicateFilterOptions(
+        deviceFilters?.organizationIds?.map((org: any) => ({
+          id: org.value,
+          label: org.label,
+          value: org.value
+        })) || []
+      ),
       renderCell: (device) => <OrganizationCell device={device} fetchedImageUrls={fetchedImageUrls} />
     }
   ]

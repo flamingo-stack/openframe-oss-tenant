@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useMemo } from "react"
+import React, { useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -8,7 +8,7 @@ import {
   ListPageLayout,
   type CursorPaginationProps
 } from "@flamingo/ui-kit/components/ui"
-import { useDebounce, useToast } from "@flamingo/ui-kit/hooks"
+import { useToast, useTablePagination, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
 import { useDialogsStore } from '../../stores/dialogs-store'
 import { Dialog } from '../../types/dialog.types'
 import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table-columns'
@@ -16,21 +16,30 @@ import { getDialogTableColumns, getDialogTableRowActions } from '../dialog-table
 export function ArchivedChats() {
   const router = useRouter()
   const { toast } = useToast()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
-  
-  const { 
-    archivedDialogs: dialogs, 
+
+  const {
+    archivedDialogs: dialogs,
     archivedPageInfo,
     archivedHasLoadedBeyondFirst,
-    isLoadingArchived: isLoading, 
+    isLoadingArchived: isLoading,
     archivedError: error,
     fetchDialogs,
     goToNextPage,
     goToFirstPage
   } = useDialogsStore()
-  
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  // Unified cursor pagination state management
+  const {
+    searchInput,
+    setSearchInput,
+    hasLoadedBeyondFirst,
+    handleNextPage,
+    handleResetToFirstPage
+  } = useCursorPaginationState({
+    paramPrefix: 'archived',
+    onInitialLoad: (search, cursor) => fetchDialogs(true, search, true, cursor),
+    onSearchChange: (search) => fetchDialogs(true, search)
+  })
 
   const columns = useMemo(() => getDialogTableColumns(), [])
 
@@ -43,48 +52,45 @@ export function ArchivedChats() {
     [handleDialogDetails]
   )
 
-  React.useEffect(() => {
-    fetchDialogs(true, undefined, true) 
+  const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
+    // Mingo doesn't use filters yet, but keep handler for future
   }, [])
 
-  React.useEffect(() => {
-    if (debouncedSearchTerm !== undefined) {
-      fetchDialogs(true, debouncedSearchTerm)
+  const onNext = useCallback(() => {
+    if (archivedPageInfo?.endCursor) {
+      handleNextPage(archivedPageInfo.endCursor, () => goToNextPage(true))
     }
-  }, [debouncedSearchTerm])
-  
-  const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    setTableFilters(columnFilters)
-  }, [])
-  
-  const handleNextPage = useCallback(() => {
-    goToNextPage(true)
-  }, [goToNextPage])
-  
-  const handleResetToFirstPage = useCallback(() => {
-    goToFirstPage(true)
-  }, [goToFirstPage])
-  
-  const cursorPagination: CursorPaginationProps | undefined = archivedPageInfo ? {
-    hasNextPage: archivedPageInfo.hasNextPage,
-    isFirstPage: !archivedHasLoadedBeyondFirst,
-    startCursor: archivedPageInfo.startCursor,
-    endCursor: archivedPageInfo.endCursor,
-    currentCount: dialogs.length,
-    itemName: 'chats',
-    onNext: () => handleNextPage(),
-    onReset: handleResetToFirstPage,
-    showInfo: true,
-    resetButtonLabel: 'First',
-    resetButtonIcon: 'home'
-  } : undefined
+  }, [archivedPageInfo, handleNextPage, goToNextPage])
+
+  const onReset = useCallback(() => {
+    handleResetToFirstPage(() => goToFirstPage(true))
+  }, [handleResetToFirstPage, goToFirstPage])
+
+  // Use store's hasLoadedBeyondFirst OR hook's (both track the same thing, store is source of truth for dialogs)
+  const cursorPagination = useTablePagination(
+    archivedPageInfo ? {
+      type: 'server',
+      hasNextPage: archivedPageInfo.hasNextPage,
+      hasLoadedBeyondFirst: archivedHasLoadedBeyondFirst || hasLoadedBeyondFirst,
+      startCursor: archivedPageInfo.startCursor,
+      endCursor: archivedPageInfo.endCursor,
+      itemCount: dialogs.length,
+      itemName: 'chats',
+      onNext,
+      onReset,
+      showInfo: true
+    } : null
+  )
+
+  // Table filters (empty for now)
+  const tableFilters = useMemo(() => ({}), [])
 
   return (
     <ListPageLayout
       title="Archived Chats"
       searchPlaceholder="Search for Chat"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       padding="none"
       className="pt-6"

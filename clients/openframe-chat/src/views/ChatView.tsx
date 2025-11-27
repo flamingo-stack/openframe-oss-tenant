@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import {
   ChatContainer,
   ChatHeader,
@@ -5,12 +6,29 @@ import {
   ChatFooter,
   ChatMessageList,
   ChatInput,
-  ChatQuickAction
+  ChatQuickAction,
+  ModelDisplay
 } from '@flamingo/ui-kit'
 import { useChat } from '../hooks/useChat'
+import { useConnectionStatus } from '../hooks/useConnectionStatus'
+import { supportedModelsService } from '../services/supportedModelsService'
 import faeAvatar from '../assets/fae-avatar.png'
 
 export function ChatView() {
+  const [currentModel, setCurrentModel] = useState<{
+    modelName: string
+    provider: string
+    contextWindow: number
+  } | null>(null)
+  
+  const handleMetadataUpdate = useCallback((metadata: { modelName: string; providerName: string; contextWindow: number }) => {
+    setCurrentModel({
+      modelName: metadata.modelName,
+      provider: metadata.providerName,
+      contextWindow: metadata.contextWindow
+    })
+  }, [])
+  
   const { 
     messages,
     isTyping,
@@ -20,7 +38,20 @@ export function ChatView() {
     quickActions,
     hasMessages,
     clearMessages
-  } = useChat({ useApi: true, useMock: false })
+  } = useChat({ 
+    useApi: true, 
+    useMock: false,
+    onMetadataUpdate: handleMetadataUpdate
+  })
+  
+  const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus()
+  const isDisconnected = status !== 'connected'
+  
+  const displayModel = currentModel || (aiConfiguration ? {
+    modelName: aiConfiguration.modelName,
+    provider: aiConfiguration.provider,
+    contextWindow: 0
+  } : null)
 
   return (
     <ChatContainer>
@@ -28,6 +59,8 @@ export function ChatView() {
         userAvatar={faeAvatar} 
         showNewChat={hasMessages}
         onNewChat={clearMessages}
+        connectionStatus={status}
+        serverUrl={serverUrl}
       />
       
       <ChatContent>
@@ -60,6 +93,7 @@ export function ChatView() {
                       key={action.id}
                       text={action.text}
                       onAction={handleQuickAction}
+                      disabled={isDisconnected}
                     />
                   ))}
                 </div>
@@ -76,7 +110,17 @@ export function ChatView() {
           placeholder="Enter your request here..."
           className="px-12"
           reserveAvatarOffset={false}
+          disabled={isDisconnected}
         />
+        {displayModel && isFullyLoaded && (
+          <div className="flex justify-start mt-3 px-12">
+            <ModelDisplay 
+              provider={displayModel.provider}
+              modelName={displayModel.modelName}
+              displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+            />
+          </div>
+        )}
       </ChatFooter>
     </ChatContainer>
   )

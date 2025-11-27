@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useMemo } from "react"
+import React, { useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -9,94 +9,124 @@ import {
 } from "@flamingo/ui-kit/components/ui"
 import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
 import { ViewToggle } from "@flamingo/ui-kit/components/features"
-import { useDebounce, useBatchImages, useTablePagination } from "@flamingo/ui-kit/hooks"
+import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
 import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'
 import { featureFlags } from '@lib/feature-flags'
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
 
 export function DevicesView() {
   const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState<{ statuses?: string[], deviceTypes?: string[], osTypes?: string[] }>({})
-  const [tableFilters, setTableFilters] = useState<Record<string, any[]>>({})
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
-  
-  const { devices, deviceFilters, isLoading, error, searchDevices, pageInfo, fetchNextPage, fetchFirstPage, hasLoadedBeyondFirst } = useDevices(filters)
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
-  const organizationImageUrls = useMemo(() => 
+  // Extra URL params not handled by cursor pagination hook (viewMode and filters)
+  const { params: extraParams, setParam: setExtraParam, setParams: setExtraParams } = useApiParams({
+    statuses: { type: 'array', default: [] },
+    osTypes: { type: 'array', default: [] },
+    organizationIds: { type: 'array', default: [] },
+    viewMode: { type: 'string', default: 'table' }
+  })
+
+  // Backend filters from URL params (default excludes ARCHIVED and DELETED)
+  const filters = useMemo(() => ({
+    statuses: extraParams.statuses.length > 0 ? extraParams.statuses : DEFAULT_VISIBLE_STATUSES,
+    osTypes: extraParams.osTypes,
+    organizationIds: extraParams.organizationIds
+  }), [extraParams.statuses, extraParams.osTypes, extraParams.organizationIds])
+
+  const { devices, deviceFilters, isLoading, error, searchDevices, pageInfo, fetchNextPage, fetchFirstPage, hasLoadedBeyondFirst, setHasLoadedBeyondFirst, fetchDevices, fetchDeviceFilters, markInitialLoadDone } = useDevices(filters)
+
+  // Unified cursor pagination state management (no prefix, uses 'search' and 'cursor')
+  const {
+    searchInput,
+    setSearchInput,
+    hasLoadedBeyondFirst: hookHasLoadedBeyondFirst,
+    handleNextPage,
+    handleResetToFirstPage,
+    params: paginationParams,
+    setParams: setPaginationParams
+  } = useCursorPaginationState({
+    onInitialLoad: (search, cursor) => {
+      if (cursor) {
+        fetchDevices(search, cursor)
+        setHasLoadedBeyondFirst(true)
+      } else {
+        fetchDevices(search)
+      }
+      fetchDeviceFilters()
+      markInitialLoadDone()
+    },
+    onSearchChange: (search) => searchDevices(search)
+  })
+
+  const organizationImageUrls = useMemo(() =>
     featureFlags.organizationImages.displayEnabled()
       ? devices.map(device => device.organizationImageUrl).filter(Boolean)
-      : [], 
+      : [],
     [devices]
   )
   const fetchedImageUrls = useBatchImages(organizationImageUrls)
 
   const columns = useMemo(() => getDeviceTableColumns(deviceFilters, fetchedImageUrls), [deviceFilters, fetchedImageUrls])
 
+  // Refresh callback for after archive/delete actions
+  const refreshDevices = useCallback(() => {
+    fetchDevices(paginationParams.search)
+  }, [fetchDevices, paginationParams.search])
+
   const renderRowActions = useMemo(
-    () => getDeviceTableRowActions(),
-    []
+    () => getDeviceTableRowActions(refreshDevices),
+    [refreshDevices]
   )
 
-  React.useEffect(() => {
-    if (debouncedSearchTerm !== undefined) {
-      searchDevices(debouncedSearchTerm)
-    }
-  }, [debouncedSearchTerm, searchDevices])
-
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    setTableFilters(columnFilters)
-    
-    const newFilters: any = {}
-    
-    if (columnFilters.status?.length > 0) {
-      newFilters.statuses = columnFilters.status
-    }
-    
-    if (columnFilters.os?.length > 0) {
-      newFilters.osTypes = columnFilters.os
-    }
-    
-    if (columnFilters.organization?.length > 0) {
-      newFilters.organizationIds = columnFilters.organization
-    }
-    
-    setFilters(newFilters)
-  }, [])
+    // Reset cursor and update filter params
+    setPaginationParams({ cursor: '' })
+    setExtraParams({
+      statuses: columnFilters.status || [],
+      osTypes: columnFilters.os || [],
+      organizationIds: columnFilters.organization || []
+    })
+    setHasLoadedBeyondFirst(false)
+  }, [setExtraParams, setPaginationParams, setHasLoadedBeyondFirst])
 
-  const handleNextPage = useCallback(async () => {
+  const onNext = useCallback(async () => {
     if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
-      await fetchNextPage(searchTerm)
+      await handleNextPage(pageInfo.endCursor, () => fetchNextPage(paginationParams.search))
     }
-  }, [pageInfo, fetchNextPage, searchTerm])
+  }, [pageInfo, handleNextPage, fetchNextPage, paginationParams.search])
 
-  const handleResetToFirstPage = useCallback(async () => {
-    await fetchFirstPage(searchTerm)
-  }, [fetchFirstPage, searchTerm])
+  const onReset = useCallback(async () => {
+    await handleResetToFirstPage(() => fetchFirstPage(paginationParams.search))
+  }, [handleResetToFirstPage, fetchFirstPage, paginationParams.search])
 
   const cursorPagination = useTablePagination(
     pageInfo ? {
       type: 'server',
       hasNextPage: pageInfo.hasNextPage,
-      hasLoadedBeyondFirst,
+      hasLoadedBeyondFirst: hasLoadedBeyondFirst || hookHasLoadedBeyondFirst,
       startCursor: pageInfo.startCursor,
       endCursor: pageInfo.endCursor,
       itemCount: devices.length,
       itemName: 'devices',
-      onNext: handleNextPage,
-      onReset: handleResetToFirstPage,
+      onNext,
+      onReset,
       showInfo: true
     } : null
   )
 
+  // Convert URL params to table filters format
+  const tableFilters = useMemo(() => ({
+    status: extraParams.statuses,
+    os: extraParams.osTypes,
+    organization: extraParams.organizationIds
+  }), [extraParams.statuses, extraParams.osTypes, extraParams.organizationIds])
 
   const viewToggle = (
     <>
       <ViewToggle
-        value={viewMode}
-        onValueChange={setViewMode}
+        value={extraParams.viewMode as 'table' | 'grid'}
+        onValueChange={(value) => setExtraParam('viewMode', value)}
         className="bg-ods-card border border-ods-border h-12"
       />
       <Button
@@ -114,14 +144,14 @@ export function DevicesView() {
       title="Devices"
       headerActions={viewToggle}
       searchPlaceholder="Search for Devices"
-      searchValue={searchTerm}
-      onSearch={setSearchTerm}
+      searchValue={searchInput}
+      onSearch={setSearchInput}
       error={error}
       padding="none"
       className="pt-6"
     >
       {/* Conditional View Rendering */}
-      {viewMode === 'table' ? (
+      {extraParams.viewMode === 'table' ? (
         // Table View
         <Table
           data={devices}
