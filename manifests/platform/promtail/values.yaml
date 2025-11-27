@@ -10,13 +10,14 @@ registerJob:
 servicemonitor:
   enabled: true
 
-image:
-  registry: ghcr.io/flamingo-stack/registry
-  repository: grafana/promtail
-  tag: "3.5.1"
 
 promtail:
   revisionHistoryLimit: 1
+
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: grafana/promtail
+    tag: "3.5.1"
 
   podsecurityContext:
     runAsUser: 1000
