@@ -94,7 +94,7 @@ export function OrganizationsOverviewSection() {
                   percentage={org.activePct}
                   showProgress
                   progressColor="#5ea62e"
-                  href="/devices"
+                  href={`/devices?organizationIds=${org.organizationId}&statuses=ONLINE`}
                 />
 
                 {/* Inactive devices */}
@@ -103,7 +103,7 @@ export function OrganizationsOverviewSection() {
                   value={org.inactive}
                   percentage={org.inactivePct}
                   showProgress
-                  href="/devices"
+                  href={`/devices?organizationIds=${org.organizationId}&statuses=OFFLINE`}
                 />
               </div>
             )
