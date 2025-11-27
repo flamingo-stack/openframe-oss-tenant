@@ -46,5 +46,5 @@ spec:
               --retry-delay 15 \
               --retry-all-errors
             echo "Cluster Registration complete."
-            echo "Keeping pod alive..."
-            sleep infinity
+
+            echo "Keeping pod alive..." && sleep infinity
