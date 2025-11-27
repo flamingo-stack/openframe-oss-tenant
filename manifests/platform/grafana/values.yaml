@@ -10,30 +10,30 @@ grafana:
     enabled: false
   
   image:
-    registry: ghcr.io/flamingo-stack/registry
+    registry: docker.io
     repository: grafana/grafana
     tag: "12.3.0"
   
   testFramework:
     image:
-      registry: ghcr.io/flamingo-stack/registry
+      registry: docker.io
       repository: bats/bats
       tag: "v1.4.1"
   
   downloadDashboardsImage:
-    registry: ghcr.io/flamingo-stack/registry
+    registry: docker.io
     repository: curlimages/curl
     tag: 8.9.1
   
   initChownData:
     image:
-      registry: ghcr.io/flamingo-stack/registry
+      registry: docker.io
       repository: library/busybox
       tag: "1.31.1"
   
   sidecar:
     image:
-      registry: ghcr.io/flamingo-stack/registry
+      registry: quay.io
       repository: kiwigrid/k8s-sidecar
       tag: 1.30.10
 
