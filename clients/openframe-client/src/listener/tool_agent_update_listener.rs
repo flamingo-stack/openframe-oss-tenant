@@ -198,15 +198,15 @@ impl ToolAgentUpdateListener {
     }
 
     fn build_filter_subject(_machine_id: &str) -> String {
-        "machine.all.tool-update".to_string()
+        "machine.*.tool.*.update".to_string()
     }
 
     fn build_deliver_subject(machine_id: &str) -> String {
-        format!("machine.{}.tool-update.inbox", machine_id)
+        format!("machine_{}_tool.*.update.inbox", machine_id)
     }
 
     fn build_durable_name(machine_id: &str) -> String {
-        format!("machine_{}_tool-update_consumer", machine_id)
+        format!("machine_{}_tool_update_consumer", machine_id)
     }
 
 }
