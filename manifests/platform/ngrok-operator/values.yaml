@@ -7,7 +7,7 @@ registerJob:
 
 ngrok-operator:
   image:
-    repository: ghcr.io/flamingo-stack/registry/ngrok/ngrok-operator
+    repository: ghcr.io/flamingo-stack/registry
     tag: "0.19.1"
 
   credentials:
