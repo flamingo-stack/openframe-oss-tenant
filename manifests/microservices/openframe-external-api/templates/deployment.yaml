@@ -13,13 +13,6 @@ spec:
       labels:
         app: openframe-external-api
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
-      {{- end }}
-
       initContainers:
         - name: wait-for-config-server
           image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
