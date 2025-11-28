@@ -1,0 +1,11 @@
+apiVersion: v2
+name: keel-wrapper
+description: Wrapper chart for Keel
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+
+dependencies:
+  - name: keel
+    version: "~1.0.5"
+    repository: https://charts.keel.sh

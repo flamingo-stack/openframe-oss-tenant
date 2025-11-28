@@ -30,3 +30,4 @@ manifests:
         valuesFiles:
           - ../../../manifests/microservices/openframe-external-api/values.yaml
         # setValues:
+      

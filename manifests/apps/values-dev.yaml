@@ -13,6 +13,12 @@ global:
     tag: latest
 
 apps:
+  keel:
+    enabled: true
+    project: platform
+    namespace: platform
+    syncWave: "0"
+
   openframe-config:
     values:
       image:

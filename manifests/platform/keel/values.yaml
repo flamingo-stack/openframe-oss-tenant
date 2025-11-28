@@ -1,0 +1,28 @@
+registerJob:
+  enabled: true
+
+keel:
+  image:
+    repository: keelhq/keel  #registry included
+    tag: null
+
+  imagePullSecrets: ghcr-pat-secret
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  # # keel policy (all/major/minor/patch/force)
+  # policy: all
+  # # trigger type, defaults to events such as pubsub, webhooks
+  # trigger: poll
+  # # polling schedule
+  # pollSchedule: "@every 3m"
+  # # images to track and update
+  # images:
+  #   - repository: image.repository # it must be the same names as your app's values
+  #     tag: image.tag # it must be the same names as your app's values
