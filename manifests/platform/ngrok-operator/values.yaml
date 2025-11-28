@@ -13,3 +13,26 @@ ngrok-operator:
   credentials:
     apiKey: "2zXpZ8Ka8DYjdNKXYcv4VznABha_7Laa3fUvZX5gyTt3kEat"
     authtoken: "2yv5cuRsSW6gKpaaweVRzCNKYk9_6pozz69uPtSQT4vZ2uHpL"
+
+  manager:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: ngrok/ngrok-operator
+      tag: "v0.19.1"
+
+  agent:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: ngrok/ngrok-agent
+      tag: "v0.19.1"
+
+  webhook:
+    patch:
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: ngrok/ngrok-operator-certgen
+        tag: "v0.19.1"
+
+  global:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
