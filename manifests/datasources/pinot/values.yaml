@@ -6,6 +6,9 @@ servicemonitor:
 
 
 pinot:
+  image:
+    repository: apachepinot/pinot
+    tag: latest
   cluster:
     name: pinot 
   server:

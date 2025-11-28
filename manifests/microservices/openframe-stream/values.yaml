@@ -8,12 +8,7 @@ deployment:
   saas:
     enabled: false
 
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
+registry: {}
 
 registerJob:
   enabled: true

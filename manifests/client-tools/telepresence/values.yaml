@@ -8,12 +8,7 @@ deployment:
         enabled: false
         gkeSecurityGroup: "gke-security-groups@flamingo.cx"
 
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
+registry: {}
 
 registerJob:
   enabled: true

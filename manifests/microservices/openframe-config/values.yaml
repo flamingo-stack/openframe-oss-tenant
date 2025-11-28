@@ -13,12 +13,7 @@ deployment:
       password: ""  # GitHub Token for private config repo access
       profile: dev 
 
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
+registry: {}
 
 registerJob:
   enabled: true
