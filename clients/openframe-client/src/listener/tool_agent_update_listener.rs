@@ -202,7 +202,7 @@ impl ToolAgentUpdateListener {
     }
 
     fn build_deliver_subject(machine_id: &str) -> String {
-        format!("machine_{}_tool.*.update.inbox", machine_id)
+        format!("machine.{}.tool.update.inbox", machine_id)
     }
 
     fn build_durable_name(machine_id: &str) -> String {
