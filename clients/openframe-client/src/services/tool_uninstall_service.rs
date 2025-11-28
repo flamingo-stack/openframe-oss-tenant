@@ -5,6 +5,8 @@ use crate::services::InstalledToolsService;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
+#[cfg(target_os = "windows")]
+use crate::platform::file_lock::log_file_lock_info;
 
 #[derive(Clone)]
 pub struct ToolUninstallService {
@@ -117,6 +119,11 @@ impl ToolUninstallService {
         cmd.args(&processed_args);
 
         let output = cmd.output().await
+            .map_err(|e| {
+                #[cfg(target_os = "windows")]
+                log_file_lock_info(&e, &agent_path.to_string_lossy(), "execute uninstallation command");
+                e
+            })
             .context("Failed to execute uninstallation command")?;
 
         if !output.status.success() {

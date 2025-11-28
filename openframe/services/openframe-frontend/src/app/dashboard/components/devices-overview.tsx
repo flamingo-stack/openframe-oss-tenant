@@ -22,14 +22,14 @@ export function DevicesOverviewSection() {
           percentage={devices.activePercentage}
           showProgress
           progressColor="#5ea62e"
-          href="/devices"
+          href="/devices?statuses=ONLINE"
         />
         <DashboardInfoCard
           title="Offline"
           value={devices.inactive}
           percentage={devices.inactivePercentage}
           showProgress
-          href="/devices"
+          href="/devices?statuses=OFFLINE"
         />
       </div>
     </div>
