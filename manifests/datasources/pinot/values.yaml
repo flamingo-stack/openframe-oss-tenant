@@ -24,3 +24,9 @@ pinot:
   broker:
     external:
       enabled: false
+
+  zookeeper:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bitnami/zookeeper
+      tag: "latest"
