@@ -16,16 +16,16 @@ spec:
       labels:
         app: openframe-management
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
-      {{- end }}
+      # {{- if ne .Values.registry.docker.password "" }}
+      # imagePullSecrets:
+      #   {{- if ne .Values.registry.docker.password "" }}
+      #   - name: docker-pat-secret
+      #   {{- end }}
+      # {{- end }}
 
       initContainers:
         - name: wait-for-config-server
-          image: curlimages/curl:latest
+          image: ghcr.io/flamingo-stack/registry/curlimages/curl:8.9.1
           {{- if .Values.deployment.saas.enabled }}
           command: ["sh", "-c", "until curl -f http://openframe-saas-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
           {{- else }}
