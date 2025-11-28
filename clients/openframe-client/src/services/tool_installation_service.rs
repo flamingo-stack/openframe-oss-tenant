@@ -11,6 +11,8 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::models::installed_tool::ToolStatus;
 use crate::models::InstalledTool;
 use crate::platform::DirectoryManager;
+#[cfg(target_os = "windows")]
+use crate::platform::file_lock::log_file_lock_info;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolUrlParamsResolver;
 use crate::services::tool_run_manager::ToolRunManager;
@@ -243,8 +245,13 @@ impl ToolInstallationService {
 
             let mut cmd = Command::new(&file_path);
             cmd.args(&installation_command_args);
-            
+
             let output = cmd.output().await
+                .map_err(|e| {
+                    #[cfg(target_os = "windows")]
+                    log_file_lock_info(&e, &file_path.to_string_lossy(), "execute installation command");
+                    e
+                })
                 .context("Failed to execute installation command for tool")?;
 
             if !output.status.success() {

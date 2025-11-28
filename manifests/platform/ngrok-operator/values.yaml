@@ -7,9 +7,12 @@ registerJob:
 
 ngrok-operator:
   image:
-    repository: ghcr.io/flamingo-stack/registry/ngrok/ngrok-operator
+    registry: ghcr.io/flamingo-stack/registry
+    repository: ngrok/ngrok-operator
     tag: "0.19.1"
 
   credentials:
     apiKey: "2zXpZ8Ka8DYjdNKXYcv4VznABha_7Laa3fUvZX5gyTt3kEat"
     authtoken: "2yv5cuRsSW6gKpaaweVRzCNKYk9_6pozz69uPtSQT4vZ2uHpL"
+
+

@@ -93,8 +93,8 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   }, [organizationId, organization, didPrefill])
 
   const tabs = useMemo<TabItem[]>(() => [
-    { id: 'general', label: 'General Information', icon: InfoIcon },
-    { id: 'contact', label: 'Contact Information', icon: UsersGroupIcon },
+    { id: 'general', label: 'General Information', icon: InfoIcon as TabItem['icon'] },
+    { id: 'contact', label: 'Contact Information', icon: UsersGroupIcon as TabItem['icon'] },
   ], [])
 
   const saveDisabled = !general.name.trim() || isSubmitting
