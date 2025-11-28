@@ -17,10 +17,10 @@ spec:
       labels:
         app: tactical-websockets
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
+      # {{- if ne .Values.registry.docker.password "" }}
+      # imagePullSecrets:
+      #   - name: docker-pat-secret
+      # {{- end }}
 
       initContainers:
       - name: wait-for-dependencies

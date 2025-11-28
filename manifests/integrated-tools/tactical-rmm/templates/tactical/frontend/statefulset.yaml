@@ -17,10 +17,6 @@ spec:
       labels:
         app: tactical-frontend
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
 
       containers:
       - name: tactical-frontend

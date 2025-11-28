@@ -17,12 +17,12 @@ spec:
       labels:
         app: authentik-postgres
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
-      {{- end }}
+      # {{- if ne .Values.registry.docker.password "" }}
+      # imagePullSecrets:
+      #   {{- if ne .Values.registry.docker.password "" }}
+      #   - name: docker-pat-secret
+      #   {{- end }}
+      # {{- end }}
 
       securityContext:
         fsGroup: 999
