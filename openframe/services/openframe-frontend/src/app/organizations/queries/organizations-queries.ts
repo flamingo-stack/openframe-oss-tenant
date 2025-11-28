@@ -40,11 +40,13 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
 export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
   query GetOrganizationsMin($search: String) {
     organizations(search: $search) {
-      organizations {
-        id
-        organizationId
-        name
-        isDefault
+      edges {
+        node {
+          id
+          organizationId
+          name
+          isDefault
+        }
       }
     }
   }
