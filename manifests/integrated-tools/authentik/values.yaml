@@ -3,15 +3,34 @@ environment: dev
 global:
   registerJob:
     enabled: true
-
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
+    image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 postgres:
-  image: 
-    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/authentik-postgresql
-    tag: latest
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: library/postgres
+    tag: "14-alpine"
+    pullPolicy: IfNotPresent
+
+redis:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: library/redis
+    tag: "6.0-alpine"
+    pullPolicy: IfNotPresent
+
+curl:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: 8.9.1
+    pullPolicy: IfNotPresent
+
+authentik:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: goauthentik/server
+    tag: "2024.8.3"
+    pullPolicy: IfNotPresent

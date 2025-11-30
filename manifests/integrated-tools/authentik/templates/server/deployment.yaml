@@ -13,16 +13,9 @@ spec:
       labels:
         app: authentik-server
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
-      {{- end }}
-
       initContainers:
       - name: wait-for-postgres
-        image: postgres:latest
+        image: "{{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
         command: ['sh', '-c',
           'until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do echo waiting for postgres; sleep 2; done;']
         envFrom:
@@ -37,7 +30,7 @@ spec:
 
       containers:
       - name: server
-        image: ghcr.io/goauthentik/server:latest
+        image: "{{ .Values.authentik.image.registry }}/{{ .Values.authentik.image.repository }}:{{ .Values.authentik.image.tag }}"
         args: ["server"]
         ports:
         - containerPort: 9000
@@ -117,7 +110,7 @@ spec:
     
       initContainers:
       - name: wait-for-postgres
-        image: postgres:latest
+        image: "{{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
         command: ['sh', '-c',
           'until pg_isready -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do echo waiting for postgres; sleep 2; done;']
         envFrom:
@@ -131,13 +124,13 @@ spec:
               key: POSTGRES_PASSWORD
 
       - name: wait-for-server
-        image: curlimages/curl:latest
+        image: "{{ .Values.curl.image.registry }}/{{ .Values.curl.image.repository }}:{{ .Values.curl.image.tag }}"
         command: ['sh', '-c',
           'until curl -s http://authentik-server:9000/-/health/ready/; do echo waiting for authentik-server; sleep 2; done;']
 
       containers:
       - name: worker
-        image: ghcr.io/goauthentik/server:latest
+        image: "{{ .Values.authentik.image.registry }}/{{ .Values.authentik.image.repository }}:{{ .Values.authentik.image.tag }}"
         args: ["worker"]
         envFrom:
         - configMapRef:
