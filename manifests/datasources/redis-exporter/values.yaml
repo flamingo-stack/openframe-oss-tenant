@@ -1,6 +1,13 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 prometheus-redis-exporter:
   redisAddress: redis://redis-headless:6379
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: oliver006/redis_exporter
+    tag: "v1.80.1"
