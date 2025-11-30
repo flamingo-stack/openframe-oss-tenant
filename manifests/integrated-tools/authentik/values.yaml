@@ -12,25 +12,27 @@ postgres:
     registry: ghcr.io/flamingo-stack/registry
     repository: library/postgres
     tag: "14-alpine"
-    pullPolicy: IfNotPresent
 
 redis:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: library/redis
     tag: "6.0-alpine"
-    pullPolicy: IfNotPresent
+
+busybox:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: library/busybox
+    tag: "1.36.1"
 
 curl:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
-    tag: 8.9.1
-    pullPolicy: IfNotPresent
+    tag: "8.9.1"
 
 authentik:
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: goauthentik/server
     tag: "2024.8.3"
-    pullPolicy: IfNotPresent

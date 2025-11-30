@@ -17,19 +17,12 @@ spec:
       labels:
         app: authentik-postgres
     spec:
-      # {{- if ne .Values.registry.docker.password "" }}
-      # imagePullSecrets:
-      #   {{- if ne .Values.registry.docker.password "" }}
-      #   - name: docker-pat-secret
-      #   {{- end }}
-      # {{- end }}
-
       securityContext:
         fsGroup: 999
 
       initContainers:
       - name: fix-permissions
-        image: busybox
+        image: "{{ .Values.busybox.image.registry }}/{{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}"
         command: ["sh", "-c", "chown -R 999:999 /var/lib/postgresql/data && chmod 0700 -R /var/lib/postgresql/data"]
         volumeMounts:
         - name: postgres-data
@@ -37,7 +30,7 @@ spec:
 
       containers:
       - name: authentik-postgresql
-        image: "{{ .Values.postgres.image.repo }}:{{ .Values.postgres.image.tag }}"
+        image: "{{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
         ports:
         - containerPort: 5432
         envFrom:
