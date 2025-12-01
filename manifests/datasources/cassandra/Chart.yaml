@@ -2,8 +2,8 @@ apiVersion: v2
 name: cassandra-wrapper
 description: Wrapper chart for Сassandra
 type: application
-version: 0.1.0
-appVersion: "1.0"
+version: 0.0.1
+appVersion: "0.0.1"
 
 dependencies:
   - name: cassandra

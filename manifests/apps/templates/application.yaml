@@ -19,6 +19,9 @@ spec:
       targetRevision: {{ $.Values.deployment.oss.repository.branch }}
       path: "{{ $.Values.deployment.oss.repository.baseDir }}/{{ $app.namespace }}/{{ $name }}"
       helm:
+        valueFiles:
+          - "values-{{ $.Values.environment }}.yaml"
+        ignoreMissingValueFiles: true
         values: |
           environment: {{ $.Values.environment }}
           global:

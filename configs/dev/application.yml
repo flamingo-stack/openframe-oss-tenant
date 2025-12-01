@@ -1,2 +1,10 @@
-# empty profile override
+openframe:
+  client:
+    update:
+      feature:
+        enabled: true
+  tool-agent:
+    update:
+      feature:
+        enabled: true
 

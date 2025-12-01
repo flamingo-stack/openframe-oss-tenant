@@ -14,7 +14,7 @@ inputs:
   helm-values-file:
     description: 'Path to helm-values.yaml file'
     required: false
-    default: 'scripts/helm-values.yaml'
+    default: 'cli/helm-values.yaml'
   github-token:
     description: 'GitHub token for repository access'
     required: true
@@ -59,7 +59,9 @@ runs:
         [ -n "$COMMIT_SHA" ] || { echo "Error: COMMIT_SHA is required" >&2; exit 1; }
         [ -n "$MATRIX" ] || { echo "Error: MATRIX is required" >&2; exit 1; }
         [ -n "$CHANGES" ] || { echo "Error: CHANGES is required" >&2; exit 1; }
-        [ -f "$HELM_VALUES_FILE" ] || { echo "Error: App-of-apps file not found: $HELM_VALUES_FILE" >&2; exit 1; }
+        [ -n "$HELM_VALUES_FILE" ] || { echo "Error: HELM_VALUES_FILE is required" >&2; exit 1; }
+
+        mkdir -p "$(dirname "$HELM_VALUES_FILE")" && touch "$HELM_VALUES_FILE"
 
         # Install yq if needed
         if ! command -v yq &> /dev/null; then
