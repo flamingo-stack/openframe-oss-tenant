@@ -30,8 +30,8 @@ export function useOrganizationsMin() {
       }
 
       const payload = (response.data as any)?.data?.organizations
-      const list = Array.isArray(payload?.organizations) ? payload.organizations : []
-      const mapped: OrganizationMin[] = list.map((o: any) => ({ id: o.id, organizationId: o.organizationId, name: o.name, isDefault: o.isDefault }))
+      const list = Array.isArray(payload?.edges) ? payload.edges : []
+      const mapped: OrganizationMin[] = list.map(({node}: any) => ({ id: node.id, organizationId: node.organizationId, name: node.name, isDefault: node.isDefault }))
       setItems(mapped)
       return mapped
     } catch (e) {

@@ -84,7 +84,7 @@ export function useOnboardingCompletion() {
     orgsFetchedRef.current = true
 
     try {
-      await fetchOrganizations('', {})
+      await fetchOrganizations('', null, {})
     } catch (err) {
       console.error('Organizations fetch failed:', err)
     }

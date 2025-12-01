@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: kube-prometheus-stack
-    version: ">=75.10.0"
-    repository: https://prometheus-community.github.io/helm-charts
+    version: "~79.7.1"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

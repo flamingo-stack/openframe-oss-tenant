@@ -26,7 +26,7 @@ export function ConfirmDeleteUserModal({ open, onOpenChange, userName, onConfirm
           <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface">
             Cancel
           </AlertDialogCancel>
-          <AlertDialogAction onClick={() => onConfirm()} className="flex-1 bg-error text-white font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:opacity-90">
+          <AlertDialogAction onClick={() => onConfirm()} className="flex-1 border border-error text-error bg-transparent hover:bg-error/10 font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px]">
             Delete User
           </AlertDialogAction>
         </AlertDialogFooter>

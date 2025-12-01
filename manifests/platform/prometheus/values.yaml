@@ -1,5 +1,8 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 kube-prometheus-stack:
@@ -8,12 +11,22 @@ kube-prometheus-stack:
 
   alertmanager:
     enabled: false
+    alertmanagerSpec:
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: prometheus/alertmanager
+        tag: v0.29.0
 
   prometheus:
     ingress:
       enabled: false
-        
+
     prometheusSpec:
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: prometheus/prometheus
+        tag: v3.7.3
+        
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
@@ -40,3 +53,34 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 15Gi
+
+  prometheus-node-exporter:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: prometheus/node-exporter
+      tag: v1.10.2
+
+  kube-state-metrics:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: kube-state-metrics/kube-state-metrics
+      tag: v2.17.0
+
+  prometheusOperator:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: prometheus-operator/prometheus-operator
+      tag: v0.86.2
+    prometheusConfigReloader:
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: prometheus-operator/prometheus-config-reloader
+        tag: v0.86.2
+    admissionWebhooks:
+      patch:
+        image:
+          registry: ghcr.io/flamingo-stack/registry
+          repository: ingress-nginx/kube-webhook-certgen
+          tag: v1.6.4
+        
+      
