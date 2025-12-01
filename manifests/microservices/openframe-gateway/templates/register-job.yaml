@@ -11,6 +11,7 @@ metadata:
 spec:
   backoffLimit: 3
   template:
+    restartPolicy: Never
     spec:
       containers:
       - name: register
