@@ -15,7 +15,7 @@ spec:
 
       containers:
       - name: register
-        image: ghcr.io/sap/kubectl-container:v1.31.6
+        image: {{ default .Values.global.registerJob.image.registry .Values.global.image.registry }}/sap/kubectl-container:v1.31.6
         envFrom:
           - configMapRef:
               name: fleetmdm-mysql
