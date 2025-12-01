@@ -6,11 +6,11 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
 
-telepresence:
+telepresence-oss:
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: telepresenceio/tel2
-    tag: 2.25.1
+    name: telepresenceio/tel2
+    tag: "2.25.1"
 
 deployment:
   saas:
