@@ -11,8 +11,8 @@ metadata:
 spec:
   backoffLimit: 3
   template:
-    restartPolicy: Never
     spec:
+      restartPolicy: Never
       containers:
       - name: register
         image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
