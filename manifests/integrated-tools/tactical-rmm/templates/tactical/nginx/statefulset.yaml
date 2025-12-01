@@ -20,7 +20,7 @@ spec:
 
       containers:
       - name: tactical-nginx
-        image: "{{ .Values.tactical.nginx.image.repo }}:{{ .Values.tactical.nginx.image.tag }}"
+        image: "{{ .Values.tactical.nginx.image.registry }}/{{ .Values.tactical.nginx.image.repository }}:{{ .Values.tactical.nginx.image.tag }}"
         ports:
         - containerPort: 8080
         - containerPort: 8000

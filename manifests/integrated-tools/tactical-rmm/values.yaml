@@ -3,24 +3,47 @@ environment: dev
 global:
   registerJob:
     enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      tag: "8.9.1"
 
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
 
 tactical:
   frontend:
     image:
-      repo: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-frontend
+      registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+      repository: tactical-frontend
       tag: latest
+
   nginx:
     image:
-      repo: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-nginx
+      registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+      repository: tactical-nginx
       tag: latest
+
   base:
     image:
-      repo: ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base
+      registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+      repository: tactical-base
       tag: latest
+
+
+postgres:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: library/postgres
+    tag: "13-alpine"
+    tagNats: "14-alpine"
+
+
+redis:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: library/redis
+    tag: "6.0-alpine"
+
+busybox:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: library/busybox
+    tag: "1.36.0"
