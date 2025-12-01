@@ -25,12 +25,6 @@ busybox:
     repository: library/busybox
     tag: "1.36.1"
 
-curl:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-    repository: curlimages/curl
-    tag: "8.9.1"
-
 authentik:
   image:
     registry: ghcr.io/flamingo-stack/registry

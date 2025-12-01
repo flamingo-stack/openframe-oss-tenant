@@ -124,7 +124,7 @@ spec:
               key: POSTGRES_PASSWORD
 
       - name: wait-for-server
-        image: "{{ .Values.curl.image.registry }}/{{ .Values.curl.image.repository }}:{{ .Values.curl.image.tag }}"
+        image: {{ default .Values.global.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.global.registerJob.image.tag }}
         command: ['sh', '-c',
           'until curl -s http://authentik-server:9000/-/health/ready/; do echo waiting for authentik-server; sleep 2; done;']
 
