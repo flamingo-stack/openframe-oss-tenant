@@ -24,9 +24,3 @@ redis:
     registry: ghcr.io/flamingo-stack/registry
     repository: library/redis
     tag: "6.0-alpine"
-
-curl:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-    repository: curlimages/curl
-    tag: "8.9.1"
