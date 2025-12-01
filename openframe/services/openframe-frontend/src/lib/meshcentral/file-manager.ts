@@ -33,6 +33,7 @@ export class MeshCentralFileManager {
   private currentPath = ''
   private currentFiles: FileEntry[] = []
   private pendingRequests = new Map<string, { resolve: Function; reject: Function; timeout: any }>()
+  private loadingPath: string | null = null // Track currently loading path to prevent duplicates
   
   private options: FileManagerOptions
   private isRemote: boolean
@@ -97,6 +98,18 @@ export class MeshCentralFileManager {
 
   private normalizeRequestedPath(path: string): string {
     if (!path || path === '/') return ''
+    
+    // Normalize Windows paths: ensure consistent format
+    // Convert /C: style to C:\ style for Windows drives
+    if (path.match(/^\/[A-Za-z]:$/)) {
+      return path.substring(1) + '\\'
+    }
+    
+    // If it's already a Windows drive path (C:\), keep it as is
+    if (path.match(/^[A-Za-z]:\\?/)) {
+      return path.endsWith('\\') ? path : path + '\\'
+    }
+    
     return path
   }
 
@@ -113,6 +126,14 @@ export class MeshCentralFileManager {
       this.tunnel = null
     }
 
+    // Ensure control session is ready BEFORE creating the tunnel
+    try {
+      await this.controlClient.openSession()
+    } catch (error) {
+      console.error('[FileManager] Failed to open control session:', error)
+      throw error
+    }
+
     this.tunnel = new MeshTunnel({
       authCookie: this.authCookie,
       nodeId: this.nodeId,
@@ -121,32 +142,31 @@ export class MeshCentralFileManager {
         if (typeof data === 'string') {
           this.handleJsonMessage(data)
         } else {
-          this.handleBinaryMessage(data.buffer as ArrayBuffer)
+          // data is Uint8Array from tunnel
+          this.handleBinaryMessage(data)
         }
       },
       onBinaryData: (bytes) => {
-        this.handleBinaryMessage(bytes.buffer as ArrayBuffer)
+        // bytes is Uint8Array from tunnel
+        this.handleBinaryMessage(bytes)
       },
       onCtrlMessage: (msg) => this.handleCtrlChannelMessage(msg),
       onConsoleMessage: (msg) => console.log('[FileManager][Console]', msg),
       onRequestPairing: async (relayId) => {
         try {
-          await this.controlClient?.openSession()
-          if (this.nodeId) {
-            this.controlClient?.sendFileTunnel(this.nodeId, relayId)
+          // Control session should already be open, but check again
+          if (!this.controlClient?.isConnected()) {
+            await this.controlClient?.openSession()
+          }
+          if (this.nodeId && this.controlClient) {
+            this.controlClient.sendFileTunnel(this.nodeId, relayId)
           }
         } catch (error) {
-          console.error('Error pairing file tunnel:', error)
+          console.error('[FileManager] Error pairing file tunnel:', error)
         }
       },
       onStateChange: (state) => this.handleTunnelStateChange(state)
     })
-
-    try {
-      await this.controlClient.openSession()
-    } catch (error) {
-      console.warn('Failed to reopen control session before tunnel start:', error)
-    }
 
     this.tunnel.start()
   }
@@ -156,6 +176,7 @@ export class MeshCentralFileManager {
       case 0:
         this.optionsSent = false
         this.initialDirectoryRequested = false
+        this.loadingPath = null // Clear loading state on disconnect
         this.setState('disconnected')
         break
       case 1:
@@ -171,7 +192,10 @@ export class MeshCentralFileManager {
         this.setState('connected_end_to_end')
         if (!wasConnected && !this.initialDirectoryRequested) {
           this.initialDirectoryRequested = true
-          this.loadDirectory(this.currentPath || '/')
+          // For Windows systems, start with empty path to show drive list
+          this.loadDirectory(this.currentPath || '').catch(error => {
+            console.error('[FileManager] Initial load failed:', error)
+          })
         }
         break
       }
@@ -266,8 +290,88 @@ export class MeshCentralFileManager {
    * Handle binary messages
    */
   private handleBinaryMessage(data: ArrayBuffer | Uint8Array): void {
-    const buffer = data instanceof Uint8Array ? data.buffer : data
-    this.binaryProtocol.push(buffer, (chunk, isFinal) => {
+    // First, try to decode the raw binary as JSON (for direct JSON responses)
+    try {
+      const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data
+      const textDecoder = new TextDecoder('utf-8')
+      const text = textDecoder.decode(bytes)
+      
+      // Check if it's JSON by trying to parse it
+      if (text.startsWith('{') || text.startsWith('[')) {
+        try {
+          const json = JSON.parse(text)
+          console.log('[FileManager] Parsed JSON from raw binary:', {
+            action: json.action,
+            hasDir: json.dir !== undefined,
+            reqid: json.reqid,
+            path: json.path
+          })
+          
+          // If it's a directory listing response, handle it
+          if (json.dir !== undefined || json.action === 'ls') {
+            // Make sure we have the directory data
+            if (json.dir !== undefined) {
+              this.handleDirectoryListing(json as DirectoryListing)
+            }
+            return
+          }
+          // Otherwise handle as regular JSON message
+          this.handleJsonMessage(text)
+          return
+        } catch (e) {
+          console.error('[FileManager] Failed to parse JSON from raw binary:', e)
+          // Not valid JSON, continue to handle as binary protocol
+        }
+      }
+    } catch (e) {
+      console.error('[FileManager] Failed to decode raw binary as text:', e)
+      // Failed to decode as text, try binary protocol
+    }
+    
+    // If not raw JSON, try binary protocol (with headers)
+    const buffer = data instanceof Uint8Array 
+      ? data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+      : data
+    
+    this.binaryProtocol.push(buffer as ArrayBuffer, (chunk, isFinal) => {
+      // Try to decode as text first (for JSON responses in protocol chunks)
+      try {
+        const textDecoder = new TextDecoder('utf-8')
+        const text = textDecoder.decode(chunk)
+        
+        // Check if it's JSON by trying to parse it
+        if (text.startsWith('{') || text.startsWith('[')) {
+          try {
+            const json = JSON.parse(text)
+            console.log('[FileManager] Parsed JSON from protocol chunk:', {
+              action: json.action,
+              hasDir: json.dir !== undefined,
+              reqid: json.reqid,
+              path: json.path
+            })
+            
+            // If it's a directory listing response, handle it
+            if (json.dir !== undefined || json.action === 'ls') {
+              // Make sure we have the directory data
+              if (json.dir !== undefined) {
+                this.handleDirectoryListing(json as DirectoryListing)
+              }
+              return
+            }
+            // Otherwise handle as regular JSON message
+            this.handleJsonMessage(text)
+            return
+          } catch (e) {
+            console.error('[FileManager] Failed to parse JSON from protocol chunk:', e)
+            // Not valid JSON, continue to handle as binary
+          }
+        }
+      } catch (e) {
+        console.error('[FileManager] Failed to decode protocol chunk as text:', e)
+        // Failed to decode as text, handle as binary download
+      }
+      
+      // If not JSON, handle as binary download data
       this.downloader.handleBinaryChunk(chunk, isFinal)
     })
   }
@@ -286,17 +390,47 @@ export class MeshCentralFileManager {
    * Handle directory listing response
    */
   private handleDirectoryListing(listing: DirectoryListing): void {
+    console.log('[FileManager] Received directory listing:', {
+      path: listing.path,
+      itemCount: listing.dir?.length || 0,
+      items: listing.dir?.slice(0, 3), // Show first 3 items for debugging
+      reqid: listing.reqid,
+      hasPendingRequest: listing.reqid ? this.pendingRequests.has(listing.reqid) : false
+    })
+    
     this.currentFiles = listing.dir || []
-    this.currentPath = listing.path || this.currentPath
+    // Normalize the path from the response to ensure consistency
+    this.currentPath = this.normalizeRequestedPath(listing.path || this.currentPath)
     
-    this.options.onDirectoryChange?.(this.currentFiles)
+    // Call the onDirectoryChange callback first to update UI
+    if (this.options.onDirectoryChange) {
+      console.log('[FileManager] Calling onDirectoryChange with', this.currentFiles.length, 'files')
+      this.options.onDirectoryChange(this.currentFiles)
+    }
     
-    // Resolve pending request
-    const request = this.pendingRequests.get(listing.reqid)
-    if (request) {
-      clearTimeout(request.timeout)
-      this.pendingRequests.delete(listing.reqid)
-      request.resolve(this.currentFiles)
+    // Resolve pending request if exists
+    if (listing.reqid) {
+      const request = this.pendingRequests.get(listing.reqid)
+      if (request) {
+        console.log('[FileManager] Resolving pending request:', listing.reqid)
+        clearTimeout(request.timeout)
+        this.pendingRequests.delete(listing.reqid)
+        request.resolve(this.currentFiles)
+      } else {
+        console.log('[FileManager] No pending request found for reqid:', listing.reqid)
+      }
+    } else {
+      // If no reqid in response, try to resolve any pending directory listing request
+      // This handles cases where the server doesn't echo back the reqid
+      console.log('[FileManager] No reqid in response, checking for pending ls requests')
+      for (const [reqid, request] of this.pendingRequests.entries()) {
+        // Assuming we only have one pending directory listing at a time
+        console.log('[FileManager] Resolving pending request without reqid match:', reqid)
+        clearTimeout(request.timeout)
+        this.pendingRequests.delete(reqid)
+        request.resolve(this.currentFiles)
+        break // Only resolve the first one
+      }
     }
   }
 
@@ -378,6 +512,7 @@ export class MeshCentralFileManager {
   ): Promise<T> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
+        console.error('[FileManager] Operation timed out for reqid:', request.reqid)
         this.pendingRequests.delete(request.reqid)
         reject(new Error('Operation timed out'))
       }, timeoutMs)
@@ -404,9 +539,26 @@ export class MeshCentralFileManager {
       throw new Error('Invalid path')
     }
     
-    const request = this.fileOps.createListDirectoryRequest(normalizedPath)
-    await this.sendOperation(request)
-    return this.currentFiles
+    // Prevent duplicate requests for the same path
+    if (this.loadingPath === normalizedPath) {
+      console.log('[FileManager] Already loading path:', normalizedPath, '- skipping duplicate request')
+      return this.currentFiles // Return current files to avoid hanging
+    }
+    
+    this.loadingPath = normalizedPath
+    
+    try {
+      const request = this.fileOps.createListDirectoryRequest(normalizedPath)
+      console.log('[FileManager] Sending ls request for path:', normalizedPath)
+      
+      // The sendOperation will wait for the response to come back via handleDirectoryListing
+      // which will resolve the promise with the actual files
+      const files = await this.sendOperation<FileEntry[]>(request)
+      console.log('[FileManager] Directory loaded:', { path: normalizedPath, fileCount: files?.length || 0 })
+      return files || []
+    } finally {
+      this.loadingPath = null // Clear loading state
+    }
   }
 
   /**
@@ -708,7 +860,17 @@ export class MeshCentralFileManager {
   }
 
   private sendData(data: string | ArrayBuffer | Uint8Array): boolean {
-    if (!this.tunnel) return false
+    if (!this.tunnel) {
+      console.error('[FileManager] Cannot send data: No tunnel connection')
+      return false
+    }
+    
+    const tunnelState = this.tunnel.getState()
+    if (tunnelState !== 3) {
+      console.warn('[FileManager] Tunnel not fully connected, state:', tunnelState)
+      return false
+    }
+    
     try {
       if (typeof data === 'string') {
         this.tunnel.sendText(data)

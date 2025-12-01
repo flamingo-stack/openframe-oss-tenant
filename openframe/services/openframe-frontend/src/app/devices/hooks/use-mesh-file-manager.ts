@@ -48,7 +48,7 @@ export function useMeshFileManager({
 }: UseMeshFileManagerOptions): UseMeshFileManagerReturn {
   const { toast } = useToast()
   const [files, setFiles] = useState<FileItem[]>([])
-  const [currentPath, setCurrentPath] = useState<string>('/')
+  const [currentPath, setCurrentPath] = useState<string>('')
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [connectionState, setConnectionState] = useState<FileConnectionState>('disconnected')
   const [loading, setLoading] = useState<boolean>(false)
@@ -157,7 +157,16 @@ export function useMeshFileManager({
           },
           onDirectoryChange: (entries: FileEntry[]) => {
             if (mounted) {
+              console.log('[FileManager Hook] Directory changed:', {
+                entriesCount: entries.length,
+                currentPath: fileManager.getCurrentPath(),
+                firstEntry: entries[0]
+              })
               const items = convertFileEntriesToItems(entries, fileManager.getCurrentPath())
+              console.log('[FileManager Hook] Converted items:', {
+                itemsCount: items.length,
+                firstItem: items[0]
+              })
               setFiles(items)
               setCurrentPath(fileManager.getCurrentPath())
             }
