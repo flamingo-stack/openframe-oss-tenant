@@ -35,7 +35,7 @@ spec:
 
       containers:
       - name: tactical-base
-        image: "{{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+        image: "{{ .Values.tactical.base.image.registry }}/{{ .Values.tactical.base.image.repository }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-websockets"]
         ports:
         - containerPort: 8000
