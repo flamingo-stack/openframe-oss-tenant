@@ -1,16 +1,15 @@
 'use client'
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useCallback, useMemo, useRef, useEffect } from 'react'
 import {
   Table,
-  StatusTag,
   Button,
   ListPageLayout,
   type TableColumn,
 } from '@flamingo/ui-kit/components/ui'
 import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
 import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
-import { useDebounce, useBatchImages, useTablePagination, useApiParams } from '@flamingo/ui-kit/hooks'
+import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from '@flamingo/ui-kit/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
 import { featureFlags } from '@lib/feature-flags'
@@ -52,44 +51,74 @@ function OrganizationNameCell({ org, fetchedImageUrls }: {
 }
 
 export function OrganizationsTable() {
-  // URL state management - search, page, and filters persist in URL
-  const { params, setParam, setParams } = useApiParams({
-    search: { type: 'string', default: '' },
-    page: { type: 'number', default: 1 },
-    limit: { type: 'number', default: 20 },
+  const router = useRouter()
+
+  // Extra URL params for filters (not search/cursor which are handled by pagination hook)
+  const { params: filterParams, setParams: setFilterParams } = useApiParams({
     tier: { type: 'array', default: [] },
     industry: { type: 'array', default: [] }
   })
 
-  const router = useRouter()
+  const prevFiltersKeyRef = useRef<string | null>(null)
 
-  // Debounce search input for smoother UX
-  const [searchInput, setSearchInput] = useState(params.search)
-  const debouncedSearchInput = useDebounce(searchInput, 300)
+  // Backend filters from URL params
+  const backendFilters = useMemo(() => ({
+    tiers: filterParams.tier,
+    industries: filterParams.industry
+  }), [filterParams.tier, filterParams.industry])
 
-  // Update URL when debounced input changes (only when value actually changed)
-  useEffect(() => {
-    if (debouncedSearchInput !== params.search) {
-      setParam('search', debouncedSearchInput)
-    }
-  }, [debouncedSearchInput, params.search, setParam])
+  // Stable filter key for detecting changes
+  const filtersKey = useMemo(() => JSON.stringify({
+    tiers: filterParams.tier?.sort() || [],
+    industries: filterParams.industry?.sort() || []
+  }), [filterParams.tier, filterParams.industry])
 
-  const stableFilters = useMemo(() => ({}), [])
-  const { organizations, isLoading, error, searchOrganizations } = useOrganizations(stableFilters)
+  const {
+    organizations,
+    isLoading,
+    error,
+    pageInfo,
+    hasLoadedBeyondFirst,
+    setHasLoadedBeyondFirst,
+    fetchOrganizations,
+    fetchNextPage,
+    fetchFirstPage,
+    searchOrganizations,
+    markInitialLoadDone
+  } = useOrganizations(backendFilters)
 
-  const imageUrls = useMemo(() => 
+  // Unified cursor pagination state management (no prefix, uses 'search' and 'cursor')
+  const {
+    searchInput,
+    setSearchInput,
+    hasLoadedBeyondFirst: hookHasLoadedBeyondFirst,
+    handleNextPage,
+    handleResetToFirstPage,
+    params: paginationParams,
+    setParams: setPaginationParams
+  } = useCursorPaginationState({
+    onInitialLoad: (search, cursor) => {
+      if (cursor) {
+        fetchOrganizations(search || '', cursor, backendFilters)
+        setHasLoadedBeyondFirst(true)
+      } else {
+        fetchOrganizations(search || '', null, backendFilters)
+      }
+      markInitialLoadDone()
+    },
+    onSearchChange: (search) => searchOrganizations(search)
+  })
+
+  const imageUrls = useMemo(() =>
     featureFlags.organizationImages.displayEnabled()
       ? organizations.map(org => org.imageUrl).filter(Boolean)
-      : [], 
+      : [],
     [organizations]
   )
   const fetchedImageUrls = useBatchImages(imageUrls)
 
   const transformed: UIOrganizationEntry[] = useMemo(() => {
     const toMoney = (n: number) => `$${n.toLocaleString()}`
-    const dateFmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, {
-      month: 'short', day: '2-digit', year: 'numeric'
-    })
     const timeAgo = (iso: string) => {
       const now = new Date().getTime()
       const then = new Date(iso).getTime()
@@ -115,35 +144,26 @@ export function OrganizationsTable() {
     }))
   }, [organizations])
 
+  // Client-side filtering for tier/industry (after fetching from server)
   const filteredOrganizations = useMemo(() => {
     let filtered = transformed
 
     // Apply tier filter from URL params
-    if (params.tier && params.tier.length > 0) {
+    if (filterParams.tier && filterParams.tier.length > 0) {
       filtered = filtered.filter(org =>
-        params.tier.includes(org.tier)
+        filterParams.tier.includes(org.tier)
       )
     }
 
     // Apply industry filter from URL params
-    if (params.industry && params.industry.length > 0) {
+    if (filterParams.industry && filterParams.industry.length > 0) {
       filtered = filtered.filter(org =>
-        params.industry.includes(org.industry)
+        filterParams.industry.includes(org.industry)
       )
     }
 
     return filtered
-  }, [transformed, params.tier, params.industry])
-
-  const paginatedOrganizations = useMemo(() => {
-    const startIndex = (params.page - 1) * params.limit
-    const endIndex = startIndex + params.limit
-    return filteredOrganizations.slice(startIndex, endIndex)
-  }, [filteredOrganizations, params.page, params.limit])
-
-  const totalPages = useMemo(() => {
-    return Math.ceil(filteredOrganizations.length / params.limit)
-  }, [filteredOrganizations.length, params.limit])
+  }, [transformed, filterParams.tier, filterParams.industry])
 
   const columns: TableColumn<UIOrganizationEntry>[] = useMemo(() => [
     {
@@ -187,43 +207,55 @@ export function OrganizationsTable() {
     }
   ], [fetchedImageUrls])
 
+  // Refetch when filters change
+  const initialFilterLoadDone = useRef(false)
   useEffect(() => {
-    // Always search, even with empty string (to show all results)
-    searchOrganizations(params.search || '')
-  }, [params.search, searchOrganizations])
-
-  // Reset to page 1 when search term changes
-  useEffect(() => {
-    if (params.search) {
-      setParam('page', 1)
+    if (initialFilterLoadDone.current) {
+      // Only refetch if filters actually changed (not on mount)
+      if (prevFiltersKeyRef.current !== null && prevFiltersKeyRef.current !== filtersKey) {
+        const refetch = async () => {
+          await searchOrganizations(paginationParams.search)
+        }
+        refetch()
+        setHasLoadedBeyondFirst(false)
+      }
+    } else {
+      initialFilterLoadDone.current = true
     }
-  }, [params.search])
+    prevFiltersKeyRef.current = filtersKey
+  }, [filtersKey, paginationParams.search, searchOrganizations, setHasLoadedBeyondFirst])
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    // Update URL params with new filters and reset to page 1
-    const updates: Record<string, any> = { page: 1 }
+    // Reset cursor and update filter params
+    setPaginationParams({ cursor: '' })
+    setFilterParams({
+      tier: columnFilters.tier || [],
+      industry: columnFilters.industry || []
+    })
+    setHasLoadedBeyondFirst(false)
+  }, [setFilterParams, setPaginationParams, setHasLoadedBeyondFirst])
 
-    if (columnFilters.tier) {
-      updates.tier = columnFilters.tier
+  const onNext = useCallback(async () => {
+    if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
+      await handleNextPage(pageInfo.endCursor, () => fetchNextPage(paginationParams.search))
     }
-    if (columnFilters.industry) {
-      updates.industry = columnFilters.industry
-    }
+  }, [pageInfo, handleNextPage, fetchNextPage, paginationParams.search])
 
-    setParam('page', 1)
-    if (columnFilters.tier) setParam('tier', columnFilters.tier)
-    if (columnFilters.industry) setParam('industry', columnFilters.industry)
-  }, [setParam])
+  const onReset = useCallback(async () => {
+    await handleResetToFirstPage(() => fetchFirstPage(paginationParams.search))
+  }, [handleResetToFirstPage, fetchFirstPage, paginationParams.search])
 
   const cursorPagination = useTablePagination(
-    totalPages > 1 ? {
-      type: 'client',
-      currentPage: params.page,
-      totalPages,
-      itemCount: paginatedOrganizations.length,
+    pageInfo ? {
+      type: 'server',
+      hasNextPage: pageInfo.hasNextPage,
+      hasLoadedBeyondFirst: hasLoadedBeyondFirst || hookHasLoadedBeyondFirst,
+      startCursor: pageInfo.startCursor ?? undefined,
+      endCursor: pageInfo.endCursor ?? undefined,
+      itemCount: organizations.length,
       itemName: 'organizations',
-      onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
-      onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
+      onNext,
+      onReset,
       showInfo: true
     } : null
   )
@@ -244,9 +276,9 @@ export function OrganizationsTable() {
 
   // Convert URL params to table filters format
   const tableFilters = useMemo(() => ({
-    tier: params.tier,
-    industry: params.industry
-  }), [params.tier, params.industry])
+    tier: filterParams.tier,
+    industry: filterParams.industry
+  }), [filterParams.tier, filterParams.industry])
 
   return (
     <ListPageLayout
@@ -261,7 +293,7 @@ export function OrganizationsTable() {
       className="pt-6"
     >
       <Table
-        data={paginatedOrganizations}
+        data={filteredOrganizations}
         columns={columns}
         rowKey="id"
         loading={isLoading}

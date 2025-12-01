@@ -1,10 +1,41 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 grafana:
   ingress:
     enabled: false
+  
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: grafana/grafana
+    tag: "12.3.0"
+  
+  testFramework:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bats/bats
+      tag: "v1.4.1"
+  
+  downloadDashboardsImage:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: 8.9.1
+  
+  initChownData:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: library/busybox
+      tag: "1.31.1"
+  
+  sidecar:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: kiwigrid/k8s-sidecar
+      tag: 1.30.10
 
   revisionHistoryLimit: 2
   resources:

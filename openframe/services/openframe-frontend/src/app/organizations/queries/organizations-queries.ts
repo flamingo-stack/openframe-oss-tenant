@@ -1,28 +1,38 @@
 export const GET_ORGANIZATIONS_QUERY = `#graphql
-  query GetOrganizations($search: String) {
-    organizations(search: $search) {
-      organizations {
-        id
-        organizationId
-        name
-        category
-        contactInformation {
-          contacts {
-            contactName
-            email
+  query GetOrganizations($search: String, $pagination: CursorPaginationInput) {
+    organizations(search: $search, pagination: $pagination) {
+      edges {
+        node {
+          id
+          organizationId
+          name
+          category
+          contactInformation {
+            contacts {
+              contactName
+              email
+            }
           }
+          numberOfEmployees
+          websiteUrl
+          monthlyRevenue
+          contractStartDate
+          contractEndDate
+          image {
+            imageUrl
+          }
+          createdAt
+          updatedAt
         }
-        numberOfEmployees
-        websiteUrl
-        monthlyRevenue
-        contractStartDate
-        contractEndDate
-        image {
-          imageUrl
-        }
-        createdAt
-        updatedAt
+        cursor
       }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+      filteredCount
     }
   }
 `
@@ -30,11 +40,13 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
 export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
   query GetOrganizationsMin($search: String) {
     organizations(search: $search) {
-      organizations {
-        id
-        organizationId
-        name
-        isDefault
+      edges {
+        node {
+          id
+          organizationId
+          name
+          isDefault
+        }
       }
     }
   }
