@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: fleetmdm-server
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
 spec:
   serviceName: fleetmdm-server
   replicas: 1
