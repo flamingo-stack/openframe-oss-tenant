@@ -11,12 +11,22 @@ import { forceLogout, clearStoredTokens } from './force-logout'
 
 function getDomainSuffix(): string {
   const sharedUrl = runtimeEnv.sharedHostUrl()
-  if (!sharedUrl) return 'openframe.ai'
+  if (!sharedUrl) {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      const hostname = window.location.hostname
+      const parts = hostname.split('.')
+      if (parts.length >= 2) {
+        return parts.slice(-2).join('.')
+      }
+      return hostname
+    }
+    return 'localhost'
+  }
   
   const withoutProtocol = sharedUrl.replace(/^https?:\/\//, '')
   const domain = withoutProtocol.split('/')[0].split(':')[0]
   
-  return domain || 'openframe.ai'
+  return domain || 'localhost'
 }
 
 export const SAAS_DOMAIN_SUFFIX = getDomainSuffix()
