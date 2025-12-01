@@ -13,3 +13,4 @@ pub const RECONNECTION_DELAY_MS: u64 = 5000; // 5 seconds
 
 // NATS message settings
 pub const CONSUMER_ACK_WAIT_SECS: u64 = 60; // 1 minute
+pub const CONSUMER_MAX_DELIVER: i64 = 10; // Maximum delivery attempts
