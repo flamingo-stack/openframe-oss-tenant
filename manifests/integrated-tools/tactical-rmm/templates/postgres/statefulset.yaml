@@ -14,11 +14,6 @@ spec:
       labels:
         app: tactical-postgres
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-
       containers:
       - name: postgres
         image: "{{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"

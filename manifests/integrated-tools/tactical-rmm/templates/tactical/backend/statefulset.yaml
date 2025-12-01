@@ -17,11 +17,6 @@ spec:
       labels:
         app: tactical-backend
     spec:
-      # {{- if ne .Values.registry.docker.password "" }}
-      # imagePullSecrets:
-      #   - name: docker-pat-secret
-      # {{- end }}
-
       initContainers:
       - name: setup-fontconfig
         image: "{{ .Values.busybox.image.registry }}/{{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}"
