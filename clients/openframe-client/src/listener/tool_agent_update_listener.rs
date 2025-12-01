@@ -6,6 +6,7 @@ use crate::config::update_config::{
     MAX_RETRY_DELAY_MS,
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
+    CONSUMER_MAX_DELIVER,
 };
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
@@ -193,20 +194,21 @@ impl ToolAgentUpdateListener {
             durable_name: Some(durable_name),
             ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
             deliver_policy: DeliverPolicy::Last,
+            max_deliver: CONSUMER_MAX_DELIVER,
             ..Default::default()
         }
     }
 
     fn build_filter_subject(_machine_id: &str) -> String {
-        "machine.all.tool-update".to_string()
+        "machine.all.tool.*.update".to_string()
     }
 
     fn build_deliver_subject(machine_id: &str) -> String {
-        format!("machine.{}.tool-update.inbox", machine_id)
+        format!("machine.{}.tool.update.inbox", machine_id)
     }
 
     fn build_durable_name(machine_id: &str) -> String {
-        format!("machine_{}_tool-update_consumer", machine_id)
+        format!("machine_{}_tool_update_consumer", machine_id)
     }
 
 }
