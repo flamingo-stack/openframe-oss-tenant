@@ -17,7 +17,7 @@ spec:
 
       containers:
         - name: debezium-ui
-          image: debezium/debezium-ui:2.5
+          image: "{{ .Values.debeziumUI.image.registry }}/{{ .Values.debeziumUI.image.repository }}:{{ .Values.debeziumUI.image.tag }}"
           ports:
             - containerPort: 8080
               name: http
