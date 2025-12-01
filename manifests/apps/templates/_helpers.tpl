@@ -16,7 +16,7 @@ Rules:
 2. If `enabled: false` → skip
 3. If deployment.oss.enabled and ingress.localhost.enabled → skip "ngrok-operator"
 4. If deployment.oss.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
-5. If deployment.saas.enabled → skip "openframe-gateway" "openframe-external-api" "openframe-stream" "openframe-config" "openframe-client" "openframe-api" "openframe-authorization-server" and "ngrok-operator"
+5. If deployment.saas.enabled → skip "openframe-gateway" "openframe-external-api" "openframe-stream" "openframe-config" "openframe-client" "openframe-api" "openframe-authorization-server" "ngrok-operator" "registration"
 6. If deployment.saas.enabled and ingress.gcp.enabled → skip "ingress-nginx"
 */}}
 
@@ -49,7 +49,7 @@ Rules:
   true
 {{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
   true
-{{- else if and $saas (or (eq $name "openframe-gateway") (eq $name "openframe-external-api") (eq $name "openframe-stream") (eq $name "openframe-config") (eq $name "openframe-client") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "ngrok-operator")) }}
+{{- else if and $saas (or (eq $name "openframe-gateway") (eq $name "openframe-external-api") (eq $name "openframe-stream") (eq $name "openframe-config") (eq $name "openframe-client") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "ngrok-operator") (eq $name "registration")) }}
   true
 {{- else if and $saas $saasGcp (eq $name "ingress-nginx") }}
   true
