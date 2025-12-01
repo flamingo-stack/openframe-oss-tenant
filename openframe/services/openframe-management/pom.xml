@@ -13,36 +13,13 @@
 
     <artifactId>openframe-management</artifactId>
     <name>OpenFrame Management Service</name>
-
-    <properties>
-        <start-class>com.openframe.management.ManagementApplication</start-class>
-    </properties>
+    <description>Management service for OpenFrame platform</description>
 
     <dependencies>
         <dependency>
             <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-idp-configuration</artifactId>
+            <artifactId>openframe-management-service-core</artifactId>
             <version>${openframe.libs.version}</version>
-
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data-mongo</artifactId>
-        </dependency>
-        <!-- OpenFrame Dependencies -->
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>openframe-data</artifactId>
-        </dependency>
-
-        <!-- OpenFrame SDKs -->
-        <dependency>
-            <groupId>com.openframe.oss</groupId>
-            <artifactId>tacticalrmm</artifactId>
         </dependency>
 
         <!-- Spring Cloud -->
@@ -51,36 +28,9 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
 
-        <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- Monitoring -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-observation</artifactId>
-        </dependency>
-
-        <!-- ShedLock for distributed scheduling -->
-        <dependency>
-            <groupId>net.javacrumbs.shedlock</groupId>
-            <artifactId>shedlock-spring</artifactId>
-            <version>5.10.2</version>
-        </dependency>
-        <dependency>
-            <groupId>net.javacrumbs.shedlock</groupId>
-            <artifactId>shedlock-provider-redis-spring</artifactId>
-            <version>5.10.2</version>
+            <artifactId>spring-boot-starter</artifactId>
         </dependency>
     </dependencies>
 </project>

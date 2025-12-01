@@ -83,7 +83,7 @@ export function OrganizationsOverviewSection() {
                 <OrganizationCard
                   organization={org}
                   fetchedImageUrl={fetchedImageUrl}
-                  onClick={() => router.push(`/organizations/details/${org.id}`)}
+                  onClick={() => router.push(`/devices?organizationIds=${org.organizationId}`)}
                   deviceCount={org.total}
                 />
 
@@ -94,7 +94,9 @@ export function OrganizationsOverviewSection() {
                   percentage={org.activePct}
                   showProgress
                   progressColor="#5ea62e"
-                  href="/devices"
+                  href={org.active > 0
+                    ? `/devices?organizationIds=${org.organizationId}&statuses=ONLINE`
+                    : `/devices?organizationIds=${org.organizationId}`}
                 />
 
                 {/* Inactive devices */}
@@ -103,7 +105,9 @@ export function OrganizationsOverviewSection() {
                   value={org.inactive}
                   percentage={org.inactivePct}
                   showProgress
-                  href="/devices"
+                  href={org.inactive > 0
+                    ? `/devices?organizationIds=${org.organizationId}&statuses=OFFLINE`
+                    : `/devices?organizationIds=${org.organizationId}`}
                 />
               </div>
             )

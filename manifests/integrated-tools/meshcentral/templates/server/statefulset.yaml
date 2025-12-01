@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: meshcentral-server
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
 spec:
   serviceName: meshcentral-server
   replicas: 1
@@ -14,12 +17,12 @@ spec:
       labels:
         app: meshcentral-server
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
-      {{- end }}
+      # {{- if ne .Values.registry.docker.password "" }}
+      # imagePullSecrets:
+      #   {{- if ne .Values.registry.docker.password "" }}
+      #   - name: docker-pat-secret
+      #   {{- end }}
+      # {{- end }}
       securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
         runAsUser: 0
 
