@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: register
-        image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
+        image: {{ default .Values.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.image.tag }}
         command:
           - /bin/sh
           - -c
