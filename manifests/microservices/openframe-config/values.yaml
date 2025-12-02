@@ -13,15 +13,11 @@ deployment:
       password: ""  # GitHub Token for private config repo access
       profile: dev 
 
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
-
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 servicemonitor:
   enabled: true
 
