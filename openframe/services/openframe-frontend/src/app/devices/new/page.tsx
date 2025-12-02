@@ -11,20 +11,31 @@ import { OSTypeBadge } from '@flamingo/ui-kit/components/features'
 import { useToast } from '@flamingo/ui-kit/hooks'
 import { useRouter } from 'next/navigation'
 import { useRegistrationSecret } from '../hooks/use-registration-secret'
+import { useReleaseVersion } from '../hooks/use-release-version'
 import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo/ui-kit/utils'
 import { OS_TYPES } from '@flamingo/ui-kit/types'
 import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
 
 type Platform = OSPlatformId
 
-const MACOS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client_macos.tar.gz'
-const WINDOWS_BINARY_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases/latest/download/openframe-client_windows.zip'
+const RELEASES_BASE_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases'
+const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz'
+const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip'
+
+const buildBinaryUrl = (version: string, assetName: string) => {
+  if (version === 'latest' || !version) {
+    return `${RELEASES_BASE_URL}/latest/download/${assetName}`
+  }
+
+  return `${RELEASES_BASE_URL}/download/${version}/${assetName}`
+}
 
 export default function NewDevicePage() {
   const router = useRouter()
   const { toast } = useToast()
   const [platform, setPlatform] = useState<Platform>(DEFAULT_OS_PLATFORM)
   const { initialKey } = useRegistrationSecret()
+  const { releaseVersion } = useReleaseVersion()
   const [argInput, setArgInput] = useState('')
   const [args, setArgs] = useState<string[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('')
@@ -75,6 +86,16 @@ export default function NewDevicePage() {
     }
   }, [addArgument])
 
+  const macBinaryUrl = useMemo(
+    () => buildBinaryUrl(releaseVersion, MACOS_BINARY_NAME),
+    [releaseVersion]
+  )
+
+  const windowsBinaryUrl = useMemo(
+    () => buildBinaryUrl(releaseVersion, WINDOWS_BINARY_NAME),
+    [releaseVersion]
+  )
+
   const command = useMemo(() => {
     const orgIdArg = selectedOrgId
     const baseArgs = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgIdArg}`
@@ -82,11 +103,11 @@ export default function NewDevicePage() {
 
     if (platform === 'windows') {
       const argString = `${baseArgs}${extras}`
-      return `Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${WINDOWS_BINARY_URL}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
+      return `Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
     }
 
-    return `rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${MACOS_BINARY_URL}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`
-  }, [initialKey, args, platform, selectedOrgId, serverUrl])
+    return `rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${macBinaryUrl}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`
+  }, [initialKey, args, platform, selectedOrgId, serverUrl, macBinaryUrl, windowsBinaryUrl])
 
   const copyCommand = useCallback(async () => {
     try {
