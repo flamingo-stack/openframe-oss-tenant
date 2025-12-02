@@ -1,10 +1,8 @@
-environment: dev
-
 registerJob:
   enabled: true
   image:
-    registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
+
 image:
-  repository: ghcr.io/flamingo-stack/registry/library/mongo
+  repository: library/mongo
   tag: "7.0.18"
