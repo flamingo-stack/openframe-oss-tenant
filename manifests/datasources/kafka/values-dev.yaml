@@ -1,0 +1,16 @@
+registerJob:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+
+kafka:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+
+  zookeeper:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+
+  metrics:
+    jmx:
+      image:
+        registry: ghcr.io/flamingo-stack/registry
