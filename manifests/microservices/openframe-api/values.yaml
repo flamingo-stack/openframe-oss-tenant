@@ -18,6 +18,6 @@ image:
   tag: latest
 
   initContainer:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-    tag: "8.9.1"
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      tag: "8.9.1"

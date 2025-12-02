@@ -20,7 +20,7 @@ image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-external-api
   tag: latest
 
-  initContainer:
+initContainer:
   image:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
