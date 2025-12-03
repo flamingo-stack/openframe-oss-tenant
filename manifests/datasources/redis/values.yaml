@@ -26,6 +26,7 @@ redis:
     replicaCount: 1
 
   metrics:
+    enabled: false
     # bitnamilegacy
     image:
       repository: bitnamilegacy/redis-exporter
