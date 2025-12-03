@@ -1,10 +1,9 @@
-environment: dev
-
 registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
+
 servicemonitor:
   enabled: true
 
@@ -29,4 +28,4 @@ pinot:
   zookeeper:
     image:
       repository: bitnami/zookeeper
-      tag: "latest"
+      tag: 3.9.3-debian-12-r22
