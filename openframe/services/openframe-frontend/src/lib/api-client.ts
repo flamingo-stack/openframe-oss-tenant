@@ -45,10 +45,9 @@ class ApiClient {
         const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY)
         if (accessToken) {
           headers['Authorization'] = `Bearer ${accessToken}`
-          console.log('🔐 [API Client] Added token to headers (DevTicket enabled)')
         }
       } catch (error) {
-        console.error('❌ [API Client] Failed to get access token:', error)
+        console.error('[API Client] Failed to get access token:', error)
       }
     }
     
@@ -59,7 +58,6 @@ class ApiClient {
    * Build full URL from path
    */
   private buildUrl(path: string): string {
-    console.log('🔄 [API Client] Building URL for path:', path)
     // Absolute URLs pass through
     if (path.startsWith('http://') || path.startsWith('https://')) return path
 
@@ -67,9 +65,6 @@ class ApiClient {
     
     const cleanPath = path.startsWith('/') ? path : `/${path}`
     if (tenantHost) return `${tenantHost}${cleanPath}`
-
-    console.log('with tenantHost:', tenantHost)
-    console.log('🔄 [API Client] Clean path:', cleanPath)
 
     // Default: use relative path (no host)
     return cleanPath
@@ -97,10 +92,8 @@ class ApiClient {
         const tenantId = storeTenantId || userTenantId
 
         if (!tenantId) {
-          console.warn('⚠️ [API Client] No tenant ID found for refresh; attempting refresh without tenantId')
+          console.warn('[API Client] No tenant ID found for refresh; attempting refresh without tenantId')
         }
-
-        console.log('🔄 [API Client] Attempting token refresh via authApiClient...')
 
         const responseRaw = await authApiClient.refresh(tenantId)
         // Adapter to existing logic
@@ -135,11 +128,9 @@ class ApiClient {
 
           return true
         } else {
-          console.error('❌ [API Client] Token refresh failed with status:', response.status)
           return false
         }
       } catch (error) {
-        console.error('❌ [API Client] Token refresh error:', error)
         return false
       } finally {
         this.isRefreshing = false
@@ -191,8 +182,6 @@ class ApiClient {
     const url = this.buildUrl(path)
     
     try {
-      console.log(`🔄 [API Client] ${options.method || 'GET'} ${url}${isRetry ? ' (retry)' : ''}`)
-      
       const response = await fetch(url, {
         ...fetchOptions,
         headers: requestHeaders,
@@ -206,7 +195,6 @@ class ApiClient {
         const isAuthPage = currentPath.startsWith('/auth')
         
         if (isAuthPage) {
-          console.log('⚠️ [API Client] 401 on auth page - skipping refresh/logout')
           // Just return the 401 without forcing logout
           return {
             data: undefined,
@@ -217,7 +205,6 @@ class ApiClient {
         }
 
         if (this.isRefreshing) {
-          console.log('🔄 [API Client] Token refresh in progress, queuing request...')
           return new Promise<ApiResponse<T>>((resolve) => {
             this.requestQueue.push(async () => {
               const result = await this.request<T>(path, options, true)
@@ -257,17 +244,10 @@ class ApiClient {
         try {
           data = await response.json()
         } catch (error) {
-          console.error('❌ [API Client] Failed to parse JSON response:', error)
+          console.error('[API Client] Failed to parse JSON response:', error)
         }
       }
-      
-      // Log response status
-      if (response.ok) {
-        console.log(`✅ [API Client] ${response.status} ${url}`)
-      } else {
-        console.error(`❌ [API Client] ${response.status} ${url}`)
-      }
-      
+
       return {
         data,
         error: response.ok ? undefined : `Request failed with status ${response.status}`,
@@ -275,7 +255,46 @@ class ApiClient {
         ok: response.ok,
       }
     } catch (error) {
-      console.error(`❌ [API Client] Network error for ${url}:`, error)
+      // Check if this might be a 401 error masquerading as a network error
+      // This can happen in localhost deployments where fetch fails completely on 401
+      if (!skipAuth && !isRetry) {
+        // Check if on auth page - skip refresh/logout to prevent loops
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+        const isAuthPage = currentPath.startsWith('/auth')
+        
+        if (!isAuthPage) {
+          if (this.isRefreshing) {
+            return new Promise<ApiResponse<T>>((resolve) => {
+              this.requestQueue.push(async () => {
+                const result = await this.request<T>(path, options, true)
+                resolve(result)
+              })
+            })
+          }
+
+          const refreshSuccess = await this.refreshAccessToken()
+
+          const queue = [...this.requestQueue]
+          this.requestQueue = []
+          
+          if (refreshSuccess) {
+            queue.forEach(retryRequest => retryRequest())
+            return this.request<T>(path, options, true)
+          } else {
+            queue.forEach(retryRequest => {
+              retryRequest().catch(() => {})
+            })
+
+            await this.forceLogout()
+            
+            return {
+              error: 'Authentication failed - please login again',
+              status: 401,
+              ok: false,
+            }
+          }
+        }
+      }
       
       return {
         error: error instanceof Error ? error.message : 'Network error',
