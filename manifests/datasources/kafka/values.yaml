@@ -1,7 +1,9 @@
 registerJob:
   enabled: true
   image:
+    registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
+
 
 kafka:
   # bitnamilegacy
@@ -42,13 +44,6 @@ kafka:
     # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
     # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
 
-  # externalAccess:
-  #   enabled: true
-  #   service:
-  #     type: LoadBalancer
-  #   ports:
-  #     external: 29092
-
   controller:
     resourcesPreset: medium
     replicaCount: 1
@@ -70,19 +65,6 @@ kafka:
   # controller:
   #   replicaCount: 0
 
-  # kraft:
-  #   enabled: false
-
-  zookeeper:
-    image:
-      repository: bitnamilegacy/zookeeper
-      tag: 3.9.3-debian-12-r22
-  #   enabled: true
-  #   replicaCount: 1
-  #   podAntiAffinityPreset: hard  # make sure that no two broker/zookeeper pods are on the same node
-  #   auth:
-  #     client:
-  #       enabled: false
 
   provisioning:
     enabled: true
