@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: cassandra
-    version: ">=12.3.9"
-    repository: oci://registry-1.docker.io/bitnamicharts  # should be migrated
+    version: "~12.3.9"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
