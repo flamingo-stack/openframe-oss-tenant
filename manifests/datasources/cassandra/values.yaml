@@ -13,6 +13,8 @@ cassandra:
     security:
       allowInsecureImages: true
 
+  priorityClassName: "cassandra"
+
   # resourcesPreset: medium
   resources:
     # requests:
