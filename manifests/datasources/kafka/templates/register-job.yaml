@@ -13,11 +13,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-      
       containers:
       - name: register
         image: {{- if or .Values.registerJob.image.registry .Values.global.image.registry }}{{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{- end }}curlimages/curl:{{ .Values.registerJob.image.tag }}
