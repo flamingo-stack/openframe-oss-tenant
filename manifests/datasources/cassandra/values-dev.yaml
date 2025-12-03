@@ -1,7 +1,3 @@
-registerJob:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-
 cassandra:
   image:
     registry: ghcr.io/flamingo-stack/registry
