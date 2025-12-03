@@ -63,7 +63,6 @@ openframe:
       - agent-configurations/fleetmdm-agent.json
       - agent-configurations/tacticalrmm-agent.json
       - agent-configurations/meshcentral-agent.json
-      - agent-configurations/openframe-chat-agent.json
 
 security:
   oauth2:
