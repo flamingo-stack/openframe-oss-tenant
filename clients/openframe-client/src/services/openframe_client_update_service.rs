@@ -483,17 +483,45 @@ impl OpenFrameClientUpdateService {
         // Get update state file path
         let update_state_path = self.update_state_service.get_state_file_path();
 
-        // Launch PowerShell with the script
-        let child = process::Command::new("powershell.exe")
-            .arg("-ExecutionPolicy").arg("Bypass")
-            .arg("-NoProfile")
-            .arg("-File").arg(&script_path)
-            .arg("-ArchivePath").arg(&archive_path)
-            .arg("-ServiceName").arg(service_name)
-            .arg("-TargetExe").arg(&current_exe)
-            .arg("-UpdateStatePath").arg(&update_state_path)
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW - no console window
-            .spawn()
+        // PowerShell paths: first PATH, then known locations as fallback
+        let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
+        let ps_paths = [
+            "powershell.exe".to_string(),
+            format!("{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", system_root),
+            format!("{}\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe", system_root),
+            "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe".to_string(),
+            "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe".to_string(),
+            "pwsh.exe".to_string(), // PowerShell Core via PATH
+        ];
+
+        let mut last_error = None;
+        let mut child = None;
+
+        for ps_path in &ps_paths {
+            match process::Command::new(ps_path)
+                .arg("-ExecutionPolicy").arg("Bypass")
+                .arg("-NoProfile")
+                .arg("-File").arg(&script_path)
+                .arg("-ArchivePath").arg(&archive_path)
+                .arg("-ServiceName").arg(service_name)
+                .arg("-TargetExe").arg(&current_exe)
+                .arg("-UpdateStatePath").arg(&update_state_path)
+                .creation_flags(0x08000000)
+                .spawn()
+            {
+                Ok(c) => {
+                    info!("PowerShell launched: {}", ps_path);
+                    child = Some(c);
+                    break;
+                }
+                Err(e) => {
+                    warn!("Failed to spawn {}: {}", ps_path, e);
+                    last_error = Some(e);
+                }
+            }
+        }
+
+        let child = child.ok_or_else(|| last_error.unwrap())
             .context("Failed to spawn PowerShell updater")?;
 
         info!("PowerShell updater launched (PID: {})", child.id());
