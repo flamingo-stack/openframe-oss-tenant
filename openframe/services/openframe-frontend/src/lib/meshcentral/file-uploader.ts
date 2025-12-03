@@ -9,7 +9,7 @@ export interface UploadTask {
   file: File
   remotePath: string
   fileName: string
-  bytesUploaded: number // confirmed by agent
+  bytesUploaded: number
   totalBytes: number
   nextOffset: number
   pendingBytes: number
@@ -51,7 +51,8 @@ export class FileUploader {
       file: task.fileName,
       progress: Math.round((task.bytesUploaded / task.totalBytes) * 100),
       bytesTransferred: task.bytesUploaded,
-      totalBytes: task.totalBytes
+      totalBytes: task.totalBytes,
+      type: 'upload'
     }
     this.onProgress?.(progress)
   }
@@ -188,6 +189,24 @@ export class FileUploader {
 
     task.status = 'failed'
     task.error = new Error(error)
+  }
+
+  hasActiveUpload(): boolean {
+    for (const task of this.uploads.values()) {
+      if (task.status === 'uploading' || task.status === 'hashing') {
+        return true
+      }
+    }
+    return false
+  }
+
+  getActiveUploadId(): string | null {
+    for (const [id, task] of this.uploads.entries()) {
+      if (task.status === 'uploading' || task.status === 'hashing') {
+        return id
+      }
+    }
+    return null
   }
 
   cancelUpload(uploadId: string): void {

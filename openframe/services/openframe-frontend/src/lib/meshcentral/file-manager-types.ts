@@ -65,6 +65,7 @@ export interface FileTransferProgress {
   progress: number
   bytesTransferred: number
   totalBytes: number
+  type?: 'upload' | 'download'
 }
 
 export interface BinaryHeader {

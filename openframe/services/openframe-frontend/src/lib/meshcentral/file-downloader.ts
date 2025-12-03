@@ -8,7 +8,7 @@ export interface DownloadTask {
   id: string
   remotePath: string
   fileName: string
-  chunks: ArrayBuffer[]
+  chunks: Uint8Array[]
   totalSize: number
   receivedSize: number
   status: 'pending' | 'requested' | 'negotiating' | 'downloading' | 'completed' | 'failed' | 'cancelled'
@@ -38,18 +38,32 @@ export class FileDownloader {
     this.onProgress = onProgress
   }
 
+  hasActiveDownload(): boolean {
+    return this.activeDownloadId !== null
+  }
+
   private generateRequestId(): string {
     return `download-${Date.now()}-${++this.requestIdCounter}`
   }
 
-  /**
-   * Start file download (one transfer at a time per relay session)
-   */
+  resetActiveDownload(): void {
+    if (this.activeDownloadId) {
+      const activeTask = this.downloads.get(this.activeDownloadId)
+      if (activeTask) {
+        if (['requested', 'negotiating', 'downloading'].includes(activeTask.status)) {
+          activeTask.status = 'failed'
+          activeTask.error = new Error('Download timeout or stuck')
+        }
+      }
+      this.activeDownloadId = null
+    }
+  }
+
   downloadFile(remotePath: string, fileName?: string, fileSize?: number): string {
     if (this.activeDownloadId) {
       const activeTask = this.downloads.get(this.activeDownloadId)
       if (activeTask && ['requested', 'negotiating', 'downloading'].includes(activeTask.status)) {
-        throw new Error('Another download is already in progress')
+        this.resetActiveDownload()
       }
     }
 
@@ -82,14 +96,16 @@ export class FileDownloader {
     if (this.sendMessage) {
       this.sendMessage(JSON.stringify(downloadRequest))
       task.status = 'negotiating'
+    } else {
+      task.status = 'failed'
+      task.error = new Error('No connection available')
+      this.activeDownloadId = null
+      throw new Error('Cannot send download request - no connection')
     }
 
     return downloadId
   }
 
-  /**
-   * Handle download control-channel messages (`action: 'download'`)
-   */
   handleControlMessage(message: any): void {
     const downloadId = message.id
     if (!downloadId) return
@@ -132,19 +148,27 @@ export class FileDownloader {
     }
   }
 
-  /**
-   * Handle incoming binary data chunk
-   */
   handleBinaryChunk(data: Uint8Array, isFinal: boolean): void {
     if (!this.activeDownloadId) return
+    
     const task = this.downloads.get(this.activeDownloadId)
     if (!task || task.status !== 'downloading') return
 
-    const chunkCopy = data.slice()
-    task.chunks.push(chunkCopy.buffer)
+    // MeshCentral Protocol: First 4 bytes are a big-endian integer with bit 0 indicating final chunk
+    if (data.byteLength < 4) return
+
+    // Read the 4-byte header (big-endian)
+    const headerView = new DataView(data.buffer, data.byteOffset, 4)
+    const flags = headerView.getUint32(0, false)
+    const isLastChunk = (flags & 1) !== 0
+    
+    const fileData = data.slice(4)
+    const chunkCopy = new Uint8Array(fileData.length)
+    chunkCopy.set(fileData)
+    task.chunks.push(chunkCopy)
     task.receivedSize += chunkCopy.byteLength
 
-    if (!isFinal && this.sendMessage) {
+    if (!isLastChunk && this.sendMessage) {
       const ack: DownloadRequest = {
         action: 'download',
         sub: 'ack',
@@ -158,11 +182,12 @@ export class FileDownloader {
       file: task.fileName,
       progress: task.totalSize > 0 ? Math.round((task.receivedSize / task.totalSize) * 100) : 0,
       bytesTransferred: task.receivedSize,
-      totalBytes: task.totalSize
+      totalBytes: task.totalSize,
+      type: 'download'
     }
     this.onProgress?.(progress)
 
-    if (isFinal || (task.totalSize > 0 && task.receivedSize >= task.totalSize)) {
+    if (isLastChunk) {
       this.completeDownload(task.id)
     }
   }
@@ -178,7 +203,8 @@ export class FileDownloader {
       file: task.fileName,
       progress: 100,
       bytesTransferred: task.receivedSize,
-      totalBytes: task.totalSize
+      totalBytes: task.totalSize,
+      type: 'download'
     }
     this.onProgress?.(progress)
 
@@ -189,7 +215,19 @@ export class FileDownloader {
   getFileBlob(downloadId: string): Blob | null {
     const task = this.downloads.get(downloadId)
     if (!task || task.status !== 'completed') return null
-    return new Blob(task.chunks)
+
+    if (task.chunks.length === 0) return null
+
+    try {
+      const blob = new Blob(task.chunks as any[])
+      
+      const reader = new FileReader()
+      reader.readAsArrayBuffer(blob.slice(0, 10))
+      
+      return blob
+    } catch (error) {
+      return null
+    }
   }
 
   saveFile(downloadId: string): void {
@@ -207,7 +245,9 @@ export class FileDownloader {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 100)
+    setTimeout(() => {
+      URL.revokeObjectURL(url)
+    }, 100)
   }
 
   cancelDownload(downloadId: string): void {

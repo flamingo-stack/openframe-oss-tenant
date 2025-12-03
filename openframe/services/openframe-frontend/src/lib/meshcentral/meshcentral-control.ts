@@ -38,7 +38,6 @@ export class MeshControlClient {
         }
       } catch {}
       
-      console.log('[MeshControl] Connecting to:', url.replace(/pass=[^&]*/, 'pass=***'))
       return url
     }
 
@@ -51,7 +50,6 @@ export class MeshControlClient {
       refreshTokenBeforeReconnect: false, // Disable for MeshCentral
       
       onStateChange: (state) => {
-        console.log('[MeshControl] State changed:', state)
         if (state === 'connected') {
           this.isOpen = true
           if (!this.cookies) {
@@ -78,7 +76,6 @@ export class MeshControlClient {
       shouldReconnect: (closeEvent) => {
         const authFailureCodes = [1008, 1006, 4401]
         const shouldReconnect = !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code)
-        console.log('[MeshControl] Should reconnect?', shouldReconnect)
         return shouldReconnect
       }
     })
@@ -185,7 +182,6 @@ export class MeshControlClient {
 
   sendTunnelMsg(nodeId: string, relayPathValue: string, usage?: number): void {
     if (!this.wsManager?.isConnected()) {
-      console.warn('[MeshControl] sendTunnelMsg called but WebSocket not connected')
       return
     }
     
@@ -193,7 +189,7 @@ export class MeshControlClient {
     if (typeof usage === 'number') {
       msg.usage = usage
     }
-    console.log('[MeshControl] Sending tunnel pairing message for nodeId:', nodeId)
+
     try {
       this.wsManager.send(JSON.stringify(msg))
     } catch (error) {

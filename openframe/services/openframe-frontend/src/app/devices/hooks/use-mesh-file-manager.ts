@@ -4,7 +4,7 @@ import { MeshCentralFileManager } from '@lib/meshcentral/file-manager'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
 import type { FileEntry, FileConnectionState, FileTransferProgress } from '@lib/meshcentral/file-manager-types'
 import type { FileItem, FileAction } from '@flamingo/ui-kit/components/ui/file-manager/types'
-import { convertFileEntriesToItems, sanitizePath, joinPath } from '../utils/file-manager-utils'
+import { convertFileEntriesToItems, sanitizePath } from '../utils/file-manager-utils'
 
 // Global map to track active file manager instances by device ID (React Strict Mode protection)
 const activeFileManagers = new Map<string, boolean>()
@@ -23,7 +23,8 @@ interface UseMeshFileManagerReturn {
   loading: boolean
   uploadProgress: FileTransferProgress | null
   downloadProgress: FileTransferProgress | null
-  
+  clipboard: ClipboardItem | null
+
   // Actions
   navigateToPath: (path: string) => Promise<void>
   navigateUp: () => Promise<void>
@@ -33,12 +34,27 @@ interface UseMeshFileManagerReturn {
   renameItem: (oldName: string, newName: string) => Promise<void>
   uploadFile: (file: File) => Promise<void>
   downloadFile: (fileName: string) => void
+  cancelDownload: () => void
+  cancelUpload: () => void
   copyFiles: (fileIds: string[], destinationPath: string) => Promise<void>
   moveFiles: (fileIds: string[], destinationPath: string) => Promise<void>
   searchFiles: (query: string) => Promise<void>
+
+  // Clipboard operations
+  copyToClipboard: (fileIds?: string[]) => void
+  cutFiles: (fileIds?: string[]) => void
+  pasteFiles: () => Promise<void>
+  clearClipboard: () => void
+
   selectFile: (fileId: string, selected: boolean) => void
   selectAll: (selected: boolean) => void
   handleFileAction: (action: FileAction, fileId?: string) => Promise<void>
+}
+
+interface ClipboardItem {
+  fileIds: string[]
+  sourcePath: string
+  operation: 'copy' | 'cut'
 }
 
 export function useMeshFileManager({
@@ -54,7 +70,8 @@ export function useMeshFileManager({
   const [loading, setLoading] = useState<boolean>(false)
   const [uploadProgress, setUploadProgress] = useState<FileTransferProgress | null>(null)
   const [downloadProgress, setDownloadProgress] = useState<FileTransferProgress | null>(null)
-  
+  const [clipboard, setClipboard] = useState<ClipboardItem | null>(null)
+
   const fileManagerRef = useRef<MeshCentralFileManager | null>(null)
   const controlClientRef = useRef<MeshControlClient | null>(null)
   const initializingRef = useRef<boolean>(false)
@@ -70,7 +87,6 @@ export function useMeshFileManager({
     onErrorRef.current = onError
   }, [onError])
 
-  // Initialize file manager
   useEffect(() => {
     if (!meshcentralAgentId) {
       return
@@ -83,61 +99,42 @@ export function useMeshFileManager({
       const token = { cancelled: false }
       initTokenRef.current = token
 
-      // Strong protection against duplicate initialization using global tracking
       const deviceKey = `${meshcentralAgentId}-${isRemote ? 'remote' : 'server'}`
 
       if (fileManagerRef.current || activeFileManagers.get(deviceKey)) {
-        console.log(`[FileManager] Device ${deviceKey} already has active file manager, skipping`)
         return
       }
-      
-      console.log(`[FileManager] Initializing file manager for device ${deviceKey}`)
+
       activeFileManagers.set(deviceKey, true)
-      
+
       isInitializing = true
       initializingRef.current = true
-      
+
       let initSucceeded = false
 
       try {
         setLoading(true)
         setConnectionState('connecting')
 
-        // Small delay to ensure everything is ready
-        await new Promise(resolve => setTimeout(resolve, 100))
-
-        // For remote file operations, we need:
-        // 1. MeshControlClient (control.ashx) for authentication and session management
-        // 2. MeshCentralFileManager (meshrelay.ashx) for actual file operations
-        console.log('[FileManager] Setting up control client for authentication...')
-        
         const controlClient = new MeshControlClient()
         controlClientRef.current = controlClient
-        
+
         if (token.cancelled) {
-          console.log('[FileManager] Initialization cancelled before creating file manager')
           controlClient.close()
           controlClientRef.current = null
           activeFileManagers.delete(deviceKey)
           return
         }
-        
-        // Create file manager instance
-        console.log('[FileManager] Creating file manager with:', {
-          nodeId: meshcentralAgentId,
-          isRemote
-        })
-        
+
         const fileManager = new MeshCentralFileManager({
           nodeId: meshcentralAgentId,
           isRemote,
           consent: 0, // No consent required for file operations
           controlClient,
           onStateChange: (state) => {
-            console.log('[FileManager] State changed:', state)
             if (mounted) {
               setConnectionState(state)
-              
+
               if (state === 'connected_end_to_end') {
                 toastRef.current?.({
                   title: 'Connected',
@@ -157,23 +154,14 @@ export function useMeshFileManager({
           },
           onDirectoryChange: (entries: FileEntry[]) => {
             if (mounted) {
-              console.log('[FileManager Hook] Directory changed:', {
-                entriesCount: entries.length,
-                currentPath: fileManager.getCurrentPath(),
-                firstEntry: entries[0]
-              })
               const items = convertFileEntriesToItems(entries, fileManager.getCurrentPath())
-              console.log('[FileManager Hook] Converted items:', {
-                itemsCount: items.length,
-                firstItem: items[0]
-              })
               setFiles(items)
               setCurrentPath(fileManager.getCurrentPath())
             }
           },
           onTransferProgress: (progress: FileTransferProgress) => {
             if (mounted) {
-              if (progress.file.includes('upload')) {
+              if (progress.type === 'upload') {
                 setUploadProgress(progress)
                 if (progress.progress === 100) {
                   setTimeout(() => setUploadProgress(null), 2000)
@@ -202,7 +190,6 @@ export function useMeshFileManager({
         fileManagerRef.current = fileManager
 
         if (token.cancelled) {
-          console.log('[FileManager] Initialization cancelled before connect attempt')
           fileManager.disconnect()
           controlClient.close()
           controlClientRef.current = null
@@ -211,10 +198,8 @@ export function useMeshFileManager({
           return
         }
 
-        // Connect to file system
         await fileManager.connect()
         if (token.cancelled) {
-          console.log('[FileManager] Initialization cancelled after connect attempt')
           fileManager.disconnect()
           controlClient.close()
           controlClientRef.current = null
@@ -223,7 +208,7 @@ export function useMeshFileManager({
           return
         }
         initSucceeded = true
-        
+
       } catch (error) {
         const err = error as Error
         toastRef.current?.({
@@ -256,28 +241,35 @@ export function useMeshFileManager({
         initTokenRef.current.cancelled = true
       }
       const deviceKey = `${meshcentralAgentId}-${isRemote ? 'remote' : 'server'}`
-      console.log(`[FileManager] Cleanup called for device ${deviceKey}`)
-      
+
       mounted = false
       isInitializing = false
       initializingRef.current = false
       activeFileManagers.delete(deviceKey)
-      
+
       if (fileManagerRef.current) {
-        console.log('[FileManager] Disconnecting existing file manager')
         fileManagerRef.current.disconnect()
         fileManagerRef.current = null
       }
-      
+
       if (controlClientRef.current) {
-        console.log('[FileManager] Disconnecting control client')
         controlClientRef.current.close()
         controlClientRef.current = null
       }
     }
   }, [meshcentralAgentId, isRemote])
 
-  // Navigation actions
+  const refreshCurrentDirectory = useCallback(async () => {
+    const fileManager = fileManagerRef.current
+    if (!fileManager || !fileManager.isConnected()) return
+
+    try {
+      await fileManager.loadDirectory(fileManager.getCurrentPath())
+    } catch {
+      /* noop */
+    }
+  }, [])
+
   const navigateToPath = useCallback(async (path: string) => {
     const fileManager = fileManagerRef.current
     if (!fileManager || !fileManager.isConnected()) return
@@ -336,19 +328,12 @@ export function useMeshFileManager({
     }
   }, [toast])
 
-  // File operations
   const createFolder = useCallback(async (name: string) => {
     const fileManager = fileManagerRef.current
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      setLoading(true)
       await fileManager.createFolder(name)
-      toast({
-        title: 'Folder Created',
-        description: `Created folder "${name}"`,
-        variant: 'success'
-      })
     } catch (error) {
       toast({
         title: 'Create Folder Failed',
@@ -356,49 +341,36 @@ export function useMeshFileManager({
         variant: 'destructive'
       })
     } finally {
-      setLoading(false)
+      refreshCurrentDirectory()
     }
-  }, [toast])
+  }, [toast, refreshCurrentDirectory])
 
   const deleteItems = useCallback(async (fileIds: string[]) => {
     const fileManager = fileManagerRef.current
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      setLoading(true)
-      // Extract file names from IDs (last part of path)
       const names = fileIds.map(id => id.split('/').pop() || '')
       await fileManager.deleteItems(names, true)
-      
-      toast({
-        title: 'Items Deleted',
-        description: `Deleted ${names.length} item(s)`,
-        variant: 'success'
-      })
-      setSelectedFiles([])
     } catch (error) {
       toast({
         title: 'Delete Failed',
         description: (error as Error).message,
         variant: 'destructive'
       })
-    } finally {
-      setLoading(false)
+      return
     }
-  }, [toast])
+
+    setSelectedFiles([])
+    refreshCurrentDirectory()
+  }, [toast, refreshCurrentDirectory])
 
   const renameItem = useCallback(async (oldName: string, newName: string) => {
     const fileManager = fileManagerRef.current
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      setLoading(true)
       await fileManager.rename(oldName, newName)
-      toast({
-        title: 'Item Renamed',
-        description: `Renamed "${oldName}" to "${newName}"`,
-        variant: 'success'
-      })
     } catch (error) {
       toast({
         title: 'Rename Failed',
@@ -406,28 +378,16 @@ export function useMeshFileManager({
         variant: 'destructive'
       })
     } finally {
-      setLoading(false)
+      refreshCurrentDirectory()
     }
-  }, [toast])
+  }, [toast, refreshCurrentDirectory])
 
   const uploadFile = useCallback(async (file: File) => {
     const fileManager = fileManagerRef.current
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      toast({
-        title: 'Upload Started',
-        description: `Uploading ${file.name}`,
-        variant: 'info'
-      })
-      
       await fileManager.uploadFile(file)
-      
-      toast({
-        title: 'Upload Complete',
-        description: `Successfully uploaded ${file.name}`,
-        variant: 'success'
-      })
     } catch (error) {
       toast({
         title: 'Upload Failed',
@@ -443,12 +403,6 @@ export function useMeshFileManager({
 
     try {
       fileManager.downloadFile(fileName)
-      
-      toast({
-        title: 'Download Started',
-        description: `Downloading ${fileName}`,
-        variant: 'info'
-      })
     } catch (error) {
       toast({
         title: 'Download Failed',
@@ -463,49 +417,39 @@ export function useMeshFileManager({
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      setLoading(true)
       const names = fileIds.map(id => id.split('/').pop() || '')
       await fileManager.copyFiles(names, destinationPath)
-      toast({
-        title: 'Files Copied',
-        description: `Copied ${names.length} item(s)`,
-        variant: 'success'
-      })
     } catch (error) {
       toast({
         title: 'Copy Failed',
         description: (error as Error).message,
         variant: 'destructive'
       })
-    } finally {
-      setLoading(false)
+      return
     }
-  }, [toast])
+
+    refreshCurrentDirectory()
+  }, [toast, refreshCurrentDirectory])
 
   const moveFiles = useCallback(async (fileIds: string[], destinationPath: string) => {
     const fileManager = fileManagerRef.current
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      setLoading(true)
       const names = fileIds.map(id => id.split('/').pop() || '')
       await fileManager.moveFiles(names, destinationPath)
-      toast({
-        title: 'Files Moved',
-        description: `Moved ${names.length} item(s)`,
-        variant: 'success'
-      })
-      setSelectedFiles([])
     } catch (error) {
       toast({
         title: 'Move Failed',
         description: (error as Error).message,
         variant: 'destructive'
       })
-    } finally {
-      setLoading(false)
+      return
     }
-  }, [toast])
+
+    setSelectedFiles([])
+    refreshCurrentDirectory()
+  }, [toast, refreshCurrentDirectory])
 
   const searchFiles = useCallback(async (query: string) => {
     const fileManager = fileManagerRef.current
@@ -527,7 +471,6 @@ export function useMeshFileManager({
     }
   }, [currentPath, toast])
 
-  // Selection actions
   const selectFile = useCallback((fileId: string, selected: boolean) => {
     setSelectedFiles(prev => {
       if (selected) {
@@ -546,10 +489,145 @@ export function useMeshFileManager({
     }
   }, [files])
 
-  // Handle file actions from context menu
+  const copyToClipboard = useCallback((fileIds?: string[]) => {
+    const targetFiles = fileIds || selectedFiles
+    if (targetFiles.length === 0) {
+      toast({
+        title: 'No Files Selected',
+        description: 'Please select files to copy',
+        variant: 'default'
+      })
+      return
+    }
+
+    setClipboard({
+      fileIds: targetFiles,
+      sourcePath: currentPath,
+      operation: 'copy'
+    })
+  }, [selectedFiles, currentPath, toast])
+
+  const cutFiles = useCallback((fileIds?: string[]) => {
+    const targetFiles = fileIds || selectedFiles
+    if (targetFiles.length === 0) {
+      toast({
+        title: 'No Files Selected',
+        description: 'Please select files to cut',
+        variant: 'default'
+      })
+      return
+    }
+
+    setClipboard({
+      fileIds: targetFiles,
+      sourcePath: currentPath,
+      operation: 'cut'
+    })
+  }, [selectedFiles, currentPath, toast])
+
+  const pasteFiles = useCallback(async () => {
+    if (!clipboard) {
+      toast({
+        title: 'Clipboard Empty',
+        description: 'No files in clipboard to paste',
+        variant: 'default'
+      })
+      return
+    }
+
+    const fileManager = fileManagerRef.current
+    if (!fileManager || !fileManager.isConnected()) {
+      toast({
+        title: 'Not Connected',
+        description: 'File manager not connected',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    if (clipboard.sourcePath === currentPath) {
+      toast({
+        title: 'Same Location',
+        description: 'Cannot paste to the same location',
+        variant: 'default'
+      })
+      return
+    }
+
+    const fileNames = clipboard.fileIds.map(id => id.split('/').pop() || '')
+
+    try {
+      if (clipboard.operation === 'copy') {
+        await fileManager.copyFromSource(clipboard.sourcePath, fileNames)
+      } else {
+        await fileManager.moveFromSource(clipboard.sourcePath, fileNames)
+        setClipboard(null)
+        setSelectedFiles([])
+      }
+    } catch (error) {
+      const operation = clipboard.operation === 'copy' ? 'Copy' : 'Move'
+      toast({
+        title: `${operation} Failed`,
+        description: (error as Error).message,
+        variant: 'destructive'
+      })
+      return
+    }
+
+    refreshCurrentDirectory()
+  }, [clipboard, currentPath, toast, refreshCurrentDirectory])
+
+  const clearClipboard = useCallback(() => {
+    setClipboard(null)
+    toast({
+      title: 'Clipboard Cleared',
+      description: 'Clipboard has been cleared',
+      variant: 'default',
+      duration: 2000
+    })
+  }, [toast])
+
+  const cancelDownload = useCallback(() => {
+    const fileManager = fileManagerRef.current
+    if (!fileManager) return
+
+    const downloader = fileManager.getDownloader()
+    if (downloader.hasActiveDownload()) {
+      const activeDownloadId = (downloader as any).activeDownloadId
+      if (activeDownloadId) {
+        downloader.cancelDownload(activeDownloadId)
+        setDownloadProgress(null)
+        toast({
+          title: 'Download Cancelled',
+          description: 'File download has been cancelled',
+          variant: 'default'
+        })
+      }
+    }
+  }, [toast])
+
+  const cancelUpload = useCallback(() => {
+    const fileManager = fileManagerRef.current
+    if (!fileManager) return
+
+    const uploader = fileManager.getUploader()
+    if (uploader.hasActiveUpload()) {
+      const activeUploadId = uploader.getActiveUploadId()
+      if (activeUploadId) {
+        uploader.cancelUpload(activeUploadId)
+        setUploadProgress(null)
+        toast({
+          title: 'Upload Cancelled',
+          description: 'File upload has been cancelled',
+          variant: 'default'
+        })
+      }
+    }
+  }, [toast])
+
   const handleFileAction = useCallback(async (action: FileAction, fileId?: string) => {
     const targetFiles = fileId ? [fileId] : selectedFiles
-    
+
     switch (action) {
       case 'download':
         if (targetFiles.length === 1) {
@@ -557,20 +635,20 @@ export function useMeshFileManager({
           downloadFile(fileName)
         }
         break
-        
+
       case 'delete':
         if (targetFiles.length > 0) {
           await deleteItems(targetFiles)
         }
         break
-        
+
       case 'new-folder':
         const folderName = prompt('Enter folder name:')
         if (folderName) {
           await createFolder(folderName)
         }
         break
-        
+
       case 'rename':
         if (targetFiles.length === 1) {
           const oldName = targetFiles[0].split('/').pop() || ''
@@ -580,15 +658,27 @@ export function useMeshFileManager({
           }
         }
         break
-        
+
       case 'upload':
         // This will be handled by the container component with file input
         break
-        
+
+      case 'copy':
+        copyToClipboard(targetFiles)
+        break
+
+      case 'cut':
+        cutFiles(targetFiles)
+        break
+
+      case 'paste':
+        await pasteFiles()
+        break
+
       default:
-        console.warn('Unhandled file action:', action)
+        break
     }
-  }, [selectedFiles, downloadFile, deleteItems, createFolder, renameItem])
+  }, [selectedFiles, downloadFile, deleteItems, createFolder, renameItem, copyToClipboard, cutFiles, pasteFiles])
 
   return {
     files,
@@ -598,6 +688,7 @@ export function useMeshFileManager({
     loading,
     uploadProgress,
     downloadProgress,
+    clipboard,
     navigateToPath,
     navigateUp,
     navigateInto,
@@ -606,9 +697,15 @@ export function useMeshFileManager({
     renameItem,
     uploadFile,
     downloadFile,
+    cancelDownload,
+    cancelUpload,
     copyFiles,
     moveFiles,
     searchFiles,
+    copyToClipboard,
+    cutFiles,
+    pasteFiles,
+    clearClipboard,
     selectFile,
     selectAll,
     handleFileAction

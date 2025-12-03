@@ -38,11 +38,7 @@ export class FileErrorHandler {
     this.setupDefaultHandlers()
   }
 
-  /**
-   * Setup default error handlers
-   */
   private setupDefaultHandlers(): void {
-    // Authentication errors
     this.registerHandler('autherror', (error) => {
       console.error('Authentication failed:', error.message)
     })
@@ -55,17 +51,14 @@ export class FileErrorHandler {
       console.error('Session timeout:', error.message)
     })
 
-    // Connection errors
     this.registerHandler('connectionerror', (error) => {
       console.error('Connection error:', error.message)
     })
 
-    // Permission errors
     this.registerHandler('permissiondenied', (error) => {
       console.error('Permission denied:', error.message)
     })
 
-    // File operation errors
     this.registerHandler('filenotfound', (error) => {
       console.error('File not found:', error.message)
     })
@@ -79,36 +72,24 @@ export class FileErrorHandler {
     })
   }
 
-  /**
-   * Register custom error handler
-   */
   registerHandler(errorType: FileErrorType, handler: (error: FileError) => void): void {
     this.errorHandlers.set(errorType, handler)
   }
 
-  /**
-   * Handle error
-   */
   handleError(error: FileError): void {
-    // Add to history
     this.errorHistory.push(error)
     if (this.errorHistory.length > this.maxHistorySize) {
       this.errorHistory.shift()
     }
 
-    // Call specific handler
     const handler = this.errorHandlers.get(error.type)
     if (handler) {
       handler(error)
     }
 
-    // Call general error callback
     this.onError?.(error)
   }
 
-  /**
-   * Parse error from WebSocket message
-   */
   parseError(message: any): FileError | null {
     if (!message || !message.error) return null
 
@@ -124,9 +105,6 @@ export class FileErrorHandler {
     }
   }
 
-  /**
-   * Map error string to error type
-   */
   private mapErrorType(error: string): FileErrorType {
     const errorMap: Record<string, FileErrorType> = {
       'autherror': 'autherror',
@@ -166,9 +144,6 @@ export class FileErrorHandler {
     return 'unknown'
   }
 
-  /**
-   * Get user-friendly error message
-   */
   getErrorMessage(errorType: FileErrorType, originalError?: string): string {
     const messages: Record<FileErrorType, string> = {
       'autherror': 'Authentication failed. Please reconnect.',
@@ -191,9 +166,6 @@ export class FileErrorHandler {
     return messages[errorType]
   }
 
-  /**
-   * Check if error is retryable
-   */
   isRetryable(errorType: FileErrorType): boolean {
     const retryableErrors: FileErrorType[] = [
       'connectionerror',
@@ -206,9 +178,6 @@ export class FileErrorHandler {
     return retryableErrors.includes(errorType)
   }
 
-  /**
-   * Create error from string
-   */
   createError(errorString: string, details?: string): FileError {
     const errorType = this.mapErrorType(errorString)
     return {
@@ -220,30 +189,18 @@ export class FileErrorHandler {
     }
   }
 
-  /**
-   * Get error history
-   */
   getErrorHistory(): FileError[] {
     return [...this.errorHistory]
   }
 
-  /**
-   * Clear error history
-   */
   clearHistory(): void {
     this.errorHistory = []
   }
 
-  /**
-   * Get last error
-   */
   getLastError(): FileError | undefined {
     return this.errorHistory[this.errorHistory.length - 1]
   }
 
-  /**
-   * Count errors by type
-   */
   getErrorCounts(): Map<FileErrorType, number> {
     const counts = new Map<FileErrorType, number>()
     

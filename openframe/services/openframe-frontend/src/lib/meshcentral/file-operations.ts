@@ -20,23 +20,26 @@ export class FileOperations {
 
   joinPath(base: string, segment: string): string {
     const sanitizedSegment = segment.replace(/^[\\/]+/, '')
-    if (!base) {
+    
+    if (!base || base === '') {
+      if (/^[A-Za-z]:/.test(sanitizedSegment)) {
+        return sanitizedSegment.endsWith('\\') ? sanitizedSegment : sanitizedSegment + '\\'
+      }
       return sanitizedSegment
     }
+    
     if (base === '/') {
       return '/' + sanitizedSegment
     }
     if (base === '\\') {
       return `\\${sanitizedSegment}`
     }
+    
     const separator = this.detectSeparator(base)
     const needsSep = base.endsWith(separator) ? '' : separator
     return `${base}${needsSep}${sanitizedSegment}`
   }
 
-  /**
-   * Create directory listing request
-   */
   createListDirectoryRequest(path: string): FileOperationRequest {
     return {
       action: 'ls',
@@ -45,9 +48,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create folder request
-   */
   createMakeDirRequest(path: string, folderName: string): FileOperationRequest {
     const fullPath = this.joinPath(path, folderName)
     return {
@@ -57,9 +57,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create rename request
-   */
   createRenameRequest(path: string, oldName: string, newName: string): FileOperationRequest {
     return {
       action: 'rename',
@@ -70,9 +67,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create delete request
-   */
   createDeleteRequest(path: string, items: string[], recursive = false): FileOperationRequest {
     return {
       action: 'rm',
@@ -83,9 +77,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create copy request
-   */
   createCopyRequest(sourcePath: string, destinationPath: string, fileNames: string[]): FileOperationRequest {
     return {
       action: 'copy',
@@ -96,9 +87,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create move request
-   */
   createMoveRequest(sourcePath: string, destinationPath: string, fileNames: string[]): FileOperationRequest {
     return {
       action: 'move',
@@ -109,9 +97,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create zip archive request
-   */
   createZipRequest(path: string, files: string[], zipName: string): FileOperationRequest {
     return {
       action: 'zip',
@@ -122,9 +107,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create unzip request
-   */
   createUnzipRequest(path: string, zipFile: string): FileOperationRequest {
     return {
       action: 'unzip',
@@ -134,9 +116,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create file search request
-   */
   createSearchRequest(path: string, filter: string): FileOperationRequest {
     return {
       action: 'findfile',
@@ -146,9 +125,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create get file content request (for small text files)
-   */
   createGetFileRequest(path: string, fileName: string): FileOperationRequest {
     return {
       action: 'get',
@@ -158,9 +134,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Create set file content request (for small text files)
-   */
   createSetFileRequest(path: string, fileName: string, content: string): FileOperationRequest {
     const base64Content = btoa(content)
     return {
@@ -172,9 +145,6 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Parse path into segments for navigation
-   */
   parsePath(path: string): string[] {
     if (!path) return []
     const separator = this.detectSeparator(path)
@@ -184,17 +154,11 @@ export class FileOperations {
     return path.split('/').filter(segment => segment.length > 0)
   }
 
-  /**
-   * Build path from segments
-   */
   buildPath(segments: string[]): string {
     if (segments.length === 0) return '/'
     return '/' + segments.join('/')
   }
 
-  /**
-   * Get parent directory path
-   */
   getParentPath(path: string): string {
     if (!path || path === '/' || path === '\\') return path || '/'
     const separator = this.detectSeparator(path)
@@ -223,19 +187,11 @@ export class FileOperations {
     return segments.length === 0 ? '/' : `/${segments.join('/')}`
   }
 
-  /**
-   * Sanitize file/folder name
-   */
   sanitizeName(name: string): string {
-    // Remove dangerous characters
     return name.replace(/[<>:"\/\\|?*\x00-\x1F]/g, '')
   }
 
-  /**
-   * Validate path (prevent traversal)
-   */
   validatePath(path: string): boolean {
-    // Check for path traversal attempts
     const segments = path.split('/')
     for (const segment of segments) {
       if (segment === '..' || segment === '.') {
@@ -243,67 +199,5 @@ export class FileOperations {
       }
     }
     return true
-  }
-
-  /**
-   * Format file size for display
-   */
-  formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
-  /**
-   * Format date for display
-   */
-  formatDate(timestamp: number): string {
-    return new Date(timestamp).toLocaleString()
-  }
-
-  /**
-   * Get file extension
-   */
-  getFileExtension(fileName: string): string {
-    const parts = fileName.split('.')
-    if (parts.length > 1) {
-      return parts.pop()?.toLowerCase() || ''
-    }
-    return ''
-  }
-
-  /**
-   * Get file icon based on type and extension
-   */
-  getFileIcon(fileType: number, fileName: string): string {
-    if (fileType === 2) return '📁' // Directory
-    if (fileType === 1) return '🔗' // Link
-    
-    const ext = this.getFileExtension(fileName)
-    const iconMap: Record<string, string> = {
-      'txt': '📄',
-      'pdf': '📕',
-      'doc': '📘',
-      'docx': '📘',
-      'xls': '📊',
-      'xlsx': '📊',
-      'zip': '🗜️',
-      'rar': '🗜️',
-      'jpg': '🖼️',
-      'jpeg': '🖼️',
-      'png': '🖼️',
-      'gif': '🖼️',
-      'mp3': '🎵',
-      'mp4': '🎥',
-      'exe': '⚙️',
-      'js': '📜',
-      'json': '📋',
-      'html': '🌐',
-      'css': '🎨'
-    }
-    
-    return iconMap[ext] || '📄'
   }
 }

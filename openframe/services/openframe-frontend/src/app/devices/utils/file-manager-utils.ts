@@ -42,9 +42,8 @@ export function formatFileSize(bytes: number): string {
 export function formatDate(timestamp: number): string {
   const date = new Date(timestamp)
   
-  // Check if date is valid
   if (isNaN(date.getTime())) {
-    return 'Unknown'
+    return ''
   }
   
   // Format: MM/DD/YYYY HH:MM
@@ -79,23 +78,22 @@ export function isDownloadable(fileType: number): boolean {
  */
 export function sanitizePath(path: string): string {
   if (!path) return ''
-  const separator = path.includes('\\') && !path.includes('/') ? '\\' : '/'
+  
+  // Remove any path traversal attempts
   const parts = path
     .split(/[\\/]/)
     .filter(part => part.length > 0 && part !== '.' && part !== '..')
 
   if (parts.length === 0) {
-    return separator === '\\' ? '\\' : '/'
+    return ''
   }
 
-  if (separator === '\\') {
-    const hasDrive = /^[A-Za-z]:$/.test(parts[0])
-    if (hasDrive) {
-      const drive = parts.shift()!
-      const remainder = parts.length ? `\\${parts.join('\\')}` : '\\'
-      return `${drive}${remainder}`
-    }
-    return `\\${parts.join('\\')}`
+  const hasDrive = /^[A-Za-z]:?$/.test(parts[0])
+  if (hasDrive) {
+    const drive = parts.shift()!
+    const driveNormalized = drive.endsWith(':') ? drive : drive + ':'
+    const remainder = parts.length ? parts.join('\\') : ''
+    return remainder ? `${driveNormalized}\\${remainder}` : `${driveNormalized}\\`
   }
 
   return `/${parts.join('/')}`
@@ -121,7 +119,7 @@ export function joinPath(...segments: string[]): string {
   const joined = segments
     .filter(Boolean)
     .join('/')
-    .replace(/\/+/g, '/') // Replace multiple slashes with single slash
+    .replace(/\/+/g, '/')
   
   return joined.startsWith('/') ? joined : '/' + joined
 }

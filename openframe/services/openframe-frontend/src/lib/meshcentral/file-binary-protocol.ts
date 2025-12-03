@@ -1,9 +1,5 @@
 /**
  * MeshCentral File Manager Binary Protocol Handler
- *
- * Protocol 5 download streams use 4-byte little-endian headers where:
- *  - bits 1..31 represent the payload length in bytes
- *  - bit 0 indicates whether the chunk is the final chunk (1 == final)
  */
 
 export class FileBinaryProtocol {
@@ -44,6 +40,7 @@ export class FileBinaryProtocol {
       throw new Error('Incomplete binary header')
     }
 
+    // Original protocol: bits 1-31 = length, bit 0 = final
     const raw =
       headerBytes[0] |
       (headerBytes[1] << 8) |
