@@ -1,6 +1,0 @@
-pinot:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-  zookeeper:
-    image:
-      registry: ghcr.io/flamingo-stack/registry

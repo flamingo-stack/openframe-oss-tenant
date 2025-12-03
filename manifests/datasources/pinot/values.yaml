@@ -11,6 +11,7 @@ servicemonitor:
 
 pinot:
   image:
+    registry: ghcr.io/flamingo-stack/registry
     repository: apachepinot/pinot
     tag: latest
   cluster:
@@ -27,5 +28,6 @@ pinot:
 
   zookeeper:
     image:
+      registry: ghcr.io/flamingo-stack/registry
       repository: bitnami/zookeeper
       tag: 3.9.3-debian-12-r22
