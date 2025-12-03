@@ -330,6 +330,7 @@ impl Client {
             tool_agent_file_client.clone(),
             installed_tools_service.clone(),
             tool_kill_service.clone(),
+            tool_run_manager.clone(),
             directory_manager.clone(),
             config_service.clone(),
             installed_agent_message_publisher.clone(),

@@ -1,2 +1,13 @@
+environment: dev
+
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
+
+mongoExpress:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: library/mongo-express
+    tag: "1.0.2"

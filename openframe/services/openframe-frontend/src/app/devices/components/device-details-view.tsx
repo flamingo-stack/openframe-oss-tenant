@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { StatusTag, DetailPageContainer, Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, ActionsMenu, normalizeOSType } from '@flamingo/ui-kit'
 import type { ActionsMenuGroup } from '@flamingo/ui-kit'
 import { RemoteControlIcon, ShellIcon, CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Folder } from 'lucide-react'
 import { RemoteShellModal } from './remote-shell-modal'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
@@ -193,6 +193,20 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           Remote Shell
         </Button>
       )}
+
+      {/* Files Button */}
+      <Button
+        variant="device-action"
+        leftIcon={<Folder className="h-5 w-5" />}
+        onClick={() => {
+          if (actionAvailability?.meshcentralAgentId) {
+            router.push(`/devices/details/${deviceId}/file-manager`)
+          }
+        }}
+        disabled={!actionAvailability?.remoteControlEnabled}
+      >
+        Files
+      </Button>
 
       {/* More Actions Dropdown (3 dots) */}
       <DeviceActionsDropdown

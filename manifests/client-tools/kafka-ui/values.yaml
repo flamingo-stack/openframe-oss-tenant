@@ -1,8 +1,17 @@
+environment: dev
+
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 kafka-ui:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: kafbat/kafka-ui
+    tag: v1.4.2
   yamlApplicationConfig:
     auth:
       type: disabled

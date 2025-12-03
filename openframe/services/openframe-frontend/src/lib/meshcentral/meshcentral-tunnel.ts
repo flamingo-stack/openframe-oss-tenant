@@ -83,7 +83,11 @@ export class MeshTunnel {
         } else if (wsState === 'connected') {
           this.setState(2)
           // Ask caller to re-send pairing via control connection on reconnect
-          try { this.params.onRequestPairing?.(this.id) } catch {}
+          try { 
+            this.params.onRequestPairing?.(this.id)
+          } catch (e) {
+            console.error('[MeshTunnel] Error calling onRequestPairing:', e)
+          }
           this.initializeHandshake()
         } else if (wsState === 'disconnected' || wsState === 'failed') {
           this.setState(0)
@@ -142,6 +146,7 @@ export class MeshTunnel {
     if (!this.isHandshakeComplete) {
       const data = e.data
       if (data === 'c' || data === 'cr') {
+        console.log('[MeshTunnel] Handshake received, sending protocol:', this.params.protocol)
         const options = this.params.options
         if (options && (options.cols || options.rows || options.requireLogin)) {
           this.sendCtrl({ ...options, type: 'options', ctrlChannel: 102938 })
@@ -151,10 +156,18 @@ export class MeshTunnel {
         this.isHandshakeComplete = true
         return
       }
+      // During handshake, ignore other messages
+      return
     }
     
     if (typeof e.data === 'string') {
       const s = e.data as string
+      
+      // Ignore empty messages
+      if (s.length === 0) {
+        return
+      }
+      
       if (s[0] === '~') {
         this.params.onData(s.substring(1))
         return
@@ -174,6 +187,9 @@ export class MeshTunnel {
           return
         }
       } catch {}
+      
+      // Pass non-empty string data to the handler
+      this.params.onData(s)
     } else {
       const buf = new Uint8Array(e.data as ArrayBuffer)
       if (this.params.onBinaryData) {
@@ -185,8 +201,8 @@ export class MeshTunnel {
   }
 
   sendText(text: string) {
-    const enc = new TextEncoder()
-    this.sendRaw(enc.encode(text))
+    // Send as text frame, not binary
+    this.sendRaw(text)
   }
 
   sendCtrl(obj: any) {
@@ -194,25 +210,25 @@ export class MeshTunnel {
       const data = JSON.stringify(obj)
       this.wsManager?.send(data)
     } catch (error) {
-      console.error('Error sending control message:', error)
+      console.error('[MeshTunnel] Error sending control message:', error)
     }
   }
 
   private sendRaw(x: string | Uint8Array) {
     try {
-      if (!this.wsManager?.isConnected()) return
+      if (!this.wsManager?.isConnected()) {
+        return
+      }
       
       if (typeof x === 'string') {
-        const b = new Uint8Array(x.length)
-        for (let i = 0; i < x.length; i++) {
-          b[i] = x.charCodeAt(i)
-        }
-        this.wsManager.send(b.buffer)
+        // Send string as text frame (opcode=1)
+        this.wsManager.send(x)
       } else {
+        // Send binary as binary frame (opcode=2)
         this.wsManager.send(x.buffer as ArrayBuffer)
       }
     } catch (error) {
-      console.error('Error sending raw data:', error)
+      console.error('[MeshTunnel] Error sending raw data:', error)
     }
   }
 

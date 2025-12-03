@@ -381,6 +381,7 @@ pub struct ToolRunManager {
     params_processor: ToolCommandParamsResolver,
     tool_kill_service: ToolKillService,
     running_tools: Arc<RwLock<HashSet<String>>>,
+    updating_tools: Arc<RwLock<HashSet<String>>>,
 }
 
 impl ToolRunManager {
@@ -394,7 +395,22 @@ impl ToolRunManager {
             params_processor,
             tool_kill_service,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
+            updating_tools: Arc::new(RwLock::new(HashSet::new())),
         }
+    }
+
+    pub async fn mark_updating(&self, tool_id: &str) {
+        self.updating_tools.write().await.insert(tool_id.to_string());
+        info!("Tool {} marked as updating", tool_id);
+    }
+
+    pub async fn clear_updating(&self, tool_id: &str) {
+        self.updating_tools.write().await.remove(tool_id);
+        info!("Tool {} update flag cleared", tool_id);
+    }
+
+    pub async fn is_updating(&self, tool_id: &str) -> bool {
+        self.updating_tools.read().await.contains(tool_id)
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -454,11 +470,17 @@ impl ToolRunManager {
         #[cfg(windows)]
         let running_tools = self.running_tools.clone();
 
+        let updating_tools = self.updating_tools.clone();
         let params_processor = self.params_processor.clone();
         tokio::spawn({
 
             async move {
                 loop {
+                    while updating_tools.read().await.contains(&tool.tool_agent_id) {
+                        info!(tool_id = %tool.tool_agent_id, "Tool is being updated, waiting...");
+                        sleep(Duration::from_secs(1)).await;
+                    }
+
                     // exchange args placeholders to real values
                     let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
                         Ok(args) => args,
