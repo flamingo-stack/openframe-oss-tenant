@@ -9,14 +9,23 @@ export class MeshControlClient {
   private isOpen = false
   private cookies: ControlAuthCookies | null = null
   private pendingRequests: Map<string, { resolve: Function; reject: Function; timeout: any }> = new Map()
-  private activeTunnels: Array<{ nodeId: string; relayId: string; protocol: 1 | 2; domainPrefix?: string }> = []
+  private activeTunnels: Array<{ nodeId: string; relayId: string; protocol: number; domainPrefix?: string; usage?: number }> = []
 
   constructor(credentials?: { user: string; pass: string }, authCookie?: string) {
-    const qs = new URLSearchParams({ 
-      user: credentials?.user || MESH_USER, 
-      pass: credentials?.pass || MESH_PASS 
-    })
-    if (authCookie) qs.append('auth', authCookie)
+    const qs = new URLSearchParams()
+    
+    // Add credentials for authentication
+    if (credentials?.user || MESH_USER) {
+      qs.append('user', credentials?.user || MESH_USER)
+    }
+    if (credentials?.pass || MESH_PASS) {
+      qs.append('pass', credentials?.pass || MESH_PASS)
+    }
+    
+    // Add auth cookie if provided
+    if (authCookie) {
+      qs.append('auth', authCookie)
+    }
     
     const buildUrl = () => {
       let url = buildWsUrl(`/control.ashx?${qs.toString()}`)
@@ -38,13 +47,12 @@ export class MeshControlClient {
       enableMessageQueue: true,
       maxReconnectAttempts: 10,
       reconnectBackoff: [1000, 2000, 4000, 8000, 16000, 30000],
-      refreshTokenBeforeReconnect: true,
+      refreshTokenBeforeReconnect: false, // Disable for MeshCentral
       
       onStateChange: (state) => {
         if (state === 'connected') {
           this.isOpen = true
-          if (this.cookies) {
-            this.cookies = null
+          if (!this.cookies) {
             this.requestAuthCookies()
           }
         } else if (state === 'disconnected' || state === 'failed') {
@@ -55,10 +63,20 @@ export class MeshControlClient {
       onMessage: (e) => {
         this.handleMessage(e)
       }, 
-      onError: () => {},
+      onError: (error) => {
+        console.error('[MeshControl] WebSocket error:', error)
+      },
+      onClose: (event) => {
+        console.log('[MeshControl] WebSocket closed:', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        })
+      },
       shouldReconnect: (closeEvent) => {
         const authFailureCodes = [1008, 1006, 4401]
-        return !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code)
+        const shouldReconnect = !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code)
+        return shouldReconnect
       }
     })
   }
@@ -162,43 +180,53 @@ export class MeshControlClient {
     await this.getAuthCookies()
   }
 
-  sendTunnelMsg(nodeId: string, relayPathValue: string): void {
-    if (!this.wsManager?.isConnected()) return
+  sendTunnelMsg(nodeId: string, relayPathValue: string, usage?: number): void {
+    if (!this.wsManager?.isConnected()) {
+      return
+    }
     
-    const msg = { action: 'msg', type: 'tunnel', nodeid: nodeId, value: relayPathValue }
+    const msg: Record<string, any> = { action: 'msg', type: 'tunnel', nodeid: nodeId, value: relayPathValue }
+    if (typeof usage === 'number') {
+      msg.usage = usage
+    }
+
     try {
       this.wsManager.send(JSON.stringify(msg))
     } catch (error) {
-      console.error('Error sending tunnel message:', error)
+      console.error('[MeshControl] Error sending tunnel message:', error)
     }
   }
 
-  sendRelayTunnel(nodeId: string, relayId: string, protocol: 1 | 2, relayCookie?: string, domainPrefix = ''): void {
-    this.upsertActiveTunnel(nodeId, relayId, protocol, domainPrefix)
+  sendRelayTunnel(nodeId: string, relayId: string, protocol: number, relayCookie?: string, domainPrefix = '', usage?: number): void {
+    this.upsertActiveTunnel(nodeId, relayId, protocol, domainPrefix, usage)
 
     const prefix = domainPrefix ? `${domainPrefix.replace(/^\/*|\/*$/g, '')}/` : ''
     const effectiveRelayCookie = this.cookies?.relayCookie ?? relayCookie
     const value = `*/${prefix}meshrelay.ashx?p=${protocol}&nodeid=${encodeURIComponent(nodeId)}&id=${encodeURIComponent(relayId)}${effectiveRelayCookie ? `&rauth=${encodeURIComponent(effectiveRelayCookie)}` : ''}`
-    this.sendTunnelMsg(nodeId, value)
+    this.sendTunnelMsg(nodeId, value, usage)
   }
 
   sendDesktopTunnel(nodeId: string, relayId: string, relayCookie?: string, domainPrefix = ''): void {
     this.sendRelayTunnel(nodeId, relayId, 2, relayCookie, domainPrefix)
   }
 
-  private upsertActiveTunnel(nodeId: string, relayId: string, protocol: 1 | 2, domainPrefix?: string) {
+  sendFileTunnel(nodeId: string, relayId: string, relayCookie?: string, domainPrefix = ''): void {
+    this.sendRelayTunnel(nodeId, relayId, 5, relayCookie, domainPrefix, 5)
+  }
+
+  private upsertActiveTunnel(nodeId: string, relayId: string, protocol: number, domainPrefix?: string, usage?: number) {
     const existingIndex = this.activeTunnels.findIndex(t => t.relayId === relayId)
     if (existingIndex >= 0) {
-      this.activeTunnels[existingIndex] = { nodeId, relayId, protocol, domainPrefix }
+      this.activeTunnels[existingIndex] = { nodeId, relayId, protocol, domainPrefix, usage }
       return
     }
-    this.activeTunnels.push({ nodeId, relayId, protocol, domainPrefix })
+    this.activeTunnels.push({ nodeId, relayId, protocol, domainPrefix, usage })
   }
   
   private resendActiveTunnels() {
     if (!this.isOpen || !this.wsManager?.isConnected()) return
     for (const t of this.activeTunnels) {
-      this.sendRelayTunnel(t.nodeId, t.relayId, t.protocol, undefined, t.domainPrefix)
+      this.sendRelayTunnel(t.nodeId, t.relayId, t.protocol, undefined, t.domainPrefix, t.usage)
     }
   }
 
