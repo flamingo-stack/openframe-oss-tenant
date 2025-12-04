@@ -63,9 +63,15 @@ export class MeshCentralFileManager {
       this.options.onTransferProgress?.(progress)
     })
 
-    this.downloader = new FileDownloader(sendMessage, (progress) => {
-      this.options.onTransferProgress?.(progress)
-    })
+    this.downloader = new FileDownloader(
+      sendMessage, 
+      (progress) => {
+        this.options.onTransferProgress?.(progress)
+      },
+      (fileName, reason) => {
+        this.options.onServerCancelDownload?.(fileName, reason)
+      }
+    )
   }
 
   async connect(): Promise<void> {
