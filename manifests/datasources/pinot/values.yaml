@@ -28,6 +28,5 @@ pinot:
 
   zookeeper:
     image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: bitnamilegacy/zookeeper
+      repository: ghcr.io/flamingo-stack/registry/bitnamilegacy/zookeeper
       tag: "3.9.3-debian-12-r22"
