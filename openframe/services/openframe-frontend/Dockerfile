@@ -23,7 +23,7 @@ COPY --from=ui-kit /tmp/ui-kit ./ui-kit
 # Install all dependencies (including devDeps) with caching
 ENV NODE_ENV=development
 RUN --mount=type=cache,id=nextjs-npm-cache,target=/root/.npm \
-    npm ci
+    npm install
 
 # Build the Next.js app (output to ./dist as per next.config.js)
 RUN npm run build  
