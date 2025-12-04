@@ -37,7 +37,7 @@ COPY --from=ui-kit /tmp/ui-kit ./ui-kit
 # Install prod deps on target platform (this is the slow part under emulation)
 ENV NODE_ENV=production
 RUN --mount=type=cache,id=nextjs-npm-cache-${TARGETPLATFORM},target=/root/.npm \
-    npm ci --only=production
+    npm install --omit=dev
 
 # Copy pre-built dist from builder (JS is platform-independent)
 COPY --from=builder /app/dist ./dist
