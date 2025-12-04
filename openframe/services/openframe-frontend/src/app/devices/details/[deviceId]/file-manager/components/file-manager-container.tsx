@@ -265,7 +265,7 @@ export function FileManagerContainer({
             searchQuery={searchQuery}
             loading={loading || connectionState === 'connecting'}
             showCheckboxes={true}
-            showSearch={true}
+            showSearch={false}
             showActions={true}
             canPaste={clipboard !== null}
             resultsCount={files.length}
