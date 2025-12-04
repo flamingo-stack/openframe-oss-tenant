@@ -13,8 +13,6 @@ deployment:
         privateDomain: "internal.flamingo.cx"
         tenantID: "cluster-1001"
 
-registry: {}
-
 global:
   image:
     tag: latest
