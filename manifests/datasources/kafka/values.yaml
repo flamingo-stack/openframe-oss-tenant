@@ -8,6 +8,7 @@ registerJob:
 kafka:
   # bitnamilegacy
   image:
+    registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/kafka
     tag: 4.0.0-debian-12-r10
   
@@ -102,6 +103,7 @@ kafka:
       enabled: false
       # bitnamilegacy
       image:
+        registry: ghcr.io/flamingo-stack/registry
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0-debian-12-r0
       
