@@ -8,6 +8,7 @@ registerJob:
 cassandra:
   # bitnamilegacy
   image:
+    registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/cassandra
     tag: 5.0.5-debian-12-r7
 

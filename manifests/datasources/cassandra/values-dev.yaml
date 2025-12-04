@@ -1,3 +1,0 @@
-cassandra:
-  image:
-    registry: ghcr.io/flamingo-stack/registry

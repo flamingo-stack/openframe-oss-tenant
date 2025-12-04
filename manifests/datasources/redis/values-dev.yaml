@@ -1,8 +1,0 @@
-redis:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-
-
-  metrics:
-    image:
-      registry: ghcr.io/flamingo-stack/registry
