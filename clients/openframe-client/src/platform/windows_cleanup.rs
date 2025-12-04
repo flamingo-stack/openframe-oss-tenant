@@ -1,6 +1,9 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use std::path::PathBuf;
 use tracing::info;
+
+#[cfg(windows)]
+use super::find_powershell_path;
 
 /// Generate a PowerShell script to cleanup the OpenFrame binary after process exit
 ///
@@ -225,7 +228,22 @@ pub fn execute_binary_cleanup_script(
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-        Command::new("powershell.exe")
+        // Try powershell.exe from PATH first, fallback to find_powershell_path()
+        let ps_path = match Command::new("powershell.exe").arg("-?").spawn() {
+            Ok(mut c) => {
+                let _ = c.wait();
+                "powershell.exe".to_string()
+            }
+            Err(_) => {
+                find_powershell_path()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .ok_or_else(|| anyhow!("PowerShell not found"))?
+            }
+        };
+
+        info!("Using PowerShell: {}", ps_path);
+
+        Command::new(&ps_path)
             .args(&[
                 "-NoProfile",
                 "-WindowStyle",
