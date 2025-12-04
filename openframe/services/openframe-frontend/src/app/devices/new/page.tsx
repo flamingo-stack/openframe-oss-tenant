@@ -127,7 +127,9 @@ export default function NewDevicePage() {
     const userAgent = navigator.userAgent.toLowerCase()
     const isMac = userAgent.includes('mac')
     const isWindows = userAgent.includes('win')
+    const isLinux = userAgent.includes('linux')
 
+    // Validate platform matches user's actual OS
     if (isMac && platform !== 'darwin') {
       toast({
         title: 'Platform Mismatch',
@@ -146,18 +148,29 @@ export default function NewDevicePage() {
       return
     }
 
+    if (isLinux && platform !== 'darwin') {
+      // Linux users should use the darwin/bash script (Unix-compatible)
+      toast({
+        title: 'Platform Mismatch',
+        description: 'Please select macOS/Linux platform for your current machine',
+        variant: 'destructive'
+      })
+      return
+    }
+
     if (!initialKey) {
       toast({ title: 'Secret unavailable', description: 'Registration secret not loaded yet', variant: 'destructive' })
       return
     }
 
     // Generate and download a script file for the user to run
+    // Use platform state (not browser detection) to match command content
     try {
       let scriptContent: string
       let fileName: string
       let mimeType: string
 
-      if (isWindows) {
+      if (platform === 'windows') {
         // PowerShell script for Windows
         scriptContent = `# OpenFrame Client Installation Script
 # Run this script as Administrator
