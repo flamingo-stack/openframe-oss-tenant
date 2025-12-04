@@ -1,5 +1,3 @@
-environment: dev
-
 registerJob:
   enabled: true
   image:

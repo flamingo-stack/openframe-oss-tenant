@@ -16,7 +16,7 @@ Rules:
 2. If `enabled: false` → skip
 3. If deployment.oss.enabled and ingress.localhost.enabled → skip "ngrok-operator"
 4. If deployment.oss.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
-5. If deployment.saas.enabled → skip "pinot" "openframe-gateway" "openframe-external-api" "openframe-stream" "openframe-config" "openframe-client" "openframe-api" "openframe-authorization-server" "ngrok-operator" "registration"
+5. If deployment.saas.enabled → skip "all that are at saas" "pinot" "openframe-gateway" "openframe-external-api" "openframe-stream" "openframe-config" "openframe-client" "openframe-api" "openframe-authorization-server" "ngrok-operator" "registration"
 6. If deployment.saas.enabled and ingress.gcp.enabled → skip "ingress-nginx"
 */}}
 
@@ -49,7 +49,7 @@ Rules:
   true
 {{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
   true
-{{- else if and $saas (or (eq $name "pinot") (eq $name "openframe-gateway") (eq $name "openframe-external-api") (eq $name "openframe-stream") (eq $name "openframe-config") (eq $name "openframe-client") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "ngrok-operator") (eq $name "registration")) }}
+{{- else if and $saas (or (eq $name "cassandra") (eq $name "debezium-connect") (eq $name "grafana") (eq $name "kafka") (eq $name "kafka-ui") (eq $name "loki") (eq $name "mongo-express") (eq $name "mongodb") (eq $name "mongodb-exporter") (eq $name "namespace-client-tools") (eq $name "namespace-datasources") (eq $name "namespace-integrated-tools") (eq $name "namespace-microservices") (eq $name "namespace-platform") (eq $name "nats") (eq $name "ngrok-operator") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "openframe-client") (eq $name "openframe-config") (eq $name "openframe-external-api") (eq $name "openframe-gateway") (eq $name "openframe-management") (eq $name "openframe-stream") (eq $name "openframe-frontend") (eq $name "pinot") (eq $name "prometheus") (eq $name "promtail") (eq $name "redis") (eq $name "redis-exporter") (eq $name "telepresence") (eq $name "authentik") (eq $name "fleetmdm") (eq $name "meshcentral") (eq $name "tactical-rmm") (eq $name "registration")) }}
   true
 {{- else if and $saas $saasGcp (eq $name "ingress-nginx") }}
   true
@@ -74,7 +74,7 @@ To add a new helper:
 {{- $vals := index . 2 -}}
 
 {{/* Apps with helpers - update this list when adding new helper files */}}
-{{- $availableHelpers := list "cassandra" "grafana" "kafka" "kafka-ui" "loki" "mongodb-exporter" "ngrok-operator" "prometheus" "promtail" "redis" "redis-exporter" "pinot" -}}
+{{- $availableHelpers := list "mongodb-exporter" "ngrok-operator" "redis-exporter" -}}
 
 {{- if has $name $availableHelpers -}}
   {{- $helper := printf "app-helpers.%s" $name -}}
