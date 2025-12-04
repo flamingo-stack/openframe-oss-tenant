@@ -194,7 +194,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         </Button>
       )}
 
-      {/* Files Button */}
+      {/* Manage Files Button */}
       <Button
         variant="device-action"
         leftIcon={<Folder className="h-5 w-5" />}
@@ -205,7 +205,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         }}
         disabled={!actionAvailability?.remoteControlEnabled}
       >
-        Files
+        Manage Files
       </Button>
 
       {/* More Actions Dropdown (3 dots) */}

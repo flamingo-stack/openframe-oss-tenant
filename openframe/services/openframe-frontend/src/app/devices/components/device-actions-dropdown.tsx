@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Button,
@@ -15,7 +15,10 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
-  AlertDialogAction
+  AlertDialogAction,
+  Modal,
+  ModalHeader,
+  ModalTitle
 } from '@flamingo/ui-kit'
 import {
   ShellIcon,
@@ -25,10 +28,14 @@ import {
   CmdIcon,
   PowerShellIcon
 } from '@flamingo/ui-kit/components/icons'
+import { CommandBox } from '@flamingo/ui-kit/components/features'
 import { normalizeOSType } from '@flamingo/ui-kit'
-import { MoreVertical, Trash2 } from 'lucide-react'
+import { useToast } from '@flamingo/ui-kit/hooks'
+import { MoreVertical, Trash2, Copy, PackageX, Folder } from 'lucide-react'
 import { useDeviceActions } from '../hooks/use-device-actions'
+import { useReleaseVersion } from '../hooks/use-release-version'
 import { getDeviceActionAvailability } from '../utils/device-action-utils'
+import { buildUninstallCommand, normalizeDevicePlatform } from '../utils/device-command-utils'
 import type { Device } from '../types/device.types'
 import type { ActionsMenuGroup } from '@flamingo/ui-kit'
 
@@ -51,14 +58,46 @@ export function DeviceActionsDropdown({
   onRemoteShell
 }: DeviceActionsDropdownProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions()
+  const { releaseVersion } = useReleaseVersion()
 
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showUninstallDialog, setShowUninstallDialog] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const deviceName = device.displayName || device.hostname || 'this device'
   const deviceId = device.machineId || device.id
+
+  // Get device platform for uninstall command
+  const devicePlatform = useMemo(() =>
+    normalizeDevicePlatform(device.platform, device.osType, device.operating_system),
+    [device.platform, device.osType, device.operating_system]
+  )
+
+  // Build the uninstall command
+  const uninstallCommand = useMemo(() =>
+    buildUninstallCommand({ platform: devicePlatform, releaseVersion }),
+    [devicePlatform, releaseVersion]
+  )
+
+  // Copy uninstall command to clipboard
+  const copyUninstallCommand = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(uninstallCommand)
+      toast({
+        title: 'Command copied',
+        description: 'Uninstall command copied to clipboard'
+      })
+    } catch {
+      toast({
+        title: 'Copy failed',
+        description: 'Could not copy command to clipboard',
+        variant: 'destructive'
+      })
+    }
+  }, [uninstallCommand, toast])
 
   // Get unified action availability
   const actionAvailability = useMemo(() =>
@@ -100,6 +139,13 @@ export function DeviceActionsDropdown({
     } else {
       // Navigate to device details with action param to auto-open remote shell
       router.push(`/devices/details/${deviceId}?action=remoteShell&shellType=${type}`)
+    }
+  }
+
+  const handleManageFiles = () => {
+    setDropdownOpen(false)
+    if (actionAvailability.meshcentralAgentId) {
+      router.push(`/devices/details/${deviceId}/file-manager`)
     }
   }
 
@@ -176,6 +222,14 @@ export function DeviceActionsDropdown({
         disabled: !actionAvailability.remoteControlEnabled,
         onClick: handleRemoteControl
       })
+
+      actionItems.push({
+        id: 'manage-files',
+        label: 'Manage Files',
+        icon: <Folder className="w-6 h-6" />,
+        disabled: !actionAvailability.remoteControlEnabled,
+        onClick: handleManageFiles
+      })
     }
 
     // Run Script is always in the dropdown
@@ -196,6 +250,17 @@ export function DeviceActionsDropdown({
 
     // Destructive actions
     const destructiveItems = []
+
+    // Uninstall Device - always available (shows command to run on device)
+    destructiveItems.push({
+      id: 'uninstall',
+      label: 'Uninstall Device',
+      icon: <PackageX className="w-6 h-6" />,
+      onClick: () => {
+        setDropdownOpen(false)
+        setShowUninstallDialog(true)
+      }
+    })
 
     if (actionAvailability.archiveEnabled) {
       destructiveItems.push({
@@ -326,6 +391,29 @@ export function DeviceActionsDropdown({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Uninstall Device Modal */}
+      <Modal isOpen={showUninstallDialog} onClose={() => setShowUninstallDialog(false)} className="max-w-2xl w-full text-left">
+        <ModalHeader>
+          <ModalTitle>Uninstall Device</ModalTitle>
+          <p className="text-ods-text-secondary text-sm mt-1">
+            Run this command on{' '}
+            <span className="text-ods-accent font-medium">{deviceName}</span>{' '}
+            to uninstall the OpenFrame client.
+          </p>
+        </ModalHeader>
+        <div className="px-6 py-4">
+          <CommandBox
+            command={uninstallCommand}
+            primaryAction={{
+              label: 'Copy Command',
+              onClick: copyUninstallCommand,
+              icon: <Copy className="w-5 h-5" />,
+              variant: 'primary'
+            }}
+          />
+        </div>
+      </Modal>
     </>
   )
 }
