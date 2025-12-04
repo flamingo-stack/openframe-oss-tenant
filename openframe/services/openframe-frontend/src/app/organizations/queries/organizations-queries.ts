@@ -46,6 +46,9 @@ export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
           organizationId
           name
           isDefault
+          image {
+            imageUrl
+          }
         }
       }
     }
