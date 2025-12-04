@@ -100,11 +100,6 @@ export function FileManagerContainer({
     selectAll(selected)
   }, [selectAll])
 
-  const handleFileClick = useCallback((file: FileItem) => {
-    // Single click should just select the file, not download it
-    // Download should be triggered via the download action button
-  }, [])
-
   const handleFolderOpen = useCallback((file: FileItem) => {
     if (file.type === 'folder') {
       navigateInto(file.name)
@@ -270,7 +265,7 @@ export function FileManagerContainer({
             searchQuery={searchQuery}
             loading={loading || connectionState === 'connecting'}
             showCheckboxes={true}
-            showSearch={true}
+            showSearch={false}
             showActions={true}
             canPaste={clipboard !== null}
             resultsCount={files.length}
@@ -280,7 +275,6 @@ export function FileManagerContainer({
             onSelectFile={handleSelectFile}
             onSelectAll={handleSelectAll}
             onFileAction={handleFileAction}
-            onFileClick={handleFileClick}
             onFolderOpen={handleFolderOpen}
             className="flex-1 min-h-0"
           />

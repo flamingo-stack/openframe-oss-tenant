@@ -21,13 +21,16 @@ export class FileDownloader {
   private onProgress?: (progress: FileTransferProgress) => void
   private sendMessage?: (data: string | ArrayBuffer) => boolean
   private activeDownloadId: string | null = null
+  private onServerCancel?: (fileName: string, reason?: string) => void
 
   constructor(
     sendMessage?: (data: string | ArrayBuffer) => boolean,
-    onProgress?: (progress: FileTransferProgress) => void
+    onProgress?: (progress: FileTransferProgress) => void,
+    onServerCancel?: (fileName: string, reason?: string) => void
   ) {
     this.sendMessage = sendMessage
     this.onProgress = onProgress
+    this.onServerCancel = onServerCancel
   }
 
   setSendMessage(sendMessage: (data: string | ArrayBuffer) => boolean): void {
@@ -36,6 +39,10 @@ export class FileDownloader {
 
   setOnProgress(onProgress: (progress: FileTransferProgress) => void): void {
     this.onProgress = onProgress
+  }
+
+  setOnServerCancel(onServerCancel: (fileName: string, reason?: string) => void): void {
+    this.onServerCancel = onServerCancel
   }
 
   hasActiveDownload(): boolean {
@@ -289,6 +296,10 @@ export class FileDownloader {
     if (!task) return
     task.status = 'cancelled'
     task.error = reason ? new Error(reason) : undefined
+
+    if (this.onServerCancel) {
+      this.onServerCancel(task.fileName, reason)
+    }
 
     if (this.activeDownloadId === downloadId) {
       this.activeDownloadId = null
