@@ -15,7 +15,7 @@ use crate::services::update_state_service::UpdateStateService;
 use crate::services::update_cleanup_service::UpdateCleanupService;
 use crate::platform::DirectoryManager;
 #[cfg(windows)]
-use crate::platform::find_powershell_path;
+use crate::platform::get_powershell_path;
 use std::path::PathBuf;
 use std::process;
 use uuid::Uuid;
@@ -485,19 +485,7 @@ impl OpenFrameClientUpdateService {
         // Get update state file path
         let update_state_path = self.update_state_service.get_state_file_path();
 
-        // Try powershell.exe from PATH first, fallback to find_powershell_path()
-        let ps_path = match process::Command::new("powershell.exe").arg("-?").spawn() {
-            Ok(mut c) => {
-                let _ = c.wait();
-                "powershell.exe".to_string()
-            }
-            Err(_) => {
-                find_powershell_path()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .ok_or_else(|| anyhow!("PowerShell not found"))?
-            }
-        };
-
+        let ps_path = get_powershell_path().map_err(|e| anyhow!(e))?;
         info!("Using PowerShell: {}", ps_path);
 
         let child = process::Command::new(&ps_path)

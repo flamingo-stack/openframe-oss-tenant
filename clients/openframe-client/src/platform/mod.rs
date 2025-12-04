@@ -15,4 +15,4 @@ pub use file_lock::{format_locking_processes, get_locking_processes, is_file_in_
 pub use permissions::{Capability, PermissionError, PermissionUtils, Permissions};
 pub use uninstall::remove_directory_with_retry;
 #[cfg(target_os = "windows")]
-pub use powershell::find_powershell_path;
+pub use powershell::get_powershell_path;

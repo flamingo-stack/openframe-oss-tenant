@@ -1,7 +1,25 @@
 use std::path::PathBuf;
+use std::process::Command;
 
+/// Get PowerShell path - tries PATH first, then known locations
+/// Returns ready-to-use path string
 #[cfg(windows)]
-pub fn find_powershell_path() -> Option<PathBuf> {
+pub fn get_powershell_path() -> Result<String, &'static str> {
+    // Try powershell.exe from PATH first
+    if let Ok(mut child) = Command::new("powershell.exe").arg("-?").spawn() {
+        let _ = child.wait();
+        return Ok("powershell.exe".to_string());
+    }
+
+    // Fallback to known locations
+    find_powershell_path()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or("PowerShell not found")
+}
+
+/// Find an existing PowerShell path on the system
+#[cfg(windows)]
+fn find_powershell_path() -> Option<PathBuf> {
     let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
     let program_files = std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string());
     let program_files_x86 = std::env::var("ProgramFiles(x86)").unwrap_or_else(|_| "C:\\Program Files (x86)".to_string());
