@@ -8,9 +8,20 @@ registerJob:
 
 telepresence-oss:
   image:
-    registry: ghcr.io/flamingo-stack/registry
-    name: telepresenceio/tel2
+    registry: ghcr.io/flamingo-stack/registry/telepresenceio
+    name: tel2
     tag: "2.25.1"
+
+  hooks:
+    busybox:
+      registry: ghcr.io/flamingo-stack/registry
+      image: library/busybox
+      tag: "1.36"
+
+    curl:
+      registry: ghcr.io/flamingo-stack/registry
+      image: curlimages/curl
+      tag: "8.9.1"
 
 deployment:
   saas:
