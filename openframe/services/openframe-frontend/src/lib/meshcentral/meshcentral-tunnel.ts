@@ -174,7 +174,7 @@ export class MeshTunnel {
       }
       try {
         const j = JSON.parse(s)
-        if (j && j.ctrlChannel === 102938) {
+        if (j && (j.ctrlChannel === 102938 || j.ctrlChannel === '102938')) {
           if (j.type === 'console' && this.params.onConsoleMessage) {
             this.params.onConsoleMessage(j.msg)
           }
