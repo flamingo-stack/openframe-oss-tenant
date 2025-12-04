@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: telepresence-oss
-    version: ">=2.23.6"
+    version: "~2.25.1"
     repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
