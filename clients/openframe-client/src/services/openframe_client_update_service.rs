@@ -14,6 +14,8 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::update_state_service::UpdateStateService;
 use crate::services::update_cleanup_service::UpdateCleanupService;
 use crate::platform::DirectoryManager;
+#[cfg(windows)]
+use crate::platform::find_powershell_path;
 use std::path::PathBuf;
 use std::process;
 use uuid::Uuid;
@@ -483,45 +485,31 @@ impl OpenFrameClientUpdateService {
         // Get update state file path
         let update_state_path = self.update_state_service.get_state_file_path();
 
-        // PowerShell paths: first PATH, then known locations as fallback
-        let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
-        let ps_paths = [
-            "powershell.exe".to_string(),
-            format!("{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", system_root),
-            format!("{}\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe", system_root),
-            "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe".to_string(),
-            "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe".to_string(),
-            "pwsh.exe".to_string(), // PowerShell Core via PATH
-        ];
-
-        let mut last_error = None;
-        let mut child = None;
-
-        for ps_path in &ps_paths {
-            match process::Command::new(ps_path)
-                .arg("-ExecutionPolicy").arg("Bypass")
-                .arg("-NoProfile")
-                .arg("-File").arg(&script_path)
-                .arg("-ArchivePath").arg(&archive_path)
-                .arg("-ServiceName").arg(service_name)
-                .arg("-TargetExe").arg(&current_exe)
-                .arg("-UpdateStatePath").arg(&update_state_path)
-                .creation_flags(0x08000000)
-                .spawn()
-            {
-                Ok(c) => {
-                    info!("PowerShell launched: {}", ps_path);
-                    child = Some(c);
-                    break;
-                }
-                Err(e) => {
-                    warn!("Failed to spawn {}: {}", ps_path, e);
-                    last_error = Some(e);
-                }
+        // Try powershell.exe from PATH first, fallback to find_powershell_path()
+        let ps_path = match process::Command::new("powershell.exe").arg("-?").spawn() {
+            Ok(mut c) => {
+                let _ = c.wait();
+                "powershell.exe".to_string()
             }
-        }
+            Err(_) => {
+                find_powershell_path()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .ok_or_else(|| anyhow!("PowerShell not found"))?
+            }
+        };
 
-        let child = child.ok_or_else(|| last_error.unwrap())
+        info!("Using PowerShell: {}", ps_path);
+
+        let child = process::Command::new(&ps_path)
+            .arg("-ExecutionPolicy").arg("Bypass")
+            .arg("-NoProfile")
+            .arg("-File").arg(&script_path)
+            .arg("-ArchivePath").arg(&archive_path)
+            .arg("-ServiceName").arg(service_name)
+            .arg("-TargetExe").arg(&current_exe)
+            .arg("-UpdateStatePath").arg(&update_state_path)
+            .creation_flags(0x08000000)
+            .spawn()
             .context("Failed to spawn PowerShell updater")?;
 
         info!("PowerShell updater launched (PID: {})", child.id());
