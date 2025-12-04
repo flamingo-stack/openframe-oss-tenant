@@ -7,8 +7,8 @@ ARG UI_KIT_REF="main"
 RUN git clone --depth 1 --branch "$UI_KIT_REF" https://github.com/flamingo-stack/ui-kit.git ui-kit
 
 
-##### Stage 1: Builder (runs on TARGETPLATFORM for correct native modules) #####
-FROM --platform=$TARGETPLATFORM node:22-alpine AS builder
+##### Stage 1: Builder (native platform for fast build) #####
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
@@ -17,23 +17,31 @@ COPY package*.json ./
 COPY --from=ui-kit /tmp/ui-kit ./ui-kit
 
 ENV NODE_ENV=development
-RUN --mount=type=cache,id=nextjs-npm-cache-${TARGETPLATFORM},target=/root/.npm \
+RUN --mount=type=cache,id=nextjs-npm-cache,target=/root/.npm \
     npm install
 
 COPY . .
 RUN npm run build
 
 
-##### Stage 2: Runtime #####
+##### Stage 2: Runtime (target platform - only npm ci runs under emulation) #####
 FROM --platform=$TARGETPLATFORM node:22-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+RUN apk add --no-cache libc6-compat
 
-# Copy standalone build with platform-correct dependencies
-COPY --from=builder /app/dist/standalone ./
-COPY --from=builder /app/dist/static ./dist/static
+# Copy package files for prod install
+COPY package*.json ./
+COPY --from=ui-kit /tmp/ui-kit ./ui-kit
+
+# Install prod deps on target platform (this is the slow part under emulation)
+ENV NODE_ENV=production
+RUN --mount=type=cache,id=nextjs-npm-cache-${TARGETPLATFORM},target=/root/.npm \
+    npm ci --only=production
+
+# Copy pre-built dist from builder (JS is platform-independent)
+COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
