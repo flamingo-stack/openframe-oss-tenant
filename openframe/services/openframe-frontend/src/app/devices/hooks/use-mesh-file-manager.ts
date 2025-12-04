@@ -174,6 +174,19 @@ export function useMeshFileManager({
               }
             }
           },
+          onServerCancelDownload: (fileName: string, reason?: string) => {
+            if (mounted) {
+              setDownloadProgress(null)
+              toastRef.current?.({
+                title: 'Download Cancelled by Server',
+                description: reason 
+                  ? `${fileName} download was cancelled: ${reason}`
+                  : `${fileName} download was cancelled by the server`,
+                variant: 'destructive',
+                duration: 5000
+              })
+            }
+          },
           onError: (error: Error) => {
             if (mounted) {
               toastRef.current?.({
