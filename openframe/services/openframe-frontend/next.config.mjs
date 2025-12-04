@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Pure frontend configuration - no server-side features
-  // output: 'export', 
+  // Standalone output for optimized Docker builds
+  output: 'standalone',
   trailingSlash: true,
-  distDir: 'dist',   // Output directory for static export
+  distDir: 'dist',
   images: {
     unoptimized: true  // No server-side image optimization
   },
