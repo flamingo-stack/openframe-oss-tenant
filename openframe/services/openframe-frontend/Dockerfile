@@ -4,6 +4,7 @@ FROM alpine:3 AS ui-kit
 WORKDIR /tmp
 RUN apk add --no-cache git
 ARG UI_KIT_REF="main"
+ARG CACHE_BUST=2025-10-12-v3
 RUN git clone --depth 1 --branch "$UI_KIT_REF" https://github.com/flamingo-stack/ui-kit.git ui-kit
 
 
