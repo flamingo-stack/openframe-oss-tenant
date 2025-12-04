@@ -1,11 +1,18 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
+
 servicemonitor:
   enabled: true
 
 
 
 pinot:
+  image:
+    repository: ghcr.io/flamingo-stack/registry/apachepinot/pinot
+    tag: latest
   cluster:
     name: pinot 
   server:
@@ -17,3 +24,9 @@ pinot:
   broker:
     external:
       enabled: false
+
+  zookeeper:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bitnamilegacy/zookeeper
+      tag: 3.9.3-debian-12-r22
