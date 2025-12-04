@@ -90,6 +90,7 @@ export interface FileManagerOptions {
   onStateChange?: (state: FileConnectionState) => void
   onDirectoryChange?: (files: FileEntry[]) => void
   onTransferProgress?: (progress: FileTransferProgress) => void
+  onServerCancelDownload?: (fileName: string, reason?: string) => void
   onError?: (error: Error) => void
 }
 
