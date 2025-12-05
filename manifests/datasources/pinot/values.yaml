@@ -12,7 +12,7 @@ servicemonitor:
 pinot:
   image:
     repository: ghcr.io/flamingo-stack/registry/apachepinot/pinot
-    tag: latest
+    tag: 1.4.0
   cluster:
     name: pinot 
   server:
