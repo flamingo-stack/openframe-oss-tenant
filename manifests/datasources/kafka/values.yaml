@@ -12,11 +12,6 @@ kafka:
     repository: bitnamilegacy/kafka
     tag: 4.0.0-debian-12-r10
   
-  global:
-    # bitnamilegacy
-    security:
-      allowInsecureImages: true
-
   existingKraftSecret: "kafka-kraft"
 
   broker:

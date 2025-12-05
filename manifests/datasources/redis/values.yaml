@@ -12,10 +12,6 @@ redis:
     repository: bitnamilegacy/redis
     tag: 8.2.1-debian-12-r0
   
-  global:
-    # bitnamilegacy
-    security:
-      allowInsecureImages: true
 
   auth:
     enabled: false

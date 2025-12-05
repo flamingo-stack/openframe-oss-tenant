@@ -12,10 +12,6 @@ cassandra:
     repository: bitnamilegacy/cassandra
     tag: 5.0.5-debian-12-r7
 
-  global:
-    # bitnamilegacy
-    security:
-      allowInsecureImages: true
 
   priorityClassName: "cassandra"
 
