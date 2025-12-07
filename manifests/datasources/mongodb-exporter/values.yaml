@@ -12,4 +12,4 @@ prometheus-mongodb-exporter:
   #   key: "mongodb-uri"
 
   serviceMonitor:
-    enabled: true
+    enabled: false

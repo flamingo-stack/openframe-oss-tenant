@@ -1,5 +1,3 @@
-environment: dev
-
 deployment:
   oss:
     enabled: true    
@@ -29,11 +27,14 @@ deployment:
         enabled: true 
         privateDomain: "internal.flamingo.cx"
         tenantID: "cluster-1001" 
-    
-servicemonitor:
-  enabled: true
+
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
+
+initContainer:
   image:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
@@ -41,8 +42,3 @@ registerJob:
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
   tag: latest
-
-initContainer:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-    tag: "8.9.1"
