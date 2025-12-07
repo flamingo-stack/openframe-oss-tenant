@@ -269,12 +269,12 @@
       "targets": [
         {
           "expr": "redis_memory_used_bytes",
-          "legendFormat": "{{pod}} - Used",
+          "legendFormat": "{{pod}} used",
           "refId": "A"
         },
         {
           "expr": "redis_memory_max_bytes",
-          "legendFormat": "{{pod}} - Max",
+          "legendFormat": "{{pod}} max",
           "refId": "B"
         }
       ],
@@ -429,12 +429,12 @@
       "targets": [
         {
           "expr": "rate(redis_keyspace_hits_total[5m])",
-          "legendFormat": "{{pod}} - Hits",
+          "legendFormat": "{{pod}} hits",
           "refId": "A"
         },
         {
           "expr": "rate(redis_keyspace_misses_total[5m])",
-          "legendFormat": "{{pod}} - Misses",
+          "legendFormat": "{{pod}} misses",
           "refId": "B"
         }
       ],
@@ -590,12 +590,12 @@
       "targets": [
         {
           "expr": "rate(redis_net_input_bytes_total[5m])",
-          "legendFormat": "{{pod}} - In",
+          "legendFormat": "{{pod}} in",
           "refId": "A"
         },
         {
           "expr": "rate(redis_net_output_bytes_total[5m])",
-          "legendFormat": "{{pod}} - Out",
+          "legendFormat": "{{pod}} out",
           "refId": "B"
         }
       ],
