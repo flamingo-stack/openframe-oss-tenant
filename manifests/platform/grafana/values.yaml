@@ -72,19 +72,10 @@ grafana:
       allow_embedding: true
       cookie_samesite: strict
 
-  serviceMonitor:
-    enabled: true
-    path: "/metrics"
-    relabelings:
-      - action: replace
-        sourceLabels: [__meta_kubernetes_pod_name]
-        targetLabel: pod
-      - action: replace
-        sourceLabels: [__meta_kubernetes_namespace]
-        targetLabel: namespace
-      - action: replace
-        sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-        targetLabel: app
+  # podAnnotations:
+  #   prometheus.io/scrape: "true"
+  #   prometheus.io/port: "3000"
+  #   prometheus.io/path: "/metrics"
 
   datasources:
     datasources.yaml:
