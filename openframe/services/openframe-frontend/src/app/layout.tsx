@@ -12,6 +12,7 @@ import { ImageConfigInitializer } from '../components/image-config-initializer'
 import { GraphQLIntrospectionInitializer } from '../components/graphql-introspection-initializer'
 import { RouteGuard } from '../components/route-guard'
 import { isAuthEnabled } from '../lib/app-mode'
+import { AppShellSkeleton } from './components/app-shell-skeleton'
 
 // Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
 export const dynamic = 'force-dynamic'
@@ -107,11 +108,7 @@ export default function RootLayout({
         )}
         <RouteGuard>
           <div className="relative flex min-h-screen flex-col">
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="text-ods-text-secondary">Loading...</div>
-              </div>
-            }>
+            <Suspense fallback={<AppShellSkeleton />}>
               {children}
             </Suspense>
           </div>
