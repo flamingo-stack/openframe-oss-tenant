@@ -1,5 +1,6 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_installation_service::ToolInstallationService;
+use crate::config::update_config::{CONSUMER_ACK_WAIT_SECS, CONSUMER_MAX_DELIVER};
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
 use tokio::time::Duration;
@@ -104,7 +105,8 @@ impl ToolInstallationMessageListener {
             filter_subject,
             deliver_subject,
             durable_name: Some(durable_name),
-            ack_wait: Duration::from_secs(300),
+            ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
+            max_deliver: CONSUMER_MAX_DELIVER,
             ..Default::default()
         }
     }

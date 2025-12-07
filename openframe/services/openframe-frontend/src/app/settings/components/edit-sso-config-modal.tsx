@@ -270,8 +270,8 @@ export function SsoConfigModal({
                 id="auto-provision-users"
                 checked={autoProvisionUsers}
                 onCheckedChange={setAutoProvisionUsers}
-                title="Allow All Users from Domain"
-                description="Automatically grant access to all users with email addresses from your organization's domain."
+                title="Auto-provision accounts from domain"
+                description="Automatically create user accounts when signing in via this SSO provider."
               />
 
               {autoProvisionUsers && (
