@@ -5,82 +5,156 @@ registerJob:
     tag: "8.9.1"
 
 
-kube-prometheus-stack:
-  grafana:
-    enabled: false
+prometheus:
+  server:
+    image:
+      repository: ghcr.io/flamingo-stack/registry/prometheus/prometheus
+      tag: v3.7.3
 
-  alertmanager:
-    enabled: false
-    alertmanagerSpec:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: prometheus/alertmanager
-        tag: v0.29.0
+    retention: "3d"
 
-  prometheus:
-    ingress:
-      enabled: false
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1
 
-    prometheusSpec:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: prometheus/prometheus
-        tag: v3.7.3
-        
-      serviceMonitorSelectorNilUsesHelmValues: false
-      podMonitorSelectorNilUsesHelmValues: false
-      probeSelectorNilUsesHelmValues: false
-      scrapeConfigSelectorNilUsesHelmValues: false
-      ruleSelectorNilUsesHelmValues: false
-      externalPrefixNilUsesHelmValues: false
-      scrapeInterval: 30s
-      evaluationInterval: 15s
-      retention: 3d  
-      
-      resources:
-        requests:
-          memory: 1Gi
-          cpu: 500m
-        limits:
-          memory: 2Gi
-          cpu: 1
-      
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            accessModes: 
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 15Gi
+    persistentVolume:
+      enabled: true
+      size: 15Gi
 
+    # Scrape interval
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 15s
+
+  # Include node-exporter for host metrics
   prometheus-node-exporter:
+    enabled: false
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: prometheus/node-exporter
       tag: v1.10.2
 
+  # Include kube-state-metrics for Kubernetes object metrics
   kube-state-metrics:
+    enabled: false
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: kube-state-metrics/kube-state-metrics
       tag: v2.17.0
 
-  prometheusOperator:
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: prometheus-operator/prometheus-operator
-      tag: v0.86.2
-    prometheusConfigReloader:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: prometheus-operator/prometheus-config-reloader
-        tag: v0.86.2
-    admissionWebhooks:
-      patch:
-        image:
-          registry: ghcr.io/flamingo-stack/registry
-          repository: ingress-nginx/kube-webhook-certgen
-          tag: v1.6.4
-        
-      
+  # Disable components we don't need
+  alertmanager:
+    enabled: false
+
+  prometheus-pushgateway:
+    enabled: false
+
+  # Scrape configs - annotation-based discovery
+  serverFiles:
+    prometheus.yml:
+      scrape_configs:
+        # Scrape Prometheus itself
+        - job_name: prometheus
+          static_configs:
+            - targets:
+                - localhost:9090
+
+        # Scrape all pods with prometheus.io/scrape=true annotation
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            # Only keep pods with prometheus.io/scrape=true
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            # Drop pods marked for slow scraping (handled by separate job)
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape_slow]
+              action: drop
+              regex: true
+            # Use custom scheme if specified
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
+              action: replace
+              target_label: __scheme__
+              regex: (https?)
+            # Use custom path if specified (default /metrics)
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            # Use custom port - handle IPv6
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
+              action: replace
+              regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+              replacement: '[$2]:$1'
+              target_label: __address__
+            # Use custom port - handle IPv4
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
+              action: replace
+              regex: (\d+);((([0-9]+?)(\.|$)){4})
+              replacement: $2:$1
+              target_label: __address__
+            # Copy pod labels
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            # Add namespace label
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: namespace
+            # Add pod label
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: pod
+            # Add node label
+            - source_labels: [__meta_kubernetes_pod_node_name]
+              action: replace
+              target_label: node
+            # Drop non-running pods
+            - source_labels: [__meta_kubernetes_pod_phase]
+              regex: Pending|Succeeded|Failed|Completed
+              action: drop
+
+        # Scrape services with prometheus.io/scrape=true annotation
+        - job_name: kubernetes-service-endpoints
+          kubernetes_sd_configs:
+            - role: endpoints
+          relabel_configs:
+            # Only keep services with prometheus.io/scrape=true
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            # Use custom scheme if specified
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+              action: replace
+              target_label: __scheme__
+              regex: (https?)
+            # Use custom path if specified
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            # Use custom port
+            - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+              action: replace
+              target_label: __address__
+              regex: (.+?)(?::\d+)?;(\d+)
+              replacement: $1:$2
+            # Copy service labels
+            - action: labelmap
+              regex: __meta_kubernetes_service_label_(.+)
+            # Add namespace label
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: namespace
+            # Add service label
+            - source_labels: [__meta_kubernetes_service_name]
+              action: replace
+              target_label: service
+            # Add pod label
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: pod

@@ -1,6 +1,0 @@
-registerJob:
-  enabled: true
-
-
-prometheus-redis-exporter:
-  redisAddress: redis://redis-headless:6379

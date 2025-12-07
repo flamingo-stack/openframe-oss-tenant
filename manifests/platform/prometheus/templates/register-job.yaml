@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -39,7 +40,7 @@ spec:
                   "description": "Prometheus Metrics Database",
                   "toolUrls": [
                     {
-                      "url": "http://prometheus.platform.svc.cluster.local",
+                      "url": "http://prometheus-server.platform.svc.cluster.local",
                       "port": "80",
                       "type": "API"
                     }
@@ -70,4 +71,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Prometheus Registration failed..."; exit 1; }
             echo "Prometheus Registration complete."
+
 {{- end }}
