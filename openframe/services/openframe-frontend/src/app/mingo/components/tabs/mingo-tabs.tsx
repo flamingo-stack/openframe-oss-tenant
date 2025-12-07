@@ -3,8 +3,7 @@
 import React, { useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { TabNavigation, TabItem, MessageCircleIcon, ArchiveIcon } from '@flamingo/ui-kit'
-import { CurrentChats } from './current-chats'
-import { ArchivedChats } from './archived-chats'
+import { CurrentChats, ArchivedChats } from './chats-table'
 
 interface MingoTabNavigationProps {
   activeTab: string

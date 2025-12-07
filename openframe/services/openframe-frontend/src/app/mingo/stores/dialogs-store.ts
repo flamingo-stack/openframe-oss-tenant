@@ -104,7 +104,7 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
 
     try {
       // Determine pagination variables
-      const paginationVars: any = { limit: 20 }
+      const paginationVars: any = { limit: 10 }
       if (cursor) {
         paginationVars.cursor = cursor
       }

@@ -38,7 +38,7 @@ function defaultRedirect(): string {
   return '/auth'
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (!isAllowed(pathname)) {

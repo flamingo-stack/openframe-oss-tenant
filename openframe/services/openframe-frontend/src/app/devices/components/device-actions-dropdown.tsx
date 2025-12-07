@@ -154,8 +154,10 @@ export function DeviceActionsDropdown({
     setShowArchiveConfirm(false)
     if (success) {
       if (context === 'detail') {
+        // From device detail page - navigate back to devices list
         router.push('/devices')
       } else {
+        // From table - just refresh the list, no navigation
         onActionComplete?.()
       }
     }
@@ -166,8 +168,10 @@ export function DeviceActionsDropdown({
     setShowDeleteConfirm(false)
     if (success) {
       if (context === 'detail') {
+        // From device detail page - navigate back to devices list
         router.push('/devices')
       } else {
+        // From table - just refresh the list, no navigation
         onActionComplete?.()
       }
     }
@@ -296,12 +300,18 @@ export function DeviceActionsDropdown({
   }, [context, isWindows, actionAvailability])
 
   // Render trigger based on context - both use 3 dots icon
+  // Stop propagation to prevent row click from triggering in table context
+  const handleTriggerClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
+
   const renderTrigger = () => {
     if (context === 'table') {
       return (
         <Button
           variant="outline"
           centerIcon={<MoreVertical />}
+          onClick={handleTriggerClick}
         >
         </Button>
       )
@@ -323,7 +333,7 @@ export function DeviceActionsDropdown({
   }
 
   return (
-    <>
+    <div data-no-row-click onClick={(e) => e.stopPropagation()}>
       <DropdownMenu modal={false} open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           {renderTrigger()}
@@ -414,6 +424,6 @@ export function DeviceActionsDropdown({
           />
         </div>
       </Modal>
-    </>
+    </div>
   )
 }
