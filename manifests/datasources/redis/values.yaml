@@ -6,38 +6,32 @@ registerJob:
 
 
 redis:
-  # bitnamilegacy
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/redis
     tag: 8.2.1-debian-12-r0
-  
-  global:
-    # bitnamilegacy
-    security:
-      allowInsecureImages: true
 
   auth:
     enabled: false
-    password: ""
-    # existingSecret: ""
-  #   password: "admin"
-  #   existingSecret: "redis-secret"
-  #   existingSecretPasswordKey: "redis-password"
+  
+  master:
+    revisionHistoryLimit: 2
+  
   replica:
     replicaCount: 1
-
+    revisionHistoryLimit: 2
 
   metrics:
     enabled: true
-
-    # bitnamilegacy
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: bitnamilegacy/redis-exporter
       tag: 1.76.0-debian-12-r0
-
-    serviceMonitor:
-      enabled: true
-    # podMonitor:
-    #   enabled: true
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9121"
+      prometheus.io/path: "/metrics"

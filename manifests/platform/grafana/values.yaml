@@ -72,19 +72,10 @@ grafana:
       allow_embedding: true
       cookie_samesite: strict
 
-  serviceMonitor:
-    enabled: true
-    path: "/metrics"
-    relabelings:
-      - action: replace
-        sourceLabels: [__meta_kubernetes_pod_name]
-        targetLabel: pod
-      - action: replace
-        sourceLabels: [__meta_kubernetes_namespace]
-        targetLabel: namespace
-      - action: replace
-        sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-        targetLabel: app
+  # podAnnotations:
+  #   prometheus.io/scrape: "true"
+  #   prometheus.io/port: "3000"
+  #   prometheus.io/path: "/metrics"
 
   datasources:
     datasources.yaml:
@@ -92,11 +83,13 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://prometheus-kube-prometheus-prometheus.platform.svc.cluster.local:9090
+          uid: prometheus
+          url: http://prometheus-server.platform.svc.cluster.local:80
           access: proxy
           isDefault: true
         - name: Loki
           type: loki
+          uid: loki
           url: http://loki.platform.svc.cluster.local:3100
           access: proxy
           jsonData:

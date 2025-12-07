@@ -1,25 +1,15 @@
-environment: dev
-
 deployment:
   oss:
     enabled: true    
     repository:
       branch: main
       profile: dev
-  saas:
-    enabled: false
-    repository:
-      branch: main
-      password: ""  # GitHub Token for private config repo access
-      profile: dev 
 
 registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
-servicemonitor:
-  enabled: true
 
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-config

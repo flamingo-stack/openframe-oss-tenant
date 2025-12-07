@@ -1,26 +1,20 @@
-environment: dev
-
 deployment:
   oss:
     enabled: true    
     repository:
       profile: dev
-  saas:
-    enabled: false
 
 registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
-servicemonitor:
-  enabled: true
- 
-image:
-  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-stream
-  tag: latest
 
 initContainer:
   image:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
+
+image:
+  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-stream
+  tag: latest

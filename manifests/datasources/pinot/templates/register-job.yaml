@@ -54,6 +54,11 @@ spec:
                       "url": "http://pinot-server.datasources.svc.cluster.local",
                       "port": "8097",
                       "type": "SERVER"
+                    },
+                    {
+                      "url": "http://pinot-minion.datasources.svc.cluster.local",
+                      "port": "9514",
+                      "type": "MINION"
                     }
                   ],
                   "category": "Analytics Database",
