@@ -84,7 +84,7 @@
       "targets": [
         {
           "expr": "redis_up",
-          "legendFormat": "Redis Status",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -136,7 +136,7 @@
       "targets": [
         {
           "expr": "redis_uptime_in_seconds",
-          "legendFormat": "Uptime",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -187,7 +187,7 @@
       "targets": [
         {
           "expr": "redis_connected_clients",
-          "legendFormat": "Connected Clients",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -269,12 +269,12 @@
       "targets": [
         {
           "expr": "redis_memory_used_bytes",
-          "legendFormat": "Used Memory",
+          "legendFormat": "{{pod}} - Used",
           "refId": "A"
         },
         {
           "expr": "redis_memory_max_bytes",
-          "legendFormat": "Max Memory",
+          "legendFormat": "{{pod}} - Max",
           "refId": "B"
         }
       ],
@@ -358,7 +358,7 @@
       "targets": [
         {
           "expr": "rate(redis_commands_processed_total[5m])",
-          "legendFormat": "Commands/sec",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -429,12 +429,12 @@
       "targets": [
         {
           "expr": "rate(redis_keyspace_hits_total[5m])",
-          "legendFormat": "Hits/sec",
+          "legendFormat": "{{pod}} - Hits",
           "refId": "A"
         },
         {
           "expr": "rate(redis_keyspace_misses_total[5m])",
-          "legendFormat": "Misses/sec",
+          "legendFormat": "{{pod}} - Misses",
           "refId": "B"
         }
       ],
@@ -517,8 +517,8 @@
       },
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{job=\"redis\"}[5m])",
-          "legendFormat": "CPU Usage",
+          "expr": "rate(redis_cpu_sys_seconds_total[5m])",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -590,12 +590,12 @@
       "targets": [
         {
           "expr": "rate(redis_net_input_bytes_total[5m])",
-          "legendFormat": "Network In",
+          "legendFormat": "{{pod}} - In",
           "refId": "A"
         },
         {
           "expr": "rate(redis_net_output_bytes_total[5m])",
-          "legendFormat": "Network Out",
+          "legendFormat": "{{pod}} - Out",
           "refId": "B"
         }
       ],
