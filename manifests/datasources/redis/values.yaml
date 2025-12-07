@@ -17,9 +17,13 @@ redis:
 
   auth:
     enabled: false
-
+  
+  master:
+    revisionHistoryLimit: 2
+  
   replica:
     replicaCount: 1
+    revisionHistoryLimit: 2
 
   metrics:
     enabled: true
