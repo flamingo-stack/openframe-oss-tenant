@@ -281,6 +281,7 @@ export function ScriptsTable() {
         columns={columns}
         rowKey="id"
         loading={isLoading}
+        skeletonRows={pageSize}
         emptyMessage={
           params.search
             ? `No scripts found matching "${params.search}". Try adjusting your search.`

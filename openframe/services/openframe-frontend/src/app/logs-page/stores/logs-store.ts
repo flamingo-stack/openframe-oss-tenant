@@ -83,7 +83,7 @@ const initialState = {
   search: '',
   pageInfo: null,
   pageSize: 20,
-  isLoading: false,
+  isLoading: true,
   error: null,
 }
 

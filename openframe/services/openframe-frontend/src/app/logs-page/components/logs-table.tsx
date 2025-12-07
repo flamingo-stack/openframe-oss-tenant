@@ -349,6 +349,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         columns={columns}
         rowKey="id"
         loading={isLoading}
+        skeletonRows={20}
         emptyMessage={deviceId ? "No logs found for this device. Try adjusting your search or filters." : "No logs found. Try adjusting your search or filters."}
         onRowClick={handleRowClick}
         rowActions={rowActions}
