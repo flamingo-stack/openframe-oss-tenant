@@ -18,8 +18,77 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Pinot Broker",
+      "title": "Pinot",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "up{app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Pinot Status",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -45,11 +114,11 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 0,
+        "w": 4,
+        "x": 4,
         "y": 1
       },
-      "id": 2,
+      "id": 3,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -64,12 +133,63 @@
       },
       "targets": [
         {
-          "expr": "jvm_threads_current",
-          "legendFormat": "Current Threads",
+          "expr": "jvm_threads_current{app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
       "title": "Current Threads",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "jvm_classes_loaded{app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Classes Loaded",
       "type": "stat"
     },
     {
@@ -127,11 +247,11 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 9,
-        "x": 6,
+        "w": 12,
+        "x": 12,
         "y": 1
       },
-      "id": 3,
+      "id": 5,
       "options": {
         "legend": {
           "calcs": [],
@@ -146,98 +266,17 @@
       },
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\"}",
-          "legendFormat": "Heap Used",
+          "expr": "jvm_memory_bytes_used{area=\"heap\", app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}} used",
           "refId": "A"
         },
         {
-          "expr": "jvm_memory_bytes_committed{area=\"heap\"}",
-          "legendFormat": "Heap Committed",
+          "expr": "jvm_memory_bytes_max{area=\"heap\", app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}} max",
           "refId": "B"
         }
       ],
-      "title": "Heap Memory Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 9,
-        "x": 15,
-        "y": 1
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "CPU Usage",
-          "refId": "A"
-        }
-      ],
-      "title": "CPU Usage",
+      "title": "Heap Memory",
       "type": "timeseries"
     },
     {
@@ -248,9 +287,9 @@
         "x": 0,
         "y": 9
       },
-      "id": 5,
+      "id": 6,
       "panels": [],
-      "title": "JVM Memory Details",
+      "title": "JVM Metrics",
       "type": "row"
     },
     {
@@ -292,105 +331,13 @@
             "thresholdsStyle": {
               "mode": "off"
             }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "bytes"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 10
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "jvm_memory_pool_bytes_used{pool=~\"G1.*\"}",
-          "legendFormat": "{{pool}} Used",
-          "refId": "A"
-        }
-      ],
-      "title": "G1 GC Memory Pools",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
         }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 10
       },
       "id": 7,
@@ -408,26 +355,13 @@
       },
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum[5m])",
-          "legendFormat": "{{gc}}",
+          "expr": "rate(process_cpu_seconds_total{app=\"pinot\"}[5m])",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
-      "title": "GC Collection Time",
+      "title": "CPU Usage",
       "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 18
-      },
-      "id": 8,
-      "panels": [],
-      "title": "Thread & System Metrics",
-      "type": "row"
     },
     {
       "datasource": {
@@ -469,25 +403,16 @@
               "mode": "off"
             }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
+          "unit": "s"
         }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 19
+        "x": 12,
+        "y": 10
       },
-      "id": 9,
+      "id": 8,
       "options": {
         "legend": {
           "calcs": [],
@@ -502,8 +427,92 @@
       },
       "targets": [
         {
-          "expr": "jvm_threads_state",
-          "legendFormat": "{{state}}",
+          "expr": "rate(jvm_gc_collection_seconds_sum{app=\"pinot\"}[5m])",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}} {{gc}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GC Collection Time",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 9,
+      "panels": [],
+      "title": "System Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "jvm_threads_state{app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}} {{state}}",
           "refId": "A"
         }
       ],
@@ -550,16 +559,6 @@
               "mode": "off"
             }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
           "unit": "bytes"
         }
       },
@@ -569,7 +568,7 @@
         "x": 12,
         "y": 19
       },
-      "id": 10,
+      "id": 11,
       "options": {
         "legend": {
           "calcs": [],
@@ -584,13 +583,13 @@
       },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes",
-          "legendFormat": "Resident Memory",
+          "expr": "process_resident_memory_bytes{app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}} resident",
           "refId": "A"
         },
         {
-          "expr": "process_virtual_memory_bytes",
-          "legendFormat": "Virtual Memory",
+          "expr": "process_virtual_memory_bytes{app=\"pinot\"}",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}} virtual",
           "refId": "B"
         }
       ],
@@ -601,7 +600,7 @@
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["pinot", "broker", "analytics", "database"],
+  "tags": ["pinot", "analytics", "database"],
   "templating": {
     "list": []
   },
@@ -611,8 +610,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Pinot Broker",
-  "uid": "pinot-broker",
+  "title": "Pinot",
+  "uid": "pinot",
   "version": 1,
   "weekStart": ""
 }
