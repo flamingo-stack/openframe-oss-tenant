@@ -1,11 +1,13 @@
 'use client'
 
 import { Skeleton } from '@flamingo/ui-kit/components/ui'
+import { isSaasTenantMode } from '@lib/app-mode'
 
 /**
  * Dashboard loading skeleton that matches the actual dashboard layout EXACTLY:
  * - OnboardingWalkthrough: Header + 5 VERTICAL step cards
  * - DevicesOverviewSection: title + subtitle + 2 info cards
+ * - ChatsOverviewSection: title + subtitle + 4 info cards (SaaS tenant only)
  * - OrganizationsOverviewSection: title + subtitle + rows of [OrgCard, 2 InfoCards]
  *
  * Used as Next.js route-level loading state for /dashboard
@@ -165,6 +167,8 @@ function OrganizationsSkeleton() {
 }
 
 export default function DashboardLoading() {
+  const showChats = isSaasTenantMode()
+
   return (
     <div
       className="space-y-10 pt-6"
@@ -173,7 +177,7 @@ export default function DashboardLoading() {
     >
       <OnboardingSkeleton />
       <DevicesSkeleton />
-      <ChatsSkeleton />
+      {showChats && <ChatsSkeleton />}
       <OrganizationsSkeleton />
     </div>
   )
