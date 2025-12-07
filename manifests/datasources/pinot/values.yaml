@@ -64,6 +64,7 @@ pinot:
       prometheus.io/port: "8008"
       prometheus.io/path: "/metrics"
 
+
   zookeeper:
     image:
       registry: ghcr.io/flamingo-stack/registry
