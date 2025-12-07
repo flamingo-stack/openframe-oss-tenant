@@ -143,7 +143,7 @@ export function useDevices(filters: DeviceFilterInput = {}) {
         query: GET_DEVICES_QUERY,
         variables: {
           filter: filtersRef.current,
-          pagination: { limit: 20, cursor: cursor || null },
+          pagination: { limit: 10, cursor: cursor || null },
           search: searchTerm || ''
         }
       })

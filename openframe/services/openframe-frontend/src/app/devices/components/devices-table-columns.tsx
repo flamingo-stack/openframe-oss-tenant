@@ -5,26 +5,18 @@ import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
 import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
-import { DeviceDetailsButton } from './device-details-button'
 import { DeviceActionsDropdown } from './device-actions-dropdown'
 import { deduplicateFilterOptions } from '@lib/filter-utils'
 import { featureFlags } from '@lib/feature-flags'
 
-// Returns render function for custom actions area
+// Returns render function for custom actions area (three dots menu only)
 export function getDeviceTableRowActions(onRefresh?: () => void): ((device: Device) => React.ReactNode) {
   const DeviceRowActions = (device: Device) => (
-    <div className="flex items-center gap-2">
-      <DeviceActionsDropdown
-        device={device}
-        context="table"
-        onActionComplete={onRefresh}
-      />
-      <DeviceDetailsButton
-        deviceId={device.id}
-        machineId={device.machineId}
-        className="h-12"
-      />
-    </div>
+    <DeviceActionsDropdown
+      device={device}
+      context="table"
+      onActionComplete={onRefresh}
+    />
   )
   DeviceRowActions.displayName = 'DeviceRowActions'
   return DeviceRowActions
@@ -62,7 +54,7 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
       label: 'DEVICE',
       width: 'w-1/3',
       renderCell: (device) => (
-        <div className="bg-ods-card box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
+        <div className="box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
           <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
             {device.type && getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, { className: 'w-5 h-5 text-ods-text-secondary' })}
           </div>

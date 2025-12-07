@@ -64,7 +64,7 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
         variables: {
           search: searchTerm || '',
           pagination: {
-            limit: 20,
+            limit: 10,
             cursor: cursor || null
           }
         }
