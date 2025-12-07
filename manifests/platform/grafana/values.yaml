@@ -92,11 +92,13 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
+          uid: prometheus
           url: http://prometheus-server.platform.svc.cluster.local:80
           access: proxy
           isDefault: true
         - name: Loki
           type: loki
+          uid: loki
           url: http://loki.platform.svc.cluster.local:3100
           access: proxy
           jsonData:
