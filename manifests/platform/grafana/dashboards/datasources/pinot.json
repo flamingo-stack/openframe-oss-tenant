@@ -344,7 +344,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -371,12 +372,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{app=\"pinot\"}[5m])",
+          "expr": "100 * rate(process_cpu_seconds_total{app=\"pinot\"}[5m])",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage",
+      "title": "CPU %",
       "type": "timeseries"
     },
     {
@@ -557,12 +558,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{app=\"pinot\"}[5m])",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}} {{gc}}",
+          "expr": "rate(jvm_gc_collection_seconds_sum{app=\"pinot\", gc=~\".*Young.*\"}[5m])",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
-      "title": "GC Collection Time",
+      "title": "GC Time (Young Gen)",
       "type": "timeseries"
     },
     {
@@ -648,9 +649,9 @@
       "id": 10,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "right",
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -662,8 +663,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_threads_state{app=\"pinot\"}",
-          "legendFormat": "{{component}} {{state}}",
+          "expr": "sum(jvm_threads_state{app=\"pinot\"}) by (state)",
+          "legendFormat": "{{state}}",
           "refId": "A"
         }
       ],
@@ -741,9 +742,9 @@
       "id": 11,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "right",
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -756,7 +757,7 @@
       "targets": [
         {
           "expr": "process_resident_memory_bytes{app=\"pinot\"}",
-          "legendFormat": "{{component}} resident",
+          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
