@@ -636,13 +636,8 @@
       "targets": [
         {
           "expr": "redis_memory_used_bytes",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} used",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
-        },
-        {
-          "expr": "redis_memory_max_bytes",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} max",
-          "refId": "B"
         }
       ],
       "title": "Memory Usage",
@@ -874,13 +869,13 @@
       },
       "targets": [
         {
-          "expr": "rate(redis_keyspace_hits_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} hits",
+          "expr": "sum(rate(redis_keyspace_hits_total[5m]))",
+          "legendFormat": "hits",
           "refId": "A"
         },
         {
-          "expr": "rate(redis_keyspace_misses_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} misses",
+          "expr": "sum(rate(redis_keyspace_misses_total[5m]))",
+          "legendFormat": "misses",
           "refId": "B"
         }
       ],
