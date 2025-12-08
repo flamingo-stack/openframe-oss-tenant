@@ -161,7 +161,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{app=\"pinot\"}",
+          "expr": "time() - process_start_time_seconds{app=\"pinot\"} and on(pod) up{app=\"pinot\"} == 1",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
