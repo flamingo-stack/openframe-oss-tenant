@@ -3,13 +3,13 @@
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useAuthStore } from '@app/auth/stores/auth-store'
-import { ContentPageContainer } from '@flamingo/ui-kit/components/ui'
 import { getDefaultRedirectPath, isAuthOnlyMode } from '../lib/app-mode'
+import { AppShellSkeleton } from './components/app-shell-skeleton'
 
 export default function HomePage() {
   const router = useRouter()
   const { isAuthenticated } = useAuthStore()
-  
+
   useEffect(() => {
     if (isAuthOnlyMode()) {
       router.push('/auth')
@@ -19,12 +19,5 @@ export default function HomePage() {
     }
   }, [router, isAuthenticated])
 
-  return (
-    <ContentPageContainer
-      title="Welcome"
-      subtitle="Loading your dashboard..."
-    >
-      <div />
-    </ContentPageContainer>
-  )
+  return <AppShellSkeleton />
 }
