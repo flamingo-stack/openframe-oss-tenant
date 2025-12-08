@@ -17,13 +17,31 @@ redis:
 
   auth:
     enabled: false
-  
+
+  commonConfiguration: |-
+    maxmemory 200mb
+    maxmemory-policy allkeys-lru
+
   master:
     revisionHistoryLimit: 2
-  
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 250m
+
   replica:
     replicaCount: 1
     revisionHistoryLimit: 2
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 250m
 
   metrics:
     enabled: true
