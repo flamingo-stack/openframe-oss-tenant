@@ -587,12 +587,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{app_kubernetes_io_name=\"zookeeper\", gc=~\".*Young.*\"}[5m])",
-          "legendFormat": "{{pod}}",
+          "expr": "rate(jvm_gc_collection_seconds_sum{app_kubernetes_io_name=\"zookeeper\"}[5m])",
+          "legendFormat": "{{pod}} {{gc}}",
           "refId": "A"
         }
       ],
-      "title": "GC Time (Young Gen)",
+      "title": "GC Time",
       "type": "timeseries"
     },
     {
