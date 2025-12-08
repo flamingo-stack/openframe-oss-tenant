@@ -264,7 +264,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 10,
+        "w": 6,
         "x": 14,
         "y": 1
       },
@@ -820,5 +820,5 @@
   "timezone": "",
   "title": "ZooKeeper",
   "uid": "zookeeper",
-  "version": 1
+  "version": 3
 }
