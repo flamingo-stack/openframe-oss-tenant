@@ -18,6 +18,10 @@ spring:
       - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration'
+  oss-tenant:
+    kafka:
+      bootstrap-servers: kafka.datasources.svc.cluster.local:9092
+      enabled: true
 
 management:
   server:
@@ -41,3 +45,4 @@ openframe:
       topics:
         outbound:
           openframe-events: openframe.events
+          devices-topic: devices-topic
