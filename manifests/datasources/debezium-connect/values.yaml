@@ -1,9 +1,10 @@
 registerJob:
   enabled: true
   image:
-    registry: ""
+    registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
 
 image:
-  repository: quay.io/debezium/connect
-  tag: "3.1.1.Final"
+  registry: ghcr.io/flamingo-stack/registry
+  repository: debezium/connect
+  tag: "3.3.2"

@@ -1,6 +1,0 @@
-registerJob:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-
-image:
-  repository: ghcr.io/flamingo-stack/registry/debezium/connect
