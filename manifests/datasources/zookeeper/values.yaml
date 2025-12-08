@@ -28,6 +28,8 @@ zookeeper:
 
   metrics:
     enabled: true
+    service:
+      annotations: {}
   podAnnotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9141"
