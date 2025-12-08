@@ -185,8 +185,8 @@
       },
       "targets": [
         {
-          "expr": "redis_connected_clients",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "sum(redis_connected_clients)",
+          "legendFormat": "total",
           "refId": "A"
         }
       ],
@@ -245,8 +245,8 @@
       },
       "targets": [
         {
-          "expr": "100 * rate(redis_keyspace_hits_total[5m]) / clamp_min(rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]), 0.001) and (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) > 0 or redis_up * 100",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "100 * sum(rate(redis_keyspace_hits_total[5m])) / clamp_min(sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m])), 0.001) and (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m]))) > 0 or max(redis_up) * 100",
+          "legendFormat": "hit rate",
           "refId": "A"
         }
       ],
@@ -304,8 +304,8 @@
       },
       "targets": [
         {
-          "expr": "redis_blocked_clients",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "sum(redis_blocked_clients)",
+          "legendFormat": "total",
           "refId": "A"
         }
       ],
@@ -500,8 +500,8 @@
       },
       "targets": [
         {
-          "expr": "irate(redis_commands_processed_total[1m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "sum(irate(redis_commands_processed_total[1m]))",
+          "legendFormat": "total",
           "refId": "A"
         }
       ],
@@ -708,20 +708,20 @@
       "id": 12,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
+          "calcs": [],
+          "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+          "mode": "single",
+          "sort": "none"
         }
       },
       "targets": [
         {
-          "expr": "rate(redis_commands_processed_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "sum(rate(redis_commands_processed_total[5m]))",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
@@ -780,9 +780,9 @@
       "id": 11,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -792,13 +792,13 @@
       },
       "targets": [
         {
-          "expr": "rate(redis_net_input_bytes_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} in",
+          "expr": "sum(rate(redis_net_input_bytes_total[5m]))",
+          "legendFormat": "in",
           "refId": "A"
         },
         {
-          "expr": "rate(redis_net_output_bytes_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} out",
+          "expr": "sum(rate(redis_net_output_bytes_total[5m]))",
+          "legendFormat": "out",
           "refId": "B"
         }
       ],
@@ -857,9 +857,9 @@
       "id": 13,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
