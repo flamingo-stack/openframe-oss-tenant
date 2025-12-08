@@ -82,7 +82,7 @@
       },
       "targets": [
         {
-          "expr": "up{job=\"zookeeper\"}",
+          "expr": "up{app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "zookeeper-{{kubernetes_pod_name}}",
           "refId": "A"
         }
@@ -134,7 +134,7 @@
       },
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{job=\"zookeeper\"}",
+          "expr": "time() - process_start_time_seconds{app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
@@ -185,7 +185,7 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_numaliveconnections{job=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_NumAliveConnections:.*\", job=\"zookeeper\"}",
+          "expr": "zookeeper_numaliveconnections{app_kubernetes_io_name=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_NumAliveConnections:.*\", app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
@@ -267,7 +267,7 @@
       },
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\", job=\"zookeeper\"}",
+          "expr": "jvm_memory_bytes_used{area=\"heap\", app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
@@ -362,12 +362,12 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_avgrequestlatency{job=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_AvgRequestLatency:.*\", job=\"zookeeper\"}",
+          "expr": "zookeeper_avgrequestlatency{app_kubernetes_io_name=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_AvgRequestLatency:.*\", app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "avg",
           "refId": "A"
         },
         {
-          "expr": "zookeeper_maxrequestlatency{job=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_MaxRequestLatency:.*\", job=\"zookeeper\"}",
+          "expr": "zookeeper_maxrequestlatency{app_kubernetes_io_name=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_MaxRequestLatency:.*\", app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "max",
           "refId": "B"
         }
@@ -448,7 +448,7 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_outstandingrequests{job=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_OutstandingRequests:.*\", job=\"zookeeper\"}",
+          "expr": "zookeeper_outstandingrequests{app_kubernetes_io_name=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_OutstandingRequests:.*\", app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
@@ -529,12 +529,12 @@
       },
       "targets": [
         {
-          "expr": "zookeeper_znodecount{job=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_NodeCount:.*\", job=\"zookeeper\"}",
+          "expr": "zookeeper_znodecount{app_kubernetes_io_name=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_NodeCount:.*\", app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "znodes",
           "refId": "A"
         },
         {
-          "expr": "zookeeper_watchcount{job=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_WatchCount:.*\", job=\"zookeeper\"}",
+          "expr": "zookeeper_watchcount{app_kubernetes_io_name=\"zookeeper\"} or {__name__=~\"zookeeper_StandaloneServer_port2181_WatchCount:.*\", app_kubernetes_io_name=\"zookeeper\"}",
           "legendFormat": "watches",
           "refId": "B"
         }
@@ -628,7 +628,7 @@
       },
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{job=\"zookeeper\"}[5m])",
+          "expr": "rate(process_cpu_seconds_total{app_kubernetes_io_name=\"zookeeper\"}[5m])",
           "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
@@ -710,7 +710,7 @@
       },
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{job=\"zookeeper\", gc=~\".*Young.*\"}[5m])",
+          "expr": "rate(jvm_gc_collection_seconds_sum{app_kubernetes_io_name=\"zookeeper\", gc=~\".*Young.*\"}[5m])",
           "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
