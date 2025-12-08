@@ -23,15 +23,17 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
   const {
     organizations,
     search,
-    isLoading,
     error,
     setOrganizations,
     setSearch,
-    setLoading,
     setError,
     clearOrganizations,
     reset
   } = useOrganizationsStore()
+
+  // Use LOCAL state for isLoading with initial=true to show skeleton immediately on mount
+  // (before useEffect triggers fetch). This prevents the flash of empty state.
+  const [isLoading, setIsLoading] = useState(true)
 
   // Pagination state (local to hook, not persisted)
   const [pageInfo, setPageInfo] = useState<PageInfo | null>(null)
@@ -53,7 +55,7 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
     cursor?: string | null,
     filters: OrganizationsFilterInput = {},
   ) => {
-    setLoading(true)
+    setIsLoading(true)
     setError(null)
 
     try {
@@ -62,7 +64,7 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
         variables: {
           search: searchTerm || '',
           pagination: {
-            limit: 20,
+            limit: 10,
             cursor: cursor || null
           }
         }
@@ -116,9 +118,9 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
       })
       throw error
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }, [setOrganizations, setLoading, setError, toast])
+  }, [setOrganizations, setError, toast])
 
   // Function to mark initial load as done (called by view component after first fetch)
   const markInitialLoadDone = useCallback(() => {

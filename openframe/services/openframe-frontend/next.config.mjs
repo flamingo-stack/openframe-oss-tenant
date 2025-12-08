@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Pure frontend configuration - no server-side features
-  // output: 'export', 
+  // output: 'export',
   trailingSlash: true,
   distDir: 'dist',   // Output directory for static export
   images: {
@@ -21,11 +21,8 @@ const nextConfig = {
   // Disable server-side features
   poweredByHeader: false,
   reactStrictMode: true,
-  // Disable SSR completely and static generation
-  experimental: {
-    esmExternals: true,
-    forceSwcTransforms: true,
-  },
+  // Next.js 16: esmExternals is now default, forceSwcTransforms removed
+  // Turbopack is now the default bundler
   generateBuildId: () => 'build',
   // Force client-side rendering
   basePath: '',

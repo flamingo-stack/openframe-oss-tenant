@@ -356,7 +356,13 @@ export function useAuth() {
         variant: "success"
       })
       
-      window.location.href = '/auth'
+      const discoveryResult = await discoverTenants(data.email)
+      
+      if (discoveryResult && discoveryResult.has_existing_accounts) {
+        window.location.href = '/auth/login'
+      } else {
+        window.location.href = '/auth'
+      }
     } catch (error: any) {
       console.error('❌ [Auth] Registration failed:', error)
       toast({

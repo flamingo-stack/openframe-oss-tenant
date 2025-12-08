@@ -82,8 +82,8 @@ const initialState = {
   edges: [],
   search: '',
   pageInfo: null,
-  pageSize: 20,
-  isLoading: false,
+  pageSize: 10,
+  isLoading: true,
   error: null,
 }
 

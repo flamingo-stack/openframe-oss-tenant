@@ -1,4 +1,4 @@
-export type StandardToolKey = 'TACTICAL' | 'FLEET' | 'MESHCENTRAL' | 'OPENFRAME_CHAT'
+export type StandardToolKey = 'TACTICAL' | 'FLEET' | 'MESHCENTRAL' | 'OPENFRAME_CHAT' | 'OPENFRAME_CLIENT'
 
 // Map of common variants to a canonical key
 const toolAliasToKey: Record<string, StandardToolKey> = {
@@ -33,6 +33,12 @@ const toolAliasToKey: Record<string, StandardToolKey> = {
   'OPENFRAME-CHAT': 'OPENFRAME_CHAT',
   'openframe_chat': 'OPENFRAME_CHAT',
   'openframe-chat': 'OPENFRAME_CHAT',
+  
+  // OpenFrame Client
+  'OPENFRAME_CLIENT': 'OPENFRAME_CLIENT',
+  'OPENFRAME-CLIENT': 'OPENFRAME_CLIENT',
+  'openframe_client': 'OPENFRAME_CLIENT',
+  'openframe-client': 'OPENFRAME_CLIENT',
 }
 
 const keyToLabel: Record<StandardToolKey, string> = {
@@ -40,13 +46,15 @@ const keyToLabel: Record<StandardToolKey, string> = {
   FLEET: 'Fleet',
   MESHCENTRAL: 'MeshCentral',
   OPENFRAME_CHAT: 'OpenFrame Chat',
+  OPENFRAME_CLIENT: 'OpenFrame Client',
 }
 
-const keyToUiKitType: Record<StandardToolKey, 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'OPENFRAME_CHAT'> = {
+const keyToUiKitType: Record<StandardToolKey, 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'OPENFRAME_CHAT' | 'OPENFRAME_CLIENT'> = {
   TACTICAL: 'TACTICAL_RMM',
   FLEET: 'FLEET_MDM',
   MESHCENTRAL: 'MESHCENTRAL',
   OPENFRAME_CHAT: 'OPENFRAME_CHAT',
+  OPENFRAME_CLIENT: 'OPENFRAME_CLIENT',
 }
 
 export function normalizeToolKey(input?: string): StandardToolKey | undefined {
@@ -70,7 +78,7 @@ export function toStandardToolLabel(input?: string): string {
   return key ? keyToLabel[key] : input || ''
 }
 
-export function toUiKitToolType(input?: string): 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'AUTHENTIK' | 'OPENFRAME' | 'OPENFRAME_CHAT' | 'SYSTEM' {
+export function toUiKitToolType(input?: string): 'TACTICAL_RMM' | 'FLEET_MDM' | 'MESHCENTRAL' | 'AUTHENTIK' | 'OPENFRAME' | 'OPENFRAME_CHAT' | 'OPENFRAME_CLIENT' | 'SYSTEM' {
   const key = normalizeToolKey(input)
   if (key) return keyToUiKitType[key]
 

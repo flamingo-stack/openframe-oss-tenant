@@ -9,6 +9,7 @@ export interface OrganizationMin {
   organizationId: string
   name: string
   isDefault: boolean
+  imageUrl?: string
 }
 
 export function useOrganizationsMin() {
@@ -31,7 +32,7 @@ export function useOrganizationsMin() {
 
       const payload = (response.data as any)?.data?.organizations
       const list = Array.isArray(payload?.edges) ? payload.edges : []
-      const mapped: OrganizationMin[] = list.map(({node}: any) => ({ id: node.id, organizationId: node.organizationId, name: node.name, isDefault: node.isDefault }))
+      const mapped: OrganizationMin[] = list.map(({node}: any) => ({ id: node.id, organizationId: node.organizationId, name: node.name, isDefault: node.isDefault, imageUrl: node.image?.imageUrl }))
       setItems(mapped)
       return mapped
     } catch (e) {

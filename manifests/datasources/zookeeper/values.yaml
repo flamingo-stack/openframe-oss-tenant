@@ -1,0 +1,37 @@
+registerJob:
+  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
+
+
+zookeeper:
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: bitnamilegacy/zookeeper
+    tag: 3.9.3-debian-12-r22
+
+  replicaCount: 1
+  revisionHistoryLimit: 2
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+  metrics:
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: "false"
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9141"
+    prometheus.io/path: "/metrics"

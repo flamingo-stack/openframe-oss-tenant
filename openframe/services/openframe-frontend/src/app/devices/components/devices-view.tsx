@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import { type Device } from '../types/device.types'
 import {
   Table,
   Button,
@@ -78,6 +79,12 @@ export function DevicesView() {
     () => getDeviceTableRowActions(refreshDevices),
     [refreshDevices]
   )
+
+  // Navigate to device details on row click
+  const handleRowClick = useCallback((device: Device) => {
+    const id = device.machineId || device.id
+    router.push(`/devices/details/${id}`)
+  }, [router])
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     // Reset cursor and update filter params
@@ -158,7 +165,9 @@ export function DevicesView() {
           columns={columns}
           rowKey="machineId"
           loading={isLoading}
+          skeletonRows={10}
           emptyMessage="No devices found. Try adjusting your search or filters."
+          onRowClick={handleRowClick}
           renderRowActions={renderRowActions}
           filters={tableFilters}
           onFilterChange={handleFilterChange}

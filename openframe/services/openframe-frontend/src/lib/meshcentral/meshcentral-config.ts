@@ -38,6 +38,7 @@ export function buildWsUrl(path: string): string {
     const scheme = getMeshWsScheme()
     const host = window.location.host
 
+    // Always use the proxy path for now since that's how the backend is configured
     return `${scheme}://${host}/ws/tools/meshcentral-server${normalizedPath}`
   }
 
