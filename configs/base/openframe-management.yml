@@ -24,6 +24,10 @@ spring:
       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.cassandra.CassandraHealthContributorAutoConfiguration
+  oss-tenant:
+    kafka:
+      bootstrap-servers: kafka.datasources.svc.cluster.local:9092
+      enabled: true
 
 # Management server configuration
 management:
@@ -40,6 +44,12 @@ openframe:
     sync-interval: 300000  # 5 minutes in milliseconds
     lock-at-most-for: "10m"  # Maximum lock duration
     lock-at-least-for: "1m"
+
+  oss-tenant:
+    kafka:
+      topics:
+        outbound:
+          devices-topic: devices-topic
 
   gateway:
     oauth:

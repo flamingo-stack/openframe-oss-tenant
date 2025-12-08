@@ -24,7 +24,9 @@ spring:
         max-wait: 1000ms
     client-type: lettuce
   oss-tenant:
-    enabled: false
+    kafka:
+      bootstrap-servers: kafka.datasources.svc.cluster.local:9092
+      enabled: true
   saas:
     enabled: false
   cloud:
@@ -76,6 +78,11 @@ openframe:
   integration:
     tool:
       enabled: true
+  oss-tenant:
+    kafka:
+      topics:
+        outbound:
+          devices-topic: devices-topic
 
 #Available SSO providers to setup
 sso:

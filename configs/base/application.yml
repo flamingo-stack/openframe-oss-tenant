@@ -80,7 +80,7 @@ security:
         max-refresh-count: 10080    # Maximum refreshes in a week (7 * 24 * 60)        
   encryption:
     password: ${ENCRYPTION_PASSWORD:kdCJxik7VWRlG5L8jKHBeJQK5unssi7u1uHOd01b75ilr8n}
-    salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}        
+    salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
 
 logging:
   config: http://openframe-config.microservices.svc.cluster.local:8888/logging/shared-logback-spring.xml
@@ -127,6 +127,14 @@ logging:
 
 openframe:
   cluster-id: ${OPENFRAME_CLUSTER_ID:cluster-id}
+  client:
+    update:
+      feature:
+        enabled: true
+  tool-agent:
+    update:
+      feature:
+        enabled: true
 # Docker environment specific configuration
 
 # Docker monitoring endpoints
