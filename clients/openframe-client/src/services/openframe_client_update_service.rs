@@ -14,6 +14,8 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::update_state_service::UpdateStateService;
 use crate::services::update_cleanup_service::UpdateCleanupService;
 use crate::platform::DirectoryManager;
+#[cfg(windows)]
+use crate::platform::get_powershell_path;
 use std::path::PathBuf;
 use std::process;
 use uuid::Uuid;
@@ -483,8 +485,10 @@ impl OpenFrameClientUpdateService {
         // Get update state file path
         let update_state_path = self.update_state_service.get_state_file_path();
 
-        // Launch PowerShell with the script
-        let child = process::Command::new("powershell.exe")
+        let ps_path = get_powershell_path().map_err(|e| anyhow!(e))?;
+        info!("Using PowerShell: {}", ps_path);
+
+        let child = process::Command::new(&ps_path)
             .arg("-ExecutionPolicy").arg("Bypass")
             .arg("-NoProfile")
             .arg("-File").arg(&script_path)
@@ -492,7 +496,7 @@ impl OpenFrameClientUpdateService {
             .arg("-ServiceName").arg(service_name)
             .arg("-TargetExe").arg(&current_exe)
             .arg("-UpdateStatePath").arg(&update_state_path)
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW - no console window
+            .creation_flags(0x08000000)
             .spawn()
             .context("Failed to spawn PowerShell updater")?;
 

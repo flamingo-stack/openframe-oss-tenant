@@ -8,12 +8,19 @@ import {
   ListPageContainer,
   PageError,
   StatusTag,
+  Skeleton,
+  Card,
+  CardHeader,
+  CardContent,
+  CheckboxWithDescription,
   type TableColumn,
   type RowAction
 } from '@flamingo/ui-kit/components/ui'
-import { EditProfileIcon, RefreshIcon } from '@flamingo/ui-kit/components/icons'
+import { EditProfileIcon, RefreshIcon, GoogleLogo, MicrosoftIcon } from '@flamingo/ui-kit/components/icons'
+import { useToast } from '@flamingo/ui-kit/hooks'
 import { SsoConfigModal } from '../edit-sso-config-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
+import { useTenantDomain, type TenantDomainInfo } from '../../hooks/use-tenant-domain'
 import { getProviderIcon } from '../../utils/get-provider-icon'
 import { featureFlags } from '@/src/lib/feature-flags'
 
@@ -48,7 +55,14 @@ export function SsoConfigurationTab() {
     allowedDomains?: string[]
   } | null>(null)
 
+  // Shared SSO provider state
+  const [tenantDomain, setTenantDomain] = useState<TenantDomainInfo | null>(null)
+  const [isDomainLoading, setIsDomainLoading] = useState(true)
+  const [isAutoProvisionUpdating, setIsAutoProvisionUpdating] = useState(false)
+
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig()
+  const { fetchTenantDomain, updateSharedAutoProvision } = useTenantDomain()
+  const { toast } = useToast()
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -86,9 +100,66 @@ export function SsoConfigurationTab() {
     }
   }, [])
 
+  // Load tenant domain info for shared SSO provider
+  const loadDomainData = useCallback(async () => {
+    setIsDomainLoading(true)
+    try {
+      const domainInfo = await fetchTenantDomain()
+      setTenantDomain(domainInfo)
+    } catch (err) {
+      console.error('Failed to load tenant domain:', err)
+      // Don't set error state - shared SSO section will just not show
+      setTenantDomain(null)
+    } finally {
+      setIsDomainLoading(false)
+    }
+  }, [fetchTenantDomain])
+
+  // Handle shared auto provision toggle
+  const handleAutoProvisionToggle = useCallback(async (enabled: boolean) => {
+    if (!tenantDomain || tenantDomain.generic) return
+
+    setIsAutoProvisionUpdating(true)
+    try {
+      const result = await updateSharedAutoProvision(enabled)
+
+      if (result.error) {
+        toast({
+          title: 'Auto Provision Failed',
+          description: result.error.message,
+          variant: 'destructive',
+          duration: 5000
+        })
+        return
+      }
+
+      // Update local state
+      setTenantDomain(prev => prev ? { ...prev, autoAllow: enabled } : null)
+
+      toast({
+        title: enabled ? 'Auto Provision Enabled' : 'Auto Provision Disabled',
+        description: enabled
+          ? `Users from ${tenantDomain.domain} can now sign in via shared Google and Microsoft SSO.`
+          : 'Auto provision for shared SSO providers has been disabled.',
+        variant: 'success',
+        duration: 4000
+      })
+    } catch (err) {
+      toast({
+        title: 'Update Failed',
+        description: err instanceof Error ? err.message : 'Failed to update auto provision setting',
+        variant: 'destructive',
+        duration: 5000
+      })
+    } finally {
+      setIsAutoProvisionUpdating(false)
+    }
+  }, [tenantDomain, updateSharedAutoProvision, toast])
+
   useEffect(() => {
     loadData()
-  }, [loadData])
+    loadDomainData()
+  }, [loadData, loadDomainData])
 
   const columns: TableColumn<UIProviderRow>[] = useMemo(() => {
     const baseColumns: TableColumn<UIProviderRow>[] = [
@@ -186,11 +257,63 @@ export function SsoConfigurationTab() {
       className='pt-6'
     >
       <SearchBar
-        placeholder="Search for API Key"
+        placeholder="Search SSO providers"
         onSubmit={setSearchTerm}
         value={searchTerm}
         className="w-full"
       />
+
+      {/* Shared SSO Provider Section */}
+      {isDomainLoading ? (
+        <Card className="bg-ods-card border-ods-border my-6 p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <Skeleton className="h-6 w-6 rounded shrink-0" />
+              <Skeleton className="h-4 w-3 shrink-0" />
+              <Skeleton className="h-6 w-6 rounded shrink-0" />
+              <div className="flex flex-col gap-1">
+                <Skeleton className="h-5 w-48 md:w-64" />
+                <Skeleton className="h-4 w-full md:w-96" />
+              </div>
+            </div>
+            <Skeleton className="h-20 w-full md:w-[400px] rounded-lg" />
+          </div>
+        </Card>
+      ) : tenantDomain && (
+        <Card className="bg-ods-card border-ods-border my-6 p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* Row 1 on mobile / Left side on desktop: Icons and text */}
+            <div className="flex items-center gap-3 flex-1">
+              <div className="flex items-center gap-2 shrink-0">
+                <GoogleLogo className="h-6 w-6" />
+                <span className="text-ods-text-secondary">&</span>
+                <MicrosoftIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-ods-text-primary">OpenFrame Google & Microsoft SSO</h2>
+                <p className="text-sm text-ods-text-secondary">
+                  Allow any account from {tenantDomain.domain} domain to access OpenFrame via shared SSO providers. Accounts will be auto provisioned upon first sign-in.
+                </p>
+              </div>
+            </div>
+
+            {/* Row 2 on mobile / Right side on desktop: Checkbox */}
+            <CheckboxWithDescription
+              id="shared-auto-provision"
+              checked={tenantDomain.autoAllow}
+              onCheckedChange={handleAutoProvisionToggle}
+              disabled={tenantDomain.generic || isAutoProvisionUpdating}
+              title={`Auto-provision accounts from ${tenantDomain.domain}`}
+              description={
+                tenantDomain.generic
+                  ? `Generic domains like ${tenantDomain.domain} cannot be used for auto-provisioning.`
+                  : "Automatically create user accounts when signing in via shared Google or Microsoft SSO."
+              }
+              className="w-full md:w-[400px] md:shrink-0"
+            />
+          </div>
+        </Card>
+      )}
 
       <Table
         data={filtered}

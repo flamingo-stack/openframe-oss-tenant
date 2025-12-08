@@ -84,7 +84,7 @@
       "targets": [
         {
           "expr": "redis_up",
-          "legendFormat": "Redis Status",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
@@ -136,7 +136,7 @@
       "targets": [
         {
           "expr": "redis_uptime_in_seconds",
-          "legendFormat": "Uptime",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
@@ -187,7 +187,7 @@
       "targets": [
         {
           "expr": "redis_connected_clients",
-          "legendFormat": "Connected Clients",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
@@ -269,12 +269,12 @@
       "targets": [
         {
           "expr": "redis_memory_used_bytes",
-          "legendFormat": "Used Memory",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} used",
           "refId": "A"
         },
         {
           "expr": "redis_memory_max_bytes",
-          "legendFormat": "Max Memory",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} max",
           "refId": "B"
         }
       ],
@@ -358,7 +358,7 @@
       "targets": [
         {
           "expr": "rate(redis_commands_processed_total[5m])",
-          "legendFormat": "Commands/sec",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
@@ -429,12 +429,12 @@
       "targets": [
         {
           "expr": "rate(redis_keyspace_hits_total[5m])",
-          "legendFormat": "Hits/sec",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} hits",
           "refId": "A"
         },
         {
           "expr": "rate(redis_keyspace_misses_total[5m])",
-          "legendFormat": "Misses/sec",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} misses",
           "refId": "B"
         }
       ],
@@ -517,8 +517,8 @@
       },
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{job=\"redis\"}[5m])",
-          "legendFormat": "CPU Usage",
+          "expr": "rate(redis_cpu_sys_seconds_total[5m])",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
@@ -590,12 +590,12 @@
       "targets": [
         {
           "expr": "rate(redis_net_input_bytes_total[5m])",
-          "legendFormat": "Network In",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} in",
           "refId": "A"
         },
         {
           "expr": "rate(redis_net_output_bytes_total[5m])",
-          "legendFormat": "Network Out",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} out",
           "refId": "B"
         }
       ],

@@ -153,46 +153,6 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "OpenFrame UI on Local Kubernetes",
-            "cwd": "${workspaceFolder}/openframe/services/openframe-ui",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "dev"
-            ],
-            "env": {
-                "PORT": "5177",
-                "VITE_API_URL": "https://localhost/api",
-                "VITE_GATEWAY_URL": "https://localhost",
-                "VITE_CLIENT_ID": "openframe_web_dashboard",
-                "VITE_CLIENT_SECRET": "prod_secret",
-                "VITE_GRAFANA_URL": "https://localhost:3000"
-            },
-            "console": "integratedTerminal"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "OpenFrame UI on Debug Localhost Apps",
-            "cwd": "${workspaceFolder}/openframe/services/openframe-ui",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "dev"
-            ],
-            "env": {
-                "PORT": "5177",
-                "VITE_API_URL": "https://localhost:8100/api",
-                "VITE_GATEWAY_URL": "https://localhost:8100",
-                "VITE_CLIENT_ID": "openframe_web_dashboard",
-                "VITE_CLIENT_SECRET": "prod_secret",
-                "VITE_GRAFANA_URL": "https://localhost:3000"
-            },
-            "console": "integratedTerminal"
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "OpenFrame Frontend with Local K8s Cluster",
             "preLaunchTask": "frontend-with-port-cleanup",
             "cwd": "${workspaceFolder}/openframe/services/openframe-frontend",

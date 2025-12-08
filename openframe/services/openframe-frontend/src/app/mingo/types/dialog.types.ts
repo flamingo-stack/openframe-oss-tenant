@@ -16,6 +16,7 @@ export interface Machine {
   machineId: string
   displayName?: string
   hostname?: string
+  organizationId?: string
 }
 
 export interface ClientDialogOwner extends DialogOwner {

@@ -2,5 +2,5 @@ apiVersion: v2
 name: namespace-integrated-tools
 description: A Helm chart to provision a integrated-tools namespace.
 type: application
-version: 0.1.0
-appVersion: "1.0.0"
+version: 0.0.1
+appVersion: "0.0.1"

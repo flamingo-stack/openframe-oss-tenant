@@ -193,7 +193,7 @@ impl ToolAgentUpdateListener {
             deliver_subject,
             durable_name: Some(durable_name),
             ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
-            deliver_policy: DeliverPolicy::Last,
+            deliver_policy: DeliverPolicy::New,
             max_deliver: CONSUMER_MAX_DELIVER,
             ..Default::default()
         }

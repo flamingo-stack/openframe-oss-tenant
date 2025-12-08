@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -12,14 +13,10 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
       
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.registerJob.image.tag }}
         command:
           - /bin/sh
           - -uc
@@ -57,6 +54,11 @@ spec:
                       "url": "http://pinot-server.datasources.svc.cluster.local",
                       "port": "8097",
                       "type": "SERVER"
+                    },
+                    {
+                      "url": "http://pinot-minion.datasources.svc.cluster.local",
+                      "port": "9514",
+                      "type": "MINION"
                     }
                   ],
                   "category": "Analytics Database",
@@ -85,4 +87,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Apache Pinot Registration failed..."; exit 1; }
             echo "Apache Pinot Registration complete."
+
 {{- end }}

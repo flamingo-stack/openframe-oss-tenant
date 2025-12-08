@@ -1,19 +1,72 @@
 registerJob:
   enabled: true
-servicemonitor:
-  enabled: true
-
-
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 pinot:
+  image:
+    repository: ghcr.io/flamingo-stack/registry/apachepinot/pinot
+    tag: 1.4.0
   cluster:
-    name: pinot 
+    name: pinot
+
   server:
     replicaCount: 2
-  
+    jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms512M -Xmx2G"
+    service:
+      extraPorts:
+        - containerPort: 8008
+          protocol: TCP
+          name: prometheus
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
+
   controller:
     external:
       enabled: false
+    jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
+    service:
+      extraPorts:
+        - containerPort: 8008
+          protocol: TCP
+          name: prometheus
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
+
   broker:
     external:
       enabled: false
+    jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
+    service:
+      extraPorts:
+        - containerPort: 8008
+          protocol: TCP
+          name: prometheus
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
+
+  minion:
+    jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
+    service:
+      extraPorts:
+        - containerPort: 8008
+          protocol: TCP
+          name: prometheus
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
+
+
+  zookeeper:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bitnamilegacy/zookeeper
+      tag: 3.9.3-debian-12-r22

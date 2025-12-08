@@ -1,7 +1,5 @@
 registerJob:
   enabled: true
-servicemonitor:
-  enabled: true
 
 credentials:
   admin_user: "admin"            
