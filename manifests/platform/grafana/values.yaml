@@ -53,7 +53,7 @@ grafana:
     enabled: true
     accessModes:
       - ReadWriteOnce
-    size: 1Gi
+    size: 5Gi
 
   admin: # pre applyed 
     existingSecret: "grafana"
