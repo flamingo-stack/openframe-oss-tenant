@@ -245,7 +245,7 @@
       },
       "targets": [
         {
-          "expr": "100 * rate(redis_keyspace_hits_total[5m]) / clamp_min(rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]), 0.001) and (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) > 0 or (redis_up == 1) * -1 + 101",
+          "expr": "100 * rate(redis_keyspace_hits_total[5m]) / clamp_min(rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]), 0.001) and (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) > 0 or redis_up * 100",
           "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -368,7 +368,7 @@
         }
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 6,
         "x": 0,
         "y": 10
@@ -430,7 +430,7 @@
         }
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 4,
         "x": 6,
         "y": 10
@@ -480,7 +480,7 @@
         }
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 4,
         "x": 10,
         "y": 10
@@ -533,7 +533,7 @@
         }
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 4,
         "x": 14,
         "y": 10
@@ -615,7 +615,7 @@
         }
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 6,
         "x": 18,
         "y": 10
@@ -649,89 +649,12 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "unit": "Bps"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 19
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "expr": "rate(redis_net_input_bytes_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} in",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(redis_net_output_bytes_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} out",
-          "refId": "B"
-        }
-      ],
-      "title": "Network Traffic",
-      "type": "timeseries"
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 20
       },
       "id": 9,
       "panels": [],
@@ -785,7 +708,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 19
+        "y": 21
       },
       "id": 12,
       "options": {
@@ -850,6 +773,83 @@
               "mode": "off"
             }
           },
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 21
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(redis_net_input_bytes_total[5m])",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} in",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(redis_net_output_bytes_total[5m])",
+          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}} out",
+          "refId": "B"
+        }
+      ],
+      "title": "Network Traffic",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "unit": "ops"
         }
       },
@@ -857,7 +857,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 19
+        "y": 21
       },
       "id": 13,
       "options": {
