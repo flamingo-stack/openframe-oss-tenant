@@ -565,6 +565,16 @@ impl ToolRunManager {
                     }
                 }
 
+                // For non-Windows platforms, skip Console session type tools
+                #[cfg(not(windows))]
+                {
+                    use crate::models::SessionType;
+                    if tool.session_type == SessionType::Console {
+                        info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
+                        return;
+                    }
+                }
+
                 // For all other tools (or non-Windows), use standard spawn
                 let mut child = match Command::new(&command_path)
                     .args(&processed_args)
