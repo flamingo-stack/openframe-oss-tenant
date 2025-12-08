@@ -245,7 +245,7 @@
       },
       "targets": [
         {
-          "expr": "(100 * rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]))) or (redis_up == 1) * 100",
+          "expr": "100 * rate(redis_keyspace_hits_total[5m]) / clamp_min(rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]), 0.001) and (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) > 0 or (redis_up == 1) * -1 + 101",
           "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -524,19 +524,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "blue",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1.5
-              },
-              {
-                "color": "red",
-                "value": 2
               }
             ]
-          }
+          },
+          "noValue": "N/A"
         }
       },
       "gridPos": {
@@ -700,9 +693,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 18
+        "w": 8,
+        "x": 8,
+        "y": 19
       },
       "id": 11,
       "options": {
@@ -790,9 +783,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 8,
         "x": 0,
-        "y": 27
+        "y": 19
       },
       "id": 12,
       "options": {
@@ -862,9 +855,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 27
+        "w": 8,
+        "x": 16,
+        "y": 19
       },
       "id": 13,
       "options": {

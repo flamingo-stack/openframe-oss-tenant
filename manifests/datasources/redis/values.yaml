@@ -17,7 +17,11 @@ redis:
 
   auth:
     enabled: false
-  
+
+  commonConfiguration: |-
+    maxmemory 200mb
+    maxmemory-policy allkeys-lru
+
   master:
     revisionHistoryLimit: 2
     resources:
