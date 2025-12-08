@@ -102,7 +102,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "up{app_kubernetes_io_name=\"zookeeper\"}",
+          "expr": "up{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -161,7 +161,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{app_kubernetes_io_name=\"zookeeper\"} and on(pod) up{app_kubernetes_io_name=\"zookeeper\"} == 1",
+          "expr": "time() - process_start_time_seconds{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"} and on(pod) up{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"} == 1",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -219,7 +219,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_threads_current{app_kubernetes_io_name=\"zookeeper\"}",
+          "expr": "jvm_threads_current{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -264,7 +264,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 6,
+        "w": 10,
         "x": 14,
         "y": 1
       },
@@ -287,7 +287,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", app_kubernetes_io_name=\"zookeeper\"} / jvm_memory_bytes_max{area=\"heap\", app_kubernetes_io_name=\"zookeeper\"}",
+          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"} / jvm_memory_bytes_max{area=\"heap\", app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -396,7 +396,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{app_kubernetes_io_name=\"zookeeper\"}[5m])",
+          "expr": "rate(process_cpu_seconds_total{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}[5m])",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -492,7 +492,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\", app_kubernetes_io_name=\"zookeeper\"}",
+          "expr": "jvm_memory_bytes_used{area=\"heap\", app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -588,8 +588,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{app_kubernetes_io_name=\"zookeeper\"}[5m])",
-          "legendFormat": "{{pod}} {{gc}}",
+          "expr": "rate(jvm_gc_collection_seconds_sum{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}[5m])",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -696,7 +696,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_state{app_kubernetes_io_name=\"zookeeper\"}) by (state)",
+          "expr": "sum(jvm_threads_state{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}) by (state)",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
@@ -792,7 +792,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{app_kubernetes_io_name=\"zookeeper\"}",
+          "expr": "process_resident_memory_bytes{app_kubernetes_io_name=\"zookeeper\", job=\"kubernetes-pods\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
