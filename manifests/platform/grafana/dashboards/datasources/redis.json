@@ -431,7 +431,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "short"
         },
         "overrides": []
       },
@@ -461,7 +462,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(redis_cpu_sys_seconds_total[5m])",
+          "expr": "rate(redis_cpu_sys_seconds_total[5m]) + rate(redis_cpu_user_seconds_total[5m])",
           "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }

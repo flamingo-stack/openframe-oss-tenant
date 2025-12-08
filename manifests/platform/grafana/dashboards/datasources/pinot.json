@@ -345,7 +345,7 @@
               }
             ]
           },
-          "unit": "percent"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -372,12 +372,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * rate(process_cpu_seconds_total{app=\"pinot\"}[5m])",
+          "expr": "rate(process_cpu_seconds_total{app=\"pinot\"}[5m])",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
       ],
-      "title": "CPU %",
+      "title": "CPU Usage",
       "type": "timeseries"
     },
     {
