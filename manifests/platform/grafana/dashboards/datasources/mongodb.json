@@ -188,13 +188,14 @@
                 "value": 0
               }
             ]
-          }
+          },
+          "unit": "bytes"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 9,
-        "w": 6,
+        "w": 7,
         "x": 10,
         "y": 1
       },
@@ -219,12 +220,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "go_goroutines{app=\"mongodb\"}",
+          "expr": "process_resident_memory_bytes{app=\"mongodb\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Goroutines",
+      "title": "Resident Memory",
       "type": "stat"
     },
     {
@@ -244,6 +245,14 @@
               {
                 "color": "green",
                 "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
               }
             ]
           }
@@ -252,8 +261,8 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
-        "x": 16,
+        "w": 7,
+        "x": 17,
         "y": 1
       },
       "id": 14,
@@ -282,7 +291,7 @@
           "refId": "A"
         }
       ],
-      "title": "Open FDs",
+      "title": "Open File Descriptors",
       "type": "stat"
     },
     {
@@ -362,7 +371,7 @@
       },
       "gridPos": {
         "h": 11,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 11
       },
@@ -458,8 +467,8 @@
       },
       "gridPos": {
         "h": 11,
-        "w": 8,
-        "x": 8,
+        "w": 12,
+        "x": 12,
         "y": 11
       },
       "id": 16,
@@ -492,108 +501,7 @@
           "refId": "B"
         }
       ],
-      "title": "Memory Used",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 16,
-        "y": 11
-      },
-      "id": 8,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "go_memstats_heap_alloc_bytes{app=\"mongodb\"}",
-          "legendFormat": "heap alloc - {{pod}}",
-          "refId": "A"
-        },
-        {
-          "expr": "go_memstats_heap_inuse_bytes{app=\"mongodb\"}",
-          "legendFormat": "heap inuse - {{pod}}",
-          "refId": "B"
-        }
-      ],
-      "title": "Heap Memory",
+      "title": "Memory Usage",
       "type": "timeseries"
     },
     {
@@ -797,17 +705,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "go_goroutines{app=\"mongodb\"}",
-          "legendFormat": "goroutines - {{pod}}",
+          "expr": "process_open_fds{app=\"mongodb\"}",
+          "legendFormat": "open - {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "go_threads{app=\"mongodb\"}",
-          "legendFormat": "threads - {{pod}}",
+          "expr": "process_max_fds{app=\"mongodb\"}",
+          "legendFormat": "max - {{pod}}",
           "refId": "B"
         }
       ],
-      "title": "Goroutines & Threads",
+      "title": "File Descriptors",
       "type": "timeseries"
     }
   ],
@@ -830,5 +738,5 @@
   "timezone": "",
   "title": "MongoDB",
   "uid": "mongodb",
-  "version": 3
+  "version": 4
 }

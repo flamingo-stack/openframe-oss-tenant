@@ -5,7 +5,8 @@ registerJob:
     tag: "8.9.1"
 
 image:
-  repository: mongo
+  registry: ghcr.io/flamingo-stack/registry
+  repository: library/mongo
   tag: "7.0.18"
 
 persistence:

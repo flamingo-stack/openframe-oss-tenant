@@ -18,11 +18,6 @@ spec:
         {{- toYaml .Values.metrics.podAnnotations | nindent 8 }}
       {{- end }}
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -35,7 +30,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ default .Values.image.registry .Values.global.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 27017
           envFrom:
