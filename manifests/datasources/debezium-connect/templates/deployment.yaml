@@ -51,10 +51,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: debezium-connect
+          {{- if .Values.metrics.enabled }}
           volumeMounts:
-            - name: jdbc-drivers-volume
-              mountPath: /jdbc-drivers
-            {{- if .Values.metrics.enabled }}
             - name: jmx-exporter
               mountPath: /opt/jmx-exporter
             {{- end }}
@@ -81,10 +79,8 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
+      {{- if .Values.metrics.enabled }}
       volumes:
-        - name: jdbc-drivers-volume
-          emptyDir: {}
-        {{- if .Values.metrics.enabled }}
         - name: jmx-exporter
           emptyDir: {}
         - name: jmx-config

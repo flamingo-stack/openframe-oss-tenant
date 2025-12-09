@@ -7,7 +7,7 @@ data:
   CONFIG_STORAGE_TOPIC: "connect-configs"
   OFFSET_STORAGE_TOPIC: "connect-offsets"
   STATUS_STORAGE_TOPIC: "connect-status"
-  CONNECT_PLUGIN_PATH: "/kafka/connect,/jdbc-drivers"
+  CONNECT_PLUGIN_PATH: "/kafka/connect"
   {{- if .Values.metrics.enabled }}
   KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar={{ .Values.metrics.port }}:/opt/jmx-exporter/config.yaml"
   {{- end }}
