@@ -148,6 +148,11 @@ apps:
     project: datasources
     namespace: datasources
     syncWave: "1"
+  zookeeper:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
 
   namespace-microservices:
     enabled: true
