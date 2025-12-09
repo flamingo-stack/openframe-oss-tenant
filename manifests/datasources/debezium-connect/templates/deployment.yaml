@@ -30,10 +30,12 @@ spec:
             - |
               wget -O /jmx/jmx_prometheus_javaagent.jar \
                 https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/{{ .Values.metrics.jmx.version }}/jmx_prometheus_javaagent-{{ .Values.metrics.jmx.version }}.jar
-              echo "rules: []" > /jmx/config.yaml
+              cp /jmx-config/config.yaml /jmx/config.yaml
           volumeMounts:
             - name: jmx-exporter
               mountPath: /jmx
+            - name: jmx-config
+              mountPath: /jmx-config
       {{- end }}
 
       containers:
@@ -85,4 +87,7 @@ spec:
         {{- if .Values.metrics.enabled }}
         - name: jmx-exporter
           emptyDir: {}
+        - name: jmx-config
+          configMap:
+            name: debezium-connect-jmx
         {{- end }}

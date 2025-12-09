@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: debezium-connect-jmx
+data:
+  config.yaml: |
+    lowercaseOutputName: true
+    lowercaseOutputLabelNames: true
+    whitelistObjectNames:
+      - "kafka.connect:type=connect-worker-metrics,*"
+      - "kafka.connect:type=connect-worker-rebalance-metrics,*"
+      - "kafka.connect:type=connector-metrics,*"
+      - "kafka.connect:type=connector-task-metrics,*"
+      - "kafka.connect:type=task-error-metrics,*"
+      - "kafka.connect:type=source-task-metrics,*"
+      - "kafka.connect:type=sink-task-metrics,*"
+      - "debezium.mongodb:type=connector-metrics,*"
+      - "debezium.mysql:type=connector-metrics,*"
+      - "debezium.postgres:type=connector-metrics,*"
+      - "debezium.sqlserver:type=connector-metrics,*"
+      - "debezium.oracle:type=connector-metrics,*"
+      - "java.lang:type=Memory"
+      - "java.lang:type=GarbageCollector,*"
+      - "java.lang:type=Threading"
+      - "java.lang:type=Runtime"
+      - "java.lang:type=OperatingSystem"
+      - "java.lang:type=ClassLoading"
+      - "java.nio:type=BufferPool,*"
+
+    rules:
+      # Kafka Connect Worker Metrics
+      - pattern: 'kafka.connect<type=connect-worker-metrics>([^:]+):'
+        name: kafka_connect_worker_$1
+        type: GAUGE
+
+      - pattern: 'kafka.connect<type=connect-worker-metrics, connector=([^,]+)>([^:]+):'
+        name: kafka_connect_worker_connector_$2
+        labels:
+          connector: $1
+        type: GAUGE
+
+      # Kafka Connect Worker Rebalance Metrics
+      - pattern: 'kafka.connect<type=connect-worker-rebalance-metrics>([^:]+):'
+        name: kafka_connect_worker_rebalance_$1
+        type: GAUGE
+
+      # Connector Metrics
+      - pattern: 'kafka.connect<type=connector-metrics, connector=([^,]+)><>([^:]+):'
+        name: kafka_connect_connector_$2
+        labels:
+          connector: $1
+        type: GAUGE
+
+      # Connector Task Metrics
+      - pattern: 'kafka.connect<type=connector-task-metrics, connector=([^,]+), task=([^,]+)><>([^:]+):'
+        name: kafka_connect_connector_task_$3
+        labels:
+          connector: $1
+          task: $2
+        type: GAUGE
+
+      # Task Error Metrics
+      - pattern: 'kafka.connect<type=task-error-metrics, connector=([^,]+), task=([^,]+)><>([^:]+):'
+        name: kafka_connect_task_error_$3
+        labels:
+          connector: $1
+          task: $2
+        type: GAUGE
+
+      # Source Task Metrics
+      - pattern: 'kafka.connect<type=source-task-metrics, connector=([^,]+), task=([^,]+)><>([^:]+):'
+        name: kafka_connect_source_task_$3
+        labels:
+          connector: $1
+          task: $2
+        type: GAUGE
+
+      # Sink Task Metrics
+      - pattern: 'kafka.connect<type=sink-task-metrics, connector=([^,]+), task=([^,]+)><>([^:]+):'
+        name: kafka_connect_sink_task_$3
+        labels:
+          connector: $1
+          task: $2
+        type: GAUGE
+
+      # Debezium MongoDB Connector Metrics
+      - pattern: 'debezium.mongodb<type=connector-metrics, context=([^,]+), server=([^,]+)><>([^:]+):'
+        name: debezium_mongodb_$3
+        labels:
+          context: $1
+          server: $2
+        type: GAUGE
+
+      # Debezium MySQL Connector Metrics
+      - pattern: 'debezium.mysql<type=connector-metrics, context=([^,]+), server=([^,]+)><>([^:]+):'
+        name: debezium_mysql_$3
+        labels:
+          context: $1
+          server: $2
+        type: GAUGE
+
+      # Debezium PostgreSQL Connector Metrics
+      - pattern: 'debezium.postgres<type=connector-metrics, context=([^,]+), server=([^,]+)><>([^:]+):'
+        name: debezium_postgres_$3
+        labels:
+          context: $1
+          server: $2
+        type: GAUGE
+
+      # Debezium SQL Server Connector Metrics
+      - pattern: 'debezium.sqlserver<type=connector-metrics, context=([^,]+), server=([^,]+)><>([^:]+):'
+        name: debezium_sqlserver_$3
+        labels:
+          context: $1
+          server: $2
+        type: GAUGE
+
+      # Debezium Oracle Connector Metrics
+      - pattern: 'debezium.oracle<type=connector-metrics, context=([^,]+), server=([^,]+)><>([^:]+):'
+        name: debezium_oracle_$3
+        labels:
+          context: $1
+          server: $2
+        type: GAUGE
+
+      # JVM Memory
+      - pattern: 'java.lang<type=Memory><HeapMemoryUsage>(\w+):'
+        name: jvm_memory_heap_$1_bytes
+        type: GAUGE
+
+      - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>(\w+):'
+        name: jvm_memory_nonheap_$1_bytes
+        type: GAUGE
+
+      # JVM GC
+      - pattern: 'java.lang<type=GarbageCollector, name=([^,]+)><>CollectionCount:'
+        name: jvm_gc_collection_count
+        labels:
+          gc: $1
+        type: COUNTER
+
+      - pattern: 'java.lang<type=GarbageCollector, name=([^,]+)><>CollectionTime:'
+        name: jvm_gc_collection_time_ms
+        labels:
+          gc: $1
+        type: COUNTER
+
+      # JVM Threading
+      - pattern: 'java.lang<type=Threading><>(\w+):'
+        name: jvm_threading_$1
+        type: GAUGE
+
+      # JVM Runtime
+      - pattern: 'java.lang<type=Runtime><>Uptime:'
+        name: jvm_runtime_uptime_ms
+        type: GAUGE
+
+      # JVM OS
+      - pattern: 'java.lang<type=OperatingSystem><>(\w+):'
+        name: jvm_os_$1
+        type: GAUGE
+
+      # JVM Classes
+      - pattern: 'java.lang<type=ClassLoading><>(\w+):'
+        name: jvm_classloading_$1
+        type: GAUGE
+
+      # JVM Buffer Pool
+      - pattern: 'java.nio<type=BufferPool, name=([^,]+)><>(\w+):'
+        name: jvm_buffer_pool_$2
+        labels:
+          pool: $1
+        type: GAUGE
