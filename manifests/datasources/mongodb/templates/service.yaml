@@ -10,4 +10,10 @@ spec:
       protocol: TCP
       port: 27017
       targetPort: 27017
+    {{- if .Values.metrics.enabled }}
+    - name: metrics
+      protocol: TCP
+      port: 9216
+      targetPort: 9216
+    {{- end }}
   clusterIP: None  # Headless service for StatefulSet

@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: mongodb
+      {{- if .Values.metrics.enabled }}
+      annotations:
+        {{- toYaml .Values.metrics.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       {{- if ne .Values.registry.docker.password "" }}
       imagePullSecrets:
@@ -56,6 +60,28 @@ spec:
             - name: readiness-command
               mountPath: /usr/local/bin/readiness-command.sh
               subPath: readiness-command.sh
+
+        {{- if .Values.metrics.enabled }}
+        - name: mongodb-exporter
+          image: bitnami/mongodb-exporter:0.46.0
+          ports:
+            - name: metrics
+              containerPort: 9216
+          env:
+            - name: MONGODB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGODB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGODB_URI
+              value: "mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin"
+        {{- end }}
+
       volumes:
         - name: init-script
           configMap:

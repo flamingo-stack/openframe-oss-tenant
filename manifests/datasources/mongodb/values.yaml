@@ -1,2 +1,9 @@
 registerJob:
   enabled: true
+
+metrics:
+  enabled: false
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9216"
+    prometheus.io/path: "/metrics"
