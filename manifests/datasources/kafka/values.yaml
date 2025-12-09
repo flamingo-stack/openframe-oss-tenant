@@ -104,8 +104,7 @@ kafka:
 
   metrics:
     jmx:
-      enabled: true
-      # bitnamilegacy
+      enabled: false
       image:
         registry: ghcr.io/flamingo-stack/registry
         repository: bitnamilegacy/jmx-exporter
@@ -132,11 +131,6 @@ kafka:
       extraRules: |-
         - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
           name: kafka_$1_$2_$3
-    serviceMonitor:
-        enabled: true
-    prometheusRule:
-      enabled: true
-      namespace: datasources
 
   # Set default replication factor to 1
   extraConfig: |

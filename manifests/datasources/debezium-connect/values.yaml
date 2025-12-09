@@ -23,7 +23,7 @@ probes:
     enabled: true
 
 metrics:
-  enabled: false
+  enabled: true
   port: 9404
   podAnnotations:
     prometheus.io/scrape: "true"
