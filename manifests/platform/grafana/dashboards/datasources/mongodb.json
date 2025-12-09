@@ -161,7 +161,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_uptime{app=\"mongodb\"}",
+          "expr": "time() - process_start_time_seconds{app=\"mongodb\"} and on(pod) mongodb_up{app=\"mongodb\"} == 1",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -219,12 +219,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_connections{conn_type=\"current\", app=\"mongodb\"}",
+          "expr": "go_goroutines{app=\"mongodb\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Current Connections",
+      "title": "Goroutines",
       "type": "stat"
     },
     {
@@ -237,28 +237,16 @@
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 0,
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
               }
             ]
-          },
-          "unit": "percent"
+          }
         },
         "overrides": []
       },
@@ -270,9 +258,11 @@
       },
       "id": 14,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -280,20 +270,20 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * mongodb_ss_connections{conn_type=\"current\", app=\"mongodb\"} / mongodb_ss_connections{conn_type=\"available\", app=\"mongodb\"}",
+          "expr": "process_open_fds{app=\"mongodb\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Connection %",
-      "type": "gauge"
+      "title": "Open FDs",
+      "type": "stat"
     },
     {
       "collapsed": false,
@@ -492,12 +482,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_mem_resident{app=\"mongodb\"} * 1024 * 1024",
+          "expr": "process_resident_memory_bytes{app=\"mongodb\"}",
           "legendFormat": "resident - {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "mongodb_ss_mem_virtual{app=\"mongodb\"} * 1024 * 1024",
+          "expr": "process_virtual_memory_bytes{app=\"mongodb\"}",
           "legendFormat": "virtual - {{pod}}",
           "refId": "B"
         }
@@ -593,17 +583,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_wt_cache_bytes{id=\"currently in the cache\", app=\"mongodb\"}",
-          "legendFormat": "in cache - {{pod}}",
+          "expr": "go_memstats_heap_alloc_bytes{app=\"mongodb\"}",
+          "legendFormat": "heap alloc - {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "mongodb_ss_wt_cache_bytes{id=\"tracked dirty bytes in the cache\", app=\"mongodb\"}",
-          "legendFormat": "dirty - {{pod}}",
+          "expr": "go_memstats_heap_inuse_bytes{app=\"mongodb\"}",
+          "legendFormat": "heap inuse - {{pod}}",
           "refId": "B"
         }
       ],
-      "title": "WiredTiger Cache",
+      "title": "Heap Memory",
       "type": "timeseries"
     },
     {
@@ -677,7 +667,7 @@
               }
             ]
           },
-          "unit": "ops"
+          "unit": "Bps"
         },
         "overrides": []
       },
@@ -707,12 +697,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(mongodb_ss_opcounters{app=\"mongodb\"}[5m])",
-          "legendFormat": "{{legacy_op_type}}",
+          "expr": "rate(process_network_receive_bytes_total{app=\"mongodb\"}[5m])",
+          "legendFormat": "in - {{pod}}",
           "refId": "A"
+        },
+        {
+          "expr": "rate(process_network_transmit_bytes_total{app=\"mongodb\"}[5m])",
+          "legendFormat": "out - {{pod}}",
+          "refId": "B"
         }
       ],
-      "title": "Operations Rate",
+      "title": "Network Traffic",
       "type": "timeseries"
     },
     {
@@ -772,8 +767,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "Bps"
+          }
         },
         "overrides": []
       },
@@ -803,17 +797,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(mongodb_ss_network_bytesIn{app=\"mongodb\"}[5m])",
-          "legendFormat": "in - {{pod}}",
+          "expr": "go_goroutines{app=\"mongodb\"}",
+          "legendFormat": "goroutines - {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "rate(mongodb_ss_network_bytesOut{app=\"mongodb\"}[5m])",
-          "legendFormat": "out - {{pod}}",
+          "expr": "go_threads{app=\"mongodb\"}",
+          "legendFormat": "threads - {{pod}}",
           "refId": "B"
         }
       ],
-      "title": "Network Traffic",
+      "title": "Goroutines & Threads",
       "type": "timeseries"
     }
   ],
@@ -836,5 +830,5 @@
   "timezone": "",
   "title": "MongoDB",
   "uid": "mongodb",
-  "version": 2
+  "version": 3
 }
