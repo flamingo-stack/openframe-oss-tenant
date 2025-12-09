@@ -22,8 +22,8 @@ spec:
 
       {{- if .Values.metrics.enabled }}
       initContainers:
-        - name: jmx-exporter-init
-          image: "{{ .Values.metrics.jmx.image.repository }}:{{ .Values.metrics.jmx.image.tag }}"
+        - name: jmx-exporter
+          image: "{{ .Values.metrics.jmx.image.registry }}/{{ .Values.metrics.jmx.image.image }}:{{ .Values.metrics.jmx.image.tag }}"
           command: [sh, -c]
           args:
             - |
