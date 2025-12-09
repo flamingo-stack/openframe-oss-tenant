@@ -33,5 +33,5 @@ metrics:
     version: "1.5.0"
     image:
       registry: ghcr.io/flamingo-stack/registry
-      image: library/busybox
+      image: busybox
       tag: "1.36"
