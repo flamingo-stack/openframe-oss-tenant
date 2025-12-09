@@ -6,7 +6,7 @@ registerJob:
 
 image:
   registry: ghcr.io/flamingo-stack/registry
-  repository: library/mongo
+  repository: mongo
   tag: "7.0.18"
 
 persistence:
