@@ -9,3 +9,8 @@ spec:
     - port: 8083
       targetPort: 8083
       name: http
+    {{- if .Values.metrics.enabled }}
+    - port: {{ .Values.metrics.port }}
+      targetPort: {{ .Values.metrics.port }}
+      name: metrics
+    {{- end }}

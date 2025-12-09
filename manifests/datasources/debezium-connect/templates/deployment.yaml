@@ -15,9 +15,21 @@ spec:
       labels:
         app: debezium-connect
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
+
+      {{- if .Values.metrics.enabled }}
+      initContainers:
+        - name: jmx-exporter-init
+          image: "{{ .Values.metrics.jmx.image.repository }}:{{ .Values.metrics.jmx.image.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              wget -O /jmx/jmx_prometheus_javaagent.jar \
+                https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/{{ .Values.metrics.jmx.version }}/jmx_prometheus_javaagent-{{ .Values.metrics.jmx.version }}.jar
+              echo "rules: []" > /jmx/config.yaml
+          volumeMounts:
+            - name: jmx-exporter
+              mountPath: /jmx
       {{- end }}
 
       containers:
@@ -26,12 +38,20 @@ spec:
           ports:
             - containerPort: 8083
               name: connect-api
+            {{- if .Values.metrics.enabled }}
+            - containerPort: {{ .Values.metrics.port }}
+              name: metrics
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: debezium-connect
           volumeMounts:
             - name: jdbc-drivers-volume
               mountPath: /jdbc-drivers
+            {{- if .Values.metrics.enabled }}
+            - name: jmx-exporter
+              mountPath: /opt/jmx-exporter
+            {{- end }}
           {{- if .Values.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
@@ -58,3 +78,7 @@ spec:
       volumes:
         - name: jdbc-drivers-volume
           emptyDir: {}
+        {{- if .Values.metrics.enabled }}
+        - name: jmx-exporter
+          emptyDir: {}
+        {{- end }}

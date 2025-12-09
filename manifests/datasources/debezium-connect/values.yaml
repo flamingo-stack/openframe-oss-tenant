@@ -1,5 +1,8 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 image:
   repository: quay.io/debezium/connect
@@ -7,14 +10,23 @@ image:
 
 resources:
   requests:
-    memory: "512Mi"
-    cpu: "250m"
+    cpu: 250m
+    memory: 512Mi
   limits:
-    memory: "1Gi"
-    cpu: "500m"
+    cpu: 500m
+    memory: 1Gi
 
 probes:
   liveness:
     enabled: true
   readiness:
     enabled: true
+
+metrics:
+  enabled: true
+  port: 9404
+  jmx:
+    version: "1.0.1"
+    image:
+      repository: busybox
+      tag: "1.36"
