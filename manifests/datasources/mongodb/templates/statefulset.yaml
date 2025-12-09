@@ -13,12 +13,11 @@ spec:
     metadata:
       labels:
         app: mongodb
-    spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
+      {{- if .Values.metrics.enabled }}
+      annotations:
+        {{- toYaml .Values.metrics.podAnnotations | nindent 8 }}
       {{- end }}
-
+    spec:
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -31,7 +30,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: mongo:7.0.18
+          image: "{{ default .Values.image.registry .Values.global.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 27017
           envFrom:
@@ -39,6 +38,8 @@ spec:
                 name: mongodb
             - secretRef:
                 name: mongodb
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
             exec:
               command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
@@ -56,6 +57,33 @@ spec:
             - name: readiness-command
               mountPath: /usr/local/bin/readiness-command.sh
               subPath: readiness-command.sh
+
+        {{- if .Values.metrics.enabled }}
+        - name: mongodb-exporter
+          image: "{{ default .Values.metrics.image.registry .Values.global.image.registry }}/{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
+          args:
+            - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
+            - --collect-all
+            - --discovering-mode
+            - --collector.diagnosticdata
+          ports:
+            - name: metrics
+              containerPort: 9216
+          env:
+            - name: MONGODB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGODB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb
+                  key: MONGO_INITDB_ROOT_USERNAME
+          resources:
+            {{- toYaml .Values.metrics.resources | nindent 12 }}
+        {{- end }}
+
       volumes:
         - name: init-script
           configMap:
@@ -74,4 +102,4 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 5Gi
+            storage: {{ .Values.persistence.size }}
