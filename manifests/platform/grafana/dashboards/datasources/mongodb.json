@@ -107,7 +107,7 @@
           "refId": "A"
         }
       ],
-      "title": "Status",
+      "title": "MongoDB Status",
       "type": "stat"
     },
     {
@@ -402,7 +402,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_globalLock_currentQueue{app=\"mongodb\"}",
+          "expr": "mongodb_ss_globalLock_currentQueue{app=\"mongodb\", count_type=\"total\"}",
           "legendFormat": "",
           "refId": "A"
         }
