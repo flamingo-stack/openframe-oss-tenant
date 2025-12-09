@@ -1,2 +1,20 @@
 registerJob:
   enabled: true
+
+image:
+  repository: quay.io/debezium/connect
+  tag: 3.1.1.Final
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+probes:
+  liveness:
+    enabled: true
+  readiness:
+    enabled: true

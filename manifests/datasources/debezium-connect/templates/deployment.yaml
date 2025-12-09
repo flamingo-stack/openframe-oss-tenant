@@ -22,31 +22,38 @@ spec:
 
       containers:
         - name: debezium-connect
-          image: quay.io/debezium/connect:3.1.1.Final
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 8083
               name: connect-api
-          env:
-            - name: BOOTSTRAP_SERVERS
-              value: "kafka-broker-headless.datasources.svc.cluster.local:9092"
-            - name: CONFIG_STORAGE_TOPIC
-              value: "connect-configs"
-            - name: OFFSET_STORAGE_TOPIC
-              value: "connect-offsets"
-            - name: STATUS_STORAGE_TOPIC
-              value: "connect-status"
-            - name: CONNECT_PLUGIN_PATH
-              value: "/kafka/connect,/jdbc-drivers"
+          envFrom:
+            - configMapRef:
+                name: debezium-connect
           volumeMounts:
             - name: jdbc-drivers-volume
               mountPath: /jdbc-drivers
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8083
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /connectors
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- end }}
           resources:
-            requests:
-              memory: "512Mi"
-              cpu: "250m"
-            limits:
-              memory: "1Gi"
-              cpu: "500m"
+            {{- toYaml .Values.resources | nindent 12 }}
 
       volumes:
         - name: jdbc-drivers-volume
