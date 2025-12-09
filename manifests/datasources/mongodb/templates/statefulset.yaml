@@ -65,6 +65,7 @@ spec:
             - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
             - --collect-all
             - --discovering-mode
+            - --collector.diagnosticdata
           ports:
             - name: metrics
               containerPort: 9216
