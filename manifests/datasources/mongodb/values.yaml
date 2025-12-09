@@ -1,5 +1,16 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
+
+image:
+  registry: ghcr.io/flamingo-stack/registry
+  repository: mongo
+  tag: "7.0.18"
+
+persistence:
+  size: 5Gi
 
 resources:
   requests:
@@ -11,6 +22,10 @@ resources:
 
 metrics:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: bitnamilegacy/mongodb-exporter
+    tag: "0.46.0"
   podAnnotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9216"

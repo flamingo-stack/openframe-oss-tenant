@@ -35,7 +35,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: mongo:7.0.18
+          image: "{{ default .Values.image.registry .Values.global.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 27017
           envFrom:
@@ -65,7 +65,7 @@ spec:
 
         {{- if .Values.metrics.enabled }}
         - name: mongodb-exporter
-          image: bitnami/mongodb-exporter:0.46.0
+          image: "{{ default .Values.metrics.image.registry .Values.global.image.registry }}/{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
           ports:
             - name: metrics
               containerPort: 9216
@@ -104,4 +104,4 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 5Gi
+            storage: {{ .Values.persistence.size }}
