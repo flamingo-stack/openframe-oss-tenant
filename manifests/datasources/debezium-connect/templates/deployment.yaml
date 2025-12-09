@@ -29,7 +29,7 @@ spec:
             - |
               VERSION={{ .Values.metrics.jmx.version }}
               wget -O /jmx/jmx_prometheus_javaagent.jar \
-                https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/${VERSION}/jmx_prometheus_javaagent-${VERSION}.jar \
+                https://github.com/prometheus/jmx_exporter/releases/download/${VERSION}/jmx_prometheus_javaagent-${VERSION}.jar \
               && cp /jmx-config/config.yaml /jmx/config.yaml
           volumeMounts:
             - name: jmx-exporter
