@@ -35,7 +35,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: "{{ default .Values.image.registry .Values.global.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 27017
           envFrom:
