@@ -6,16 +6,20 @@ registerJob:
 
 
 kafka:
-  # bitnamilegacy
+  
+  commonAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9216"
+    prometheus.io/path: "/metrics"
+
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/kafka
     tag: 4.0.0-debian-12-r10
-  
-  global:
-    # bitnamilegacy
-    security:
-      allowInsecureImages: true
 
   existingKraftSecret: "kafka-kraft"
 
@@ -100,12 +104,12 @@ kafka:
 
   metrics:
     jmx:
-      enabled: false
+      enabled: true
       # bitnamilegacy
       image:
         registry: ghcr.io/flamingo-stack/registry
         repository: bitnamilegacy/jmx-exporter
-        tag: 1.4.0-debian-12-r0
+        tag: 1.4.0
       
       livenessProbe:
         initialDelaySeconds: 90 
