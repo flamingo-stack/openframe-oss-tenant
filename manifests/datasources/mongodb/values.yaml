@@ -2,7 +2,7 @@ registerJob:
   enabled: true
 
 metrics:
-  enabled: false
+  enabled: true
   podAnnotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9216"

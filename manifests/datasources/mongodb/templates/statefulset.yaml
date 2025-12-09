@@ -63,7 +63,7 @@ spec:
 
         {{- if .Values.metrics.enabled }}
         - name: mongodb-exporter
-          image: bitnami/mongodb-exporter:0.46.0
+          image: bitnamilegacy/mongodb-exporter:0.46.0
           ports:
             - name: metrics
               containerPort: 9216
