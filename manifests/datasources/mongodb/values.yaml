@@ -1,9 +1,24 @@
 registerJob:
   enabled: true
 
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
 metrics:
   enabled: true
   podAnnotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9216"
     prometheus.io/path: "/metrics"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

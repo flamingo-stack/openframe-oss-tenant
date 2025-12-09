@@ -44,12 +44,7 @@ spec:
             - secretRef:
                 name: mongodb
           resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
+            {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
             exec:
               command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
@@ -88,12 +83,7 @@ spec:
             - name: MONGODB_URI
               value: "mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin"
           resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 100m
-              memory: 128Mi
+            {{- toYaml .Values.metrics.resources | nindent 12 }}
         {{- end }}
 
       volumes:
