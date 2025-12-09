@@ -24,13 +24,13 @@ spec:
       initContainers:
         - name: jmx-exporter-init
           image: "{{ .Values.metrics.jmx.image.repository }}:{{ .Values.metrics.jmx.image.tag }}"
-          command:
-            - sh
-            - -c
+          command: [sh, -c]
+          args:
             - |
+              VERSION={{ .Values.metrics.jmx.version }}
               wget -O /jmx/jmx_prometheus_javaagent.jar \
-                https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/{{ .Values.metrics.jmx.version }}/jmx_prometheus_javaagent-{{ .Values.metrics.jmx.version }}.jar
-              cp /jmx-config/config.yaml /jmx/config.yaml
+                https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/${VERSION}/jmx_prometheus_javaagent-${VERSION}.jar \
+              && cp /jmx-config/config.yaml /jmx/config.yaml
           volumeMounts:
             - name: jmx-exporter
               mountPath: /jmx
