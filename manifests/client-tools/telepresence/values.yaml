@@ -13,7 +13,7 @@ telepresence-oss:
   hooks:
     busybox:
       registry: ghcr.io/flamingo-stack/registry
-      image: library/busybox
+      image: busybox
       tag: "1.36"
 
     curl:
