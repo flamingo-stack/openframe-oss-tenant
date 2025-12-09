@@ -43,6 +43,13 @@ spec:
                 name: mongodb
             - secretRef:
                 name: mongodb
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           readinessProbe:
             exec:
               command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
@@ -63,7 +70,7 @@ spec:
 
         {{- if .Values.metrics.enabled }}
         - name: mongodb-exporter
-          image: bitnamilegacy/mongodb-exporter:0.46.0
+          image: bitnami/mongodb-exporter:0.46.0
           ports:
             - name: metrics
               containerPort: 9216
@@ -80,6 +87,13 @@ spec:
                   key: MONGO_INITDB_ROOT_USERNAME
             - name: MONGODB_URI
               value: "mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
         {{- end }}
 
       volumes:
