@@ -25,6 +25,10 @@ probes:
 metrics:
   enabled: true
   port: 9404
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9404"
+    prometheus.io/path: "/metrics"
   jmx:
     version: "1.0.1"
     image:
