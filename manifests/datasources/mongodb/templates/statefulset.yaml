@@ -66,6 +66,10 @@ spec:
         {{- if .Values.metrics.enabled }}
         - name: mongodb-exporter
           image: "{{ default .Values.metrics.image.registry .Values.global.image.registry }}/{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
+          args:
+            - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
+            - --collect-all
+            - --discovering-mode
           ports:
             - name: metrics
               containerPort: 9216
@@ -80,8 +84,6 @@ spec:
                 secretKeyRef:
                   name: mongodb
                   key: MONGO_INITDB_ROOT_USERNAME
-            - name: MONGODB_URI
-              value: "mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin"
           resources:
             {{- toYaml .Values.metrics.resources | nindent 12 }}
         {{- end }}
