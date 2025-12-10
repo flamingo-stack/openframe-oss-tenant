@@ -102,7 +102,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "up{app=\"pinot\"}",
+          "expr": "up{service=~\"pinot-.*\"}",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -161,7 +161,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{app=\"pinot\"} and on(pod) up{app=\"pinot\"} == 1",
+          "expr": "time() - process_start_time_seconds{service=~\"pinot-.*\"} and on(pod) up{service=~\"pinot-.*\"} == 1",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -219,7 +219,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_threads_current{app=\"pinot\"}",
+          "expr": "jvm_threads_current{service=~\"pinot-.*\"}",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -287,7 +287,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", app=\"pinot\"} / jvm_memory_bytes_max{area=\"heap\", app=\"pinot\"}",
+          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"} / jvm_memory_bytes_max{area=\"heap\", service=~\"pinot-.*\"}",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -396,7 +396,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{app=\"pinot\"}[5m])",
+          "expr": "rate(process_cpu_seconds_total{service=~\"pinot-.*\"}[5m])",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -492,7 +492,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\", app=\"pinot\"}",
+          "expr": "jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -588,7 +588,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{app=\"pinot\", gc=~\".*Young.*\", job=\"kubernetes-pods\"}[5m])",
+          "expr": "rate(jvm_gc_collection_seconds_sum{service=~\"pinot-.*\", gc=~\".*Young.*\", job=\"kubernetes-pods\"}[5m])",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
@@ -696,7 +696,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_state{app=\"pinot\"}) by (state)",
+          "expr": "sum(jvm_threads_state{service=~\"pinot-.*\"}) by (state)",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
@@ -792,7 +792,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{app=\"pinot\"}",
+          "expr": "process_resident_memory_bytes{service=~\"pinot-.*\"}",
           "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
           "refId": "A"
         }
