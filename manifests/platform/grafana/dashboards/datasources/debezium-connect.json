@@ -103,7 +103,7 @@
       "targets": [
         {
           "expr": "up{service=\"debezium-connect\"}",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -162,7 +162,7 @@
       "targets": [
         {
           "expr": "time() - process_start_time_seconds{service=\"debezium-connect\"} and on(pod) up{service=\"debezium-connect\"} == 1",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -346,7 +346,7 @@
       "targets": [
         {
           "expr": "100 * jvm_memory_used_bytes{area=\"heap\", service=\"debezium-connect\"} / jvm_memory_max_bytes{area=\"heap\", service=\"debezium-connect\"}",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -455,7 +455,7 @@
       "targets": [
         {
           "expr": "rate(process_cpu_seconds_total{service=\"debezium-connect\"}[5m])",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -551,7 +551,7 @@
       "targets": [
         {
           "expr": "jvm_memory_used_bytes{area=\"heap\", service=\"debezium-connect\"}",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -1265,7 +1265,7 @@
       "targets": [
         {
           "expr": "process_resident_memory_bytes{service=\"debezium-connect\"}",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
