@@ -1,0 +1,11 @@
+apiVersion: v2
+name: zookeeper-wrapper
+description: Wrapper chart for ZooKeeper
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+
+dependencies:
+  - name: zookeeper
+    version: "~13.8.7"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

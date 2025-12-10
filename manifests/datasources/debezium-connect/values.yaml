@@ -1,2 +1,40 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
+
+image:
+  repository: quay.io/debezium/connect
+  tag: 3.1.1.Final
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+probes:
+  liveness:
+    enabled: true
+  readiness:
+    enabled: true
+  
+service:
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9404"
+    prometheus.io/path: "/metrics"
+
+
+metrics:
+  enabled: true
+  port: 9404
+  jmx:
+    version: "1.5.0"
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      image: busybox
+      tag: "1.36.0"

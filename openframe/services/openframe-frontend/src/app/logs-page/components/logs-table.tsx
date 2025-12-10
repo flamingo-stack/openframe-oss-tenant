@@ -8,16 +8,15 @@ import {
   Button,
   ListPageLayout,
   TableDescriptionCell,
+  TableTimestampCell,
   DeviceCardCompact,
-  type TableColumn,
-  type RowAction,
-  type CursorPaginationProps
+  type TableColumn
 } from "@flamingo/ui-kit/components/ui"
 import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
+import { ExternalLink } from "lucide-react"
 import { Input, ToolBadge } from "@flamingo/ui-kit"
 import { useApiParams, useTablePagination, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
-import { navigateToLogDetails } from '@lib/log-navigation'
 import { transformOrganizationFilters } from '@lib/filter-utils'
 import { useLogs, useLogFilters } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
@@ -165,14 +164,11 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         label: 'Log ID',
         width: 'w-[200px]',
         renderCell: (log) => (
-          <div className="flex flex-col justify-center shrink-0">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-              {log.timestamp}
-            </span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-              {log.logId}
-            </span>
-          </div>
+          <TableTimestampCell
+            timestamp={log.timestamp}
+            id={log.logId}
+            formatTimestamp={false}
+          />
         )
       },
       {
@@ -239,16 +235,25 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     return allColumns
   }, [embedded, logFilters])
 
-  const rowActions: RowAction<UILogEntry>[] = useMemo(() => [
-    {
-      label: 'Details',
-      onClick: (log) => {
-        navigateToLogDetails(router, log)
-      },
-      variant: 'outline',
-      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
-    }
-  ], [router])
+  // Build URL for log details page (opens in new tab)
+  const getLogDetailsUrl = useCallback((log: UILogEntry): string => {
+    const original = log.originalLogEntry || log
+    const id = log.id || log.logId
+    return `/log-details?id=${id}&ingestDay=${original.ingestDay}&toolType=${original.toolType}&eventType=${original.eventType}&timestamp=${encodeURIComponent(original.timestamp || '')}`
+  }, [])
+
+  // Render row actions with external link button
+  const renderRowActions = useCallback((log: UILogEntry) => (
+    <Button
+      variant="outline"
+      href={getLogDetailsUrl(log)}
+      openInNewTab={true}
+      rightIcon={<ExternalLink className="w-4 h-4" />}
+      className="bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
+    >
+      Details
+    </Button>
+  ), [getLogDetailsUrl])
 
   // Refetch when filters change
   const initialFilterLoadDone = useRef(false)
@@ -349,9 +354,10 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         columns={columns}
         rowKey="id"
         loading={isLoading}
+        skeletonRows={10}
         emptyMessage={deviceId ? "No logs found for this device. Try adjusting your search or filters." : "No logs found. Try adjusting your search or filters."}
         onRowClick={handleRowClick}
-        rowActions={rowActions}
+        renderRowActions={!embedded ? renderRowActions : undefined}
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}

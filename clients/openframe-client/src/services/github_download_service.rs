@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, anyhow};
-use tracing::{info, debug, warn};
+use tracing::{info, warn};
 use crate::models::download_configuration::DownloadConfiguration;
 use crate::config::update_config::{
     MAX_DOWNLOAD_RETRIES,
@@ -42,10 +42,14 @@ impl GithubDownloadService {
         }
 
         // Extract based on file extension
+        info!("Archive file_name: '{}', agent_file_name: '{}'", config.file_name, config.agent_file_name);
+
         let binary_bytes = if config.file_name.ends_with(".zip") {
+            info!("Detected ZIP format, extracting...");
             self.extract_from_zip(archive_bytes, &config.agent_file_name)
                 .with_context(|| "Failed to extract from ZIP archive")?
         } else if config.file_name.ends_with(".tar.gz") || config.file_name.ends_with(".tgz") {
+            info!("Detected tar.gz format, extracting...");
             self.extract_from_tar_gz(archive_bytes, &config.agent_file_name)
                 .with_context(|| "Failed to extract from tar.gz archive")?
         } else {
@@ -174,9 +178,7 @@ impl GithubDownloadService {
     #[cfg(target_os = "windows")]
     fn extract_from_zip(&self, archive_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
         use zip::ZipArchive;
-        
-        debug!("Extracting {} from ZIP archive", target_filename);
-        
+
         let cursor = Cursor::new(archive_bytes);
         let mut archive = ZipArchive::new(cursor)
             .context("Failed to read ZIP archive")?;
@@ -187,8 +189,7 @@ impl GithubDownloadService {
                 .context("Failed to read ZIP entry")?;
             
             let file_name = file.name().to_string();
-            debug!("Found file in ZIP: {}", file_name);
-            
+
             // Check if this is the target file (case-insensitive, check basename)
             if file_name.to_lowercase().ends_with(&target_filename.to_lowercase()) {
                 info!("Found target file: {}", file_name);
@@ -215,33 +216,38 @@ impl GithubDownloadService {
     fn extract_from_tar_gz(&self, archive_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
         use flate2::read::GzDecoder;
         use tar::Archive;
-        
-        debug!("Extracting {} from tar.gz archive", target_filename);
-        
+
+        info!("Extracting {} from tar.gz archive ({} bytes)", target_filename, archive_bytes.len());
+
         let cursor = Cursor::new(archive_bytes);
         let decoder = GzDecoder::new(cursor);
         let mut archive = Archive::new(decoder);
-        
+
         // Search for the target file in the archive
         for entry_result in archive.entries().context("Failed to read tar entries")? {
             let mut entry = entry_result.context("Failed to read tar entry")?;
-            
+
             let path = entry.path().context("Failed to get entry path")?;
             let file_name = path.to_string_lossy().to_string();
-            debug!("Found file in tar.gz: {}", file_name);
-            
-            // Check if this is the target file (case-insensitive, check basename)
-            if file_name.to_lowercase().ends_with(&target_filename.to_lowercase()) {
-                info!("Found target file: {}", file_name);
-                
+            let entry_size = entry.size();
+            info!("Found file in tar.gz: {} ({} bytes)", file_name, entry_size);
+
+            let basename = path.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+
+            if basename.eq_ignore_ascii_case(target_filename) && !basename.starts_with("._") {
+                info!("Matched target file: {} ({} bytes)", file_name, entry_size);
+
                 let mut buffer = Vec::new();
                 std::io::copy(&mut entry, &mut buffer)
                     .context("Failed to read file from tar.gz")?;
-                
+
+                info!("Read {} bytes from entry", buffer.len());
                 return Ok(Bytes::from(buffer));
             }
         }
-        
+
         Err(anyhow!("File '{}' not found in tar.gz archive", target_filename))
     }
 

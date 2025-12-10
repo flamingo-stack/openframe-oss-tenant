@@ -13,14 +13,9 @@ spec:
       labels:
         app: mongo-express
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets: 
-        - name: docker-pat-secret
-      {{- end }}
-    
       containers:
         - name: mongo-express
-          image: mongo-express:latest
+          image: "{{ .Values.mongoExpress.image.registry }}/{{ .Values.mongoExpress.image.repository }}:{{ .Values.mongoExpress.image.tag }}"
           env:
             - name: ME_CONFIG_MONGODB_ADMINUSERNAME
               value: "openframe"

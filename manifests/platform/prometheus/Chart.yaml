@@ -1,11 +1,11 @@
 apiVersion: v2
-name: kube-prometheus-wrapper
-description: Wrapper chart for Prometheus Community kube-prometheus-stack
+name: prometheus-wrapper
+description: Wrapper chart for standalone Prometheus
 type: application
 version: 0.0.1
 appVersion: "0.0.1"
 
 dependencies:
-  - name: kube-prometheus-stack
-    version: "~79.7.1"
-    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
+  - name: prometheus
+    version: "~27.50.0"
+    repository: https://prometheus-community.github.io/helm-charts

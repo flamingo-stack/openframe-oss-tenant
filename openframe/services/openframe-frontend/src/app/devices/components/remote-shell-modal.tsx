@@ -62,7 +62,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel, shell
       }
       window.addEventListener('resize', handleResize)
       const disposeResize = term.onResize(() => handleResize)
-      const disposeData = term.onData((d: string) => tunnelRef.current?.sendText(d))
+      const disposeData = term.onData((d: string) => tunnelRef.current?.sendBinary(new TextEncoder().encode(d)))
 
       const cleanup = () => {
         window.removeEventListener('resize', handleResize)
@@ -89,7 +89,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel, shell
     if (state === 3 && shellType === 'powershell' && hasReceivedData && !powershellCommandSentRef.current && tunnelRef.current) {
       setTimeout(() => {
         if (tunnelRef.current && !powershellCommandSentRef.current) {
-          tunnelRef.current.sendText(WINDOWS_POWERSHELL_CMD + '\r')
+          tunnelRef.current.sendBinary(new TextEncoder().encode(WINDOWS_POWERSHELL_CMD + '\r'))
           powershellCommandSentRef.current = true
         }
       }, 100)
@@ -123,6 +123,7 @@ export function RemoteShellModal({ isOpen, onClose, deviceId, deviceLabel, shell
             if (typeof data === 'string') term.write(data)
             else term.write(new TextDecoder().decode(data))
           },
+          onCtrlMessage: () => {},
           onConsoleMessage: (msg) => {
             toast({ title: 'Remote Shell', description: msg, variant: 'default' })
           },

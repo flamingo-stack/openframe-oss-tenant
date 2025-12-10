@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: kafka
-    version: ">=32.3.14"
-    repository: oci://registry-1.docker.io/bitnamicharts  # should be migrated
+    version: "~32.4.3"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

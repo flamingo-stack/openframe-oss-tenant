@@ -1,11 +1,10 @@
+/* All @import statements must come first */
 @import '@flamingo/ui-kit/styles';
+@import 'xterm/css/xterm.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* xterm terminal styles */
-@import 'xterm/css/xterm.css';
 
 :root {
   --foreground-rgb: 0, 0, 0;

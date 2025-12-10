@@ -114,6 +114,9 @@ nats-ws-url: ws://nats.datasources.svc.cluster.local:8080
 
 # Rate limiting configuration
 openframe:
+  device:
+    aspect:
+      enabled: false
   rate-limit:
     enabled: true
     default-requests-per-minute: 5
