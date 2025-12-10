@@ -58,7 +58,7 @@ kafka:
         memory: 1Gi
 
 
-metrics:
+  metrics:
     jmx:
       enabled: true
       image:
