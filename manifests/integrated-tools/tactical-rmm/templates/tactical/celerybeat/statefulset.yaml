@@ -19,7 +19,7 @@ spec:
     spec:
       initContainers:
       - name: wait-for-dependencies
-        image: "{{ .Values.busybox.image.registry }}/{{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}"
+        image: {{ .Values.tactical.init.image.registry }}/{{ .Values.tactical.init.image.repository }}:{{ .Values.tactical.init.image.tag }}
         command: ['sh', '-c', '
           echo "Waiting for PostgreSQL..." &&
           until nc -z tactical-postgres-0.tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
@@ -34,7 +34,7 @@ spec:
 
       containers:
       - name: tactical-base
-        image: "{{ .Values.tactical.base.image.registry }}/{{ .Values.tactical.base.image.repository }}:{{ .Values.tactical.base.image.tag }}"
+        image: "{{ .Values.tactical.base.image.repo }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-celerybeat"]
         envFrom:
         - configMapRef:

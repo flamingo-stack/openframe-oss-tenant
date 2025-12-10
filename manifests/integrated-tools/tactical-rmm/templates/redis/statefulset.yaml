@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: redis
-        image: "{{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+        image: {{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
         command: ["redis-server", "--save", "3600", "1", "300", "100", "60", "10000"]
         ports:
         - containerPort: 6379

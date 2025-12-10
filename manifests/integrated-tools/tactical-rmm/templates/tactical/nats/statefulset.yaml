@@ -19,7 +19,7 @@ spec:
     spec:
       initContainers:
       - name: wait-for-redis
-        image: "{{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+        image: {{ .Values.tactical.base.waitRedis.image.registry }}/{{ .Values.tactical.base.waitRedis.image.repository }}:{{ .Values.tactical.base.waitRedis.image.tag }}
         command: ['sh', '-c', '
           echo "Waiting for Redis..." &&
           until redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_rmm_conf" > /dev/null; do sleep 2; done &&
@@ -37,7 +37,7 @@ spec:
             name: tactical-postgres
 
       - name: wait-for-backend
-        image: "{{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tagNats }}"
+        image: {{ .Values.tactical.base.waitPostgres.image.registry }}/{{ .Values.tactical.base.waitPostgres.image.repository }}:{{ .Values.tactical.base.waitPostgres.image.tag }}
         command:
         - sh
         - -c
@@ -80,7 +80,7 @@ spec:
 
       containers:
       - name: tactical-base
-        image: "{{ .Values.tactical.base.image.registry }}/{{ .Values.tactical.base.image.repository }}:{{ .Values.tactical.base.image.tag }}"
+        image: "{{ .Values.tactical.base.image.repo }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-nats"]
         ports:
         - containerPort: 9235

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: "{{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+        image: {{ .Values.postgres.image.registry }}/{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}
         args:
           - "-c"
           - "wal_level=logical"
