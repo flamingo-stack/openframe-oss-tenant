@@ -10,10 +10,17 @@ cassandra:
   global:
     security:
       allowInsecureImages: true  # bitnamilegacy
+
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/cassandra
     tag: 5.0.5-debian-12-r7
+
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+      prometheus.io/path: "/metrics"    
 
   priorityClassName: "cassandra"
 
