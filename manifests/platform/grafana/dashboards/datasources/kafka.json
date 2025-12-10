@@ -616,13 +616,8 @@
       "targets": [
         {
           "expr": "java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Used",
+          "legendFormat": "Used",
           "refId": "A"
-        },
-        {
-          "expr": "java_lang_memory_heapmemoryusage_committed{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Committed",
-          "refId": "B"
         }
       ],
       "title": "Heap Memory",
@@ -716,13 +711,8 @@
       "targets": [
         {
           "expr": "java_lang_threading_threadcount{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Total",
+          "legendFormat": "Total",
           "refId": "A"
-        },
-        {
-          "expr": "java_lang_threading_daemonthreadcount{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Daemon",
-          "refId": "B"
         }
       ],
       "title": "Thread Count",
@@ -829,12 +819,12 @@
       "targets": [
         {
           "expr": "sum(rate(kafka_network_requestmetrics_requestspersec_count{service=\"kafka-jmx-metrics\", request=\"Produce\"}[5m])) by (pod)",
-          "legendFormat": "{{pod}} - Produce",
+          "legendFormat": "Produce",
           "refId": "A"
         },
         {
           "expr": "sum(rate(kafka_network_requestmetrics_requestspersec_count{service=\"kafka-jmx-metrics\", request=~\"Fetch.*\"}[5m])) by (pod)",
-          "legendFormat": "{{pod}} - Fetch",
+          "legendFormat": "Fetch",
           "refId": "B"
         }
       ],
@@ -933,7 +923,7 @@
       "targets": [
         {
           "expr": "sum(rate(kafka_network_requestmetrics_errorspersec_count{service=\"kafka-jmx-metrics\"}[5m])) by (pod, error)",
-          "legendFormat": "{{pod}} - {{error}}",
+          "legendFormat": "{{error}}",
           "refId": "A"
         }
       ],
@@ -1028,12 +1018,12 @@
       "targets": [
         {
           "expr": "kafka_network_requestchannel_requestqueuesize_value{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Request Queue",
+          "legendFormat": "Request",
           "refId": "A"
         },
         {
           "expr": "kafka_network_requestchannel_responsequeuesize_value{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Response Queue",
+          "legendFormat": "Response",
           "refId": "B"
         }
       ],
@@ -1047,319 +1037,6 @@
         "w": 24,
         "x": 0,
         "y": 23
-      },
-      "id": 30,
-      "panels": [],
-      "title": "Request Latency",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 24
-      },
-      "id": 31,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "kafka_network_requestmetrics_totaltimems{service=\"kafka-jmx-metrics\", request=\"Produce\", quantile=\"0.99\"}",
-          "legendFormat": "{{pod}} - Produce p99",
-          "refId": "A"
-        },
-        {
-          "expr": "kafka_network_requestmetrics_totaltimems{service=\"kafka-jmx-metrics\", request=\"Produce\", quantile=\"0.5\"}",
-          "legendFormat": "{{pod}} - Produce p50",
-          "refId": "B"
-        }
-      ],
-      "title": "Produce Total Time",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 24
-      },
-      "id": 32,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "kafka_network_requestmetrics_totaltimems{service=\"kafka-jmx-metrics\", request=\"FetchConsumer\", quantile=\"0.99\"}",
-          "legendFormat": "{{pod}} - FetchConsumer p99",
-          "refId": "A"
-        },
-        {
-          "expr": "kafka_network_requestmetrics_totaltimems{service=\"kafka-jmx-metrics\", request=\"FetchConsumer\", quantile=\"0.5\"}",
-          "legendFormat": "{{pod}} - FetchConsumer p50",
-          "refId": "B"
-        }
-      ],
-      "title": "Fetch Total Time",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 24
-      },
-      "id": 33,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "kafka_network_requestmetrics_requestqueuetimems{service=\"kafka-jmx-metrics\", request=\"Produce\", quantile=\"0.99\"}",
-          "legendFormat": "{{pod}} - Produce Queue p99",
-          "refId": "A"
-        },
-        {
-          "expr": "kafka_network_requestmetrics_requestqueuetimems{service=\"kafka-jmx-metrics\", request=\"FetchConsumer\", quantile=\"0.99\"}",
-          "legendFormat": "{{pod}} - Fetch Queue p99",
-          "refId": "B"
-        }
-      ],
-      "title": "Request Queue Time (p99)",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 32
       },
       "id": 20,
       "panels": [],
@@ -1655,12 +1332,12 @@
       "targets": [
         {
           "expr": "java_lang_operatingsystem_openfiledescriptorcount{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Open",
+          "legendFormat": "Open",
           "refId": "A"
         },
         {
           "expr": "java_lang_operatingsystem_maxfiledescriptorcount{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Max",
+          "legendFormat": "Max",
           "refId": "B"
         }
       ],
