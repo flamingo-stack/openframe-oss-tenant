@@ -588,8 +588,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{service=~\"zookeeper-.*\"}[5m])",
-          "legendFormat": "{{pod}}",
+          "expr": "sum(rate(jvm_gc_collection_seconds_sum{service=~\"zookeeper-.*\"}[5m])) by (gc)",
+          "legendFormat": "{{gc}}",
           "refId": "A"
         }
       ],
