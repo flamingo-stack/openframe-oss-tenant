@@ -80,8 +80,6 @@ kafka:
       protocol: PLAINTEXT
     external:
       protocol: PLAINTEXT
-    # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
-    # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
 
 
   provisioning:
