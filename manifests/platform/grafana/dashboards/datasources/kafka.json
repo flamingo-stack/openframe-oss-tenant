@@ -711,7 +711,7 @@
       "targets": [
         {
           "expr": "rate(java_lang_garbagecollector_collectiontime{service=\"kafka-jmx-metrics\"}[5m])/1000",
-          "legendFormat": "{{pod}} - {{name}}",
+          "legendFormat": "{{pod}} - {{gc}}",
           "refId": "A"
         }
       ],

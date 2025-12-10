@@ -46,6 +46,14 @@ data:
         name: kafka_server_$1_total_$2_$3
       - pattern: kafka.server<type=(.+)><>(queue-size)
         name: kafka_server_$1_$2
+      - pattern: java.lang<type=GarbageCollector, name=(.+)><>CollectionCount
+        name: java_lang_garbagecollector_collectioncount
+        labels:
+          gc: "$1"
+      - pattern: java.lang<type=GarbageCollector, name=(.+)><>CollectionTime
+        name: java_lang_garbagecollector_collectiontime
+        labels:
+          gc: "$1"
       - pattern: java.lang<type=(.+), name=(.+)><(.+)>(\w+)
         name: java_lang_$1_$4_$3_$2
       - pattern: java.lang<type=(.+), name=(.+)><>(\w+)
