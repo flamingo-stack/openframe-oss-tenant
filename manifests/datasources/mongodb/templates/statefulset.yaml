@@ -13,10 +13,6 @@ spec:
     metadata:
       labels:
         app: mongodb
-      {{- if .Values.metrics.enabled }}
-      annotations:
-        {{- toYaml .Values.metrics.podAnnotations | nindent 8 }}
-      {{- end }}
     spec:
       affinity:
         podAntiAffinity:

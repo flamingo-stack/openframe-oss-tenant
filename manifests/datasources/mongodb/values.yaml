@@ -9,6 +9,12 @@ image:
   repository: mongo
   tag: "7.0.18"
 
+service:
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9216"
+    prometheus.io/path: "/metrics"
+
 persistence:
   size: 5Gi
 
@@ -26,10 +32,6 @@ metrics:
     registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/mongodb-exporter
     tag: "0.46.0"
-  podAnnotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "9216"
-    prometheus.io/path: "/metrics"
   resources:
     requests:
       cpu: 50m

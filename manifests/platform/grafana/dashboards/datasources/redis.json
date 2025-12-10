@@ -102,8 +102,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "redis_up",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "min(label_replace(redis_up{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -161,8 +161,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "redis_uptime_in_seconds",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "min(label_replace(redis_uptime_in_seconds{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -219,8 +219,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "redis_connected_clients",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "sum(label_replace(redis_connected_clients{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -287,7 +287,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * sum(rate(redis_keyspace_hits_total[5m])) / clamp_min(sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m])), 0.001) and (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m]))) > 0 or max(redis_up) * 100",
+          "expr": "(100 * sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m])) / (sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m])) + sum(rate(redis_keyspace_misses_total{service=~\"redis-.*\"}[5m])))) or vector(100)",
           "legendFormat": "hit rate",
           "refId": "A"
         }
@@ -353,8 +353,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(redis_blocked_clients)",
-          "legendFormat": "total",
+          "expr": "sum(label_replace(redis_blocked_clients{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -462,8 +462,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(redis_cpu_sys_seconds_total[5m]) + rate(redis_cpu_user_seconds_total[5m])",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "avg(label_replace(rate(redis_cpu_sys_seconds_total{service=~\"redis-.*\"}[5m]) + rate(redis_cpu_user_seconds_total{service=~\"redis-.*\"}[5m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -530,8 +530,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * redis_memory_used_bytes / redis_memory_max_bytes and redis_memory_max_bytes > 0",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "100 * sum(label_replace(redis_memory_used_bytes{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role) / sum(label_replace(redis_memory_max_bytes{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -589,8 +589,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(irate(redis_commands_processed_total[1m]))",
-          "legendFormat": "total",
+          "expr": "sum(label_replace(irate(redis_commands_processed_total{service=~\"redis-.*\"}[1m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -649,8 +649,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "redis_mem_fragmentation_ratio or redis_memory_used_rss_bytes / clamp_min(redis_memory_used_bytes, 1)",
-          "legendFormat": "{{app_kubernetes_io_component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "avg(label_replace(redis_mem_fragmentation_ratio{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "legendFormat": "{{role}}",
           "refId": "A"
         }
       ],
@@ -743,7 +743,7 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -755,12 +755,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(redis_net_input_bytes_total[5m]))",
+          "expr": "sum(rate(redis_net_input_bytes_total{service=~\"redis-.*\"}[5m]))",
           "legendFormat": "in",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(redis_net_output_bytes_total[5m]))",
+          "expr": "sum(rate(redis_net_output_bytes_total{service=~\"redis-.*\"}[5m]))",
           "legendFormat": "out",
           "refId": "B"
         }
@@ -842,7 +842,7 @@
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": false
+          "showLegend": true
         },
         "tooltip": {
           "hideZeros": false,
@@ -853,8 +853,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(redis_commands_processed_total[5m]))",
-          "legendFormat": "",
+          "expr": "sum(rate(redis_commands_processed_total{service=~\"redis-.*\"}[5m]))",
+          "legendFormat": "total",
           "refId": "A"
         }
       ],
@@ -934,7 +934,7 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -946,12 +946,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(redis_keyspace_hits_total[5m]))",
+          "expr": "sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m]))",
           "legendFormat": "hits",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(redis_keyspace_misses_total[5m]))",
+          "expr": "sum(rate(redis_keyspace_misses_total{service=~\"redis-.*\"}[5m]))",
           "legendFormat": "misses",
           "refId": "B"
         }
