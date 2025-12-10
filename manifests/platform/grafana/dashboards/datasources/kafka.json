@@ -616,11 +616,116 @@
       "targets": [
         {
           "expr": "java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{pod}} - Used",
           "refId": "A"
+        },
+        {
+          "expr": "java_lang_memory_heapmemoryusage_committed{service=\"kafka-jmx-metrics\"}",
+          "legendFormat": "{{pod}} - Committed",
+          "refId": "B"
         }
       ],
       "title": "Heap Memory",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 6
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "java_lang_threading_threadcount{service=\"kafka-jmx-metrics\"}",
+          "legendFormat": "{{pod}} - Total",
+          "refId": "A"
+        },
+        {
+          "expr": "java_lang_threading_daemonthreadcount{service=\"kafka-jmx-metrics\"}",
+          "legendFormat": "{{pod}} - Daemon",
+          "refId": "B"
+        }
+      ],
+      "title": "Thread Count",
       "type": "timeseries"
     },
     {
@@ -1525,108 +1630,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 42
-      },
-      "id": 24,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "java_lang_threading_threadcount{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Total",
-          "refId": "A"
-        },
-        {
-          "expr": "java_lang_threading_daemonthreadcount{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Daemon",
-          "refId": "B"
-        }
-      ],
-      "title": "Thread Count",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
         "y": 42
       },
       "id": 8,
@@ -1650,11 +1655,16 @@
       "targets": [
         {
           "expr": "java_lang_operatingsystem_openfiledescriptorcount{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "{{pod}} - Open",
           "refId": "A"
+        },
+        {
+          "expr": "java_lang_operatingsystem_maxfiledescriptorcount{service=\"kafka-jmx-metrics\"}",
+          "legendFormat": "{{pod}} - Max",
+          "refId": "B"
         }
       ],
-      "title": "Open File Descriptors",
+      "title": "File Descriptors",
       "type": "timeseries"
     },
     {
@@ -1714,17 +1724,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "decbytes"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 12,
+        "x": 12,
         "y": 42
       },
-      "id": 34,
+      "id": 35,
       "options": {
         "legend": {
           "calcs": [
@@ -1744,12 +1754,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(java_lang_garbagecollector_collectioncount{service=\"kafka-jmx-metrics\"}[5m])",
-          "legendFormat": "{{pod}} - {{gc}}",
+          "expr": "sum(kafka_log_log_size{service=\"kafka-jmx-metrics\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "GC Collections/s",
+      "title": "Total Log Size",
       "type": "timeseries"
     }
   ],
