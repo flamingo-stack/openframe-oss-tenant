@@ -11,7 +11,7 @@ loki:
   loki:
     image:
       registry: ghcr.io/flamingo-stack/registry
-      repository: loki
+      repository: grafana/loki
       tag: "3.5.7"
 
     auth_enabled: false
@@ -73,7 +73,7 @@ loki:
   memcached:
     image:
       registry: ghcr.io/flamingo-stack/registry
-      repository: library/memcached
+      repository: memcached
       tag: "1.6.39-alpine"
 
   memcachedExporter:
