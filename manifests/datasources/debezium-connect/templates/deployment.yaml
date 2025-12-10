@@ -14,10 +14,6 @@ spec:
     metadata:
       labels:
         app: debezium-connect
-      {{- if .Values.metrics.enabled }}
-      annotations:
-        {{- toYaml .Values.metrics.podAnnotations | nindent 8 }}
-      {{- end }}
     spec:
 
       {{- if .Values.metrics.enabled }}
