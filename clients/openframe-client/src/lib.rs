@@ -1,11 +1,8 @@
 use anyhow::{Context, Result};
-use directories::ProjectDirs;
-use semver;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{sleep, Duration};
+use tokio::time::{ Duration};
 use tracing::{error, info};
 use uuid;
 use reqwest;
@@ -315,13 +312,9 @@ impl Client {
 
         // Initialize OpenFrame client update service
         let openframe_client_update_service = OpenFrameClientUpdateService::new(
-            directory_manager.clone(),
             openframe_client_info_service.clone(),
             github_download_service.clone(),
-            config_service.clone(),
-            installed_agent_message_publisher.clone(),
             update_state_service.clone(),
-            update_cleanup_service.clone(),
         );
 
         // Initialize tool agent update service
