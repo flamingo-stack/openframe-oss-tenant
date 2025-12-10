@@ -4,8 +4,10 @@ metadata:
   name: kafka-jmx
 data:
   jmx-kafka-prometheus.yml: |
+    jmxUrl: service:jmx:rmi:///jndi/rmi://127.0.0.1:{{ .Values.kafka.metrics.jmx.kafkaJmxPort }}/jmxrmi
     lowercaseOutputName: true
     lowercaseOutputLabelNames: true
+    ssl: false
     whitelistObjectNames:
       - java.lang:type=GarbageCollector,*
       - java.lang:type=Memory
