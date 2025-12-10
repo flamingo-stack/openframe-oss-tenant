@@ -44,7 +44,7 @@ cassandra:
       prometheus.io/scrape: "false"
 
 
-extraEnvVars:
+  extraEnvVars:
     - name: CASSANDRA_AUTHENTICATOR
       value: AllowAllAuthenticator
     - name: CASSANDRA_AUTHORIZER
