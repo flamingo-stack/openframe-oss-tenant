@@ -6,16 +6,9 @@ use crate::models::update_state::{UpdateState, UpdatePhase};
 use crate::service::FULL_SERVICE_NAME;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::github_download_service::GithubDownloadService;
-
 use crate::services::update_state_service::UpdateStateService;
-#[cfg(windows)]
-use crate::platform::get_powershell_path;
-#[cfg(windows)]
-use crate::platform::update_scripts::UPDATE_SCRIPT_WINDOWS;
-#[cfg(target_os = "macos")]
-use crate::platform::update_scripts::{UPDATE_SCRIPT_MACOS, UPDATER_PLIST_TEMPLATE};
+use crate::platform::updater_launcher::{self, UpdaterParams};
 use std::path::PathBuf;
-use std::process;
 use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -183,22 +176,20 @@ impl OpenFrameClientUpdateService {
         info!("Temporary archive created: {}", archive_path.display());
 
         // 5. Launch update process (platform-specific)
-        let launch_result = {
-            #[cfg(windows)]
-            {
-                self.launch_windows_updater(archive_path.clone(), update_state).await
-            }
+        update_state.set_phase(UpdatePhase::UpdaterLaunched);
+        self.update_state_service.save(update_state).await?;
 
-            #[cfg(target_os = "macos")]
-            {
-                self.launch_macos_updater(archive_path.clone(), update_state).await
-            }
+        let current_exe = std::env::current_exe()
+            .context("Failed to get current executable path")?;
 
-            #[cfg(target_os = "linux")]
-            {
-                self.launch_linux_updater(archive_path.clone(), update_state).await
-            }
+        let params = UpdaterParams {
+            binary_path: archive_path.clone(),
+            target_exe: current_exe,
+            service_name: FULL_SERVICE_NAME.to_string(),
+            update_state_path: self.update_state_service.get_state_file_path(),
         };
+
+        let launch_result = updater_launcher::launch_updater(params).await;
 
         // If launch failed, cleanup archive and state
         if let Err(e) = launch_result {
@@ -257,148 +248,7 @@ impl OpenFrameClientUpdateService {
         
         Ok(binary_path)
     }
-    
-    /// Launch PowerShell updater script on Windows
-    #[cfg(windows)]
-    async fn launch_windows_updater(&self, archive_path: PathBuf, update_state: &mut UpdateState) -> Result<()> {
-        use std::os::windows::process::CommandExt;
 
-        info!("Launching Windows PowerShell updater");
-
-        // Save PowerShell script to temp file
-        let script_path = std::env::temp_dir().join(format!(
-            "openframe-updater-{}.ps1",
-            Uuid::new_v4()
-        ));
-
-        tokio::fs::write(&script_path, UPDATE_SCRIPT_WINDOWS).await
-            .context("Failed to write PowerShell script")?;
-
-        info!("PowerShell script saved to: {}", script_path.display());
-
-        // Get current executable path
-        let current_exe = std::env::current_exe()
-            .context("Failed to get current executable path")?;
-
-        // Mark updater as launched
-        update_state.set_phase(UpdatePhase::UpdaterLaunched);
-        self.update_state_service.save(update_state).await?;
-
-        // Service name - use unified constant for all platforms
-        let service_name = FULL_SERVICE_NAME;
-
-        // Get update state file path
-        let update_state_path = self.update_state_service.get_state_file_path();
-
-        let ps_path = get_powershell_path().map_err(|e| anyhow!(e))?;
-        info!("Using PowerShell: {}", ps_path);
-
-        let child = process::Command::new(&ps_path)
-            .arg("-ExecutionPolicy").arg("Bypass")
-            .arg("-NoProfile")
-            .arg("-File").arg(&script_path)
-            .arg("-ArchivePath").arg(&archive_path)
-            .arg("-ServiceName").arg(service_name)
-            .arg("-TargetExe").arg(&current_exe)
-            .arg("-UpdateStatePath").arg(&update_state_path)
-            .creation_flags(0x08000000)
-            .spawn()
-            .context("Failed to spawn PowerShell updater")?;
-
-        info!("PowerShell updater launched (PID: {})", child.id());
-
-        Ok(())
-    }
-
-    #[cfg(target_os = "macos")]
-    async fn launch_macos_updater(&self, binary_path: PathBuf, update_state: &mut UpdateState) -> Result<()> {
-        info!("Launching macOS bash updater");
-
-        let script_path = std::env::temp_dir().join(format!(
-            "openframe-updater-{}.sh",
-            Uuid::new_v4()
-        ));
-
-        tokio::fs::write(&script_path, UPDATE_SCRIPT_MACOS).await
-            .context("Failed to write bash script")?;
-
-        // Make script executable
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let mut perms = std::fs::metadata(&script_path)?.permissions();
-            perms.set_mode(0o755);
-            std::fs::set_permissions(&script_path, perms)
-                .context("Failed to set script executable permissions")?;
-        }
-
-        info!("Bash script saved to: {}", script_path.display());
-
-        let current_exe = std::env::current_exe()
-            .context("Failed to get current executable path")?;
-
-        update_state.set_phase(UpdatePhase::UpdaterLaunched);
-        self.update_state_service.save(update_state).await?;
-
-        let service_label = FULL_SERVICE_NAME;
-
-        let update_state_path = self.update_state_service.get_state_file_path();
-
-        info!("Launching updater with: binary={}, service={}, target={}, state={}",
-            binary_path.display(), service_label, current_exe.display(), update_state_path);
-
-        // Create a temporary plist to run the update script as a one-shot launchd job
-        // This ensures the script survives when our service is stopped
-        let plist_path = std::env::temp_dir().join("com.openframe.updater.plist");
-
-        // Remove any leftover updater job from a previous failed update
-        let _ = process::Command::new("launchctl")
-            .arg("remove")
-            .arg("com.openframe.updater")
-            .output();
-
-        let plist_content = UPDATER_PLIST_TEMPLATE
-            .replace("{SCRIPT_PATH}", &script_path.to_string_lossy())
-            .replace("{BINARY_PATH}", &binary_path.to_string_lossy())
-            .replace("{SERVICE_LABEL}", service_label)
-            .replace("{TARGET_EXE}", &current_exe.to_string_lossy())
-            .replace("{UPDATE_STATE_PATH}", &update_state_path);
-
-        std::fs::write(&plist_path, &plist_content)
-            .context("Failed to write updater plist")?;
-
-        info!("Updater plist created at: {}", plist_path.display());
-
-        // Load the plist to start the updater job
-        let output = process::Command::new("launchctl")
-            .arg("load")
-            .arg(&plist_path)
-            .output()
-            .context("Failed to load updater plist")?;
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(anyhow!("Failed to load updater plist: {}", stderr));
-        }
-
-        info!("macOS bash updater launched via launchd");
-
-        Ok(())
-    }
-
-    /// Launch shell script updater on Linux (not implemented)
-    #[cfg(target_os = "linux")]
-    async fn launch_linux_updater(&self, _binary_path: PathBuf, update_state: &mut UpdateState) -> Result<()> {
-        info!("Launching Linux shell updater");
-
-        // Mark updater as launched
-        update_state.set_phase(UpdatePhase::UpdaterLaunched);
-        self.update_state_service.save(update_state).await?;
-
-        // TODO: Implement Linux updater with systemd
-        Err(anyhow!("Linux updater not yet implemented. Use systemd service restart instead."))
-    }
-    
     /// Parse version string into semver Version
     /// Supports formats like: "1.2.3", "v1.2.3", "1.2.3-beta", "1.2.3+build"
     fn parse_version(version: &str) -> Result<Version> {
