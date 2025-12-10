@@ -710,7 +710,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{service=\"kafka-jmx-metrics\"}[5m])",
+          "expr": "rate(jvm_gc_collection_time_ms{service=\"kafka-jmx-metrics\"}[5m])/1000",
           "legendFormat": "{{pod}} - {{gc}}",
           "refId": "A"
         }
@@ -1839,7 +1839,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_count{service=\"kafka-jmx-metrics\"}[5m])",
+          "expr": "rate(jvm_gc_collection_count{service=\"kafka-jmx-metrics\"}[5m])",
           "legendFormat": "{{pod}} - {{gc}}",
           "refId": "A"
         }
