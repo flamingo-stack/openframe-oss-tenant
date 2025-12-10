@@ -34,6 +34,7 @@ export function FileManagerContainer({
     selectedFiles,
     connectionState,
     loading,
+    isSearching,
     uploadProgress,
     downloadProgress,
     clipboard,
@@ -70,7 +71,7 @@ export function FileManagerContainer({
 
   const [deleteContext, setDeleteContext] = useState<{ fileIds: string[] } | null>(null)
 
-  const showFileManagerSkeleton = (loading || connectionState === 'connecting') && files.length === 0
+  const showFileManagerSkeleton = connectionState === 'disconnected' || (connectionState === 'connecting' && files.length === 0)
   const handleBackToDevice = useCallback(() => {
     router.push(`/devices/details/${deviceId}`)
   }, [router, deviceId])
@@ -105,6 +106,17 @@ export function FileManagerContainer({
       navigateInto(file.name)
     }
   }, [navigateInto])
+
+  const handleFileClick = useCallback((file: FileItem) => {
+    if (file.path) {
+      const pathParts = file.path.split(/[/\\]/)
+      pathParts.pop()
+      const directoryPath = pathParts.join(file.path.includes('\\') ? '\\' : '/')
+      
+      navigateToPath(directoryPath || '/')
+      setSearchQuery('')
+    }
+  }, [navigateToPath])
 
   const handleFileAction = useCallback(async (action: FileAction, fileId?: string) => {
     if (action === 'upload') {
@@ -263,9 +275,15 @@ export function FileManagerContainer({
             selectedFiles={selectedFiles}
             deviceName={hostname || `Device ${deviceId}`}
             searchQuery={searchQuery}
-            loading={loading || connectionState === 'connecting'}
+            loading={
+              loading || 
+              connectionState === 'connecting' || 
+              connectionState === 'connected_to_server' || 
+              (isSearching && files.length === 0) || 
+              (connectionState === 'connected_end_to_end' && files.length === 0 && !searchQuery)
+            }
             showCheckboxes={true}
-            showSearch={false}
+            showSearch={true}
             showActions={true}
             canPaste={clipboard !== null}
             resultsCount={files.length}
@@ -275,6 +293,7 @@ export function FileManagerContainer({
             onSelectFile={handleSelectFile}
             onSelectAll={handleSelectAll}
             onFileAction={handleFileAction}
+            onFileClick={handleFileClick}
             onFolderOpen={handleFolderOpen}
             className="flex-1 min-h-0"
           />

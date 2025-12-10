@@ -21,6 +21,7 @@ interface UseMeshFileManagerReturn {
   selectedFiles: string[]
   connectionState: FileConnectionState
   loading: boolean
+  isSearching: boolean
   uploadProgress: FileTransferProgress | null
   downloadProgress: FileTransferProgress | null
   clipboard: ClipboardItem | null
@@ -71,6 +72,7 @@ export function useMeshFileManager({
   const [uploadProgress, setUploadProgress] = useState<FileTransferProgress | null>(null)
   const [downloadProgress, setDownloadProgress] = useState<FileTransferProgress | null>(null)
   const [clipboard, setClipboard] = useState<ClipboardItem | null>(null)
+  const [isSearching, setIsSearching] = useState<boolean>(false)
 
   const fileManagerRef = useRef<MeshCentralFileManager | null>(null)
   const controlClientRef = useRef<MeshControlClient | null>(null)
@@ -157,6 +159,26 @@ export function useMeshFileManager({
               const items = convertFileEntriesToItems(entries, fileManager.getCurrentPath())
               setFiles(items)
               setCurrentPath(fileManager.getCurrentPath())
+              setIsSearching(false)
+            }
+          },
+          onSearchStart: () => {
+            if (mounted) {
+              setFiles([])
+              setIsSearching(true)
+            }
+          },
+          onSearchResult: (result: FileEntry, allResults: FileEntry[]) => {
+            if (mounted) {
+              const items = convertFileEntriesToItems(allResults, fileManager.getCurrentPath())
+              setFiles(items)
+            }
+          },
+          onSearchComplete: (results: FileEntry[]) => {
+            if (mounted) {
+              const items = convertFileEntriesToItems(results, fileManager.getCurrentPath())
+              setFiles(items)
+              setIsSearching(false)
             }
           },
           onTransferProgress: (progress: FileTransferProgress) => {
@@ -469,20 +491,19 @@ export function useMeshFileManager({
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      setLoading(true)
-      const results = await fileManager.searchFiles(query)
-      const items = convertFileEntriesToItems(results, currentPath)
-      setFiles(items)
+      await fileManager.searchFiles(query)
     } catch (error) {
-      toast({
-        title: 'Search Failed',
-        description: (error as Error).message,
-        variant: 'destructive'
-      })
-    } finally {
-      setLoading(false)
+      const errorMessage = (error as Error).message
+      if (!errorMessage.includes('Cancelled for new search')) {
+        toast({
+          title: 'Search Failed',
+          description: errorMessage,
+          variant: 'destructive'
+        })
+        setIsSearching(false)
+      }
     }
-  }, [currentPath, toast])
+  }, [toast])
 
   const selectFile = useCallback((fileId: string, selected: boolean) => {
     setSelectedFiles(prev => {
@@ -699,6 +720,7 @@ export function useMeshFileManager({
     selectedFiles,
     connectionState,
     loading,
+    isSearching,
     uploadProgress,
     downloadProgress,
     clipboard,

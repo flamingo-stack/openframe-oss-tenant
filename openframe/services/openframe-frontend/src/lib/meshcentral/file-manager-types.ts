@@ -92,6 +92,9 @@ export interface FileManagerOptions {
   onTransferProgress?: (progress: FileTransferProgress) => void
   onServerCancelDownload?: (fileName: string, reason?: string) => void
   onError?: (error: Error) => void
+  onSearchStart?: () => void
+  onSearchResult?: (result: FileEntry, allResults: FileEntry[]) => void
+  onSearchComplete?: (results: FileEntry[]) => void
 }
 
 export const MeshRights = {
