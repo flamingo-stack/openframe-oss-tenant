@@ -103,7 +103,7 @@
       "targets": [
         {
           "expr": "up{service=~\"pinot-.*\"}",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -162,7 +162,7 @@
       "targets": [
         {
           "expr": "time() - process_start_time_seconds{service=~\"pinot-.*\"} and on(pod) up{service=~\"pinot-.*\"} == 1",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -220,7 +220,7 @@
       "targets": [
         {
           "expr": "jvm_threads_current{service=~\"pinot-.*\"}",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -288,7 +288,7 @@
       "targets": [
         {
           "expr": "100 * jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"} / jvm_memory_bytes_max{area=\"heap\", service=~\"pinot-.*\"}",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -397,7 +397,7 @@
       "targets": [
         {
           "expr": "rate(process_cpu_seconds_total{service=~\"pinot-.*\"}[5m])",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -493,7 +493,7 @@
       "targets": [
         {
           "expr": "jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -588,8 +588,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{service=~\"pinot-.*\", gc=~\".*Young.*\", job=\"kubernetes-pods\"}[5m])",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "expr": "rate(jvm_gc_collection_seconds_sum{service=~\"pinot-.*\", gc=~\".*Young.*\"}[5m])",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -793,7 +793,7 @@
       "targets": [
         {
           "expr": "process_resident_memory_bytes{service=~\"pinot-.*\"}",
-          "legendFormat": "{{component}}-{{apps_kubernetes_io_pod_index}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
