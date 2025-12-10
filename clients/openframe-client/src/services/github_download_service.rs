@@ -178,9 +178,7 @@ impl GithubDownloadService {
     #[cfg(target_os = "windows")]
     fn extract_from_zip(&self, archive_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
         use zip::ZipArchive;
-        
-        debug!("Extracting {} from ZIP archive", target_filename);
-        
+
         let cursor = Cursor::new(archive_bytes);
         let mut archive = ZipArchive::new(cursor)
             .context("Failed to read ZIP archive")?;
@@ -191,8 +189,7 @@ impl GithubDownloadService {
                 .context("Failed to read ZIP entry")?;
             
             let file_name = file.name().to_string();
-            debug!("Found file in ZIP: {}", file_name);
-            
+
             // Check if this is the target file (case-insensitive, check basename)
             if file_name.to_lowercase().ends_with(&target_filename.to_lowercase()) {
                 info!("Found target file: {}", file_name);
