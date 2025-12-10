@@ -6,12 +6,6 @@ registerJob:
 
 
 kafka:
-  
-  commonAnnotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "9216"
-    prometheus.io/path: "/metrics"
-
   global:
     security:
       allowInsecureImages: true  # bitnamilegacy
@@ -104,11 +98,12 @@ kafka:
 
   metrics:
     jmx:
-      enabled: false
+      enabled: true
       image:
         registry: ghcr.io/flamingo-stack/registry
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0
+      kafkaJmxPort: 5555
       
       livenessProbe:
         initialDelaySeconds: 90 
@@ -127,7 +122,7 @@ kafka:
           cpu: 100m
           memory: 256Mi
 
-      kafkaJmxPort: 5555
+      
       extraRules: |-
         - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
           name: kafka_$1_$2_$3
