@@ -1840,7 +1840,7 @@
       "targets": [
         {
           "expr": "rate(java_lang_garbagecollector_collectioncount{service=\"kafka-jmx-metrics\"}[5m])",
-          "legendFormat": "{{pod}} - {{name}}",
+          "legendFormat": "{{pod}} - {{gc}}",
           "refId": "A"
         }
       ],
