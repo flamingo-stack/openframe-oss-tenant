@@ -17,11 +17,17 @@ kafka:
 
   existingKraftSecret: "kafka-kraft"
 
+
   broker:
     resourcesPreset: medium
     replicaCount: 1
     podAntiAffinityPreset: soft
     priorityClassName: kafka
+
+    podAnnotations:
+      prometheus.io/scrape: "5555"
+      prometheus.io/port: "9141"
+      prometheus.io/path: "/metrics"
 
     resources:
       requests:
@@ -30,6 +36,62 @@ kafka:
       limits:
         cpu: 1
         memory: 2Gi
+
+
+  controller:
+    resourcesPreset: medium
+    replicaCount: 1
+    podAntiAffinityPreset: soft
+    priorityClassName: kafka
+
+    podAnnotations:
+      prometheus.io/scrape: "5555"
+      prometheus.io/port: "9141"
+      prometheus.io/path: "/metrics"
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+
+metrics:
+    jmx:
+      enabled: true
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: bitnamilegacy/jmx-exporter
+        tag: 1.4.0
+      kafkaJmxPort: 5555
+      service:
+        annotations:
+          prometheus.io/scrape: "false"
+      
+      livenessProbe:
+        initialDelaySeconds: 90 
+        periodSeconds: 20        
+        failureThreshold: 6   
+      readinessProbe:
+        initialDelaySeconds: 60
+        periodSeconds: 15
+        failureThreshold: 5
+      
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
+
+      
+      extraRules: |-
+        - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
+          name: kafka_$1_$2_$3
+
 
   listeners:
     client:
@@ -42,27 +104,6 @@ kafka:
       protocol: PLAINTEXT
     # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
     # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
-
-  controller:
-    resourcesPreset: medium
-    replicaCount: 1
-    podAntiAffinityPreset: soft
-    priorityClassName: kafka
-
-    resources:
-      requests:
-        cpu: 250m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-
-  kraft:
-    enabled: true
-
-  # # Zookeeper mode - Controller nodes not supported
-  # controller:
-  #   replicaCount: 0
 
 
   provisioning:
@@ -96,36 +137,6 @@ kafka:
         config:
           cleanup.policy: compact
 
-  metrics:
-    jmx:
-      enabled: true
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: bitnamilegacy/jmx-exporter
-        tag: 1.4.0
-      kafkaJmxPort: 5555
-      
-      livenessProbe:
-        initialDelaySeconds: 90 
-        periodSeconds: 20        
-        failureThreshold: 6   
-      readinessProbe:
-        initialDelaySeconds: 60
-        periodSeconds: 15
-        failureThreshold: 5
-      
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-        limits:
-          cpu: 100m
-          memory: 256Mi
-
-      
-      extraRules: |-
-        - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
-          name: kafka_$1_$2_$3
 
   # Set default replication factor to 1
   extraConfig: |
