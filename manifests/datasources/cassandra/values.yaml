@@ -32,8 +32,6 @@ cassandra:
       value: AllowAllAuthorizer
     - name: CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS
       value: "128"
-    # - name: CASSANDRA_NATIVE_TRANSPORT_PORT_SSL
-    #   value: "9142"
     - name: CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE
       value: "256MB"
     - name: CASSANDRA_STARTUP_TIMEOUT
@@ -87,7 +85,6 @@ cassandra:
 
   metrics:
     enabled: false
-    # bitnamilegacy
     image:
       repository: bitnamilegacy/cassandra-exporter
       tag: 2.3.8-debian-12-r51
@@ -100,7 +97,3 @@ cassandra:
       periodSeconds: 15
       timeoutSeconds: 45
       failureThreshold: 5
-
-    serviceMonitor:
-      enabled: true
-      namespace: datasources
