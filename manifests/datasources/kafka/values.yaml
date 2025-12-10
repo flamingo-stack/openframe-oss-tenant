@@ -25,7 +25,7 @@ kafka:
     priorityClassName: kafka
 
     podAnnotations:
-      prometheus.io/scrape: "5555"
+      prometheus.io/scrape: "5556"
       prometheus.io/port: "9141"
       prometheus.io/path: "/metrics"
 
@@ -45,7 +45,7 @@ kafka:
     priorityClassName: kafka
 
     podAnnotations:
-      prometheus.io/scrape: "5555"
+      prometheus.io/scrape: "5556"
       prometheus.io/port: "9141"
       prometheus.io/path: "/metrics"
 
