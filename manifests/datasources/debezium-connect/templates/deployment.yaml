@@ -15,39 +15,71 @@ spec:
       labels:
         app: debezium-connect
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
+
+      {{- if .Values.metrics.enabled }}
+      initContainers:
+        - name: jmx-exporter
+          image: "{{ .Values.metrics.jmx.image.registry }}/{{ .Values.metrics.jmx.image.image }}:{{ .Values.metrics.jmx.image.tag }}"
+          command: [sh, -c]
+          args:
+            - |
+              VERSION={{ .Values.metrics.jmx.version }}
+              wget -O /jmx/jmx_prometheus_javaagent.jar \
+                https://github.com/prometheus/jmx_exporter/releases/download/${VERSION}/jmx_prometheus_javaagent-${VERSION}.jar \
+              && cp /jmx-config/config.yaml /jmx/config.yaml
+          volumeMounts:
+            - name: jmx-exporter
+              mountPath: /jmx
+            - name: jmx-config
+              mountPath: /jmx-config
       {{- end }}
 
       containers:
         - name: debezium-connect
-          image: quay.io/debezium/connect:3.1.1.Final
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 8083
               name: connect-api
-          env:
-            - name: BOOTSTRAP_SERVERS
-              value: "kafka-broker-headless.datasources.svc.cluster.local:9092"
-            - name: CONFIG_STORAGE_TOPIC
-              value: "connect-configs"
-            - name: OFFSET_STORAGE_TOPIC
-              value: "connect-offsets"
-            - name: STATUS_STORAGE_TOPIC
-              value: "connect-status"
-            - name: CONNECT_PLUGIN_PATH
-              value: "/kafka/connect,/jdbc-drivers"
+            {{- if .Values.metrics.enabled }}
+            - containerPort: {{ .Values.metrics.port }}
+              name: metrics
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: debezium-connect
+          {{- if .Values.metrics.enabled }}
           volumeMounts:
-            - name: jdbc-drivers-volume
-              mountPath: /jdbc-drivers
+            - name: jmx-exporter
+              mountPath: /opt/jmx-exporter
+            {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8083
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /connectors
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- end }}
           resources:
-            requests:
-              memory: "512Mi"
-              cpu: "250m"
-            limits:
-              memory: "1Gi"
-              cpu: "500m"
+            {{- toYaml .Values.resources | nindent 12 }}
 
+      {{- if .Values.metrics.enabled }}
       volumes:
-        - name: jdbc-drivers-volume
+        - name: jmx-exporter
           emptyDir: {}
+        - name: jmx-config
+          configMap:
+            name: debezium-connect-jmx
+        {{- end }}

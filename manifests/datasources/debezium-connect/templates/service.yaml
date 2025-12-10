@@ -2,6 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: debezium-connect
+  {{- if .Values.service.annotations }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     app: debezium-connect
@@ -9,3 +13,8 @@ spec:
     - port: 8083
       targetPort: 8083
       name: http
+    {{- if .Values.metrics.enabled }}
+    - port: {{ .Values.metrics.port }}
+      targetPort: {{ .Values.metrics.port }}
+      name: metrics
+    {{- end }}

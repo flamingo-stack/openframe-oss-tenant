@@ -6,25 +6,23 @@ registerJob:
 
 
 kafka:
-  # bitnamilegacy
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/kafka
     tag: 4.0.0-debian-12-r10
-  
-  global:
-    # bitnamilegacy
-    security:
-      allowInsecureImages: true
 
   existingKraftSecret: "kafka-kraft"
+
 
   broker:
     resourcesPreset: medium
     replicaCount: 1
     podAntiAffinityPreset: soft
     priorityClassName: kafka
-
     resources:
       requests:
         cpu: 500m
@@ -32,6 +30,46 @@ kafka:
       limits:
         cpu: 1
         memory: 2Gi
+
+
+  controller:
+    resourcesPreset: medium
+    replicaCount: 1
+    podAntiAffinityPreset: soft
+    priorityClassName: kafka
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+
+  metrics:
+    jmx:
+      enabled: true
+      image:
+        registry: ghcr.io/flamingo-stack/registry
+        repository: bitnamilegacy/jmx-exporter
+        tag: 1.4.0
+      kafkaJmxPort: 5555
+      livenessProbe:
+        initialDelaySeconds: 90 
+        periodSeconds: 20        
+        failureThreshold: 6   
+      readinessProbe:
+        initialDelaySeconds: 60
+        periodSeconds: 15
+        failureThreshold: 5
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
+
 
   listeners:
     client:
@@ -42,29 +80,6 @@ kafka:
       protocol: PLAINTEXT
     external:
       protocol: PLAINTEXT
-    # advertisedListeners: "EXTERNAL://localhost:9092,INTERNAL://kafka-broker-headless:29092"
-    # securityProtocolMap: "EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
-
-  controller:
-    resourcesPreset: medium
-    replicaCount: 1
-    podAntiAffinityPreset: soft
-    priorityClassName: kafka
-
-    resources:
-      requests:
-        cpu: 250m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-
-  kraft:
-    enabled: true
-
-  # # Zookeeper mode - Controller nodes not supported
-  # controller:
-  #   replicaCount: 0
 
 
   provisioning:
@@ -98,41 +113,6 @@ kafka:
         config:
           cleanup.policy: compact
 
-  metrics:
-    jmx:
-      enabled: false
-      # bitnamilegacy
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: bitnamilegacy/jmx-exporter
-        tag: 1.4.0-debian-12-r0
-      
-      livenessProbe:
-        initialDelaySeconds: 90 
-        periodSeconds: 20        
-        failureThreshold: 6   
-      readinessProbe:
-        initialDelaySeconds: 60
-        periodSeconds: 15
-        failureThreshold: 5
-      
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-        limits:
-          cpu: 100m
-          memory: 256Mi
-
-      kafkaJmxPort: 5555
-      extraRules: |-
-        - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
-          name: kafka_$1_$2_$3
-    serviceMonitor:
-        enabled: true
-    prometheusRule:
-      enabled: true
-      namespace: datasources
 
   # Set default replication factor to 1
   extraConfig: |

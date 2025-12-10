@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "id": 15,
+  "id": 22,
   "links": [],
   "panels": [
     {
@@ -76,7 +76,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 5,
         "w": 4,
         "x": 0,
         "y": 1
@@ -102,12 +102,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "min(up{service=~\"pinot-.*\"}) by (service)",
+          "expr": "up{service=\"debezium-connect\"}",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
-      "title": "Pinot Status",
+      "title": "Debezium Status",
       "type": "stat"
     },
     {
@@ -135,8 +135,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 6,
+        "h": 5,
+        "w": 4,
         "x": 4,
         "y": 1
       },
@@ -161,7 +161,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "min(time() - process_start_time_seconds{service=~\"pinot-.*\"}) by (service)",
+          "expr": "time() - process_start_time_seconds{service=\"debezium-connect\"} and on(pod) up{service=\"debezium-connect\"} == 1",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -193,9 +193,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 6,
-        "x": 10,
+        "h": 5,
+        "w": 3,
+        "x": 8,
         "y": 1
       },
       "id": 4,
@@ -219,12 +219,70 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_current{service=~\"pinot-.*\"}) by (service)",
-          "legendFormat": "{{service}}",
+          "expr": "kafka_connect_worker_connector_count{service=\"debezium-connect\"}",
+          "legendFormat": "connectors",
           "refId": "A"
         }
       ],
-      "title": "Threads",
+      "title": "Connectors",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 11,
+        "y": 1
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "kafka_connect_worker_task_count{service=\"debezium-connect\"}",
+          "legendFormat": "tasks",
+          "refId": "A"
+        }
+      ],
+      "title": "Tasks",
       "type": "stat"
     },
     {
@@ -263,9 +321,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
+        "h": 5,
+        "w": 4,
+        "x": 14,
         "y": 1
       },
       "id": 14,
@@ -287,7 +345,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * sum(jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}) by (service) / sum(jvm_memory_bytes_max{area=\"heap\", service=~\"pinot-.*\"}) by (service)",
+          "expr": "100 * jvm_memory_used_bytes{area=\"heap\", service=\"debezium-connect\"} / jvm_memory_max_bytes{area=\"heap\", service=\"debezium-connect\"}",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -301,7 +359,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 6
       },
       "id": 6,
       "panels": [],
@@ -374,7 +432,7 @@
         "h": 11,
         "w": 8,
         "x": 0,
-        "y": 11
+        "y": 7
       },
       "id": 7,
       "options": {
@@ -396,7 +454,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "avg(rate(process_cpu_seconds_total{service=~\"pinot-.*\"}[5m])) by (service)",
+          "expr": "rate(process_cpu_seconds_total{service=\"debezium-connect\"}[5m])",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -470,7 +528,7 @@
         "h": 11,
         "w": 8,
         "x": 8,
-        "y": 11
+        "y": 7
       },
       "id": 16,
       "options": {
@@ -492,7 +550,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}) by (service)",
+          "expr": "jvm_memory_used_bytes{area=\"heap\", service=\"debezium-connect\"}",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -566,7 +624,7 @@
         "h": 11,
         "w": 8,
         "x": 16,
-        "y": 11
+        "y": 7
       },
       "id": 8,
       "options": {
@@ -588,12 +646,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "avg(rate(jvm_gc_collection_seconds_sum{service=~\"pinot-.*\", gc=~\".*Young.*\"}[5m])) by (service)",
-          "legendFormat": "{{service}}",
+          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Young Generation\", service=\"debezium-connect\"}[5m])",
+          "legendFormat": "G1 Young",
           "refId": "A"
+        },
+        {
+          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Old Generation\", service=\"debezium-connect\"}[5m])",
+          "legendFormat": "G1 Old",
+          "refId": "B"
         }
       ],
-      "title": "GC Time (Young Gen)",
+      "title": "GC Time",
       "type": "timeseries"
     },
     {
@@ -602,9 +665,418 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 18
       },
       "id": 9,
+      "panels": [],
+      "title": "CDC Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 19
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "rate(kafka_connect_source_task_source_record_poll_total{service=\"debezium-connect\"}[5m])",
+          "legendFormat": "{{connector}}-{{task}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Records/s",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 10000
+              },
+              {
+                "color": "red",
+                "value": 60000
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 19
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "debezium_mongodb_millisecondssincelastEvent{service=\"debezium-connect\"} or debezium_mysql_millisecondssincelastEvent{service=\"debezium-connect\"} or debezium_postgres_millisecondssincelastEvent{service=\"debezium-connect\"}",
+          "legendFormat": "{{server}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Time Since Last Event",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 60000
+              },
+              {
+                "color": "red",
+                "value": 300000
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 19
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "debezium_mongodb_millisecondsbehindsource{service=\"debezium-connect\"} or debezium_mysql_millisecondsbehindsource{service=\"debezium-connect\"} or debezium_postgres_millisecondsbehindsource{service=\"debezium-connect\"}",
+          "legendFormat": "{{server}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Replication Lag",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 19
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "kafka_connect_task_error_total_errors_logged{service=\"debezium-connect\"}",
+          "legendFormat": "{{connector}}-{{task}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Task Errors",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 20,
       "panels": [],
       "title": "Operations",
       "type": "row"
@@ -674,9 +1146,9 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 37
       },
-      "id": 10,
+      "id": 21,
       "options": {
         "legend": {
           "calcs": [
@@ -696,7 +1168,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_state{service=~\"pinot-.*\"}) by (state)",
+          "expr": "sum(jvm_threads_state{service=\"debezium-connect\"}) by (state)",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
@@ -770,9 +1242,9 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 37
       },
-      "id": 11,
+      "id": 22,
       "options": {
         "legend": {
           "calcs": [
@@ -792,7 +1264,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(process_resident_memory_bytes{service=~\"pinot-.*\"}) by (service)",
+          "expr": "process_resident_memory_bytes{service=\"debezium-connect\"}",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -805,9 +1277,9 @@
   "refresh": "5s",
   "schemaVersion": 42,
   "tags": [
-    "pinot",
-    "analytics",
-    "database"
+    "debezium",
+    "kafka-connect",
+    "cdc"
   ],
   "templating": {
     "list": []
@@ -818,7 +1290,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Pinot",
-  "uid": "pinot",
-  "version": 5
+  "title": "Debezium Connect",
+  "uid": "debezium-connect",
+  "version": 1
 }

@@ -22,6 +22,7 @@ redis:
     maxmemory 200mb
     maxmemory-policy allkeys-lru
 
+
   master:
     revisionHistoryLimit: 2
     resources:
@@ -31,6 +32,7 @@ redis:
       limits:
         memory: 256Mi
         cpu: 250m
+
 
   replica:
     replicaCount: 1
@@ -43,6 +45,7 @@ redis:
         memory: 256Mi
         cpu: 250m
 
+
   metrics:
     enabled: true
     image:
@@ -50,6 +53,9 @@ redis:
       repository: bitnamilegacy/redis-exporter
       tag: 1.76.0-debian-12-r0
     podAnnotations:
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "9121"
-      prometheus.io/path: "/metrics"
+      prometheus.io/scrape: "false"
+    service:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+        prometheus.io/path: "/metrics"
