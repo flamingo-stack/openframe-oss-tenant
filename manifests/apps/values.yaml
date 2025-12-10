@@ -138,12 +138,12 @@ apps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-  mongodb-exporter:
+  redis:
     enabled: true
     project: datasources
     namespace: datasources
     syncWave: "1"
-  redis:
+  zookeeper:
     enabled: true
     project: datasources
     namespace: datasources

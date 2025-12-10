@@ -28,7 +28,7 @@ grafana:
   initChownData:
     image:
       registry: ghcr.io/flamingo-stack/registry
-      repository: library/busybox
+      repository: busybox
       tag: "1.31.1"
   
   sidecar:
