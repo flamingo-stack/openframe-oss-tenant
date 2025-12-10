@@ -102,8 +102,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "up{service=~\"pinot-.*\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "min(up{service=~\"pinot-.*\"}) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -161,8 +161,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{service=~\"pinot-.*\"} and on(pod) up{service=~\"pinot-.*\"} == 1",
-          "legendFormat": "{{pod}}",
+          "expr": "min(time() - process_start_time_seconds{service=~\"pinot-.*\"}) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -219,8 +219,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_threads_current{service=~\"pinot-.*\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "sum(jvm_threads_current{service=~\"pinot-.*\"}) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -287,8 +287,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"} / jvm_memory_bytes_max{area=\"heap\", service=~\"pinot-.*\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "100 * sum(jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}) by (service) / sum(jvm_memory_bytes_max{area=\"heap\", service=~\"pinot-.*\"}) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -396,8 +396,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{service=~\"pinot-.*\"}[5m])",
-          "legendFormat": "{{pod}}",
+          "expr": "avg(rate(process_cpu_seconds_total{service=~\"pinot-.*\"}[5m])) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -492,8 +492,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "sum(jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -588,8 +588,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{service=~\"pinot-.*\", gc=~\".*Young.*\"}[5m])",
-          "legendFormat": "{{pod}}",
+          "expr": "avg(rate(jvm_gc_collection_seconds_sum{service=~\"pinot-.*\", gc=~\".*Young.*\"}[5m])) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
@@ -792,8 +792,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{service=~\"pinot-.*\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "sum(process_resident_memory_bytes{service=~\"pinot-.*\"}) by (service)",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
