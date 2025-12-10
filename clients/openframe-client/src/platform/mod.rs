@@ -2,6 +2,7 @@ pub mod directories;
 pub mod file_lock;
 pub mod permissions;
 pub mod uninstall;
+pub mod update_scripts;
 
 #[cfg(target_os = "windows")]
 pub mod windows_cleanup;

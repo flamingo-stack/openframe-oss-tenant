@@ -3,19 +3,17 @@ use tracing::{info, warn, error};
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 use crate::models::openframe_client_info::ClientUpdateStatus;
 use crate::models::update_state::{UpdateState, UpdatePhase};
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
-#[cfg(windows)]
 use crate::service::FULL_SERVICE_NAME;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::github_download_service::GithubDownloadService;
-use crate::services::InstalledAgentMessagePublisher;
-use crate::services::agent_configuration_service::AgentConfigurationService;
+
 use crate::services::update_state_service::UpdateStateService;
-use crate::services::update_cleanup_service::UpdateCleanupService;
-use crate::platform::DirectoryManager;
 #[cfg(windows)]
 use crate::platform::get_powershell_path;
+#[cfg(windows)]
+use crate::platform::update_scripts::UPDATE_SCRIPT_WINDOWS;
+#[cfg(target_os = "macos")]
+use crate::platform::update_scripts::{UPDATE_SCRIPT_MACOS, UPDATER_PLIST_TEMPLATE};
 use std::path::PathBuf;
 use std::process;
 use uuid::Uuid;
@@ -23,223 +21,25 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use semver::Version;
 
-/// PowerShell script for updating OpenFrame client on Windows
-/// This script stops the service, replaces the binary, and restarts the service
-const UPDATE_SCRIPT: &str = r#"
-param(
-    [string]$ArchivePath,
-    [string]$ServiceName,
-    [string]$TargetExe,
-    [string]$UpdateStatePath
-)
-
-# Setup logging
-$LogFile = Join-Path $env:TEMP "openframe-update-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
-function Write-Log {
-    param([string]$Message)
-    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $logMessage = "[$timestamp] $Message"
-    Write-Host $logMessage
-    Add-Content -Path $LogFile -Value $logMessage -ErrorAction SilentlyContinue
-}
-
-$ErrorActionPreference = 'Stop'
-
-Write-Log "=== OpenFrame Updater Started ==="
-Write-Log "Log file: $LogFile"
-Write-Log "Archive: $ArchivePath"
-Write-Log "Target: $TargetExe"
-Write-Log "Service: $ServiceName"
-
-$BackupPath = $null
-$TempExtract = $null
-
-try {
-    # 0. Validate inputs
-    if (-not (Test-Path $ArchivePath)) {
-        throw "Archive file not found: $ArchivePath"
-    }
-    if (-not (Test-Path $TargetExe)) {
-        throw "Target executable not found: $TargetExe"
-    }
-
-    $archiveSize = (Get-Item $ArchivePath).Length
-    Write-Log "Archive size: $archiveSize bytes"
-    if ($archiveSize -lt 100KB) {
-        throw "Archive too small ($archiveSize bytes), likely corrupted"
-    }
-
-    # 1. Stop the service
-    Write-Log "Stopping service: $ServiceName"
-    $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-    if (-not $service) {
-        throw "Service not found: $ServiceName"
-    }
-
-    if ($service.Status -ne 'Stopped') {
-        Stop-Service -Name $ServiceName -Force -ErrorAction Stop
-        Write-Log "Service stop command sent"
-    }
-
-    # 2. Wait for service to fully stop
-    $timeout = 30
-    $elapsed = 0
-    while ((Get-Service -Name $ServiceName).Status -ne 'Stopped' -and $elapsed -lt $timeout) {
-        Start-Sleep -Seconds 1
-        $elapsed++
-    }
-
-    if ($elapsed -ge $timeout) {
-        throw "Service did not stop within $timeout seconds"
-    }
-
-    Write-Log "Service stopped (took $elapsed seconds)"
-    Start-Sleep -Seconds 2
-
-    # 3. Create backup
-    $BackupPath = "$TargetExe.backup.$(Get-Date -Format 'yyyyMMddHHmmss')"
-    Write-Log "Creating backup: $BackupPath"
-    Copy-Item -Path $TargetExe -Destination $BackupPath -Force -ErrorAction Stop
-
-    $backupSize = (Get-Item $BackupPath).Length
-    Write-Log "Backup created: $backupSize bytes"
-
-    # 4. Extract archive
-    Write-Log "Extracting archive..."
-    $TempExtract = Join-Path $env:TEMP "openframe-update-$(New-Guid)"
-    Expand-Archive -Path $ArchivePath -DestinationPath $TempExtract -Force -ErrorAction Stop
-    Write-Log "Archive extracted to: $TempExtract"
-
-    # 5. Find new executable
-    $NewExe = Get-ChildItem -Path $TempExtract -Filter "*.exe" -Recurse | Select-Object -First 1
-
-    if (-not $NewExe) {
-        throw "No executable found in archive"
-    }
-
-    $newExeSize = $NewExe.Length
-    Write-Log "Found executable: $($NewExe.FullName) ($newExeSize bytes)"
-
-    if ($newExeSize -lt 100KB) {
-        throw "Extracted executable too small ($newExeSize bytes), likely corrupted"
-    }
-
-    # 6. Replace binary
-    Write-Log "Replacing binary..."
-    Copy-Item -Path $NewExe.FullName -Destination $TargetExe -Force -ErrorAction Stop
-
-    $updatedSize = (Get-Item $TargetExe).Length
-    Write-Log "Binary replaced: $updatedSize bytes"
-
-    # 7. Mark update as completed by updating state to Completed phase BEFORE starting service
-    if ($UpdateStatePath -and (Test-Path $UpdateStatePath)) {
-        try {
-            Write-Log "Updating state to Completed phase: $UpdateStatePath"
-            $stateContent = Get-Content -Path $UpdateStatePath -Raw | ConvertFrom-Json
-            $stateContent.phase = "completed"
-            $stateContent | ConvertTo-Json -Depth 10 | Set-Content -Path $UpdateStatePath -Force
-            Write-Log "Successfully updated state to Completed phase"
-        }
-        catch {
-            Write-Log "Warning: Failed to update state to Completed: $_"
-        }
-    } else {
-        Write-Log "Warning: UpdateStatePath not provided or does not exist"
-    }
-
-    # 8. Start service
-    Write-Log "Starting service: $ServiceName"
-    Start-Service -Name $ServiceName -ErrorAction Stop
-
-    # 9. Verify service started
-    Start-Sleep -Seconds 3
-    $service = Get-Service -Name $ServiceName -ErrorAction Stop
-
-    if ($service.Status -ne 'Running') {
-        throw "Service status is '$($service.Status)' (expected 'Running')"
-    }
-
-    Write-Log "Service started successfully"
-
-    # 10. Cleanup
-    Write-Log "Cleaning up temporary files..."
-    Remove-Item -Path $ArchivePath -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path $TempExtract -Recurse -Force -ErrorAction SilentlyContinue
-
-    Write-Log "=== Update completed successfully ==="
-    exit 0
-}
-catch {
-    Write-Log "ERROR: Update failed: $_"
-    Write-Log "Error at line: $($_.InvocationInfo.ScriptLineNumber)"
-
-    # Attempt rollback if backup exists
-    if ($BackupPath -and (Test-Path $BackupPath)) {
-        Write-Log "Attempting rollback from backup..."
-        try {
-            Copy-Item -Path $BackupPath -Destination $TargetExe -Force -ErrorAction Stop
-            Write-Log "Binary rolled back successfully"
-
-            Write-Log "Attempting to start service..."
-            Start-Service -Name $ServiceName -ErrorAction Stop
-
-            Start-Sleep -Seconds 3
-            $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-            if ($service -and $service.Status -eq 'Running') {
-                Write-Log "Service started after rollback"
-            } else {
-                Write-Log "WARNING: Service may not be running after rollback"
-            }
-        }
-        catch {
-            Write-Log "ERROR during rollback: $_"
-            Write-Log "Manual intervention required!"
-        }
-    } else {
-        Write-Log "No backup available for rollback"
-    }
-
-    # Cleanup temp files even on failure
-    if ($TempExtract -and (Test-Path $TempExtract)) {
-        Remove-Item -Path $TempExtract -Recurse -Force -ErrorAction SilentlyContinue
-    }
-
-    Write-Log "=== Update failed ==="
-    exit 1
-}
-"#;
-
 #[derive(Clone)]
 pub struct OpenFrameClientUpdateService {
-    directory_manager: DirectoryManager,
     client_info_service: OpenFrameClientInfoService,
     github_download_service: GithubDownloadService,
-    config_service: AgentConfigurationService,
-    installed_agent_publisher: InstalledAgentMessagePublisher,
     update_state_service: UpdateStateService,
-    cleanup_service: UpdateCleanupService,
     /// Mutex to prevent concurrent updates (race condition protection)
     update_in_progress: Arc<Mutex<bool>>,
 }
 
 impl OpenFrameClientUpdateService {
     pub fn new(
-        directory_manager: DirectoryManager,
         client_info_service: OpenFrameClientInfoService,
         github_download_service: GithubDownloadService,
-        config_service: AgentConfigurationService,
-        installed_agent_publisher: InstalledAgentMessagePublisher,
         update_state_service: UpdateStateService,
-        cleanup_service: UpdateCleanupService,
     ) -> Self {
         Self {
-            directory_manager,
             client_info_service,
             github_download_service,
-            config_service,
-            installed_agent_publisher,
             update_state_service,
-            cleanup_service,
             update_in_progress: Arc::new(Mutex::new(false)),
         }
     }
@@ -314,7 +114,7 @@ impl OpenFrameClientUpdateService {
         info!("Starting update to version {}", requested_version);
 
         // Execute update with status rollback
-        let update_result = self.execute_update(&message, requested_version, &mut update_state).await;
+        let update_result = self.execute_update(&message, &mut update_state).await;
 
         // Handle errors: set status to Failed (cleanup already done in execute_update)
         if let Err(ref e) = update_result {
@@ -335,7 +135,7 @@ impl OpenFrameClientUpdateService {
     }
 
     /// Execute the actual update process
-    async fn execute_update(&self, message: &OpenFrameClientUpdateMessage, requested_version: &str, update_state: &mut UpdateState) -> Result<()> {
+    async fn execute_update(&self, message: &OpenFrameClientUpdateMessage, update_state: &mut UpdateState) -> Result<()> {
         // 1. Find the appropriate download configuration for current OS
         let download_config = GithubDownloadService::find_config_for_current_os(&message.download_configurations)
             .context("Failed to find download configuration for current OS")?;
@@ -382,16 +182,21 @@ impl OpenFrameClientUpdateService {
 
         info!("Temporary archive created: {}", archive_path.display());
 
-        // 5. Launch update process (Windows: PowerShell, Unix: shell script)
+        // 5. Launch update process (platform-specific)
         let launch_result = {
             #[cfg(windows)]
             {
                 self.launch_windows_updater(archive_path.clone(), update_state).await
             }
 
-            #[cfg(unix)]
+            #[cfg(target_os = "macos")]
             {
-                self.launch_unix_updater(archive_path.clone(), update_state).await
+                self.launch_macos_updater(archive_path.clone(), update_state).await
+            }
+
+            #[cfg(target_os = "linux")]
+            {
+                self.launch_linux_updater(archive_path.clone(), update_state).await
             }
         };
 
@@ -407,9 +212,9 @@ impl OpenFrameClientUpdateService {
             return Err(e);
         }
 
-        // PowerShell will stop the service, so everything after this won't execute
+        // Update script will stop the service, so everything after this won't execute
         // NATS notification will be sent from recovery service after restart
-        info!("Update process launched, service will be stopped by PowerShell");
+        info!("Update process launched, service will be stopped by update script");
         Ok(())
     }
     
@@ -466,7 +271,7 @@ impl OpenFrameClientUpdateService {
             Uuid::new_v4()
         ));
 
-        tokio::fs::write(&script_path, UPDATE_SCRIPT).await
+        tokio::fs::write(&script_path, UPDATE_SCRIPT_WINDOWS).await
             .context("Failed to write PowerShell script")?;
 
         info!("PowerShell script saved to: {}", script_path.display());
@@ -504,19 +309,94 @@ impl OpenFrameClientUpdateService {
 
         Ok(())
     }
-    
-    /// Launch shell script updater on Unix systems
-    #[cfg(unix)]
-    async fn launch_unix_updater(&self, archive_path: PathBuf, update_state: &mut UpdateState) -> Result<()> {
-        info!("Launching Unix shell updater");
+
+    #[cfg(target_os = "macos")]
+    async fn launch_macos_updater(&self, binary_path: PathBuf, update_state: &mut UpdateState) -> Result<()> {
+        info!("Launching macOS bash updater");
+
+        let script_path = std::env::temp_dir().join(format!(
+            "openframe-updater-{}.sh",
+            Uuid::new_v4()
+        ));
+
+        tokio::fs::write(&script_path, UPDATE_SCRIPT_MACOS).await
+            .context("Failed to write bash script")?;
+
+        // Make script executable
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = std::fs::metadata(&script_path)?.permissions();
+            perms.set_mode(0o755);
+            std::fs::set_permissions(&script_path, perms)
+                .context("Failed to set script executable permissions")?;
+        }
+
+        info!("Bash script saved to: {}", script_path.display());
+
+        let current_exe = std::env::current_exe()
+            .context("Failed to get current executable path")?;
+
+        update_state.set_phase(UpdatePhase::UpdaterLaunched);
+        self.update_state_service.save(update_state).await?;
+
+        let service_label = FULL_SERVICE_NAME;
+
+        let update_state_path = self.update_state_service.get_state_file_path();
+
+        info!("Launching updater with: binary={}, service={}, target={}, state={}",
+            binary_path.display(), service_label, current_exe.display(), update_state_path);
+
+        // Create a temporary plist to run the update script as a one-shot launchd job
+        // This ensures the script survives when our service is stopped
+        let plist_path = std::env::temp_dir().join("com.openframe.updater.plist");
+
+        // Remove any leftover updater job from a previous failed update
+        let _ = process::Command::new("launchctl")
+            .arg("remove")
+            .arg("com.openframe.updater")
+            .output();
+
+        let plist_content = UPDATER_PLIST_TEMPLATE
+            .replace("{SCRIPT_PATH}", &script_path.to_string_lossy())
+            .replace("{BINARY_PATH}", &binary_path.to_string_lossy())
+            .replace("{SERVICE_LABEL}", service_label)
+            .replace("{TARGET_EXE}", &current_exe.to_string_lossy())
+            .replace("{UPDATE_STATE_PATH}", &update_state_path);
+
+        std::fs::write(&plist_path, &plist_content)
+            .context("Failed to write updater plist")?;
+
+        info!("Updater plist created at: {}", plist_path.display());
+
+        // Load the plist to start the updater job
+        let output = process::Command::new("launchctl")
+            .arg("load")
+            .arg(&plist_path)
+            .output()
+            .context("Failed to load updater plist")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow!("Failed to load updater plist: {}", stderr));
+        }
+
+        info!("macOS bash updater launched via launchd");
+
+        Ok(())
+    }
+
+    /// Launch shell script updater on Linux (not implemented)
+    #[cfg(target_os = "linux")]
+    async fn launch_linux_updater(&self, _binary_path: PathBuf, update_state: &mut UpdateState) -> Result<()> {
+        info!("Launching Linux shell updater");
 
         // Mark updater as launched
         update_state.set_phase(UpdatePhase::UpdaterLaunched);
         self.update_state_service.save(update_state).await?;
 
-        // TODO: Implement Unix updater with shell script or binary copy
-        // For now, return error as not implemented
-        Err(anyhow!("Unix updater not yet implemented. Use systemd service restart instead."))
+        // TODO: Implement Linux updater with systemd
+        Err(anyhow!("Linux updater not yet implemented. Use systemd service restart instead."))
     }
     
     /// Parse version string into semver Version

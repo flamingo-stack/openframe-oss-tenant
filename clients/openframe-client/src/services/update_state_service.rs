@@ -23,13 +23,17 @@ impl UpdateStateService {
     }
 
     pub async fn load(&self) -> Result<Option<UpdateState>> {
+        info!("Checking for update state file at: {}", self.state_file_path.display());
+
         if !self.state_file_path.exists() {
-            debug!("No update state file found");
+            info!("No update state file found at: {}", self.state_file_path.display());
             return Ok(None);
         }
 
         let json_content = fs::read_to_string(&self.state_file_path)
             .with_context(|| format!("Failed to read update state file: {:?}", self.state_file_path))?;
+
+        info!("Read update state file content: {}", json_content);
 
         let state: UpdateState = serde_json::from_str(&json_content)
             .context("Failed to deserialize update state from JSON")?;
