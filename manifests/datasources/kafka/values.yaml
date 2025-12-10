@@ -87,11 +87,6 @@ metrics:
           cpu: 100m
           memory: 256Mi
 
-      
-      extraRules: |-
-        - pattern: kafka.(\w+)<type=(.+), name=(.+)><>Value
-          name: kafka_$1_$2_$3
-
 
   listeners:
     client:
