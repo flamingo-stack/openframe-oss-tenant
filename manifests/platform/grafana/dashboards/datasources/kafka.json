@@ -616,13 +616,8 @@
       "targets": [
         {
           "expr": "java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Used",
+          "legendFormat": "{{pod}}",
           "refId": "A"
-        },
-        {
-          "expr": "java_lang_memory_heapmemoryusage_max{service=\"kafka-jmx-metrics\"}",
-          "legendFormat": "{{pod}} - Max",
-          "refId": "B"
         }
       ],
       "title": "Heap Memory",
@@ -715,8 +710,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(java_lang_garbagecollector_collectiontime{service=\"kafka-jmx-metrics\"}[5m])/1000",
-          "legendFormat": "{{pod}} - {{name}}",
+          "expr": "rate(jvm_gc_collection_seconds_sum{service=\"kafka-jmx-metrics\"}[5m])",
+          "legendFormat": "{{pod}} - {{gc}}",
           "refId": "A"
         }
       ],
@@ -1844,8 +1839,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(java_lang_garbagecollector_collectioncount{service=\"kafka-jmx-metrics\"}[5m])",
-          "legendFormat": "{{pod}} - {{name}}",
+          "expr": "rate(jvm_gc_collection_seconds_count{service=\"kafka-jmx-metrics\"}[5m])",
+          "legendFormat": "{{pod}} - {{gc}}",
           "refId": "A"
         }
       ],
