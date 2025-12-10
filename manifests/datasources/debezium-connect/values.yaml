@@ -10,11 +10,11 @@ image:
 
 resources:
   requests:
-    cpu: 250m
-    memory: 512Mi
-  limits:
     cpu: 500m
     memory: 1Gi
+  limits:
+    cpu: 700m
+    memory: 2Gi
 
 probes:
   liveness:
@@ -36,5 +36,5 @@ metrics:
     version: "1.5.0"
     image:
       registry: ghcr.io/flamingo-stack/registry
-      image: busybox
+      repository: busybox
       tag: "1.36.0"

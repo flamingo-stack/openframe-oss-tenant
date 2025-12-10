@@ -19,7 +19,7 @@ spec:
       {{- if .Values.metrics.enabled }}
       initContainers:
         - name: jmx-exporter
-          image: "{{ .Values.metrics.jmx.image.registry }}/{{ .Values.metrics.jmx.image.image }}:{{ .Values.metrics.jmx.image.tag }}"
+          image: "{{ .Values.metrics.jmx.image.registry }}/{{ .Values.metrics.jmx.image.repository }}:{{ .Values.metrics.jmx.image.tag }}"
           command: [sh, -c]
           args:
             - |
@@ -57,7 +57,7 @@ spec:
             httpGet:
               path: /
               port: 8083
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 3
@@ -67,7 +67,7 @@ spec:
             httpGet:
               path: /connectors
               port: 8083
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
@@ -82,4 +82,4 @@ spec:
         - name: jmx-config
           configMap:
             name: debezium-connect-jmx
-        {{- end }}
+      {{- end }}
