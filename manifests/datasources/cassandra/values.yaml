@@ -24,6 +24,8 @@ cassandra:
 
   priorityClassName: "cassandra"
 
+  initDBConfigMap: "cassandra-initdb"
+
   resources:
     requests:
       cpu: 500m
@@ -32,7 +34,18 @@ cassandra:
       cpu: 1
       memory: 2Gi
 
-  extraEnvVars:
+
+  metrics:
+    enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bitnamilegacy/cassandra-exporter
+      tag: 2.3.8-debian-12-r51
+    podAnnotations:
+      prometheus.io/scrape: "false"
+
+
+extraEnvVars:
     - name: CASSANDRA_AUTHENTICATOR
       value: AllowAllAuthenticator
     - name: CASSANDRA_AUTHORIZER
@@ -47,60 +60,3 @@ cassandra:
       value: "0"
     - name: GOSSIP_WAIT_TIME_IN_MS
       value: "0"
-
-  initDB:
-    cassandra-init.cql: |
-      CREATE KEYSPACE IF NOT EXISTS openframe_events
-      WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-      
-      USE openframe_events;
-      
-      CREATE TABLE IF NOT EXISTS unified_logs (
-      ingest_day          text,
-      tool_type           text,
-      event_type          text,
-      event_timestamp     timestamp,
-      tool_event_id       text,
-      user_id             text,
-      device_id           text,
-      hostname            text,
-      organization_id     text,
-      organization_name   text,
-      severity            text,
-      message             text,
-      details             text,
-      debezium_message    text,
-      PRIMARY KEY ((ingest_day, tool_type), event_type, event_timestamp, tool_event_id)
-      ) WITH CLUSTERING ORDER BY (event_type ASC, event_timestamp DESC, tool_event_id ASC);
-  # initDBConfigMap: ""
-
-  cluster:
-    name: cassandra
-    seedCount: 1
-    numTokens: 256
-    datacenter: dc1
-    rack: rack1
-    endpointSnitch: SimpleSnitch
-    clientEncryption: false
-    ## eg:
-    ## extraSeeds:
-    ##   - hostname/IP
-    ##   - hostname/IP
-    ##
-    extraSeeds: []
-    enableUDF: false
-
-  metrics:
-    enabled: false
-    image:
-      registry: docker.io
-      repository: bitnamilegacy/cassandra-exporter
-      tag: 2.3.8-debian-12-r51
-    podAnnotations:
-      prometheus.io/scrape: "false"
-
-    readinessProbe:
-      initialDelaySeconds: 60
-      periodSeconds: 15
-      timeoutSeconds: 45
-      failureThreshold: 5
