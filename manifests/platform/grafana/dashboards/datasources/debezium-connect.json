@@ -102,7 +102,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "up{app=\"debezium-connect\"}",
+          "expr": "up{service=\"debezium-connect\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -161,7 +161,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{app=\"debezium-connect\"} and on(pod) up{app=\"debezium-connect\"} == 1",
+          "expr": "time() - process_start_time_seconds{service=\"debezium-connect\"} and on(pod) up{service=\"debezium-connect\"} == 1",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -219,7 +219,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_connect_worker_connector_count{app=\"debezium-connect\"}",
+          "expr": "kafka_connect_worker_connector_count{service=\"debezium-connect\"}",
           "legendFormat": "connectors",
           "refId": "A"
         }
@@ -277,7 +277,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_connect_worker_task_count{app=\"debezium-connect\"}",
+          "expr": "kafka_connect_worker_task_count{service=\"debezium-connect\"}",
           "legendFormat": "tasks",
           "refId": "A"
         }
@@ -345,7 +345,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * jvm_memory_used_bytes{area=\"heap\", app=\"debezium-connect\"} / jvm_memory_max_bytes{area=\"heap\", app=\"debezium-connect\"}",
+          "expr": "100 * jvm_memory_used_bytes{area=\"heap\", service=\"debezium-connect\"} / jvm_memory_max_bytes{area=\"heap\", service=\"debezium-connect\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -454,7 +454,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{app=\"debezium-connect\"}[5m])",
+          "expr": "rate(process_cpu_seconds_total{service=\"debezium-connect\"}[5m])",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -550,7 +550,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{area=\"heap\", app=\"debezium-connect\"}",
+          "expr": "jvm_memory_used_bytes{area=\"heap\", service=\"debezium-connect\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -646,12 +646,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Young Generation\", app=\"debezium-connect\"}[5m])",
+          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Young Generation\", service=\"debezium-connect\"}[5m])",
           "legendFormat": "G1 Young",
           "refId": "A"
         },
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Old Generation\", app=\"debezium-connect\"}[5m])",
+          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Old Generation\", service=\"debezium-connect\"}[5m])",
           "legendFormat": "G1 Old",
           "refId": "B"
         }
@@ -760,7 +760,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(kafka_connect_source_task_source_record_poll_total{app=\"debezium-connect\"}[5m])",
+          "expr": "rate(kafka_connect_source_task_source_record_poll_total{service=\"debezium-connect\"}[5m])",
           "legendFormat": "{{connector}}-{{task}}",
           "refId": "A"
         }
@@ -860,7 +860,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "debezium_mongodb_millisecondssincelastEvent{app=\"debezium-connect\"} or debezium_mysql_millisecondssincelastEvent{app=\"debezium-connect\"} or debezium_postgres_millisecondssincelastEvent{app=\"debezium-connect\"}",
+          "expr": "debezium_mongodb_millisecondssincelastEvent{service=\"debezium-connect\"} or debezium_mysql_millisecondssincelastEvent{service=\"debezium-connect\"} or debezium_postgres_millisecondssincelastEvent{service=\"debezium-connect\"}",
           "legendFormat": "{{server}}",
           "refId": "A"
         }
@@ -960,7 +960,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "debezium_mongodb_millisecondsbehindsource{app=\"debezium-connect\"} or debezium_mysql_millisecondsbehindsource{app=\"debezium-connect\"} or debezium_postgres_millisecondsbehindsource{app=\"debezium-connect\"}",
+          "expr": "debezium_mongodb_millisecondsbehindsource{service=\"debezium-connect\"} or debezium_mysql_millisecondsbehindsource{service=\"debezium-connect\"} or debezium_postgres_millisecondsbehindsource{service=\"debezium-connect\"}",
           "legendFormat": "{{server}}",
           "refId": "A"
         }
@@ -1060,7 +1060,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_connect_task_error_total_errors_logged{app=\"debezium-connect\"}",
+          "expr": "kafka_connect_task_error_total_errors_logged{service=\"debezium-connect\"}",
           "legendFormat": "{{connector}}-{{task}}",
           "refId": "A"
         }
@@ -1168,7 +1168,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_state{app=\"debezium-connect\"}) by (state)",
+          "expr": "sum(jvm_threads_state{service=\"debezium-connect\"}) by (state)",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
@@ -1264,7 +1264,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{app=\"debezium-connect\"}",
+          "expr": "process_resident_memory_bytes{service=\"debezium-connect\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
