@@ -22,9 +22,8 @@ cassandra:
       prometheus.io/port: "8080"
       prometheus.io/path: "/metrics"    
 
-  priorityClassName: "cassandra"
-
   initDBConfigMap: "cassandra-initdb"
+  priorityClassName: "cassandra"
 
   resources:
     requests:
