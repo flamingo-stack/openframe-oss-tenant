@@ -54,17 +54,7 @@ kafka:
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0
       kafkaJmxPort: 5555
-
-      extraRules: |
-        - pattern: 'java.lang<type=GarbageCollector, name=(.*)><>CollectionCount'
-          name: jvm_gc_collection_count
-          labels:
-            gc: "$1"
-        - pattern: 'java.lang<type=GarbageCollector, name=(.*)><>CollectionTime'
-          name: jvm_gc_collection_time_ms
-          labels:
-            gc: "$1"
-
+      existingConfigmap: kafka-jmx
       livenessProbe:
         initialDelaySeconds: 90 
         periodSeconds: 20        
@@ -73,7 +63,6 @@ kafka:
         initialDelaySeconds: 60
         periodSeconds: 15
         failureThreshold: 5
-      
       resources:
         requests:
           cpu: 50m
