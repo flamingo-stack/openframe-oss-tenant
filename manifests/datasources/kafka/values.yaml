@@ -54,7 +54,6 @@ kafka:
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0
       kafkaJmxPort: 5555
-      existingConfigmap: kafka-jmx
       livenessProbe:
         initialDelaySeconds: 90 
         periodSeconds: 20        
