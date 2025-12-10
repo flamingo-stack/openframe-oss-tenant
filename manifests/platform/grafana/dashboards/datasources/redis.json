@@ -755,13 +755,13 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(label_replace(rate(redis_net_input_bytes_total{service=~\"redis-.*\"}[5m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
-          "legendFormat": "{{role}} in",
+          "expr": "sum(rate(redis_net_input_bytes_total{service=~\"redis-.*\"}[5m]))",
+          "legendFormat": "in",
           "refId": "A"
         },
         {
-          "expr": "sum(label_replace(rate(redis_net_output_bytes_total{service=~\"redis-.*\"}[5m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
-          "legendFormat": "{{role}} out",
+          "expr": "sum(rate(redis_net_output_bytes_total{service=~\"redis-.*\"}[5m]))",
+          "legendFormat": "out",
           "refId": "B"
         }
       ],
@@ -853,8 +853,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(label_replace(rate(redis_commands_processed_total{service=~\"redis-.*\"}[5m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
-          "legendFormat": "{{role}}",
+          "expr": "sum(rate(redis_commands_processed_total{service=~\"redis-.*\"}[5m]))",
+          "legendFormat": "total",
           "refId": "A"
         }
       ],
@@ -946,13 +946,13 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(label_replace(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
-          "legendFormat": "{{role}} hits",
+          "expr": "sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m]))",
+          "legendFormat": "hits",
           "refId": "A"
         },
         {
-          "expr": "sum(label_replace(rate(redis_keyspace_misses_total{service=~\"redis-.*\"}[5m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
-          "legendFormat": "{{role}} misses",
+          "expr": "sum(rate(redis_keyspace_misses_total{service=~\"redis-.*\"}[5m]))",
+          "legendFormat": "misses",
           "refId": "B"
         }
       ],
