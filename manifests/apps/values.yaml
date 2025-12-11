@@ -134,7 +134,7 @@ apps:
     namespace: datasources
     syncWave: "1"
   nats:
-    enabled: true
+    enabled: false
     project: datasources
     namespace: datasources
     syncWave: "1"
