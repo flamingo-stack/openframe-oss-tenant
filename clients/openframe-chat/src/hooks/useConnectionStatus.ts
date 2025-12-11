@@ -52,8 +52,18 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
       }
       
       try {
-        const apiUrl =  tokenService.getCurrentApiBaseUrl()
-        const token = tokenService.getCurrentToken()
+        let apiUrl = tokenService.getCurrentApiBaseUrl()
+        let token = tokenService.getCurrentToken()
+        
+        if (!apiUrl) {
+          await tokenService.initApiUrl()
+          apiUrl = tokenService.getCurrentApiBaseUrl()
+        }
+        
+        if (!token) {
+          await tokenService.requestToken()
+          token = tokenService.getCurrentToken()
+        }
         
         if (!apiUrl || !token) {
           if (currentStatusRef.current !== 'disconnected') {
