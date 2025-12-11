@@ -52,6 +52,22 @@ nats:
           mountPath: /etc/nats-custom-config
         - name: pid
           mountPath: /var/run/nats
+  podTemplate:
+    merge:
+      spec:
+        volumes:
+          - name: nats-config
+            configMap:
+              name: nats-config
+          - name: nats-custom-config
+            configMap:
+              name: nats-custom-config
+          - name: pid
+            emptyDir: {}
+  statefulSet:
+    merge:
+      spec:
+        revisionHistoryLimit: 2
 
 
   reloader:
@@ -98,23 +114,3 @@ nats:
 
   natsBox:
     enabled: false
-
-
-  statefulSet:
-    merge:
-      spec:
-        revisionHistoryLimit: 2
-
-
-  podTemplate:
-    merge:
-      spec:
-        volumes:
-          - name: nats-config
-            configMap:
-              name: nats-config
-          - name: nats-custom-config
-            configMap:
-              name: nats-custom-config
-          - name: pid
-            emptyDir: {}
