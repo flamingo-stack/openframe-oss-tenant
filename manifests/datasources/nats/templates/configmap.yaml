@@ -4,8 +4,7 @@ metadata:
   name: nats-custom-config
 data:
   nats.conf: |
-    port: 4222
-    http: 8222
+    http_port: 8222
 
     ping_interval: 15s
     ping_max: 3
