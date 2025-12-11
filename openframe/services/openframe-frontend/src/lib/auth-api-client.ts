@@ -203,6 +203,25 @@ class AuthApiClient {
     })
   }
 
+  registerOrganizationSSO<T = any>(payload: {
+    tenantName: string,
+    tenantDomain: string,
+    provider: 'google' | 'microsoft',
+    accessCode: string,
+    redirectTo?: string,
+  }) {
+    return request<T>(`/sas/oauth/register/sso`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  getRegistrationProviders<T = any>() {
+    return request<T>(`/sas/sso/providers/registration`, {
+      method: 'GET',
+    })
+  }
+
   acceptInvitation<T = any>(payload: {
     invitationId: string,
     password: string,
