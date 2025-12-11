@@ -354,7 +354,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * (cassandra_stats{name=\"org:apache:cassandra:metrics:table:keycachehitrate:value\", service=\"cassandra\"} > 0 or cassandra_stats{name=\"org:apache:cassandra:metrics:cache:keycache:requests:count\", service=\"cassandra\"} == 0)",
+          "expr": "100 * cassandra_stats{name=\"org:apache:cassandra:metrics:table:keycachehitrate:value\", service=\"cassandra\"} or vector(100)",
           "legendFormat": "Key Cache",
           "refId": "A"
         }
@@ -726,9 +726,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(cassandra_stats{name=~\"java:lang:name=.*:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
-          "legendFormat": "{{name}}",
+          "expr": "rate(cassandra_stats{name=\"java:lang:name=g1_old_generation:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
+          "legendFormat": "G1 Old",
           "refId": "A"
+        },
+        {
+          "expr": "rate(cassandra_stats{name=\"java:lang:name=g1_young_generation:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
+          "legendFormat": "G1 Young",
+          "refId": "B"
         }
       ],
       "title": "GC Time",
@@ -1264,9 +1269,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=~\"org:apache:cassandra:metrics:.*hint.*\", service=\"cassandra\"}",
-          "legendFormat": "{{name}}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:droppedmessage:hint:dropped:oneminuterate\", service=\"cassandra\"}",
+          "legendFormat": "Dropped Hints/min",
           "refId": "A"
+        },
+        {
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:droppedmessage:hint:dropped:count\", service=\"cassandra\"}",
+          "legendFormat": "Total Dropped",
+          "refId": "B"
         }
       ],
       "title": "Hints",
