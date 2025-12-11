@@ -287,7 +287,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "(100 * sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m])) / (sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m])) + sum(rate(redis_keyspace_misses_total{service=~\"redis-.*\"}[5m])))) or vector(100)",
+          "expr": "100 * sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m])) / clamp_min(sum(rate(redis_keyspace_hits_total{service=~\"redis-.*\"}[5m])) + sum(rate(redis_keyspace_misses_total{service=~\"redis-.*\"}[5m])), 1e-10) or vector(100)",
           "legendFormat": "hit rate",
           "refId": "A"
         }
