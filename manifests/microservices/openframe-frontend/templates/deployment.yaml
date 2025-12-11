@@ -55,10 +55,10 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
-          # resources:
-          #   requests:
-          #     memory: "256Mi"
-          #     cpu: "0.2"
-          #   limits:
-          #     memory: "512Mi"
-          #     cpu: "0.5"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "0.2"
+            limits:
+              memory: "512Mi"
+              cpu: "0.5"
