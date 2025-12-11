@@ -28,7 +28,7 @@ nats:
 
     merge:
       pid_file: /var/run/nats/nats.pid
-      $include: ./custom.conf
+      $include: /etc/nats-custom/nats.conf
 
 
   container:
@@ -51,8 +51,7 @@ nats:
         - name: nats-config
           mountPath: /etc/nats-config
         - name: nats-custom-config
-          mountPath: /etc/nats-config/custom.conf
-          subPath: nats.conf
+          mountPath: /etc/nats-custom
         - name: pid
           mountPath: /var/run/nats
 
@@ -68,8 +67,7 @@ nats:
         - name: nats-config
           mountPath: /etc/nats-config
         - name: nats-custom-config
-          mountPath: /etc/nats-config/custom.conf
-          subPath: nats.conf
+          mountPath: /etc/nats-custom
         - name: pid
           mountPath: /var/run/nats
 
