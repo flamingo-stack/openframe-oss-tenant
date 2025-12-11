@@ -4,7 +4,7 @@ metadata:
   name: nats-custom-config
 data:
   nats.conf: |
-    ping_interval: 15s
+    ping_interval: 10s
     ping_max: 3
 
     accounts: {
