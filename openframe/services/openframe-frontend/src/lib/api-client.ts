@@ -248,9 +248,16 @@ class ApiClient {
         }
       }
 
+      // Extract error message from response body if available
+      let errorMessage: string | undefined
+      if (!response.ok) {
+        const errorData = data as any
+        errorMessage = errorData?.message || errorData?.error || `Request failed with status ${response.status}`
+      }
+
       return {
         data,
-        error: response.ok ? undefined : `Request failed with status ${response.status}`,
+        error: errorMessage,
         status: response.status,
         ok: response.ok,
       }
