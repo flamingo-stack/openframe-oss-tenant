@@ -218,8 +218,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:client:connectednativeclients:value\", service=\"cassandra\"} or vector(0)",
-          "legendFormat": "{{pod}}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:client:connectednativeclients:value\", service=\"cassandra\"}",
+          "legendFormat": "Clients",
           "refId": "A"
         }
       ],
@@ -354,7 +354,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * cassandra_stats{name=\"org:apache:cassandra:metrics:table:keycachehitrate:value\", service=\"cassandra\"} or vector(100)",
+          "expr": "100 * cassandra_stats{name=\"org:apache:cassandra:metrics:table:keycachehitrate:value\", service=\"cassandra\"}",
           "legendFormat": "Key Cache",
           "refId": "A"
         }
@@ -1245,7 +1245,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 24
       },
@@ -1269,113 +1269,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:droppedmessage:hint:dropped:oneminuterate\", service=\"cassandra\"}",
-          "legendFormat": "Dropped Hints/min",
-          "refId": "A"
-        },
-        {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:droppedmessage:hint:dropped:count\", service=\"cassandra\"}",
-          "legendFormat": "Total Dropped",
-          "refId": "B"
-        }
-      ],
-      "title": "Hints",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 10
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 24
-      },
-      "id": 19,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "cassandra_stats{name=~\"org:apache:cassandra:metrics:droppedmessage:.*:dropped:oneminuterate\", service=\"cassandra\"}",
-          "legendFormat": "{{name}}",
+          "expr": "label_replace(cassandra_stats{name=~\"org:apache:cassandra:metrics:droppedmessage:.*:dropped:oneminuterate\", service=\"cassandra\"}, \"msg_type\", \"$1\", \"name\", \".*:droppedmessage:([^:]+):.*\")",
+          "legendFormat": "{{msg_type}}",
           "refId": "A"
         }
       ],
@@ -1446,8 +1341,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 12,
+        "x": 12,
         "y": 24
       },
       "id": 20,
