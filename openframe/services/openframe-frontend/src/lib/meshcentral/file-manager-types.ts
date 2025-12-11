@@ -9,8 +9,8 @@ export type FileConnectionState = 'disconnected' | 'connecting' | 'connected_to_
 export interface FileEntry {
   n: string           // Name
   t: number          // Type: 1=Link, 2=Directory, 3=File
-  s: number          // Size in bytes
-  d: number          // Modified date (Unix timestamp)
+  s?: number          // Size in bytes
+  d?: number          // Modified date (Unix timestamp)
   nx?: string        // Normalized key (server supplied)
   dt?: string        // Drive type (FIXED, REMOVABLE, etc.)
   path?: string      // Absolute path when supplied
@@ -94,7 +94,7 @@ export interface FileManagerOptions {
   onError?: (error: Error) => void
   onSearchStart?: () => void
   onSearchResult?: (result: FileEntry, allResults: FileEntry[]) => void
-  onSearchComplete?: (results: FileEntry[]) => void
+  onSearchComplete?: (results: FileEntry[], cancelled?: boolean) => void
 }
 
 export const MeshRights = {

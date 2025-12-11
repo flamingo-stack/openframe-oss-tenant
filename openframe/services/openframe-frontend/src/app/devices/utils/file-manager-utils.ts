@@ -8,22 +8,21 @@ export function convertFileEntryToItem(entry: FileEntry, currentPath: string): F
   const isFolder = entry.t === 1 || entry.t === 2
   let itemPath: string
 
+  const normalizedCurrentPath = currentPath.replace(/\\/g, '/')
+
   if (entry.path) {
-    const separator = entry.path.includes('\\') ? '\\' : '/'
-    const cleanedPath = entry.path.replace(/^[\\\/]+/, '')
+    const cleanedPath = entry.path.replace(/^[\\\/]+/, '').replace(/\\/g, '/')
     
-    if (currentPath === '' || currentPath === '/' || currentPath === '\\') {
-      itemPath = separator + cleanedPath
+    if (normalizedCurrentPath === '' || normalizedCurrentPath === '/') {
+      itemPath = '/' + cleanedPath
     } else {
-      const currentSeparator = currentPath.includes('\\') ? '\\' : '/'
-      itemPath = currentPath + (currentPath.endsWith(currentSeparator) ? '' : currentSeparator) + cleanedPath
+      itemPath = normalizedCurrentPath + (normalizedCurrentPath.endsWith('/') ? '' : '/') + cleanedPath
     }
   } else {
-    const separator = currentPath.includes('\\') ? '\\' : '/'
-    if (currentPath === '' || currentPath === '/' || currentPath === '\\') {
-      itemPath = separator + entry.n
+    if (normalizedCurrentPath === '' || normalizedCurrentPath === '/') {
+      itemPath = '/' + entry.n
     } else {
-      itemPath = currentPath + (currentPath.endsWith(separator) ? '' : separator) + entry.n
+      itemPath = normalizedCurrentPath + (normalizedCurrentPath.endsWith('/') ? '' : '/') + entry.n
     }
   }
   
@@ -31,8 +30,8 @@ export function convertFileEntryToItem(entry: FileEntry, currentPath: string): F
     id: itemPath,
     name: entry.n,
     type: isFolder ? 'folder' : 'file',
-    size: isFolder ? undefined : formatFileSize(entry.s),
-    modified: formatDate(entry.d),
+    size: isFolder || !entry.s ? undefined : formatFileSize(entry.s),
+    modified: entry.d ? formatDate(entry.d) : '',
     path: itemPath
   }
 }

@@ -35,6 +35,7 @@ export function FileManagerContainer({
     connectionState,
     loading,
     isSearching,
+    isSearchActive,
     uploadProgress,
     downloadProgress,
     clipboard,
@@ -78,10 +79,12 @@ export function FileManagerContainer({
 
   const handleNavigate = useCallback((path: string) => {
     navigateToPath(path)
+    setSearchQuery('')
   }, [navigateToPath])
 
   const handleBreadcrumbClick = useCallback((path: string) => {
     navigateToPath(path)
+    setSearchQuery('')
   }, [navigateToPath])
 
   const handleSearch = useCallback((query: string) => {
@@ -104,6 +107,7 @@ export function FileManagerContainer({
   const handleFolderOpen = useCallback((file: FileItem) => {
     if (file.type === 'folder') {
       navigateInto(file.name)
+      setSearchQuery('')
     }
   }, [navigateInto])
 
@@ -279,9 +283,11 @@ export function FileManagerContainer({
               loading || 
               connectionState === 'connecting' || 
               connectionState === 'connected_to_server' || 
-              (isSearching && files.length === 0) || 
-              (connectionState === 'connected_end_to_end' && files.length === 0 && !searchQuery)
+              (isSearching && files.length === 0) ||
+              (searchQuery && files.length === 0 && isSearchActive()) ||
+              (connectionState === 'connected_end_to_end' && currentPath === '' && files.length === 0 && !searchQuery)
             }
+            isSearching={isSearching}
             showCheckboxes={true}
             showSearch={true}
             showActions={true}
