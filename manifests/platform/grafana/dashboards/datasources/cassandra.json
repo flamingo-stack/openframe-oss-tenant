@@ -101,7 +101,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "up{service=\"cassandra\"}",
+          "expr": "up{service=\"cassandra\", job=\"kubernetes-service-endpoints\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -129,7 +129,7 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "ms"
         },
         "overrides": []
       },
@@ -160,7 +160,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{service=\"cassandra\"} and on(pod) up{service=\"cassandra\"} == 1",
+          "expr": "cassandra_stats{name=\"java:lang:runtime:uptime\", service=\"cassandra\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -218,12 +218,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_clientrequest_currentlyblocked{scope=\"Read\", service=\"cassandra\"} + cassandra_clientrequest_currentlyblocked{scope=\"Write\", service=\"cassandra\"}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:client:connectednateclientsbyuser:value\", service=\"cassandra\"} or vector(0)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Active Clients",
+      "title": "Connected Clients",
       "type": "stat"
     },
     {
@@ -286,7 +286,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", service=\"cassandra\"} / jvm_memory_bytes_max{area=\"heap\", service=\"cassandra\"}",
+          "expr": "100 * cassandra_stats{name=\"java:lang:name=g1_old_gen:memorypool:usage:used\", service=\"cassandra\"} / cassandra_stats{name=\"java:lang:name=g1_old_gen:memorypool:usage:max\", service=\"cassandra\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -354,7 +354,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * cassandra_cache_hitrate{scope=\"KeyCache\", service=\"cassandra\"}",
+          "expr": "100 * cassandra_stats{name=\"org:apache:cassandra:metrics:cache:keycache:hitrate:value\", service=\"cassandra\"}",
           "legendFormat": "Key Cache",
           "refId": "A"
         }
@@ -420,7 +420,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_compaction_pendingtasks{service=\"cassandra\"}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:compaction:pendingtasks:value\", service=\"cassandra\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -529,7 +529,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{service=\"cassandra\"}[5m])",
+          "expr": "rate(cassandra_stats{name=\"java:lang:operatingsystem:processcputime\", service=\"cassandra\"}[5m]) / 1000000000",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -625,9 +625,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_memory_bytes_used{area=\"heap\", service=\"cassandra\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "cassandra_stats{name=\"java:lang:name=g1_old_gen:memorypool:usage:used\", service=\"cassandra\"}",
+          "legendFormat": "Old Gen - {{pod}}",
           "refId": "A"
+        },
+        {
+          "expr": "cassandra_stats{name=\"java:lang:name=g1_eden_space:memorypool:usage:used\", service=\"cassandra\"}",
+          "legendFormat": "Eden - {{pod}}",
+          "refId": "B"
         }
       ],
       "title": "Heap Memory Used",
@@ -691,7 +696,7 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -721,17 +726,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Young Generation\", service=\"cassandra\"}[5m])",
-          "legendFormat": "G1 Young",
+          "expr": "cassandra_stats{name=\"java:lang:threading:threadcount\", service=\"cassandra\"}",
+          "legendFormat": "Threads - {{pod}}",
           "refId": "A"
-        },
-        {
-          "expr": "rate(jvm_gc_collection_seconds_sum{gc=\"G1 Old Generation\", service=\"cassandra\"}[5m])",
-          "legendFormat": "G1 Old",
-          "refId": "B"
         }
       ],
-      "title": "GC Time",
+      "title": "Thread Count",
       "type": "timeseries"
     },
     {
@@ -801,15 +801,15 @@
               },
               {
                 "color": "yellow",
-                "value": 100
+                "value": 100000
               },
               {
                 "color": "red",
-                "value": 500
+                "value": 500000
               }
             ]
           },
-          "unit": "ms"
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -839,12 +839,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_clientrequest_latency{scope=\"Read\", quantile=\"0.99\", service=\"cassandra\"} / 1000",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:read:latency:99thpercentile\", service=\"cassandra\"}",
           "legendFormat": "p99",
           "refId": "A"
         },
         {
-          "expr": "cassandra_clientrequest_latency{scope=\"Read\", quantile=\"0.5\", service=\"cassandra\"} / 1000",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:read:latency:50thpercentile\", service=\"cassandra\"}",
           "legendFormat": "p50",
           "refId": "B"
         }
@@ -906,15 +906,15 @@
               },
               {
                 "color": "yellow",
-                "value": 100
+                "value": 100000
               },
               {
                 "color": "red",
-                "value": 500
+                "value": 500000
               }
             ]
           },
-          "unit": "ms"
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -944,12 +944,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_clientrequest_latency{scope=\"Write\", quantile=\"0.99\", service=\"cassandra\"} / 1000",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:write:latency:99thpercentile\", service=\"cassandra\"}",
           "legendFormat": "p99",
           "refId": "A"
         },
         {
-          "expr": "cassandra_clientrequest_latency{scope=\"Write\", quantile=\"0.5\", service=\"cassandra\"} / 1000",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:write:latency:50thpercentile\", service=\"cassandra\"}",
           "legendFormat": "p50",
           "refId": "B"
         }
@@ -1045,12 +1045,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(cassandra_clientrequest_latency_count{scope=\"Read\", service=\"cassandra\"}[5m])",
+          "expr": "rate(cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:read:latency:count\", service=\"cassandra\"}[5m])",
           "legendFormat": "Read",
           "refId": "A"
         },
         {
-          "expr": "rate(cassandra_clientrequest_latency_count{scope=\"Write\", service=\"cassandra\"}[5m])",
+          "expr": "rate(cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:write:latency:count\", service=\"cassandra\"}[5m])",
           "legendFormat": "Write",
           "refId": "B"
         }
@@ -1150,24 +1150,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(cassandra_clientrequest_timeouts{scope=\"Read\", service=\"cassandra\"}[5m])",
+          "expr": "rate(cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:read:timeouts:oneminuterate\", service=\"cassandra\"}[5m])",
           "legendFormat": "Read Timeouts",
           "refId": "A"
         },
         {
-          "expr": "rate(cassandra_clientrequest_timeouts{scope=\"Write\", service=\"cassandra\"}[5m])",
+          "expr": "rate(cassandra_stats{name=\"org:apache:cassandra:metrics:clientrequest:write:timeouts:oneminuterate\", service=\"cassandra\"}[5m])",
           "legendFormat": "Write Timeouts",
           "refId": "B"
-        },
-        {
-          "expr": "rate(cassandra_clientrequest_unavailables{scope=\"Read\", service=\"cassandra\"}[5m])",
-          "legendFormat": "Read Unavailable",
-          "refId": "C"
-        },
-        {
-          "expr": "rate(cassandra_clientrequest_unavailables{scope=\"Write\", service=\"cassandra\"}[5m])",
-          "legendFormat": "Write Unavailable",
-          "refId": "D"
         }
       ],
       "title": "Errors/s",
@@ -1274,13 +1264,13 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_compaction_pendingtasks{service=\"cassandra\"}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:compaction:pendingtasks:value\", service=\"cassandra\"}",
           "legendFormat": "Pending",
           "refId": "A"
         },
         {
-          "expr": "rate(cassandra_compaction_completedtasks{service=\"cassandra\"}[5m])",
-          "legendFormat": "Completed/s",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:compaction:completedtasks:value\", service=\"cassandra\"}",
+          "legendFormat": "Completed",
           "refId": "B"
         }
       ],
@@ -1379,12 +1369,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(cassandra_droppedmessage_dropped{service=\"cassandra\"}[5m])",
-          "legendFormat": "{{scope}}",
+          "expr": "cassandra_stats{name=~\"org:apache:cassandra:metrics:droppedmessage:.*:dropped:count\", service=\"cassandra\"} > 0",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ],
-      "title": "Dropped Messages/s",
+      "title": "Dropped Messages",
       "type": "timeseries"
     },
     {
@@ -1475,9 +1465,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_threadpool_pendingtasks{service=\"cassandra\", scope=~\"ReadStage|MutationStage|RequestResponseStage\"}",
-          "legendFormat": "{{scope}}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:threadpools:request:mutationstage:pendingtasks:value\", service=\"cassandra\"}",
+          "legendFormat": "MutationStage",
           "refId": "A"
+        },
+        {
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:threadpools:request:readstage:pendingtasks:value\", service=\"cassandra\"}",
+          "legendFormat": "ReadStage",
+          "refId": "B"
         }
       ],
       "title": "Thread Pool Pending",
@@ -1583,9 +1578,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_table_livediskspaceused{service=\"cassandra\"}",
-          "legendFormat": "{{keyspace}}.{{table}}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:table:livediskspaceused:value\", service=\"cassandra\"}",
+          "legendFormat": "Total",
           "refId": "A"
+        },
+        {
+          "expr": "cassandra_stats{name=~\"org:apache:cassandra:metrics:table:.*:livediskspaceused:value\", keyspace!=\"\", service=\"cassandra\"}",
+          "legendFormat": "{{keyspace}}.{{table}}",
+          "refId": "B"
         }
       ],
       "title": "SSTable Disk Space",
@@ -1679,7 +1679,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_commitlog_totalcommitlogsize{service=\"cassandra\"}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:commitlog:totalcommitlogsize:value\", service=\"cassandra\"}",
           "legendFormat": "CommitLog",
           "refId": "A"
         }
@@ -1775,12 +1775,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{service=\"cassandra\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:table:memtablelivedatasize:value\", service=\"cassandra\"}",
+          "legendFormat": "Memtable",
           "refId": "A"
         }
       ],
-      "title": "Process Memory",
+      "title": "Memtable Size",
       "type": "timeseries"
     }
   ],
