@@ -57,7 +57,7 @@ nats:
   reloader:
     enabled: true
     image:
-      registry:
+      registry: ghcr.io/flamingo-stack/registry
       repository: natsio/nats-server-config-reloader
       tag: 0.21.1
     merge:
@@ -72,7 +72,7 @@ nats:
   promExporter:
     enabled: true
     image:
-      registry:
+      registry: ghcr.io/flamingo-stack/registry
       repository: natsio/prometheus-nats-exporter
       tag: 0.18.0
     port: 7777
