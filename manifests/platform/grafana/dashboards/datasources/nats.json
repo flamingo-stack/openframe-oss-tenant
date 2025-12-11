@@ -276,12 +276,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_subsz_num_subscriptions{service=\"nats\"}",
+          "expr": "nats_connz_subscriptions{service=\"nats\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Subscriptions",
+      "title": "Client Subscriptions",
       "type": "stat"
     },
     {
