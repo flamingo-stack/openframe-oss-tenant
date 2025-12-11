@@ -726,14 +726,9 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(cassandra_stats{name=\"java:lang:name=g1_young_generation:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
-          "legendFormat": "G1 Young - {{pod}}",
+          "expr": "rate(cassandra_stats{name=~\"java:lang:name=.*:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
+          "legendFormat": "{{name}}",
           "refId": "A"
-        },
-        {
-          "expr": "rate(cassandra_stats{name=\"java:lang:name=g1_old_generation:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
-          "legendFormat": "G1 Old - {{pod}}",
-          "refId": "B"
         }
       ],
       "title": "GC Time",
@@ -1269,14 +1264,9 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:storage:hints:oneminuterate\", service=\"cassandra\"}",
-          "legendFormat": "Hints/s",
+          "expr": "cassandra_stats{name=~\"org:apache:cassandra:metrics:.*hint.*\", service=\"cassandra\"}",
+          "legendFormat": "{{name}}",
           "refId": "A"
-        },
-        {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:hintsservice:hintsinprogress:value\", service=\"cassandra\"}",
-          "legendFormat": "In Progress",
-          "refId": "B"
         }
       ],
       "title": "Hints",
