@@ -1,10 +1,100 @@
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
 
-credentials:
-  admin_user: "admin"            
-  admin_pass: "admin_password"
-  device_user: "machine"
-  service_user: "service"
-  service_pass: "service_pass"
 
+nats:
+  config:
+    cluster:
+      enabled: false
+
+    jetstream:
+      enabled: true
+      fileStore:
+        enabled: true
+        dir: /data/jetstream
+        pvc:
+          size: 10Gi
+
+    websocket:
+      enabled: true
+
+    merge:
+      $include: ./nats.conf
+
+
+  container:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: nats
+      tag: 2.10-alpine
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    merge:
+      envFrom:
+        - secretRef:
+            name: nats-credentials
+      volumeMounts:
+        - name: nats-config
+          mountPath: /etc/nats-config/nats.conf
+          subPath: nats.conf
+
+
+  reloader:
+    enabled: true
+    image:
+      registry:
+      repository: natsio/nats-server-config-reloader
+      tag: 0.21.1
+    merge:
+      volumeMounts:
+        - name: nats-accounts
+          mountPath: /etc/nats-config/nats.conf
+          subPath: nats.conf
+
+
+  promExporter:
+    enabled: true
+    image:
+      registry:
+      repository: natsio/prometheus-nats-exporter
+      tag: 0.18.0
+    port: 7777
+
+
+  service:
+    enabled: true
+    ports:
+      nats:
+        enabled: true
+      websocket:
+        enabled: true
+      monitor:
+        enabled: true
+    merge:
+      metadata:
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "7777"
+          prometheus.io/path: "/metrics"
+
+
+  natsBox:
+    enabled: false
+
+
+  podTemplate:
+    merge:
+      spec:
+        volumes:
+          - name: nats-config
+            configMap:
+              name: nats-config
