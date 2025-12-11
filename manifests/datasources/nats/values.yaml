@@ -27,7 +27,6 @@ nats:
       port: 8222
 
     merge:
-      pid_file: /var/run/nats/nats.pid
       $include: ./nats.conf
 
 
@@ -48,7 +47,7 @@ nats:
         - secretRef:
             name: nats-credentials
       volumeMounts:
-        - name: nats-config
+        - name: nats-custom-config
           mountPath: /etc/nats-config/nats.conf
           subPath: nats.conf
         - name: pid
@@ -63,7 +62,7 @@ nats:
       tag: 0.21.1
     merge:
       volumeMounts:
-        - name: nats-config
+        - name: nats-custom-config
           mountPath: /etc/nats-config/nats.conf
           subPath: nats.conf
         - name: pid
@@ -110,8 +109,8 @@ nats:
     merge:
       spec:
         volumes:
-          - name: nats-config
+          - name: nats-custom-config
             configMap:
-              name: nats-config
+              name: nats-custom-config
           - name: pid
             emptyDir: {}

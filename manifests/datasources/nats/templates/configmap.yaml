@@ -1,9 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: nats-config
+  name: nats-custom-config
 data:
   nats.conf: |
+    pid_file: /var/run/nats/nats.pid
     ping_interval: 10s
     ping_max: 3
 
