@@ -261,6 +261,7 @@ class AuthApiClient {
     invitationId: string,
     provider: 'google' | 'microsoft',
     switchTenant?: boolean,
+    redirectTo?: string
   }) {
     const params = new URLSearchParams({
       invitationId: payload.invitationId,
@@ -269,6 +270,10 @@ class AuthApiClient {
     
     if (payload.switchTenant !== undefined) {
       params.append('switchTenant', payload.switchTenant.toString())
+    }
+
+    if (payload.redirectTo) {
+      params.append('redirectTo', payload.redirectTo)
     }
     
     const url = buildAuthUrl(`/sas/invitations/accept/sso?${params.toString()}`)

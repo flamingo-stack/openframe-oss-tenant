@@ -130,7 +130,7 @@ export default function InvitePage() {
       await authApiClient.acceptInvitationSSO({
         invitationId,
         provider: provider as 'google' | 'microsoft',
-        switchTenant: false
+        switchTenant: true
       })
     } catch (error) {
       console.error('SSO signup error:', error)
