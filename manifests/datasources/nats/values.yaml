@@ -28,7 +28,7 @@ nats:
 
     merge:
       pid_file: /var/run/nats/nats.pid
-      $include: /etc/nats-custom/nats.conf
+      $include: ../nats-custom/nats.conf
 
 
   container:
