@@ -21,14 +21,12 @@ nats:
 
     websocket:
       enabled: true
-
     monitor:
       enabled: true
-      port: 8222
 
     merge:
       pid_file: /var/run/nats/nats.pid
-      $include: ../nats-custom/nats.conf
+      $include: ../nats-custom-config/nats.conf
 
 
   container:
@@ -51,7 +49,7 @@ nats:
         - name: nats-config
           mountPath: /etc/nats-config
         - name: nats-custom-config
-          mountPath: /etc/nats-custom
+          mountPath: /etc/nats-custom-config
         - name: pid
           mountPath: /var/run/nats
 
@@ -67,7 +65,7 @@ nats:
         - name: nats-config
           mountPath: /etc/nats-config
         - name: nats-custom-config
-          mountPath: /etc/nats-custom
+          mountPath: /etc/nats-custom-config
         - name: pid
           mountPath: /var/run/nats
 
