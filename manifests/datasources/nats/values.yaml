@@ -28,7 +28,7 @@ nats:
 
     merge:
       pid_file: /var/run/nats/nats.pid
-      $include: ./custom.conf
+      $include: /etc/nats-custom/custom.conf
 
 
   container:
@@ -49,7 +49,7 @@ nats:
             name: nats-credentials
       volumeMounts:
         - name: nats-custom-config
-          mountPath: /etc/nats-config/custom.conf
+          mountPath: /etc/nats-custom/custom.conf
           subPath: nats.conf
         - name: pid
           mountPath: /var/run/nats
@@ -64,7 +64,7 @@ nats:
     merge:
       volumeMounts:
         - name: nats-custom-config
-          mountPath: /etc/nats-config/custom.conf
+          mountPath: /etc/nats-custom/custom.conf
           subPath: nats.conf
         - name: pid
           mountPath: /var/run/nats
