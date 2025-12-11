@@ -56,7 +56,7 @@ nats:
       tag: 0.21.1
     merge:
       volumeMounts:
-        - name: nats-accounts
+        - name: nats-config
           mountPath: /etc/nats-config/nats.conf
           subPath: nats.conf
 
