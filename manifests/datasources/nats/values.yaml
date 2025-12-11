@@ -22,7 +22,12 @@ nats:
     websocket:
       enabled: true
 
+    monitor:
+      enabled: true
+      port: 8222
+
     merge:
+      pid_file: /var/run/nats/nats.pid
       $include: ./nats.conf
 
 
@@ -46,6 +51,8 @@ nats:
         - name: nats-config
           mountPath: /etc/nats-config/nats.conf
           subPath: nats.conf
+        - name: pid
+          mountPath: /var/run/nats
 
 
   reloader:
@@ -59,6 +66,8 @@ nats:
         - name: nats-config
           mountPath: /etc/nats-config/nats.conf
           subPath: nats.conf
+        - name: pid
+          mountPath: /var/run/nats
 
 
   promExporter:
@@ -91,6 +100,12 @@ nats:
     enabled: false
 
 
+  statefulSet:
+    merge:
+      spec:
+        revisionHistoryLimit: 2
+
+
   podTemplate:
     merge:
       spec:
@@ -98,3 +113,5 @@ nats:
           - name: nats-config
             configMap:
               name: nats-config
+          - name: pid
+            emptyDir: {}
