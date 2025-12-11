@@ -10,70 +10,70 @@ deployment:
 
 global:
   image:
-    tag: 0.3.2
+    tag: 0.3.3
 
 apps:
   openframe-config:
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-management:
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-external-api: 
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-api: 
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-authorization-server:
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-gateway: 
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-client: 
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-stream: 
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
   openframe-frontend: 
     values:
       image:
-        tag: 0.3.2
+        tag: 0.3.3
 
   # authentik: 
   #   values:
   #     postgres:
   #       image: 
-  #         tag: 0.3.2
+  #         tag: 0.3.3
   fleetmdm: 
     values:
       server:
         image: 
-          tag: 0.3.2
+          tag: 0.3.3
   meshcentral: 
     values:
       server:
         image: 
-          tag: 0.3.2
+          tag: 0.3.3
   tactical-rmm: 
     values:
       tactical:
         frontend:
           image:
-            tag: 0.3.2
+            tag: 0.3.3
         nginx:
           image:
-            tag: 0.3.2
+            tag: 0.3.3
         base:
           image:
-            tag: 0.3.2
+            tag: 0.3.3
