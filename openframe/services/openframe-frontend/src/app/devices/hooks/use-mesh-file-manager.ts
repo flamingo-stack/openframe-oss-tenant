@@ -9,6 +9,16 @@ import { convertFileEntriesToItems, sanitizePath } from '../utils/file-manager-u
 // Global map to track active file manager instances by device ID (React Strict Mode protection)
 const activeFileManagers = new Map<string, boolean>()
 
+// Extract directory path from file IDs
+function getDirectoryFromFileIds(fileIds: string[]): string {
+  if (fileIds.length === 0) return '/'
+  
+  const firstFilePath = fileIds[0]
+  const pathParts = firstFilePath.split('/')
+  pathParts.pop()
+  return pathParts.length > 0 ? pathParts.join('/') : '/'
+}
+
 interface UseMeshFileManagerOptions {
   meshcentralAgentId: string
   isRemote?: boolean
@@ -21,6 +31,8 @@ interface UseMeshFileManagerReturn {
   selectedFiles: string[]
   connectionState: FileConnectionState
   loading: boolean
+  isSearching: boolean
+  isSearchActive: () => boolean
   uploadProgress: FileTransferProgress | null
   downloadProgress: FileTransferProgress | null
   clipboard: ClipboardItem | null
@@ -71,6 +83,7 @@ export function useMeshFileManager({
   const [uploadProgress, setUploadProgress] = useState<FileTransferProgress | null>(null)
   const [downloadProgress, setDownloadProgress] = useState<FileTransferProgress | null>(null)
   const [clipboard, setClipboard] = useState<ClipboardItem | null>(null)
+  const [isSearching, setIsSearching] = useState<boolean>(false)
 
   const fileManagerRef = useRef<MeshCentralFileManager | null>(null)
   const controlClientRef = useRef<MeshControlClient | null>(null)
@@ -157,6 +170,32 @@ export function useMeshFileManager({
               const items = convertFileEntriesToItems(entries, fileManager.getCurrentPath())
               setFiles(items)
               setCurrentPath(fileManager.getCurrentPath())
+
+              if (!fileManager.isSearchActive()) {
+                setIsSearching(false)
+              }
+            }
+          },
+          onSearchStart: () => {
+            if (mounted) {
+              setFiles([])
+              setIsSearching(true)
+            }
+          },
+          onSearchResult: (result: FileEntry, allResults: FileEntry[]) => {
+            if (mounted) {
+              const items = convertFileEntriesToItems(allResults, fileManager.getCurrentPath())
+              setFiles(items)
+            }
+          },
+          onSearchComplete: (results: FileEntry[], cancelled?: boolean) => {
+            if (mounted) {
+              const items = convertFileEntriesToItems(results, fileManager.getCurrentPath())
+              setFiles(items)
+
+              if (!cancelled) {
+                setIsSearching(false)
+              }
             }
           },
           onTransferProgress: (progress: FileTransferProgress) => {
@@ -469,20 +508,19 @@ export function useMeshFileManager({
     if (!fileManager || !fileManager.isConnected()) return
 
     try {
-      setLoading(true)
-      const results = await fileManager.searchFiles(query)
-      const items = convertFileEntriesToItems(results, currentPath)
-      setFiles(items)
+      await fileManager.searchFiles(query)
     } catch (error) {
-      toast({
-        title: 'Search Failed',
-        description: (error as Error).message,
-        variant: 'destructive'
-      })
-    } finally {
-      setLoading(false)
+      const errorMessage = (error as Error).message
+      if (!errorMessage.includes('Cancelled for new search')) {
+        toast({
+          title: 'Search Failed',
+          description: errorMessage,
+          variant: 'destructive'
+        })
+        setIsSearching(false)
+      }
     }
-  }, [currentPath, toast])
+  }, [toast])
 
   const selectFile = useCallback((fileId: string, selected: boolean) => {
     setSelectedFiles(prev => {
@@ -513,12 +551,14 @@ export function useMeshFileManager({
       return
     }
 
+    const sourcePath = getDirectoryFromFileIds(targetFiles)
+    
     setClipboard({
       fileIds: targetFiles,
-      sourcePath: currentPath,
+      sourcePath,
       operation: 'copy'
     })
-  }, [selectedFiles, currentPath, toast])
+  }, [selectedFiles, toast])
 
   const cutFiles = useCallback((fileIds?: string[]) => {
     const targetFiles = fileIds || selectedFiles
@@ -531,12 +571,14 @@ export function useMeshFileManager({
       return
     }
 
+    const sourcePath = getDirectoryFromFileIds(targetFiles)
+    
     setClipboard({
       fileIds: targetFiles,
-      sourcePath: currentPath,
+      sourcePath,
       operation: 'cut'
     })
-  }, [selectedFiles, currentPath, toast])
+  }, [selectedFiles, toast])
 
   const pasteFiles = useCallback(async () => {
     if (!clipboard) {
@@ -693,12 +735,18 @@ export function useMeshFileManager({
     }
   }, [selectedFiles, downloadFile, deleteItems, createFolder, renameItem, copyToClipboard, cutFiles, pasteFiles])
 
+  const isSearchActive = useCallback(() => {
+    return fileManagerRef.current?.isSearchActive() ?? false
+  }, [])
+
   return {
     files,
     currentPath,
     selectedFiles,
     connectionState,
     loading,
+    isSearching,
+    isSearchActive,
     uploadProgress,
     downloadProgress,
     clipboard,

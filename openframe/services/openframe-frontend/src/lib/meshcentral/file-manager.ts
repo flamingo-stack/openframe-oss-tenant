@@ -33,6 +33,11 @@ export class MeshCentralFileManager {
   private currentFiles: FileEntry[] = []
   private pendingRequests = new Map<string, { resolve: Function; reject: Function; timeout: any }>()
   private loadingPath: string | null = null
+  private pendingSearchRequestId: string | null = null
+  private searchDebounceTimer: any = null
+  private searchResults: Map<string, FileEntry[]> = new Map()
+  private cancelledSearchRequestIds: Set<string> = new Set()
+  private isPreparingNewSearch: boolean = false
   
   private options: FileManagerOptions
   private isRemote: boolean
@@ -238,6 +243,10 @@ export class MeshCentralFileManager {
           this.handleDirectoryListing(message as DirectoryListing)
           break
 
+        case 'findfile':
+          this.handleFindFileMessage(message)
+          break
+
         case 'download':
           this.handleDownloadMessage(message)
           break
@@ -328,6 +337,60 @@ export class MeshCentralFileManager {
     }
   }
 
+  private handleFindFileMessage(message: any): void {
+    const { reqid, r } = message
+    
+    if (!reqid) return
+    
+    if (!this.searchResults.has(reqid)) {
+      this.searchResults.set(reqid, [])
+    }
+    
+    const results = this.searchResults.get(reqid) || []
+    
+    const isStaleSearch = this.isPreparingNewSearch || 
+                          this.cancelledSearchRequestIds.has(reqid) ||
+                          (this.pendingSearchRequestId !== null && this.pendingSearchRequestId !== reqid)
+    
+    if (r === null) {
+      const request = this.pendingRequests.get(reqid)
+      if (request) {
+        clearTimeout(request.timeout)
+        this.pendingRequests.delete(reqid)
+        request.resolve(results)
+      }
+      this.searchResults.delete(reqid)
+      this.cancelledSearchRequestIds.delete(reqid)
+      
+      if (this.pendingSearchRequestId === reqid) {
+        this.pendingSearchRequestId = null
+      }
+      
+      if (isStaleSearch && (this.isPreparingNewSearch || this.pendingSearchRequestId !== null || this.searchDebounceTimer !== null)) {
+        return
+      }
+      
+      this.options.onSearchComplete?.(results)
+    } else if (r) {
+      const fileName = r.split(/[/\\]/).pop() || r
+      const fileEntry: FileEntry = {
+        n: fileName,
+        t: 3,
+        path: r
+      }
+      results.push(fileEntry)
+      this.searchResults.set(reqid, results)
+      
+      if (isStaleSearch) {
+        return
+      }
+      
+      if (this.options.onSearchResult) {
+        this.options.onSearchResult(fileEntry, results)
+      }
+    }
+  }
+
   private handleDownloadMessage(message: any): void {
     this.downloader.handleControlMessage(message)
   }
@@ -404,17 +467,20 @@ export class MeshCentralFileManager {
     timeoutMs = 8000
   ): Promise<T> {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.warn('[FileManager] Operation timed out for reqid:', request.reqid, '- operation may have succeeded on server')
-        this.pendingRequests.delete(request.reqid)
-        reject(new Error('Operation timed out'))
-      }, timeoutMs)
+      let timeout: any = null
+      
+      if (timeoutMs > 0) {
+        timeout = setTimeout(() => {
+          this.pendingRequests.delete(request.reqid)
+          reject(new Error('Operation timed out'))
+        }, timeoutMs)
+      }
       
       this.pendingRequests.set(request.reqid, { resolve, reject, timeout })
       
       const sent = this.sendJsonMessage(request)
       if (!sent) {
-        clearTimeout(timeout)
+        if (timeout) clearTimeout(timeout)
         this.pendingRequests.delete(request.reqid)
         reject(new Error('Failed to send request'))
       }
@@ -535,10 +601,75 @@ export class MeshCentralFileManager {
     await this.sendOperation(request)
   }
 
-  async searchFiles(filter: string): Promise<FileEntry[]> {
-    const request = this.fileOps.createSearchRequest(this.currentPath, filter)
-    const response = await this.sendOperation<any>(request)
-    return response.files || []
+  async searchFiles(filter: string, debounceDelay = 500): Promise<FileEntry[]> {
+    return new Promise((resolve, reject) => {
+      this.isPreparingNewSearch = true
+      this.options.onSearchStart?.()
+
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+        this.searchDebounceTimer = null
+      }
+
+      this.searchDebounceTimer = setTimeout(async () => {
+        try {
+          if (this.pendingSearchRequestId) {
+            const cancelRequestId = this.pendingSearchRequestId
+            this.cancelledSearchRequestIds.add(cancelRequestId)
+            
+            const cancelRequest = this.fileOps.createCancelSearchRequest(cancelRequestId)
+            this.sendJsonMessage(cancelRequest)
+            
+            const cancellationPromise = new Promise<void>((resolveCancellation) => {
+              const timeout = setTimeout(() => {
+                resolveCancellation()
+              }, 2000)
+              
+              const checkInterval = setInterval(() => {
+                if (!this.pendingRequests.has(cancelRequestId) && 
+                    !this.searchResults.has(cancelRequestId)) {
+                  clearTimeout(timeout)
+                  clearInterval(checkInterval)
+                  resolveCancellation()
+                }
+              }, 100)
+              
+              setTimeout(() => {
+                clearInterval(checkInterval)
+              }, 2000)
+            })
+            
+            const pendingRequest = this.pendingRequests.get(cancelRequestId)
+            if (pendingRequest) {
+              clearTimeout(pendingRequest.timeout)
+              this.pendingRequests.delete(cancelRequestId)
+              pendingRequest.reject(new Error('Cancelled for new search'))
+            }
+            
+            this.pendingSearchRequestId = null
+            
+            await cancellationPromise
+          }
+
+          const request = this.fileOps.createSearchRequest(this.currentPath, filter)
+          this.pendingSearchRequestId = request.reqid
+          this.isPreparingNewSearch = false
+          
+          this.searchResults.set(request.reqid, [])
+
+          const results = await this.sendOperation<FileEntry[]>(request, 0)
+          
+          this.pendingSearchRequestId = null
+          resolve(results)
+        } catch (error) {
+          this.pendingSearchRequestId = null
+          this.isPreparingNewSearch = false
+          reject(error)
+        } finally {
+          this.searchDebounceTimer = null
+        }
+      }, debounceDelay)
+    })
   }
 
   async navigateToPath(path: string): Promise<FileEntry[]> {
@@ -588,12 +719,30 @@ export class MeshCentralFileManager {
     return this.state === 'connected_end_to_end'
   }
 
+  isSearchActive(): boolean {
+    return this.isPreparingNewSearch || 
+           this.pendingSearchRequestId !== null || 
+           this.searchDebounceTimer !== null
+  }
+
   disconnect(): void {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer)
+      this.searchDebounceTimer = null
+    }
+    
     for (const [, request] of this.pendingRequests) {
-      clearTimeout(request.timeout)
+      if (request.timeout) {
+        clearTimeout(request.timeout)
+      }
       request.reject(new Error('Disconnected'))
     }
     this.pendingRequests.clear()
+    
+    this.pendingSearchRequestId = null
+    this.searchResults.clear()
+    this.cancelledSearchRequestIds.clear()
+    this.isPreparingNewSearch = false
     
     if (this.tunnel) {
       try {

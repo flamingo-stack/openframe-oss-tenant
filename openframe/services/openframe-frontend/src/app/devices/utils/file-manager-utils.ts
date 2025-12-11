@@ -6,13 +6,33 @@ import type { FileItem } from '@flamingo/ui-kit/components/ui/file-manager/types
  */
 export function convertFileEntryToItem(entry: FileEntry, currentPath: string): FileItem {
   const isFolder = entry.t === 1 || entry.t === 2
+  let itemPath: string
+
+  const normalizedCurrentPath = currentPath.replace(/\\/g, '/')
+
+  if (entry.path) {
+    const cleanedPath = entry.path.replace(/^[\\\/]+/, '').replace(/\\/g, '/')
+    
+    if (normalizedCurrentPath === '' || normalizedCurrentPath === '/') {
+      itemPath = '/' + cleanedPath
+    } else {
+      itemPath = normalizedCurrentPath + (normalizedCurrentPath.endsWith('/') ? '' : '/') + cleanedPath
+    }
+  } else {
+    if (normalizedCurrentPath === '' || normalizedCurrentPath === '/') {
+      itemPath = '/' + entry.n
+    } else {
+      itemPath = normalizedCurrentPath + (normalizedCurrentPath.endsWith('/') ? '' : '/') + entry.n
+    }
+  }
+  
   return {
-    id: `${currentPath}/${entry.n}`,
+    id: itemPath,
     name: entry.n,
     type: isFolder ? 'folder' : 'file',
-    size: isFolder ? undefined : formatFileSize(entry.s),
-    modified: formatDate(entry.d),
-    path: `${currentPath}/${entry.n}`
+    size: isFolder || !entry.s ? undefined : formatFileSize(entry.s),
+    modified: entry.d ? formatDate(entry.d) : '',
+    path: itemPath
   }
 }
 

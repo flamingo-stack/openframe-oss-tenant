@@ -117,11 +117,20 @@ export class FileOperations {
   }
 
   createSearchRequest(path: string, filter: string): FileOperationRequest {
+    const wildcardFilter = filter ? `*${filter}*` : '*'
     return {
       action: 'findfile',
       reqid: this.generateRequestId(),
       path: path,
-      filter: filter
+      filter: wildcardFilter
+    }
+  }
+
+  createCancelSearchRequest(reqid: string): FileOperationRequest {
+    return {
+      action: 'cancelfindfile',
+      reqid: this.generateRequestId(),
+      cancelreqid: reqid
     }
   }
 
