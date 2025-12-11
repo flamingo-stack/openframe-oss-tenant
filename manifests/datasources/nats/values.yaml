@@ -48,6 +48,8 @@ nats:
         - secretRef:
             name: nats-credentials
       volumeMounts:
+        - name: nats-config
+          mountPath: /etc/nats-config
         - name: nats-custom-config
           mountPath: /etc/nats-custom/custom.conf
           subPath: nats.conf
@@ -63,6 +65,8 @@ nats:
       tag: 0.21.1
     merge:
       volumeMounts:
+        - name: nats-config
+          mountPath: /etc/nats-config
         - name: nats-custom-config
           mountPath: /etc/nats-custom/custom.conf
           subPath: nats.conf
@@ -110,6 +114,9 @@ nats:
     merge:
       spec:
         volumes:
+          - name: nats-config
+            configMap:
+              name: nats-config
           - name: nats-custom-config
             configMap:
               name: nats-custom-config
