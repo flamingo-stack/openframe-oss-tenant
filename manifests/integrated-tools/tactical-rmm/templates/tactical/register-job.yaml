@@ -1,4 +1,4 @@
-{{- if .Values.global.registerJob.enabled }}
+{{- if .Values.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -15,7 +15,7 @@ spec:
 
       containers:
       - name: register
-        image: ghcr.io/sap/kubectl-container:v1.31.6
+        image: {{ .Values.registerJob.imageSap.registry }}/{{ .Values.registerJob.imageSap.repository }}:{{ .Values.registerJob.imageSap.tag }}
         envFrom:
         - configMapRef:
             name: tactical-postgres

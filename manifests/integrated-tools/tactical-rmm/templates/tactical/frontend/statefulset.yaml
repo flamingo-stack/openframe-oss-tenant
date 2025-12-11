@@ -20,7 +20,7 @@ spec:
 
       containers:
       - name: tactical-frontend
-        image: "{{ .Values.tactical.frontend.image.repo }}:{{ .Values.tactical.frontend.image.tag }}"
+        image: "{{ .Values.tactical.frontend.image.registry }}/{{ .Values.tactical.frontend.image.repository }}:{{ .Values.tactical.frontend.image.tag }}"
         ports:
         - containerPort: 8080
         envFrom:
