@@ -11,7 +11,7 @@ import { isAuthOnlyMode } from '../../../lib/app-mode'
 export default function SignupPage() {
   const router = useRouter()
   const { isAuthenticated } = useAuthStore()
-  const { isLoading, registerOrganization, loginWithSSO } = useAuth()
+  const { isLoading, registerOrganization, registerOrganizationSSO, loginWithSSO } = useAuth()
 
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
@@ -21,18 +21,28 @@ export default function SignupPage() {
 
   const storedOrgName = typeof window !== 'undefined' ? sessionStorage.getItem('auth:org_name') || '' : ''
   const storedDomain = typeof window !== 'undefined' ? sessionStorage.getItem('auth:domain') || 'localhost' : 'localhost'
+  const storedAccessCode = typeof window !== 'undefined' ? sessionStorage.getItem('auth:access_code') || '' : ''
 
   const handleSignupSubmit = (data: any) => {
     registerOrganization(data)
   }
 
   const handleSSOSignup = async (provider: string) => {
-    if (storedOrgName) {
-      sessionStorage.setItem('auth:signup_org', storedOrgName)
-      sessionStorage.setItem('auth:signup_domain', storedDomain)
+    if (storedOrgName && storedDomain && storedAccessCode) {
+      await registerOrganizationSSO({
+        tenantName: storedOrgName,
+        tenantDomain: storedDomain,
+        provider: provider as 'google' | 'microsoft',
+        redirectTo: '/auth/login',
+        accessCode: storedAccessCode
+      })
+    } else {
+      if (storedOrgName) {
+        sessionStorage.setItem('auth:signup_org', storedOrgName)
+        sessionStorage.setItem('auth:signup_domain', storedDomain)
+      }
+      await loginWithSSO(provider)
     }
-    
-    await loginWithSSO(provider)
   }
 
   const handleBack = () => {
@@ -44,6 +54,7 @@ export default function SignupPage() {
       <AuthSignupSection
         orgName={storedOrgName}
         domain={storedDomain}
+        accessCode={storedAccessCode}
         onSubmit={handleSignupSubmit}
         onSSO={handleSSOSignup}
         onBack={handleBack}

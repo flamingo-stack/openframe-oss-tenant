@@ -8,7 +8,7 @@ import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@lib/auth-api-client'
 import { ForgotPasswordModal } from './forgot-password-modal'
 
 interface AuthChoiceSectionProps {
-  onCreateOrganization: (orgName: string, domain: string) => void
+  onCreateOrganization: (orgName: string, domain: string, accessCode: string) => void
   onSignIn: (email: string) => Promise<void>
   isLoading?: boolean
 }
@@ -23,6 +23,8 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const [orgName, setOrgName] = useState('')
   const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost')
   const [email, setEmail] = useState('')
+  const [accessCode, setAccessCode] = useState('')
+  const [accessCodeError, setAccessCodeError] = useState<string | null>(null)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [isCheckingDomain, setIsCheckingDomain] = useState(false)
   const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
@@ -36,6 +38,14 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
 
   const handleCreateOrganization = async () => {
     if (!orgName.trim() || !isOrgNameValid) return
+    
+    if (isSaasShared) {
+      if (!accessCode.trim()) {
+        setAccessCodeError('Access code is required')
+        return
+      }
+      setAccessCodeError(null)
+    }
 
     if (isSaasShared && domain.trim()) {
       setIsCheckingDomain(true)
@@ -50,7 +60,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
           
           if (available) {
             const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
-            onCreateOrganization(orgName.trim(), fullDomain)
+            onCreateOrganization(orgName.trim(), fullDomain, isSaasShared ? accessCode.trim() : '')
           } else {
             toast({
               title: "Domain Not Available",
@@ -77,7 +87,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         setIsCheckingDomain(false)
       }
     } else {
-      onCreateOrganization(orgName.trim(), domain || 'localhost')
+      onCreateOrganization(orgName.trim(), domain || 'localhost', '')
     }
   }
 
@@ -195,13 +205,35 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             </div>
           </div>
 
+          {/* Access Code field for SaaS shared mode */}
+          {isSaasShared && (
+            <div className="flex flex-col gap-1">
+              <Label>Access Code</Label>
+              <Input
+                value={accessCode}
+                onChange={(e) => { setAccessCode(e.target.value); if (accessCodeError) setAccessCodeError(null) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isLoading) {
+                    handleCreateOrganization()
+                  }
+                }}
+                placeholder="Enter Code Here"
+                disabled={isLoading}
+                className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-error' : ''}`}
+              />
+              {accessCodeError && (
+                <p className="text-xs text-error mt-1">{accessCodeError}</p>
+              )}
+            </div>
+          )}
+
           {/* Button Row */}
           <div className="flex gap-6 items-center">
             <div className="flex-1"></div>
             <div className="flex-1">
               <Button
                 onClick={handleCreateOrganization}
-                disabled={!orgName.trim() || (isSaasShared && !domain.trim()) || isLoading || isCheckingDomain}
+                disabled={!orgName.trim() || (isSaasShared && (!domain.trim() || !accessCode.trim())) || isLoading || isCheckingDomain}
                 loading={isLoading || isCheckingDomain}
                 variant="primary"
                 className="!w-full sm:!w-full"

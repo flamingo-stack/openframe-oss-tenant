@@ -12,14 +12,16 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-ods-bg flex flex-col lg:flex-row">
+    <div className="h-screen bg-ods-bg flex flex-col lg:flex-row overflow-hidden">
       {/* Left Side - Auth Content (50% width) */}
-      <div className="w-full lg:w-1/2 h-full min-h-screen flex flex-col justify-center gap-10 p-6 lg:p-20">
-        {children}
+      <div className="w-full lg:w-1/2 h-full overflow-y-auto">
+        <div className="min-h-full flex flex-col justify-center gap-10 p-6 lg:p-20">
+          {children}
+        </div>
       </div>
       
       {/* Right Side - Benefits Section (50% width) */}
-      <div className="w-full lg:w-1/2 h-full min-h-screen">
+      <div className="hidden lg:block lg:w-1/2 h-full">
         <AuthBenefitsSection />
       </div>
     </div>
