@@ -21,7 +21,13 @@ cassandra:
       prometheus.io/scrape: "true"
       prometheus.io/port: "8080"
       prometheus.io/path: "/metrics"    
-
+  
+  dbUser:
+    user: cassandra
+    existingSecret:
+      name: cassandra
+      keyMapping:
+        cassandra-password: cassandra-password
   initDBConfigMap: "cassandra-initdb"
   priorityClassName: "cassandra"
 

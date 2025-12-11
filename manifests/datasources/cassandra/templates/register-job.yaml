@@ -17,6 +17,14 @@ spec:
       containers:
       - name: register
         image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.registerJob.image.tag }}
+        env:
+          - name: CASSANDRA_USER
+            value: {{ .Values.cassandra.dbUser.user | quote }}
+          - name: CASSANDRA_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.cassandra.dbUser.existingSecret.name }}
+                key: {{ index .Values.cassandra.dbUser.existingSecret.keyMapping "cassandra-password" }}
         command:
           - /bin/sh
           - -uc
@@ -49,7 +57,10 @@ spec:
                   "category": "NoSQL Database",
                   "platformCategory": "OpenFrame Datasource",
                   "enabled": true,
-                  "credentials": {},
+                  "credentials": {
+                    "username": "'"${CASSANDRA_USER}"'",
+                    "password": "'"${CASSANDRA_PASSWORD}"'"
+                  },
                   "layer": "Datasource",
                   "layerOrder": 3,
                   "layerColor": "#616161",
