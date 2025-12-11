@@ -4,9 +4,13 @@ metadata:
   name: nats-custom-config
 data:
   nats.conf: |
-    pid_file: /var/run/nats/nats.pid
+    port: 4222
+    http: 8222
+
     ping_interval: 10s
     ping_max: 3
+
+    pid_file: /var/run/nats/nats.pid
 
     accounts: {
       SYS: {
