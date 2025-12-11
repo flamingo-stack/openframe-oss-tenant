@@ -20,6 +20,7 @@ interface AuthSignupSectionProps {
   orgName: string
   domain: string
   accessCode: string
+  email?: string
   onSubmit: (data: RegisterRequest) => void
   onSSO?: (provider: string) => void
   onBack: () => void
@@ -29,13 +30,13 @@ interface AuthSignupSectionProps {
 /**
  * Signup section for completing user registration
  */
-export function AuthSignupSection({ orgName, domain, accessCode, onSubmit, onSSO, onBack, isLoading }: AuthSignupSectionProps) {
+export function AuthSignupSection({ orgName, domain, accessCode, email: prefillEmail, onSubmit, onSSO, onBack, isLoading }: AuthSignupSectionProps) {
   const isSaasShared = isSaasSharedMode()
   const { providers: ssoProviders, loading: loadingProviders } = useRegistrationProviders()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(prefillEmail || '')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [, setSignupMethod] = useState<'form' | 'sso'>('form')
@@ -177,7 +178,7 @@ export function AuthSignupSection({ orgName, domain, accessCode, onSubmit, onSSO
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="username@mail.com"
-                disabled={isLoading}
+                disabled={isLoading || !!prefillEmail}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
               />
               {email.trim() && !isEmailValid && (
