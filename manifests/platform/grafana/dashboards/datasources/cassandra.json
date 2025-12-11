@@ -313,7 +313,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": 0
+                "value": null
               },
               {
                 "color": "yellow",
@@ -626,12 +626,12 @@
       "targets": [
         {
           "expr": "cassandra_stats{name=\"java:lang:memory:heapmemoryusage:used\", service=\"cassandra\"}",
-          "legendFormat": "Heap Used - {{pod}}",
+          "legendFormat": "Used",
           "refId": "A"
         },
         {
           "expr": "cassandra_stats{name=\"java:lang:memory:heapmemoryusage:max\", service=\"cassandra\"}",
-          "legendFormat": "Heap Max - {{pod}}",
+          "legendFormat": "Max",
           "refId": "B"
         }
       ],
@@ -1374,7 +1374,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=~\"org:apache:cassandra:metrics:droppedmessage:.*:dropped:count\", service=\"cassandra\"} > 0",
+          "expr": "cassandra_stats{name=~\"org:apache:cassandra:metrics:droppedmessage:.*:dropped:oneminuterate\", service=\"cassandra\"}",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
