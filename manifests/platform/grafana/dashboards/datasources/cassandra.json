@@ -218,7 +218,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:client:connectednateclientsbyuser:value\", service=\"cassandra\"} or vector(0)",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:client:connectednativeclients:value\", service=\"cassandra\"} or vector(0)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -286,7 +286,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * cassandra_stats{name=\"java:lang:name=g1_old_gen:memorypool:usage:used\", service=\"cassandra\"} / cassandra_stats{name=\"java:lang:name=g1_old_gen:memorypool:usage:max\", service=\"cassandra\"}",
+          "expr": "(100 * cassandra_stats{name=\"java:lang:memory:heapmemoryusage:used\", service=\"cassandra\"} / cassandra_stats{name=\"java:lang:memory:heapmemoryusage:max\", service=\"cassandra\"}) or vector(0)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -354,7 +354,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * cassandra_stats{name=\"org:apache:cassandra:metrics:cache:keycache:hitrate:value\", service=\"cassandra\"}",
+          "expr": "100 * (cassandra_stats{name=\"org:apache:cassandra:metrics:table:keycachehitrate:value\", service=\"cassandra\"} > 0 or cassandra_stats{name=\"org:apache:cassandra:metrics:cache:keycache:requests:count\", service=\"cassandra\"} == 0)",
           "legendFormat": "Key Cache",
           "refId": "A"
         }
@@ -625,13 +625,13 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=\"java:lang:name=g1_old_gen:memorypool:usage:used\", service=\"cassandra\"}",
-          "legendFormat": "Old Gen - {{pod}}",
+          "expr": "cassandra_stats{name=\"java:lang:memory:heapmemoryusage:used\", service=\"cassandra\"}",
+          "legendFormat": "Heap Used - {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "cassandra_stats{name=\"java:lang:name=g1_eden_space:memorypool:usage:used\", service=\"cassandra\"}",
-          "legendFormat": "Eden - {{pod}}",
+          "expr": "cassandra_stats{name=\"java:lang:memory:heapmemoryusage:max\", service=\"cassandra\"}",
+          "legendFormat": "Heap Max - {{pod}}",
           "refId": "B"
         }
       ],
@@ -696,7 +696,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -726,12 +726,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=\"java:lang:threading:threadcount\", service=\"cassandra\"}",
-          "legendFormat": "Threads - {{pod}}",
+          "expr": "rate(cassandra_stats{name=\"java:lang:name=g1_young_generation:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
+          "legendFormat": "G1 Young - {{pod}}",
           "refId": "A"
+        },
+        {
+          "expr": "rate(cassandra_stats{name=\"java:lang:name=g1_old_generation:garbagecollector:collectiontime\", service=\"cassandra\"}[5m])",
+          "legendFormat": "G1 Old - {{pod}}",
+          "refId": "B"
         }
       ],
-      "title": "Thread Count",
+      "title": "GC Time",
       "type": "timeseries"
     },
     {
@@ -1264,17 +1269,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:compaction:pendingtasks:value\", service=\"cassandra\"}",
-          "legendFormat": "Pending",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:storage:hints:oneminuterate\", service=\"cassandra\"}",
+          "legendFormat": "Hints/s",
           "refId": "A"
         },
         {
-          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:compaction:completedtasks:value\", service=\"cassandra\"}",
-          "legendFormat": "Completed",
+          "expr": "cassandra_stats{name=\"org:apache:cassandra:metrics:hintsservice:hintsinprogress:value\", service=\"cassandra\"}",
+          "legendFormat": "In Progress",
           "refId": "B"
         }
       ],
-      "title": "Compaction",
+      "title": "Hints",
       "type": "timeseries"
     },
     {
