@@ -21,11 +21,12 @@ export default function AuthPage() {
     }
   }, [isAuthenticated, router])
 
-  const handleCreateOrganization = (orgName: string, domain: string, accessCode: string) => {
+  const handleCreateOrganization = (orgName: string, domain: string, accessCode: string, email: string) => {
     // Store org details and navigate to signup screen
     sessionStorage.setItem('auth:org_name', orgName)
     sessionStorage.setItem('auth:domain', domain)
     sessionStorage.setItem('auth:access_code', accessCode)
+    sessionStorage.setItem('auth:email', email)
     router.push('/auth/signup/')
   }
 

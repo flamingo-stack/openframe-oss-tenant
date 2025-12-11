@@ -292,6 +292,7 @@ export function FileManagerContainer({
             showSearch={true}
             showActions={true}
             canPaste={clipboard !== null}
+            disableSearch={currentPath === '/' || currentPath === ''}
             resultsCount={files.length}
             onNavigate={handleNavigate}
             onBreadcrumbClick={handleBreadcrumbClick}

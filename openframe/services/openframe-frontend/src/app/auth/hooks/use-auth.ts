@@ -38,6 +38,7 @@ interface RegisterRequest {
 interface SSORegisterRequest {
   tenantName: string
   tenantDomain: string
+  email: string
   provider: 'google' | 'microsoft'
   accessCode: string
   redirectTo?: string
@@ -387,39 +388,16 @@ export function useAuth() {
     setIsLoading(true)
     
     try {
-      const response = await authApiClient.registerOrganizationSSO(data)
-
-      if (response.status === 302 || response.ok) {
-        return true
-      }
-
-      const message = (response.data as any)?.message || response.error || 'SSO registration failed'
-      let userMessage = 'SSO registration failed'
-      let title = 'SSO Registration Failed'
-
-      if (response.status === 400) {
-        if (message.includes('domain taken')) {
-          userMessage = 'This domain is already taken. Please choose a different domain.'
-          title = 'Domain Not Available'
-        } else if (message.includes('provider not configured')) {
-          userMessage = `${data.provider} is not configured for SSO registration.`
-          title = 'Provider Not Available'
-        } else {
-          userMessage = message
-        }
-      }
-
-      toast({ title, description: userMessage, variant: 'destructive' })
-      throw new Error(userMessage)
+      await authApiClient.registerOrganizationSSO(data)
+      return true
     } catch (error: any) {
       toast({
         title: "SSO Registration Failed",
         description: error instanceof Error ? error.message : "Unable to register organization with SSO",
         variant: "destructive"
       })
-      return false
-    } finally {
       setIsLoading(false)
+      return false
     }
   }
 
