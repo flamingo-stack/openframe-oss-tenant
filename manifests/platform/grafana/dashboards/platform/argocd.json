@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "id": null,
+  "id": 5,
   "links": [],
   "panels": [
     {
@@ -102,9 +102,39 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}) > 0 or vector(0)",
-          "legendFormat": "loki",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0)",
+          "legendFormat": "server",
           "refId": "A"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0)",
+          "legendFormat": "controller",
+          "refId": "B"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0)",
+          "legendFormat": "repo-server",
+          "refId": "C"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0)",
+          "legendFormat": "redis",
+          "refId": "D"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0)",
+          "legendFormat": "appset-controller",
+          "refId": "E"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0)",
+          "legendFormat": "notifications",
+          "refId": "F"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0)",
+          "legendFormat": "dex",
+          "refId": "G"
         }
       ],
       "title": "Status",
@@ -196,9 +226,39 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}) > 0 or vector(0)",
-          "legendFormat": "loki",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0)",
+          "legendFormat": "server",
           "refId": "A"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0)",
+          "legendFormat": "controller",
+          "refId": "B"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0)",
+          "legendFormat": "repo-server",
+          "refId": "C"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0)",
+          "legendFormat": "redis",
+          "refId": "D"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0)",
+          "legendFormat": "appset-controller",
+          "refId": "E"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0)",
+          "legendFormat": "notifications",
+          "refId": "F"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0)",
+          "legendFormat": "dex",
+          "refId": "G"
         }
       ],
       "title": "History",
@@ -212,7 +272,7 @@
         "x": 0,
         "y": 4
       },
-      "id": 4,
+      "id": 7,
       "panels": [],
       "title": "System",
       "type": "row"
@@ -267,7 +327,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -281,11 +341,11 @@
       },
       "gridPos": {
         "h": 16,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 5
       },
-      "id": 5,
+      "id": 8,
       "options": {
         "legend": {
           "calcs": [
@@ -305,12 +365,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[5m])) by (container)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"argocd\", container!=\"\", container!=\"POD\"}[5m])) by (container)",
           "legendFormat": "{{container}}",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage",
+      "title": "CPU Usage by Container",
       "type": "timeseries"
     },
     {
@@ -363,7 +423,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -377,11 +437,11 @@
       },
       "gridPos": {
         "h": 16,
-        "w": 8,
-        "x": 8,
+        "w": 12,
+        "x": 12,
         "y": 5
       },
-      "id": 6,
+      "id": 9,
       "options": {
         "legend": {
           "calcs": [
@@ -401,113 +461,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"platform\", container=\"loki\"}) by (container)",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"argocd\", container!=\"\", container!=\"POD\"}) by (container)",
           "legendFormat": "{{container}}",
           "refId": "A"
         }
       ],
-      "title": "Memory Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 16,
-        "w": 8,
-        "x": 16,
-        "y": 5
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "kubelet_volume_stats_used_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
-          "legendFormat": "Used",
-          "refId": "A"
-        },
-        {
-          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
-          "legendFormat": "Capacity",
-          "refId": "B"
-        }
-      ],
-      "title": "Storage",
+      "title": "Memory Usage by Container",
       "type": "timeseries"
     }
   ],
@@ -515,8 +474,8 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
-    "loki",
-    "logging",
+    "argocd",
+    "gitops",
     "platform"
   ],
   "templating": {
@@ -528,7 +487,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Loki",
-  "uid": "loki",
-  "version": 1
+  "title": "ArgoCD",
+  "uid": "argocd",
+  "version": 7
 }
