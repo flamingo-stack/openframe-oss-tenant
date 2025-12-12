@@ -64,7 +64,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -76,7 +76,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 3,
         "w": 12,
         "x": 0,
         "y": 1
@@ -156,7 +156,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -165,7 +165,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 3,
         "w": 12,
         "x": 12,
         "y": 1
@@ -191,42 +191,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - container_start_time_seconds{namespace=\"argocd\", container=\"server\"}",
-          "legendFormat": "server",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container!=\"\", container!=\"POD\"})",
+          "legendFormat": "containers",
           "refId": "A"
-        },
-        {
-          "expr": "time() - container_start_time_seconds{namespace=\"argocd\", container=\"application-controller\"}",
-          "legendFormat": "controller",
-          "refId": "B"
-        },
-        {
-          "expr": "time() - container_start_time_seconds{namespace=\"argocd\", container=\"repo-server\"}",
-          "legendFormat": "repo-server",
-          "refId": "C"
-        },
-        {
-          "expr": "time() - container_start_time_seconds{namespace=\"argocd\", container=\"redis\"}",
-          "legendFormat": "redis",
-          "refId": "D"
-        },
-        {
-          "expr": "time() - container_start_time_seconds{namespace=\"argocd\", container=\"applicationset-controller\"}",
-          "legendFormat": "appset-controller",
-          "refId": "E"
-        },
-        {
-          "expr": "time() - container_start_time_seconds{namespace=\"argocd\", container=\"notifications-controller\"}",
-          "legendFormat": "notifications",
-          "refId": "F"
-        },
-        {
-          "expr": "time() - container_start_time_seconds{namespace=\"argocd\", container=\"dex-server\"}",
-          "legendFormat": "dex",
-          "refId": "G"
         }
       ],
-      "title": "Uptime",
+      "title": "Running Containers",
       "type": "stat"
     },
     {
@@ -235,7 +205,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 4
       },
       "id": 7,
       "panels": [],
@@ -308,7 +278,7 @@
         "h": 16,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 5
       },
       "id": 8,
       "options": {
@@ -404,7 +374,7 @@
         "h": 16,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 5
       },
       "id": 9,
       "options": {
@@ -454,5 +424,5 @@
   "timezone": "",
   "title": "ArgoCD",
   "uid": "argocd",
-  "version": 3
+  "version": 7
 }
