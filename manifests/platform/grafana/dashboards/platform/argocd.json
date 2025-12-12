@@ -190,13 +190,43 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container!=\"\", container!=\"POD\"})",
-          "legendFormat": "containers",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0)",
+          "legendFormat": "server",
           "refId": "A"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0)",
+          "legendFormat": "controller",
+          "refId": "B"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0)",
+          "legendFormat": "repo-server",
+          "refId": "C"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0)",
+          "legendFormat": "redis",
+          "refId": "D"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0)",
+          "legendFormat": "appset-controller",
+          "refId": "E"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0)",
+          "legendFormat": "notifications",
+          "refId": "F"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0)",
+          "legendFormat": "dex",
+          "refId": "G"
         }
       ],
-      "title": "Running Containers",
-      "type": "stat"
+      "title": "History",
+      "type": "timeseries"
     },
     {
       "collapsed": false,
