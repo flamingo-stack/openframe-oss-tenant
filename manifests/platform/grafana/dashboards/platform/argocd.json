@@ -156,11 +156,10 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
-          },
-          "unit": "s"
+          }
         },
         "overrides": []
       },
