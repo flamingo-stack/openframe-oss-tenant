@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "id": null,
+  "id": 5,
   "links": [],
   "panels": [
     {
@@ -64,7 +64,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -140,7 +140,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -216,7 +216,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -292,7 +292,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -354,7 +354,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -459,7 +459,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -472,7 +472,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 16,
         "w": 12,
         "x": 0,
         "y": 6
@@ -555,7 +555,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -568,7 +568,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 16,
         "w": 12,
         "x": 12,
         "y": 6
@@ -621,5 +621,5 @@
   "timezone": "",
   "title": "ArgoCD",
   "uid": "argocd",
-  "version": 1
+  "version": 3
 }
