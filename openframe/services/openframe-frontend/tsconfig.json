@@ -32,6 +32,9 @@
       "@lib/*": [
         "./src/lib/*"
       ],
+      "@flamingo/ui-kit": [
+        "./ui-kit/src/index.ts"
+      ],
       "@flamingo/ui-kit/*": [
         "./ui-kit/src/*"
       ]

@@ -38,6 +38,7 @@ export class MeshCentralFileManager {
   private searchResults: Map<string, FileEntry[]> = new Map()
   private cancelledSearchRequestIds: Set<string> = new Set()
   private isPreparingNewSearch: boolean = false
+  private pendingDebouncedSearchReject: ((error: Error) => void) | null = null
   
   private options: FileManagerOptions
   private isRemote: boolean
@@ -353,6 +354,7 @@ export class MeshCentralFileManager {
                           (this.pendingSearchRequestId !== null && this.pendingSearchRequestId !== reqid)
     
     if (r === null) {
+      const wasCancelled = this.cancelledSearchRequestIds.has(reqid)
       const request = this.pendingRequests.get(reqid)
       if (request) {
         clearTimeout(request.timeout)
@@ -364,6 +366,10 @@ export class MeshCentralFileManager {
       
       if (this.pendingSearchRequestId === reqid) {
         this.pendingSearchRequestId = null
+      }
+
+      if (wasCancelled) {
+        return
       }
       
       if (isStaleSearch && (this.isPreparingNewSearch || this.pendingSearchRequestId !== null || this.searchDebounceTimer !== null)) {
@@ -606,13 +612,25 @@ export class MeshCentralFileManager {
       this.isPreparingNewSearch = true
       this.options.onSearchStart?.()
 
+      if (this.pendingDebouncedSearchReject) {
+        try {
+          this.pendingDebouncedSearchReject(new Error('Cancelled for new search'))
+        } catch {
+          /* noop */
+        }
+        this.pendingDebouncedSearchReject = null
+      }
+
       if (this.searchDebounceTimer) {
         clearTimeout(this.searchDebounceTimer)
         this.searchDebounceTimer = null
       }
 
+      this.pendingDebouncedSearchReject = reject
       this.searchDebounceTimer = setTimeout(async () => {
         try {
+          this.pendingDebouncedSearchReject = null
+
           if (this.pendingSearchRequestId) {
             const cancelRequestId = this.pendingSearchRequestId
             this.cancelledSearchRequestIds.add(cancelRequestId)
@@ -670,6 +688,41 @@ export class MeshCentralFileManager {
         }
       }, debounceDelay)
     })
+  }
+
+  async cancelSearch(): Promise<void> {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer)
+      this.searchDebounceTimer = null
+    }
+
+    if (this.pendingDebouncedSearchReject) {
+      try {
+        this.pendingDebouncedSearchReject(new Error('Cancelled for new search'))
+      } catch {
+        /* noop */
+      }
+      this.pendingDebouncedSearchReject = null
+    }
+
+    if (this.pendingSearchRequestId) {
+      const cancelRequestId = this.pendingSearchRequestId
+      this.cancelledSearchRequestIds.add(cancelRequestId)
+
+      const cancelRequest = this.fileOps.createCancelSearchRequest(cancelRequestId)
+      this.sendJsonMessage(cancelRequest)
+
+      const pendingRequest = this.pendingRequests.get(cancelRequestId)
+      if (pendingRequest) {
+        clearTimeout(pendingRequest.timeout)
+        this.pendingRequests.delete(cancelRequestId)
+        pendingRequest.reject(new Error('Cancelled for new search'))
+      }
+
+      this.pendingSearchRequestId = null
+    }
+
+    this.isPreparingNewSearch = false
   }
 
   async navigateToPath(path: string): Promise<FileEntry[]> {
