@@ -198,12 +198,16 @@ export function DeviceActionsDropdown({
               id: 'cmd',
               label: 'CMD',
               icon: <CmdIcon className="w-6 h-6" />,
+              href: `/devices/details/${deviceId}?action=remoteShell&shellType=cmd`,
+              showExternalLinkOnHover: true,
               onClick: () => handleRemoteShell('cmd')
             },
             {
               id: 'powershell',
               label: 'PowerShell',
               icon: <PowerShellIcon className="w-6 h-6" />,
+              href: `/devices/details/${deviceId}?action=remoteShell&shellType=powershell`,
+              showExternalLinkOnHover: true,
               onClick: () => handleRemoteShell('powershell')
             }
           ]
@@ -215,6 +219,8 @@ export function DeviceActionsDropdown({
           label: 'Remote Shell',
           icon: <ShellIcon className="w-6 h-6" />,
           disabled: !actionAvailability.remoteShellEnabled,
+          href: `/devices/details/${deviceId}?action=remoteShell&shellType=bash`,
+          showExternalLinkOnHover: true,
           onClick: () => handleRemoteShell('bash')
         })
       }
@@ -224,6 +230,8 @@ export function DeviceActionsDropdown({
         label: 'Remote Control',
         icon: <RemoteControlIcon className="w-6 h-6" />,
         disabled: !actionAvailability.remoteControlEnabled,
+        href: `/devices/details/${deviceId}/remote-desktop`,
+        showExternalLinkOnHover: true,
         onClick: handleRemoteControl
       })
 
@@ -232,6 +240,8 @@ export function DeviceActionsDropdown({
         label: 'Manage Files',
         icon: <Folder className="w-6 h-6" />,
         disabled: !actionAvailability.remoteControlEnabled,
+        href: `/devices/details/${deviceId}/file-manager`,
+        showExternalLinkOnHover: true,
         onClick: handleManageFiles
       })
     }

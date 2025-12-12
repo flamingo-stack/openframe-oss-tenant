@@ -132,11 +132,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       <Button
         variant="device-action"
         leftIcon={<RemoteControlIcon className="h-5 w-5" />}
-        onClick={() => {
-          if (actionAvailability?.meshcentralAgentId) {
-            router.push(`/devices/details/${deviceId}/remote-desktop`)
-          }
-        }}
+        href={`/devices/details/${deviceId}/remote-desktop`}
+        showExternalLinkOnHover
         disabled={!actionAvailability?.remoteControlEnabled}
       >
         Remote Control
@@ -163,6 +160,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                     id: 'cmd',
                     label: 'CMD',
                     icon: <CmdIcon className="w-6 h-6" />,
+                    href: `/devices/details/${deviceId}?action=remoteShell&shellType=cmd`,
+                    showExternalLinkOnHover: true,
                     onClick: () => {
                       setShellDropdownOpen(false)
                       handleRemoteShell('cmd')
@@ -172,6 +171,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                     id: 'powershell',
                     label: 'PowerShell',
                     icon: <PowerShellIcon className="w-6 h-6" />,
+                    href: `/devices/details/${deviceId}?action=remoteShell&shellType=powershell`,
+                    showExternalLinkOnHover: true,
                     onClick: () => {
                       setShellDropdownOpen(false)
                       handleRemoteShell('powershell')
@@ -198,11 +199,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       <Button
         variant="device-action"
         leftIcon={<Folder className="h-5 w-5" />}
-        onClick={() => {
-          if (actionAvailability?.meshcentralAgentId) {
-            router.push(`/devices/details/${deviceId}/file-manager`)
-          }
-        }}
+        href={`/devices/details/${deviceId}/file-manager`}
+        showExternalLinkOnHover
         disabled={!actionAvailability?.remoteControlEnabled}
       >
         Manage Files
