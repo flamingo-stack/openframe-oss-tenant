@@ -18,7 +18,7 @@ export function getDeviceTableRowActions(onRefresh?: () => void): ((device: Devi
       onActionComplete={onRefresh}
     />
   )
-  DeviceRowActions.displayName = 'DeviceRowActions'
+  DeviceRowActions.displayName = 'DeviceRowActions' 
   return DeviceRowActions
 }
 
