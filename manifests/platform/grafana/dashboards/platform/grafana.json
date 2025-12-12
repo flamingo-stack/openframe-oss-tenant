@@ -176,7 +176,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 6,
+        "w": 7,
         "x": 3,
         "y": 1
       },
@@ -506,7 +506,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -585,5 +588,5 @@
   "timezone": "",
   "title": "Grafana",
   "uid": "grafana",
-  "version": 4
+  "version": 11
 }
