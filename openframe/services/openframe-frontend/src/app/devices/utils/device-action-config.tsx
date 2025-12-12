@@ -104,7 +104,7 @@ export function getDeviceActionButtons(
           href: `/devices/details/${deviceId}?action=remoteShell&shellType=cmd`,
           showExternalLinkOnHover: true,
           type: 'submenu',
-          submenu: getWindowsShellSubmenu(deviceId)
+          submenu: getWindowsShellSubmenu()
         }
       : {
           id: 'remote-shell',

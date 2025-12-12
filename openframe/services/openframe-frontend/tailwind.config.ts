@@ -23,7 +23,7 @@ const config: Config = {
   },
   plugins: [tailwindcssAnimate],
   // Use ui-kit configuration as preset - this provides all ODS colors
-  presets: [uiKitPreset],
+  presets: [uiKitPreset as unknown as Partial<Config>],
 }
 
 export default config
