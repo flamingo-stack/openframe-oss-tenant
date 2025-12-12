@@ -51,6 +51,7 @@ interface UseMeshFileManagerReturn {
   copyFiles: (fileIds: string[], destinationPath: string) => Promise<void>
   moveFiles: (fileIds: string[], destinationPath: string) => Promise<void>
   searchFiles: (query: string) => Promise<void>
+  cancelSearch: () => Promise<void>
 
   // Clipboard operations
   copyToClipboard: (fileIds?: string[]) => void
@@ -522,6 +523,19 @@ export function useMeshFileManager({
     }
   }, [toast])
 
+  const cancelSearch = useCallback(async () => {
+    const fileManager = fileManagerRef.current
+    if (!fileManager || !fileManager.isConnected()) return
+
+    try {
+      await fileManager.cancelSearch()
+    } catch {
+      /* noop */
+    } finally {
+      setIsSearching(false)
+    }
+  }, [])
+
   const selectFile = useCallback((fileId: string, selected: boolean) => {
     setSelectedFiles(prev => {
       if (selected) {
@@ -763,6 +777,7 @@ export function useMeshFileManager({
     copyFiles,
     moveFiles,
     searchFiles,
+    cancelSearch,
     copyToClipboard,
     cutFiles,
     pasteFiles,
