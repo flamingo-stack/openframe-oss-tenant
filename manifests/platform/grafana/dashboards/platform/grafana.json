@@ -102,7 +102,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=~\"grafana.*\"}) > 0 or vector(0)",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}) > 0 or vector(0)",
           "legendFormat": "grafana",
           "refId": "A"
         }
@@ -196,7 +196,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=~\"grafana.*\"}) > 0 or vector(0)",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}) > 0 or vector(0)",
           "legendFormat": "grafana",
           "refId": "A"
         }
@@ -280,7 +280,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 16,
+        "h": 10,
         "w": 8,
         "x": 0,
         "y": 5
@@ -376,7 +376,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 16,
+        "h": 10,
         "w": 8,
         "x": 8,
         "y": 5
@@ -472,7 +472,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 16,
+        "h": 10,
         "w": 8,
         "x": 16,
         "y": 5
@@ -530,5 +530,5 @@
   "timezone": "",
   "title": "Grafana",
   "uid": "grafana",
-  "version": 3
+  "version": 4
 }
