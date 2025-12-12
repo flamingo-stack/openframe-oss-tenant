@@ -17,8 +17,8 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": 6,
+  "graphTooltip": 2,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -31,42 +31,60 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Loki",
+      "title": "Health",
       "type": "row"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
               }
             ]
-          },
-          "unit": "none"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 6,
+        "h": 3,
+        "w": 12,
         "x": 0,
         "y": 1
       },
       "id": 2,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
@@ -81,21 +99,21 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.6.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(loki_distributor_lines_received_total)",
-          "legendFormat": "Total Lines",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}) > 0 or vector(0)",
+          "legendFormat": "loki",
           "refId": "A"
         }
       ],
-      "title": "Total Log Lines Received",
+      "title": "Status",
       "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -111,21 +129,22 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -136,22 +155,28 @@
             }
           },
           "mappings": [],
+          "max": 1,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
               }
             ]
-          },
-          "unit": "bytes"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 9,
-        "x": 6,
+        "h": 3,
+        "w": 12,
+        "x": 12,
         "y": 1
       },
       "id": 3,
@@ -160,115 +185,23 @@
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
-      "pluginVersion": "11.6.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(loki_distributor_bytes_received_total[5m])",
-          "legendFormat": "Bytes Received",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}) > 0 or vector(0)",
+          "legendFormat": "loki",
           "refId": "A"
         }
       ],
-      "title": "Ingestion Rate",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 9,
-        "x": 15,
-        "y": 1
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.6.1",
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.99, sum(rate(loki_ingester_client_request_duration_seconds_bucket{operation=\"/logproto.StreamData/GetStreamRates\"}[5m])) by (le))",
-          "legendFormat": "99th Percentile",
-          "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(loki_ingester_client_request_duration_seconds_bucket{operation=\"/logproto.StreamData/GetStreamRates\"}[5m])) by (le))",
-          "legendFormat": "50th Percentile",
-          "refId": "B"
-        }
-      ],
-      "title": "Query Latency",
+      "title": "History",
       "type": "timeseries"
     },
     {
@@ -277,17 +210,17 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 4
       },
-      "id": 5,
+      "id": 4,
       "panels": [],
-      "title": "Cache & Storage",
+      "title": "System",
       "type": "row"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -303,21 +236,22 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -332,49 +266,57 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           },
-          "unit": "percent"
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 16,
+        "w": 8,
         "x": 0,
-        "y": 10
+        "y": 5
       },
-      "id": 6,
+      "id": 5,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
-      "pluginVersion": "11.6.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(loki_cache_hits[5m])) by (name) / sum(rate(loki_cache_fetched_keys[5m])) by (name) * 100",
-          "legendFormat": "{{name}}",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[5m])) by (container)",
+          "legendFormat": "{{container}}",
           "refId": "A"
         }
       ],
-      "title": "Cache Hit Ratio",
+      "title": "CPU Usage",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -390,21 +332,22 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -419,7 +362,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           },
@@ -428,60 +376,159 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 10
+        "h": 16,
+        "w": 8,
+        "x": 8,
+        "y": 5
       },
-      "id": 7,
+      "id": 6,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
-      "pluginVersion": "11.6.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(loki_cache_memory_bytes{cache=~\"chunksembedded-cache|frontend.embedded-cache\"})",
-          "legendFormat": "Cache Memory",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"platform\", container=\"loki\"}) by (container)",
+          "legendFormat": "{{container}}",
           "refId": "A"
-        },
-        {
-          "expr": "process_resident_memory_bytes{job=\"loki\"}",
-          "legendFormat": "Process Memory",
-          "refId": "B"
         }
       ],
       "title": "Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 8,
+        "x": 16,
+        "y": 5
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "kubelet_volume_stats_used_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
+          "legendFormat": "Used",
+          "refId": "A"
+        },
+        {
+          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
+          "legendFormat": "Capacity",
+          "refId": "B"
+        }
+      ],
+      "title": "Storage",
       "type": "timeseries"
     }
   ],
   "preload": false,
   "refresh": "30s",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [
     "loki",
     "logging",
-    "monitoring"
+    "platform"
   ],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Loki",
   "uid": "loki",
-  "version": 2
+  "version": 1
 }
