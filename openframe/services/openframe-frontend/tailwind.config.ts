@@ -1,4 +1,6 @@
 import type { Config } from 'tailwindcss'
+import tailwindcssAnimate from 'tailwindcss-animate'
+import uiKitPreset from './ui-kit/tailwind.config.js'
 
 const config: Config = {
   content: [
@@ -19,9 +21,9 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
   // Use ui-kit configuration as preset - this provides all ODS colors
-  presets: [require('./ui-kit/tailwind.config.js')],
+  presets: [uiKitPreset],
 }
 
 export default config

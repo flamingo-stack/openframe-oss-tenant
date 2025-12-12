@@ -194,7 +194,7 @@
                 "NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER": "true",
                 "NEXT_PUBLIC_AUTH_CHECK_INTERVAL": "60000",
                 "NEXT_PUBLIC_APP_MODE": "saas-tenant",
-                "NEXT_PUBLIC_TENANT_HOST_URL": "https://dmytro.openframe.build",
+                "NEXT_PUBLIC_TENANT_HOST_URL": "https://michael.openframe.build",
                 "NEXT_PUBLIC_SHARED_HOST_URL": "https://openframe.build",
                 "NEXT_PUBLIC_FEATURE_ORG_IMAGES": "true"
             },
