@@ -26,7 +26,7 @@ export function useScripts(activeFilters: ScriptsFilterInput = {}) {
 
   // Use LOCAL state for isLoading with initial=true to show skeleton immediately on mount
   // (before useEffect triggers fetch). This prevents the flash of empty state.
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Track if first fetch has been done (set by view component)
   const initialLoadDone = useRef(false)
