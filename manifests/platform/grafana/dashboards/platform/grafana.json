@@ -472,8 +472,8 @@
         "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "^[^\\s]+$"
+              "id": "byFrameRefID",
+              "options": "A"
             },
             "properties": [
               {
@@ -491,8 +491,8 @@
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".* limit$"
+              "id": "byFrameRefID",
+              "options": "B"
             },
             "properties": [
               {
@@ -512,6 +512,14 @@
               {
                 "id": "custom.fillOpacity",
                 "value": 0
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": false,
+                  "viz": false
+                }
               }
             ]
           }
@@ -549,7 +557,7 @@
         },
         {
           "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"platform\", persistentvolumeclaim=\"grafana\"}",
-          "legendFormat": "{{persistentvolumeclaim}} limit",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
       ],
