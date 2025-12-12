@@ -35,6 +35,7 @@ import { MoreVertical, Trash2, Copy, PackageX, Folder } from 'lucide-react'
 import { useDeviceActions } from '../hooks/use-device-actions'
 import { useReleaseVersion } from '../hooks/use-release-version'
 import { getDeviceActionAvailability } from '../utils/device-action-utils'
+import { getDeviceActionButtons, toActionsMenuItem } from '../utils/device-action-config'
 import { buildUninstallCommand, normalizeDevicePlatform } from '../utils/device-command-utils'
 import type { Device } from '../types/device.types'
 import type { ActionsMenuGroup } from '@flamingo/ui-kit'
@@ -177,6 +178,12 @@ export function DeviceActionsDropdown({
     }
   }
 
+  // Get unified action button configs
+  const actionButtons = useMemo(() =>
+    getDeviceActionButtons(device, deviceId, isWindows),
+    [device, deviceId, isWindows]
+  )
+
   // Build menu groups - different items for table vs detail context
   const menuGroups = useMemo((): ActionsMenuGroup[] => {
     const groups: ActionsMenuGroup[] = []
@@ -185,65 +192,24 @@ export function DeviceActionsDropdown({
     // In table context, include all remote actions
     // In detail context, Remote Shell and Remote Control are separate buttons, so exclude them
     if (context === 'table') {
-      // Remote Shell with submenu for Windows
-      if (isWindows) {
-        actionItems.push({
-          id: 'remote-shell',
-          label: 'Remote Shell',
-          icon: <ShellIcon className="w-6 h-6" />,
-          type: 'submenu' as const,
-          disabled: !actionAvailability.remoteShellEnabled,
-          submenu: [
-            {
-              id: 'cmd',
-              label: 'CMD',
-              icon: <CmdIcon className="w-6 h-6" />,
-              href: `/devices/details/${deviceId}?action=remoteShell&shellType=cmd`,
-              showExternalLinkOnHover: true,
-              onClick: () => handleRemoteShell('cmd')
-            },
-            {
-              id: 'powershell',
-              label: 'PowerShell',
-              icon: <PowerShellIcon className="w-6 h-6" />,
-              href: `/devices/details/${deviceId}?action=remoteShell&shellType=powershell`,
-              showExternalLinkOnHover: true,
-              onClick: () => handleRemoteShell('powershell')
-            }
-          ]
+      // Use unified config for action buttons
+      actionItems.push(
+        toActionsMenuItem(actionButtons.remoteShell, deviceId, {
+          onShellSelect: handleRemoteShell
         })
-      } else {
-        // Non-Windows: single shell option (bash)
-        actionItems.push({
-          id: 'remote-shell',
-          label: 'Remote Shell',
-          icon: <ShellIcon className="w-6 h-6" />,
-          disabled: !actionAvailability.remoteShellEnabled,
-          href: `/devices/details/${deviceId}?action=remoteShell&shellType=bash`,
-          showExternalLinkOnHover: true,
-          onClick: () => handleRemoteShell('bash')
+      )
+
+      actionItems.push(
+        toActionsMenuItem(actionButtons.remoteControl, deviceId, {
+          onClick: handleRemoteControl
         })
-      }
+      )
 
-      actionItems.push({
-        id: 'remote-control',
-        label: 'Remote Control',
-        icon: <RemoteControlIcon className="w-6 h-6" />,
-        disabled: !actionAvailability.remoteControlEnabled,
-        href: `/devices/details/${deviceId}/remote-desktop`,
-        showExternalLinkOnHover: true,
-        onClick: handleRemoteControl
-      })
-
-      actionItems.push({
-        id: 'manage-files',
-        label: 'Manage Files',
-        icon: <Folder className="w-6 h-6" />,
-        disabled: !actionAvailability.remoteControlEnabled,
-        href: `/devices/details/${deviceId}/file-manager`,
-        showExternalLinkOnHover: true,
-        onClick: handleManageFiles
-      })
+      actionItems.push(
+        toActionsMenuItem(actionButtons.manageFiles, deviceId, {
+          onClick: handleManageFiles
+        })
+      )
     }
 
     // Run Script is always in the dropdown

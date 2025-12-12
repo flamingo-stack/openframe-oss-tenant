@@ -201,7 +201,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         leftIcon={<Folder className="h-5 w-5" />}
         href={`/devices/details/${deviceId}/file-manager`}
         showExternalLinkOnHover
-        disabled={!actionAvailability?.remoteControlEnabled}
+        disabled={!actionAvailability?.manageFilesEnabled}
       >
         Manage Files
       </Button>
