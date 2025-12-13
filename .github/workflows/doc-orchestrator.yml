@@ -1,0 +1,600 @@
+# Doc Orchestrator Pipeline
+# ===========================
+# This GitHub Actions workflow is triggered by the multi-platform-hub to generate
+# comprehensive documentation for this repository and create a PR with the results.
+#
+# 3-Stage Pipeline:
+# 1. Inline Documentation - Generate .md files next to source classes
+# 2. CodeWiki Analysis - Architecture overview and Mermaid diagrams
+# 3. VoltAgent Tutorials - AI-generated getting started and how-to guides
+#
+# Installation:
+# Copy this file to .github/workflows/doc-orchestrator.yml in your target repository.
+# No secrets required - all credentials are securely passed from the orchestrator at runtime.
+
+name: Doc Orchestrator Pipeline
+
+on:
+  repository_dispatch:
+    types: [doc-orchestrator]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run ID for tracking'
+        required: false
+        default: 'manual'
+      repo_id:
+        description: 'Repository ID in orchestrator database'
+        required: false
+        default: ''
+      callback_url:
+        description: 'Webhook URL for completion callback'
+        required: false
+        default: ''
+      stages:
+        description: 'Comma-separated stages to run (inline-docs,codewiki,voltagent)'
+        required: false
+        default: 'inline-docs,codewiki,voltagent'
+      dependencies:
+        description: 'Comma-separated dependency repos'
+        required: false
+        default: ''
+      source_branch:
+        description: 'Branch to analyze code from (defaults to main)'
+        required: false
+        default: 'main'
+      anthropic_api_key:
+        description: 'Anthropic API key for AI processing'
+        required: false
+        default: ''
+      webhook_secret:
+        description: 'Secret for webhook authentication'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  # Credentials: passed from orchestrator at runtime (no repo secrets needed)
+  # Supports both repository_dispatch (client_payload) and workflow_dispatch (inputs)
+  ANTHROPIC_API_KEY: ${{ github.event.client_payload.anthropic_api_key || github.event.inputs.anthropic_api_key || '' }}
+  WEBHOOK_SECRET: ${{ github.event.client_payload.webhook_secret || github.event.inputs.webhook_secret || '' }}
+  # Run configuration
+  RUN_ID: ${{ github.event.client_payload.run_id || github.event.inputs.run_id || github.run_id }}
+  REPO_ID: ${{ github.event.client_payload.repo_id || github.event.inputs.repo_id || '' }}
+  CALLBACK_URL: ${{ github.event.client_payload.callback_url || github.event.inputs.callback_url || '' }}
+  STAGES: ${{ github.event.client_payload.stages || github.event.inputs.stages || 'inline-docs,codewiki,voltagent' }}
+  DEPENDENCIES: ${{ github.event.client_payload.dependencies || github.event.inputs.dependencies || '' }}
+  # Branch to checkout for code analysis (github_branch from repo config)
+  SOURCE_BRANCH: ${{ github.event.client_payload.source_branch || github.event.inputs.source_branch || 'main' }}
+
+jobs:
+  doc-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ env.SOURCE_BRANCH }}
+
+      # =========================================================================
+      # SETUP: Clone Dependency Repos (if configured)
+      # =========================================================================
+      - name: Clone Dependency Repositories
+        if: env.DEPENDENCIES != ''
+        run: |
+          echo "📦 Cloning dependency repositories..."
+          mkdir -p ../deps
+
+          IFS=',' read -ra DEPS <<< "$DEPENDENCIES"
+          for dep in "${DEPS[@]}"; do
+            echo "  Cloning: $dep"
+            git clone --depth 1 "https://github.com/$dep.git" "../deps/$(basename $dep)" || echo "  ⚠️ Failed to clone $dep"
+          done
+
+          echo "✅ Dependency cloning complete"
+          ls -la ../deps/ || echo "No dependencies cloned"
+
+      # =========================================================================
+      # STAGE 1: INLINE CLASS DOCUMENTATION
+      # Generate .md files next to each source class
+      # =========================================================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Stage 1 Dependencies
+        if: contains(env.STAGES, 'inline-docs')
+        run: npm install @anthropic-ai/sdk glob
+
+      - name: Generate Inline Class Documentation
+        id: stage1
+        if: contains(env.STAGES, 'inline-docs')
+        run: |
+          echo "📝 Stage 1: Generating inline documentation..."
+
+          cat > generate-inline-docs.js << 'SCRIPT_EOF'
+          #!/usr/bin/env node
+          const Anthropic = require('@anthropic-ai/sdk');
+          const { glob } = require('glob');
+          const fs = require('fs').promises;
+          const path = require('path');
+
+          const client = new Anthropic.default();
+
+          // Configure source patterns based on project type
+          const SOURCE_PATTERNS = [
+            // TypeScript/JavaScript
+            'src/**/*.ts', 'src/**/*.tsx', 'lib/**/*.ts', 'app/**/*.ts', 'app/**/*.tsx',
+            // Java
+            'src/**/*.java', '**/src/main/java/**/*.java',
+            // Python
+            'src/**/*.py', 'lib/**/*.py', '**/*.py',
+            // Rust
+            'src/**/*.rs',
+            // Exclusions
+            '!**/*.test.*', '!**/*.spec.*', '!**/node_modules/**',
+            '!**/target/**', '!**/build/**', '!**/__pycache__/**',
+            '!**/dist/**', '!**/.next/**', '!**/coverage/**'
+          ];
+
+          // Skip generating docs for files that already have .md files
+          async function hasExistingDoc(filePath) {
+            const docPath = filePath.replace(/\.[^.]+$/, '.md');
+            try {
+              await fs.access(docPath);
+              return true;
+            } catch {
+              return false;
+            }
+          }
+
+          async function generateInlineDoc(filePath) {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const ext = path.extname(filePath);
+            const fileName = path.basename(filePath, ext);
+            const docPath = filePath.replace(/\.[^.]+$/, '.md');
+
+            // Skip if content is too short (likely a simple export/index file)
+            if (content.length < 100) {
+              console.log(`  ⏭️  Skipping ${fileName} (too short)`);
+              return null;
+            }
+
+            // Determine language for code blocks
+            const langMap = {
+              '.ts': 'typescript', '.tsx': 'typescript',
+              '.js': 'javascript', '.jsx': 'javascript',
+              '.java': 'java', '.py': 'python', '.rs': 'rust'
+            };
+            const language = langMap[ext] || 'plaintext';
+
+            const response = await client.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 2048,
+              system: `You are a technical documentation expert. Generate concise, developer-friendly documentation for source code files.
+
+          FORMAT REQUIREMENTS:
+          - Start with a brief 1-2 sentence description of the file's purpose
+          - Include a "## Key Components" section listing main exports/classes/functions
+          - Include a "## Usage Example" section with practical code examples
+          - Keep it concise - aim for 100-300 words total
+          - Use ${language} code blocks for examples
+          - Do not include the file name as a heading (it will be in the filename)`,
+              messages: [{
+                role: 'user',
+                content: `Document this ${language} file "${fileName}${ext}":\n\n\`\`\`${language}\n${content.slice(0, 12000)}\n\`\`\``
+              }]
+            });
+
+            const docContent = response.content[0].text;
+            await fs.writeFile(docPath, docContent);
+            console.log(`  ✅ Generated: ${docPath}`);
+            return docPath;
+          }
+
+          async function main() {
+            console.log('🔍 Scanning for source files...');
+
+            // Find all matching files
+            const files = await glob(SOURCE_PATTERNS, { ignore: ['**/node_modules/**'] });
+            console.log(`Found ${files.length} source files`);
+
+            let generated = 0;
+            let skipped = 0;
+            let errors = 0;
+
+            for (const file of files) {
+              try {
+                // Skip if doc already exists
+                if (await hasExistingDoc(file)) {
+                  console.log(`  ⏭️  Skipping ${file} (doc exists)`);
+                  skipped++;
+                  continue;
+                }
+
+                const result = await generateInlineDoc(file);
+                if (result) generated++;
+                else skipped++;
+
+                // Rate limiting - wait 500ms between API calls
+                await new Promise(r => setTimeout(r, 500));
+              } catch (error) {
+                console.error(`  ❌ Error processing ${file}:`, error.message);
+                errors++;
+              }
+            }
+
+            console.log(`\n📊 Stage 1 Complete:`);
+            console.log(`   Generated: ${generated}`);
+            console.log(`   Skipped: ${skipped}`);
+            console.log(`   Errors: ${errors}`);
+
+            // Write stats for later stages
+            await fs.writeFile('.doc-stage1-stats.json', JSON.stringify({
+              generated, skipped, errors, timestamp: new Date().toISOString()
+            }));
+          }
+
+          main().catch(err => {
+            console.error('Stage 1 failed:', err);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+
+          node generate-inline-docs.js
+
+          # Count generated files
+          INLINE_DOCS=$(find . -name "*.md" -newer .git -type f | wc -l)
+          echo "stage1_files=$INLINE_DOCS" >> $GITHUB_OUTPUT
+          echo "stage1_status=completed" >> $GITHUB_OUTPUT
+
+      # =========================================================================
+      # STAGE 2: CODEWIKI ANALYSIS
+      # Generate architecture overview and module tree
+      # =========================================================================
+      - name: Setup Python 3.12
+        if: contains(env.STAGES, 'codewiki')
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install CodeWiki
+        id: codewiki_install
+        if: contains(env.STAGES, 'codewiki')
+        continue-on-error: true
+        run: |
+          pip install git+https://github.com/FSoft-AI4Code/CodeWiki.git
+          echo "codewiki_installed=true" >> $GITHUB_OUTPUT
+
+      - name: Configure CodeWiki
+        if: contains(env.STAGES, 'codewiki') && steps.codewiki_install.outputs.codewiki_installed == 'true'
+        continue-on-error: true
+        run: |
+          codewiki config set --api-key "$ANTHROPIC_API_KEY" --base-url https://api.anthropic.com
+
+      - name: Run CodeWiki Analysis
+        id: stage2
+        if: contains(env.STAGES, 'codewiki') && steps.codewiki_install.outputs.codewiki_installed == 'true'
+        continue-on-error: true
+        run: |
+          echo "📊 Stage 2: Running CodeWiki analysis..."
+
+          mkdir -p docs/codewiki
+
+          # Run CodeWiki with verbose output
+          codewiki generate --output ./docs/codewiki --verbose || {
+            echo "⚠️ CodeWiki failed, creating placeholder docs"
+            echo "# CodeWiki Documentation" > docs/codewiki/overview.md
+            echo "" >> docs/codewiki/overview.md
+            echo "CodeWiki analysis was skipped or failed. Run manually with:" >> docs/codewiki/overview.md
+            echo "\`\`\`bash" >> docs/codewiki/overview.md
+            echo "pip install git+https://github.com/FSoft-AI4Code/CodeWiki.git" >> docs/codewiki/overview.md
+            echo "codewiki generate --output ./docs/codewiki" >> docs/codewiki/overview.md
+            echo "\`\`\`" >> docs/codewiki/overview.md
+          }
+
+          CODEWIKI_FILES=$(find docs/codewiki -name "*.md" -type f 2>/dev/null | wc -l)
+          echo "stage2_files=$CODEWIKI_FILES" >> $GITHUB_OUTPUT
+          echo "stage2_status=completed" >> $GITHUB_OUTPUT
+
+      # =========================================================================
+      # STAGE 3: VOLTAGENT TUTORIALS
+      # Generate getting started guides and how-to tutorials
+      # =========================================================================
+      - name: Install VoltAgent Dependencies
+        if: contains(env.STAGES, 'voltagent')
+        run: |
+          npm install @anthropic-ai/sdk glob
+
+      - name: Generate Tutorials with AI
+        id: stage3
+        if: contains(env.STAGES, 'voltagent')
+        run: |
+          echo "📚 Stage 3: Generating tutorials..."
+
+          cat > generate-tutorials.js << 'SCRIPT_EOF'
+          #!/usr/bin/env node
+          const Anthropic = require('@anthropic-ai/sdk');
+          const fs = require('fs').promises;
+          const path = require('path');
+          const { glob } = require('glob');
+
+          const client = new Anthropic.default();
+
+          async function gatherContext() {
+            const context = { readme: '', claudeMd: '', inlineDocs: [], codewiki: [] };
+
+            // Read README
+            try {
+              context.readme = await fs.readFile('README.md', 'utf-8');
+            } catch {}
+
+            // Read CLAUDE.md
+            try {
+              context.claudeMd = await fs.readFile('CLAUDE.md', 'utf-8');
+            } catch {}
+
+            // Gather inline docs from Stage 1
+            const inlineMdFiles = await glob('src/**/*.md');
+            for (const file of inlineMdFiles.slice(0, 20)) {
+              try {
+                const content = await fs.readFile(file, 'utf-8');
+                context.inlineDocs.push({ path: file, content: content.slice(0, 1000) });
+              } catch {}
+            }
+
+            // Gather CodeWiki docs from Stage 2
+            const codewikiFiles = await glob('docs/codewiki/**/*.md');
+            for (const file of codewikiFiles.slice(0, 10)) {
+              try {
+                const content = await fs.readFile(file, 'utf-8');
+                context.codewiki.push({ path: file, content: content.slice(0, 2000) });
+              } catch {}
+            }
+
+            return context;
+          }
+
+          async function generateTutorial(title, prompt, context, outputPath) {
+            console.log(`  📝 Generating: ${title}...`);
+
+            const contextSummary = `
+          PROJECT CONTEXT:
+          ${context.readme.slice(0, 3000)}
+
+          ${context.claudeMd ? `PROJECT INSTRUCTIONS (CLAUDE.md):\n${context.claudeMd.slice(0, 2000)}` : ''}
+
+          INLINE DOCUMENTATION (${context.inlineDocs.length} files):
+          ${context.inlineDocs.map(d => `- ${d.path}`).join('\n')}
+
+          CODEWIKI DOCUMENTATION (${context.codewiki.length} files):
+          ${context.codewiki.map(d => `- ${d.path}`).join('\n')}
+          `;
+
+            const response = await client.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4096,
+              system: `You are a technical writer creating developer documentation.
+          Write clear, practical documentation that developers can follow step-by-step.
+          Use Markdown formatting with proper headings, code blocks, and examples.
+          Be concise but thorough. Include real code examples when helpful.`,
+              messages: [{
+                role: 'user',
+                content: `${prompt}\n\n${contextSummary}`
+              }]
+            });
+
+            const content = response.content[0].text;
+            await fs.mkdir(path.dirname(outputPath), { recursive: true });
+            await fs.writeFile(outputPath, content);
+            console.log(`  ✅ Written: ${outputPath}`);
+            return outputPath;
+          }
+
+          async function main() {
+            console.log('🔍 Gathering project context...');
+            const context = await gatherContext();
+
+            console.log(`  README: ${context.readme.length} chars`);
+            console.log(`  CLAUDE.md: ${context.claudeMd.length} chars`);
+            console.log(`  Inline docs: ${context.inlineDocs.length} files`);
+            console.log(`  CodeWiki docs: ${context.codewiki.length} files`);
+
+            const tutorials = [
+              {
+                title: 'Getting Started',
+                outputPath: 'docs/tutorials/getting-started.md',
+                prompt: `Write a "Getting Started" guide for this project.
+          Include:
+          1. Prerequisites (what needs to be installed)
+          2. Installation steps
+          3. Basic configuration
+          4. Running the project locally
+          5. First steps / "Hello World" equivalent
+          6. Common issues and solutions
+
+          Make it beginner-friendly but assume the reader knows basic programming.`
+              },
+              {
+                title: 'Architecture Overview',
+                outputPath: 'docs/tutorials/architecture-overview.md',
+                prompt: `Write an "Architecture Overview" document for this project.
+          Include:
+          1. High-level architecture diagram description (describe what a diagram would show)
+          2. Main components and their responsibilities
+          3. Data flow between components
+          4. Key design decisions and patterns used
+          5. Directory/folder structure explanation
+
+          Focus on helping new developers understand the codebase structure.`
+              },
+              {
+                title: 'API Examples',
+                outputPath: 'docs/tutorials/api-examples.md',
+                prompt: `Write an "API Usage Examples" guide for this project.
+          Include:
+          1. Main API endpoints or functions available
+          2. Authentication (if applicable)
+          3. Common use cases with code examples
+          4. Error handling patterns
+          5. Best practices
+
+          Include practical, copy-paste ready code examples.`
+              }
+            ];
+
+            let generated = 0;
+            for (const tutorial of tutorials) {
+              try {
+                await generateTutorial(
+                  tutorial.title,
+                  tutorial.prompt,
+                  context,
+                  tutorial.outputPath
+                );
+                generated++;
+                // Rate limiting
+                await new Promise(r => setTimeout(r, 1000));
+              } catch (error) {
+                console.error(`  ❌ Failed: ${tutorial.title}:`, error.message);
+              }
+            }
+
+            console.log(`\n📊 Stage 3 Complete:`);
+            console.log(`   Generated: ${generated} tutorials`);
+
+            await fs.writeFile('.doc-stage3-stats.json', JSON.stringify({
+              generated, timestamp: new Date().toISOString()
+            }));
+          }
+
+          main().catch(err => {
+            console.error('Stage 3 failed:', err);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+
+          node generate-tutorials.js
+
+          TUTORIAL_FILES=$(find docs/tutorials -name "*.md" -type f 2>/dev/null | wc -l)
+          echo "stage3_files=$TUTORIAL_FILES" >> $GITHUB_OUTPUT
+          echo "stage3_status=completed" >> $GITHUB_OUTPUT
+
+      # =========================================================================
+      # CREATE PULL REQUEST
+      # =========================================================================
+      - name: Create Pull Request
+        id: create-pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            docs: Automated documentation update [skip ci]
+
+            Generated by Doc Orchestrator Pipeline
+            Run ID: ${{ env.RUN_ID }}
+          title: "📚 Automated Documentation Update"
+          body: |
+            ## Documentation Pipeline Results
+
+            **Run ID:** `${{ env.RUN_ID }}`
+
+            ### Stage 1: Inline Documentation
+            - Status: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
+            - Files generated: ${{ steps.stage1.outputs.stage1_files || '0' }}
+            - Generated `.md` files next to source classes explaining their purpose
+
+            ### Stage 2: CodeWiki Analysis
+            - Status: ${{ steps.stage2.outputs.stage2_status || 'skipped' }}
+            - Files generated: ${{ steps.stage2.outputs.stage2_files || '0' }}
+            - Architecture overview and module documentation
+
+            ### Stage 3: VoltAgent Tutorials
+            - Status: ${{ steps.stage3.outputs.stage3_status || 'skipped' }}
+            - Files generated: ${{ steps.stage3.outputs.stage3_files || '0' }}
+            - Getting started guides and how-to tutorials
+
+            ---
+
+            **Review checklist:**
+            - [ ] Check generated inline docs for accuracy
+            - [ ] Review architecture documentation
+            - [ ] Test code examples in tutorials
+
+            ---
+            🤖 Generated by [Doc Orchestrator](https://github.com/openframe-oss-tenant)
+          branch: docs/orchestrator-${{ env.RUN_ID }}
+          base: ${{ github.event.repository.default_branch }}
+          delete-branch: true
+          labels: |
+            documentation
+            automated
+
+      # =========================================================================
+      # SEND WEBHOOK NOTIFICATION
+      # =========================================================================
+      - name: Send Webhook Notification
+        if: always() && env.CALLBACK_URL != ''
+        run: |
+          # Determine overall status
+          if [ "${{ job.status }}" = "success" ]; then
+            STATUS="success"
+          else
+            STATUS="failure"
+          fi
+
+          # Build stage results JSON
+          STAGE_RESULTS=$(cat << EOF
+          {
+            "inline_docs": {
+              "status": "${{ steps.stage1.outputs.stage1_status || 'skipped' }}",
+              "files_generated": ${{ steps.stage1.outputs.stage1_files || 0 }}
+            },
+            "codewiki": {
+              "status": "${{ steps.stage2.outputs.stage2_status || 'skipped' }}",
+              "files_generated": ${{ steps.stage2.outputs.stage2_files || 0 }}
+            },
+            "voltagent": {
+              "status": "${{ steps.stage3.outputs.stage3_status || 'skipped' }}",
+              "files_generated": ${{ steps.stage3.outputs.stage3_files || 0 }}
+            }
+          }
+          EOF
+          )
+
+          # Send webhook
+          curl -X POST "$CALLBACK_URL" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $WEBHOOK_SECRET" \
+            -d "{
+              \"run_id\": \"$RUN_ID\",
+              \"repo_id\": \"$REPO_ID\",
+              \"status\": \"$STATUS\",
+              \"pr_url\": \"${{ steps.create-pr.outputs.pull-request-url }}\",
+              \"pr_number\": ${{ steps.create-pr.outputs.pull-request-number || 'null' }},
+              \"branch\": \"docs/orchestrator-$RUN_ID\",
+              \"stage_results\": $STAGE_RESULTS
+            }" || echo "⚠️ Webhook notification failed"
+
+      - name: Pipeline Summary
+        if: always()
+        run: |
+          echo "## 📚 Doc Orchestrator Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Files |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Inline Docs | ${{ steps.stage1.outputs.stage1_status || 'skipped' }} | ${{ steps.stage1.outputs.stage1_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeWiki | ${{ steps.stage2.outputs.stage2_status || 'skipped' }} | ${{ steps.stage2.outputs.stage2_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tutorials | ${{ steps.stage3.outputs.stage3_status || 'skipped' }} | ${{ steps.stage3.outputs.stage3_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.create-pr.outputs.pull-request-url }}" ]; then
+            echo "**Pull Request:** ${{ steps.create-pr.outputs.pull-request-url }}" >> $GITHUB_STEP_SUMMARY
+          fi
