@@ -17,3 +17,9 @@ initContainer:
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-authorization-server
   tag: latest
+
+service:
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9006"
+    prometheus.io/path: "/management/v1/prometheus"

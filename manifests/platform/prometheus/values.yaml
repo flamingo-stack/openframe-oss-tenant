@@ -182,9 +182,9 @@ prometheus:
             - source_labels: [__name__]
               regex: container_cpu_usage_seconds_total|container_memory_working_set_bytes
               action: keep
-            # Filter to argocd and platform namespaces
+            # Filter to argocd, platform, and microservices namespaces
             - source_labels: [namespace]
-              regex: argocd|platform
+              regex: argocd|platform|microservices
               action: keep
 
         # Scrape kubelet for PVC storage metrics
@@ -210,7 +210,7 @@ prometheus:
             - source_labels: [__name__]
               regex: kubelet_volume_stats_used_bytes|kubelet_volume_stats_capacity_bytes
               action: keep
-            # Filter to argocd and platform namespaces
+            # Filter to argocd, platform, and microservices namespaces
             - source_labels: [namespace]
-              regex: argocd|platform
+              regex: argocd|platform|microservices
               action: keep
