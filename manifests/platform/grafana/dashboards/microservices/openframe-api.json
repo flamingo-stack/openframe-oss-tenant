@@ -102,7 +102,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[2m])) by (pod) > 0",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[2m])) by (pod) > 0",
           "instant": true,
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -197,7 +197,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[2m])) by (pod) > 0",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[2m])) by (pod) > 0",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -282,7 +282,7 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 8,
+        "w": 12,
         "x": 0,
         "y": 5
       },
@@ -306,7 +306,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[5m])) by (container)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[5m])) by (container)",
           "legendFormat": "{{container}}",
           "refId": "A"
         }
@@ -378,8 +378,8 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 8,
-        "x": 8,
+        "w": 12,
+        "x": 12,
         "y": 5
       },
       "id": 6,
@@ -402,12 +402,131 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"platform\", container=\"loki\"}) by (container)",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"microservices\", container=\"openframe-api\"}) by (container)",
           "legendFormat": "{{container}}",
           "refId": "A"
         }
       ],
       "title": "Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 7,
+      "panels": [],
+      "title": "Application",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{application=\"openframe-api\", area=\"heap\"}",
+          "legendFormat": "Used - {{id}}",
+          "refId": "A"
+        },
+        {
+          "expr": "jvm_memory_committed_bytes{application=\"openframe-api\", area=\"heap\"}",
+          "legendFormat": "Committed - {{id}}",
+          "refId": "B"
+        },
+        {
+          "expr": "jvm_memory_max_bytes{application=\"openframe-api\", area=\"heap\"}",
+          "legendFormat": "Max - {{id}}",
+          "refId": "C"
+        }
+      ],
+      "title": "JVM Heap Memory",
       "type": "timeseries"
     },
     {
@@ -460,7 +579,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -468,74 +587,17 @@
               }
             ]
           },
-          "unit": "bytes"
+          "unit": "reqps"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 25
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "dash": [
-                    10,
-                    10
-                  ],
-                  "fill": "dash"
-                }
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              },
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": true,
-                  "tooltip": false,
-                  "viz": false
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 16,
-        "y": 5
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
       },
-      "id": 7,
+      "id": 9,
       "options": {
         "legend": {
           "calcs": [
@@ -555,17 +617,235 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kubelet_volume_stats_used_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
-          "legendFormat": "{{persistentvolumeclaim}}",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"openframe-api\"}[5m])) by (uri)",
+          "legendFormat": "{{uri}}",
           "refId": "A"
-        },
-        {
-          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
-          "legendFormat": "{{persistentvolumeclaim}}",
-          "refId": "B"
         }
       ],
-      "title": "Storage",
+      "title": "HTTP Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"openframe-api\"}[5m])) by (uri) / sum(rate(http_server_requests_seconds_count{application=\"openframe-api\"}[5m])) by (uri)",
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP Response Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "warn"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "sum(rate(logback_events_total{application=\"openframe-api\"}[5m])) by (level)",
+          "legendFormat": "{{level}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Events Rate",
       "type": "timeseries"
     }
   ],
@@ -573,9 +853,8 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
-    "loki",
-    "logging",
-    "platform"
+    "openframe-api",
+    "microservices"
   ],
   "templating": {
     "list": []
@@ -586,7 +865,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Loki",
-  "uid": "loki",
+  "title": "OpenFrame API",
+  "uid": "openframe-api",
   "version": 1
 }

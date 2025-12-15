@@ -17,3 +17,9 @@ initContainer:
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-api
   tag: latest
+
+service:
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8091"
+    prometheus.io/path: "/management/v1/prometheus"
