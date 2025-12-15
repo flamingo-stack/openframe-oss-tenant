@@ -48,6 +48,7 @@ export function FileManagerContainer({
     downloadFile,
     cancelDownload,
     cancelUpload,
+    cancelSearch,
     searchFiles,
     copyToClipboard,
     cutFiles,
@@ -92,9 +93,12 @@ export function FileManagerContainer({
     if (query) {
       searchFiles(query)
     } else {
+      if (isSearchActive()) {
+        void cancelSearch()
+      }
       navigateToPath(currentPath)
     }
-  }, [searchFiles, navigateToPath, currentPath])
+  }, [searchFiles, navigateToPath, currentPath, cancelSearch, isSearchActive])
 
   const handleSelectFile = useCallback((fileId: string, selected: boolean) => {
     selectFile(fileId, selected)

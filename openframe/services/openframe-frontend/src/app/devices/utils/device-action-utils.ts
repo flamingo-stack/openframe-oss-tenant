@@ -58,6 +58,7 @@ export interface DeviceActionAvailability {
   // Action enabled states
   remoteShellEnabled: boolean
   remoteControlEnabled: boolean
+  manageFilesEnabled: boolean
   runScriptEnabled: boolean
   archiveEnabled: boolean
   deleteEnabled: boolean
@@ -85,6 +86,10 @@ export function getDeviceActionAvailability(device: Device): DeviceActionAvailab
 
     // Remote Control: requires MeshCentral agent AND device must be online
     remoteControlEnabled: Boolean(meshcentralAgentId) && isOnline,
+
+    // Manage Files: requires MeshCentral agent AND device must be online
+    // (Currently same as remoteControlEnabled, but separate for future flexibility)
+    manageFilesEnabled: Boolean(meshcentralAgentId) && isOnline,
 
     // Run Script: requires Tactical RMM agent AND device must be online
     runScriptEnabled: Boolean(tacticalAgentId) && isOnline,

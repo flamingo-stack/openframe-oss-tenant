@@ -77,7 +77,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
+        "w": 12,
         "x": 0,
         "y": 1
       },
@@ -102,9 +102,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[2m])) by (pod) > 0",
-          "instant": true,
-          "legendFormat": "{{pod}}",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}) > 0 or vector(0)",
+          "legendFormat": "loki",
           "refId": "A"
         }
       ],
@@ -176,8 +175,8 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 7,
-        "x": 3,
+        "w": 12,
+        "x": 12,
         "y": 1
       },
       "id": 3,
@@ -197,8 +196,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[2m])) by (pod) > 0",
-          "legendFormat": "{{pod}}",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}) > 0 or vector(0)",
+          "legendFormat": "loki",
           "refId": "A"
         }
       ],
@@ -268,7 +267,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -281,7 +280,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 16,
         "w": 8,
         "x": 0,
         "y": 5
@@ -364,7 +363,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -377,7 +376,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 16,
         "w": 8,
         "x": 8,
         "y": 5
@@ -460,7 +459,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -530,7 +529,7 @@
         ]
       },
       "gridPos": {
-        "h": 10,
+        "h": 16,
         "w": 8,
         "x": 16,
         "y": 5
@@ -556,12 +555,12 @@
       "targets": [
         {
           "expr": "kubelet_volume_stats_used_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
-          "legendFormat": "{{persistentvolumeclaim}}",
+          "legendFormat": "Used",
           "refId": "A"
         },
         {
           "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"platform\", persistentvolumeclaim=~\"storage-loki.*\"}",
-          "legendFormat": "{{persistentvolumeclaim}}",
+          "legendFormat": "Capacity",
           "refId": "B"
         }
       ],
