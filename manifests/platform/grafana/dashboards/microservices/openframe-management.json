@@ -119,6 +119,65 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 3,
+        "y": 1
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "process_uptime_seconds{application=\"openframe-management\"}",
+          "legendFormat": "Uptime",
+          "refId": "A"
+        }
+      ],
+      "title": "Application Uptime",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "palette-classic"
           },
           "custom": {
@@ -176,8 +235,8 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 7,
-        "x": 3,
+        "w": 6,
+        "x": 7,
         "y": 1
       },
       "id": 3,
@@ -412,7 +471,7 @@
       "type": "row"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -420,38 +479,41 @@
         "y": 5
       },
       "id": 7,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+      "panels": [],
+      "title": "Application",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           },
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 0,
-            "y": 6
-          },
-          "id": 8,
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 6
+      },
+      "id": 8,
           "options": {
             "colorMode": "value",
             "graphMode": "area",
@@ -670,22 +732,21 @@
             }
           ],
           "title": "Request Rate",
-          "type": "timeseries"
-        }
-      ],
-      "title": "Application",
-      "type": "row"
+      "type": "timeseries"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 6
+        "y": 14
       },
       "id": 11,
-      "panels": [
+      "panels": [],
+      "title": "JVM Metrics",
+      "type": "row"
+    },
         {
           "datasource": {
             "type": "prometheus",
@@ -886,22 +947,21 @@
             }
           ],
           "title": "JVM Thread States",
-          "type": "timeseries"
-        }
-      ],
-      "title": "JVM Metrics",
-      "type": "row"
+      "type": "timeseries"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 25
       },
       "id": 14,
-      "panels": [
+      "panels": [],
+      "title": "HTTP Metrics",
+      "type": "row"
+    },
         {
           "datasource": {
             "type": "prometheus",
@@ -1097,11 +1157,7 @@
             }
           ],
           "title": "Average Response Time",
-          "type": "timeseries"
-        }
-      ],
-      "title": "HTTP Metrics",
-      "type": "row"
+      "type": "timeseries"
     }
   ],
   "preload": false,
