@@ -137,7 +137,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 4,
+        "w": 3,
         "x": 3,
         "y": 1
       },
@@ -167,7 +167,7 @@
           "refId": "A"
         }
       ],
-      "title": "Application Uptime",
+      "title": "Uptime",
       "type": "stat"
     },
     {
@@ -235,8 +235,8 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 6,
-        "x": 7,
+        "w": 7,
+        "x": 6,
         "y": 1
       },
       "id": 3,
