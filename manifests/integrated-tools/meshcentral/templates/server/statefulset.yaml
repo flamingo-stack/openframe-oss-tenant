@@ -22,7 +22,7 @@ spec:
 
       initContainers:
       - name: wait-mongodb
-        image: "{{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+        image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
         envFrom:
           - configMapRef:
               name: meshcentral-mongodb
@@ -57,7 +57,7 @@ spec:
           subPath: readiness-command.sh
 
       - name: init-clean-meshcentral
-        image: "{{ .Values.busybox.image.registry }}/{{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}"
+        image: {{ .Values.server.initImage.image.registry }}/{{ .Values.server.initImage.image.repository }}:{{ .Values.server.initImage.image.tag }}
         command:
           - sh
           - -c
@@ -80,7 +80,7 @@ spec:
 
       containers:
         - name: meshcentral
-          image: "{{ .Values.server.image.registry }}/{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+          image: "{{ .Values.server.image.repo }}:{{ .Values.server.image.tag }}"
           ports:
           - name: meshcentral
             containerPort: 8383

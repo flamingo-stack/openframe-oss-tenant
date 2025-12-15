@@ -21,7 +21,7 @@ spec:
 
       initContainers:
         - name: keyfile-prepare
-          image: "{{ .Values.busybox.image.registry }}/{{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}"
+          image: {{ .Values.mongodb.initImage.image.registry }}/{{ .Values.mongodb.initImage.image.repository }}:{{ .Values.mongodb.initImage.image.tag }}
           securityContext:
             runAsUser: 0
           command:
@@ -38,7 +38,7 @@ spec:
               mountPath: /work
 
         - name: fix-perms
-          image: "{{ .Values.busybox.image.registry }}/{{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}"
+          image: {{ .Values.mongodb.initImage.image.registry }}/{{ .Values.mongodb.initImage.image.repository }}:{{ .Values.mongodb.initImage.image.tag }}
           securityContext:
             runAsUser: 0
           command:
@@ -53,7 +53,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: "{{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
           command: ["/usr/local/bin/mongodb-entrypoint.sh"]
           ports:
             - name: mongodb
