@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { Policy } from '../types/policies.types'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { fleetApiClient } from '@lib/fleet-api-client'
 
 export function usePolicies() {

@@ -6,14 +6,14 @@ import {
   Table,
   Button,
   ListPageLayout
-} from "@flamingo/ui-kit/components/ui"
-import { useTablePagination, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
+} from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { useTablePagination, useCursorPaginationState } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { useDialogsStore } from '../../stores/dialogs-store'
 import { useArchiveResolved } from '../../hooks/use-archive-resolved'
 import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup'
 import { Dialog, ClientDialogOwner } from '../../types/dialog.types'
 import { getDialogTableColumns } from '../dialog-table-columns'
-import { ArchiveIcon } from '@flamingo/ui-kit'
+import { ArchiveIcon } from '@flamingo-stack/openframe-frontend-core'
 
 interface ChatsTableProps {
   isArchived: boolean

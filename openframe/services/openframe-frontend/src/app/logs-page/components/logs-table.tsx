@@ -11,11 +11,11 @@ import {
   TableTimestampCell,
   DeviceCardCompact,
   type TableColumn
-} from "@flamingo/ui-kit/components/ui"
-import { RefreshIcon } from "@flamingo/ui-kit/components/icons"
+} from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { RefreshIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
 import { ExternalLink } from "lucide-react"
-import { Input, ToolBadge } from "@flamingo/ui-kit"
-import { useApiParams, useTablePagination, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
+import { Input, ToolBadge } from "@flamingo-stack/openframe-frontend-core"
+import { useApiParams, useTablePagination, useCursorPaginationState } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { transformOrganizationFilters } from '@lib/filter-utils'
 import { useLogs, useLogFilters } from '../hooks/use-logs'

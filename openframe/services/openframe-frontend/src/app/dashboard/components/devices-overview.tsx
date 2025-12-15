@@ -1,6 +1,6 @@
 'use client'
 
-import { DashboardInfoCard } from '@flamingo/ui-kit'
+import { DashboardInfoCard } from '@flamingo-stack/openframe-frontend-core'
 import { useDevicesOverview } from '../hooks/use-dashboard-stats'
 
 export function DevicesOverviewSection() {

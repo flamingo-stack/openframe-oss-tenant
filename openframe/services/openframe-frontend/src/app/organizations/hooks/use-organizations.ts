@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState, useRef, useMemo, useEffect } from 'react'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
 import { useOrganizationsStore, OrganizationEntry } from '../stores/organizations-store'
 import { GET_ORGANIZATIONS_QUERY } from '../queries/organizations-queries'

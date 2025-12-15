@@ -6,9 +6,9 @@ import {
   Table,
   Button,
   ListPageLayout
-} from "@flamingo/ui-kit/components/ui"
-import { PlusCircleIcon, RefreshIcon } from "@flamingo/ui-kit/components/icons"
-import { useDebounce } from "@flamingo/ui-kit/hooks"
+} from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { PlusCircleIcon, RefreshIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
+import { useDebounce } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { usePolicies } from '../../hooks/use-policies'
 import { Policy } from '../../types/policies.types'
 import { getPolicyTableColumns, getPolicyTableRowActions } from '../policies-table-columns'

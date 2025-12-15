@@ -17,9 +17,9 @@ import {
   Skeleton,
   OpenAiIcon,
   GoogleGeminiIcon
-} from '@flamingo/ui-kit'
+} from '@flamingo-stack/openframe-frontend-core'
 import { Edit2, Save, X, Shield, Check, AlertCircle, Bot } from 'lucide-react'
-import { ClaudeIcon, GoogleLogo, AiRobotIcon } from '@flamingo/ui-kit/components/icons'
+import { ClaudeIcon, GoogleLogo, AiRobotIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { useAIConfiguration } from '../../hooks/use-ai-configuration'
 
 // Provider configuration mapping

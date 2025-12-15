@@ -6,7 +6,7 @@ import { AuthLayout } from '@app/auth/layouts'
 import { useAuth } from '@app/auth/hooks/use-auth'
 import { useAuthStore } from '@app/auth/stores/auth-store'
 import { useRouter } from 'next/navigation'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { isAuthOnlyMode } from '@lib/app-mode'
 
 export default function AuthPage() {

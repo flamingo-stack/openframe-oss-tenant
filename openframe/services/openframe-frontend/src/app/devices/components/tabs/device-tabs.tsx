@@ -1,6 +1,6 @@
 'use client'
 
-import { TabItem } from '@flamingo/ui-kit'
+import { TabItem } from '@flamingo-stack/openframe-frontend-core'
 import {
   CpuIcon,
   NetworkIcon,
@@ -11,7 +11,7 @@ import {
   PackageIcon,
   AlertTriangleIcon,
   FileTextIcon
-} from '@flamingo/ui-kit'
+} from '@flamingo-stack/openframe-frontend-core'
 import { HardwareTab } from './hardware-tab'
 import { NetworkTab } from './network-tab'
 import { SecurityTab } from './security-tab'

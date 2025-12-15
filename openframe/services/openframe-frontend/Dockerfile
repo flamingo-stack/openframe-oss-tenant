@@ -1,65 +1,59 @@
 # Multi-stage Dockerfile for Next.js (Node 22)
-# - Clones flamingo-stack/ui-kit into project root prior to install/build
-# - Builds app with Next 15 (distDir set to "dist")
-# - Runs with `next start` on port 4000
+# - Builds app with Next (distDir set to "dist")
+# - Optimized for fast, repeatable builds on amd64/arm64 using BuildKit cache mounts
 
 ##########
 # deps
 ##########
-FROM node:22-alpine AS deps
+FROM --platform=$BUILDPLATFORM node:22-alpine AS deps
 WORKDIR /app
 
-# git is required to clone ui-kit
-RUN apk add --no-cache git
+ENV NEXT_TELEMETRY_DISABLED=1
+ARG GITHUB_TOKEN
 
-# Allow pinning the ui-kit ref for better Docker layer caching
-ARG UI_KIT_REF=main
-ARG CACHE_BUST=2025-10-12-v3
-
-# Copy only package.json (exclude lockfile) for better layer caching
+# Copy dependency manifests first for best layer caching
 COPY package.json ./
+COPY .npmrc ./.npmrc
 
-# Always use a fresh clone of the ui-kit into /app/ui-kit
-RUN echo "Cache bust: ${CACHE_BUST}" \
- && rm -rf ui-kit \
- && git clone --depth=1 --branch ${UI_KIT_REF} https://github.com/flamingo-stack/ui-kit.git ui-kit
-
-# Install dependencies without using package-lock.json (cache npm directory)
-RUN --mount=type=cache,target=/root/.npm npm install
+# Install dependencies (no lockfile in repo) + cache npm download artifacts
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=secret,id=GITHUB_TOKEN,required=false \
+    export GITHUB_TOKEN="${GITHUB_TOKEN:-$(cat /run/secrets/GITHUB_TOKEN 2>/dev/null)}" && \
+    npm install --no-audit --no-fund
 
 ##########
 # build
 ##########
-FROM node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 WORKDIR /app
 
-# Reuse installed node_modules and cloned ui-kit from deps stage
+# Reuse installed node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/ui-kit ./ui-kit
 
-# Now copy the rest of the source (ui-kit is ignored by .dockerignore)
+# Now copy the rest of the source
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the Next.js app (distDir is configured as "dist")
-# Note: Cache mount temporarily removed to prevent stale build artifacts
-RUN npm run build
+# Use BuildKit cache mounts for faster incremental builds (works across amd64/arm64)
+RUN --mount=type=cache,target=/app/.next/cache \
+    --mount=type=cache,target=/app/dist/cache \
+    npm run build
 
 ##########
 # runtime
 ##########
-FROM node:22-alpine AS runner
+FROM --platform=$TARGETPLATFORM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Use node_modules from deps and prune dev dependencies for production
+# Install production dependencies (lockfile is not committed in this repo)
 COPY package.json ./
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/ui-kit ./ui-kit
-RUN npm prune --omit=dev
+RUN npm install --no-audit --no-fund --omit=dev
 
 # Copy build output and public assets
 COPY --from=builder /app/dist ./dist
@@ -69,4 +63,4 @@ COPY --from=builder /app/next.config.mjs ./next.config.mjs
 EXPOSE 3000
 
 # Default command uses package.json start script (next start -p 3000)
-CMD ["npm", "run", "start"]
+CMD ["npm", "start"]

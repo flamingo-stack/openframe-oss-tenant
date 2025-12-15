@@ -19,7 +19,7 @@ import {
   Modal,
   ModalHeader,
   ModalTitle
-} from '@flamingo/ui-kit'
+} from '@flamingo-stack/openframe-frontend-core'
 import {
   ShellIcon,
   RemoteControlIcon,
@@ -27,10 +27,10 @@ import {
   ArchiveIcon,
   CmdIcon,
   PowerShellIcon
-} from '@flamingo/ui-kit/components/icons'
-import { CommandBox } from '@flamingo/ui-kit/components/features'
-import { normalizeOSType } from '@flamingo/ui-kit'
-import { useToast } from '@flamingo/ui-kit/hooks'
+} from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { CommandBox } from '@flamingo-stack/openframe-frontend-core/components/features'
+import { normalizeOSType } from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { MoreVertical, Trash2, Copy, PackageX, Folder } from 'lucide-react'
 import { useDeviceActions } from '../hooks/use-device-actions'
 import { useReleaseVersion } from '../hooks/use-release-version'
@@ -38,7 +38,7 @@ import { getDeviceActionAvailability } from '../utils/device-action-utils'
 import { getDeviceActionButtons, toActionsMenuItem } from '../utils/device-action-config'
 import { buildUninstallCommand, normalizeDevicePlatform } from '../utils/device-command-utils'
 import type { Device } from '../types/device.types'
-import type { ActionsMenuGroup } from '@flamingo/ui-kit'
+import type { ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core'
 
 interface DeviceActionsDropdownProps {
   device: Device

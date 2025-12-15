@@ -1,8 +1,8 @@
 'use client'
 
-import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useState } from 'react'
-import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
+import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { isSaasSharedMode } from '@lib/app-mode'
 import { useRegistrationProviders } from '@app/auth/hooks/use-registration-providers'
 

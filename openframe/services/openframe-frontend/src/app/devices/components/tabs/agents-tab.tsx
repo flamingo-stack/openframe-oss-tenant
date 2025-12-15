@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react'
-import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo/ui-kit'
-import { ToolBadge } from '@flamingo/ui-kit/components/platform'
+import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo-stack/openframe-frontend-core'
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
 import { Info as InfoIcon } from 'lucide-react'
 import { toUiKitToolType } from '@lib/tool-labels'
 import type { Device, ToolConnection, InstalledAgent } from '../../types/device.types'

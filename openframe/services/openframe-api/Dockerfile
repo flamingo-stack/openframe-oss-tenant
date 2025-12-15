@@ -16,8 +16,8 @@ COPY .mvn/settings.xml /root/.m2/settings.xml
 COPY pom.xml ./
 COPY openframe/ openframe/
 
-RUN --mount=type=secret,id=github_token \
-    export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
+RUN --mount=type=secret,id=GITHUB_TOKEN \
+    export GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) && \
     mvn clean install \
     -U \
     -pl openframe/services/openframe-api \

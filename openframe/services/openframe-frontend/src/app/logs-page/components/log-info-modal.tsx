@@ -2,9 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
-import { DeviceCard, Button, StatusTag } from '@flamingo/ui-kit/components/ui'
-import { ToolBadge } from '@flamingo/ui-kit/components/platform'
-import { cn } from '@flamingo/ui-kit/utils'
+import { DeviceCard, Button, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils'
 import { toUiKitToolType } from '@lib/tool-labels'
 import { useDeviceDetails } from '../../devices/hooks/use-device-details'
 import { getDeviceStatusConfig, getDeviceOperatingSystem } from '../../devices/utils/device-status'

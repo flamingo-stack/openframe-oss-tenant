@@ -1,9 +1,9 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { DeviceCard, StatusTag } from "@flamingo/ui-kit/components/ui"
+import { DeviceCard, StatusTag } from "@flamingo-stack/openframe-frontend-core/components/ui"
 import { type Device } from '../types/device.types'
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device-status'
-import { ContentLoadingContainer, DeviceCardSkeletonGrid } from "@flamingo/ui-kit/components/loading"
+import { ContentLoadingContainer, DeviceCardSkeletonGrid } from "@flamingo-stack/openframe-frontend-core/components"
 
 interface DevicesGridProps {
   devices: Device[]

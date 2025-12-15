@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { apiClient } from '../../../lib/api-client'
-import { useToast } from '@flamingo/ui-kit'
+import { useToast } from '@flamingo-stack/openframe-frontend-core'
 
 // GraphQL query based on provided payload
 const GET_INTEGRATED_TOOLS_QUERY = `

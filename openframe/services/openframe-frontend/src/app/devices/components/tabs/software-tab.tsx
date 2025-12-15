@@ -2,9 +2,9 @@
 
 import React, { useMemo } from 'react'
 import { Device, Software } from '../../types/device.types'
-import { Table, StatusTag, SoftwareInfo, SoftwareSourceBadge } from '@flamingo/ui-kit'
-import type { TableColumn } from '@flamingo/ui-kit'
-import type { SoftwareSource } from '@flamingo/ui-kit'
+import { Table, StatusTag, SoftwareInfo, SoftwareSourceBadge } from '@flamingo-stack/openframe-frontend-core'
+import type { TableColumn } from '@flamingo-stack/openframe-frontend-core'
+import type { SoftwareSource } from '@flamingo-stack/openframe-frontend-core'
 
 interface SoftwareTabProps {
   device: Device | null

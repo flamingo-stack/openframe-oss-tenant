@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@flamingo/ui-kit'
+import { Button } from '@flamingo-stack/openframe-frontend-core'
 import { useRouter } from 'next/navigation'
 
 interface DeviceDetailsButtonProps {

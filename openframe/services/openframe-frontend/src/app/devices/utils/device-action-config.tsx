@@ -9,7 +9,7 @@ import {
   RemoteControlIcon,
   CmdIcon,
   PowerShellIcon
-} from '@flamingo/ui-kit/components/icons'
+} from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { Folder } from 'lucide-react'
 import { getDeviceActionAvailability, type DeviceActionAvailability } from './device-action-utils'
 import type { Device } from '../types/device.types'

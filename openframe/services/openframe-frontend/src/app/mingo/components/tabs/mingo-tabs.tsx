@@ -2,7 +2,7 @@
 
 import React, { useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { TabNavigation, TabItem, MessageCircleIcon, ArchiveIcon } from '@flamingo/ui-kit'
+import { TabNavigation, TabItem, MessageCircleIcon, ArchiveIcon } from '@flamingo-stack/openframe-frontend-core'
 import { CurrentChats, ArchivedChats } from './chats-table'
 
 interface MingoTabNavigationProps {

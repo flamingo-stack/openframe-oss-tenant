@@ -1,11 +1,11 @@
 import type { Config } from 'tailwindcss'
 import tailwindcssAnimate from 'tailwindcss-animate'
-import uiKitPreset from './ui-kit/tailwind.config.js'
+import openframeCorePreset from '@flamingo-stack/openframe-frontend-core/tailwind.config.ts'
 
 const config: Config = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
-    './ui-kit/src/**/*.{js,ts,jsx,tsx,mdx}',
+    './node_modules/@flamingo-stack/openframe-frontend-core/dist/**/*.{js,mjs,cjs}',
   ],
   theme: {
     extend: {
@@ -23,7 +23,7 @@ const config: Config = {
   },
   plugins: [tailwindcssAnimate],
   // Use ui-kit configuration as preset - this provides all ODS colors
-  presets: [uiKitPreset as unknown as Partial<Config>],
+  presets: [openframeCorePreset],
 }
 
 export default config

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { GET_DIALOG_MESSAGES_QUERY } from '../queries/dialogs-queries'
 import { MessageConnection, Message } from '../types/dialog.types'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
 
 interface MessagesResponse {

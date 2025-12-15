@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppLayout } from '../components/app-layout'
-import { ContentPageContainer } from '@flamingo/ui-kit'
+import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core'
 import { MingoView } from './components/mingo-view'
 import { isSaasTenantMode } from '@lib/app-mode'
 

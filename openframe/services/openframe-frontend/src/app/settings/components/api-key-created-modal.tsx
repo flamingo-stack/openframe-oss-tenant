@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter, Label } from '@flamingo/ui-kit'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { Alert, AlertDescription } from '@flamingo/ui-kit/components/ui'
-import { AlertTriangleIcon } from '@flamingo/ui-kit/components/icons'
+import { Button, Modal, ModalHeader, ModalTitle, ModalFooter, Label } from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { Alert, AlertDescription } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 
 interface ApiKeyCreatedModalProps {
   isOpen: boolean

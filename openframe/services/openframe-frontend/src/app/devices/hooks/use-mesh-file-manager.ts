@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { MeshCentralFileManager } from '@lib/meshcentral/file-manager'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
 import type { FileEntry, FileConnectionState, FileTransferProgress } from '@lib/meshcentral/file-manager-types'
-import type { FileItem, FileAction } from '@flamingo/ui-kit/components/ui/file-manager/types'
+import type { FileItem, FileAction } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
 import { convertFileEntriesToItems, sanitizePath } from '../utils/file-manager-utils'
 
 // Global map to track active file manager instances by device ID (React Strict Mode protection)

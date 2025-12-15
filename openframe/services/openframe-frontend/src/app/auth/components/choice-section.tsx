@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { isSaasSharedMode } from '@lib/app-mode'
 import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@lib/auth-api-client'
 import { ForgotPasswordModal } from './forgot-password-modal'

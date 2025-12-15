@@ -17,8 +17,8 @@ COPY pom.xml ./
 COPY openframe/ openframe/
 
 # Build the application using BuildKit secret
-RUN --mount=type=secret,id=github_token \
-    export GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
+RUN --mount=type=secret,id=GITHUB_TOKEN \
+    export GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) && \
     mvn clean install \
     -U \
     -pl openframe/services/openframe-external-api \

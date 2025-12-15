@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { AppLayout } from '@app/components/app-layout'
 import { FileManagerContainer } from '@/src/app/devices/details/[deviceId]/file-manager/components/file-manager-container'
 import { useDeviceDetails } from '@app/devices/hooks/use-device-details'
-import { Button, Skeleton } from '@flamingo/ui-kit'
+import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core'
 import { getMeshCentralAgentId } from '@app/devices/utils/device-action-utils'
-import { FileManagerSkeleton } from '@flamingo/ui-kit/components/ui/file-manager/file-manager-skeleton'
+import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
 import { ChevronLeft } from 'lucide-react'
 
 interface FileManagerPageProps {

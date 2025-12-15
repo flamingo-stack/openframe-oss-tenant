@@ -9,13 +9,13 @@ import {
   ListPageLayout,
   TableDescriptionCell,
   type TableColumn
-} from "@flamingo/ui-kit/components/ui"
+} from "@flamingo-stack/openframe-frontend-core/components/ui"
 import { CirclePlusIcon } from "lucide-react"
-import { useDebounce, useTablePagination, useApiParams } from "@flamingo/ui-kit/hooks"
+import { useDebounce, useTablePagination, useApiParams } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { useScripts } from "../hooks/use-scripts"
-import { ToolBadge, ShellTypeBadge } from "@flamingo/ui-kit/components/platform"
-import { OSTypeBadgeGroup } from "@flamingo/ui-kit/components/features"
-import type { ShellType } from "@flamingo/ui-kit"
+import { ToolBadge, ShellTypeBadge } from "@flamingo-stack/openframe-frontend-core/components"
+import { OSTypeBadgeGroup } from "@flamingo-stack/openframe-frontend-core/components/features"
+import type { ShellType } from "@flamingo-stack/openframe-frontend-core"
 
 interface UIScriptEntry {
   id: number

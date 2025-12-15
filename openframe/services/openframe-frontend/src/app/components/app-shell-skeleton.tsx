@@ -1,6 +1,6 @@
 'use client'
 
-import { Skeleton } from '@flamingo/ui-kit/components/ui'
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 /**
  * DashboardInfoCard skeleton - matches DashboardInfoCard exactly

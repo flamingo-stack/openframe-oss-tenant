@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { GET_DIALOGS_QUERY } from '../queries/dialogs-queries'
 import { Dialog, DialogConnection } from '../types/dialog.types'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
 
 interface DialogsResponse {
