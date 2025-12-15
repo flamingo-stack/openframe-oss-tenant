@@ -2,6 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: openframe-external-api
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     app: openframe-external-api
 spec:

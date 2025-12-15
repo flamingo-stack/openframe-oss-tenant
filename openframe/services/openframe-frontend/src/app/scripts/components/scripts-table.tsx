@@ -39,7 +39,7 @@ export function ScriptsTable() {
     addedBy: { type: 'array', default: [] },
     page: { type: 'number', default: 1 }
   })
-  const pageSize = 20
+  const pageSize = 10
 
   const [isInitialized, setIsInitialized] = useState(false)
   const prevFilterKeyRef = React.useRef<string | null>(null)
@@ -281,6 +281,7 @@ export function ScriptsTable() {
         columns={columns}
         rowKey="id"
         loading={isLoading}
+        skeletonRows={pageSize}
         emptyMessage={
           params.search
             ? `No scripts found matching "${params.search}". Try adjusting your search.`

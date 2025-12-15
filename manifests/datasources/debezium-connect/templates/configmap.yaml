@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: debezium-connect
+data:
+  BOOTSTRAP_SERVERS: "kafka-broker-headless.datasources.svc.cluster.local:9092"
+  CONFIG_STORAGE_TOPIC: "connect-configs"
+  OFFSET_STORAGE_TOPIC: "connect-offsets"
+  STATUS_STORAGE_TOPIC: "connect-status"
+  CONNECT_PLUGIN_PATH: "/kafka/connect"
+  {{- if .Values.metrics.enabled }}
+  KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar={{ .Values.metrics.port }}:/opt/jmx-exporter/config.yaml"
+  {{- end }}

@@ -297,6 +297,7 @@ export function OrganizationsTable() {
         columns={columns}
         rowKey="id"
         loading={isLoading}
+        skeletonRows={10}
         emptyMessage="No organizations found. Try adjusting your search or filters."
         filters={tableFilters}
         onFilterChange={handleFilterChange}

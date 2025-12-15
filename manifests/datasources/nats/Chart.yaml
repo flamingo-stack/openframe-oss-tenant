@@ -1,6 +1,11 @@
 apiVersion: v2
-name: nats
-description: A NATS helm chart.
+name: nats-wrapper
+description: Wrapper chart for NATS
 type: application
 version: 0.0.1
 appVersion: "0.0.1"
+
+dependencies:
+  - name: nats
+    version: "~2.12.2"
+    repository: https://nats-io.github.io/k8s/helm/charts/

@@ -8,7 +8,7 @@ import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@lib/auth-api-client'
 import { ForgotPasswordModal } from './forgot-password-modal'
 
 interface AuthChoiceSectionProps {
-  onCreateOrganization: (orgName: string, domain: string) => void
+  onCreateOrganization: (orgName: string, domain: string, accessCode: string, email: string) => void
   onSignIn: (email: string) => Promise<void>
   isLoading?: boolean
 }
@@ -22,7 +22,10 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
 
   const [orgName, setOrgName] = useState('')
   const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost')
-  const [email, setEmail] = useState('')
+  const [orgEmail, setOrgEmail] = useState('')
+  const [signInEmail, setSignInEmail] = useState('')
+  const [accessCode, setAccessCode] = useState('')
+  const [accessCodeError, setAccessCodeError] = useState<string | null>(null)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [isCheckingDomain, setIsCheckingDomain] = useState(false)
   const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
@@ -32,10 +35,19 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const isOrgNameValid = orgNameRegex.test(orgName.trim())
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const isEmailValid = emailRegex.test(email.trim())
+  const isOrgEmailValid = emailRegex.test(orgEmail.trim())
+  const isSignInEmailValid = emailRegex.test(signInEmail.trim())
 
   const handleCreateOrganization = async () => {
-    if (!orgName.trim() || !isOrgNameValid) return
+    if (!orgName.trim() || !isOrgNameValid || !isOrgEmailValid) return
+    
+    if (isSaasShared) {
+      if (!accessCode.trim()) {
+        setAccessCodeError('Access code is required')
+        return
+      }
+      setAccessCodeError(null)
+    }
 
     if (isSaasShared && domain.trim()) {
       setIsCheckingDomain(true)
@@ -50,7 +62,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
           
           if (available) {
             const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
-            onCreateOrganization(orgName.trim(), fullDomain)
+            onCreateOrganization(orgName.trim(), fullDomain, isSaasShared ? accessCode.trim() : '', orgEmail.trim())
           } else {
             toast({
               title: "Domain Not Available",
@@ -77,15 +89,15 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         setIsCheckingDomain(false)
       }
     } else {
-      onCreateOrganization(orgName.trim(), domain || 'localhost')
+      onCreateOrganization(orgName.trim(), domain || 'localhost', '', orgEmail.trim())
     }
   }
 
   const handleSignIn = async () => {
-    if (isEmailValid && !isSigningIn) {
+    if (isSignInEmailValid && !isSigningIn) {
       setIsSigningIn(true)
       try {
-        await onSignIn(email.trim())
+        await onSignIn(signInEmail.trim())
       } finally {
         setIsSigningIn(false)
       }
@@ -107,7 +119,28 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             </p>
           </div>
 
-          {/* Form Fields */}
+          {/* Email Field - First */}
+          <div className="flex flex-col gap-1">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={orgEmail}
+              onChange={(e) => setOrgEmail(e.target.value)}
+              placeholder="username@mail.com"
+              disabled={isLoading}
+              className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoading && isOrgEmailValid && isOrgNameValid) {
+                  handleCreateOrganization()
+                }
+              }}
+            />
+            {orgEmail.trim() && !isOrgEmailValid && (
+              <p className="text-xs text-error mt-1">Enter a valid email address</p>
+            )}
+          </div>
+
+          {/* Organization Name and Domain Fields */}
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-1 flex flex-col gap-1">
               <Label>Organization Name</Label>
@@ -195,13 +228,35 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             </div>
           </div>
 
+          {/* Access Code field for SaaS shared mode */}
+          {isSaasShared && (
+            <div className="flex flex-col gap-1">
+              <Label>Access Code</Label>
+              <Input
+                value={accessCode}
+                onChange={(e) => { setAccessCode(e.target.value); if (accessCodeError) setAccessCodeError(null) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isLoading) {
+                    handleCreateOrganization()
+                  }
+                }}
+                placeholder="Enter Code Here"
+                disabled={isLoading}
+                className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-error' : ''}`}
+              />
+              {accessCodeError && (
+                <p className="text-xs text-error mt-1">{accessCodeError}</p>
+              )}
+            </div>
+          )}
+
           {/* Button Row */}
           <div className="flex gap-6 items-center">
             <div className="flex-1"></div>
             <div className="flex-1">
               <Button
                 onClick={handleCreateOrganization}
-                disabled={!orgName.trim() || (isSaasShared && !domain.trim()) || isLoading || isCheckingDomain}
+                disabled={!orgName.trim() || !isOrgEmailValid || (isSaasShared && (!domain.trim() || !accessCode.trim())) || isLoading || isCheckingDomain}
                 loading={isLoading || isCheckingDomain}
                 variant="primary"
                 className="!w-full sm:!w-full"
@@ -231,10 +286,10 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <Label>Email</Label>
             <Input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={signInEmail}
+              onChange={(e) => setSignInEmail(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isLoading && isEmailValid) {
+                if (e.key === 'Enter' && !isLoading && isSignInEmailValid) {
                   handleSignIn()
                 }
               }}
@@ -242,7 +297,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               disabled={isLoading}
               className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 w-full"
             />
-            {email.trim() && !isEmailValid && (
+            {signInEmail.trim() && !isSignInEmailValid && (
               <p className="text-xs text-error mt-1">Enter a valid email address</p>
             )}
           </div>
@@ -261,7 +316,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <div className="flex-1">
               <Button
                 onClick={handleSignIn}
-                disabled={!isEmailValid || isSigningIn || isLoading}
+                disabled={!isSignInEmailValid || isSigningIn || isLoading}
                 loading={isSigningIn || isLoading}
                 variant="primary"
                 className="!w-full sm:!w-full"
@@ -277,7 +332,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
       <ForgotPasswordModal
         open={showForgotPassword}
         onOpenChange={setShowForgotPassword}
-        defaultEmail={email}
+        defaultEmail={signInEmail}
       />
     </>
   )

@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -12,27 +13,30 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-      
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.registerJob.image.tag }}
         command:
           - /bin/sh
           - -uc
           - |
             echo "Registering OpenFrame Frontend..."
             echo "Waiting for OpenFrame Management API to become reachable..."
+          {{- if and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.gcp.enabled }}
+            until curl --head --fail --silent http://openframe-saas-management.microservices.svc.cluster.local:8096/management/v1/health; do
+          {{- else }}
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+          {{- end }}
               echo "Still waiting..."
               sleep 10
             done
             echo "Sending registration request..."
             http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
+              {{- if and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.gcp.enabled }}
+              -X POST "http://openframe-saas-management.microservices.svc.cluster.local:8095/v1/tools/openframe-frontend" \
+              {{- else }}
               -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/openframe-frontend" \
+              {{- end }}
               -H "Content-Type: application/json" \
               --connect-timeout 5 \
               --max-time 20 \
@@ -75,4 +79,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "OpenFrame Frontend Registration failed..."; exit 1; }
             echo "OpenFrame Frontend Registration complete."
+
 {{- end }}

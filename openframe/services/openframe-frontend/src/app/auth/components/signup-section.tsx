@@ -4,6 +4,7 @@ import { Button, Input, Label } from '@flamingo/ui-kit/components/ui'
 import { useState } from 'react'
 import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
 import { isSaasSharedMode } from '@lib/app-mode'
+import { useRegistrationProviders } from '@app/auth/hooks/use-registration-providers'
 
 interface RegisterRequest {
   tenantName: string
@@ -18,6 +19,8 @@ interface RegisterRequest {
 interface AuthSignupSectionProps {
   orgName: string
   domain: string
+  accessCode: string
+  email?: string
   onSubmit: (data: RegisterRequest) => void
   onSSO?: (provider: string) => void
   onBack: () => void
@@ -27,17 +30,16 @@ interface AuthSignupSectionProps {
 /**
  * Signup section for completing user registration
  */
-export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, isLoading }: AuthSignupSectionProps) {
+export function AuthSignupSection({ orgName, domain, accessCode, email: prefillEmail, onSubmit, onSSO, onBack, isLoading }: AuthSignupSectionProps) {
   const isSaasShared = isSaasSharedMode()
+  const { providers: ssoProviders, loading: loadingProviders } = useRegistrationProviders()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(prefillEmail || '')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [accessCode, setAccessCode] = useState('')
-  const [accessCodeError, setAccessCodeError] = useState<string | null>(null)
-  const [signupMethod, setSignupMethod] = useState<'form' | 'sso'>('form')
+  const [, setSignupMethod] = useState<'form' | 'sso'>('form')
 
   const displayDomain = isSaasShared ? domain : domain
 
@@ -49,15 +51,8 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
   const getButtonText = () => isSaasShared ? 'Start Free Trial' : 'Create Organization'
 
   const handleSubmit = () => {
-    setAccessCodeError(null)
     if (!firstName.trim() || !lastName.trim() || !isEmailValid || !password || password !== confirmPassword) {
       return
-    }
-    if (isSaasShared) {
-      if (!accessCode.trim()) {
-        setAccessCodeError('Access code is required')
-        return
-      }
     }
 
     const data: RegisterRequest = {
@@ -67,7 +62,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
       lastName: lastName.trim(),
       email: email.trim(),
       password,
-      accessCode: isSaasShared ? accessCode.trim() : ''
+      accessCode: accessCode
     }
 
     onSubmit(data)
@@ -87,14 +82,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
   }
 
   const isFormValid = firstName.trim() && lastName.trim() && isEmailValid &&
-    password && confirmPassword && password === confirmPassword && (!isSaasShared || accessCode.trim())
-
-  // SSO providers for cloud deployment
-  const ssoProviders = [
-    { provider: 'google', enabled: true },
-    { provider: 'microsoft', enabled: true },
-    { provider: 'github', enabled: true }
-  ]
+    password && confirmPassword && password === confirmPassword
 
   return (
     <div className="w-full">
@@ -110,6 +98,26 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
               {getSubtitle()}
             </p>
           </div>
+
+          {/* SSO Options for SaaS Shared Mode */}
+          {ssoProviders.length > 0 && onSSO && (
+            <div className="mb-6">
+              <AuthProvidersList
+                enabledProviders={ssoProviders}
+                onProviderClick={handleSSOClick}
+                dividerText="Sign up with"
+                loading={isLoading || loadingProviders}
+              />
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-ods-border" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-ods-card px-2 text-ods-text-secondary">Or continue with email</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-6"
             onClick={() => setSignupMethod('form')}>
@@ -170,7 +178,7 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="username@mail.com"
-                disabled={isLoading}
+                disabled={isLoading || !!prefillEmail}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
               />
               {email.trim() && !isEmailValid && (
@@ -210,23 +218,6 @@ export function AuthSignupSection({ orgName, domain, onSubmit, onSSO, onBack, is
                 )}
               </div>
             </div>
-
-            {isSaasShared && (
-              <div className="flex flex-col gap-1">
-                <Label>Access Code</Label>
-                <Input
-                  value={accessCode}
-                  onChange={(e) => { setAccessCode(e.target.value); if (accessCodeError) setAccessCodeError(null) }}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Enter your access code"
-                  disabled={isLoading}
-                  className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-error' : ''}`}
-                />
-                {accessCodeError && (
-                  <p className="text-xs text-error mt-1">{accessCodeError}</p>
-                )}
-              </div>
-            )}
 
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center">
               <Button

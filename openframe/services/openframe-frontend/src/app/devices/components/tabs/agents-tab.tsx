@@ -15,7 +15,8 @@ const agentTypeToToolType: Record<string, string> = {
   'fleetmdm-agent': 'FLEET_MDM',
   'tacticalrmm-agent': 'TACTICAL_RMM',
   'meshcentral-agent': 'MESHCENTRAL',
-  'openframe-chat': 'OPENFRAME_CHAT'
+  'openframe-chat': 'OPENFRAME_CHAT',
+  'openframe-client': 'OPENFRAME_CLIENT'
 }
 
 export function AgentsTab({ device }: AgentsTabProps) {
@@ -60,7 +61,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
       {hasAgents ? (
         combinedAgents.map((agent: any, idx: number) => {
           const toolType = toUiKitToolType(agent.toolType)
@@ -75,7 +76,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
           }
 
           return (
-            <div key={`${agent.agentType}-${agent.agentToolId || idx}`} className="relative">
+            <div key={`${agent.agentType}-${agent.agentToolId || idx}`} className="relative h-full">
               <div className="absolute top-4 left-4 z-10">
                 <ToolBadge toolType={toolType} />
               </div>
@@ -98,30 +99,33 @@ export function AgentsTab({ device }: AgentsTabProps) {
                 data={{
                   items: items
                 }}
-                className="pt-16"
+                className="pt-16 h-full"
               />
             </div>
           )
         })
       ) : (
-        <InfoCard
-          data={{
-            title: 'Agents',
-            icon: (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[500px] min-w-[400px]">
-                  <p>No management agents are currently installed on this device. Agents provide remote management capabilities through Tactical RMM, Fleet MDM, and other platforms.</p>
-                </TooltipContent>
-              </Tooltip>
-            ),
-            items: [
-              { label: 'Status', value: 'No agents found' }
-            ]
-          }}
-        />
+        <div className="h-full">
+          <InfoCard
+            data={{
+              title: 'Agents',
+              icon: (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[500px] min-w-[400px]">
+                    <p>No management agents are currently installed on this device. Agents provide remote management capabilities through Tactical RMM, Fleet MDM, and other platforms.</p>
+                  </TooltipContent>
+                </Tooltip>
+              ),
+              items: [
+                { label: 'Status', value: 'No agents found' }
+              ]
+            }}
+            className="h-full"
+          />
+        </div>
       )}
     </div>
     </TooltipProvider>

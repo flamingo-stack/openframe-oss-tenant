@@ -45,18 +45,20 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     search,
     pageInfo,
     pageSize,
-    isLoading,
     error,
     setEdges,
     appendEdges,
     setSearch,
     setPageInfo,
     setPageSize,
-    setLoading,
     setError,
     clearLogs,
     reset
   } = useLogsStore()
+
+  // Use LOCAL state for isLoading with initial=true to show skeleton immediately on mount
+  // (before useEffect triggers fetch). This prevents the flash of empty state.
+  const [isLoading, setIsLoading] = useState(true)
 
   /**
    * Transform backend log data to include Device structure
@@ -86,7 +88,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
     cursor?: string | null,
     append: boolean = false
   ) => {
-    setLoading(true)
+    setIsLoading(true)
     setError(null)
 
     try {
@@ -159,7 +161,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
 
       throw error
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }, [pageSize, toast])
 

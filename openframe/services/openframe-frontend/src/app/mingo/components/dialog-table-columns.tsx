@@ -1,28 +1,19 @@
-import React from 'react'
-import { type TableColumn, type RowAction, StatusTag } from '@flamingo/ui-kit/components/ui'
-import { Dialog } from '../types/dialog.types'
+import { type TableColumn, StatusTag, TableTimestampCell, DeviceCardCompact } from '@flamingo/ui-kit/components/ui'
+import { Dialog, ClientDialogOwner } from '../types/dialog.types'
 
-export function getDialogTableRowActions(
-  onDetails: (dialog: Dialog) => void
-): RowAction<Dialog>[] {
-  return [
-    {
-      label: 'Details',
-      onClick: onDetails,
-      variant: 'outline',
-      className: "bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
-    }
-  ]
+interface DialogTableColumnsOptions {
+  organizationLookup?: Record<string, string>
 }
 
-export function getDialogTableColumns(): TableColumn<Dialog>[] {
+export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): TableColumn<Dialog>[] {
+  const { organizationLookup = {} } = options
   return [
     {
       key: 'title',
       label: 'TITLE',
-      width: 'w-1/3',
+      width: 'flex-1 min-w-0',
       renderCell: (dialog) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate block">
           {dialog.title}
         </span>
       )
@@ -30,21 +21,31 @@ export function getDialogTableColumns(): TableColumn<Dialog>[] {
     {
       key: 'source',
       label: 'SOURCE',
-      width: 'w-1/6',
-      renderCell: (dialog) => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
-          {'machine' in (dialog.owner || {}) ? (dialog.owner as any).machine?.hostname : dialog.owner?.type }
-        </span>
-      )
+      width: 'w-1/5',
+      renderCell: (dialog) => {
+        const isClientOwner = 'machine' in (dialog.owner || {})
+        const clientOwner = isClientOwner ? (dialog.owner as ClientDialogOwner) : null
+        const deviceName = clientOwner?.machine?.displayName || clientOwner?.machine?.hostname
+        const organizationId = clientOwner?.machine?.organizationId
+        const organizationName = organizationId ? organizationLookup[organizationId] : undefined
+
+        return (
+          <DeviceCardCompact
+            deviceName={deviceName || 'Unknown Device'}
+            organization={organizationName}
+          />
+        )
+      }
     },
     {
       key: 'createdAt',
       label: 'CREATED',
-      width: 'w-1/6',
+      width: 'w-1/5',
       renderCell: (dialog) => (
-        <span className="font-['Azeret_Mono'] font-normal text-[18px] leading-[18px] text-ods-text-secondary truncate">
-          {dialog.createdAt}
-        </span>
+        <TableTimestampCell
+          timestamp={dialog.createdAt}
+          id={dialog.id}
+        />
       )
     },
     {

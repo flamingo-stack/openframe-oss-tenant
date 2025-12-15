@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -12,14 +13,18 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
       
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.registerJob.image.tag }}
+        env:
+          - name: CASSANDRA_USER
+            value: {{ .Values.cassandra.dbUser.user | quote }}
+          - name: CASSANDRA_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.cassandra.dbUser.existingSecret.name }}
+                key: {{ index .Values.cassandra.dbUser.existingSecret.keyMapping "cassandra-password" }}
         command:
           - /bin/sh
           - -uc
@@ -52,7 +57,10 @@ spec:
                   "category": "NoSQL Database",
                   "platformCategory": "OpenFrame Datasource",
                   "enabled": true,
-                  "credentials": {},
+                  "credentials": {
+                    "username": "'"${CASSANDRA_USER}"'",
+                    "password": "'"${CASSANDRA_PASSWORD}"'"
+                  },
                   "layer": "Datasource",
                   "layerOrder": 3,
                   "layerColor": "#616161",
@@ -75,4 +83,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Cassandra Registration failed..."; exit 1; }
             echo "Cassandra Registration complete."
+
 {{- end }}

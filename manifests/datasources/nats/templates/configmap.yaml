@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats-custom-config
+data:
+  nats.conf: |
+    ping_interval: 10s
+    ping_max: 3
+
+    accounts: {
+      SYS: {
+        users: [
+          {
+            user: $ADMIN_USER,
+            password: $ADMIN_PASS
+          }
+        ],
+        exports: [
+          {
+            stream: "$SYS.ACCOUNT.DEVICES.CONNECT",
+            accounts: ["DEVICES"]
+          },
+          {
+            stream: "$SYS.ACCOUNT.DEVICES.DISCONNECT",
+            accounts: ["DEVICES"]
+          },
+        ]
+      },
+      DEVICES: {
+        users: [
+          {
+            user: $DEVICE_USER,
+            password: "",
+            permissions: {
+              publish: {
+                allow: [
+                  "$JS.API.CONSUMER.CREATE.TOOL_INSTALLATION.*.machine.*.tool-installation",
+                  "$JS.ACK.TOOL_INSTALLATION.>",
+                  "$JS.API.CONSUMER.CREATE.CLIENT_UPDATE.*.machine.all.client-update",
+                  "$JS.ACK.CLIENT_UPDATE.>",
+                  "$JS.API.CONSUMER.CREATE.TOOL_UPDATE.*.machine.all.tool.*.update",
+                  "$JS.API.CONSUMER.CREATE.TOOL_UPDATE.>",
+                  "$JS.ACK.TOOL_UPDATE.>",
+                  "machine.*.tool-connection",
+                  "machine.*.heartbeat",
+                  "machine.*.installed-agent"
+                ]
+              },
+              subscribe: {
+                allow: [
+                  "_INBOX.*.*",
+                  "machine.*.tool-installation.inbox",
+                  "machine.*.client-update.inbox",
+                  "machine.*.tool.update.inbox"
+                ]
+              }
+            }
+          },
+          {
+            user: $SERVICE_USER,
+            password: $SERVICE_PASS,
+            permissions: {
+              publish: {
+                allow: [
+                  ">"
+                ]
+              },
+              subscribe: {
+                allow: [
+                  ">"
+                ]
+              }
+            }
+          }
+        ],
+        imports: [
+          {
+            stream: {
+              account: "SYS",
+              subject: "$SYS.ACCOUNT.DEVICES.CONNECT",
+            }
+          },
+          {
+            stream: {
+              account: "SYS",
+              subject: "$SYS.ACCOUNT.DEVICES.DISCONNECT",
+            }
+          }
+        ],
+        jetstream: enabled
+      }
+    }
+
+    system_account: SYS
