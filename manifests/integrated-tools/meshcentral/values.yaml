@@ -10,9 +10,9 @@ server:
     repo: ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral
     tag: latest
   initImage:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: busybox
-      tag: "1.36.0"
+    registry: ghcr.io/flamingo-stack/registry
+    repository: busybox
+    tag: "1.36.0"
 
 mongodb:
   image:
@@ -20,6 +20,6 @@ mongodb:
     repository: mongo
     tag: "8.0.9"
   initImage:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: busybox
-      tag: "1.36.0"
+    registry: ghcr.io/flamingo-stack/registry
+    repository: busybox
+    tag: "1.36.0"
