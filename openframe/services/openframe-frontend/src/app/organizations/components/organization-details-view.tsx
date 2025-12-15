@@ -1,13 +1,13 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { Button, DetailPageContainer, CardLoader, LoadError, NotFoundError, InfoCard } from '@flamingo/ui-kit'
-import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
+import { Button, DetailPageContainer, CardLoader, LoadError, NotFoundError, InfoCard } from '@flamingo-stack/openframe-frontend-core'
+import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { useRouter } from 'next/navigation'
 import { useOrganizationDetails } from '../hooks/use-organization-details'
 import { PencilIcon } from 'lucide-react'
 import { useDeleteOrganization } from '../hooks/use-delete-organization'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { featureFlags } from '@lib/feature-flags'
 
 interface OrganizationDetailsViewProps {

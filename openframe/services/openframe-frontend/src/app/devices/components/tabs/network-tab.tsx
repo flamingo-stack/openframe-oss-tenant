@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo/ui-kit'
+import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo-stack/openframe-frontend-core'
 import { Info as InfoIcon } from 'lucide-react'
 
 interface NetworkTabProps {

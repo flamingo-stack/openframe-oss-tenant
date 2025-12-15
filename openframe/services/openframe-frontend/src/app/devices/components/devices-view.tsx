@@ -7,10 +7,10 @@ import {
   Table,
   Button,
   ListPageLayout
-} from "@flamingo/ui-kit/components/ui"
-import { PlusCircleIcon } from "@flamingo/ui-kit/components/icons"
-import { ViewToggle } from "@flamingo/ui-kit/components/features"
-import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from "@flamingo/ui-kit/hooks"
+} from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
+import { ViewToggle } from "@flamingo-stack/openframe-frontend-core/components/features"
+import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { useDevices } from '../hooks/use-devices'
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 import { DevicesGrid } from './devices-grid'

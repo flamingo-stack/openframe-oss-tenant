@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState, useRef, useMemo, useEffect } from 'react'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { tacticalApiClient } from '../../../lib/tactical-api-client'
 import { useScriptsStore, ScriptEntry } from '../stores/scripts-store'
 

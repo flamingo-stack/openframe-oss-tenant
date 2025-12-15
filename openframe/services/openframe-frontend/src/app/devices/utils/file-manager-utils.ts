@@ -1,5 +1,5 @@
 import type { FileEntry } from '@lib/meshcentral/file-manager-types'
-import type { FileItem } from '@flamingo/ui-kit/components/ui/file-manager/types'
+import type { FileItem } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
 
 /**
  * Convert MeshCentral FileEntry to UI-Kit FileItem format

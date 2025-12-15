@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { BenefitCard, Button, Input, Label } from '@flamingo/ui-kit/components/ui'
+import { BenefitCard, Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { 
   OpenFrameLogo, 
   CutVendorCostsIcon, 
@@ -9,9 +9,9 @@ import {
   ReclaimProfitsIcon,
   OpenmspLogo,
   OpenFrameText
-} from '@flamingo/ui-kit/components/icons'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { getSlackCommunityJoinUrl } from '@flamingo/ui-kit/utils'
+} from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { getSlackCommunityJoinUrl } from '@flamingo-stack/openframe-frontend-core/utils'
 import { runtimeEnv } from '@lib/runtime-config'
 
 export function AuthBenefitsSection() {

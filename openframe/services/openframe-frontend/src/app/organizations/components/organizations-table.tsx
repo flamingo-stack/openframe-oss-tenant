@@ -6,10 +6,10 @@ import {
   Button,
   ListPageLayout,
   type TableColumn,
-} from '@flamingo/ui-kit/components/ui'
-import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
-import { OrganizationIcon } from '@flamingo/ui-kit/components/features'
-import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from '@flamingo/ui-kit/hooks'
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features'
+import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { useOrganizations } from '../hooks/use-organizations'
 import { useRouter } from 'next/navigation'
 import { featureFlags } from '@lib/feature-flags'

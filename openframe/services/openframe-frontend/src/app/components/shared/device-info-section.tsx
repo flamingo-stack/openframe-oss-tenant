@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { DeviceCard, CardLoader, StatusTag } from '@flamingo/ui-kit/components/ui'
+import { DeviceCard, CardLoader, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useDeviceDetails } from '../../devices/hooks/use-device-details'
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status'
 import { DeviceDetailsButton } from '../../devices/components/device-details-button'

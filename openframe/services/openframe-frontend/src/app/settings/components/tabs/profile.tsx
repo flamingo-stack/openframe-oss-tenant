@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { InfoRow, CardLoader, PageError, ListPageContainer } from '@flamingo/ui-kit/components/ui'
+import { InfoRow, CardLoader, PageError, ListPageContainer } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { apiClient } from '@/src/lib/api-client'
 
 type MeResponse = {

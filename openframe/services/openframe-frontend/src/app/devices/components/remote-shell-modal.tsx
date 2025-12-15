@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
-import { Button } from '@flamingo/ui-kit'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { Button } from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
 import { MeshTunnel, TunnelState } from '@lib/meshcentral/meshcentral-tunnel'
 

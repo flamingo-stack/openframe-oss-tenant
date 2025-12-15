@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '../../../lib/api-client'
 import { GET_LOG_DETAILS_QUERY } from '../../logs-page/queries/logs-queries'
 import type { LogEntry } from '../../logs-page/stores/logs-store'

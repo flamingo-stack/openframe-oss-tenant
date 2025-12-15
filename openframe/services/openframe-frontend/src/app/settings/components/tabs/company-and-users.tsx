@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { ListPageContainer, Table, type TableColumn, StatusTag, MoreActionsMenu } from '@flamingo/ui-kit/components/ui'
+import { ListPageContainer, Table, type TableColumn, StatusTag, MoreActionsMenu } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useUsers, type UserRecord } from '../../hooks/use-users'
 import { ConfirmDeleteUserModal } from '../confirm-delete-user-modal'
 import { AddUsersModal } from '../add-users-modal'
-import { Button } from '@flamingo/ui-kit'
-import { PlusCircleIcon } from '@flamingo/ui-kit/components/icons'
+import { Button } from '@flamingo-stack/openframe-frontend-core'
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { useAuthStore } from '../../../auth/stores/auth-store'
 import { useInvitations } from '../../hooks/use-invitations'
 

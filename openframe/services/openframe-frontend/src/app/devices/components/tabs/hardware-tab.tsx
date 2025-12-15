@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Device } from '../../types/device.types'
-import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo/ui-kit'
+import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo-stack/openframe-frontend-core'
 import { Info as InfoIcon } from 'lucide-react'
 
 interface HardwareTabProps {

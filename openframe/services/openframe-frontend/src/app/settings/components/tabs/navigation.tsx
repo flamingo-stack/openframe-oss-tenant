@@ -2,14 +2,14 @@
 'use client'
 
 import React from 'react'
-import { TabNavigation, UsersGroupIcon, UserIcon, type TabItem, NetworkIcon, ShieldKeyIcon, ShieldCheckIcon } from '@flamingo/ui-kit'
+import { TabNavigation, UsersGroupIcon, UserIcon, type TabItem, NetworkIcon, ShieldKeyIcon, ShieldCheckIcon } from '@flamingo-stack/openframe-frontend-core'
 import { ArchitectureTab } from './architecture'
 import { CompanyAndUsersTab } from './company-and-users'
 import { ApiKeysTab } from './api-keys'
 import { SsoConfigurationTab } from './sso-configuration'
 import { ProfileTab } from './profile'
 import { AISettingsTab } from './ai-settings'
-import { SSOConfigurationIcon } from '@/ui-kit/src/components/icons/sso-configuration-icon'
+import { SSOConfigurationIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 
 interface SettingsTabNavigationProps {
   activeTab: string

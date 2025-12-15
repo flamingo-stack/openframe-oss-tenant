@@ -1,11 +1,11 @@
 'use client'
 
 import React from 'react'
-import { Input, Label, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@flamingo/ui-kit/components/ui'
-import { HeroImageUploader } from '@flamingo/ui-kit/components/hero-image-uploader'
+import { Input, Label, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { HeroImageUploader } from '@flamingo-stack/openframe-frontend-core/components'
 import { useAuthenticatedImage } from '@lib/use-authenticated-image'
 import { uploadWithAuth, deleteWithAuth } from '@lib/upload-with-auth'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { runtimeEnv } from '@lib/runtime-config'
 import { featureFlags } from '@lib/feature-flags'
 

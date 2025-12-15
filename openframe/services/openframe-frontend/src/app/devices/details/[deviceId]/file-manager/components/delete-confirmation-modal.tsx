@@ -8,7 +8,7 @@ import {
   ModalContent,
   ModalFooter,
   Button
-} from '@flamingo/ui-kit/components/ui'
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean

@@ -3,7 +3,7 @@
  * Unified logic for building device installation and uninstallation commands
  */
 
-import type { OSPlatformId } from '@flamingo/ui-kit/utils'
+import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils'
 
 const RELEASES_BASE_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases'
 const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz'

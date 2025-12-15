@@ -9,7 +9,7 @@ import {
   ModalFooter,
   Button,
   Input
-} from '@flamingo/ui-kit/components/ui'
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 interface NewFolderModalProps {
   isOpen: boolean

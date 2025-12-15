@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Button, Input, Label, Card, CardContent, CardHeader, AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { AuthProvidersList } from '@flamingo/ui-kit/components/features'
+import { Button, Input, Label, Card, CardContent, CardHeader, AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { AuthLayout } from '../layouts'
 import { authApiClient } from '@lib/auth-api-client'
 import { useInviteProviders } from '@app/auth/hooks/use-invite-providers'

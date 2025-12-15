@@ -1,7 +1,7 @@
 import React from 'react'
 import { AppConfig } from '../app-config'
-import { OpenFrameLogo, UserIcon, HamburgerIcon, IconsXIcon as XIcon } from '@flamingo/ui-kit/components/icons'
-import { Button } from '@flamingo/ui-kit/components/ui'
+import { OpenFrameLogo, UserIcon, HamburgerIcon, IconsXIcon as XIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { getBaseUrl } from '../utils'
 
 export const openframeConfig: AppConfig = {

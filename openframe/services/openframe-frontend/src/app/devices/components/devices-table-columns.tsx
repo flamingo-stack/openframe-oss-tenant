@@ -1,10 +1,10 @@
 import React from 'react'
-import { StatusTag, type TableColumn } from "@flamingo/ui-kit/components/ui"
-import { OSTypeBadge, OrganizationIcon } from "@flamingo/ui-kit/components/features"
+import { StatusTag, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { OSTypeBadge, OrganizationIcon } from "@flamingo-stack/openframe-frontend-core/components/features"
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
-import { DeviceType, getDeviceTypeIcon } from '@flamingo/ui-kit'
+import { DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core'
 import { DeviceActionsDropdown } from './device-actions-dropdown'
 import { deduplicateFilterOptions } from '@lib/filter-utils'
 import { featureFlags } from '@lib/feature-flags'

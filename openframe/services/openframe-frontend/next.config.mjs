@@ -27,8 +27,6 @@ const nextConfig = {
   // Force client-side rendering
   basePath: '',
   assetPrefix: '',
-  // Transpile the ui-kit package to handle TypeScript files
-  transpilePackages: ['@flamingo/ui-kit'],
 }
 
 export default nextConfig

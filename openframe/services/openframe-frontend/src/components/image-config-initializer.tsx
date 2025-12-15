@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { configureBatchImageFetch } from '@flamingo/ui-kit/hooks'
-import { configureAuthenticatedImage } from '@flamingo/ui-kit/hooks'
+import { configureBatchImageFetch } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { configureAuthenticatedImage } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { runtimeEnv } from '../lib/runtime-config'
 
 /**

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { getTabComponent } from '@flamingo/ui-kit'
+import { getTabComponent } from '@flamingo-stack/openframe-frontend-core'
 import { SETTINGS_TABS } from './tabs'
 
 interface SettingsTabContentProps {

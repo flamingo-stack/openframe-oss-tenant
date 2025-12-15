@@ -1,5 +1,5 @@
 import React from 'react'
-import { type TableColumn, type RowAction } from "@flamingo/ui-kit/components/ui"
+import { type TableColumn, type RowAction } from "@flamingo-stack/openframe-frontend-core/components/ui"
 import { MoreHorizontal } from "lucide-react"
 import { Policy } from '../types/policies.types'
 

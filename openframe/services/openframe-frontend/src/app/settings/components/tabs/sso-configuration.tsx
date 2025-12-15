@@ -15,9 +15,9 @@ import {
   CheckboxWithDescription,
   type TableColumn,
   type RowAction
-} from '@flamingo/ui-kit/components/ui'
-import { EditProfileIcon, RefreshIcon, GoogleLogo, MicrosoftIcon } from '@flamingo/ui-kit/components/icons'
-import { useToast } from '@flamingo/ui-kit/hooks'
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { EditProfileIcon, RefreshIcon, GoogleLogo, MicrosoftIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { SsoConfigModal } from '../edit-sso-config-modal'
 import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
 import { useTenantDomain, type TenantDomainInfo } from '../../hooks/use-tenant-domain'

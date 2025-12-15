@@ -14,8 +14,8 @@ import {
   SelectValue,
   Checkbox,
   Label
-} from '@flamingo/ui-kit'
-import { useToast } from '@flamingo/ui-kit/hooks'
+} from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { MeshDesktop } from '@lib/meshcentral/meshcentral-desktop'
 import { MeshTunnel } from '@lib/meshcentral/meshcentral-tunnel'
 import {

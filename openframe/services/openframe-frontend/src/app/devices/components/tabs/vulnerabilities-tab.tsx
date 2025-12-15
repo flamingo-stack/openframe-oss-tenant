@@ -2,8 +2,8 @@
 
 import React, { useMemo } from 'react'
 import { Device, Software, Vulnerability } from '../../types/device.types'
-import { Table, StatusTag, Badge, SoftwareInfo, SoftwareSourceBadge, CveLink } from '@flamingo/ui-kit'
-import type { TableColumn, SoftwareSource } from '@flamingo/ui-kit'
+import { Table, StatusTag, Badge, SoftwareInfo, SoftwareSourceBadge, CveLink } from '@flamingo-stack/openframe-frontend-core'
+import type { TableColumn, SoftwareSource } from '@flamingo-stack/openframe-frontend-core'
 
 interface VulnerabilitiesTabProps {
   device: Device | null

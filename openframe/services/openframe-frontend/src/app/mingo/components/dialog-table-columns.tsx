@@ -1,4 +1,4 @@
-import { type TableColumn, StatusTag, TableTimestampCell, DeviceCardCompact } from '@flamingo/ui-kit/components/ui'
+import { type TableColumn, StatusTag, TableTimestampCell, DeviceCardCompact } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { Dialog, ClientDialogOwner } from '../types/dialog.types'
 
 interface DialogTableColumnsOptions {

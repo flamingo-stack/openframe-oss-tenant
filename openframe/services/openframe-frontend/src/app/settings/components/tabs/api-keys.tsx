@@ -1,8 +1,8 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
-import { ListPageContainer, Table, type TableColumn, StatusTag, Button, MoreActionsMenu } from '@flamingo/ui-kit/components/ui'
-import { PlusCircleIcon, DocumentIcon } from '@flamingo/ui-kit/components/icons'
+import { ListPageContainer, Table, type TableColumn, StatusTag, Button, MoreActionsMenu } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { PlusCircleIcon, DocumentIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { useApiKeys, type ApiKeyRecord } from '../../hooks/use-api-keys'
 import { CreateApiKeyModal } from '../../components/create-api-key-modal'
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal'

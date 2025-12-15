@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { useLocalStorage } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
