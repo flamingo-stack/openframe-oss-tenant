@@ -21,7 +21,7 @@ spec:
 
       initContainers:
         - name: keyfile-prepare
-          image: {{ .Values.mongodb.initImage.image.registry }}/{{ .Values.mongodb.initImage.image.repository }}:{{ .Values.mongodb.initImage.image.tag }}
+          image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
           securityContext:
             runAsUser: 0
           command:

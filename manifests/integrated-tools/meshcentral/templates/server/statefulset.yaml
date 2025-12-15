@@ -57,7 +57,7 @@ spec:
           subPath: readiness-command.sh
 
       - name: init-clean-meshcentral
-        image: {{ .Values.server.initImage.image.registry }}/{{ .Values.server.initImage.image.repository }}:{{ .Values.server.initImage.image.tag }}
+        image: {{ .Values.server.initImage.registry }}/{{ .Values.server.initImage.repository }}:{{ .Values.server.initImage.tag }}
         command:
           - sh
           - -c
