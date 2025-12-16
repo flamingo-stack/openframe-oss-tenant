@@ -506,7 +506,7 @@
         "showCommonLabels": false,
         "showControls": false,
         "showLabels": false,
-        "showTime": false,
+        "showTime": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
@@ -548,7 +548,7 @@
         "showCommonLabels": false,
         "showControls": false,
         "showLabels": false,
-        "showTime": false,
+        "showTime": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
@@ -590,7 +590,7 @@
         "showCommonLabels": false,
         "showControls": false,
         "showLabels": false,
-        "showTime": false,
+        "showTime": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
