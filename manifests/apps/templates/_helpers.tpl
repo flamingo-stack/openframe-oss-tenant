@@ -1,6 +1,6 @@
 {{- define "app.allowlist" -}}
 {{/* Defines the complete list of valid applications that can be deployed. */}}
-cassandra debezium-connect grafana ingress-nginx kafka kafka-ui loki mongo-express mongodb zookeeper namespace-client-tools namespace-datasources namespace-integrated-tools namespace-microservices namespace-platform nats ngrok-operator openframe-api openframe-authorization-server openframe-client openframe-config openframe-external-api openframe-gateway openframe-management openframe-stream openframe-frontend pinot prometheus promtail redis telepresence authentik fleetmdm meshcentral tactical-rmm registration
+cassandra debezium-connect grafana ingress-nginx kafka kafka-ui loki mongo-express mongodb zookeeper namespace-client-tools namespace-datasources namespace-integrated-tools namespace-microservices namespace-platform nats ngrok-operator openframe-api openframe-authorization-server openframe-client openframe-config openframe-external-api openframe-gateway openframe-management openframe-stream openframe-frontend pinot prometheus alloy redis telepresence authentik fleetmdm meshcentral tactical-rmm registration
 {{- end -}}
 
 {{/*
@@ -49,7 +49,7 @@ Rules:
   true
 {{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
   true
-{{- else if and $saas (or (eq $name "cassandra") (eq $name "debezium-connect") (eq $name "grafana") (eq $name "kafka") (eq $name "kafka-ui") (eq $name "loki") (eq $name "mongo-express") (eq $name "mongodb") (eq $name "zookeeper") (eq $name "namespace-client-tools") (eq $name "namespace-datasources") (eq $name "namespace-integrated-tools") (eq $name "namespace-microservices") (eq $name "namespace-platform") (eq $name "nats") (eq $name "ngrok-operator") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "openframe-client") (eq $name "openframe-config") (eq $name "openframe-external-api") (eq $name "openframe-gateway") (eq $name "openframe-stream") (eq $name "openframe-management") (eq $name "pinot") (eq $name "prometheus") (eq $name "promtail") (eq $name "redis") (eq $name "telepresence") (eq $name "authentik") (eq $name "fleetmdm") (eq $name "meshcentral") (eq $name "tactical-rmm") (eq $name "registration")) }}
+{{- else if and $saas (or (eq $name "cassandra") (eq $name "debezium-connect") (eq $name "grafana") (eq $name "kafka") (eq $name "kafka-ui") (eq $name "loki") (eq $name "mongo-express") (eq $name "mongodb") (eq $name "zookeeper") (eq $name "namespace-client-tools") (eq $name "namespace-datasources") (eq $name "namespace-integrated-tools") (eq $name "namespace-microservices") (eq $name "namespace-platform") (eq $name "nats") (eq $name "ngrok-operator") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "openframe-client") (eq $name "openframe-config") (eq $name "openframe-external-api") (eq $name "openframe-gateway") (eq $name "openframe-stream") (eq $name "openframe-management") (eq $name "pinot") (eq $name "prometheus") (eq $name "alloy") (eq $name "redis") (eq $name "telepresence") (eq $name "authentik") (eq $name "fleetmdm") (eq $name "meshcentral") (eq $name "tactical-rmm") (eq $name "registration")) }}
   true
 {{- else if and $saas $saasGcp (eq $name "ingress-nginx") }}
   true

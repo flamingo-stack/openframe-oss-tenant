@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  labels:
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/component: config
+data:
+  config.alloy: |
+    // ============================================
+    // Kubernetes Pod Discovery
+    // ============================================
+    discovery.kubernetes "pods" {
+      role = "pod"
+    }
+
+    // Relabel discovered pods with useful metadata
+    discovery.relabel "pods" {
+      targets = discovery.kubernetes.pods.targets
+
+      // Drop pods that have logging disabled
+      rule {
+        source_labels = ["__meta_kubernetes_pod_annotation_logging_enabled"]
+        regex         = "false"
+        action        = "drop"
+      }
+
+      // Namespace label
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      // Pod name
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+
+      // Container name
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+
+      // App label (common k8s label)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        target_label  = "app"
+      }
+
+      // App.kubernetes.io/name label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+        target_label  = "app_name"
+      }
+
+      // App.kubernetes.io/component label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+        target_label  = "component"
+      }
+
+      // Node name
+      rule {
+        source_labels = ["__meta_kubernetes_pod_node_name"]
+        target_label  = "node"
+      }
+
+      // Job name for batch workloads
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_job_name"]
+        target_label  = "job_name"
+      }
+    }
+
+    // ============================================
+    // Log Collection from Kubernetes
+    // ============================================
+    loki.source.kubernetes "pods" {
+      targets    = discovery.relabel.pods.output
+      forward_to = [loki.process.pods.receiver]
+    }
+
+    // ============================================
+    // Log Processing Pipeline
+    // ============================================
+    loki.process "pods" {
+      forward_to = [loki.write.default.receiver]
+
+      // Parse JSON logs if present
+      stage.json {
+        expressions = {
+          level   = "level",
+          msg     = "msg",
+          message = "message",
+          logger  = "logger",
+          error   = "error",
+        }
+        drop_malformed = true
+      }
+
+      // Extract level from common formats
+      stage.regex {
+        expression = "(?P<level>DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE)"
+      }
+
+      // Normalize log levels
+      stage.replace {
+        expression = "(?i)warning"
+        replace    = "WARN"
+        source     = "level"
+      }
+
+      // Add level label if extracted
+      stage.labels {
+        values = {
+          level = "",
+        }
+      }
+
+      // Add static cluster label
+      stage.static_labels {
+        values = {
+          cluster = "openframe",
+        }
+      }
+
+      // Drop debug logs in production (optional - uncomment if needed)
+      // stage.drop {
+      //   source = "level"
+      //   value  = "DEBUG"
+      // }
+    }
+
+    // ============================================
+    // Loki Writer
+    // ============================================
+    loki.write "default" {
+      endpoint {
+        url = "http://loki.platform.svc.cluster.local:3100/loki/api/v1/push"
+
+        // Batch settings for better performance
+        batch_wait    = "1s"
+        batch_size    = 1048576  // 1MB
+
+        // Retry on failure
+        retry_on_http_429 = true
+      }
+      external_labels = {}
+    }
