@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "id": null,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -163,7 +163,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -586,8 +586,12 @@
         "type": "loki",
         "uid": "loki"
       },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
-        "h": 15,
+        "h": 9,
         "w": 24,
         "x": 0,
         "y": 16
@@ -595,14 +599,17 @@
       "id": 9,
       "options": {
         "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
         "enableLogDetails": true,
         "prettifyLogMessage": false,
         "showCommonLabels": false,
+        "showControls": false,
         "showLabels": true,
         "showTime": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -636,5 +643,5 @@
   "timezone": "",
   "title": "Loki",
   "uid": "loki",
-  "version": 1
+  "version": 4
 }
