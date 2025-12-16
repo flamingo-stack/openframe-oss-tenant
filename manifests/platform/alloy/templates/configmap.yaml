@@ -140,11 +140,8 @@ data:
       endpoint {
         url = "http://loki.platform.svc.cluster.local:3100/loki/api/v1/push"
 
-        // Batch settings for better performance
-        batch_wait    = "1s"
-        batch_size    = 1048576  // 1MB
-
-        // Retry on failure
+        batch_wait        = "1s"
+        batch_size        = "1MiB"
         retry_on_http_429 = true
       }
       external_labels = {}
