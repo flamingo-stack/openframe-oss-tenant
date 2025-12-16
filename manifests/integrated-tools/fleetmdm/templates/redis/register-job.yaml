@@ -1,4 +1,4 @@
-{{- if .Values.global.registerJob.enabled }}
+{{- if .Values.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -11,15 +11,10 @@ spec:
   backoffLimit: 3
   template:
     spec:
-      restartPolicy: Never
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-      
+      restartPolicy: Never 
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         command:
           - /bin/sh
           - -uc
