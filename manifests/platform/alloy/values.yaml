@@ -29,6 +29,7 @@ alloy:
 
   controller:
     type: daemonset
+    revisionHistoryLimit: 2
     tolerations:
       - operator: Exists
         effect: NoSchedule
