@@ -25,7 +25,7 @@ alloy:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: prometheus-operator/prometheus-config-reloader
-      tag: "0.86.0"
+      tag: "v0.86.1"
 
   controller:
     type: daemonset
