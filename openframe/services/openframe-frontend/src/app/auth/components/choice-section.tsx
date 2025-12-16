@@ -54,7 +54,6 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         const validateResponse = await authApiClient.validateAccessCode(orgEmail.trim(), accessCode.trim())
         
         if (!validateResponse.ok || !validateResponse.data) {
-          console.log({validateResponse})
           const error = validateResponse?.data?.code || 'Failed to validate access code'
           
           if (error.includes('ACCESS_CODE_ALREADY_USED')) {
