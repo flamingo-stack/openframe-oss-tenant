@@ -79,7 +79,7 @@ data:
     loki.process "pods" {
       forward_to = [loki.write.default.receiver]
 
-      // Parse JSON logs if present
+      // Parse JSON logs if present (don't drop non-JSON logs)
       stage.json {
         expressions = {
           level   = "level",
@@ -88,7 +88,7 @@ data:
           logger  = "logger",
           error   = "error",
         }
-        drop_malformed = true
+        drop_malformed = false
       }
 
       // Extract level from common formats
