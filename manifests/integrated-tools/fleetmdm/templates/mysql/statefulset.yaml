@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: mysql
-        image: "{{ .Values.mysql.image.registry }}/{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+        image: {{ .Values.mysql.image.registry }}/{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
         args:
           - --default-authentication-plugin=mysql_native_password
           - --skip-mysqlx

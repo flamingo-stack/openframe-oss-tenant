@@ -21,7 +21,7 @@ spec:
       
       containers:
       - name: redis
-        image: "{{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+        image: {{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
         ports:
         - containerPort: 6379
         volumeMounts:

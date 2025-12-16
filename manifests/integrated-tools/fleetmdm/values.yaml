@@ -1,26 +1,27 @@
-environment: dev
-
-global:
-  registerJob:
-    enabled: true
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      tag: "8.9.1"
+registerJob:
+  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
+  sapImage:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: sap/kubectl-container
+    tag: "v1.31.6"
 
 server:
-  image:
-    registry: ghcr.io/flamingo-stack/openframe-oss-tenant
-    repository: fleetmdm
+  image: 
+    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/fleetmdm
     tag: latest
 
 mysql:
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: library/mysql
+    repository: mysql
     tag: "8.0.35"
 
 redis:
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: library/redis
-    tag: "6.0-alpine"
+    repository: redis
+    tag: "7.4-alpine"

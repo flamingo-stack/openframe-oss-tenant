@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: init-privileges
-          image: "{{ .Values.mysql.image.registry }}/{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+          image: {{ .Values.mysql.image.registry }}/{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
           env:
             - name: MYSQL_USER
               valueFrom:
