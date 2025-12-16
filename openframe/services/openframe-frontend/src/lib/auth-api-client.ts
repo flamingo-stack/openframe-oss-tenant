@@ -188,6 +188,11 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' })
   }
 
+  validateAccessCode<T = any>(email: string, code: string) {
+    const path = `/sas/oauth/access-code/validate?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`
+    return requestPublic<T>(path, { method: 'GET' })
+  }
+
   registerOrganization<T = any>(payload: {
     email: string,
     firstName: string,
