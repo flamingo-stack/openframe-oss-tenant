@@ -79,28 +79,15 @@ data:
     loki.process "pods" {
       forward_to = [loki.write.default.receiver]
 
-      // Parse JSON logs if present (don't drop non-JSON logs)
-      stage.json {
-        expressions = {
-          level   = "level",
-          msg     = "msg",
-          message = "message",
-          logger  = "logger",
-          error   = "error",
-        }
-        drop_malformed = false
-      }
-
-      // Extract level from common formats
+      // Extract level from log line (works for JSON, logfmt, and plain text)
       stage.regex {
-        expression = "(?P<level>DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE)"
+        expression = "(?i)level[=:]\\s*[\"']?(?P<level>DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE)[\"']?"
       }
 
-      // Normalize log levels
-      stage.replace {
-        expression = "(?i)warning"
-        replace    = "WARN"
-        source     = "level"
+      // Normalize to lowercase
+      stage.template {
+        source   = "level"
+        template = "{{ ToLower .Value }}"
       }
 
       // Add level label if extracted
