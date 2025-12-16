@@ -43,7 +43,7 @@ export interface ScriptsState {
 const initialState = {
   scripts: [],
   search: '',
-  isLoading: false,
+  isLoading: true,
   error: null,
 }
 

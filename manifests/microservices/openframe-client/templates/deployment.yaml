@@ -13,16 +13,9 @@ spec:
       labels:
         app: openframe-client
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
-      {{- end }}
-
       initContainers:
         - name: wait-for-config-server
-          image: curlimages/curl:latest
+          image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
           command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
 
       containers:

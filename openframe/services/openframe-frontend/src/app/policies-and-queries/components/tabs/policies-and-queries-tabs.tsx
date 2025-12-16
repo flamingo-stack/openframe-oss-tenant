@@ -1,7 +1,7 @@
 'use client'
 
-import { TabItem } from '@flamingo/ui-kit'
-import { PoliciesIcon, QueriesIcon } from '@flamingo/ui-kit'
+import { TabItem } from '@flamingo-stack/openframe-frontend-core'
+import { PoliciesIcon, QueriesIcon } from '@flamingo-stack/openframe-frontend-core'
 import { Policies } from './policies'
 import { Queries } from './queries'
 

@@ -2,15 +2,15 @@
 
 import React, { useMemo, useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, ListLoader } from '@flamingo/ui-kit/components/ui'
-import { DetailPageContainer, SelectCard, LoadError, NotFoundError } from '@flamingo/ui-kit'
-import { SearchBar } from '@flamingo/ui-kit/components/ui'
-import { useToast, useDebounce } from '@flamingo/ui-kit/hooks'
+import { Button, ListLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { DetailPageContainer, SelectCard, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
+import { SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { ScriptInfoSection } from './script-info-section'
 import { useScriptDetails } from '../hooks/use-script-details'
 import { useDevices } from '../../devices/hooks/use-devices'
 import { getDeviceOperatingSystem } from '../../devices/utils/device-status'
-import { DeviceType } from '@flamingo/ui-kit'
+import { DeviceType } from '@flamingo-stack/openframe-frontend-core'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 
 interface RunScriptViewProps {

@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import { PublicEnvScript } from 'next-runtime-env'
 import { Suspense } from 'react'
 import './globals.css'
-import '@flamingo/ui-kit/styles'
-import { azeretMono, dmSans } from '@flamingo/ui-kit/fonts'
-import { Toaster } from '@flamingo/ui-kit/components/ui'
+import '@flamingo-stack/openframe-frontend-core/styles'
+import { azeretMono, dmSans } from '@lib/fonts'
+import { Toaster } from '@lib/openframe-core-ui'
 import { DevTicketObserver } from './auth/components/dev-ticket-observer'
 import { DeploymentInitializer } from './components/deployment-initializer'
 import { GoogleTagManager } from './components/google-tag-manager'
@@ -12,6 +12,7 @@ import { ImageConfigInitializer } from '../components/image-config-initializer'
 import { GraphQLIntrospectionInitializer } from '../components/graphql-introspection-initializer'
 import { RouteGuard } from '../components/route-guard'
 import { isAuthEnabled } from '../lib/app-mode'
+import { AppShellSkeleton } from './components/app-shell-skeleton'
 
 // Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
 export const dynamic = 'force-dynamic'
@@ -107,11 +108,7 @@ export default function RootLayout({
         )}
         <RouteGuard>
           <div className="relative flex min-h-screen flex-col">
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="text-ods-text-secondary">Loading...</div>
-              </div>
-            }>
+            <Suspense fallback={<AppShellSkeleton />}>
               {children}
             </Suspense>
           </div>

@@ -14,14 +14,9 @@ spec:
       labels:
         app: tactical-redis
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-
       containers:
       - name: redis
-        image: redis:6.0-alpine
+        image: {{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
         command: ["redis-server", "--save", "3600", "1", "300", "100", "60", "10000"]
         ports:
         - containerPort: 6379

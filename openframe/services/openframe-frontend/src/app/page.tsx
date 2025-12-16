@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ContentPageContainer } from '@flamingo/ui-kit/components/ui'
 import { useAuthStore } from './auth/stores/auth-store'
 import { getDefaultRedirectPath } from '../lib/app-mode'
+import { AppShellSkeleton } from './components/app-shell-skeleton'
 
 export default function Home() {
   const router = useRouter()
@@ -19,12 +19,5 @@ export default function Home() {
     }
   }, [router, isAuthenticated])
 
-  return (
-    <ContentPageContainer
-      title="Welcome"
-      subtitle="Loading your dashboard..."
-    >
-      <div />
-    </ContentPageContainer>
-  )
+  return <AppShellSkeleton />
 }

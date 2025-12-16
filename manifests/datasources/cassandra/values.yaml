@@ -1,26 +1,54 @@
+
 registerJob:
   enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    tag: "8.9.1"
 
 
 cassandra:
-  # bitnamilegacy
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
   image:
+    registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/cassandra
     tag: 5.0.5-debian-12-r7
 
-  global:
-    # bitnamilegacy
-    security:
-      allowInsecureImages: true
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+      prometheus.io/path: "/metrics"    
+  
+  dbUser:
+    user: cassandra
+    existingSecret:
+      name: cassandra
+      keyMapping:
+        cassandra-password: cassandra-password
+  initDBConfigMap: "cassandra-initdb"
+  priorityClassName: "cassandra"
 
-  # resourcesPreset: medium
   resources:
-    # requests:
-    #   cpu: 2
-    #   memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 1Gi
     limits:
       cpu: 1
-      memory: 2048Mi
+      memory: 2Gi
+
+
+  metrics:
+    enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bitnamilegacy/cassandra-exporter
+      tag: 2.3.8-debian-12-r51
+    podAnnotations:
+      prometheus.io/scrape: "false"
+
 
   extraEnvVars:
     - name: CASSANDRA_AUTHENTICATOR
@@ -29,8 +57,6 @@ cassandra:
       value: AllowAllAuthorizer
     - name: CASSANDRA_NATIVE_TRANSPORT_MAX_THREADS
       value: "128"
-    # - name: CASSANDRA_NATIVE_TRANSPORT_PORT_SSL
-    #   value: "9142"
     - name: CASSANDRA_NATIVE_TRANSPORT_MAX_FRAME_SIZE
       value: "256MB"
     - name: CASSANDRA_STARTUP_TIMEOUT
@@ -39,65 +65,3 @@ cassandra:
       value: "0"
     - name: GOSSIP_WAIT_TIME_IN_MS
       value: "0"
-
-  initDB:
-    cassandra-init.cql: |
-      CREATE KEYSPACE IF NOT EXISTS openframe_events
-      WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-      
-      USE openframe_events;
-      
-      CREATE TABLE IF NOT EXISTS unified_logs (
-      ingest_day          text,
-      tool_type           text,
-      event_type          text,
-      event_timestamp     timestamp,
-      tool_event_id       text,
-      user_id             text,
-      device_id           text,
-      hostname            text,
-      organization_id     text,
-      organization_name   text,
-      severity            text,
-      message             text,
-      details             text,
-      debezium_message    text,
-      PRIMARY KEY ((ingest_day, tool_type), event_type, event_timestamp, tool_event_id)
-      ) WITH CLUSTERING ORDER BY (event_type ASC, event_timestamp DESC, tool_event_id ASC);
-  # initDBConfigMap: ""
-
-  cluster:
-    name: cassandra
-    seedCount: 1
-    numTokens: 256
-    datacenter: dc1
-    rack: rack1
-    endpointSnitch: SimpleSnitch
-    clientEncryption: false
-    ## eg:
-    ## extraSeeds:
-    ##   - hostname/IP
-    ##   - hostname/IP
-    ##
-    extraSeeds: []
-    enableUDF: false
-
-  metrics:
-    enabled: false
-    # bitnamilegacy
-    image:
-      repository: bitnamilegacy/cassandra-exporter
-      tag: 2.3.8-debian-12-r51
-    
-    podAnnotations:
-      prometheus.io/path: "/metrics"
-
-    readinessProbe:
-      initialDelaySeconds: 60
-      periodSeconds: 15
-      timeoutSeconds: 45
-      failureThreshold: 5
-
-    serviceMonitor:
-      enabled: true
-      namespace: datasources

@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter, Label } from '@flamingo/ui-kit'
-import { Input, Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { PlusCircleIcon, IconsXIcon } from '@flamingo/ui-kit/components/icons'
+import { Button, Modal, ModalHeader, ModalTitle, ModalFooter, Label } from '@flamingo-stack/openframe-frontend-core'
+import { Input, Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { PlusCircleIcon, IconsXIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 
 type InviteRow = { email: string; role: string }
 

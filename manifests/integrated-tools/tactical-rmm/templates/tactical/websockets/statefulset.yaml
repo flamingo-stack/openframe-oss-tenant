@@ -17,14 +17,10 @@ spec:
       labels:
         app: tactical-websockets
     spec:
-      # {{- if ne .Values.registry.docker.password "" }}
-      # imagePullSecrets:
-      #   - name: docker-pat-secret
-      # {{- end }}
 
       initContainers:
       - name: wait-for-dependencies
-        image: busybox:1.28
+        image: {{ .Values.tactical.init.image.registry }}/{{ .Values.tactical.init.image.repository }}:{{ .Values.tactical.init.image.tag }}
         command: ['sh', '-c', '
           echo "Waiting for PostgreSQL..." &&
           until nc -z tactical-postgres-0.tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
@@ -39,7 +35,7 @@ spec:
 
       containers:
       - name: tactical-base
-        image: "{{ .Values.tactical.base.image.repo }}:{{ .Values.tactical.base.image.tag }}"
+        image: "{{ .Values.tactical.base.image.registry }}/{{ .Values.tactical.base.image.repository }}:{{ .Values.tactical.base.image.tag }}"
         args: ["tactical-websockets"]
         ports:
         - containerPort: 8000

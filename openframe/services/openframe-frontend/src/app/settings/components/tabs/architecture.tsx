@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { ServiceCard, Skeleton } from '@flamingo/ui-kit'
-import { SearchBar } from '@flamingo/ui-kit/components/ui'
+import { ServiceCard, Skeleton } from '@flamingo-stack/openframe-frontend-core'
+import { SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useIntegratedTools } from '../../hooks/use-integrated-tools'
 
 export function ArchitectureTab() {

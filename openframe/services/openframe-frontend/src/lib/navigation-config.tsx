@@ -1,4 +1,4 @@
-import { NavigationSidebarItem } from '@flamingo/ui-kit/types/navigation'
+import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation'
 import { 
   DashboardIcon,
   DevicesIcon,
@@ -8,7 +8,7 @@ import {
   MingoIcon,
   PoliciesIcon,
   OrganizationsIcon
-} from '@flamingo/ui-kit/components/icons'
+} from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode'
 
 export const getNavigationItems = (

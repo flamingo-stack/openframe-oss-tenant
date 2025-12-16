@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { ContentPageContainer } from '@flamingo/ui-kit/components/ui'
+import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 export default function NotFound() {
   return (

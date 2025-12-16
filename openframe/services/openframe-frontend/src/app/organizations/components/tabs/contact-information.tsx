@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { Input, Label, Checkbox } from '@flamingo/ui-kit/components/ui'
+import { Input, Label, Checkbox } from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 export type ContactInfoState = {
   primaryName: string

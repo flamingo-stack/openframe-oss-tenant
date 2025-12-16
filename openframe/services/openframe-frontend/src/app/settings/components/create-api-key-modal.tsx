@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit'
-import { Input, Label, Textarea } from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo-stack/openframe-frontend-core'
+import { Input, Label, Textarea } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 
 interface CreateApiKeyModalProps {
   isOpen: boolean

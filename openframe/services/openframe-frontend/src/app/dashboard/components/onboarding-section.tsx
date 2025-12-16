@@ -10,7 +10,7 @@ import {
   DevicesIcon,
   UsersGroupIcon,
   DocumentIcon
-} from '@flamingo/ui-kit'
+} from '@flamingo-stack/openframe-frontend-core'
 import { useOnboardingCompletion } from '../hooks/use-onboarding-completion'
 
 /**

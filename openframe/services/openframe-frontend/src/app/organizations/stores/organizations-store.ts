@@ -42,7 +42,7 @@ export interface OrganizationsState {
 const initialState = {
   organizations: [],
   search: '',
-  isLoading: false,
+  isLoading: true,
   error: null,
 }
 

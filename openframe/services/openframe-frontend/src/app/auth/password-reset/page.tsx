@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Button, Input, Label, Card, CardContent, CardHeader } from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { Button, Input, Label, Card, CardContent, CardHeader } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { AuthLayout } from '../layouts'
 import { authApiClient } from '@lib/auth-api-client'
 

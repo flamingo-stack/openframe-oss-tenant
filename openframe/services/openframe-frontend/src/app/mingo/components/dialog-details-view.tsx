@@ -8,9 +8,9 @@ import {
   Monitor,
   Check
 } from 'lucide-react'
-import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo/ui-kit'
-import { Button } from '@flamingo/ui-kit'
-import { DetailLoader } from '@flamingo/ui-kit/components/ui'
+import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo-stack/openframe-frontend-core'
+import { Button } from '@flamingo-stack/openframe-frontend-core'
+import { DetailLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { DeviceInfoSection } from '../../components/shared'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'

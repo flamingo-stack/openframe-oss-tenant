@@ -5,7 +5,7 @@
  * Must be called after authentication is complete.
  */
 
-import { introspector } from '@flamingo/ui-kit/hooks'
+import { introspector } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { runtimeEnv } from './runtime-config'
 
 // GraphQL endpoint configuration

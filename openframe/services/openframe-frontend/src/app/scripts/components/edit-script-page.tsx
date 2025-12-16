@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Plus, ArrowLeft } from 'lucide-react'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { useScriptDetails } from '../hooks/use-script-details'
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, FormLoader, FormPageContainer, Label, Textarea } from '@flamingo/ui-kit'
-import { PushButtonSelector } from '@flamingo/ui-kit/components/features'
-import { Card } from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { OS_TYPES, type OSType } from '@flamingo/ui-kit'
-import { SHELL_TYPES } from '@flamingo/ui-kit/types/shell.types'
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, FormLoader, FormPageContainer, Label, Textarea } from '@flamingo-stack/openframe-frontend-core'
+import { PushButtonSelector } from '@flamingo-stack/openframe-frontend-core/components/features'
+import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { OS_TYPES, type OSType } from '@flamingo-stack/openframe-frontend-core'
+import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types'
 
 interface ScriptData {
   name: string

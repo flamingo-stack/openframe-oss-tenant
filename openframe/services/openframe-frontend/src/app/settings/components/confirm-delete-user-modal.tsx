@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@flamingo/ui-kit/components/ui'
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 interface ConfirmDeleteUserModalProps {
   open: boolean

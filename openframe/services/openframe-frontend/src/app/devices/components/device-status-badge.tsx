@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { cn } from '@flamingo/ui-kit/utils'
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils'
 import { getDeviceStatusConfig } from '../utils/device-status'
 
 interface DeviceStatusBadgeProps {

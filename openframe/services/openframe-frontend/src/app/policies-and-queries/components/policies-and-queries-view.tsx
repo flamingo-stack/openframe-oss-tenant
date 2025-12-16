@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react"
-import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
+import { TabNavigation, TabContent, getTabComponent } from '@flamingo-stack/openframe-frontend-core'
 import { POLICIES_AND_QUERIES_TABS } from './tabs/policies-and-queries-tabs'
 
 export function PoliciesAndQueriesView() {

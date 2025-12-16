@@ -1,5 +1,5 @@
 import React from 'react'
-import { MicrosoftIcon, GoogleLogo, SlackIcon } from '@flamingo/ui-kit/components/icons'
+import { MicrosoftIcon, GoogleLogo, SlackIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 
 /**
  * Get the appropriate icon component for an SSO provider

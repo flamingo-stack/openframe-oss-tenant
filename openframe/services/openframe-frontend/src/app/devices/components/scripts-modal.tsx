@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react'
 import { Search, Check } from 'lucide-react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { getOSPlatformId, OS_TYPES } from '@flamingo/ui-kit'
+import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { getOSPlatformId, OS_TYPES } from '@flamingo-stack/openframe-frontend-core'
 import { useScripts } from '../../scripts/hooks/use-scripts'
 import { ScriptEntry } from '../../scripts/stores/scripts-store'
 import { Device } from '../types/device.types'
 import { tacticalApiClient } from '../../../lib/tactical-api-client'
-import { ListLoader, PageError } from '@flamingo/ui-kit/components/ui'
+import { ListLoader, PageError } from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 const scrollbarStyles = {
   scrollbarWidth: 'thin' as const,

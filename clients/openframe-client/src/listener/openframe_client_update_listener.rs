@@ -6,6 +6,7 @@ use crate::config::update_config::{
     MAX_RETRY_DELAY_MS,
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
+    CONSUMER_MAX_DELIVER,
 };
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
@@ -179,7 +180,8 @@ impl OpenFrameClientUpdateListener {
             deliver_subject,
             durable_name: Some(durable_name),
             ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
-            deliver_policy: DeliverPolicy::Last,
+            deliver_policy: DeliverPolicy::New,
+            max_deliver: CONSUMER_MAX_DELIVER,
             ..Default::default()
         }
     }

@@ -1,7 +1,7 @@
 'use client'
 
-import { DashboardInfoCard, Skeleton, OrganizationCard } from '@flamingo/ui-kit'
-import { useBatchImages } from '@flamingo/ui-kit/hooks'
+import { DashboardInfoCard, Skeleton, OrganizationCard } from '@flamingo-stack/openframe-frontend-core'
+import { useBatchImages } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { useOrganizationsOverview } from '../hooks/use-organizations-overview'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'

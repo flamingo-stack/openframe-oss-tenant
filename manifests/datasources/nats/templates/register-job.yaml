@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -12,9 +13,13 @@ spec:
   template:
     spec:
       restartPolicy: Never
+
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        envFrom:
+          - secretRef:
+              name: nats-credentials
         command:
           - /bin/sh
           - -uc
@@ -39,17 +44,17 @@ spec:
                   "description": "Nats",
                   "toolUrls": [
                     {
-                      "url": "nats://nats-0.nats.datasources.svc.cluster.local",
+                      "url": "nats://nats.datasources.svc.cluster.local",
                       "port": "4222",
                       "type": "NATS"
                     },
                     {
-                      "url": "ws://nats-0.nats.datasources.svc.cluster.local",
+                      "url": "ws://nats.datasources.svc.cluster.local",
                       "port": "8080",
                       "type": "WS"
                     },
                     {
-                      "url": "http://nats-0.nats.datasources.svc.cluster.local",
+                      "url": "http://nats.datasources.svc.cluster.local",
                       "port": "8222",
                       "type": "DASHBOARD"
                     }
@@ -57,7 +62,10 @@ spec:
                   "category": "Service Discovery",
                   "platformCategory": "OpenFrame Service",
                   "enabled": true,
-                  "credentials": {},
+                  "credentials": {
+                    "username": "'"${SERVICE_USER}"'",
+                    "password": "'"${SERVICE_PASS}"'"
+                  },
                   "layer": "Streaming",
                   "layerOrder": 2,
                   "layerColor": "#1E88E5",
@@ -80,4 +88,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "NATS Registration failed..."; exit 1; }
             echo "NATS Registration complete."
+
 {{- end }}
