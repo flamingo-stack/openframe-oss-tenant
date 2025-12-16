@@ -18,6 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
+  "id": 24,
   "links": [],
   "panels": [
     {
@@ -101,8 +102,10 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "up{service=\"cassandra\", job=\"kubernetes-service-endpoints\"}",
+          "editorMode": "code",
+          "expr": "up{service=\"cassandra\", job=\"kubernetes-service\"}",
           "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -313,7 +316,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
