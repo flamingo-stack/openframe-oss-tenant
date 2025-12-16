@@ -4,17 +4,18 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
 
+
 alloy:
   alloy:
     clustering:
       enabled: false
     stabilityLevel: "generally-available"
 
-    # Use external ConfigMap instead of inline config
     configMap:
       create: false
       name: alloy-config
       key: config.alloy
+
 
   controller:
     type: daemonset
@@ -24,32 +25,27 @@ alloy:
 
   serviceAccount:
     create: true
-
   rbac:
     create: true
 
-  # Mount paths needed for log collection
   mounts:
     varlog: true
     dockercontainers: true
 
-  # Resource limits
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
-      cpu: 500m
+      cpu: 200m
       memory: 512Mi
 
-  # Liveness and readiness probes
   livenessProbe:
     httpGet:
       path: /-/healthy
       port: 12345
     initialDelaySeconds: 30
     periodSeconds: 10
-
   readinessProbe:
     httpGet:
       path: /-/ready
