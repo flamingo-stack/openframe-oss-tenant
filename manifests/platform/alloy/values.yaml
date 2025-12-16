@@ -15,6 +15,10 @@ alloy:
       create: false
       name: alloy-config
       key: config.alloy
+    
+    mounts:
+      varlog: true
+      dockercontainers: true
 
   
   image:
@@ -40,10 +44,6 @@ alloy:
     create: true
   rbac:
     create: true
-
-  mounts:
-    varlog: true
-    dockercontainers: true
 
   resources:
     requests:
