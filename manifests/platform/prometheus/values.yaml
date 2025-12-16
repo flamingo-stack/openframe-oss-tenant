@@ -11,6 +11,9 @@ prometheus:
       repository: ghcr.io/flamingo-stack/registry/prometheus/prometheus
       tag: v3.7.3
 
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+
     retention: "3d"
 
     resources:

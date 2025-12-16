@@ -33,6 +33,8 @@ alloy:
     tolerations:
       - operator: Exists
         effect: NoSchedule
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
 
   serviceAccount:
     create: true
