@@ -604,8 +604,8 @@
         "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showControls": false,
-        "showLabels": true,
-        "showTime": true,
+        "showLabels": false,
+        "showTime": false,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
@@ -616,7 +616,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"loki.*\", namespace=\"platform\"} | logfmt",
+          "expr": "{pod=~\"loki.*\", namespace=\"platform\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],

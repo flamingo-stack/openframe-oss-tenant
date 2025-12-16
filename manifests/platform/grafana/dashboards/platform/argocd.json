@@ -505,8 +505,8 @@
         "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showControls": false,
-        "showLabels": true,
-        "showTime": true,
+        "showLabels": false,
+        "showTime": false,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
@@ -517,7 +517,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"argocd-server.*\", namespace=\"argocd\"} | logfmt",
+          "expr": "{pod=~\"argocd-server.*\", namespace=\"argocd\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],
@@ -547,8 +547,8 @@
         "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showControls": false,
-        "showLabels": true,
-        "showTime": true,
+        "showLabels": false,
+        "showTime": false,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
@@ -559,7 +559,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"argocd-application-controller.*\", namespace=\"argocd\"} | logfmt",
+          "expr": "{pod=~\"argocd-application-controller.*\", namespace=\"argocd\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],
@@ -589,8 +589,8 @@
         "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showControls": false,
-        "showLabels": true,
-        "showTime": true,
+        "showLabels": false,
+        "showTime": false,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
@@ -601,7 +601,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"argocd-repo-server.*\", namespace=\"argocd\"} | logfmt",
+          "expr": "{pod=~\"argocd-repo-server.*\", namespace=\"argocd\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],
