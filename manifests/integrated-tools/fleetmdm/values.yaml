@@ -11,7 +11,7 @@ registerJob:
 
 server:
   image: 
-    registry: ghcr.io/flamingo-stack/openframe-oss-tenant/
+    registry: ghcr.io/flamingo-stack/openframe-oss-tenant
     repository: fleetmdm
     tag: latest
 
