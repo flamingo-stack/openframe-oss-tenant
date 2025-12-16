@@ -14,7 +14,7 @@ spec:
       restartPolicy: Never 
       containers:
       - name: register
-        image: {{ default .Values.global.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.global.registerJob.image.tag }}
+        image: {{ default .Values.global.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.global.registerJob.image.repository }}:{{ .Values.global.registerJob.image.tag }}
         command:
           - /bin/sh
           - -uc

@@ -11,7 +11,8 @@ registerJob:
 
 server:
   image: 
-    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/fleetmdm
+    registry: ghcr.io/flamingo-stack/openframe-oss-tenant/
+    repository: fleetmdm
     tag: latest
 
 mysql:
