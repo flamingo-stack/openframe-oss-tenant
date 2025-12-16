@@ -16,6 +16,16 @@ alloy:
       name: alloy-config
       key: config.alloy
 
+  
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: grafana/alloy
+    tag: "v1.12.1"
+  configReloader:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: prometheus-operator/prometheus-config-reloader
+      tag: "0.86.0"
 
   controller:
     type: daemonset
