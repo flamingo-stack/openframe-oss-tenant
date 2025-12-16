@@ -17,18 +17,12 @@ spec:
       labels:
         app: meshcentral-server
     spec:
-      # {{- if ne .Values.registry.docker.password "" }}
-      # imagePullSecrets:
-      #   {{- if ne .Values.registry.docker.password "" }}
-      #   - name: docker-pat-secret
-      #   {{- end }}
-      # {{- end }}
       securityContext:  # FIX for: chmod: /opt/mesh: Operation not permitted, remove this when chmod on /opt/mesh/ is removed
         runAsUser: 0
 
       initContainers:
       - name: wait-mongodb
-        image: mongo:8.0.9
+        image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
         envFrom:
           - configMapRef:
               name: meshcentral-mongodb
@@ -63,7 +57,7 @@ spec:
           subPath: readiness-command.sh
 
       - name: init-clean-meshcentral
-        image: busybox:1.36
+        image: {{ .Values.server.initImage.registry }}/{{ .Values.server.initImage.repository }}:{{ .Values.server.initImage.tag }}
         command:
           - sh
           - -c

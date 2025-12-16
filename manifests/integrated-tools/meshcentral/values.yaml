@@ -1,17 +1,25 @@
-global:
-  registerJob:
-    enabled: true
-
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
+registerJob:
+  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
 
 server:
   image: 
     repo: ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral
     tag: latest
+  initImage:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: busybox
+    tag: "1.36.0"
 
-empty: ""
+mongodb:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: mongo
+    tag: "8.0.9"
+  initImage:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: busybox
+    tag: "1.36.0"
