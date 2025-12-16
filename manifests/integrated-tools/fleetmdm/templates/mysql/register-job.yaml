@@ -1,4 +1,4 @@
-{{- if .Values.global.registerJob.enabled }}
+{{- if .Values.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -16,7 +16,7 @@ spec:
 
       containers:
       - name: register
-        image: {{ default .Values.global.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.global.registerJob.image.repository }}:{{ .Values.global.registerJob.image.tag }}
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         env:
         - name: MYSQL_USER
           valueFrom:
