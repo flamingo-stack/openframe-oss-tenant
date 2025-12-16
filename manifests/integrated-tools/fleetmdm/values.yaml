@@ -1,16 +1,28 @@
-global:
-  registerJob:
-    enabled: true
-
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
+registerJob:
+  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
+  sapImage:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: sap/kubectl-container
+    tag: "v1.31.6"
 
 server:
   image: 
-    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/fleetmdm
+    registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+    repository: fleetmdm
     tag: latest
-empty: ""
+
+mysql:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: mysql
+    tag: "8.0.35"
+
+redis:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: redis
+    tag: "7.4-alpine"

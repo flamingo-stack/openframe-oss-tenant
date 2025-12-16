@@ -1,4 +1,4 @@
-{{- if .Values.global.registerJob.enabled }}
+{{- if .Values.registerJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -15,7 +15,7 @@ spec:
 
       containers:
       - name: register
-        image: ghcr.io/sap/kubectl-container:v1.31.6
+        image: {{ .Values.registerJob.sapImage.registry }}/{{ .Values.registerJob.sapImage.repository }}:{{ .Values.registerJob.sapImage.tag }}
         envFrom:
           - configMapRef:
               name: fleetmdm-mysql
