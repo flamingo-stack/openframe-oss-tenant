@@ -81,13 +81,7 @@ data:
 
       // Extract level from log line (works for JSON, logfmt, and plain text)
       stage.regex {
-        expression = "(?i)level[=:]\\s*[\"']?(?P<level>DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE)[\"']?"
-      }
-
-      // Normalize to lowercase
-      stage.template {
-        source   = "level"
-        template = "{{ ToLower .Value }}"
+        expression = "(?i)level[=:]\\s*[\"']?(?P<level>[a-zA-Z]+)[\"']?"
       }
 
       // Add level label if extracted
