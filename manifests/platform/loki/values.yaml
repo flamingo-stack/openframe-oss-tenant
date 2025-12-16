@@ -12,10 +12,7 @@ loki:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: grafana/loki
-      tag: "3.5.7"
-    
-    serviceAnnotations:
-      loki.grafana.com/scrape: "true"
+      tag: "3.5.7"      
 
     auth_enabled: false
     server:
@@ -94,6 +91,10 @@ loki:
 
   singleBinary:
     replicas: 1
+
+    service:
+      annotations: 
+        loki.grafana.com/scrape: "true"
 
     persistence:
       enabled: true
