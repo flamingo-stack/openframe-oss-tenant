@@ -4,9 +4,7 @@ metadata:
   name: alloy-config
 data:
   config.alloy: |
-    // ============================================
-    // Kubernetes Pod Discovery
-    // ============================================
+    // Discover pods on this node with loki.grafana.com/scrape=true annotation
     discovery.kubernetes "pods" {
       role = "pod"
       selectors {
@@ -15,18 +13,17 @@ data:
       }
     }
 
-    // Relabel to keep only annotated pods and extract labels
     discovery.relabel "pods" {
       targets = discovery.kubernetes.pods.targets
 
-      // Only keep pods with loki scrape annotation
+      // Only scrape pods with annotation
       rule {
         source_labels = ["__meta_kubernetes_pod_annotation_loki_grafana_com_scrape"]
         regex         = "true"
         action        = "keep"
       }
 
-      // Set path to container log files
+      // Set log file path
       rule {
         source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
         target_label  = "__path__"
@@ -34,40 +31,26 @@ data:
         replacement   = "/var/log/pods/*$1/$2/*.log"
       }
 
-      // Namespace
+      // Standard labels
       rule {
         source_labels = ["__meta_kubernetes_namespace"]
         target_label  = "namespace"
       }
-
-      // Pod
       rule {
         source_labels = ["__meta_kubernetes_pod_name"]
         target_label  = "pod"
       }
-
-      // Container
       rule {
         source_labels = ["__meta_kubernetes_pod_container_name"]
         target_label  = "container"
       }
-
-      // App name
       rule {
         source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
         target_label  = "app"
       }
-
-      // Component
-      rule {
-        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
-        target_label  = "component"
-      }
     }
 
-    // ============================================
-    // File-based Log Collection (Promtail-style)
-    // ============================================
+    // Collect logs from files
     local.file_match "pods" {
       path_targets = discovery.relabel.pods.output
     }
@@ -77,42 +60,16 @@ data:
       forward_to = [loki.process.pods.receiver]
     }
 
-    // ============================================
-    // Log Processing Pipeline
-    // ============================================
+    // Process logs
     loki.process "pods" {
       forward_to = [loki.write.default.receiver]
-
-      // Parse CRI/Docker container log format
       stage.cri {}
-
-      // Extract log level from content
-      stage.regex {
-        expression = "(?i)level[=:]\\s*[\"']?(?P<level>debug|info|warn|warning|error|fatal)[\"']?"
-      }
-
-      // Add level label
-      stage.labels {
-        values = {
-          level = "",
-        }
-      }
-
-      // Add cluster label
-      stage.static_labels {
-        values = {
-          cluster = "openframe",
-        }
-      }
     }
 
-    // ============================================
-    // Loki Writer
-    // ============================================
+    // Send to Loki
     loki.write "default" {
       endpoint {
-        url = "http://loki.platform.svc.cluster.local:3100/loki/api/v1/push"
-
+        url               = "http://loki.platform.svc.cluster.local:3100/loki/api/v1/push"
         batch_wait        = "1s"
         batch_size        = "1MiB"
         retry_on_http_429 = true
