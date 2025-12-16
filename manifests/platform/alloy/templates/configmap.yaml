@@ -2,33 +2,36 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: alloy-config
-  labels:
-    app.kubernetes.io/name: alloy
-    app.kubernetes.io/component: config
 data:
   config.alloy: |
     // ============================================
-    // Kubernetes Pod Discovery
+    // Kubernetes Service Discovery (via endpoints)
     // ============================================
-    discovery.kubernetes "pods" {
-      role = "pod"
+    discovery.kubernetes "services" {
+      role = "endpoints"
     }
 
-    // Relabel discovered pods with useful metadata
+    // Relabel based on service annotations
     discovery.relabel "pods" {
-      targets = discovery.kubernetes.pods.targets
+      targets = discovery.kubernetes.services.targets
 
-      // Drop pods that have logging disabled
+      // Only keep services with loki scrape annotation
       rule {
-        source_labels = ["__meta_kubernetes_pod_annotation_logging_enabled"]
-        regex         = "false"
-        action        = "drop"
+        source_labels = ["__meta_kubernetes_service_annotation_loki_grafana_com_scrape"]
+        regex         = "true"
+        action        = "keep"
       }
 
       // Namespace label
       rule {
         source_labels = ["__meta_kubernetes_namespace"]
         target_label  = "namespace"
+      }
+
+      // Service name
+      rule {
+        source_labels = ["__meta_kubernetes_service_name"]
+        target_label  = "service"
       }
 
       // Pod name
@@ -43,21 +46,21 @@ data:
         target_label  = "container"
       }
 
-      // App label (common k8s label)
+      // App label from service
       rule {
-        source_labels = ["__meta_kubernetes_pod_label_app"]
+        source_labels = ["__meta_kubernetes_service_label_app"]
         target_label  = "app"
       }
 
-      // App.kubernetes.io/name label
+      // App.kubernetes.io/name from service
       rule {
-        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+        source_labels = ["__meta_kubernetes_service_label_app_kubernetes_io_name"]
         target_label  = "app_name"
       }
 
-      // App.kubernetes.io/component label
+      // App.kubernetes.io/component from service
       rule {
-        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+        source_labels = ["__meta_kubernetes_service_label_app_kubernetes_io_component"]
         target_label  = "component"
       }
 
@@ -65,12 +68,6 @@ data:
       rule {
         source_labels = ["__meta_kubernetes_pod_node_name"]
         target_label  = "node"
-      }
-
-      // Job name for batch workloads
-      rule {
-        source_labels = ["__meta_kubernetes_pod_label_job_name"]
-        target_label  = "job_name"
       }
     }
 

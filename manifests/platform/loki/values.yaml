@@ -88,6 +88,9 @@ loki:
 
   deploymentMode: SingleBinary
 
+  serviceAnnotations:
+    loki.grafana.com/scrape: "true"
+
   singleBinary:
     replicas: 1
 
