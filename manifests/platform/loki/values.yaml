@@ -92,9 +92,8 @@ loki:
   singleBinary:
     replicas: 1
 
-    service:
-      annotations: 
-        loki.grafana.com/scrape: "true"
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
 
     persistence:
       enabled: true
