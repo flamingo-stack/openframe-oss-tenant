@@ -46,6 +46,8 @@ nats:
         - secretRef:
             name: nats-credentials
       volumeMounts:
+        - name: nats-js
+          mountPath: /data/jetstream
         - name: nats-config
           mountPath: /etc/nats-config
         - name: nats-custom-config
