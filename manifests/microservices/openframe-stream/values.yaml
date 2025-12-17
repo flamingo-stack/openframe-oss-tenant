@@ -19,6 +19,8 @@ image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-stream
   tag: latest
 
+podAnnotations:
+  loki.grafana.com/scrape: "true"
 service:
   annotations:
     prometheus.io/scrape: "true"

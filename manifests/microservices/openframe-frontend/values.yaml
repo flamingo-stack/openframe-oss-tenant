@@ -35,3 +35,6 @@ registerJob:
 image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-frontend
   tag: latest
+
+podAnnotations:
+  loki.grafana.com/scrape: "true"
