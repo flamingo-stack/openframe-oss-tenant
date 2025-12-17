@@ -41,25 +41,29 @@ nats:
       limits:
         cpu: 200m
         memory: 256Mi
-    patch:
-      - op: add
-        path: /envFrom
-        value:
-          - secretRef:
-              name: nats-credentials
-      - op: add
-        path: /volumeMounts/-
-        value:
-          name: nats-custom-config
+    merge:
+      envFrom:
+        - secretRef:
+            name: nats-credentials
+      volumeMounts:
+        - name: nats-config
+          mountPath: /etc/nats-config
+        - name: nats-custom-config
           mountPath: /etc/nats-custom-config
+        - name: pid
+          mountPath: /var/run/nats
   podTemplate:
-    patch:
-      - op: add
-        path: /spec/volumes/-
-        value:
-          name: nats-custom-config
-          configMap:
-            name: nats-custom-config
+    merge:
+      spec:
+        volumes:
+          - name: nats-config
+            configMap:
+              name: nats-config
+          - name: nats-custom-config
+            configMap:
+              name: nats-custom-config
+          - name: pid
+            emptyDir: {}
   statefulSet:
     merge:
       spec:
@@ -72,12 +76,14 @@ nats:
       registry: ghcr.io/flamingo-stack/registry
       repository: natsio/nats-server-config-reloader
       tag: 0.21.1
-    patch:
-      - op: add
-        path: /volumeMounts/-
-        value:
-          name: nats-custom-config
+    merge:
+      volumeMounts:
+        - name: nats-config
+          mountPath: /etc/nats-config
+        - name: nats-custom-config
           mountPath: /etc/nats-custom-config
+        - name: pid
+          mountPath: /var/run/nats
 
 
   promExporter:
