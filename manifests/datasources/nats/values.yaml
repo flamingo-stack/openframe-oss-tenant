@@ -50,37 +50,16 @@ nats:
       - op: add
         path: /volumeMounts/-
         value:
-          name: nats-config
-          mountPath: /etc/nats-config
-      - op: add
-        path: /volumeMounts/-
-        value:
           name: nats-custom-config
           mountPath: /etc/nats-custom-config
-      - op: add
-        path: /volumeMounts/-
-        value:
-          name: pid
-          mountPath: /var/run/nats
   podTemplate:
     patch:
-      - op: add
-        path: /spec/volumes/-
-        value:
-          name: nats-config
-          configMap:
-            name: nats-config
       - op: add
         path: /spec/volumes/-
         value:
           name: nats-custom-config
           configMap:
             name: nats-custom-config
-      - op: add
-        path: /spec/volumes/-
-        value:
-          name: pid
-          emptyDir: {}
   statefulSet:
     merge:
       spec:
@@ -93,22 +72,12 @@ nats:
       registry: ghcr.io/flamingo-stack/registry
       repository: natsio/nats-server-config-reloader
       tag: 0.21.1
-    patch:
-      - op: add
-        path: /volumeMounts/-
-        value:
-          name: nats-config
-          mountPath: /etc/nats-config
-      - op: add
-        path: /volumeMounts/-
-        value:
-          name: nats-custom-config
-          mountPath: /etc/nats-custom-config
-      - op: add
-        path: /volumeMounts/-
-        value:
-          name: pid
-          mountPath: /var/run/nats
+    # patch:
+    #   - op: add
+    #     path: /volumeMounts/-
+    #     value:
+    #       name: nats-custom-config
+    #       mountPath: /etc/nats-custom-config
 
 
   promExporter:
