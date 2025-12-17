@@ -15,6 +15,10 @@ spec:
     metadata:
       labels:
         app: openframe-management
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       initContainers:
         - name: wait-for-config-server

@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: openframe-external-api
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       initContainers:
         - name: wait-for-config-server
