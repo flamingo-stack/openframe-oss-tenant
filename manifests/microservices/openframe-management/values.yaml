@@ -1,8 +1,6 @@
 deployment:
   oss:
-    enabled: true    
-    repository:
-      profile: dev
+    enabled: true
     ingress:
       localhost:
         enabled: true

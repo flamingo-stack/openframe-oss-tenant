@@ -30,9 +30,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: openframe-config
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "{{ .Values.deployment.oss.repository.profile }}"
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml

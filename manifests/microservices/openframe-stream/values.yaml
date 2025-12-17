@@ -1,9 +1,3 @@
-deployment:
-  oss:
-    enabled: true    
-    repository:
-      profile: dev
-
 registerJob:
   enabled: true
   image:

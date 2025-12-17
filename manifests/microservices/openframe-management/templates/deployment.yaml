@@ -45,8 +45,6 @@ spec:
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}
-            - name: SPRING_PROFILES_ACTIVE
-              value: "{{ .Values.deployment.oss.repository.profile }}"
             - name: SPRING_CONFIG_URL
               {{- if .Values.deployment.saas.enabled }}
               value: "http://openframe-saas-config.microservices.svc.cluster.local:8888"
