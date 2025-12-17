@@ -72,12 +72,6 @@ nats:
       registry: ghcr.io/flamingo-stack/registry
       repository: natsio/nats-server-config-reloader
       tag: 0.21.1
-    patch:
-      - op: add
-        path: /volumeMounts/-
-        value:
-          name: nats-custom-config
-          mountPath: /etc/nats-custom-config
 
 
   promExporter:
