@@ -41,31 +41,46 @@ nats:
       limits:
         cpu: 200m
         memory: 256Mi
-    merge:
-      envFrom:
-        - secretRef:
-            name: nats-credentials
-      volumeMounts:
-        - name: nats-js
-          mountPath: /data/jetstream
-        - name: nats-config
+    patch:
+      - op: add
+        path: /envFrom
+        value:
+          - secretRef:
+              name: nats-credentials
+      - op: add
+        path: /volumeMounts/-
+        value:
+          name: nats-config
           mountPath: /etc/nats-config
-        - name: nats-custom-config
+      - op: add
+        path: /volumeMounts/-
+        value:
+          name: nats-custom-config
           mountPath: /etc/nats-custom-config
-        - name: pid
+      - op: add
+        path: /volumeMounts/-
+        value:
+          name: pid
           mountPath: /var/run/nats
   podTemplate:
-    merge:
-      spec:
-        volumes:
-          - name: nats-config
-            configMap:
-              name: nats-config
-          - name: nats-custom-config
-            configMap:
-              name: nats-custom-config
-          - name: pid
-            emptyDir: {}
+    patch:
+      - op: add
+        path: /spec/volumes/-
+        value:
+          name: nats-config
+          configMap:
+            name: nats-config
+      - op: add
+        path: /spec/volumes/-
+        value:
+          name: nats-custom-config
+          configMap:
+            name: nats-custom-config
+      - op: add
+        path: /spec/volumes/-
+        value:
+          name: pid
+          emptyDir: {}
   statefulSet:
     merge:
       spec:
@@ -78,13 +93,21 @@ nats:
       registry: ghcr.io/flamingo-stack/registry
       repository: natsio/nats-server-config-reloader
       tag: 0.21.1
-    merge:
-      volumeMounts:
-        - name: nats-config
+    patch:
+      - op: add
+        path: /volumeMounts/-
+        value:
+          name: nats-config
           mountPath: /etc/nats-config
-        - name: nats-custom-config
+      - op: add
+        path: /volumeMounts/-
+        value:
+          name: nats-custom-config
           mountPath: /etc/nats-custom-config
-        - name: pid
+      - op: add
+        path: /volumeMounts/-
+        value:
+          name: pid
           mountPath: /var/run/nats
 
 
