@@ -59,6 +59,11 @@ openframe:
 
   debezium:
     base-url: http://debezium-connect.datasources:8083
+    health-check:
+      enabled: true
+      interval: 300000  # 5 minutes in milliseconds
+      lock-at-most-for: "5m"
+      lock-at-least-for: "1m"
 
   integration:
     tool:
