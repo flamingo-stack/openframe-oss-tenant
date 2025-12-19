@@ -12,17 +12,12 @@ class TokenService {
   private apiUrlListeners: Set<(apiUrl: string) => void> = new Set();
 
   constructor() {
-    if (this.isTauriAvailable()) {
-      this.initTokenListener();
-      this.initApiUrl();
-    } else {
-      this.initFromEnv();
-    }
+    this.initTokenListener();
+    this.initApiUrl();
+    
+    this.initFromEnv();
   }
 
-  private isTauriAvailable(): boolean {
-    return typeof window !== 'undefined' && Boolean((window as any).__TAURI__);
-  }
 
   private normalizeApiUrl(serverUrl: string): string {
     const trimmed = serverUrl.trim();
@@ -33,10 +28,10 @@ class TokenService {
     const token = import.meta.env.VITE_TOKEN as string | undefined;
     const serverUrl = import.meta.env.VITE_SERVER_URL as string | undefined;
 
-    if (serverUrl) {
+    if (serverUrl && !this.currentApiBaseUrl) {
       this.setApiBaseUrl(this.normalizeApiUrl(serverUrl));
     }
-    if (token) {
+    if (token && !this.currentToken) {
       this.setToken(token);
     }
   }
@@ -86,10 +81,7 @@ class TokenService {
    */
   async requestToken(): Promise<string | null> {
     if (this.currentToken) return this.currentToken;
-    if (!this.isTauriAvailable()) {
-      this.initFromEnv();
-      return this.currentToken;
-    }
+
     try {
       console.log('[TOKEN SERVICE] Requesting token from Rust...');
       const token = await invoke<string | null>('get_token');
@@ -97,14 +89,12 @@ class TokenService {
       if (token) {
         console.log('[TOKEN SERVICE] Token received from Rust command:', this.maskToken(token));
         this.setToken(token);
+        return token;
       } else {
-        console.log('[TOKEN SERVICE] No token available yet');
+        return this.currentToken;
       }
-      
-      return token;
     } catch (error) {
-      console.error('[TOKEN SERVICE] Failed to request token:', error);
-      return null;
+      return this.currentToken;
     }
   }
 
@@ -142,17 +132,11 @@ class TokenService {
    * Initialize API base URL from Tauri
    */
   async initApiUrl() {
-    if (this.currentApiBaseUrl) return;
-    if (!this.isTauriAvailable()) {
-      this.initFromEnv();
-      return;
-    }
     try {
       const serverUrl = await invoke<string>('get_server_url');
       
-      const apiUrl = this.normalizeApiUrl(serverUrl);
-      
-      if (apiUrl) {
+      if (serverUrl) {
+        const apiUrl = this.normalizeApiUrl(serverUrl);
         this.setApiBaseUrl(apiUrl);
       }
     } catch (error) {
