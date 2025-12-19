@@ -1,0 +1,2279 @@
+# Doc Orchestrator Pipeline
+# ===========================
+# This GitHub Actions workflow is triggered by the multi-platform-hub to generate
+# comprehensive documentation for this repository and create a PR with the results.
+#
+# 3-Stage Pipeline:
+# 1. Inline Documentation - Generate .md files next to source classes
+# 2. CodeWiki Analysis - Architecture overview and Mermaid diagrams
+# 3. AI Tutorial Generator - VoltAgent-powered tutorial generation with tool-based exploration
+#
+# NOTE: Stage 3 uses the VoltAgent framework (https://voltagent.dev/) for agentic
+# document generation with three tools: list_docs, read_doc_file, write_tutorial_doc.
+#
+# Installation:
+# Copy this file to .github/workflows/doc-orchestrator.yml in your target repository.
+# No secrets required - all credentials are securely passed from the orchestrator at runtime.
+
+name: Doc Orchestrator Pipeline
+
+on:
+  # Push trigger - registers workflow with GitHub Actions (required for workflow_dispatch API)
+  # Only triggers when the workflow file itself is modified (runs once on initial setup)
+  push:
+    paths:
+      - '.github/workflows/doc-orchestrator.yml'
+
+  repository_dispatch:
+    types: [doc-orchestrator]
+
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run ID for tracking'
+        required: false
+        default: 'manual'
+      repo_id:
+        description: 'Repository ID in orchestrator database'
+        required: false
+        default: ''
+      callback_url:
+        description: 'Webhook URL for completion callback'
+        required: false
+        default: ''
+      stages:
+        description: 'Comma-separated stages to run (inline-docs,codewiki,tutorials)'
+        required: false
+        default: 'inline-docs,codewiki,tutorials'
+      dependencies:
+        description: 'Comma-separated dependency repos'
+        required: false
+        default: ''
+      source_branch:
+        description: 'Branch to analyze code from (defaults to main)'
+        required: false
+        default: 'main'
+      anthropic_api_key:
+        description: 'Anthropic API key for AI processing (Stage 1 & 3)'
+        required: false
+        default: ''
+      openai_api_key:
+        description: 'OpenAI API key for CodeWiki (Stage 2) - CodeWiki only supports OpenAI provider'
+        required: false
+        default: ''
+      webhook_secret:
+        description: 'Secret for webhook authentication'
+        required: false
+        default: ''
+      github_pat:
+        description: 'GitHub PAT for cross-repo access (optional, for private dependencies)'
+        required: false
+        default: ''
+      inline_docs_limit:
+        description: 'Max files per folder for inline docs (0=unlimited, useful for testing)'
+        required: false
+        default: '0'
+      codewiki_provider:
+        description: 'LLM provider for CodeWiki (openai or anthropic)'
+        required: false
+        default: 'openai'
+      codewiki_model:
+        description: 'Model name for CodeWiki (e.g., gpt-4o, claude-sonnet-4-20250514)'
+        required: false
+        default: 'gpt-4o'
+      docs_output_path:
+        description: 'Base docs path (from repo config)'
+        required: false
+        default: 'docs'
+      codewiki_output_path:
+        description: 'CodeWiki output path (from repo config)'
+        required: false
+        default: 'docs/codewiki'
+      tutorials_output_path:
+        description: 'Tutorials output path (from repo config)'
+        required: false
+        default: 'docs/tutorials'
+      stage1_timeout:
+        description: 'Timeout in hours for inline docs generation (default: 12)'
+        required: false
+        default: '12'
+      stage2_timeout:
+        description: 'Timeout in hours for CodeWiki/architecture analysis (default: 6)'
+        required: false
+        default: '6'
+      stage3_timeout:
+        description: 'Timeout in hours for VoltAgent tutorial generation (default: 6)'
+        required: false
+        default: '6'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  # SECURITY: Only NON-SENSITIVE variables in job-level env
+  # Secrets are passed per-step to avoid exposure in job setup logs
+  # Run configuration (non-sensitive)
+  RUN_ID: ${{ github.event.client_payload.run_id || github.event.inputs.run_id || github.run_id }}
+  REPO_ID: ${{ github.event.client_payload.repo_id || github.event.inputs.repo_id || '' }}
+  CALLBACK_URL: ${{ github.event.client_payload.callback_url || github.event.inputs.callback_url || '' }}
+  STAGES: ${{ github.event.client_payload.stages || github.event.inputs.stages || 'inline-docs,codewiki,tutorials' }}
+  DEPENDENCIES: ${{ github.event.client_payload.dependencies || github.event.inputs.dependencies || '' }}
+  # Branch to checkout for code analysis (github_branch from repo config)
+  SOURCE_BRANCH: ${{ github.event.client_payload.source_branch || github.event.inputs.source_branch || 'main' }}
+  # Debug/testing: limit files per folder for inline docs (0=unlimited)
+  INLINE_DOCS_LIMIT: ${{ github.event.client_payload.inline_docs_limit || github.event.inputs.inline_docs_limit || '0' }}
+  # CodeWiki LLM provider and model configuration
+  CODEWIKI_PROVIDER: ${{ github.event.client_payload.codewiki_provider || github.event.inputs.codewiki_provider || 'openai' }}
+  CODEWIKI_MODEL: ${{ github.event.client_payload.codewiki_model || github.event.inputs.codewiki_model || 'gpt-4o' }}
+  # Docs output paths (from repo config)
+  DOCS_OUTPUT_PATH: ${{ github.event.client_payload.docs_output_path || github.event.inputs.docs_output_path || 'docs' }}
+  CODEWIKI_OUTPUT_PATH: ${{ github.event.client_payload.codewiki_output_path || github.event.inputs.codewiki_output_path || 'docs/codewiki' }}
+  TUTORIALS_OUTPUT_PATH: ${{ github.event.client_payload.tutorials_output_path || github.event.inputs.tutorials_output_path || 'docs/tutorials' }}
+  # Stage timeouts (in hours)
+  STAGE1_TIMEOUT_HOURS: ${{ github.event.client_payload.stage1_timeout || github.event.inputs.stage1_timeout || '12' }}
+  STAGE2_TIMEOUT_HOURS: ${{ github.event.client_payload.stage2_timeout || github.event.inputs.stage2_timeout || '6' }}
+  STAGE3_TIMEOUT_HOURS: ${{ github.event.client_payload.stage3_timeout || github.event.inputs.stage3_timeout || '6' }}
+
+jobs:
+  doc-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 720  # 12 hours for large repositories with many files
+    # Skip actual work when triggered by push (push trigger only registers workflow with GitHub)
+    # This allows workflow_dispatch API calls to work on feature branches
+    if: github.event_name != 'push'
+
+    steps:
+      # =========================================================================
+      # DEFINE WORKFLOW HELPER FUNCTIONS
+      # Creates reusable functions for consistency across all steps
+      # =========================================================================
+      - name: Define Workflow Helper Functions
+        id: helpers
+        run: |
+          cat > /tmp/workflow-helpers.sh << 'HELPERS_EOF'
+          #!/bin/bash
+
+          # === SECRET MASKING ===
+          mask_secret() {
+            local secret_value="$1"
+            if [ -n "$secret_value" ]; then
+              echo "::add-mask::$secret_value"
+            fi
+          }
+
+          # === GITHUB OUTPUT ===
+          set_output() {
+            local name="$1"
+            local value="$2"
+            echo "${name}=${value}" >> $GITHUB_OUTPUT
+          }
+
+          # === FILE COUNTING ===
+          count_source_files() {
+            local file_list="$1"
+            wc -l < "$file_list" 2>/dev/null | tr -d ' ' || echo "0"
+          }
+
+          count_main_repo_files() {
+            local file_list="$1"
+            grep -v "^\.\./deps" "$file_list" 2>/dev/null | wc -l | tr -d ' ' || echo "0"
+          }
+
+          count_dependency_files() {
+            local file_list="$1"
+            grep "^\.\./deps" "$file_list" 2>/dev/null | wc -l | tr -d ' ' || echo "0"
+          }
+
+          count_by_extension() {
+            local file_list="$1"
+            local extension="$2"
+            grep -E "\.${extension}$" "$file_list" 2>/dev/null | wc -l | tr -d ' ' || echo "0"
+          }
+
+          count_markdown_files() {
+            local dir="$1"
+            find "$dir" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ' || echo "0"
+          }
+
+          count_files_by_pattern() {
+            local path="$1"
+            shift
+            local patterns="$@"
+            find "$path" ../deps 2>/dev/null -type f \( $patterns \) \
+              -not -path "*/.git/*" | wc -l | tr -d ' ' || echo "0"
+          }
+
+          # === LANGUAGE DETECTION ===
+          find_primary_language() {
+            local go_count="$1"
+            local rust_count="$2"
+            local py_count="$3"
+            local java_count="$4"
+            local ts_count="$5"
+            local js_count="$6"
+            local c_count="$7"
+            local cs_count="$8"
+
+            local max=0
+            local primary="typescript"
+
+            [ "$go_count" -gt "$max" ] && { max=$go_count; primary="go"; }
+            [ "$rust_count" -gt "$max" ] && { max=$rust_count; primary="rust"; }
+            [ "$py_count" -gt "$max" ] && { max=$py_count; primary="python"; }
+            [ "$java_count" -gt "$max" ] && { max=$java_count; primary="java"; }
+            [ "$ts_count" -gt "$max" ] && { max=$ts_count; primary="typescript"; }
+            [ "$js_count" -gt "$max" ] && { max=$js_count; primary="javascript"; }
+            [ "$c_count" -gt "$max" ] && { max=$c_count; primary="c"; }
+            [ "$cs_count" -gt "$max" ] && { max=$cs_count; primary="csharp"; }
+
+            echo "$primary:$max"
+          }
+
+          # === DIRECTORY OPERATIONS ===
+          ensure_directory() {
+            local dir="$1"
+            mkdir -p "$dir"
+          }
+
+          cleanup_path() {
+            local path="$1"
+            rm -rf "$path" 2>/dev/null || true
+          }
+
+          # === STAGE REPORTING ===
+          report_stage_status() {
+            local stage_name="$1"
+            local status="$2"
+            local file_count="$3"
+            set_output "${stage_name}_status" "$status"
+            set_output "${stage_name}_files" "$file_count"
+          }
+
+          # === WEBHOOK HELPER ===
+          send_webhook() {
+            local callback_url="$1"
+            local webhook_secret="$2"
+            local payload="$3"
+            local output_file="${4:-/dev/null}"
+
+            curl -s --max-time 30 -o "$output_file" -w "%{http_code}" -X POST "$callback_url" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $webhook_secret" \
+              -d "$payload"
+          }
+
+          # === TIMEOUT EXECUTION ===
+          # Unified timeout wrapper for all stages
+          # Usage: run_with_timeout <stage_name> <timeout_hours> <command> [args...]
+          # Returns: 0 on success, 124 on timeout, other on command failure
+          run_with_timeout() {
+            local stage_name="$1"
+            local timeout_hours="$2"
+            shift 2
+            local command="$@"
+
+            local timeout_seconds=$((${timeout_hours:-6} * 3600))
+            echo "⏱️  ${stage_name} timeout: ${timeout_hours} hours (${timeout_seconds} seconds)"
+
+            timeout $timeout_seconds $command
+            local exit_code=$?
+
+            if [ $exit_code -eq 124 ]; then
+              echo "⚠️ ${stage_name} timed out after ${timeout_hours} hours"
+              echo "   Partial results will be included in PR"
+            elif [ $exit_code -ne 0 ]; then
+              echo "⚠️ ${stage_name} exited with code ${exit_code}"
+            fi
+
+            return $exit_code
+          }
+
+          # === UNIFIED FILE HANDLING ===
+          # These functions ensure consistent file handling across all stages
+          # when using INLINE_DOCS_LIMIT for debug/testing mode.
+
+          # Get the inline doc path for a source file
+          # Usage: get_inline_doc_path "src/utils/helper.ts" -> "src/utils/.helper.md"
+          get_inline_doc_path() {
+            local src_file="$1"
+            local dir=$(dirname "$src_file")
+            local base=$(basename "$src_file" | sed 's/\.[^.]*$//')
+            echo "$dir/.$base.md"
+          }
+
+          # Count inline docs that exist for source files in a list
+          # Usage: count_inline_docs_for_sources ".doc-orchestrator-source-files.txt"
+          count_inline_docs_for_sources() {
+            local source_list="$1"
+            local count=0
+            if [ -f "$source_list" ]; then
+              while IFS= read -r src_file; do
+                local inline_doc=$(get_inline_doc_path "$src_file")
+                if [ -f "$inline_doc" ]; then
+                  count=$((count + 1))
+                fi
+              done < "$source_list"
+            fi
+            echo "$count"
+          }
+
+          # Find all local source files (standard extensions and exclusions)
+          # Usage: find_local_source_files "/tmp/output.txt"
+          find_local_source_files() {
+            local output_file="$1"
+            find . -maxdepth 10 -type f \( \
+              -name "*.java" -o -name "*.py" -o -name "*.ts" -o -name "*.tsx" \
+              -o -name "*.js" -o -name "*.jsx" -o -name "*.c" -o -name "*.cpp" \
+              -o -name "*.h" -o -name "*.cs" -o -name "*.go" -o -name "*.rs" \
+            \) -not -path "*/node_modules/*" -not -path "*/.git/*" \
+               -not -path "*/vendor/*" -not -path "*/target/*" 2>/dev/null | sort > "$output_file"
+          }
+
+          # Hide files not in the unified source list (for limited analysis)
+          # Usage: hide_files_not_in_list ".doc-orchestrator-source-files.txt" "/tmp/excluded_list.txt"
+          # Returns: Count of hidden files
+          hide_files_not_in_list() {
+            local source_list="$1"
+            local excluded_list="$2"
+            local temp_storage="/tmp/codewiki_limited_files"
+
+            # Clear/create the excluded list
+            > "$excluded_list"
+            mkdir -p "$temp_storage"
+
+            # Find all local source files
+            local all_files_temp="/tmp/all_local_source_files.txt"
+            find_local_source_files "$all_files_temp"
+
+            local hidden_count=0
+            while IFS= read -r file; do
+              # Check if file is in the unified discovery list
+              if ! grep -qxF "$file" "$source_list" 2>/dev/null; then
+                if [ -f "$file" ]; then
+                  local dir_path=$(dirname "$file")
+                  mkdir -p "$temp_storage/$dir_path"
+                  mv "$file" "$temp_storage/$file"
+                  echo "$file" >> "$excluded_list"
+                  hidden_count=$((hidden_count + 1))
+                fi
+              fi
+            done < "$all_files_temp"
+
+            rm -f "$all_files_temp"
+            echo "$hidden_count"
+          }
+
+          # Restore files that were previously hidden
+          # Usage: restore_hidden_files "/tmp/excluded_list.txt"
+          # Returns: Count of restored files
+          restore_hidden_files() {
+            local excluded_list="$1"
+            local temp_storage="/tmp/codewiki_limited_files"
+            local restored_count=0
+
+            if [ -s "$excluded_list" ]; then
+              while IFS= read -r file; do
+                if [ -f "$temp_storage/$file" ]; then
+                  local dir_path=$(dirname "$file")
+                  mkdir -p "$dir_path"
+                  mv "$temp_storage/$file" "$file"
+                  restored_count=$((restored_count + 1))
+                fi
+              done < "$excluded_list"
+
+              rm -rf "$temp_storage"
+              rm -f "$excluded_list"
+            fi
+            echo "$restored_count"
+          }
+
+          # Apply file limit to a source file list
+          # Usage: apply_file_limit "/tmp/all_files.txt" ".doc-orchestrator-source-files.txt" "50"
+          apply_file_limit() {
+            local input_list="$1"
+            local output_list="$2"
+            local limit="$3"
+
+            local total=$(wc -l < "$input_list" | tr -d ' ')
+
+            if [ "$limit" -gt 0 ] && [ "$total" -gt "$limit" ]; then
+              head -n "$limit" "$input_list" > "$output_list"
+              echo "limited:$total:$limit"
+            else
+              cp "$input_list" "$output_list"
+              echo "full:$total:$total"
+            fi
+          }
+
+          HELPERS_EOF
+
+          chmod +x /tmp/workflow-helpers.sh
+          echo "✅ Workflow helper functions defined in /tmp/workflow-helpers.sh"
+
+      # =========================================================================
+      # SEND START NOTIFICATION
+      # Notify orchestrator that workflow has started running
+      # =========================================================================
+      - name: Send Start Notification
+        if: env.CALLBACK_URL != ''
+        continue-on-error: true
+        env:
+          WEBHOOK_SECRET: ${{ github.event.client_payload.webhook_secret || github.event.inputs.webhook_secret || '' }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          mask_secret "$WEBHOOK_SECRET"
+
+          echo "📤 Sending start notification to: $CALLBACK_URL"
+
+          PAYLOAD="{
+            \"run_id\": \"$RUN_ID\",
+            \"repo_id\": \"$REPO_ID\",
+            \"status\": \"running\",
+            \"workflow_run_id\": ${{ github.run_id }},
+            \"workflow_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+            \"current_stage\": \"inline-docs\"
+          }"
+
+          HTTP_CODE=$(send_webhook "$CALLBACK_URL" "$WEBHOOK_SECRET" "$PAYLOAD" "/tmp/webhook_start_response.txt") || HTTP_CODE="failed"
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            echo "✅ Start notification sent (HTTP $HTTP_CODE)"
+          else
+            echo "⚠️ Start notification returned HTTP $HTTP_CODE (non-blocking)"
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ env.SOURCE_BRANCH }}
+
+      # =========================================================================
+      # SETUP: Clone Dependency Repos (if configured)
+      # =========================================================================
+      - name: Clone Dependency Repositories
+        if: env.DEPENDENCIES != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SECURITY: Pass secret per-step with inline masking
+          GITHUB_PAT: ${{ github.event.client_payload.github_pat || github.event.inputs.github_pat || '' }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          mask_secret "$GITHUB_PAT"
+
+          echo "📦 Cloning dependency repositories for documentation context..."
+          echo "   Dependencies: $DEPENDENCIES"
+          ensure_directory "../deps"
+
+          # Determine which token to use (PAT preferred for cross-repo access)
+          if [ -n "$GITHUB_PAT" ]; then
+            echo "   Using provided GitHub PAT for cross-repo access"
+            CLONE_TOKEN="$GITHUB_PAT"
+          else
+            echo "   Using default GITHUB_TOKEN (may not work for private cross-repo)"
+            CLONE_TOKEN="$GH_TOKEN"
+          fi
+
+          # Configure git to use token for private repos
+          git config --global url."https://x-access-token:${CLONE_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+          IFS=',' read -ra DEPS <<< "$DEPENDENCIES"
+          for dep in "${DEPS[@]}"; do
+            repo_name=$(basename $dep)
+            echo ""
+            echo "  📁 Cloning: $dep → ../deps/$repo_name"
+            if git clone --depth 1 "https://github.com/$dep.git" "../deps/$repo_name" 2>&1; then
+              file_count=$(find "../deps/$repo_name" -type f \( -name "*.java" -o -name "*.ts" -o -name "*.py" -o -name "*.rs" \) 2>/dev/null | wc -l | tr -d ' ')
+              echo "     ✅ Cloned successfully ($file_count source files)"
+            else
+              echo "     ⚠️ Failed to clone $dep"
+              echo "        If private, pass github_pat with 'repo' scope"
+            fi
+          done
+
+          echo ""
+          echo "📂 Dependency directories:"
+          ls -la ../deps/ 2>/dev/null || echo "   No dependencies cloned"
+          echo ""
+          echo "📊 Total dependency source files available for documentation:"
+          find ../deps -type f \( -name "*.java" -o -name "*.ts" -o -name "*.py" -o -name "*.rs" \) 2>/dev/null | wc -l | xargs echo "  "
+
+      # =========================================================================
+      # LANGUAGE DETECTION (runs before all stages for consistency)
+      # Determines primary language for filtering in Stage 1, 2, and 3
+      # =========================================================================
+      - name: Detect Repository Language
+        id: detect_language
+        run: |
+          source /tmp/workflow-helpers.sh
+
+          echo "🔍 Detecting repository primary language..."
+          echo "   Scanning main repo (.) and dependency repos (../deps/)"
+
+          # Count source files by extension (main repo + dependencies)
+          # Uses same exclusions as Stage 1 and Stage 2 for consistency
+          GO_COUNT=$(find . ../deps 2>/dev/null -name "*.go" -type f \
+            -not -path "*/node_modules/*" -not -path "*/vendor/*" \
+            -not -path "*/.git/*" -not -path "*/target/*" \
+            -not -name "*_test.go" | wc -l | tr -d ' ')
+          RUST_COUNT=$(find . ../deps 2>/dev/null -name "*.rs" -type f \
+            -not -path "*/target/*" -not -path "*/.git/*" | wc -l | tr -d ' ')
+          PY_COUNT=$(find . ../deps 2>/dev/null -name "*.py" -type f \
+            -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.git/*" | wc -l | tr -d ' ')
+          JAVA_COUNT=$(find . ../deps 2>/dev/null -name "*.java" -type f \
+            -not -path "*/.git/*" | wc -l | tr -d ' ')
+          TS_COUNT=$(find . ../deps 2>/dev/null \( -name "*.ts" -o -name "*.tsx" \) -type f \
+            -not -path "*/node_modules/*" -not -path "*/.git/*" \
+            -not -name "*.test.*" -not -name "*.spec.*" | wc -l | tr -d ' ')
+          JS_COUNT=$(find . ../deps 2>/dev/null \( -name "*.js" -o -name "*.jsx" \) -type f \
+            -not -path "*/node_modules/*" -not -path "*/.git/*" \
+            -not -name "*.test.*" -not -name "*.spec.*" | wc -l | tr -d ' ')
+          C_COUNT=$(find . ../deps 2>/dev/null \( -name "*.c" -o -name "*.cpp" -o -name "*.h" \) -type f \
+            -not -path "*/.git/*" | wc -l | tr -d ' ')
+          CS_COUNT=$(find . ../deps 2>/dev/null -name "*.cs" -type f \
+            -not -path "*/.git/*" | wc -l | tr -d ' ')
+
+          echo ""
+          echo "📊 File counts (excluding tests and generated files):"
+          echo "  Go: $GO_COUNT"
+          echo "  Rust: $RUST_COUNT"
+          echo "  Python: $PY_COUNT"
+          echo "  Java: $JAVA_COUNT"
+          echo "  TypeScript: $TS_COUNT"
+          echo "  JavaScript: $JS_COUNT"
+          echo "  C/C++: $C_COUNT"
+          echo "  C#: $CS_COUNT"
+
+          # Determine primary language using helper function
+          RESULT=$(find_primary_language "$GO_COUNT" "$RUST_COUNT" "$PY_COUNT" "$JAVA_COUNT" "$TS_COUNT" "$JS_COUNT" "$C_COUNT" "$CS_COUNT")
+          PRIMARY_LANG="${RESULT%:*}"
+          MAX_COUNT="${RESULT#*:}"
+
+          # Determine if CodeWiki supports this language
+          MIN_FILES_THRESHOLD=10
+
+          if [ "$JAVA_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
+             [ "$TS_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
+             [ "$JS_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
+             [ "$PY_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
+             [ "$C_COUNT" -ge "$MIN_FILES_THRESHOLD" ] || \
+             [ "$CS_COUNT" -ge "$MIN_FILES_THRESHOLD" ]; then
+            CODEWIKI_SUPPORTED="true"
+            echo ""
+            echo "✅ Primary language: $PRIMARY_LANG ($MAX_COUNT files)"
+            echo "   CodeWiki supported: YES"
+          else
+            CODEWIKI_SUPPORTED="false"
+            echo ""
+            echo "✅ Primary language: $PRIMARY_LANG ($MAX_COUNT files)"
+            echo "   CodeWiki supported: NO (will use Claude Architecture Analysis)"
+          fi
+
+          # Output for use by subsequent steps
+          set_output "primary_language" "$PRIMARY_LANG"
+          set_output "codewiki_supported" "$CODEWIKI_SUPPORTED"
+          set_output "file_count" "$MAX_COUNT"
+
+      # =========================================================================
+      # UNIFIED FILE DISCOVERY (Single Source of Truth)
+      # Discovers ALL source files ONCE and stores them for use by all stages.
+      # This ensures Stage 1, 2, and 3 all analyze the exact same files.
+      # Uses `find` command for reliable exclusion patterns.
+      # If INLINE_DOCS_LIMIT is set, limit is applied here (not in each stage).
+      # =========================================================================
+      - name: Discover Source Files
+        id: discover_files
+        env:
+          INLINE_DOCS_LIMIT: ${{ env.INLINE_DOCS_LIMIT }}
+        run: |
+          source /tmp/workflow-helpers.sh
+
+          echo "🔍 Discovering source files (single source of truth for all stages)..."
+          echo "   Scanning main repo (.) and dependency repos (../deps/)"
+
+          # File paths
+          SOURCE_FILES_LIST=".doc-orchestrator-source-files.txt"
+          ALL_FILES_TEMP="/tmp/all_source_files_discovered.txt"
+
+          # Use find command with comprehensive patterns and exclusions
+          # This is more reliable than glob's negative patterns
+          find . ../deps 2>/dev/null -type f \( \
+            -name "*.ts" -o -name "*.tsx" \
+            -o -name "*.js" -o -name "*.jsx" \
+            -o -name "*.java" \
+            -o -name "*.py" \
+            -o -name "*.go" \
+            -o -name "*.rs" \
+            -o -name "*.c" -o -name "*.cpp" -o -name "*.h" \
+            -o -name "*.cs" \
+          \) \
+            -not -path "*/node_modules/*" \
+            -not -path "*/vendor/*" \
+            -not -path "*/target/*" \
+            -not -path "*/.git/*" \
+            -not -path "*/dist/*" \
+            -not -path "*/.next/*" \
+            -not -path "*/build/*" \
+            -not -path "*/__pycache__/*" \
+            -not -path "*/.venv/*" \
+            -not -path "*/venv/*" \
+            -not -path "*/coverage/*" \
+            -not -name "*_test.go" \
+            -not -name "*.test.*" \
+            -not -name "*.spec.*" \
+            -not -name "*_test.ts" \
+            -not -name "*_test.js" \
+            -not -name "*.test.ts" \
+            -not -name "*.test.js" \
+            -not -name "*.spec.ts" \
+            -not -name "*.spec.js" \
+          | sort > "$ALL_FILES_TEMP"
+
+          # Apply limit at discovery time using helper function (single source of truth)
+          FILE_LIMIT="${INLINE_DOCS_LIMIT:-0}"
+          LIMIT_RESULT=$(apply_file_limit "$ALL_FILES_TEMP" "$SOURCE_FILES_LIST" "$FILE_LIMIT")
+
+          # Parse result: "limited:total:actual" or "full:total:actual"
+          LIMIT_TYPE=$(echo "$LIMIT_RESULT" | cut -d: -f1)
+          TOTAL_DISCOVERED=$(echo "$LIMIT_RESULT" | cut -d: -f2)
+          ACTUAL_COUNT=$(echo "$LIMIT_RESULT" | cut -d: -f3)
+
+          if [ "$LIMIT_TYPE" = "limited" ]; then
+            echo "⚡ DEBUG MODE: Applying limit at discovery phase"
+            echo "   Total discovered: $TOTAL_DISCOVERED files"
+            echo "   Limiting to: $ACTUAL_COUNT files"
+          fi
+
+          # Cleanup temp file
+          rm -f "$ALL_FILES_TEMP"
+
+          # Count files using helper functions (now on the limited list)
+          FILE_COUNT=$(count_source_files "$SOURCE_FILES_LIST")
+          MAIN_COUNT=$(count_main_repo_files "$SOURCE_FILES_LIST")
+          DEPS_COUNT=$(count_dependency_files "$SOURCE_FILES_LIST")
+
+          echo ""
+          echo "📊 Source files discovered:"
+          echo "   Total: $FILE_COUNT files"
+          echo "   Main repo: $MAIN_COUNT files"
+          echo "   Dependencies: $DEPS_COUNT files"
+
+          # Show breakdown by extension using helper
+          echo ""
+          echo "📋 By language:"
+          for ext in ts tsx js jsx java py go rs c cpp h cs; do
+            EXT_COUNT=$(count_by_extension "$SOURCE_FILES_LIST" "$ext")
+            if [ "$EXT_COUNT" -gt 0 ]; then
+              echo "   .$ext: $EXT_COUNT files"
+            fi
+          done
+
+          # Show first 20 files for debugging
+          echo ""
+          echo "📄 Sample files (first 20):"
+          head -20 "$SOURCE_FILES_LIST" | sed 's/^/   /'
+
+          # Output for use by subsequent steps
+          set_output "source_file_count" "$FILE_COUNT"
+          set_output "source_files_list" "$SOURCE_FILES_LIST"
+
+      # =========================================================================
+      # STAGE 1: INLINE CLASS DOCUMENTATION
+      # Generate .md files next to each source class
+      # Uses discovered files from the unified file discovery step
+      # =========================================================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Stage 1 Dependencies
+        if: contains(env.STAGES, 'inline-docs')
+        run: npm install @anthropic-ai/sdk glob
+
+      - name: Generate Inline Class Documentation
+        id: stage1
+        if: contains(env.STAGES, 'inline-docs')
+        env:
+          # SECURITY: Pass secret per-step with inline masking
+          ANTHROPIC_API_KEY: ${{ github.event.client_payload.anthropic_api_key || github.event.inputs.anthropic_api_key || '' }}
+          # Pass through config from workflow env
+          INLINE_DOCS_LIMIT: ${{ env.INLINE_DOCS_LIMIT }}
+          DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
+          # Stage timeout (in hours)
+          STAGE1_TIMEOUT_HOURS: ${{ env.STAGE1_TIMEOUT_HOURS }}
+          # Unified file discovery result (single source of truth)
+          SOURCE_FILES_LIST: ${{ steps.discover_files.outputs.source_files_list }}
+          SOURCE_FILE_COUNT: ${{ steps.discover_files.outputs.source_file_count }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          mask_secret "$ANTHROPIC_API_KEY"
+
+          echo "📝 Stage 1: Generating inline documentation..."
+          echo "   Using unified file list: $SOURCE_FILES_LIST ($SOURCE_FILE_COUNT files)"
+
+          cat > generate-inline-docs.js << 'SCRIPT_EOF'
+          #!/usr/bin/env node
+          const Anthropic = require('@anthropic-ai/sdk');
+          const fs = require('fs').promises;
+          const path = require('path');
+          const crypto = require('crypto');
+
+          const client = new Anthropic.default();
+
+          // Progress tracking (module-level for SIGTERM handler access)
+          const CHECKPOINT_INTERVAL = 10; // Report every 10 files
+          let totalFiles = 0;
+          let generated = 0;
+          let skipped = 0;
+          let unchanged = 0;
+          let errors = 0;
+          let processedSinceCheckpoint = 0;
+
+          // Handle graceful shutdown on SIGTERM (from timeout command)
+          process.on('SIGTERM', async () => {
+            console.log('\n⚠️ Received SIGTERM - saving final checkpoint...');
+            const processed = generated + unchanged + skipped + errors;
+            await require('fs').promises.writeFile('.doc-stage1-stats.json', JSON.stringify({
+              generated, unchanged, skipped, errors,
+              processed,
+              total: totalFiles,
+              interrupted: true,
+              timestamp: new Date().toISOString()
+            }));
+            console.log(`   Checkpoint saved: ${processed}/${totalFiles} files processed`);
+            console.log('   Exiting cleanly to allow PR creation with partial results');
+            process.exit(0); // Exit cleanly to allow PR creation
+          });
+
+          // Compute MD5 hash of content
+          function computeHash(content) {
+            return crypto.createHash('md5').update(content).digest('hex');
+          }
+
+          // Extract hash from existing doc file (first line: <!-- source-hash: xxx -->)
+          function extractHashFromDoc(docContent) {
+            const match = docContent.match(/^<!--\s*source-hash:\s*([a-f0-9]{32})\s*-->/);
+            return match ? match[1] : null;
+          }
+
+          // Generate hidden doc path: src/MyService.ts -> src/.MyService.md
+          function getHiddenDocPath(filePath) {
+            const dir = path.dirname(filePath);
+            const ext = path.extname(filePath);
+            const baseName = path.basename(filePath, ext);
+            return path.join(dir, `.${baseName}.md`);
+          }
+
+          // Check if doc exists AND has matching hash (source unchanged)
+          // Returns: { exists: boolean, hashMatch: boolean, docPath: string }
+          async function checkExistingDoc(filePath, sourceContent) {
+            const docPath = getHiddenDocPath(filePath);
+            const sourceHash = computeHash(sourceContent);
+
+            try {
+              const docContent = await fs.readFile(docPath, 'utf-8');
+              const existingHash = extractHashFromDoc(docContent);
+
+              if (existingHash === sourceHash) {
+                return { exists: true, hashMatch: true, docPath, sourceHash };
+              }
+              // Doc exists but source changed - needs regeneration
+              return { exists: true, hashMatch: false, docPath, sourceHash };
+            } catch {
+              // Doc doesn't exist
+              return { exists: false, hashMatch: false, docPath, sourceHash };
+            }
+          }
+
+          async function generateInlineDoc(filePath, sourceHash) {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const ext = path.extname(filePath);
+            const fileName = path.basename(filePath, ext);
+            const docPath = getHiddenDocPath(filePath);  // Hidden file: .FileName.md
+
+            // Skip if content is too short (likely a simple export/index file)
+            if (content.length < 100) {
+              console.log(`  ⏭️  Skipping ${fileName} (too short)`);
+              return null;
+            }
+
+            // Compute hash if not provided
+            const hash = sourceHash || computeHash(content);
+
+            // Determine language for code blocks
+            const langMap = {
+              '.ts': 'typescript', '.tsx': 'typescript',
+              '.js': 'javascript', '.jsx': 'javascript',
+              '.java': 'java', '.py': 'python', '.rs': 'rust',
+              '.go': 'go', '.c': 'c', '.cpp': 'cpp', '.h': 'c',
+              '.cs': 'csharp'
+            };
+            const language = langMap[ext] || 'plaintext';
+
+            const response = await client.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 2048,
+              system: `You are a technical documentation expert. Generate concise, developer-friendly documentation for source code files.
+
+          FORMAT REQUIREMENTS:
+          - Start with a brief 1-2 sentence description of the file's purpose
+          - Include a "## Key Components" section listing main exports/classes/functions
+          - Include a "## Usage Example" section with practical code examples
+          - Keep it concise - aim for 100-300 words total
+          - Use ${language} code blocks for examples
+          - Do not include the file name as a heading (it will be in the filename)`,
+              messages: [{
+                role: 'user',
+                content: `Document this ${language} file "${fileName}${ext}":\n\n\`\`\`${language}\n${content.slice(0, 12000)}\n\`\`\``
+              }]
+            });
+
+            // Prepend hash comment to doc content for cache validation
+            const docContent = `<!-- source-hash: ${hash} -->\n${response.content[0].text}`;
+            await fs.writeFile(docPath, docContent);
+            console.log(`  ✅ Generated: ${docPath}`);
+            return docPath;
+          }
+
+          async function main() {
+            // Read file list from unified discovery step (single source of truth)
+            const sourceFilesList = process.env.SOURCE_FILES_LIST || '.doc-orchestrator-source-files.txt';
+            console.log(`🔍 Reading source files from: ${sourceFilesList}`);
+
+            let allFiles;
+            try {
+              const fileContent = await fs.readFile(sourceFilesList, 'utf-8');
+              allFiles = fileContent.trim().split('\n').filter(f => f.length > 0);
+            } catch (error) {
+              console.error(`❌ Failed to read source files list: ${error.message}`);
+              process.exit(1);
+            }
+
+            // Files already limited in discovery phase (single source of truth)
+            // No need to apply limit here - use the list as-is
+            const files = allFiles;
+            console.log(`Processing ${files.length} files (from unified discovery)`);
+
+            // Set total for SIGTERM handler (module-level variables already declared)
+            totalFiles = files.length;
+
+            for (const file of files) {
+              try {
+                // Read source content for hash check
+                const sourceContent = await fs.readFile(file, 'utf-8');
+
+                // Check if doc exists and if source has changed
+                const docCheck = await checkExistingDoc(file, sourceContent);
+
+                if (docCheck.exists && docCheck.hashMatch) {
+                  // Doc exists and source unchanged - skip
+                  console.log(`  ⏭️  Skipping ${file} (unchanged, hash: ${docCheck.sourceHash.slice(0, 8)}...)`);
+                  unchanged++;
+                  continue;
+                }
+
+                if (docCheck.exists && !docCheck.hashMatch) {
+                  // Doc exists but source changed - regenerate
+                  console.log(`  🔄 Regenerating ${file} (source changed)`);
+                }
+
+                const result = await generateInlineDoc(file, docCheck.sourceHash);
+                if (result) generated++;
+                else skipped++;
+
+                // Rate limiting - wait 500ms between API calls
+                await new Promise(r => setTimeout(r, 500));
+              } catch (error) {
+                console.error(`  ❌ Error processing ${file}:`, error.message);
+                errors++;
+              }
+
+              // Checkpoint reporting every N files
+              processedSinceCheckpoint++;
+              if (processedSinceCheckpoint >= CHECKPOINT_INTERVAL) {
+                const processed = generated + unchanged + skipped + errors;
+                console.log(`📊 Checkpoint: ${processed}/${totalFiles} files processed`);
+                console.log(`   Generated: ${generated}, Unchanged: ${unchanged}, Skipped: ${skipped}, Errors: ${errors}`);
+
+                // Save checkpoint to disk (for recovery if needed)
+                await fs.writeFile('.doc-stage1-checkpoint.json', JSON.stringify({
+                  processed, total: totalFiles,
+                  generated, unchanged, skipped, errors,
+                  timestamp: new Date().toISOString()
+                }));
+
+                processedSinceCheckpoint = 0;
+              }
+            }
+
+            console.log(`\n📊 Stage 1 Complete:`);
+            console.log(`   Generated: ${generated}`);
+            console.log(`   Unchanged (cached): ${unchanged}`);
+            console.log(`   Skipped (too short): ${skipped}`);
+            console.log(`   Errors: ${errors}`);
+
+            // Write stats for later stages
+            await fs.writeFile('.doc-stage1-stats.json', JSON.stringify({
+              generated, unchanged, skipped, errors, timestamp: new Date().toISOString()
+            }));
+          }
+
+          main().catch(err => {
+            console.error('Stage 1 failed:', err);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+
+          # Run with unified timeout helper (12 hours default)
+          run_with_timeout "Stage 1" "${STAGE1_TIMEOUT_HOURS:-12}" node generate-inline-docs.js || true
+          # Continue - don't fail the workflow, preserve partial results
+
+          # Count generated files (hidden .*.md files)
+          INLINE_DOCS=$(find . -name ".*.md" -newer .git -type f -not -path "./node_modules/*" -not -path "./.git/*" | wc -l)
+          set_output "stage1_files" "$INLINE_DOCS"
+          set_output "stage1_status" "completed"
+
+      - name: Report Stage 1 Progress
+        if: always() && contains(env.STAGES, 'inline-docs') && env.CALLBACK_URL != ''
+        continue-on-error: true
+        env:
+          WEBHOOK_SECRET: ${{ github.event.client_payload.webhook_secret || github.event.inputs.webhook_secret || '' }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          mask_secret "$WEBHOOK_SECRET"
+
+          echo "📤 Reporting Stage 1 (Inline Docs) completion..."
+
+          PAYLOAD="{
+            \"run_id\": \"$RUN_ID\",
+            \"repo_id\": \"$REPO_ID\",
+            \"status\": \"running\",
+            \"workflow_run_id\": ${{ github.run_id }},
+            \"workflow_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+            \"current_stage\": \"codewiki\",
+            \"stage_results\": {
+              \"inline-docs\": {
+                \"status\": \"${{ steps.stage1.outputs.stage1_status || 'skipped' }}\",
+                \"files_generated\": ${{ steps.stage1.outputs.stage1_files || 0 }}
+              }
+            }
+          }"
+          send_webhook "$CALLBACK_URL" "$WEBHOOK_SECRET" "$PAYLOAD" || echo "⚠️ Stage 1 progress notification failed (non-blocking)"
+
+      # =========================================================================
+      # STAGE 2: CODEWIKI ANALYSIS
+      # Generate architecture overview and module tree
+      # Language detection already ran before Stage 1 (uses steps.detect_language outputs)
+      # =========================================================================
+
+      - name: Setup Python 3.12
+        if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install CodeWiki
+        id: codewiki_install
+        if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'true'
+        continue-on-error: true
+        run: |
+          # Install keyrings.alt for headless keyring support in CI environments
+          # Install ipython to suppress "Mermaidjs magic function not available" warning
+          pip install keyrings.alt ipython
+          pip install git+https://github.com/FSoft-AI4Code/CodeWiki.git
+
+          # Patch CodeWiki to increase Pydantic AI tool retries from 1 to 3
+          # This fixes "Tool exceeded max retries count of 1" errors on LLM schema validation failures
+          echo "🔧 Patching CodeWiki retry configuration..."
+          CODEWIKI_PATH=$(python3 -c "import codewiki; import os; print(os.path.dirname(codewiki.__file__))")
+
+          # Patch agent_orchestrator.py - add retries=3 to Agent() calls
+          ORCHESTRATOR_FILE="$CODEWIKI_PATH/src/be/agent_orchestrator.py"
+          if [ -f "$ORCHESTRATOR_FILE" ]; then
+            sed -i 's/system_prompt=SYSTEM_PROMPT\.format(module_name=module_name),$/system_prompt=SYSTEM_PROMPT.format(module_name=module_name),\n                retries=3,/' "$ORCHESTRATOR_FILE"
+            sed -i 's/system_prompt=LEAF_SYSTEM_PROMPT\.format(module_name=module_name),$/system_prompt=LEAF_SYSTEM_PROMPT.format(module_name=module_name),\n                retries=3,/' "$ORCHESTRATOR_FILE"
+            echo "  ✓ Patched agent_orchestrator.py"
+          fi
+
+          # Patch generate_sub_module_documentations.py - add retries=3 to nested Agent() calls
+          SUBMOD_FILE="$CODEWIKI_PATH/src/be/agent_tools/generate_sub_module_documentations.py"
+          if [ -f "$SUBMOD_FILE" ]; then
+            sed -i 's/tools=\[read_code_components_tool, str_replace_editor_tool, generate_sub_module_documentation_tool\],$/tools=[read_code_components_tool, str_replace_editor_tool, generate_sub_module_documentation_tool],\n                retries=3,/' "$SUBMOD_FILE"
+            sed -i 's/tools=\[read_code_components_tool, str_replace_editor_tool\],$/tools=[read_code_components_tool, str_replace_editor_tool],\n                retries=3,/' "$SUBMOD_FILE"
+            echo "  ✓ Patched generate_sub_module_documentations.py"
+          fi
+
+          source /tmp/workflow-helpers.sh
+          set_output "codewiki_installed" "true"
+
+      - name: Configure CodeWiki
+        id: codewiki_config
+        if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'true' && steps.codewiki_install.outputs.codewiki_installed == 'true'
+        continue-on-error: true
+        env:
+          # SECURITY: Pass secrets per-step with inline masking
+          OPENAI_API_KEY: ${{ github.event.client_payload.openai_api_key || github.event.inputs.openai_api_key || '' }}
+          ANTHROPIC_API_KEY: ${{ github.event.client_payload.anthropic_api_key || github.event.inputs.anthropic_api_key || '' }}
+          # Set keyring backend via env var (must be set before any keyring operations)
+          PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
+        run: |
+          source /tmp/workflow-helpers.sh
+          # SECURITY: Mask secrets immediately before any echo
+          mask_secret "$OPENAI_API_KEY"
+          mask_secret "$ANTHROPIC_API_KEY"
+
+          # === KEYRING CONFIGURATION FOR CI ===
+          # CodeWiki stores API keys in system keyring. In CI (no GUI), we must:
+          # 1. Create keyring config to specify PlaintextKeyring backend
+          # 2. Create data directory for credential storage
+          # See: https://github.com/FSoft-AI4Code/CodeWiki - uses keyring.set_password()
+
+          echo "🔑 Setting up keyring for headless CI environment..."
+
+          # Create keyring configuration directory and config file
+          mkdir -p ~/.config/python_keyring
+          cat > ~/.config/python_keyring/keyringrc.cfg << 'KEYRING_CFG'
+          [backend]
+          default-keyring=keyrings.alt.file.PlaintextKeyring
+          KEYRING_CFG
+
+          # Ensure keyring data directory exists with proper permissions
+          mkdir -p ~/.local/share/python_keyring
+          chmod 700 ~/.local/share/python_keyring
+
+          # Debug: Verify keyring is properly configured
+          echo "📋 Keyring backend verification:"
+          python3 -c "import keyring; print(f'  Active backend: {keyring.get_keyring()}')"
+
+          # Configure CodeWiki with selected provider and model
+          # Supported providers: anthropic (recommended), openai
+          # See: https://fsoft-ai4code.github.io/CodeWiki/
+          echo "🔧 Configuring CodeWiki with provider: $CODEWIKI_PROVIDER, model: $CODEWIKI_MODEL"
+
+          if [ "$CODEWIKI_PROVIDER" = "anthropic" ]; then
+            # Anthropic Claude - CodeWiki's recommended provider (68.79% quality score)
+            codewiki config set \
+              --api-key "$ANTHROPIC_API_KEY" \
+              --base-url "https://api.anthropic.com" \
+              --main-model "$CODEWIKI_MODEL" \
+              --cluster-model "$CODEWIKI_MODEL"
+          else
+            # OpenAI - fallback option
+            # Determine cluster model - avoid double -mini suffix
+            if [[ "$CODEWIKI_MODEL" == *-mini ]]; then
+              CLUSTER_MODEL="$CODEWIKI_MODEL"
+            else
+              CLUSTER_MODEL="${CODEWIKI_MODEL}-mini"
+            fi
+            codewiki config set \
+              --api-key "$OPENAI_API_KEY" \
+              --base-url "https://api.openai.com/v1" \
+              --main-model "$CODEWIKI_MODEL" \
+              --cluster-model "$CLUSTER_MODEL"
+          fi
+
+          # Verify configuration was saved
+          echo ""
+          echo "📋 CodeWiki configuration:"
+          codewiki config show
+
+          echo ""
+          echo "✅ Validating configuration..."
+          codewiki config validate
+
+          echo ""
+          set_output "codewiki_configured" "true"
+
+      - name: Run CodeWiki Analysis
+        id: stage2
+        if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'true' && steps.codewiki_config.outputs.codewiki_configured == 'true'
+        continue-on-error: false
+        env:
+          # Keyring backend for CI (must match config step)
+          PYTHON_KEYRING_BACKEND: keyrings.alt.file.PlaintextKeyring
+          # API keys for both providers (CodeWiki will use the one configured)
+          OPENAI_API_KEY: ${{ github.event.client_payload.openai_api_key || github.event.inputs.openai_api_key || '' }}
+          ANTHROPIC_API_KEY: ${{ github.event.client_payload.anthropic_api_key || github.event.inputs.anthropic_api_key || '' }}
+          # Pass through config from workflow env
+          INLINE_DOCS_LIMIT: ${{ env.INLINE_DOCS_LIMIT }}
+          CODEWIKI_OUTPUT_PATH: ${{ env.CODEWIKI_OUTPUT_PATH }}
+          # Stage timeout
+          STAGE2_TIMEOUT_HOURS: ${{ env.STAGE2_TIMEOUT_HOURS }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          # SECURITY: Mask secrets immediately
+          mask_secret "$OPENAI_API_KEY"
+          mask_secret "$ANTHROPIC_API_KEY"
+
+          echo "📊 Stage 2: Running CodeWiki analysis..."
+
+          # Debug: Show active keyring backend
+          echo "📋 Keyring verification before generate:"
+          python3 -c "import keyring; print(f'  Active backend: {keyring.get_keyring()}')"
+
+          # IMPORTANT: Exclude dependency directories from CodeWiki analysis
+          # CodeWiki analyzes ALL code in the directory, including node_modules/vendor
+          # which can result in documenting dependencies instead of the actual project
+          # NOTE: Do NOT exclude .git - CodeWiki needs it for git features
+          echo "🗂️ Excluding dependency directories from CodeWiki analysis..."
+          EXCLUDED_DIRS=""
+          for dir in node_modules vendor .venv venv __pycache__ dist build .next target; do
+            if [ -d "$dir" ]; then
+              echo "  Moving $dir to /tmp/codewiki_excluded_$dir"
+              mv "$dir" "/tmp/codewiki_excluded_$dir"
+              EXCLUDED_DIRS="$EXCLUDED_DIRS $dir"
+            fi
+          done
+
+          # Also exclude helper/utility scripts that aren't part of the main codebase
+          # These are typically standalone scripts for CI/CD, code generation, etc.
+          echo "🗂️ Excluding helper scripts from CodeWiki analysis..."
+          EXCLUDED_FILES=""
+          for file in generate-inline-docs.js generate-docs.js; do
+            if [ -f "$file" ]; then
+              echo "  Moving $file to /tmp/codewiki_excluded_$file"
+              mv "$file" "/tmp/codewiki_excluded_$file"
+              EXCLUDED_FILES="$EXCLUDED_FILES $file"
+            fi
+          done
+
+          # Include dependency repos in CodeWiki analysis by COPYING files
+          # IMPORTANT: CodeWiki does NOT follow symlinks, so we must copy the files
+          # This allows CodeWiki to analyze the full codebase including libraries
+          # NOTE: Skip in debug mode (FILE_LIMIT > 0) to speed up testing
+          DEP_COPIES=""
+          DEBUG_FILE_LIMIT="${INLINE_DOCS_LIMIT:-0}"
+          if [ "$DEBUG_FILE_LIMIT" -gt 0 ]; then
+            echo "📦 Skipping dependency repos (debug mode with FILE_LIMIT=$DEBUG_FILE_LIMIT)"
+          elif [ -d "../deps" ]; then
+            echo "📦 Copying dependency repos for CodeWiki analysis..."
+            for dep_dir in ../deps/*/; do
+              if [ -d "$dep_dir" ]; then
+                dep_name=$(basename "$dep_dir")
+                # Copy dependency into current directory (CodeWiki doesn't follow symlinks!)
+                if [ ! -e "deps-$dep_name" ]; then
+                  echo "   Copying: $dep_dir → deps-$dep_name"
+                  cp -r "$dep_dir" "deps-$dep_name"
+                  # Remove .git from copy to avoid confusion
+                  rm -rf "deps-$dep_name/.git" 2>/dev/null || true
+                  DEP_FILE_COUNT=$(find "deps-$dep_name" -type f \( -name "*.java" -o -name "*.ts" -o -name "*.py" -o -name "*.rs" -o -name "*.go" \) 2>/dev/null | wc -l | tr -d ' ')
+                  echo "   ✅ Copied deps-$dep_name ($DEP_FILE_COUNT source files)"
+                  DEP_COPIES="$DEP_COPIES deps-$dep_name"
+                fi
+              fi
+            done
+            if [ -z "$DEP_COPIES" ]; then
+              echo "   No dependency repos to copy"
+            fi
+          else
+            echo "📦 No dependency repos found"
+          fi
+
+          # Show what CodeWiki will analyze
+          echo "📂 Files/directories to analyze:"
+          ls -la | head -25
+
+          # =====================================================================
+          # FILE LIMITING FOR CODEWIKI (uses unified discovery list)
+          # In debug mode (INLINE_DOCS_LIMIT > 0), we hide files that are NOT
+          # in the unified discovery list, so CodeWiki only analyzes the same
+          # files that Stage 1 processed (plus their generated inline docs).
+          # Uses helper functions from /tmp/workflow-helpers.sh
+          # =====================================================================
+          EXCLUDED_SOURCE_FILES_LIST="/tmp/codewiki_excluded_files.txt"
+
+          FILE_LIMIT="${INLINE_DOCS_LIMIT:-0}"
+          if [ "$FILE_LIMIT" -gt 0 ]; then
+            echo "⚡ DEBUG MODE: Limiting CodeWiki to files from unified discovery"
+
+            # Use the unified file list from discovery phase (already limited)
+            SOURCE_FILES_LIST="${SOURCE_FILES_LIST:-.doc-orchestrator-source-files.txt}"
+
+            if [ ! -f "$SOURCE_FILES_LIST" ]; then
+              echo "❌ Source files list not found: $SOURCE_FILES_LIST"
+              echo "   CodeWiki will analyze ALL files (no limit applied)"
+            else
+              SOURCE_COUNT=$(count_source_files "$SOURCE_FILES_LIST")
+              echo "   Unified discovery list: $SOURCE_COUNT files"
+
+              # Count inline docs using helper function
+              INLINE_DOCS_COUNT=$(count_inline_docs_for_sources "$SOURCE_FILES_LIST")
+              echo "   Inline docs from Stage 1: $INLINE_DOCS_COUNT files"
+
+              # Hide files not in the unified list using helper function
+              MOVED_COUNT=$(hide_files_not_in_list "$SOURCE_FILES_LIST" "$EXCLUDED_SOURCE_FILES_LIST")
+              echo "   Temporarily hidden $MOVED_COUNT files (CodeWiki sees: $SOURCE_COUNT source + $INLINE_DOCS_COUNT inline docs)"
+            fi
+          fi
+
+          CODEWIKI_DIR="${CODEWIKI_OUTPUT_PATH}"
+          mkdir -p "$CODEWIKI_DIR"
+
+          # Run CodeWiki with unified timeout helper (6 hours default)
+          # Internal Pydantic AI retry handles LLM schema errors (retries=3)
+          echo "🚀 Running CodeWiki analysis..."
+          echo "   Output path: $CODEWIKI_DIR"
+          CODEWIKI_FAILED=false
+          if run_with_timeout "Stage 2" "${STAGE2_TIMEOUT_HOURS:-6}" codewiki generate --output "./$CODEWIKI_DIR" --verbose 2>&1; then
+            echo "✅ CodeWiki completed successfully"
+          else
+            CODEWIKI_EXIT=$?
+            echo "❌ CodeWiki failed with exit code: $CODEWIKI_EXIT"
+            CODEWIKI_FAILED=true
+          fi
+
+          # Restore limited source files using helper function
+          EXCLUDED_SOURCE_FILES_LIST="/tmp/codewiki_excluded_files.txt"
+          if [ -s "$EXCLUDED_SOURCE_FILES_LIST" ]; then
+            echo "🔄 Restoring temporarily excluded source files..."
+            RESTORE_COUNT=$(restore_hidden_files "$EXCLUDED_SOURCE_FILES_LIST")
+            echo "   ✅ Restored $RESTORE_COUNT source files"
+          fi
+
+          # Remove copied dependency directories (cleanup)
+          for dep_copy in $DEP_COPIES; do
+            if [ -d "$dep_copy" ]; then
+              rm -rf "$dep_copy"
+              echo "   Removed: $dep_copy"
+            fi
+          done
+
+          # Restore excluded directories (for subsequent steps)
+          for dir in $EXCLUDED_DIRS; do
+            if [ -d "/tmp/codewiki_excluded_$dir" ]; then
+              echo "  Restoring $dir"
+              mv "/tmp/codewiki_excluded_$dir" "$dir"
+            fi
+          done
+
+          # Restore excluded files
+          for file in $EXCLUDED_FILES; do
+            if [ -f "/tmp/codewiki_excluded_$file" ]; then
+              echo "  Restoring $file"
+              mv "/tmp/codewiki_excluded_$file" "$file"
+            fi
+          done
+
+          # Fail the workflow if CodeWiki failed
+          if [ "$CODEWIKI_FAILED" = "true" ]; then
+            echo "💥 CodeWiki stage failed - failing workflow"
+            exit 1
+          fi
+
+          CODEWIKI_FILES=$(count_markdown_files "$CODEWIKI_DIR")
+          set_output "stage2_files" "$CODEWIKI_FILES"
+          set_output "stage2_status" "completed"
+
+      # Alternative: Claude Architecture Analysis for ALL languages (when CodeWiki is not supported)
+      - name: Run Claude Architecture Analysis (All Languages)
+        id: stage2_alt
+        if: contains(env.STAGES, 'codewiki') && steps.detect_language.outputs.codewiki_supported == 'false'
+        env:
+          ANTHROPIC_API_KEY: ${{ github.event.client_payload.anthropic_api_key || github.event.inputs.anthropic_api_key || '' }}
+          PRIMARY_LANGUAGE: ${{ steps.detect_language.outputs.primary_language }}
+          INLINE_DOCS_LIMIT: ${{ env.INLINE_DOCS_LIMIT }}
+          CODEWIKI_OUTPUT_PATH: ${{ env.CODEWIKI_OUTPUT_PATH }}
+          # Unified file discovery result (single source of truth)
+          SOURCE_FILES_LIST: ${{ steps.discover_files.outputs.source_files_list }}
+          SOURCE_FILE_COUNT: ${{ steps.discover_files.outputs.source_file_count }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          # SECURITY: Mask API key
+          mask_secret "$ANTHROPIC_API_KEY"
+
+          echo "📊 Stage 2 (Alternative): Claude Architecture Analysis (all languages, primary: $PRIMARY_LANGUAGE)..."
+          echo "   Using unified file list: $SOURCE_FILES_LIST ($SOURCE_FILE_COUNT files)"
+
+          # Create output directory using configurable path
+          CODEWIKI_DIR="${CODEWIKI_OUTPUT_PATH}"
+          mkdir -p "$CODEWIKI_DIR"
+          echo "   Output path: $CODEWIKI_DIR"
+
+          # Read source files from unified discovery step (single source of truth)
+          echo "📁 Reading source files from unified discovery..."
+
+          if [ ! -f "$SOURCE_FILES_LIST" ]; then
+            echo "❌ Source files list not found: $SOURCE_FILES_LIST"
+            set_output "stage2_files" "0"
+            set_output "stage2_status" "failed"
+            exit 1
+          fi
+
+          # Read files from the list (already limited in discovery phase - no need to limit again)
+          SOURCE_FILES=$(cat "$SOURCE_FILES_LIST")
+          FILE_COUNT=$(wc -l < "$SOURCE_FILES_LIST" | tr -d ' ')
+          echo "   Processing $FILE_COUNT source files (from unified discovery)"
+
+          # Show breakdown
+          MAIN_COUNT=$(echo "$SOURCE_FILES" | grep -v "^\.\./deps" | wc -l | tr -d ' ')
+          DEPS_COUNT=$(echo "$SOURCE_FILES" | grep "^\.\./deps" | wc -l | tr -d ' ')
+          echo "   Main repo: $MAIN_COUNT files"
+          echo "   Dependencies: $DEPS_COUNT files"
+
+          # Build file contents for Claude - save to temp file to avoid shell escaping issues
+          echo "" > /tmp/file_contents.txt
+          for file in $SOURCE_FILES; do
+            if [ -f "$file" ]; then
+              echo "=== File: $file ===" >> /tmp/file_contents.txt
+              head -150 "$file" >> /tmp/file_contents.txt
+              echo "" >> /tmp/file_contents.txt
+            fi
+          done
+
+          # Get repository name
+          REPO_NAME=$(basename "$(pwd)")
+
+          # Include README if exists
+          echo "" > /tmp/readme_content.txt
+          if [ -f "README.md" ]; then
+            echo "=== README.md ===" >> /tmp/readme_content.txt
+            cat README.md >> /tmp/readme_content.txt
+          fi
+
+          # Build the prompt
+          cat > /tmp/claude_prompt.txt << 'PROMPT_END'
+          You are an expert software architect. Analyze this repository and its dependencies to generate comprehensive architecture documentation.
+
+          Generate documentation in Markdown format with:
+          1. **Overview**: What this project does (2-3 sentences)
+          2. **Architecture**: High-level system design (include a Mermaid flowchart)
+          3. **Core Components**: Key modules/packages and their responsibilities (use a table)
+          4. **Component Relationships**: Mermaid flowchart diagram showing dependencies between modules
+          5. **Data Flow**: How data moves through the system (Mermaid sequence diagram)
+          6. **Key Files**: Most important files and their purpose
+          7. **Dependencies**: How this project relates to its library dependencies (files in ../deps/)
+          8. **CLI Commands**: (if applicable) Available commands and usage
+
+          IMPORTANT:
+          - Focus ONLY on the actual source code. Do NOT document helper scripts (like .js files) unless they are part of the core functionality.
+          - Files from ../deps/ are library dependencies - explain how the main project uses them.
+          - Include at least 2 Mermaid diagrams (architecture + data flow or sequence).
+
+          Output only the Markdown documentation, no preamble.
+          PROMPT_END
+
+          # Combine into full prompt
+          FULL_PROMPT="Repository: $REPO_NAME
+          Primary Language: $PRIMARY_LANGUAGE
+
+          $(cat /tmp/readme_content.txt)
+
+          Source Files:
+          $(cat /tmp/file_contents.txt)
+
+          $(cat /tmp/claude_prompt.txt)"
+
+          # Escape for JSON
+          ESCAPED_PROMPT=$(echo "$FULL_PROMPT" | jq -Rs .)
+
+          # Build JSON payload
+          cat > /tmp/claude_request.json << JSONEND
+          {
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 8000,
+            "messages": [{"role": "user", "content": $ESCAPED_PROMPT}]
+          }
+          JSONEND
+
+          echo "🤖 Calling Claude API for architecture analysis..."
+
+          RESPONSE=$(curl -s -X POST "https://api.anthropic.com/v1/messages" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -d @/tmp/claude_request.json)
+
+          # Extract content from response
+          CONTENT=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
+
+          if [ -z "$CONTENT" ]; then
+            echo "❌ Claude API call failed"
+            echo "$RESPONSE" | jq .
+            set_output "stage2_files" "0"
+            set_output "stage2_status" "failed"
+            exit 1
+          fi
+
+          # Write the documentation
+          echo "# $REPO_NAME Module Documentation" > "$CODEWIKI_DIR/overview.md"
+          echo "" >> "$CODEWIKI_DIR/overview.md"
+          echo "$CONTENT" >> "$CODEWIKI_DIR/overview.md"
+
+          # Create metadata.json
+          echo "{\"generator\":\"claude-architecture-analysis\",\"model\":\"claude-sonnet-4-20250514\",\"language\":\"$PRIMARY_LANGUAGE\",\"files_analyzed\":$FILE_COUNT}" > "$CODEWIKI_DIR/metadata.json"
+
+          echo "✅ Architecture documentation generated successfully"
+          echo "  Output: $CODEWIKI_DIR/overview.md"
+
+          ARCH_FILES=$(count_markdown_files "$CODEWIKI_DIR")
+          set_output "stage2_files" "$ARCH_FILES"
+          set_output "stage2_status" "completed"
+
+      - name: Report Stage 2 Progress
+        if: always() && contains(env.STAGES, 'codewiki') && env.CALLBACK_URL != ''
+        continue-on-error: true
+        env:
+          WEBHOOK_SECRET: ${{ github.event.client_payload.webhook_secret || github.event.inputs.webhook_secret || '' }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          mask_secret "$WEBHOOK_SECRET"
+
+          echo "📤 Reporting Stage 2 (Architecture Analysis) completion..."
+
+          # Use outputs from either CodeWiki (stage2) or Claude alternative (stage2_alt)
+          STAGE2_STATUS="${{ steps.stage2.outputs.stage2_status || steps.stage2_alt.outputs.stage2_status || 'skipped' }}"
+          STAGE2_FILES="${{ steps.stage2.outputs.stage2_files || steps.stage2_alt.outputs.stage2_files || 0 }}"
+
+          PAYLOAD="{
+            \"run_id\": \"$RUN_ID\",
+            \"repo_id\": \"$REPO_ID\",
+            \"status\": \"running\",
+            \"workflow_run_id\": ${{ github.run_id }},
+            \"workflow_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+            \"current_stage\": \"tutorials\",
+            \"stage_results\": {
+              \"inline-docs\": {
+                \"status\": \"${{ steps.stage1.outputs.stage1_status || 'skipped' }}\",
+                \"files_generated\": ${{ steps.stage1.outputs.stage1_files || 0 }}
+              },
+                \"codewiki\": {
+                  \"status\": \"$STAGE2_STATUS\",
+                  \"files_generated\": $STAGE2_FILES
+                }
+              }
+            }"
+          send_webhook "$CALLBACK_URL" "$WEBHOOK_SECRET" "$PAYLOAD" || echo "⚠️ Stage 2 progress notification failed (non-blocking)"
+
+      # =========================================================================
+      # STAGE 3: AI TUTORIAL GENERATOR (VoltAgent-powered)
+      # Generate getting started guides and how-to tutorials
+      # Uses VoltAgent framework with tool-based document generation
+      # Generates 4 tutorials: user/getting-started, user/common-use-cases,
+      #                        dev/getting-started-dev, dev/architecture-overview-dev
+      # =========================================================================
+      - name: Install Tutorial Generator Dependencies
+        if: contains(env.STAGES, 'tutorials')
+        run: |
+          npm install @voltagent/core @ai-sdk/anthropic zod glob
+
+      - name: Generate Tutorials with VoltAgent
+        id: stage3
+        if: contains(env.STAGES, 'tutorials')
+        env:
+          # SECURITY: Pass secret per-step with inline masking
+          ANTHROPIC_API_KEY: ${{ github.event.client_payload.anthropic_api_key || github.event.inputs.anthropic_api_key || '' }}
+          # Pass through output paths from workflow env
+          DOCS_OUTPUT_PATH: ${{ env.DOCS_OUTPUT_PATH }}
+          CODEWIKI_OUTPUT_PATH: ${{ env.CODEWIKI_OUTPUT_PATH }}
+          TUTORIALS_OUTPUT_PATH: ${{ env.TUTORIALS_OUTPUT_PATH }}
+          # Stage timeout
+          STAGE3_TIMEOUT_HOURS: ${{ env.STAGE3_TIMEOUT_HOURS }}
+          # Unified file discovery result (same files as Stage 1 and 2)
+          SOURCE_FILES_LIST: ${{ steps.discover_files.outputs.source_files_list }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          # SECURITY: Mask secret immediately before any echo
+          mask_secret "$ANTHROPIC_API_KEY"
+
+          echo "🤖 Stage 3: VoltAgent Tutorial Generator starting..."
+
+          cat > generate-tutorials-voltagent.cjs << 'SCRIPT_EOF'
+          #!/usr/bin/env node
+          const { Agent, createTool } = require("@voltagent/core");
+          const { anthropic } = require("@ai-sdk/anthropic");
+          const { z } = require("zod");
+          const fs = require("fs").promises;
+          const path = require("path");
+          const { glob } = require("glob");
+
+          // Configuration from environment (from repo config)
+          const DOCS_OUTPUT_PATH = process.env.DOCS_OUTPUT_PATH || "docs";
+          const TUTORIALS_PATH = process.env.TUTORIALS_OUTPUT_PATH || path.join(DOCS_OUTPUT_PATH, "tutorials");
+          const CODEWIKI_PATH = process.env.CODEWIKI_OUTPUT_PATH || path.join(DOCS_OUTPUT_PATH, "codewiki");
+          const SOURCE_FILES_LIST = process.env.SOURCE_FILES_LIST || ".doc-orchestrator-source-files.txt";
+
+          console.log(`📁 Docs output path: ${DOCS_OUTPUT_PATH}`);
+          console.log(`📁 Tutorials path: ${TUTORIALS_PATH}`);
+          console.log(`📁 CodeWiki path: ${CODEWIKI_PATH}`);
+          console.log(`📁 Source files list: ${SOURCE_FILES_LIST}`);
+
+          // Load unified source files list (same files processed by Stage 1 and 2)
+          let unifiedSourceFiles = [];
+          try {
+            const content = await fs.readFile(SOURCE_FILES_LIST, "utf-8");
+            unifiedSourceFiles = content.trim().split("\n").filter(f => f.length > 0);
+            console.log(`📊 Loaded ${unifiedSourceFiles.length} source files from unified discovery`);
+          } catch (error) {
+            console.log(`⚠️ Could not load unified source files list: ${error.message}`);
+            console.log(`   Stage 3 will use glob patterns to discover files`);
+          }
+
+          // Helper function to check if file exists
+          async function fileExists(filePath) {
+            try {
+              await fs.access(filePath);
+              return true;
+            } catch {
+              return false;
+            }
+          }
+
+          // ============================================================
+          // TOOL 1: list_docs - List available documentation files
+          // ============================================================
+          const listDocsTool = createTool({
+            name: "list_docs",
+            description: "List available documentation files (CLAUDE.md, inline docs, CodeWiki). Does NOT include README.md - use CLAUDE.md and CodeWiki as primary sources.",
+            parameters: z.object({
+              category: z.enum(["all", "project", "inline", "codewiki"]).optional()
+                .describe("Filter by category: 'project' for CLAUDE.md, 'inline' for Stage 1 docs, 'codewiki' for Stage 2 docs, 'all' for everything")
+            }),
+            execute: async ({ category = "all" }) => {
+              const files = { project: [], inline: [], codewiki: [] };
+
+              // Project files (CLAUDE.md only - NOT README)
+              if (category === "all" || category === "project") {
+                if (await fileExists("CLAUDE.md")) files.project.push("CLAUDE.md");
+              }
+
+              // Inline docs (Stage 1 output) - hidden files like .MyService.md
+              // Use unified source files list to find corresponding inline docs
+              if (category === "all" || category === "inline") {
+                if (unifiedSourceFiles.length > 0) {
+                  // Find inline docs that correspond to the unified source files
+                  for (const srcFile of unifiedSourceFiles) {
+                    const dir = path.dirname(srcFile);
+                    const ext = path.extname(srcFile);
+                    const base = path.basename(srcFile, ext);
+                    const inlineDoc = path.join(dir, `.${base}.md`);
+                    if (await fileExists(inlineDoc)) {
+                      files.inline.push(inlineDoc);
+                    }
+                  }
+                } else {
+                  // Fallback: search directories if unified list not available
+                  const inlineDirs = ["src", "lib", "app", "components", "hooks", "utils", "crates", "cli", "bin", "cmd", "internal", "pkg"];
+                  for (const dir of inlineDirs) {
+                    const found = await glob(`${dir}/**/.*.md`, { ignore: ["**/node_modules/**", "**/docs/**"], dot: true });
+                    files.inline.push(...found);
+                  }
+                  // Only limit if using fallback glob search
+                  files.inline = files.inline.slice(0, 40);
+                }
+              }
+
+              // CodeWiki docs (Stage 2 output)
+              if (category === "all" || category === "codewiki") {
+                const codewikiFiles = await glob(`${CODEWIKI_PATH}/**/*.md`);
+                // Sort by importance (overview files first)
+                codewikiFiles.sort((a, b) => {
+                  const scoreA = a.toLowerCase().includes("overview") ? 10 : a.toLowerCase().includes("index") ? 5 : 0;
+                  const scoreB = b.toLowerCase().includes("overview") ? 10 : b.toLowerCase().includes("index") ? 5 : 0;
+                  return scoreB - scoreA;
+                });
+                files.codewiki = codewikiFiles.slice(0, 20);
+              }
+
+              return {
+                summary: `Found ${files.project.length} project files, ${files.inline.length} inline docs, ${files.codewiki.length} CodeWiki docs`,
+                files,
+                note: "README.md is excluded - use CLAUDE.md and CodeWiki for context"
+              };
+            }
+          });
+
+          // ============================================================
+          // TOOL 2: read_doc_file - Read content of a documentation file
+          // ============================================================
+          const readDocFileTool = createTool({
+            name: "read_doc_file",
+            description: "Read the content of a documentation file. Use this to understand the project before writing tutorials.",
+            parameters: z.object({
+              path: z.string().describe("Path to the file to read (e.g., 'CLAUDE.md', 'docs/codewiki/overview.md')"),
+              maxChars: z.number().optional().describe("Maximum characters to read (default: 6000)")
+            }),
+            execute: async ({ path: filePath, maxChars = 6000 }) => {
+              try {
+                const content = await fs.readFile(filePath, "utf-8");
+                const truncated = content.length > maxChars;
+                return {
+                  path: filePath,
+                  content: content.slice(0, maxChars),
+                  totalChars: content.length,
+                  truncated,
+                  message: truncated ? `Content truncated from ${content.length} to ${maxChars} chars` : "Full content returned"
+                };
+              } catch (error) {
+                return {
+                  path: filePath,
+                  error: `Failed to read file: ${error.message}`,
+                  content: null
+                };
+              }
+            }
+          });
+
+          // ============================================================
+          // TOOL 3: write_tutorial_doc - Write a tutorial document
+          // ============================================================
+          const writeTutorialDocTool = createTool({
+            name: "write_tutorial_doc",
+            description: `Write a tutorial document to ${TUTORIALS_PATH}/. Use 'user/' prefix for end-user tutorials and 'dev/' prefix for developer tutorials.`,
+            parameters: z.object({
+              filename: z.string().describe("Filename with subdirectory, e.g., 'user/getting-started.md' or 'dev/architecture-overview-dev.md'"),
+              content: z.string().describe("Full markdown content of the tutorial"),
+              title: z.string().describe("Title of the tutorial for logging")
+            }),
+            execute: async ({ filename, content, title }) => {
+              const outputPath = path.join(TUTORIALS_PATH, filename);
+              await fs.mkdir(path.dirname(outputPath), { recursive: true });
+              await fs.writeFile(outputPath, content);
+              return {
+                success: true,
+                path: outputPath,
+                title,
+                chars: content.length,
+                message: `Successfully wrote "${title}" to ${outputPath}`
+              };
+            }
+          });
+
+          // ============================================================
+          // TOOL 4: list_source_files - List source code files in repo
+          // ============================================================
+          const listSourceFilesTool = createTool({
+            name: "list_source_files",
+            description: "List source code files from the unified discovery (same files processed by Stage 1 and 2). Use this to explore the codebase structure.",
+            parameters: z.object({
+              directory: z.string().optional().describe("Filter by directory prefix (default: all). Examples: 'src', 'lib', 'app'"),
+              extension: z.string().optional().describe("Filter by extension without dot (default: all). Examples: 'java', 'ts', 'py'"),
+              maxFiles: z.number().optional().describe("Maximum files to return (default: 50)")
+            }),
+            execute: async ({ directory, extension, maxFiles = 50 }) => {
+              try {
+                let files = [];
+
+                if (unifiedSourceFiles.length > 0) {
+                  // Use unified source files list (same files as Stage 1 and 2)
+                  files = [...unifiedSourceFiles];
+
+                  // Apply directory filter if specified
+                  if (directory && directory !== ".") {
+                    files = files.filter(f => f.startsWith(directory + "/") || f.startsWith("./" + directory + "/"));
+                  }
+
+                  // Apply extension filter if specified
+                  if (extension) {
+                    files = files.filter(f => f.endsWith(`.${extension}`));
+                  }
+                } else {
+                  // Fallback: use glob if unified list not available
+                  const ext = extension ? `*.${extension}` : "*";
+                  const searchDir = directory || ".";
+                  const patterns = [`${searchDir}/**/${ext}`, `${searchDir}/${ext}`];
+                  const ignore = ["**/node_modules/**", "**/vendor/**", "**/target/**", "**/.git/**", "**/dist/**", "**/build/**", "**/deps-*/**"];
+
+                  for (const pattern of patterns) {
+                    const found = await glob(pattern, { ignore, nodir: true });
+                    files.push(...found);
+                  }
+
+                  const sourceExts = [".java", ".ts", ".tsx", ".js", ".jsx", ".py", ".rs", ".go", ".c", ".cpp", ".h", ".cs"];
+                  files = [...new Set(files)].filter(f =>
+                    extension ? f.endsWith(`.${extension}`) : sourceExts.some(e => f.endsWith(e))
+                  );
+                }
+
+                // Sort by path and limit
+                files.sort();
+                const limited = files.slice(0, maxFiles);
+
+                return {
+                  source: unifiedSourceFiles.length > 0 ? "unified_discovery" : "glob_fallback",
+                  directory: directory || "all",
+                  extension: extension || "all source files",
+                  totalFound: files.length,
+                  returned: limited.length,
+                  files: limited,
+                  note: files.length > maxFiles ? `Showing ${maxFiles} of ${files.length} files. Use directory/extension filter to narrow search.` : null
+                };
+              } catch (error) {
+                return { error: `Failed to list files: ${error.message}`, files: [] };
+              }
+            }
+          });
+
+          // ============================================================
+          // TOOL 5: read_source_file - Read source code file
+          // ============================================================
+          const readSourceFileTool = createTool({
+            name: "read_source_file",
+            description: "Read a source code file from the main repository. Use this to understand implementation details.",
+            parameters: z.object({
+              path: z.string().describe("Path to the source file (e.g., 'src/main/java/App.java', 'lib/utils.ts')"),
+              maxChars: z.number().optional().describe("Maximum characters to read (default: 8000)")
+            }),
+            execute: async ({ path: filePath, maxChars = 8000 }) => {
+              try {
+                // Security: prevent reading outside repo or sensitive files
+                if (filePath.includes("..") || filePath.startsWith("/")) {
+                  return { error: "Invalid path: must be relative and within repository", content: null };
+                }
+                if (filePath.includes("node_modules") || filePath.includes(".env") || filePath.includes("secret")) {
+                  return { error: "Cannot read files from excluded directories or sensitive files", content: null };
+                }
+
+                const content = await fs.readFile(filePath, "utf-8");
+                const truncated = content.length > maxChars;
+
+                // Detect language for context
+                const ext = path.extname(filePath).toLowerCase();
+                const langMap = {
+                  ".java": "java", ".ts": "typescript", ".tsx": "typescript",
+                  ".js": "javascript", ".jsx": "javascript", ".py": "python",
+                  ".rs": "rust", ".go": "go", ".c": "c", ".cpp": "cpp", ".cs": "csharp"
+                };
+
+                return {
+                  path: filePath,
+                  language: langMap[ext] || "unknown",
+                  content: content.slice(0, maxChars),
+                  totalChars: content.length,
+                  truncated,
+                  message: truncated ? `Truncated from ${content.length} to ${maxChars} chars` : "Full file returned"
+                };
+              } catch (error) {
+                return { path: filePath, error: `Failed to read: ${error.message}`, content: null };
+              }
+            }
+          });
+
+          // ============================================================
+          // TOOL 6: list_dependency_repos - List available dependency repos
+          // ============================================================
+          const listDependencyReposTool = createTool({
+            name: "list_dependency_repos",
+            description: "List dependency repositories that were cloned for analysis. These are in 'deps-*' directories.",
+            parameters: z.object({}),
+            execute: async () => {
+              try {
+                const entries = await fs.readdir(".", { withFileTypes: true });
+                const depDirs = entries
+                  .filter(e => e.isDirectory() && e.name.startsWith("deps-"))
+                  .map(e => e.name);
+
+                const repos = [];
+                for (const dir of depDirs) {
+                  // Count source files in each dep
+                  const sourceExts = ["*.java", "*.ts", "*.tsx", "*.js", "*.py", "*.rs", "*.go"];
+                  let fileCount = 0;
+                  for (const ext of sourceExts) {
+                    const found = await glob(`${dir}/**/${ext}`, { ignore: ["**/node_modules/**", "**/target/**"] });
+                    fileCount += found.length;
+                  }
+                  repos.push({ name: dir, sourceFiles: fileCount });
+                }
+
+                return {
+                  count: repos.length,
+                  repos,
+                  note: repos.length === 0 ? "No dependency repos found. They may not have been copied (debug mode)." : null
+                };
+              } catch (error) {
+                return { error: `Failed to list dependency repos: ${error.message}`, repos: [] };
+              }
+            }
+          });
+
+          // ============================================================
+          // TOOL 7: read_dependency_file - Read file from dependency repo
+          // ============================================================
+          const readDependencyFileTool = createTool({
+            name: "read_dependency_file",
+            description: "Read a source file from a dependency repository. Use list_dependency_repos first to see available repos.",
+            parameters: z.object({
+              repo: z.string().describe("Dependency repo name (e.g., 'deps-openframe-oss-lib')"),
+              path: z.string().describe("Path within the repo (e.g., 'src/main/java/Utils.java')"),
+              maxChars: z.number().optional().describe("Maximum characters to read (default: 6000)")
+            }),
+            execute: async ({ repo, path: filePath, maxChars = 6000 }) => {
+              try {
+                // Validate repo name
+                if (!repo.startsWith("deps-")) {
+                  return { error: "Invalid repo: must be a deps-* directory", content: null };
+                }
+
+                const fullPath = path.join(repo, filePath);
+
+                // Security checks
+                if (fullPath.includes("..") || filePath.startsWith("/")) {
+                  return { error: "Invalid path", content: null };
+                }
+
+                const content = await fs.readFile(fullPath, "utf-8");
+                const truncated = content.length > maxChars;
+
+                return {
+                  repo,
+                  path: filePath,
+                  fullPath,
+                  content: content.slice(0, maxChars),
+                  totalChars: content.length,
+                  truncated
+                };
+              } catch (error) {
+                return { repo, path: filePath, error: `Failed to read: ${error.message}`, content: null };
+              }
+            }
+          });
+
+          // ============================================================
+          // AGENT INSTRUCTIONS
+          // ============================================================
+          const AGENT_INSTRUCTIONS = `You are a technical documentation expert tasked with generating comprehensive tutorials for a software project.
+
+          ## YOUR MISSION
+          Generate 4 tutorial documents by:
+          1. First exploring available documentation using list_docs
+          2. Reading key files (CLAUDE.md, CodeWiki overview, inline docs) to understand the project
+          3. Optionally explore source code using list_source_files and read_source_file for implementation details
+          4. Writing 4 tutorials: 2 for end users, 2 for developers
+
+          ## AVAILABLE TOOLS
+          - **list_docs** / **read_doc_file**: Access generated documentation (CLAUDE.md, inline docs, CodeWiki)
+          - **list_source_files** / **read_source_file**: Explore main repository source code
+          - **list_dependency_repos** / **read_dependency_file**: Explore dependency repositories
+          - **write_tutorial_doc**: Write tutorial files to ${TUTORIALS_PATH}/
+
+          ## IMPORTANT: Context Sources (Priority Order)
+          1. PRIMARY: CLAUDE.md (project instructions and guidelines)
+          2. PRIMARY: CodeWiki docs (${CODEWIKI_PATH}/**/*.md) for architecture understanding
+          3. SECONDARY: Source code (use list_source_files/read_source_file for implementation details)
+          4. SECONDARY: Dependency repos (use list_dependency_repos/read_dependency_file for library context)
+          5. TERTIARY: Inline docs (hidden files: src/**/.*.md, etc.) for code-level details
+          - DO NOT use README.md - rely on CLAUDE.md and CodeWiki only
+
+          ## TUTORIALS TO GENERATE
+
+          ### User Tutorials (${TUTORIALS_PATH}/user/)
+          1. **user/getting-started.md** - A beginner-friendly guide covering:
+             - Prerequisites table (what needs to be installed)
+             - Installation steps with copy-paste commands
+             - Basic configuration with examples
+             - First steps / "Hello World" equivalent
+             - Common issues and solutions table
+             - Include a Mermaid flowchart showing the setup process
+             - Audience: Non-technical users/admins using the product
+             - Language: Avoid internal class names and technical jargon
+
+          2. **user/common-use-cases.md** - Practical usage guide covering:
+             - Top 5-10 common use cases with examples
+             - Step-by-step "How do I...?" scenarios
+             - Best practices for each use case
+             - Tips and tricks section
+             - Troubleshooting common problems
+             - Audience: Product users
+             - Include: Screenshot placeholders, friendly language
+
+          ### Developer Tutorials (${TUTORIALS_PATH}/dev/)
+          3. **dev/getting-started-dev.md** - Developer onboarding guide covering:
+             - Development environment setup
+             - Repository structure explanation with tree format
+             - Build and test commands
+             - Code style and conventions
+             - Contributing guidelines summary
+             - Include a Mermaid diagram showing the development workflow
+             - Audience: Engineers joining the team
+             - Include: Debug tips, common development errors
+
+          4. **dev/architecture-overview-dev.md** - Technical architecture document covering:
+             - High-level architecture diagram (Mermaid flowchart)
+             - Core components and their responsibilities (table)
+             - Data flow diagram (Mermaid sequence diagram)
+             - Key design patterns used
+             - Module dependencies and relationships
+             - Include at least 2 Mermaid diagrams
+             - Audience: Engineers
+             - Language: Technical terms and internal references OK
+
+          ## FORMATTING REQUIREMENTS
+          - Use Mermaid diagrams for architecture, data flow, and relationships
+          - Use tables for comparing options, listing features, or showing data
+          - Use blockquotes (>) for important notes and warnings
+          - Use collapsible sections (<details>) for advanced topics
+          - Use proper heading hierarchy (h1, h2, h3)
+          - Include code blocks with language hints
+
+          ## EXECUTION STEPS
+          1. Call list_docs to see all available documentation
+          2. Call read_doc_file for CLAUDE.md to understand project guidelines
+          3. Call read_doc_file for key CodeWiki files (especially overviews)
+          4. Read a few inline docs to understand code patterns
+          5. Generate and write each of the 4 tutorials using write_tutorial_doc
+          6. Confirm completion with a summary of files written
+
+          ## IMPORTANT RULES
+          - Be concise but thorough
+          - Include real, copy-paste ready code examples based on the project
+          - If certain information is not available, make reasonable assumptions and note them
+          - Each tutorial should be self-contained but can reference other tutorials
+          - Write for the specified audience (users vs developers)
+          - DO NOT invent APIs or commands not present in the docs`;
+
+          // ============================================================
+          // AGENT CREATION
+          // ============================================================
+          const tutorialAgent = new Agent({
+            name: "tutorial-generator",
+            instructions: AGENT_INSTRUCTIONS,
+            model: anthropic("claude-sonnet-4-20250514"),
+            tools: [
+              listDocsTool,
+              readDocFileTool,
+              writeTutorialDocTool,
+              listSourceFilesTool,
+              readSourceFileTool,
+              listDependencyReposTool,
+              readDependencyFileTool
+            ]
+          });
+
+          // ============================================================
+          // MAIN EXECUTION
+          // ============================================================
+          async function main() {
+            console.log("🤖 VoltAgent Tutorial Generator starting...");
+            console.log("📚 Will generate 4 tutorials: user/getting-started, user/common-use-cases, dev/getting-started-dev, dev/architecture-overview-dev");
+
+            try {
+              const result = await tutorialAgent.generateText(
+                "Generate all 4 tutorials as specified in your instructions. Start by exploring the available documentation with list_docs, then read CLAUDE.md and key CodeWiki files, then write each tutorial.",
+                {
+                  maxSteps: 20,
+                  maxTokens: 16000
+                }
+              );
+
+              console.log("\n📊 Agent execution complete:");
+              console.log(result.text || "(Agent completed without summary)");
+
+              // Count generated files
+              const tutorialFiles = await glob(`${TUTORIALS_PATH}/**/*.md`);
+              console.log(`\n✅ Generated ${tutorialFiles.length} tutorial files:`);
+              tutorialFiles.forEach(f => console.log(`   - ${f}`));
+
+              // Write stats
+              await fs.writeFile(".doc-stage3-stats.json", JSON.stringify({
+                generated: tutorialFiles.length,
+                files: tutorialFiles,
+                timestamp: new Date().toISOString(),
+                agent: "voltagent",
+                model: "claude-sonnet-4-20250514"
+              }));
+
+              // Force exit - VoltAgent keeps connections open that prevent natural exit
+              console.log("\n🏁 Stage 3 complete, exiting...");
+              process.exit(0);
+
+            } catch (error) {
+              console.error("❌ Agent execution failed:", error.message);
+              console.error(error.stack);
+
+              // Write failure stats
+              await fs.writeFile(".doc-stage3-stats.json", JSON.stringify({
+                generated: 0,
+                error: error.message,
+                timestamp: new Date().toISOString(),
+                agent: "voltagent",
+                status: "failed"
+              }));
+
+              throw error;
+            }
+          }
+
+          main().catch(err => {
+            console.error("Stage 3 failed:", err);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+
+          # Run with unified timeout helper (6 hours default)
+          run_with_timeout "Stage 3" "${STAGE3_TIMEOUT_HOURS:-6}" node generate-tutorials-voltagent.cjs || true
+          # Continue - don't fail the workflow, preserve partial results
+
+          TUTORIALS_DIR="${TUTORIALS_OUTPUT_PATH}"
+          TUTORIAL_FILES=$(count_markdown_files "$TUTORIALS_DIR")
+          set_output "stage3_files" "$TUTORIAL_FILES"
+          set_output "stage3_status" "completed"
+
+      - name: Report Stage 3 Progress
+        if: always() && contains(env.STAGES, 'tutorials') && env.CALLBACK_URL != ''
+        continue-on-error: true
+        env:
+          WEBHOOK_SECRET: ${{ github.event.client_payload.webhook_secret || github.event.inputs.webhook_secret || '' }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          mask_secret "$WEBHOOK_SECRET"
+
+          echo "📤 Reporting Stage 3 (AI Tutorial Generator) completion..."
+
+          PAYLOAD="{
+            \"run_id\": \"$RUN_ID\",
+            \"repo_id\": \"$REPO_ID\",
+            \"status\": \"running\",
+            \"workflow_run_id\": ${{ github.run_id }},
+            \"workflow_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+            \"current_stage\": \"creating-pr\",
+            \"stage_results\": {
+              \"inline-docs\": {
+                \"status\": \"${{ steps.stage1.outputs.stage1_status || 'skipped' }}\",
+                \"files_generated\": ${{ steps.stage1.outputs.stage1_files || 0 }}
+              },
+              \"codewiki\": {
+                \"status\": \"${{ steps.stage2.outputs.stage2_status || 'skipped' }}\",
+                \"files_generated\": ${{ steps.stage2.outputs.stage2_files || 0 }}
+              },
+              \"tutorials\": {
+                \"status\": \"${{ steps.stage3.outputs.stage3_status || 'skipped' }}\",
+                \"files_generated\": ${{ steps.stage3.outputs.stage3_files || 0 }}
+              }
+            }
+          }"
+          send_webhook "$CALLBACK_URL" "$WEBHOOK_SECRET" "$PAYLOAD" || echo "⚠️ Stage 3 progress notification failed (non-blocking)"
+
+      # =========================================================================
+      # CREATE PULL REQUEST
+      # =========================================================================
+      - name: Cleanup Temporary Files
+        run: |
+          source /tmp/workflow-helpers.sh
+          echo "🧹 Cleaning up temporary files before PR creation..."
+
+          # Remove generated scripts (created with heredoc)
+          cleanup_path "generate-inline-docs.js"
+          cleanup_path "generate-tutorials-voltagent.cjs"
+
+          # Remove stats files
+          cleanup_path ".doc-stage1-stats.json"
+          cleanup_path ".doc-stage3-stats.json"
+
+          # Remove unified file discovery list
+          cleanup_path ".doc-orchestrator-source-files.txt"
+
+          # Remove npm artifacts (installed for scripts)
+          cleanup_path "node_modules"
+          cleanup_path "package.json"
+          cleanup_path "package-lock.json"
+
+          # NOTE: /tmp/workflow-helpers.sh is cleaned up in final webhook step
+          echo "✅ Cleanup complete"
+
+      - name: Sanitize Branch Name
+        id: branch-name
+        run: |
+          source /tmp/workflow-helpers.sh
+          # Replace colons and other invalid chars with hyphens for git branch name
+          SAFE_RUN_ID=$(echo "$RUN_ID" | sed 's/[:]/-/g' | sed 's/[^a-zA-Z0-9._-]/-/g')
+          set_output "safe_run_id" "$SAFE_RUN_ID"
+          echo "📝 Sanitized RUN_ID for branch: $SAFE_RUN_ID"
+
+      - name: Stage Generated Documentation
+        id: stage-docs
+        run: |
+          source /tmp/workflow-helpers.sh
+          echo "📁 Staging generated documentation files..."
+          echo "   Using DOCS_OUTPUT_PATH: $DOCS_OUTPUT_PATH"
+          echo "   Using CODEWIKI_OUTPUT_PATH: $CODEWIKI_OUTPUT_PATH"
+          echo "   Using TUTORIALS_OUTPUT_PATH: $TUTORIALS_OUTPUT_PATH"
+
+          # Count untracked/modified files before staging
+          BEFORE_COUNT=$(git status --porcelain | wc -l)
+          echo "   Total changed files: $BEFORE_COUNT"
+
+          # Stage ALL .md files anywhere in the repo (for inline docs generated next to source files)
+          # This catches Stage 1 inline docs (hidden: .FileName.md), Stage 2 CodeWiki, and Stage 3 tutorials
+          echo "   Finding all .md files to stage (including hidden)..."
+
+          # Find all .md files recursively, including hidden files (.*.md)
+          # Stage everything except README.md and CHANGELOG.md (to avoid conflicts)
+          find . \( -name "*.md" -o -name ".*.md" \) -type f \
+            -not -path "./node_modules/*" \
+            -not -path "./.git/*" \
+            -not -name "README.md" \
+            -not -name "CHANGELOG.md" \
+            -exec git add -f {} \; 2>/dev/null || true
+
+          # Show what .md files exist (for debugging)
+          echo ""
+          echo "📋 All .md files found (including hidden inline docs):"
+          find . \( -name "*.md" -o -name ".*.md" \) -type f \
+            -not -path "./node_modules/*" \
+            -not -path "./.git/*" \
+            -not -name "README.md" \
+            -not -name "CHANGELOG.md" | head -100
+
+          # Count staged files
+          STAGED_COUNT=$(git diff --cached --name-only | wc -l)
+          echo "   Staged files: $STAGED_COUNT"
+          set_output "staged_count" "$STAGED_COUNT"
+
+          # Show what was staged
+          echo ""
+          echo "📋 Staged files:"
+          git diff --cached --name-only | head -50
+
+          if [ "$STAGED_COUNT" -eq "0" ]; then
+            echo ""
+            echo "⚠️ No documentation files to stage"
+            set_output "has_changes" "false"
+          else
+            set_output "has_changes" "true"
+          fi
+
+      - name: Create Pull Request
+        if: steps.stage-docs.outputs.has_changes == 'true'
+        id: create-pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            docs: Automated documentation update [skip ci]
+
+            Generated by Doc Orchestrator Pipeline
+            Run ID: ${{ env.RUN_ID }}
+          title: "📚 Automated Documentation Update"
+          body: |
+            ## Documentation Pipeline Results
+
+            **Run ID:** `${{ env.RUN_ID }}`
+
+            ### Stage 1: Inline Documentation
+            - Status: ${{ steps.stage1.outputs.stage1_status || 'skipped' }}
+            - Files generated: ${{ steps.stage1.outputs.stage1_files || '0' }}
+            - Generated `.md` files next to source classes explaining their purpose
+
+            ### Stage 2: CodeWiki Analysis
+            - Status: ${{ steps.stage2.outputs.stage2_status || 'skipped' }}
+            - Files generated: ${{ steps.stage2.outputs.stage2_files || '0' }}
+            - Architecture overview and module documentation
+
+            ### Stage 3: AI Tutorial Generator
+            - Status: ${{ steps.stage3.outputs.stage3_status || 'skipped' }}
+            - Files generated: ${{ steps.stage3.outputs.stage3_files || '0' }}
+            - Getting started guides and how-to tutorials
+
+            ---
+
+            **Review checklist:**
+            - [ ] Check generated inline docs for accuracy
+            - [ ] Review architecture documentation
+            - [ ] Test code examples in tutorials
+
+            ---
+            🤖 Generated by [Doc Orchestrator](https://github.com/openframe-oss-tenant)
+          branch: docs/orchestrator-${{ steps.branch-name.outputs.safe_run_id }}
+          base: ${{ github.event.repository.default_branch }}
+          delete-branch: true
+          labels: |
+            documentation
+            automated
+          # Include ALL .md files in the PR (inline docs, codewiki, tutorials)
+          # Includes hidden files (.*.md) for Stage 1 inline docs
+          add-paths: |
+            **/*.md
+            **/.**/*.md
+            **/.*.md
+            !README.md
+            !CHANGELOG.md
+            !node_modules/**
+
+      # =========================================================================
+      # SEND WEBHOOK NOTIFICATION
+      # =========================================================================
+      - name: Send Webhook Notification
+        if: always() && env.CALLBACK_URL != ''
+        continue-on-error: true  # Don't fail the workflow if callback fails
+        env:
+          # SECURITY: Pass secret per-step with inline masking
+          WEBHOOK_SECRET: ${{ github.event.client_payload.webhook_secret || github.event.inputs.webhook_secret || '' }}
+        run: |
+          source /tmp/workflow-helpers.sh
+          # SECURITY: Mask secret immediately before any echo
+          mask_secret "$WEBHOOK_SECRET"
+
+          echo "📤 Sending webhook to: $CALLBACK_URL"
+
+          # Determine overall status
+          if [ "${{ steps.stage-docs.outputs.has_changes }}" != "true" ]; then
+            STATUS="no_changes"
+            echo "   Status: no_changes (no documentation files generated)"
+          elif [ "${{ job.status }}" = "success" ]; then
+            STATUS="success"
+          else
+            STATUS="failure"
+          fi
+
+          # Build stage results JSON
+          STAGE_RESULTS=$(cat << EOF
+          {
+            "inline_docs": {
+              "status": "${{ steps.stage1.outputs.stage1_status || 'skipped' }}",
+              "files_generated": ${{ steps.stage1.outputs.stage1_files || 0 }}
+            },
+            "codewiki": {
+              "status": "${{ steps.stage2.outputs.stage2_status || 'skipped' }}",
+              "files_generated": ${{ steps.stage2.outputs.stage2_files || 0 }}
+            },
+            "tutorials": {
+              "status": "${{ steps.stage3.outputs.stage3_status || 'skipped' }}",
+              "files_generated": ${{ steps.stage3.outputs.stage3_files || 0 }}
+            }
+          }
+          EOF
+          )
+
+          # Get sanitized branch name
+          SAFE_BRANCH="docs/orchestrator-${{ steps.branch-name.outputs.safe_run_id }}"
+
+          # Send final webhook with response capture
+          PAYLOAD="{
+            \"run_id\": \"$RUN_ID\",
+            \"repo_id\": \"$REPO_ID\",
+            \"status\": \"$STATUS\",
+            \"workflow_run_id\": ${{ github.run_id }},
+            \"workflow_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+            \"pr_url\": \"${{ steps.create-pr.outputs.pull-request-url }}\",
+            \"pr_number\": ${{ steps.create-pr.outputs.pull-request-number || 'null' }},
+            \"branch\": \"$SAFE_BRANCH\",
+            \"stage_results\": $STAGE_RESULTS
+          }"
+          HTTP_CODE=$(send_webhook "$CALLBACK_URL" "$WEBHOOK_SECRET" "$PAYLOAD" "/tmp/webhook_response.txt") || HTTP_CODE="failed"
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            echo "✅ Webhook sent successfully (HTTP $HTTP_CODE)"
+          else
+            echo "⚠️ Webhook notification returned HTTP $HTTP_CODE (non-blocking)"
+            cat /tmp/webhook_response.txt 2>/dev/null || true
+          fi
+
+          # Final cleanup: remove workflow helpers file
+          cleanup_path "/tmp/workflow-helpers.sh"
+
+      - name: Pipeline Summary
+        if: always()
+        run: |
+          echo "## 📚 Doc Orchestrator Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Files |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Inline Docs | ${{ steps.stage1.outputs.stage1_status || 'skipped' }} | ${{ steps.stage1.outputs.stage1_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeWiki | ${{ steps.stage2.outputs.stage2_status || 'skipped' }} | ${{ steps.stage2.outputs.stage2_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tutorials | ${{ steps.stage3.outputs.stage3_status || 'skipped' }} | ${{ steps.stage3.outputs.stage3_files || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.create-pr.outputs.pull-request-url }}" ]; then
+            echo "**Pull Request:** ${{ steps.create-pr.outputs.pull-request-url }}" >> $GITHUB_STEP_SUMMARY
+          fi
