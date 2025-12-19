@@ -323,6 +323,17 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
               } as any,
             }
           }
+          if (type === 'APPROVAL_RESULT') {
+            return {
+              ...base,
+              messageData: {
+                type: 'APPROVAL_RESULT',
+                approvalRequestId: String(asAny.approvalRequestId ?? ''),
+                approved: Boolean(asAny.approved),
+                approvalType: String(asAny.approvalType ?? 'USER'),
+              } as any,
+            }
+          }
 
           return null
         })()

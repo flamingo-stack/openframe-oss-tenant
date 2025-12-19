@@ -177,7 +177,12 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
         if (message.role === 'assistant' && Array.isArray(message.content)) {
           const updatedContent = message.content.map(segment => {
             if (segment.type === 'approval_request' && segment.data.requestId === requestId) {
-              return { ...segment, status }
+              return { 
+                ...segment, 
+                status,
+                onApprove: handleApproveRequest,
+                onReject: handleRejectRequest
+              }
             }
             return segment
           })
@@ -186,7 +191,24 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
         return message
       })
     })
-  }, [])
+    
+    const updatedCurrentSegments = currentAssistantSegmentsRef.current.map(segment => {
+      if (segment.type === 'approval_request' && segment.data.requestId === requestId) {
+        return { 
+          ...segment, 
+          status,
+          onApprove: handleApproveRequest,
+          onReject: handleRejectRequest
+        }
+      }
+      return segment
+    })
+    
+    if (JSON.stringify(updatedCurrentSegments) !== JSON.stringify(currentAssistantSegmentsRef.current)) {
+      currentAssistantSegmentsRef.current = updatedCurrentSegments
+      updateLastAssistantMessage(updatedCurrentSegments)
+    }
+  }, [handleApproveRequest, handleRejectRequest, updateLastAssistantMessage])
   
   const handleNatsChunk = useCallback((chunk: any) => {
     if (!chunk || typeof chunk !== 'object') return
@@ -270,6 +292,23 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
       }
       return
     }
+
+    if (type === 'APPROVAL_RESULT') {
+      const requestId = chunk.approvalRequestId || ''
+      const approved = chunk.approved === true
+      const approvalType = chunk.approvalType || 'CLIENT'
+      
+      const newStatus = approved ? 'approved' : 'rejected'
+      setApprovalStatuses(prev => ({ ...prev, [requestId]: newStatus }))
+      
+      updateApprovalStatus(requestId, newStatus)
+      
+      if (approvalType !== 'CLIENT') {
+        setIsTyping(false)
+      }
+      
+      return
+    }
     
     // if (type === 'ERROR') {
     //   setNatsStreaming(false)
@@ -288,7 +327,7 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
     //   addMessage(errorMessage)
     //   return
     // }
-  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest])
+  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus])
 
   // NATS connect happens whenever feature flag is on.
   // Disable SSE message processing after we have an active subscription (natsSubscribed).

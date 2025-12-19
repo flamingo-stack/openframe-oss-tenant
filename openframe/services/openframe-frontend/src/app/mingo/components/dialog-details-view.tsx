@@ -56,6 +56,23 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     }
   }, [dialogId, fetchDialog, fetchMessages, clearCurrent])
 
+  useEffect(() => {
+    const newStatuses: Record<string, 'approved' | 'rejected'> = {}
+    
+    messages.forEach(msg => {
+      const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData]
+      messageDataArray.forEach((data: any) => {
+        if (data?.type === 'APPROVAL_RESULT' && data.approvalRequestId) {
+          newStatuses[data.approvalRequestId] = data.approved ? 'approved' : 'rejected'
+        }
+      })
+    })
+    
+    if (Object.keys(newStatuses).length > 0) {
+      setApprovalStatuses(prev => ({ ...prev, ...newStatuses }))
+    }
+  }, [messages])
+
   // Subscribe to realtime events via NATS instead of polling GraphQL for new messages.
   useNatsDialogSubscription({
     enabled: Boolean(dialogId),
@@ -145,6 +162,14 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       parameters?: Record<string, any>
     }>()
 
+    const pendingApprovals = new Map<string, {
+      command: string
+      approvalType: string
+      description?: string
+      risk?: string
+      details?: any
+    }>()
+
     let currentAssistantMessage: {
       id: string
       segments: MessageSegment[]
@@ -157,6 +182,16 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       
       messageDataArray.forEach((data: any) => {
         if (role === 'user' && data.type === 'TEXT') {
+          if (currentAssistantMessage && currentAssistantMessage.segments.length > 0) {
+            processedMessages.push({
+              id: currentAssistantMessage.id,
+              content: currentAssistantMessage.segments,
+              role: 'assistant',
+              timestamp: currentAssistantMessage.timestamp
+            })
+            currentAssistantMessage = null
+          }
+          
           processedMessages.push({
             id: msg.id,
             content: [{
@@ -213,6 +248,20 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
               text: data.text || ''
             })
           } else if (data.type === 'APPROVAL_REQUEST') {
+            const requestId = data.approvalRequestId
+            if (requestId) {
+              pendingApprovals.set(requestId, {
+                command: data.command,
+                approvalType: data.approvalType,
+                description: data.description,
+                risk: data.risk,
+                details: data.details
+              })
+            }
+          } else if (data.type === 'APPROVAL_RESULT') {
+            const requestId = data.approvalRequestId
+            const pendingApproval = pendingApprovals.get(requestId)
+            
             if (!currentAssistantMessage) {
               currentAssistantMessage = {
                 id: msg.id,
@@ -221,18 +270,25 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
               }
             }
             
-            const requestId = data.approvalRequestId || msg.id
+            const status: 'pending' | 'approved' | 'rejected' = data.approved ? 'approved' : 'rejected'
+            
             const approvalSegment = {
               type: 'approval_request' as const,
               data: {
-                command: data.command || '',
-                requestId: requestId
+                command: pendingApproval?.command || data.command || '',
+                requestId: requestId,
+                approvalType: pendingApproval?.approvalType || data.approvalType
               },
-              status: (approvalStatuses[requestId] || 'pending') as 'pending' | 'approved' | 'rejected',
+              status: status,
               onApprove: handleApproveRequest,
               onReject: handleRejectRequest
             }
+            
             currentAssistantMessage.segments.push(approvalSegment as MessageSegment)
+            
+            if (pendingApproval) {
+              pendingApprovals.delete(requestId)
+            }
           }
         }
       })
@@ -241,7 +297,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       const isLastMessage = index === messages.length - 1
       const nextIsFromDifferentOwner = nextMsg && nextMsg.owner?.type !== msg.owner?.type
       
-      if (currentAssistantMessage && (isLastMessage || nextIsFromDifferentOwner || role === 'user')) {
+      if (currentAssistantMessage && role === 'assistant' && (isLastMessage || nextIsFromDifferentOwner)) {
         if (currentAssistantMessage.segments.length > 0) {
           processedMessages.push({
             id: currentAssistantMessage.id,
@@ -253,6 +309,35 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
         currentAssistantMessage = null
       }
     })
+
+    if (pendingApprovals.size > 0) {
+      const pendingSegments: MessageSegment[] = []
+      
+      pendingApprovals.forEach((approval, requestId) => {
+        const status = approvalStatuses[requestId] || 'pending'
+        
+        pendingSegments.push({
+          type: 'approval_request' as const,
+          data: {
+            command: approval.command || '',
+            requestId: requestId,
+            approvalType: approval.approvalType
+          },
+          status: status as 'pending' | 'approved' | 'rejected',
+          onApprove: handleApproveRequest,
+          onReject: handleRejectRequest
+        } as MessageSegment)
+      })
+      
+      if (pendingSegments.length > 0) {
+        processedMessages.push({
+          id: `pending-approvals-${Date.now()}`,
+          content: pendingSegments,
+          role: 'assistant',
+          timestamp: new Date()
+        })
+      }
+    }
 
     return processedMessages
   }, [messages, approvalStatuses, handleApproveRequest, handleRejectRequest])
