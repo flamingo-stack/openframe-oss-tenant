@@ -136,6 +136,13 @@ export const GET_DIALOG_MESSAGES_QUERY = `
               approvalStatus
             }
 
+            ... on ApprovalRequestData {
+              type  
+              approvalRequestId
+              approvalType
+              command
+            }
+
             ... on ErrorData {
               error
               details

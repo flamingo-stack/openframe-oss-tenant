@@ -8,7 +8,7 @@ const config = {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
     "*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@flamingo/ui-kit/src/**/*.{ts,tsx}",
+    "./node_modules/@flamingo-stack/openframe-frontend-core/dist/**/*.{js,mjs,cjs}"
   ],
   prefix: "",
   safelist: [

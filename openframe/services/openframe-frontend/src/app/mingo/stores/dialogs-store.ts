@@ -24,6 +24,7 @@ interface DialogsStore {
   currentError: string | null
   hasLoadedCurrent: boolean
   currentSearchTerm?: string
+  currentStatusFilters?: string[]
   
   // Archived dialogs state
   archivedDialogs: Dialog[]
@@ -33,9 +34,10 @@ interface DialogsStore {
   archivedError: string | null
   hasLoadedArchived: boolean
   archivedSearchTerm?: string
+  archivedStatusFilters?: string[]
   
   // Actions
-  fetchDialogs: (archived: boolean, searchParam?: string, force?: boolean, cursor?: string | null) => Promise<void>
+  fetchDialogs: (archived: boolean, searchParam?: string, force?: boolean, cursor?: string | null, statusFilters?: string[]) => Promise<void>
   goToNextPage: (archived: boolean) => Promise<void>
   goToFirstPage: (archived: boolean) => Promise<void>
   resetCurrentDialogs: () => void
@@ -51,6 +53,7 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
   currentError: null,
   hasLoadedCurrent: false,
   currentSearchTerm: undefined,
+  currentStatusFilters: undefined,
   
   // Archived dialogs state
   archivedDialogs: [],
@@ -60,22 +63,28 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
   archivedError: null,
   hasLoadedArchived: false,
   archivedSearchTerm: undefined,
+  archivedStatusFilters: undefined,
   
-  fetchDialogs: async (archived: boolean, searchParam?: string, force?: boolean, cursor?: string | null) => {
+  fetchDialogs: async (archived: boolean, searchParam?: string, force?: boolean, cursor?: string | null, statusFilters?: string[]) => {
     const state = get()
     
     if (archived ? state.isLoadingArchived : state.isLoadingCurrent) {
       return
     }
 
-    // Reset pagination when search term changes
+    // Reset pagination when search term or status filters change
     // Normalize empty string and undefined to be equivalent for comparison
     const currentSearch = archived ? state.archivedSearchTerm : state.currentSearchTerm
     const normalizedSearchParam = searchParam || ''
     const normalizedCurrentSearch = currentSearch || ''
     const isNewSearch = searchParam !== undefined && normalizedSearchParam !== normalizedCurrentSearch
     
-    if (!force && !cursor && searchParam === undefined && (archived ? state.hasLoadedArchived : state.hasLoadedCurrent)) {
+    // Check if status filters changed
+    const currentFilters = archived ? state.archivedStatusFilters : state.currentStatusFilters
+    const filtersChanged = statusFilters !== undefined && JSON.stringify(statusFilters) !== JSON.stringify(currentFilters)
+    const shouldResetPagination = isNewSearch || filtersChanged
+    
+    if (!force && !cursor && searchParam === undefined && statusFilters === undefined && (archived ? state.hasLoadedArchived : state.hasLoadedCurrent)) {
       return
     }
     
@@ -83,22 +92,24 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
       { 
         isLoadingArchived: true, 
         archivedError: null,
-        ...(isNewSearch ? { 
+        ...(shouldResetPagination ? { 
           archivedDialogs: [], 
           archivedPageInfo: null,
           archivedHasLoadedBeyondFirst: false
         } : {}),
-        archivedSearchTerm: searchParam !== undefined ? searchParam : state.archivedSearchTerm
+        archivedSearchTerm: searchParam !== undefined ? searchParam : state.archivedSearchTerm,
+        archivedStatusFilters: statusFilters !== undefined ? statusFilters : state.archivedStatusFilters
       } : 
       { 
         isLoadingCurrent: true, 
         currentError: null,
-        ...(isNewSearch ? { 
+        ...(shouldResetPagination ? { 
           currentDialogs: [], 
           currentPageInfo: null,
           currentHasLoadedBeyondFirst: false
         } : {}),
-        currentSearchTerm: searchParam !== undefined ? searchParam : state.currentSearchTerm
+        currentSearchTerm: searchParam !== undefined ? searchParam : state.currentSearchTerm,
+        currentStatusFilters: statusFilters !== undefined ? statusFilters : state.currentStatusFilters
       }
     )
 
@@ -113,12 +124,23 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
       const effectiveSearchParam = searchParam !== undefined ? searchParam : 
         (archived ? state.archivedSearchTerm : state.currentSearchTerm)
       
+      // Determine the status filters to use
+      let statuses: string[]
+      const effectiveStatusFilters = statusFilters !== undefined ? statusFilters : 
+        (archived ? state.archivedStatusFilters : state.currentStatusFilters)
+      
+      if (effectiveStatusFilters && effectiveStatusFilters.length > 0) {
+        statuses = effectiveStatusFilters
+      } else if (archived) {
+        statuses = ['ARCHIVED']
+      } else {
+        statuses = ['ACTIVE', 'ACTION_REQUIRED', 'ON_HOLD', 'RESOLVED']
+      }
+      
       const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('/chat/graphql', {
         query: GET_DIALOGS_QUERY,
         variables: {
-          filter: archived ? 
-            { statuses: ['ARCHIVED'] } : 
-            { statuses: ['ACTIVE', 'ACTION_REQUIRED', 'ON_HOLD', 'RESOLVED'] },
+          filter: { statuses },
           pagination: paginationVars,
           search: effectiveSearchParam || undefined,
           slaSort: 'ASC'

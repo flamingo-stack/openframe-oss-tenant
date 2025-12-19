@@ -12,8 +12,55 @@ class TokenService {
   private apiUrlListeners: Set<(apiUrl: string) => void> = new Set();
 
   constructor() {
-    this.initTokenListener();
-    this.initApiUrl();
+    if (this.isTauriAvailable()) {
+      this.initTokenListener();
+      this.initApiUrl();
+    } else {
+      this.initFromEnv();
+    }
+  }
+
+  private isTauriAvailable(): boolean {
+    return typeof window !== 'undefined' && Boolean((window as any).__TAURI__);
+  }
+
+  private normalizeApiUrl(serverUrl: string): string {
+    const trimmed = serverUrl.trim();
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `https://${trimmed}`;
+  }
+
+  private initFromEnv() {
+    const token = import.meta.env.VITE_TOKEN as string | undefined;
+    const serverUrl = import.meta.env.VITE_SERVER_URL as string | undefined;
+
+    if (serverUrl) {
+      this.setApiBaseUrl(this.normalizeApiUrl(serverUrl));
+    }
+    if (token) {
+      this.setToken(token);
+    }
+  }
+
+  private setToken(token: string) {
+    this.currentToken = token;
+    this.listeners.forEach((listener) => {
+      try {
+        listener(token);
+      } catch (error) {
+        console.error('[TOKEN SERVICE] Error in listener:', error);
+      }
+    });
+  }
+
+  private setApiBaseUrl(apiUrl: string) {
+    this.currentApiBaseUrl = apiUrl;
+    this.apiUrlListeners.forEach((listener) => {
+      try {
+        listener(apiUrl);
+      } catch (error) {
+        console.error('[TOKEN SERVICE] Error in API URL listener:', error);
+      }
+    });
   }
 
   /**
@@ -25,16 +72,7 @@ class TokenService {
         const { token } = event.payload;
         console.log('[TOKEN SERVICE] Token received from Rust event:', this.maskToken(token));
         
-        this.currentToken = token;
-        
-        // Notify all listeners
-        this.listeners.forEach(listener => {
-          try {
-            listener(token);
-          } catch (error) {
-            console.error('[TOKEN SERVICE] Error in listener:', error);
-          }
-        });
+        this.setToken(token);
       });
       
       console.log('[TOKEN SERVICE] Token listener initialized');
@@ -47,22 +85,18 @@ class TokenService {
    * Request token from Rust using Tauri command
    */
   async requestToken(): Promise<string | null> {
+    if (this.currentToken) return this.currentToken;
+    if (!this.isTauriAvailable()) {
+      this.initFromEnv();
+      return this.currentToken;
+    }
     try {
       console.log('[TOKEN SERVICE] Requesting token from Rust...');
       const token = await invoke<string | null>('get_token');
       
       if (token) {
         console.log('[TOKEN SERVICE] Token received from Rust command:', this.maskToken(token));
-        this.currentToken = token;
-        
-        // Notify all listeners
-        this.listeners.forEach(listener => {
-          try {
-            listener(token);
-          } catch (error) {
-            console.error('[TOKEN SERVICE] Error in listener:', error);
-          }
-        });
+        this.setToken(token);
       } else {
         console.log('[TOKEN SERVICE] No token available yet');
       }
@@ -108,23 +142,18 @@ class TokenService {
    * Initialize API base URL from Tauri
    */
   async initApiUrl() {
+    if (this.currentApiBaseUrl) return;
+    if (!this.isTauriAvailable()) {
+      this.initFromEnv();
+      return;
+    }
     try {
       const serverUrl = await invoke<string>('get_server_url');
       
-      const apiUrl = serverUrl.startsWith('http://') || serverUrl.startsWith('https://') 
-        ? serverUrl 
-        : `https://${serverUrl}`;
+      const apiUrl = this.normalizeApiUrl(serverUrl);
       
       if (apiUrl) {
-        this.currentApiBaseUrl = apiUrl;
-        
-        this.apiUrlListeners.forEach(listener => {
-          try {
-            listener(apiUrl);
-          } catch (error) {
-            console.error('[TOKEN SERVICE] Error in API URL listener:', error);
-          }
-        });
+        this.setApiBaseUrl(apiUrl);
       }
     } catch (error) {
       console.error('[TOKEN SERVICE] Failed to get API base URL:', error);

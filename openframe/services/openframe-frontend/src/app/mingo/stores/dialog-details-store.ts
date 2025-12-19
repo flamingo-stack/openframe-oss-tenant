@@ -46,6 +46,7 @@ interface DialogDetailsStore {
   loadMore: () => Promise<void>
   clearCurrent: () => void
   updateDialogStatus: (status: string) => void
+  ingestRealtimeEvent: (payload: unknown) => void
 }
 
 export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
@@ -237,5 +238,123 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         }
       })
     }
-  }
+  },
+
+  ingestRealtimeEvent: (payload: unknown) => {
+    const state = get()
+    if (!state.currentDialogId) return
+
+    const asAny = payload as any
+    const isMessageObject =
+      asAny &&
+      typeof asAny === 'object' &&
+      typeof asAny.id === 'string' &&
+      typeof asAny.dialogId === 'string' &&
+      asAny.messageData != null &&
+      asAny.owner != null
+
+    const nowIso = new Date().toISOString()
+    const message: Message | null = isMessageObject
+      ? (asAny as Message)
+      : (() => {
+          const type = typeof asAny?.type === 'string' ? asAny.type : null
+          if (!type) return null
+
+          if (type === 'MESSAGE_START' || type === 'MESSAGE_END') return null
+
+          const id = `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`
+          const base: Message = {
+            id,
+            dialogId: state.currentDialogId,
+            chatType: 'CLIENT',
+            dialogMode: 'DEFAULT',
+            createdAt: nowIso,
+            owner: { type: 'ASSISTANT', model: '' } as any,
+            messageData: { type: 'TEXT', text: '' } as any,
+          }
+
+          if (type === 'TEXT') {
+            return { ...base, messageData: { type: 'TEXT', text: String(asAny.text ?? '') } as any }
+          }
+          if (type === 'EXECUTING_TOOL') {
+            return {
+              ...base,
+              messageData: {
+                type: 'EXECUTING_TOOL',
+                integratedToolType: String(asAny.integratedToolType ?? ''),
+                toolFunction: String(asAny.toolFunction ?? ''),
+                parameters: asAny.parameters,
+              } as any,
+            }
+          }
+          if (type === 'EXECUTED_TOOL') {
+            return {
+              ...base,
+              messageData: {
+                type: 'EXECUTED_TOOL',
+                integratedToolType: String(asAny.integratedToolType ?? ''),
+                toolFunction: String(asAny.toolFunction ?? ''),
+                result: asAny.result,
+                success: asAny.success,
+              } as any,
+            }
+          }
+          if (type === 'ERROR') {
+            return {
+              ...base,
+              messageData: {
+                type: 'ERROR',
+                error: String(asAny.error ?? 'Error'),
+                details: typeof asAny.details === 'string' ? asAny.details : undefined,
+              } as any,
+            }
+          }
+          if (type === 'APPROVAL_REQUEST') {
+            return {
+              ...base,
+              messageData: {
+                type: 'APPROVAL_REQUEST',
+                approvalType: String(asAny.approvalType ?? 'USER'),
+                command: String(asAny.command ?? ''),
+                approvalRequestId: String(asAny.approvalRequestId ?? ''),
+                description: asAny.description,
+                risk: asAny.risk,
+                details: asAny.details,
+              } as any,
+            }
+          }
+
+          return null
+        })()
+
+    if (!message) return
+    if (message.dialogId !== state.currentDialogId) return
+
+    set((s) => {
+      const existingIds = new Set(s.currentMessages.map((m) => m.id))
+      if (existingIds.has(message.id)) return s
+      
+      if (message.messageData?.type === 'TEXT' && 
+          s.currentMessages.length > 0) {
+        const lastMessage = s.currentMessages[s.currentMessages.length - 1]
+        
+        if (lastMessage.messageData?.type === 'TEXT' && 
+            lastMessage.owner?.type === 'ASSISTANT') {
+          const updatedMessages = [...s.currentMessages]
+          const lastMessageData = lastMessage.messageData as any
+          const messageData = message.messageData as any
+          updatedMessages[updatedMessages.length - 1] = {
+            ...lastMessage,
+            messageData: {
+              ...lastMessage.messageData,
+              text: (lastMessageData.text || '') + (messageData.text || '')
+            }
+          }
+          return { currentMessages: updatedMessages }
+        }
+      }
+      
+      return { currentMessages: [...s.currentMessages, message] }
+    })
+  },
 }))

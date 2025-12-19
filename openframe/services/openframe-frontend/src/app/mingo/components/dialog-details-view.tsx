@@ -5,19 +5,26 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Clock,
   CheckCircle,
-  Monitor,
-  Check
 } from 'lucide-react'
-import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo-stack/openframe-frontend-core'
+import { 
+  MessageCircleIcon, 
+  ChatMessageList,
+  DetailPageContainer,
+  type MessageSegment 
+} from '@flamingo-stack/openframe-frontend-core'
 import { Button } from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { DetailLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { DeviceInfoSection } from '../../components/shared'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
+import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription'
+import { apiClient } from '@lib/api-client'
 import type { Message, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
+  const { toast } = useToast()
   const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
     return owner != null && typeof owner === 'object' && 'machineId' in owner
   }
@@ -31,10 +38,12 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     fetchMessages,
     loadMore,
     clearCurrent,
-    updateDialogStatus
+    updateDialogStatus,
+    ingestRealtimeEvent
   } = useDialogDetailsStore()
   const { putOnHold, resolve, isUpdating } = useDialogStatus()
   const [isPaused, setIsPaused] = useState(false)
+  const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({})
 
   useEffect(() => {
     if (dialogId) {
@@ -45,22 +54,19 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     return () => {
       clearCurrent()
     }
-  }, [dialogId])
+  }, [dialogId, fetchDialog, fetchMessages, clearCurrent])
 
-  useEffect(() => {
-    if (!dialogId) return
-    const interval = setInterval(() => {
-      fetchDialog(dialogId)
-      fetchMessages(dialogId, false, true)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [dialogId, fetchDialog, fetchMessages])
+  // Subscribe to realtime events via NATS instead of polling GraphQL for new messages.
+  useNatsDialogSubscription({
+    enabled: Boolean(dialogId),
+    dialogId,
+    onEvent: ingestRealtimeEvent,
+  })
 
   const handleSendMessage = (text: string) => {
     if (!isPaused) return
     const message = text.trim()
     if (!message) return
-    console.log('Sending message:', message)
   }
 
   const handlePutOnHold = async () => {
@@ -81,23 +87,54 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     }
   }
 
+  const handleApproveRequest = async (requestId?: string) => {
+    if (!requestId) return
+    
+    try {
+      await apiClient.post(`/chat/api/v1/approval-requests/${requestId}/approve`, {
+        approve: true
+      })
+      
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: 'approved'
+      }))
+    } catch (error) {
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "Unable to approve request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
+  }
+
+  const handleRejectRequest = async (requestId?: string) => {
+    if (!requestId) return
+    
+    try {
+      await apiClient.post(`/chat/api/v1/approval-requests/${requestId}/approve`, {
+        approve: false
+      })
+      
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: 'rejected'
+      }))
+    } catch (error) {
+      toast({
+        title: "Rejection Failed",
+        description: error instanceof Error ? error.message : "Unable to reject request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
+  }
+
   const chatMessages = useMemo(() => {
     const processedMessages: Array<{
       id: string
-      content: Array<{
-        type: 'text'
-        text: string
-      } | {
-        type: 'tool_execution'
-        data: {
-          type: 'EXECUTING_TOOL' | 'EXECUTED_TOOL'
-          integratedToolType: string
-          toolFunction: string
-          parameters?: Record<string, any>
-          result?: string
-          success?: boolean
-        }
-      }>
+      content: string | MessageSegment[]
       role: 'user' | 'assistant'
       timestamp: Date
     }> = []
@@ -110,7 +147,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
 
     let currentAssistantMessage: {
       id: string
-      segments: any[]
+      segments: MessageSegment[]
       timestamp: Date
     } | null = null
 
@@ -125,7 +162,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
             content: [{
               type: 'text',
               text: data.text || ''
-            }],
+            } as MessageSegment],
             role: 'user',
             timestamp: new Date(msg.createdAt)
           })
@@ -175,6 +212,27 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
               type: 'text',
               text: data.text || ''
             })
+          } else if (data.type === 'APPROVAL_REQUEST') {
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id,
+                segments: [],
+                timestamp: new Date(msg.createdAt)
+              }
+            }
+            
+            const requestId = data.approvalRequestId || msg.id
+            const approvalSegment = {
+              type: 'approval_request' as const,
+              data: {
+                command: data.command || '',
+                requestId: requestId
+              },
+              status: (approvalStatuses[requestId] || 'pending') as 'pending' | 'approved' | 'rejected',
+              onApprove: handleApproveRequest,
+              onReject: handleRejectRequest
+            }
+            currentAssistantMessage.segments.push(approvalSegment as MessageSegment)
           }
         }
       })
@@ -197,7 +255,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     })
 
     return processedMessages
-  }, [messages])
+  }, [messages, approvalStatuses, handleApproveRequest, handleRejectRequest])
 
   const prevLenRef = useRef<number>(messages.length)
   const shouldAutoScroll = messages.length > prevLenRef.current
@@ -292,17 +350,6 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
                 </Button>
               </div>
             )}
-          </div>
-
-          {/* Input */}
-          <div className="mt-3">
-            <ChatInput
-              placeholder={isPaused ? 'Type your message...' : 'You should pause Fae to Start Direct Chat'}
-              sending={!isPaused}
-              onSend={handleSendMessage}
-              reserveAvatarOffset={false}
-              className="!mx-0 max-w-none"
-            />
           </div>
         </div>
 

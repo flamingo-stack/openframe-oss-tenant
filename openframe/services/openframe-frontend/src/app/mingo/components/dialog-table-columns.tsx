@@ -3,10 +3,11 @@ import { Dialog, ClientDialogOwner } from '../types/dialog.types'
 
 interface DialogTableColumnsOptions {
   organizationLookup?: Record<string, string>
+  isArchived?: boolean
 }
 
 export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): TableColumn<Dialog>[] {
-  const { organizationLookup = {} } = options
+  const { organizationLookup = {}, isArchived = false } = options
   return [
     {
       key: 'title',
@@ -52,7 +53,13 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
       key: 'status',
       label: 'STATUS',
       width: 'w-1/6',
-      filterable: true,
+      filterable: !isArchived,
+      filterOptions: !isArchived ? [
+        { id: 'ACTIVE', value: 'ACTIVE', label: 'Active' },
+        { id: 'ACTION_REQUIRED', value: 'ACTION_REQUIRED', label: 'Action Required' },
+        { id: 'ON_HOLD', value: 'ON_HOLD', label: 'On Hold' },
+        { id: 'RESOLVED', value: 'RESOLVED', label: 'Resolved' }
+      ] : undefined,
       renderCell: (dialog) => {
         const getStatusVariant = (status: string) => {
           switch (status) {

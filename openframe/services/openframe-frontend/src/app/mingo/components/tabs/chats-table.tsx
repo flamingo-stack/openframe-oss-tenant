@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useMemo, useEffect } from "react"
+import { useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Table,
@@ -90,7 +90,7 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
   // Archive resolved only available for current chats
   const { archiveResolvedDialogs, isArchiving } = useArchiveResolved()
 
-  const columns = useMemo(() => getDialogTableColumns({ organizationLookup }), [organizationLookup])
+  const columns = useMemo(() => getDialogTableColumns({ organizationLookup, isArchived }), [organizationLookup, isArchived])
 
   const handleRowClick = useCallback((dialog: Dialog) => {
     router.push(`/mingo/dialog?id=${dialog.id}`)
@@ -104,9 +104,13 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
     }
   }, [archiveResolvedDialogs, dialogs, fetchDialogs, isArchived, params])
 
-  const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
-    // Mingo doesn't use filters yet, but keep handler for future
-  }, [])
+  const handleFilterChange = useCallback(async (columnFilters: Record<string, any[]>) => {
+    if (isArchived) return
+    
+    const statusFilters = columnFilters.status || []
+    const searchKey = 'currentSearch'
+    await fetchDialogs(false, params[searchKey] || '', true, null, statusFilters)
+  }, [fetchDialogs, isArchived, params])
 
   const hasResolvedDialogs = useMemo(() => {
     return !isArchived && dialogs.some(d => d.status === 'RESOLVED')
@@ -178,7 +182,7 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
         onRowClick={handleRowClick}
         filters={tableFilters}
         onFilterChange={handleFilterChange}
-        showFilters={false}
+        showFilters={!isArchived}
         mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
         cursorPagination={cursorPagination}

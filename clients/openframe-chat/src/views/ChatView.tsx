@@ -8,11 +8,12 @@ import {
   ChatInput,
   ChatQuickAction,
   ModelDisplay
-} from '@flamingo/ui-kit'
+} from '@flamingo-stack/openframe-frontend-core'
 import { useChat } from '../hooks/useChat'
 import { useConnectionStatus } from '../hooks/useConnectionStatus'
 import { supportedModelsService } from '../services/supportedModelsService'
 import faeAvatar from '../assets/fae-avatar.png'
+import { features } from '../config/features'
 
 export function ChatView() {
   const [currentModel, setCurrentModel] = useState<{
@@ -41,6 +42,7 @@ export function ChatView() {
   } = useChat({ 
     useApi: true, 
     useMock: false,
+    useNats: features.nats,
     onMetadataUpdate: handleMetadataUpdate
   })
   
