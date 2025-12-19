@@ -209,6 +209,7 @@ jobs:
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: ${{ matrix.name }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     defaults:
       run:
         shell: bash
