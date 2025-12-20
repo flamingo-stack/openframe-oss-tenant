@@ -1,24 +1,3 @@
-# GKE Dev Configuration - SingleBinary
-#
-# Currently using filesystem. When GCS is ready, uncomment GCS sections.
-#
-# =============================================================================
-# GCS SETUP (when infrastructure is ready):
-# =============================================================================
-# 1. Create GCS buckets:
-#    gcloud storage buckets create gs://${PROJECT_ID}-loki-chunks gs://${PROJECT_ID}-loki-ruler \
-#      --location=<REGION> --uniform-bucket-level-access --public-access-prevention
-#
-# 2. Setup Workload Identity:
-#    gcloud iam service-accounts create loki --display-name="Loki"
-#    gcloud storage buckets add-iam-policy-binding gs://${PROJECT_ID}-loki-chunks \
-#      --role=roles/storage.objectUser \
-#      --member="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${PROJECT_ID}.svc.id.goog/subject/ns/platform/sa/loki"
-#    (repeat for ruler bucket)
-#
-# 3. Uncomment GCS storage/schemaConfig sections, comment filesystem sections
-# 4. Uncomment serviceAccount annotation
-# =============================================================================
 
 registerJob:
   enabled: true
@@ -26,6 +5,7 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
     tag: "8.9.1"
+
 
 loki:
   loki:
@@ -103,7 +83,7 @@ loki:
       retention_enabled: true
       retention_delete_delay: 2h
       compaction_interval: 10m
-      delete_request_store: filesystem
+      delete_request_store: filesystem  # Change to: gcs (when using GCS)
 
     querier:
       max_concurrent: 4
@@ -127,6 +107,7 @@ loki:
       repository: prom/memcached-exporter
       tag: "v0.15.3"
 
+
   deploymentMode: SingleBinary
 
   singleBinary:
@@ -137,7 +118,7 @@ loki:
       enabled: true
       accessModes:
         - ReadWriteOnce
-      size: 10Gi
+      size: 20Gi
       mountPath: /var/loki
     resources:
       requests:
