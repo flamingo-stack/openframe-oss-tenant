@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "enabledManagers": ["maven"],
+  "enabledManagers": ["maven", "npm"],
   "labels": ["dependencies", "openframe-libs"],
   "prConcurrentLimit": 3,
   "prCreation": "immediate",
@@ -11,7 +11,7 @@
 
   "packageRules": [
     {
-      "description": "Auto-merge updates for OpenFrame OSS libs property",
+      "description": "Updates for OpenFrame OSS libs property",
       "matchManagers": ["maven"],
       "matchPackagePatterns": ["^com\\.openframe\\.oss"],
       "groupName": "openframe-libs",
@@ -19,11 +19,10 @@
       "commitMessageTopic": "OpenFrame libs",
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps",
-      "automergeType": "pr",
-      "automergeStrategy": "squash",
       "labels": ["dependencies", "openframe-libs"],
       "prPriority": 10,
-      "enabled": true
+      "enabled": true,
+      "ignoreUnstable": true
     },
     {
       "description": "Ignore parent POM, prevent lookup errors",
@@ -35,6 +34,28 @@
       "matchManagers": ["maven"],
       "matchPackagePatterns": ["*"],
       "excludePackagePatterns": ["^com\\.openframe\\.oss"],
+      "enabled": false
+    },
+    {
+      "description": "Updates for OpenFrame frontend core npm package",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@flamingo-stack/openframe-frontend-core"],
+      "groupName": "openframe-frontend-core",
+      "groupSlug": "openframe-frontend-core",
+      "commitMessageTopic": "OpenFrame frontend core",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "labels": ["dependencies", "openframe-libs"],
+      "prPriority": 10,
+      "enabled": true,
+      "registryUrls": ["https://npm.pkg.github.com"],
+      "ignoreUnstable": true
+    },
+    {
+      "description": "Disable all other npm dependencies - only update openframe-frontend-core",
+      "matchManagers": ["npm"],
+      "matchPackagePatterns": ["*"],
+      "excludePackageNames": ["@flamingo-stack/openframe-frontend-core"],
       "enabled": false
     }
   ],
@@ -50,9 +71,9 @@
       "description": "GitHub Packages Maven registry"
     },
     {
-      "hostType": "maven",
-      "matchHost": "maven.pkg.github.com/flamingo-stack/openframe-oss-lib",
-      "description": "Specific registry for com.openframe.oss artifacts"
+      "hostType": "npm",
+      "matchHost": "npm.pkg.github.com",
+      "description": "GitHub Packages npm registry"
     }
   ],
 

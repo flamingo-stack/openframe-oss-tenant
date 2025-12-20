@@ -18,9 +18,11 @@ interface MessageEventData {
 export class ChatApiService {
   private dialogId: string | null = null
   private debugMode: boolean
+  private useNatsTransport: boolean = false
   private tokenUnsubscribe?: () => void
   private apiUrlUnsubscribe?: () => void
   private onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void
+  private dialogIdListeners: Set<(dialogId: string | null) => void> = new Set()
 
   constructor(debug: boolean = false, onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void) {
     this.debugMode = debug
@@ -37,6 +39,30 @@ export class ChatApiService {
         console.log('[ChatApiService] API URL updated:', apiUrl)
       }
     })
+  }
+  
+  onDialogIdUpdate(callback: (dialogId: string | null) => void): () => void {
+    this.dialogIdListeners.add(callback)
+    try {
+      callback(this.dialogId)
+    } catch {
+      // ignore callback errors
+    }
+    return () => {
+      this.dialogIdListeners.delete(callback)
+    }
+  }
+
+  private setDialogId(dialogId: string | null) {
+    if (this.dialogId === dialogId) return
+    this.dialogId = dialogId
+    for (const listener of this.dialogIdListeners) {
+      try {
+        listener(dialogId)
+      } catch {
+        // ignore listener failures
+      }
+    }
   }
 
   private getApiBaseUrl(): string {
@@ -247,7 +273,7 @@ export class ChatApiService {
       throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
     }
     
-    yield* this.consumeSSE(response)
+    // yield* this.consumeSSE(response)
   }
 
   private async *consumeSSE(response: Response): AsyncGenerator<MessageSegment> {
@@ -256,11 +282,18 @@ export class ChatApiService {
         return
       }
 
+      // When using NATS for streaming chunks, SSE is only used for control-plane events:
+      // - dialog-created (to learn dialogId)
+      // - metadata (to update UI)
+      if (this.useNatsTransport && event !== 'dialog-created' && event !== 'metadata') {
+        continue
+      }
+
       if (event === 'dialog-created') {
         try {
           const parsed = JSON.parse(data) as DialogCreatedEventData
           if (parsed && parsed.dialogId) {
-            this.dialogId = parsed.dialogId
+            this.setDialogId(parsed.dialogId)
           }
         } catch {
           // ignore malformed event
@@ -354,8 +387,12 @@ export class ChatApiService {
     this.onMetadataUpdate = callback
   }
 
+  setUseNatsTransport(enabled: boolean) {
+    this.useNatsTransport = enabled
+  }
+
   reset() {
-    this.dialogId = null
+    this.setDialogId(null)
   }
   
   getDialogId(): string | null {

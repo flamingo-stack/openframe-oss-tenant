@@ -8,10 +8,25 @@ export interface ToolExecutionData {
   success?: boolean
 }
 
+// Approval request data type
+export interface ApprovalRequestData {
+  command: string
+  description?: string
+  approvalType?: string
+  requestId?: string
+}
+
 // Message segment types
 export type MessageSegment = 
   | { type: 'text'; text: string }
   | { type: 'tool_execution'; data: ToolExecutionData }
+  | { 
+      type: 'approval_request'
+      data: ApprovalRequestData
+      status?: 'pending' | 'approved' | 'rejected'
+      onApprove?: (requestId?: string) => void
+      onReject?: (requestId?: string) => void
+    }
 
 // Message content can be a simple string (backward compatible) or structured segments
 export type MessageContent = string | MessageSegment[]

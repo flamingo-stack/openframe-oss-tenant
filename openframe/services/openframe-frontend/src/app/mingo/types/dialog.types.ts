@@ -64,7 +64,7 @@ export interface DialogConnection {
 export type MessageOwnerType = 'CLIENT' | 'ASSISTANT' | 'ADMIN'
 export type ChatType = string
 export type DialogMode = string
-export type MessageDataType = 'TEXT' | 'ERROR' | 'EXECUTING_TOOL' | 'EXECUTED_TOOL'
+export type MessageDataType = 'TEXT' | 'ERROR' | 'EXECUTING_TOOL' | 'EXECUTED_TOOL' | 'APPROVAL_REQUEST' | 'APPROVAL_RESULT'
 
 export interface MessageOwner {
   type: MessageOwnerType
@@ -117,6 +117,27 @@ export interface ExecutedToolData extends MessageData {
   approvalStatus?: string
 }
 
+export interface ApprovalRequestData extends MessageData {
+  type: 'APPROVAL_REQUEST'
+  approvalRequestId: string
+  approvalType: string
+  command: string
+  description?: string
+  risk?: string
+  details?: any
+}
+
+export interface ApprovalResultData extends MessageData {
+  type: 'APPROVAL_RESULT'
+  approvalRequestId: string
+  approved: boolean
+  approvalType: string
+  command?: string
+  description?: string
+  risk?: string
+  details?: any
+}
+
 export interface Message {
   id: string
   dialogId: string
@@ -124,7 +145,7 @@ export interface Message {
   dialogMode: DialogMode
   createdAt: string
   owner: ClientOwner | AssistantOwner | AdminOwner | MessageOwner
-  messageData: TextData | ErrorData | ExecutingToolData | ExecutedToolData | MessageData
+  messageData: TextData | ErrorData | ExecutingToolData | ExecutedToolData | ApprovalRequestData | ApprovalResultData | MessageData
 }
 
 export interface MessageEdge {

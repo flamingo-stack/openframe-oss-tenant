@@ -28,6 +28,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const [accessCodeError, setAccessCodeError] = useState<string | null>(null)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [isCheckingDomain, setIsCheckingDomain] = useState(false)
+  const [isValidatingAccessCode, setIsValidatingAccessCode] = useState(false)
   const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
   const [showForgotPassword, setShowForgotPassword] = useState(false)
 
@@ -47,6 +48,50 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         return
       }
       setAccessCodeError(null)
+      
+      setIsValidatingAccessCode(true)
+      try {
+        const validateResponse = await authApiClient.validateAccessCode(orgEmail.trim(), accessCode.trim())
+        
+        if (!validateResponse.ok || !validateResponse.data) {
+          const error = validateResponse?.data?.code || 'Failed to validate access code'
+          
+          if (error.includes('ACCESS_CODE_ALREADY_USED')) {
+            setAccessCodeError('This access code has already been used')
+            toast({
+              title: "Access Code Already Used",
+              description: "This access code has already been used.",
+              variant: "destructive"
+            })
+          } else if (['ACCESS_CODE_VALIDATION_FAILED', 'INVALID_ACCESS_CODE'].includes(error)) {
+            setAccessCodeError('Invalid access code')
+            toast({
+              title: "Invalid Access Code",
+              description: "The access code is not valid.",
+              variant: "destructive"
+            })
+          } else {
+            setAccessCodeError('Access code validation failed')
+            toast({
+              title: "Validation Failed",
+              description: error,
+              variant: "destructive"
+            })
+          }
+          return
+        }
+      } catch (error) {
+        console.error('Access code validation error:', error)
+        setAccessCodeError('Failed to validate access code')
+        toast({
+          title: "Validation Error",
+          description: "Unable to validate access code.",
+          variant: "destructive"
+        })
+        return
+      } finally {
+        setIsValidatingAccessCode(false)
+      }
     }
 
     if (isSaasShared && domain.trim()) {
@@ -256,12 +301,12 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <div className="flex-1">
               <Button
                 onClick={handleCreateOrganization}
-                disabled={!orgName.trim() || !isOrgEmailValid || (isSaasShared && (!domain.trim() || !accessCode.trim())) || isLoading || isCheckingDomain}
-                loading={isLoading || isCheckingDomain}
+                disabled={!orgName.trim() || !isOrgEmailValid || (isSaasShared && (!domain.trim() || !accessCode.trim())) || isLoading || isValidatingAccessCode || isCheckingDomain}
+                loading={isLoading || isValidatingAccessCode || isCheckingDomain}
                 variant="primary"
                 className="!w-full sm:!w-full"
               >
-                {isCheckingDomain ? 'Checking...' : 'Continue'}
+                {isValidatingAccessCode ? 'Validating...' : isCheckingDomain ? 'Checking...' : 'Continue'}
               </Button>
             </div>
           </div>

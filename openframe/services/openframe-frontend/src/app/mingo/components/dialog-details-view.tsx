@@ -5,19 +5,26 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Clock,
   CheckCircle,
-  Monitor,
-  Check
 } from 'lucide-react'
-import { MessageCircleIcon, ChatMessageList, ChatInput, DetailPageContainer, StatusTag } from '@flamingo-stack/openframe-frontend-core'
+import { 
+  MessageCircleIcon, 
+  ChatMessageList,
+  DetailPageContainer,
+  type MessageSegment 
+} from '@flamingo-stack/openframe-frontend-core'
 import { Button } from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { DetailLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { DeviceInfoSection } from '../../components/shared'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
+import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription'
+import { apiClient } from '@lib/api-client'
 import type { Message, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
 
 export function DialogDetailsView({ dialogId }: { dialogId: string }) {
   const router = useRouter()
+  const { toast } = useToast()
   const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
     return owner != null && typeof owner === 'object' && 'machineId' in owner
   }
@@ -31,10 +38,12 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     fetchMessages,
     loadMore,
     clearCurrent,
-    updateDialogStatus
+    updateDialogStatus,
+    ingestRealtimeEvent
   } = useDialogDetailsStore()
   const { putOnHold, resolve, isUpdating } = useDialogStatus()
   const [isPaused, setIsPaused] = useState(false)
+  const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({})
 
   useEffect(() => {
     if (dialogId) {
@@ -45,22 +54,36 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     return () => {
       clearCurrent()
     }
-  }, [dialogId])
+  }, [dialogId, fetchDialog, fetchMessages, clearCurrent])
 
   useEffect(() => {
-    if (!dialogId) return
-    const interval = setInterval(() => {
-      fetchDialog(dialogId)
-      fetchMessages(dialogId, false, true)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [dialogId, fetchDialog, fetchMessages])
+    const newStatuses: Record<string, 'approved' | 'rejected'> = {}
+    
+    messages.forEach(msg => {
+      const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData]
+      messageDataArray.forEach((data: any) => {
+        if (data?.type === 'APPROVAL_RESULT' && data.approvalRequestId) {
+          newStatuses[data.approvalRequestId] = data.approved ? 'approved' : 'rejected'
+        }
+      })
+    })
+    
+    if (Object.keys(newStatuses).length > 0) {
+      setApprovalStatuses(prev => ({ ...prev, ...newStatuses }))
+    }
+  }, [messages])
+
+  // Subscribe to realtime events via NATS instead of polling GraphQL for new messages.
+  useNatsDialogSubscription({
+    enabled: Boolean(dialogId),
+    dialogId,
+    onEvent: ingestRealtimeEvent,
+  })
 
   const handleSendMessage = (text: string) => {
     if (!isPaused) return
     const message = text.trim()
     if (!message) return
-    console.log('Sending message:', message)
   }
 
   const handlePutOnHold = async () => {
@@ -81,23 +104,54 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     }
   }
 
+  const handleApproveRequest = async (requestId?: string) => {
+    if (!requestId) return
+    
+    try {
+      await apiClient.post(`/chat/api/v1/approval-requests/${requestId}/approve`, {
+        approve: true
+      })
+      
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: 'approved'
+      }))
+    } catch (error) {
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "Unable to approve request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
+  }
+
+  const handleRejectRequest = async (requestId?: string) => {
+    if (!requestId) return
+    
+    try {
+      await apiClient.post(`/chat/api/v1/approval-requests/${requestId}/approve`, {
+        approve: false
+      })
+      
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: 'rejected'
+      }))
+    } catch (error) {
+      toast({
+        title: "Rejection Failed",
+        description: error instanceof Error ? error.message : "Unable to reject request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
+  }
+
   const chatMessages = useMemo(() => {
     const processedMessages: Array<{
       id: string
-      content: Array<{
-        type: 'text'
-        text: string
-      } | {
-        type: 'tool_execution'
-        data: {
-          type: 'EXECUTING_TOOL' | 'EXECUTED_TOOL'
-          integratedToolType: string
-          toolFunction: string
-          parameters?: Record<string, any>
-          result?: string
-          success?: boolean
-        }
-      }>
+      content: string | MessageSegment[]
       role: 'user' | 'assistant'
       timestamp: Date
     }> = []
@@ -108,9 +162,17 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       parameters?: Record<string, any>
     }>()
 
+    const pendingApprovals = new Map<string, {
+      command: string
+      approvalType: string
+      description?: string
+      risk?: string
+      details?: any
+    }>()
+
     let currentAssistantMessage: {
       id: string
-      segments: any[]
+      segments: MessageSegment[]
       timestamp: Date
     } | null = null
 
@@ -120,12 +182,22 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       
       messageDataArray.forEach((data: any) => {
         if (role === 'user' && data.type === 'TEXT') {
+          if (currentAssistantMessage && currentAssistantMessage.segments.length > 0) {
+            processedMessages.push({
+              id: currentAssistantMessage.id,
+              content: currentAssistantMessage.segments,
+              role: 'assistant',
+              timestamp: currentAssistantMessage.timestamp
+            })
+            currentAssistantMessage = null
+          }
+          
           processedMessages.push({
             id: msg.id,
             content: [{
               type: 'text',
               text: data.text || ''
-            }],
+            } as MessageSegment],
             role: 'user',
             timestamp: new Date(msg.createdAt)
           })
@@ -175,6 +247,48 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
               type: 'text',
               text: data.text || ''
             })
+          } else if (data.type === 'APPROVAL_REQUEST') {
+            const requestId = data.approvalRequestId
+            if (requestId) {
+              pendingApprovals.set(requestId, {
+                command: data.command,
+                approvalType: data.approvalType,
+                description: data.description,
+                risk: data.risk,
+                details: data.details
+              })
+            }
+          } else if (data.type === 'APPROVAL_RESULT') {
+            const requestId = data.approvalRequestId
+            const pendingApproval = pendingApprovals.get(requestId)
+            
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id,
+                segments: [],
+                timestamp: new Date(msg.createdAt)
+              }
+            }
+            
+            const status: 'pending' | 'approved' | 'rejected' = data.approved ? 'approved' : 'rejected'
+            
+            const approvalSegment = {
+              type: 'approval_request' as const,
+              data: {
+                command: pendingApproval?.command || data.command || '',
+                requestId: requestId,
+                approvalType: pendingApproval?.approvalType || data.approvalType
+              },
+              status: status,
+              onApprove: handleApproveRequest,
+              onReject: handleRejectRequest
+            }
+            
+            currentAssistantMessage.segments.push(approvalSegment as MessageSegment)
+            
+            if (pendingApproval) {
+              pendingApprovals.delete(requestId)
+            }
           }
         }
       })
@@ -183,7 +297,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       const isLastMessage = index === messages.length - 1
       const nextIsFromDifferentOwner = nextMsg && nextMsg.owner?.type !== msg.owner?.type
       
-      if (currentAssistantMessage && (isLastMessage || nextIsFromDifferentOwner || role === 'user')) {
+      if (currentAssistantMessage && role === 'assistant' && (isLastMessage || nextIsFromDifferentOwner)) {
         if (currentAssistantMessage.segments.length > 0) {
           processedMessages.push({
             id: currentAssistantMessage.id,
@@ -196,8 +310,37 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
       }
     })
 
+    if (pendingApprovals.size > 0) {
+      const pendingSegments: MessageSegment[] = []
+      
+      pendingApprovals.forEach((approval, requestId) => {
+        const status = approvalStatuses[requestId] || 'pending'
+        
+        pendingSegments.push({
+          type: 'approval_request' as const,
+          data: {
+            command: approval.command || '',
+            requestId: requestId,
+            approvalType: approval.approvalType
+          },
+          status: status as 'pending' | 'approved' | 'rejected',
+          onApprove: handleApproveRequest,
+          onReject: handleRejectRequest
+        } as MessageSegment)
+      })
+      
+      if (pendingSegments.length > 0) {
+        processedMessages.push({
+          id: `pending-approvals-${Date.now()}`,
+          content: pendingSegments,
+          role: 'assistant',
+          timestamp: new Date()
+        })
+      }
+    }
+
     return processedMessages
-  }, [messages])
+  }, [messages, approvalStatuses, handleApproveRequest, handleRejectRequest])
 
   const prevLenRef = useRef<number>(messages.length)
   const shouldAutoScroll = messages.length > prevLenRef.current
@@ -292,17 +435,6 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
                 </Button>
               </div>
             )}
-          </div>
-
-          {/* Input */}
-          <div className="mt-3">
-            <ChatInput
-              placeholder={isPaused ? 'Type your message...' : 'You should pause Fae to Start Direct Chat'}
-              sending={!isPaused}
-              onSend={handleSendMessage}
-              reserveAvatarOffset={false}
-              className="!mx-0 max-w-none"
-            />
           </div>
         </div>
 
