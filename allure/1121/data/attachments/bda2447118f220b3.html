@@ -1,0 +1,35 @@
+<div>POST to http://openframe-client.microservices.svc.cluster.local:8097/api/agents/register</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;hostname&quot;: &quot;filter-test-test-93b9166a-8d66-4cae-b2b3-3d9b3441483c-62666e2f-0&quot;,
+    &quot;macAddress&quot;: &quot;02:ff:06:20:35:7f&quot;,
+    &quot;ip&quot;: &quot;192.168.1.18&quot;,
+    &quot;osUuid&quot;: &quot;uuid-87820294&quot;,
+    &quot;agentVersion&quot;: &quot;1.0.0&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>X-Test-Id: cd5ecf3a</div>
+        <div>Accept: */*</div>
+        <div>X-Correlation-Id: corr-cd5ecf3a</div>
+        <div>X-Initial-Key: -s614eyV2v6U9_yVdfsDdv_S2De59URo</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://openframe-client.microservices.svc.cluster.local:8097/api/agents/register&#39; -H &#39;X-Test-Id: cd5ecf3a&#39; -H &#39;Accept: */*&#39; -H &#39;X-Correlation-Id: corr-cd5ecf3a&#39; -H &#39;X-Initial-Key: -s614eyV2v6U9_yVdfsDdv_S2De59URo&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;hostname&quot;: &quot;filter-test-test-93b9166a-8d66-4cae-b2b3-3d9b3441483c-62666e2f-0&quot;,
+    &quot;macAddress&quot;: &quot;02:ff:06:20:35:7f&quot;,
+    &quot;ip&quot;: &quot;192.168.1.18&quot;,
+    &quot;osUuid&quot;: &quot;uuid-87820294&quot;,
+    &quot;agentVersion&quot;: &quot;1.0.0&quot;
+}&#39;
+</div>
