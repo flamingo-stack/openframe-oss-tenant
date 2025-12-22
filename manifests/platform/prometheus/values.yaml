@@ -28,15 +28,14 @@ prometheus:
         cpu: 1
         memory: 2Gi
 
-    # Storage - sized for 14 days retention
     persistentVolume:
       enabled: true
-      size: 50Gi
+      size: 20Gi
 
     # Enable remote write receiver for Alloy
     extraFlags:
       - "web.enable-remote-write-receiver"
-      - "storage.tsdb.retention.size=45GB"  # Stop before disk full
+      - "storage.tsdb.retention.size=18GB" 
 
     # Global settings
     global:
