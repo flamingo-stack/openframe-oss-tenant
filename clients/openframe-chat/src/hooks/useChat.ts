@@ -440,6 +440,35 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
           }
           
           updateLastAssistantMessage([...currentAssistantSegmentsRef.current])
+        } else if ((segment as any).type === 'approval_request') {
+          const approvalSegment = segment as any
+          const requestId = approvalSegment.data.requestId || ''
+          const approvalType = approvalSegment.data.approvalType || 'USER'
+          
+          if (approvalType === 'CLIENT') {
+            const finalSegment: MessageSegment = {
+              type: 'approval_request',
+              data: {
+                command: approvalSegment.data.command || '',
+                requestId: requestId,
+                approvalType: approvalType
+              },
+              status: (approvalStatuses[requestId] || 'pending') as 'pending' | 'approved' | 'rejected',
+              onApprove: handleApproveRequest,
+              onReject: handleRejectRequest
+            }
+            
+            currentAssistantSegmentsRef.current.push(finalSegment)
+            updateLastAssistantMessage([...currentAssistantSegmentsRef.current])
+          } else {
+            const escalationSegment: MessageSegment = {
+              type: 'text',
+              text: 'Escalated to technician - awaiting response'
+            }
+            currentAssistantSegmentsRef.current.push(escalationSegment)
+            updateLastAssistantMessage([...currentAssistantSegmentsRef.current])
+            setIsTyping(true)
+          }
         }
       }
 
@@ -447,13 +476,18 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
         await waitForNatsDone
       }
     } catch (err) {
+      const errorText = err instanceof Error ? err.message : String(err)
+      if (errorText.toLowerCase().includes('network error')) {
+        return
+      }
+      
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'error',
         name: 'Fae',
         timestamp: new Date(),
         avatar: faeAvatar,
-        content: err instanceof Error ? err.message : 'An error occurred while processing your request.',
+        content: errorText,
       }
       
       setMessages(prev => {
@@ -473,7 +507,7 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
         currentTextSegmentRef.current = ''
       }
     }
-  }, [streamMessage, addMessage, updateLastAssistantMessage, useNatsTransport])
+  }, [streamMessage, addMessage, updateLastAssistantMessage, useNatsTransport, natsDialogId, natsStreaming])
   
   const handleQuickAction = useCallback((actionText: string) => {
     sendMessage(actionText)
