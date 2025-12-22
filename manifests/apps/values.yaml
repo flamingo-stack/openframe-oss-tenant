@@ -88,7 +88,7 @@ apps:
     namespace: platform
     syncWave: "0"
   prometheus:
-    enabled: true
+    enabled: false
     project: platform
     namespace: platform
     syncWave: "0"
