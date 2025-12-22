@@ -13,7 +13,8 @@ loki:
 
 # Mimir configuration for metrics (replaces Prometheus remote_write)
 mimir:
-  remoteWriteUrl: "http://mimir-gateway.platform.svc.cluster.local:80/api/v1/push"
+  # Monolithic mode uses port 8080 directly
+  remoteWriteUrl: "http://mimir.platform.svc.cluster.local:8080/api/v1/push"
   tenantId: "anonymous"  # Default tenant for single-tenant setup
   scrapeInterval: "30s"
   scrapeTimeout: "10s"

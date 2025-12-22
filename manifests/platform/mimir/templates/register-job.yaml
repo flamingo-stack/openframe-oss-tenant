@@ -40,8 +40,8 @@ spec:
                   "description": "Grafana Mimir - Scalable Long-Term Metrics Storage",
                   "toolUrls": [
                     {
-                      "url": "http://mimir-gateway.platform.svc.cluster.local",
-                      "port": "80",
+                      "url": "http://mimir.platform.svc.cluster.local",
+                      "port": "8080",
                       "type": "API"
                     }
                   ],

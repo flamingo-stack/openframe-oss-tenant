@@ -5,131 +5,72 @@ registerJob:
     repository: curlimages/curl
     tag: "8.9.1"
 
-# GCS bucket configuration (disabled for now - using local filesystem)
-# gcs:
-#   bucketName: ""  # Set via environment overlay (e.g., openframe-mimir)
-
 mimir-distributed:
+  # Use monolithic mode - single deployment instead of microservices
+  deploymentMode: monolithic
+
   # Global image configuration
   global:
     image:
       registry: ghcr.io/flamingo-stack/registry
 
-  # Mimir configuration
+  # Monolithic Mimir (single pod with all components)
   mimir:
+    image:
+      repository: grafana/mimir
+      tag: "2.14.0"
+
     structuredConfig:
+      # Multi-tenancy disabled for simplicity
+      multitenancy_enabled: false
+
+      # Use filesystem storage (GCS commented out for now)
       common:
         storage:
-          # Using local filesystem instead of GCS for now
           backend: filesystem
           filesystem:
-            dir: /data/mimir
+            dir: /data
 
       blocks_storage:
-        storage_prefix: blocks
+        backend: filesystem
+        filesystem:
+          dir: /data/blocks
         tsdb:
           dir: /data/tsdb
-        bucket_store:
-          sync_dir: /data/tsdb-sync
 
-      # GCS configuration (commented out for now)
-      # common:
-      #   storage:
-      #     backend: gcs
-      #     gcs:
-      #       bucket_name: "${GCS_BUCKET_NAME}"
-      # blocks_storage:
-      #   storage_prefix: blocks
-      # ruler_storage:
-      #   storage_prefix: ruler
-
-      # Limits configuration
+      # Limits
       limits:
-        # Ingestion limits
-        ingestion_rate: 100000
-        ingestion_burst_size: 200000
-        max_global_series_per_user: 1500000
-        max_global_series_per_metric: 50000
+        ingestion_rate: 50000
+        max_global_series_per_user: 1000000
+        compactor_blocks_retention_period: 30d
 
-        # Query limits
-        max_fetched_series_per_query: 50000
-        max_fetched_chunk_bytes_per_query: 2147483648
+      # Compactor
+      compactor:
+        data_dir: /data/compactor
+        sharding_ring:
+          kvstore:
+            store: memberlist
 
-        # Retention (1 year)
-        compactor_blocks_retention_period: 365d
+      # Ingester
+      ingester:
+        ring:
+          replication_factor: 1
+          kvstore:
+            store: memberlist
 
-  # Gateway (entry point for remote_write)
-  gateway:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
-    podAnnotations:
-      loki.grafana.com/scrape: "true"
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
+      # Store gateway
+      store_gateway:
+        sharding_ring:
+          replication_factor: 1
+          kvstore:
+            store: memberlist
 
-  # Distributor (receives metrics from Alloy)
-  distributor:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    podAnnotations:
-      loki.grafana.com/scrape: "true"
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
+      # Activity tracker disabled
+      activity_tracker:
+        filepath: ""
 
-  # Ingester (stores metrics temporarily before flushing to storage)
-  ingester:
-    replicas: 2
-    resources:
-      requests:
-        cpu: 500m
-        memory: 1Gi
-      limits:
-        cpu: 1
-        memory: 2Gi
-    persistentVolume:
-      enabled: true
-      size: 20Gi
-    podAnnotations:
-      loki.grafana.com/scrape: "true"
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
-    zoneAwareReplication:
-      enabled: false
-
-  # Store-gateway (reads historical data from storage)
-  store_gateway:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-    persistentVolume:
-      enabled: true
-      size: 10Gi
-    podAnnotations:
-      loki.grafana.com/scrape: "true"
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
-    zoneAwareReplication:
-      enabled: false
-
-  # Compactor (optimizes data in storage)
-  compactor:
+  # Single monolithic deployment
+  monolithic:
     replicas: 1
     resources:
       requests:
@@ -146,74 +87,46 @@ mimir-distributed:
       prometheus.io/scrape: "true"
       prometheus.io/port: "8080"
 
-  # Querier (executes PromQL queries)
+  # Disable all distributed components
+  distributor:
+    replicas: 0
+  ingester:
+    replicas: 0
   querier:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-    podAnnotations:
-      loki.grafana.com/scrape: "true"
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
-
-  # Query-frontend (query optimization and caching)
+    replicas: 0
   query_frontend:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    podAnnotations:
-      loki.grafana.com/scrape: "true"
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
-
-  # Query-scheduler (distributes queries across queriers)
+    replicas: 0
   query_scheduler:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 50m
-        memory: 128Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
+    replicas: 0
+  store_gateway:
+    replicas: 0
+  compactor:
+    replicas: 0
 
-  # Ruler (optional - for recording rules and alerts)
+  # Disable optional components
   ruler:
     enabled: false
-
-  # Alertmanager (optional - for alert routing)
   alertmanager:
     enabled: false
-
-  # Disable components we don't need
   overrides_exporter:
     enabled: false
-
-  # Disable minio - using local filesystem for now
   minio:
     enabled: false
-
-  # Disable nginx - we use gateway
   nginx:
     enabled: false
-
-  # Rollout operator for safe deployments
+  gateway:
+    enabled: false
   rollout_operator:
-    enabled: true
+    enabled: false
 
   # Service account
   serviceAccount:
     create: true
-    annotations: {}
-    # For GKE Workload Identity (when enabling GCS), add:
-    # iam.gke.io/gcp-service-account: mimir-sa@PROJECT_ID.iam.gserviceaccount.com
+
+  # GCS configuration (commented out for now)
+  # To enable GCS, change common.storage.backend to "gcs" and add:
+  # common:
+  #   storage:
+  #     backend: gcs
+  #     gcs:
+  #       bucket_name: "your-mimir-bucket"
