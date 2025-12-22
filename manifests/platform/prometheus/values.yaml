@@ -37,6 +37,7 @@ prometheus:
     extraFlags:
       - "web.enable-remote-write-receiver"
       - "storage.tsdb.retention.size=45GB"  # Stop before disk full
+      - "storage.tsdb.out-of-order-time-window=30m"  # Accept out-of-order samples up to 30 min
 
     # Global settings
     global:

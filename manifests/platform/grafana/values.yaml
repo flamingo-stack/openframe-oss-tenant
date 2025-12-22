@@ -74,9 +74,6 @@ grafana:
 
   podAnnotations:
     loki.grafana.com/scrape: "true"
-  #   prometheus.io/scrape: "true"
-  #   prometheus.io/port: "3000"
-  #   prometheus.io/path: "/metrics"
 
   datasources:
     datasources.yaml:
