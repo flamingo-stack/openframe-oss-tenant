@@ -63,7 +63,7 @@ prometheus:
       # Enable out-of-order ingestion for remote write
       storage:
         tsdb:
-          out_of_order_time_window: 30m
+          out_of_order_time_window: 10m
 
       scrape_configs:
         - job_name: prometheus
