@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import {
   Clock,
   CheckCircle,
@@ -104,7 +104,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
     }
   }
 
-  const handleApproveRequest = async (requestId?: string) => {
+  const handleApproveRequest = useCallback(async (requestId?: string) => {
     if (!requestId) return
     
     try {
@@ -124,9 +124,9 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
         duration: 5000
       })
     }
-  }
+  }, [toast])
 
-  const handleRejectRequest = async (requestId?: string) => {
+  const handleRejectRequest = useCallback(async (requestId?: string) => {
     if (!requestId) return
     
     try {
@@ -146,7 +146,7 @@ export function DialogDetailsView({ dialogId }: { dialogId: string }) {
         duration: 5000
       })
     }
-  }
+  }, [toast])
 
   const chatMessages = useMemo(() => {
     const processedMessages: Array<{
