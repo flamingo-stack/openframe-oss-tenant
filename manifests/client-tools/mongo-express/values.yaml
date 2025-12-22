@@ -5,6 +5,9 @@ registerJob:
     tag: "8.9.1"
 
 mongoExpress:
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: mongo-express

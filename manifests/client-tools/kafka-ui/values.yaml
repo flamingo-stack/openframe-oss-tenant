@@ -6,6 +6,9 @@ registerJob:
 
 
 kafka-ui:
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: kafbat/kafka-ui

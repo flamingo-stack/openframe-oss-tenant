@@ -5,6 +5,9 @@ registerJob:
     tag: "8.9.1"
 
 telepresence-oss:
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+
   image:
     registry: ghcr.io/flamingo-stack/registry/telepresenceio
     name: tel2
