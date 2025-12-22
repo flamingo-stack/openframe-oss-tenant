@@ -460,7 +460,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{pod=~\"mongo-express.*\", namespace=\"client-tools\"} | logfmt | line_format \"{{.msg}}\"",
+          "expr": "{pod=~\"mongo-express.*\", namespace=\"client-tools\"} | logfmt",
           "queryType": "range",
           "refId": "A"
         }
