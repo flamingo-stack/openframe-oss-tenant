@@ -6,15 +6,12 @@ registerJob:
     tag: "8.9.1"
 
 mimir-distributed:
-  # Use monolithic mode - single deployment instead of microservices
-  deploymentMode: monolithic
-
   # Global image configuration
   global:
     image:
       registry: ghcr.io/flamingo-stack/registry
 
-  # Monolithic Mimir (single pod with all components)
+  # Mimir configuration
   mimir:
     image:
       repository: grafana/mimir
@@ -24,7 +21,7 @@ mimir-distributed:
       # Multi-tenancy disabled for simplicity
       multitenancy_enabled: false
 
-      # Use filesystem storage (GCS commented out for now)
+      # Use filesystem storage
       common:
         storage:
           backend: filesystem
@@ -51,14 +48,14 @@ mimir-distributed:
           kvstore:
             store: memberlist
 
-      # Ingester
+      # Ingester - single instance
       ingester:
         ring:
           replication_factor: 1
           kvstore:
             store: memberlist
 
-      # Store gateway
+      # Store gateway - single instance
       store_gateway:
         sharding_ring:
           replication_factor: 1
@@ -69,64 +66,83 @@ mimir-distributed:
       activity_tracker:
         filepath: /data/activity/activity.log
 
-  # Single monolithic deployment
-  monolithic:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 500m
-        memory: 1Gi
-      limits:
-        cpu: 1
-        memory: 2Gi
-    persistentVolume:
-      enabled: true
-      size: 30Gi
-    podAnnotations:
-      loki.grafana.com/scrape: "true"
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
+  # =====================================================
+  # DISABLE ALL DISTRIBUTED COMPONENTS
+  # =====================================================
 
-  # Disable all distributed components
+  # Distributor
   distributor:
     replicas: 0
+    resources: null
+
+  # Ingester - disable zone-aware, use single statefulset
   ingester:
     replicas: 0
+    zoneAwareReplication:
+      enabled: false
+    resources: null
+
+  # Querier
   querier:
     replicas: 0
+    resources: null
+
+  # Query Frontend
   query_frontend:
     replicas: 0
+    resources: null
+
+  # Query Scheduler
   query_scheduler:
     replicas: 0
+    resources: null
+
+  # Store Gateway
   store_gateway:
     replicas: 0
+    zoneAwareReplication:
+      enabled: false
+    resources: null
+
+  # Compactor
   compactor:
     replicas: 0
+    resources: null
 
-  # Disable optional components
+  # =====================================================
+  # DISABLE ALL OPTIONAL COMPONENTS
+  # =====================================================
   ruler:
     enabled: false
   alertmanager:
     enabled: false
   overrides_exporter:
     enabled: false
-  minio:
+  gateway:
     enabled: false
   nginx:
     enabled: false
-  gateway:
+  minio:
     enabled: false
   rollout_operator:
+    enabled: false
+  graphite:
+    enabled: false
+  metaMonitoring:
+    enabled: false
+  continuous_test:
+    enabled: false
+
+  # Chunks cache
+  chunks-cache:
+    enabled: false
+  index-cache:
+    enabled: false
+  metadata-cache:
+    enabled: false
+  results-cache:
     enabled: false
 
   # Service account
   serviceAccount:
     create: true
-
-  # GCS configuration (commented out for now)
-  # To enable GCS, change common.storage.backend to "gcs" and add:
-  # common:
-  #   storage:
-  #     backend: gcs
-  #     gcs:
-  #       bucket_name: "your-mimir-bucket"
