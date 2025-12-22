@@ -11,11 +11,15 @@ prometheus:
     image:
       repository: ghcr.io/flamingo-stack/registry/prometheus/prometheus
       tag: v3.7.3
+
+    # Pod annotations for log collection
     podAnnotations:
       loki.grafana.com/scrape: "true"
 
-    retention: "3d"
+    # 14 days retention
+    retention: "14d"
 
+    # Resources
     resources:
       requests:
         cpu: 500m
@@ -24,20 +28,23 @@ prometheus:
         cpu: 1
         memory: 2Gi
 
+    # Storage - sized for 14 days retention
     persistentVolume:
       enabled: true
-      size: 15Gi
+      size: 50Gi
 
     # Enable remote write receiver for Alloy
     extraFlags:
       - "web.enable-remote-write-receiver"
+      - "storage.tsdb.retention.size=45GB"  # Stop before disk full
 
-    # Scrape interval (for self-scrape only)
+    # Global settings
     global:
       scrape_interval: 30s
-      evaluation_interval: 15s
+      scrape_timeout: 10s
+      evaluation_interval: 30s
 
-  # Disable sub-charts - not needed when Alloy handles collection
+  # Disable sub-charts - Alloy handles collection
   prometheus-node-exporter:
     enabled: false
 
@@ -50,12 +57,10 @@ prometheus:
   prometheus-pushgateway:
     enabled: false
 
-  # Simplified scrape configs - Alloy handles all external scraping
-  # Prometheus only scrapes itself for internal metrics
+  # Prometheus only scrapes itself
   serverFiles:
     prometheus.yml:
       scrape_configs:
-        # Scrape Prometheus itself (required for internal metrics)
         - job_name: prometheus
           static_configs:
             - targets:

@@ -11,14 +11,12 @@ loki:
   batchWait: "1s"
   batchSize: "1MiB"
 
-# Mimir configuration for metrics (replaces Prometheus remote_write)
-mimir:
-  # Monolithic mode uses port 8080 directly
-  remoteWriteUrl: "http://mimir.platform.svc.cluster.local:8080/api/v1/push"
-  tenantId: "anonymous"  # Default tenant for single-tenant setup
+# Prometheus configuration for metrics
+prometheus:
+  remoteWriteUrl: "http://prometheus-server.platform.svc.cluster.local:80/api/v1/write"
   scrapeInterval: "30s"
   scrapeTimeout: "10s"
-  namespaceFilter: "argocd|platform|microservices"
+  namespaceFilter: "argocd|platform|datasources|microservices"
 
 alloy:
   alloy:

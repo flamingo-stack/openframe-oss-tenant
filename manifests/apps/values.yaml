@@ -94,11 +94,6 @@ apps:
     syncWave: "0"
     syncOptions:
       ServerSideApply: true
-  mimir:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
   grafana:
     enabled: true
     project: platform
