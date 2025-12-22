@@ -11,9 +11,10 @@ loki:
   batchWait: "1s"
   batchSize: "1MiB"
 
-# Prometheus configuration for metrics
-prometheus:
-  remoteWriteUrl: "http://prometheus-server.platform.svc.cluster.local:80/api/v1/write"
+# Mimir configuration for metrics (replaces Prometheus remote_write)
+mimir:
+  remoteWriteUrl: "http://mimir-gateway.platform.svc.cluster.local:80/api/v1/push"
+  tenantId: "anonymous"  # Default tenant for single-tenant setup
   scrapeInterval: "30s"
   scrapeTimeout: "10s"
   namespaceFilter: "argocd|platform|microservices"

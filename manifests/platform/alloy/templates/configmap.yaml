@@ -176,8 +176,8 @@ data:
     // Scrape metrics from discovered pods
     prometheus.scrape "pods" {
       targets         = discovery.relabel.pod_metrics.output
-      scrape_interval = {{ .Values.prometheus.scrapeInterval | quote }}
-      scrape_timeout  = {{ .Values.prometheus.scrapeTimeout | quote }}
+      scrape_interval = {{ .Values.mimir.scrapeInterval | quote }}
+      scrape_timeout  = {{ .Values.mimir.scrapeTimeout | quote }}
       forward_to      = [prometheus.relabel.filter.receiver]
     }
 
@@ -212,8 +212,8 @@ data:
     prometheus.scrape "cadvisor" {
       targets         = discovery.relabel.cadvisor.output
       scheme          = "https"
-      scrape_interval = {{ .Values.prometheus.scrapeInterval | quote }}
-      scrape_timeout  = {{ .Values.prometheus.scrapeTimeout | quote }}
+      scrape_interval = {{ .Values.mimir.scrapeInterval | quote }}
+      scrape_timeout  = {{ .Values.mimir.scrapeTimeout | quote }}
 
       bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
       tls_config {
@@ -235,11 +235,11 @@ data:
       // Filter to relevant namespaces
       rule {
         source_labels = ["namespace"]
-        regex         = {{ .Values.prometheus.namespaceFilter | quote }}
+        regex         = {{ .Values.mimir.namespaceFilter | quote }}
         action        = "keep"
       }
 
-      forward_to = [prometheus.remote_write.prometheus.receiver]
+      forward_to = [prometheus.remote_write.mimir.receiver]
     }
 
     // ============================================================
@@ -269,8 +269,8 @@ data:
     prometheus.scrape "kubelet" {
       targets         = discovery.relabel.kubelet.output
       scheme          = "https"
-      scrape_interval = {{ .Values.prometheus.scrapeInterval | quote }}
-      scrape_timeout  = {{ .Values.prometheus.scrapeTimeout | quote }}
+      scrape_interval = {{ .Values.mimir.scrapeInterval | quote }}
+      scrape_timeout  = {{ .Values.mimir.scrapeTimeout | quote }}
 
       bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
       tls_config {
@@ -292,15 +292,15 @@ data:
       // Filter to relevant namespaces
       rule {
         source_labels = ["namespace"]
-        regex         = {{ .Values.prometheus.namespaceFilter | quote }}
+        regex         = {{ .Values.mimir.namespaceFilter | quote }}
         action        = "keep"
       }
 
-      forward_to = [prometheus.remote_write.prometheus.receiver]
+      forward_to = [prometheus.remote_write.mimir.receiver]
     }
 
     // ============================================================
-    // METRICS FILTERING & REMOTE WRITE
+    // METRICS FILTERING & REMOTE WRITE TO MIMIR
     // ============================================================
     prometheus.relabel "filter" {
       // Drop high-cardinality internal metrics (optional)
@@ -310,18 +310,22 @@ data:
         action        = "drop"
       }
 
-      forward_to = [prometheus.remote_write.prometheus.receiver]
+      forward_to = [prometheus.remote_write.mimir.receiver]
     }
 
-    // Send metrics to Prometheus via remote write
-    prometheus.remote_write "prometheus" {
+    // Send metrics to Mimir via remote write
+    prometheus.remote_write "mimir" {
       endpoint {
-        url = {{ .Values.prometheus.remoteWriteUrl | quote }}
+        url = {{ .Values.mimir.remoteWriteUrl | quote }}
+
+        headers = {
+          "X-Scope-OrgID" = {{ .Values.mimir.tenantId | quote }},
+        }
 
         queue_config {
-          max_shards          = 10
+          max_shards           = 10
           max_samples_per_send = 2000
-          batch_send_deadline = "5s"
+          batch_send_deadline  = "5s"
         }
       }
 

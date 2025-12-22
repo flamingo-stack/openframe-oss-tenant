@@ -1,0 +1,219 @@
+registerJob:
+  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
+
+# GCS bucket configuration (disabled for now - using local filesystem)
+# gcs:
+#   bucketName: ""  # Set via environment overlay (e.g., openframe-mimir)
+
+mimir-distributed:
+  # Global image configuration
+  global:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+
+  # Mimir configuration
+  mimir:
+    structuredConfig:
+      common:
+        storage:
+          # Using local filesystem instead of GCS for now
+          backend: filesystem
+          filesystem:
+            dir: /data/mimir
+
+      blocks_storage:
+        storage_prefix: blocks
+        tsdb:
+          dir: /data/tsdb
+        bucket_store:
+          sync_dir: /data/tsdb-sync
+
+      # GCS configuration (commented out for now)
+      # common:
+      #   storage:
+      #     backend: gcs
+      #     gcs:
+      #       bucket_name: "${GCS_BUCKET_NAME}"
+      # blocks_storage:
+      #   storage_prefix: blocks
+      # ruler_storage:
+      #   storage_prefix: ruler
+
+      # Limits configuration
+      limits:
+        # Ingestion limits
+        ingestion_rate: 100000
+        ingestion_burst_size: 200000
+        max_global_series_per_user: 1500000
+        max_global_series_per_metric: 50000
+
+        # Query limits
+        max_fetched_series_per_query: 50000
+        max_fetched_chunk_bytes_per_query: 2147483648
+
+        # Retention (1 year)
+        compactor_blocks_retention_period: 365d
+
+  # Gateway (entry point for remote_write)
+  gateway:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+
+  # Distributor (receives metrics from Alloy)
+  distributor:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+
+  # Ingester (stores metrics temporarily before flushing to storage)
+  ingester:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 1
+        memory: 2Gi
+    persistentVolume:
+      enabled: true
+      size: 20Gi
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+    zoneAwareReplication:
+      enabled: false
+
+  # Store-gateway (reads historical data from storage)
+  store_gateway:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+    zoneAwareReplication:
+      enabled: false
+
+  # Compactor (optimizes data in storage)
+  compactor:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 1
+        memory: 2Gi
+    persistentVolume:
+      enabled: true
+      size: 30Gi
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+
+  # Querier (executes PromQL queries)
+  querier:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+
+  # Query-frontend (query optimization and caching)
+  query_frontend:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+
+  # Query-scheduler (distributes queries across queriers)
+  query_scheduler:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+  # Ruler (optional - for recording rules and alerts)
+  ruler:
+    enabled: false
+
+  # Alertmanager (optional - for alert routing)
+  alertmanager:
+    enabled: false
+
+  # Disable components we don't need
+  overrides_exporter:
+    enabled: false
+
+  # Disable minio - using local filesystem for now
+  minio:
+    enabled: false
+
+  # Disable nginx - we use gateway
+  nginx:
+    enabled: false
+
+  # Rollout operator for safe deployments
+  rollout_operator:
+    enabled: true
+
+  # Service account
+  serviceAccount:
+    create: true
+    annotations: {}
+    # For GKE Workload Identity (when enabling GCS), add:
+    # iam.gke.io/gcp-service-account: mimir-sa@PROJECT_ID.iam.gserviceaccount.com

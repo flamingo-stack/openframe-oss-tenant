@@ -1,0 +1,11 @@
+apiVersion: v2
+name: mimir-wrapper
+description: Wrapper chart for Grafana Mimir
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+
+dependencies:
+  - name: mimir-distributed
+    version: "~5.6.0"
+    repository: https://grafana.github.io/helm-charts

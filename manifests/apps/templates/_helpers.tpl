@@ -1,6 +1,6 @@
 {{- define "app.allowlist" -}}
 {{/* Defines the complete list of valid applications that can be deployed. */}}
-cassandra debezium-connect grafana ingress-nginx kafka kafka-ui loki mongo-express mongodb zookeeper namespace-client-tools namespace-datasources namespace-integrated-tools namespace-microservices namespace-platform nats ngrok-operator openframe-api openframe-authorization-server openframe-client openframe-config openframe-external-api openframe-gateway openframe-management openframe-stream openframe-frontend pinot prometheus alloy redis telepresence authentik fleetmdm meshcentral tactical-rmm registration
+mimir cassandra debezium-connect grafana ingress-nginx kafka kafka-ui loki mongo-express mongodb zookeeper namespace-client-tools namespace-datasources namespace-integrated-tools namespace-microservices namespace-platform nats ngrok-operator openframe-api openframe-authorization-server openframe-client openframe-config openframe-external-api openframe-gateway openframe-management openframe-stream openframe-frontend pinot prometheus alloy redis telepresence authentik fleetmdm meshcentral tactical-rmm registration
 {{- end -}}
 
 {{/*
