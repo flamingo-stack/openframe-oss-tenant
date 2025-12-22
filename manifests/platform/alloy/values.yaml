@@ -2,7 +2,20 @@ registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
+
+
+loki:
+  url: "http://loki.platform.svc.cluster.local:3100/loki/api/v1/push"
+  batchWait: "1s"
+  batchSize: "1MiB"
+
+prometheus:
+  remoteWriteUrl: "http://prometheus-server.platform.svc.cluster.local:80/api/v1/write"
+  scrapeInterval: "30s"
+  scrapeTimeout: "10s"
+  namespaceFilter: "argocd|platform|datasources|microservices|client-tools|integrated-tools"
 
 
 alloy:
@@ -44,13 +57,14 @@ alloy:
   rbac:
     create: true
 
+  # Increased resources for unified logs + metrics collection
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 150m
+      memory: 384Mi
     limits:
-      cpu: 200m
-      memory: 512Mi
+      cpu: 300m
+      memory: 768Mi
 
   livenessProbe:
     httpGet:

@@ -5,10 +5,14 @@ registerJob:
     tag: "8.9.1"
 
 telepresence-oss:
+  logLevel: info
+
   image:
     registry: ghcr.io/flamingo-stack/registry/telepresenceio
     name: tel2
     tag: "2.25.1"
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
 
   hooks:
     busybox:

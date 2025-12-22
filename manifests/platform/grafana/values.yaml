@@ -74,9 +74,6 @@ grafana:
 
   podAnnotations:
     loki.grafana.com/scrape: "true"
-  #   prometheus.io/scrape: "true"
-  #   prometheus.io/port: "3000"
-  #   prometheus.io/path: "/metrics"
 
   datasources:
     datasources.yaml:
@@ -108,13 +105,6 @@ grafana:
           editable: true
           options:
             path: /var/lib/grafana/dashboards/platform
-        - name: 'microservices'
-          folder: 'microservices'
-          type: file
-          disableDeletion: false
-          editable: true
-          options:
-            path: /var/lib/grafana/dashboards/microservices
         - name: 'datasources'
           folder: 'datasources'
           type: file
@@ -122,6 +112,20 @@ grafana:
           editable: true
           options:
             path: /var/lib/grafana/dashboards/datasources
+        - name: 'microservices'
+          folder: 'microservices'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/microservices
+        - name: 'client-tools'
+          folder: 'client-tools'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/client-tools
         - name: 'integrated-tools'
           folder: 'integrated-tools'
           type: file
@@ -133,10 +137,12 @@ grafana:
   extraVolumeMounts:
     - name: platform
       mountPath: /var/lib/grafana/dashboards/platform
-    - name: microservices
-      mountPath: /var/lib/grafana/dashboards/microservices
     - name: datasources
       mountPath: /var/lib/grafana/dashboards/datasources
+    - name: microservices
+      mountPath: /var/lib/grafana/dashboards/microservices
+    - name: client-tools
+      mountPath: /var/lib/grafana/dashboards/client-tools
     - name: integrated-tools
       mountPath: /var/lib/grafana/dashboards/integrated-tools
 
@@ -144,12 +150,15 @@ grafana:
     - name: platform
       configMap:
         name: platform
-    - name: microservices
-      configMap:
-        name: microservices
     - name: datasources
       configMap:
         name: datasources
+    - name: microservices
+      configMap:
+        name: microservices
+    - name: client-tools
+      configMap:
+        name: client-tools
     - name: integrated-tools
       configMap:
         name: integrated-tools

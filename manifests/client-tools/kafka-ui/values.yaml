@@ -6,10 +6,14 @@ registerJob:
 
 
 kafka-ui:
+
   image:
     registry: ghcr.io/flamingo-stack/registry
     repository: kafbat/kafka-ui
     tag: v1.4.2
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+
   yamlApplicationConfig:
     auth:
       type: disabled
@@ -26,6 +30,10 @@ kafka-ui:
     value: 'true'
   - name: "DISABLELOGDIRSCOLLECTION"
     value: 'true'
+  - name: LOGGING_PATTERN_CONSOLE
+    value: "ts=%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} level=%p thread=\"%t\" logger=\"%c{1}\" line=%L msg=\"%m\"%n"
+  - name: SPRING_OUTPUT_ANSI_ENABLED
+    value: "NEVER"
   - name: KAFKA_CLUSTERS_0_NAME
     value: "bitnami"
   - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS

@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: register
-        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.registerJob.image.tag }}
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         command:
           - /bin/sh
           - -uc
@@ -53,7 +53,7 @@ spec:
                   "layerOrder": 2,
                   "layerColor": "#78909C",
                   "metricsPath": "/metrics",
-                  "healthCheckEndpoint": "/health",
+                  "healthCheckEndpoint": "/-/healthy",
                   "healthCheckInterval": 30,
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,

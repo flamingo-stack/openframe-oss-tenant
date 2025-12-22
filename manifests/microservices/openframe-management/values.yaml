@@ -24,8 +24,6 @@ image:
 
 podAnnotations:
   loki.grafana.com/scrape: "true"
-service:
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "8096"
-    prometheus.io/path: "/management/v1/prometheus"
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8096"
+  prometheus.io/path: "/management/v1/prometheus"

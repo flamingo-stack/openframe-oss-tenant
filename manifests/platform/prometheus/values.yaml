@@ -2,6 +2,7 @@ registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
 
 
@@ -11,209 +12,61 @@ prometheus:
       repository: ghcr.io/flamingo-stack/registry/prometheus/prometheus
       tag: v3.7.3
 
+    # Pod annotations for log collection
     podAnnotations:
       loki.grafana.com/scrape: "true"
 
-    retention: "3d"
+    # 14 days retention
+    retention: "14d"
 
+    # Resources
     resources:
       requests:
-        memory: 1Gi
         cpu: 500m
+        memory: 1Gi
       limits:
-        memory: 2Gi
         cpu: 1
+        memory: 2Gi
 
     persistentVolume:
       enabled: true
-      size: 15Gi
+      size: 20Gi
 
-    # Scrape interval
+    # Enable remote write receiver for Alloy
+    extraFlags:
+      - "web.enable-remote-write-receiver"
+      - "web.enable-lifecycle"
+      - "storage.tsdb.retention.size=18GB" 
+
+    # Global settings
     global:
       scrape_interval: 30s
-      evaluation_interval: 15s
+      scrape_timeout: 10s
+      evaluation_interval: 30s
 
-  # Include node-exporter for host metrics
+  # Disable sub-charts - Alloy handles collection
   prometheus-node-exporter:
     enabled: false
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: prometheus/node-exporter
-      tag: v1.10.2
 
-  # Include kube-state-metrics for Kubernetes object metrics
   kube-state-metrics:
     enabled: false
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: kube-state-metrics/kube-state-metrics
-      tag: v2.17.0
 
-  # Disable components we don't need
   alertmanager:
     enabled: false
 
   prometheus-pushgateway:
     enabled: false
 
-  # Scrape configs - annotation-based discovery
+  # Prometheus configuration
   serverFiles:
     prometheus.yml:
+      # Enable out-of-order ingestion for remote write
+      storage:
+        tsdb:
+          out_of_order_time_window: 10m
+
       scrape_configs:
-        # Scrape Prometheus itself
         - job_name: prometheus
           static_configs:
             - targets:
                 - localhost:9090
-
-        # Scrape all pods with prometheus.io/scrape=true annotation
-        - job_name: kubernetes-pods
-          kubernetes_sd_configs:
-            - role: pod
-          relabel_configs:
-            # Only keep pods with prometheus.io/scrape=true
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-              action: keep
-              regex: true
-            # Drop pods marked for slow scraping (handled by separate job)
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape_slow]
-              action: drop
-              regex: true
-            # Use custom scheme if specified
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
-              action: replace
-              target_label: __scheme__
-              regex: (https?)
-            # Use custom path if specified (default /metrics)
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-              action: replace
-              target_label: __metrics_path__
-              regex: (.+)
-            # Use custom port - handle IPv6
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
-              action: replace
-              regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
-              replacement: '[$2]:$1'
-              target_label: __address__
-            # Use custom port - handle IPv4
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
-              action: replace
-              regex: (\d+);((([0-9]+?)(\.|$)){4})
-              replacement: $2:$1
-              target_label: __address__
-            # Copy pod labels
-            - action: labelmap
-              regex: __meta_kubernetes_pod_label_(.+)
-            # Add namespace label
-            - source_labels: [__meta_kubernetes_namespace]
-              action: replace
-              target_label: namespace
-            # Add pod label
-            - source_labels: [__meta_kubernetes_pod_name]
-              action: replace
-              target_label: pod
-            # Add node label
-            - source_labels: [__meta_kubernetes_pod_node_name]
-              action: replace
-              target_label: node
-            # Drop non-running pods
-            - source_labels: [__meta_kubernetes_pod_phase]
-              regex: Pending|Succeeded|Failed|Completed
-              action: drop
-
-        # Scrape services with prometheus.io/scrape=true annotation
-        - job_name: kubernetes-service
-          kubernetes_sd_configs:
-            - role: endpoints
-          relabel_configs:
-            # Only keep services with prometheus.io/scrape=true
-            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
-              action: keep
-              regex: true
-            # Use custom scheme if specified
-            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
-              action: replace
-              target_label: __scheme__
-              regex: (https?)
-            # Use custom path if specified
-            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
-              action: replace
-              target_label: __metrics_path__
-              regex: (.+)
-            # Use custom port
-            - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
-              action: replace
-              target_label: __address__
-              regex: (.+?)(?::\d+)?;(\d+)
-              replacement: $1:$2
-            # Copy service labels
-            - action: labelmap
-              regex: __meta_kubernetes_service_label_(.+)
-            # Add namespace label
-            - source_labels: [__meta_kubernetes_namespace]
-              action: replace
-              target_label: namespace
-            # Add service label
-            - source_labels: [__meta_kubernetes_service_name]
-              action: replace
-              target_label: service
-            # Add pod label
-            - source_labels: [__meta_kubernetes_pod_name]
-              action: replace
-              target_label: pod
-
-        # Scrape cAdvisor for container CPU and memory metrics
-        - job_name: kubernetes-nodes-cadvisor
-          scheme: https
-          tls_config:
-            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            insecure_skip_verify: true
-          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-          kubernetes_sd_configs:
-            - role: node
-          relabel_configs:
-            - action: labelmap
-              regex: __meta_kubernetes_node_label_(.+)
-            - target_label: __address__
-              replacement: kubernetes.default.svc:443
-            - source_labels: [__meta_kubernetes_node_name]
-              regex: (.+)
-              target_label: __metrics_path__
-              replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
-          metric_relabel_configs:
-            # Keep only CPU and memory metrics
-            - source_labels: [__name__]
-              regex: container_cpu_usage_seconds_total|container_memory_working_set_bytes
-              action: keep
-            # Filter to argocd, platform, and microservices namespaces
-            - source_labels: [namespace]
-              regex: argocd|platform|microservices
-              action: keep
-
-        # Scrape kubelet for PVC storage metrics
-        - job_name: kubernetes-nodes-kubelet
-          scheme: https
-          tls_config:
-            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            insecure_skip_verify: true
-          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-          kubernetes_sd_configs:
-            - role: node
-          relabel_configs:
-            - action: labelmap
-              regex: __meta_kubernetes_node_label_(.+)
-            - target_label: __address__
-              replacement: kubernetes.default.svc:443
-            - source_labels: [__meta_kubernetes_node_name]
-              regex: (.+)
-              target_label: __metrics_path__
-              replacement: /api/v1/nodes/$1/proxy/metrics
-          metric_relabel_configs:
-            # Keep only PVC storage metrics
-            - source_labels: [__name__]
-              regex: kubelet_volume_stats_used_bytes|kubelet_volume_stats_capacity_bytes
-              action: keep
-            # Filter to argocd, platform, and microservices namespaces
-            - source_labels: [namespace]
-              regex: argocd|platform|microservices
-              action: keep

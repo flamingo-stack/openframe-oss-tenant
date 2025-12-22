@@ -4,7 +4,9 @@ metadata:
   name: alloy-config
 data:
   config.alloy: |
-    // Discover pods on this node with loki.grafana.com/scrape=true annotation
+    // ============================================================
+    // SHARED DISCOVERY - Used by both logs and metrics pipelines
+    // ============================================================
     discovery.kubernetes "pods" {
       role = "pod"
       selectors {
@@ -13,10 +15,13 @@ data:
       }
     }
 
-    discovery.relabel "pods" {
+    // ============================================================
+    // LOGS PIPELINE
+    // ============================================================
+    discovery.relabel "pod_logs" {
       targets = discovery.kubernetes.pods.targets
 
-      // Only scrape pods with annotation
+      // Only scrape pods with loki annotation
       rule {
         source_labels = ["__meta_kubernetes_pod_annotation_loki_grafana_com_scrape"]
         regex         = "true"
@@ -52,7 +57,7 @@ data:
 
     // Collect logs from files
     local.file_match "pods" {
-      path_targets = discovery.relabel.pods.output
+      path_targets = discovery.relabel.pod_logs.output
     }
 
     loki.source.file "pods" {
@@ -66,12 +71,257 @@ data:
       stage.cri {}
     }
 
-    // Send to Loki
+    // Send logs to Loki
     loki.write "default" {
       endpoint {
-        url               = "http://loki.platform.svc.cluster.local:3100/loki/api/v1/push"
-        batch_wait        = "1s"
-        batch_size        = "1MiB"
+        url               = {{ .Values.loki.url | quote }}
+        batch_wait        = {{ .Values.loki.batchWait | quote }}
+        batch_size        = {{ .Values.loki.batchSize | quote }}
         retry_on_http_429 = true
+      }
+    }
+
+    // ============================================================
+    // METRICS PIPELINE - Annotation-based pod scraping
+    // Requires: prometheus.io/scrape: "true"
+    // Optional: prometheus.io/port, prometheus.io/path
+    // ============================================================
+    discovery.relabel "pod_metrics" {
+      targets = discovery.kubernetes.pods.targets
+
+      // Only scrape pods with prometheus.io/scrape=true
+      rule {
+        source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+        regex         = "true"
+        action        = "keep"
+      }
+
+      // Drop non-running pods
+      rule {
+        source_labels = ["__meta_kubernetes_pod_phase"]
+        regex         = "Pending|Succeeded|Failed|Completed"
+        action        = "drop"
+      }
+
+      // Use custom scheme if specified
+      rule {
+        source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scheme"]
+        action        = "replace"
+        target_label  = "__scheme__"
+        regex         = "(https?)"
+      }
+
+      // Use custom path if specified (default /metrics)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_path"]
+        action        = "replace"
+        target_label  = "__metrics_path__"
+        regex         = "(.+)"
+      }
+
+      // Use custom port - handle IPv4
+      rule {
+        source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_port", "__meta_kubernetes_pod_ip"]
+        action        = "replace"
+        regex         = "(\\d+);((([0-9]+?)(\\.|$)){4})"
+        replacement   = "$2:$1"
+        target_label  = "__address__"
+      }
+
+      // Use custom port - handle IPv6
+      rule {
+        source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_port", "__meta_kubernetes_pod_ip"]
+        action        = "replace"
+        regex         = "(\\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})"
+        replacement   = "[$2]:$1"
+        target_label  = "__address__"
+      }
+
+      // Copy pod labels
+      rule {
+        action = "labelmap"
+        regex  = "__meta_kubernetes_pod_label_(.+)"
+      }
+
+      // Add namespace label
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      // Add pod label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+
+      // Add container label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+
+      // Add node label
+      rule {
+        source_labels = ["__meta_kubernetes_pod_node_name"]
+        target_label  = "node"
+      }
+    }
+
+    // Scrape metrics from discovered pods
+    prometheus.scrape "pods" {
+      targets         = discovery.relabel.pod_metrics.output
+      scrape_interval = {{ .Values.prometheus.scrapeInterval | quote }}
+      scrape_timeout  = {{ .Values.prometheus.scrapeTimeout | quote }}
+      forward_to      = [prometheus.relabel.filter.receiver]
+    }
+
+    // ============================================================
+    // CADVISOR METRICS (Container CPU/Memory)
+    // ============================================================
+    discovery.kubernetes "nodes" {
+      role = "node"
+    }
+
+    discovery.relabel "cadvisor" {
+      targets = discovery.kubernetes.nodes.targets
+
+      rule {
+        action = "labelmap"
+        regex  = "__meta_kubernetes_node_label_(.+)"
+      }
+
+      rule {
+        target_label = "__address__"
+        replacement  = "kubernetes.default.svc:443"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_node_name"]
+        regex         = "(.+)"
+        target_label  = "__metrics_path__"
+        replacement   = "/api/v1/nodes/$1/proxy/metrics/cadvisor"
+      }
+    }
+
+    prometheus.scrape "cadvisor" {
+      targets         = discovery.relabel.cadvisor.output
+      scheme          = "https"
+      scrape_interval = {{ .Values.prometheus.scrapeInterval | quote }}
+      scrape_timeout  = {{ .Values.prometheus.scrapeTimeout | quote }}
+
+      bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      tls_config {
+        ca_file              = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        insecure_skip_verify = true
+      }
+
+      forward_to = [prometheus.relabel.cadvisor.receiver]
+    }
+
+    prometheus.relabel "cadvisor" {
+      // Keep only CPU and memory metrics
+      rule {
+        source_labels = ["__name__"]
+        regex         = "container_cpu_usage_seconds_total|container_memory_working_set_bytes"
+        action        = "keep"
+      }
+
+      // Filter to relevant namespaces
+      rule {
+        source_labels = ["namespace"]
+        regex         = {{ .Values.prometheus.namespaceFilter | quote }}
+        action        = "keep"
+      }
+
+      forward_to = [prometheus.remote_write.prometheus.receiver]
+    }
+
+    // ============================================================
+    // KUBELET METRICS (PVC Storage)
+    // ============================================================
+    discovery.relabel "kubelet" {
+      targets = discovery.kubernetes.nodes.targets
+
+      rule {
+        action = "labelmap"
+        regex  = "__meta_kubernetes_node_label_(.+)"
+      }
+
+      rule {
+        target_label = "__address__"
+        replacement  = "kubernetes.default.svc:443"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_node_name"]
+        regex         = "(.+)"
+        target_label  = "__metrics_path__"
+        replacement   = "/api/v1/nodes/$1/proxy/metrics"
+      }
+    }
+
+    prometheus.scrape "kubelet" {
+      targets         = discovery.relabel.kubelet.output
+      scheme          = "https"
+      scrape_interval = {{ .Values.prometheus.scrapeInterval | quote }}
+      scrape_timeout  = {{ .Values.prometheus.scrapeTimeout | quote }}
+
+      bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      tls_config {
+        ca_file              = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        insecure_skip_verify = true
+      }
+
+      forward_to = [prometheus.relabel.kubelet.receiver]
+    }
+
+    prometheus.relabel "kubelet" {
+      // Keep only PVC storage metrics
+      rule {
+        source_labels = ["__name__"]
+        regex         = "kubelet_volume_stats_used_bytes|kubelet_volume_stats_capacity_bytes"
+        action        = "keep"
+      }
+
+      // Filter to relevant namespaces
+      rule {
+        source_labels = ["namespace"]
+        regex         = {{ .Values.prometheus.namespaceFilter | quote }}
+        action        = "keep"
+      }
+
+      forward_to = [prometheus.remote_write.prometheus.receiver]
+    }
+
+    // ============================================================
+    // METRICS FILTERING & REMOTE WRITE TO PROMETHEUS
+    // ============================================================
+    prometheus.relabel "filter" {
+      // Drop high-cardinality internal metrics
+      rule {
+        source_labels = ["__name__"]
+        regex         = "go_gc_.*|go_memstats_.*"
+        action        = "drop"
+      }
+
+      forward_to = [prometheus.remote_write.prometheus.receiver]
+    }
+
+    // Send metrics to Prometheus via remote write
+    prometheus.remote_write "prometheus" {
+      endpoint {
+        url = {{ .Values.prometheus.remoteWriteUrl | quote }}
+
+        queue_config {
+          max_shards           = 10
+          max_samples_per_send = 2000
+          batch_send_deadline  = "5s"
+        }
+      }
+
+      wal {
+        truncate_frequency = "2h"
+        max_keepalive_time = "8h"
       }
     }
