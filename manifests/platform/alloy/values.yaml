@@ -15,7 +15,7 @@ prometheus:
   remoteWriteUrl: "http://prometheus-server.platform.svc.cluster.local:80/api/v1/write"
   scrapeInterval: "30s"
   scrapeTimeout: "10s"
-  namespaceFilter: "argocd|platform|datasources|microservice|client-tools|integrated-tools"
+  namespaceFilter: "argocd|platform|datasources|microservices|client-tools|integrated-tools"
 
 
 alloy:
