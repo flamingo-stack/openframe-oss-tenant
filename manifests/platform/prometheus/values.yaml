@@ -35,6 +35,7 @@ prometheus:
     # Enable remote write receiver for Alloy
     extraFlags:
       - "web.enable-remote-write-receiver"
+      - "web.enable-lifecycle"
       - "storage.tsdb.retention.size=18GB" 
 
     # Global settings
