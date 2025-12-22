@@ -1,7 +1,5 @@
 server:
   port: 8888
-loki:
-  url: http://loki.platform.svc.cluster.local:3100/loki/api/v1/push
 spring:
   application:
     name: config-server

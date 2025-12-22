@@ -83,7 +83,7 @@ security:
     salt: ${ENCRYPTION_SALT:74f62c51327175b05abe1ad78030565c}
 
 logging:
-  config: http://openframe-config.microservices.svc.cluster.local:8888/logging/shared-logback-spring.xml
+  config: http://openframe-config.microservices.svc.cluster.local:8888/logging/shared-logback-spring-logfmt.xml
   file:
     path: logs
   level:

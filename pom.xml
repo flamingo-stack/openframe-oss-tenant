@@ -34,7 +34,6 @@
         <pinot.version>1.2.0</pinot.version>
         <micrometer.version>1.14.1</micrometer.version>
         <simpleclient.version>0.16.0</simpleclient.version>
-        <loki.version>1.5.2</loki.version>
         <slf4j.api.version>2.0.7</slf4j.api.version>
         <slf4j.impl.version>2.21.1</slf4j.impl.version>
         <opensaml.version>4.3.0</opensaml.version>
@@ -45,7 +44,7 @@
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
         <!-- Centralized OpenFrame OSS libs version -->
-        <openframe.libs.version>5.9.3</openframe.libs.version>
+        <openframe.libs.version>5.10.1</openframe.libs.version>
     </properties>
 
     <modules>
@@ -86,12 +85,6 @@
             <artifactId>logstash-logback-encoder</artifactId>
             <version>${logstash.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.loki4j</groupId>
-            <artifactId>loki-logback-appender</artifactId>
-            <version>${loki.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.pinot</groupId>
             <artifactId>pinot-java-client</artifactId>
