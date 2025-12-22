@@ -1,10 +1,10 @@
+
 registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
-servicemonitor:
-  enabled: true
 
 
 loki:
@@ -12,111 +12,133 @@ loki:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: grafana/loki
-      tag: "3.5.7"      
+      tag: "3.5.7"
 
     auth_enabled: false
     server:
       http_listen_port: 3100
     revisionHistoryLimit: 2
-    
+
     commonConfig:
       replication_factor: 1
-    
-    limits_config:
-      allow_structured_metadata: false
+      path_prefix: /var/loki
 
+    # Filesystem (current)
+    schemaConfig:
+      configs:
+        - from: "2024-04-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: loki_index_
+            period: 24h
+
+    # GCS schemaConfig (uncomment when ready)
+    # schemaConfig:
+    #   configs:
+    #     - from: "2024-04-01"
+    #       store: tsdb
+    #       object_store: gcs
+    #       schema: v13
+    #       index:
+    #         prefix: loki_index_
+    #         period: 24h
+
+    # Filesystem storage (current)
     storage:
       type: filesystem
-      bucketNames:
-        chunks: filesystem
-        ruler: filesystem
-        admin: filesystem
       filesystem:
         chunks_directory: /var/loki/chunks
         rules_directory: /var/loki/rules
 
-    storage_config:
-      filesystem:
-        directory: /var/loki
-      boltdb_shipper:
-        active_index_directory: /var/loki/index
-        cache_location: /var/loki/index_cache
-        cache_ttl: 24h
-    
-    schemaConfig:
-      configs:
-        - from: 2024-04-01
-          object_store: filesystem         
-          store: boltdb-shipper  
-          schema: v13
-          index:
-            prefix: index_
-            period: 24h
-          
+    # GCS storage (uncomment when ready)
+    # storage:
+    #   type: gcs
+    #   bucketNames:
+    #     chunks: "${PROJECT_ID}-loki-chunks"
+    #     ruler: "${PROJECT_ID}-loki-ruler"
+    #   gcs:
+    #     chunkBufferSize: 0
+    #     requestTimeout: "0s"
+    #     enableHttp2: true
+
     ingester:
       chunk_encoding: snappy
+      wal:
+        enabled: true
+        dir: /var/loki/wal
+
+    limits_config:
+      allow_structured_metadata: true
+      volume_enabled: true
+      retention_period: 336h  # 14 days
+      ingestion_rate_mb: 10
+      ingestion_burst_size_mb: 20
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+
+    compactor:
+      working_directory: /var/loki/compactor
+      retention_enabled: true
+      retention_delete_delay: 2h
+      compaction_interval: 10m
+      delete_request_store: filesystem  # Change to: gcs (when using GCS)
+
+    querier:
+      max_concurrent: 4
+
     tracing:
       enabled: true
-    querier:
-      # Default is 4, if you have enough memory and CPU you can increase, reduce if OOMing
-      max_concurrent: 2
-    
-    extraMemberlistConfig:  # for SingleBinary mode
-      join_members: []
 
   sidecar:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: kiwigrid/k8s-sidecar
       tag: "1.30.10"
-
   memcached:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: memcached
       tag: "1.6.39-alpine"
-
   memcachedExporter:
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: prom/memcached-exporter
       tag: "v0.15.3"
 
-  # gateway:
-  #   service:
-  #     type: LoadBalancer
 
   deploymentMode: SingleBinary
 
-
   singleBinary:
     replicas: 1
-
     podAnnotations:
       loki.grafana.com/scrape: "true"
-
     persistence:
       enabled: true
       accessModes:
         - ReadWriteOnce
-      size: 2Gi
+      size: 20Gi
       mountPath: /var/loki
-
     resources:
-      limits:
-        cpu: 2
-        memory: 2Gi
       requests:
         cpu: 500m
         memory: 500Mi
+      limits:
+        cpu: 2
+        memory: 2Gi
     extraEnv:
-      # Keep a little bit lower than memory limits
       - name: GOMEMLIMIT
         value: 1750MiB
 
   chunksCache:
-    allocatedMemory: 1000  # in Mb
-    writebackSizeLimit: 10MB  # default is 500MB, with limited memory keep this smaller
+    enabled: true
+    allocatedMemory: 1024
+    writebackSizeLimit: 10MB
+
+  resultsCache:
+    enabled: true
+    allocatedMemory: 512
 
   test:
     enabled: false
@@ -125,10 +147,12 @@ loki:
   gateway:
     enabled: false
 
-  serviceMonitor:
-    enabled: true
+  serviceAccount:
+    create: true
+    name: loki
+    # annotations: 
+    #   iam.gke.io/gcp-service-account: loki@${PROJECT_ID}.iam.gserviceaccount.com
 
-  # Zero out replica counts of other deployment modes
   backend:
     replicas: 0
   read:
@@ -154,3 +178,6 @@ loki:
     replicas: 0
   bloomGateway:
     replicas: 0
+
+  minio:
+    enabled: false
