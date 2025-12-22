@@ -65,9 +65,9 @@ mimir-distributed:
           kvstore:
             store: memberlist
 
-      # Activity tracker disabled
+      # Activity tracker
       activity_tracker:
-        filepath: ""
+        filepath: /data/activity/activity.log
 
   # Single monolithic deployment
   monolithic:
