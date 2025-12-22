@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: mongo-express
+      {{- with .Values.mongoExpress.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: mongo-express

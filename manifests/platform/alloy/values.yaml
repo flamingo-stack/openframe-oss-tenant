@@ -5,18 +5,18 @@ registerJob:
     repository: curlimages/curl
     tag: "8.9.1"
 
-# Loki configuration for logs
+
 loki:
   url: "http://loki.platform.svc.cluster.local:3100/loki/api/v1/push"
   batchWait: "1s"
   batchSize: "1MiB"
 
-# Prometheus configuration for metrics
 prometheus:
   remoteWriteUrl: "http://prometheus-server.platform.svc.cluster.local:80/api/v1/write"
   scrapeInterval: "30s"
   scrapeTimeout: "10s"
   namespaceFilter: "argocd|platform|datasources|microservice|client-tools|integrated-tools"
+
 
 alloy:
   alloy:
