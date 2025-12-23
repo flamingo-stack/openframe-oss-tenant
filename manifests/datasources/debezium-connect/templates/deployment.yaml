@@ -53,8 +53,8 @@ spec:
                 name: debezium-connect
           volumeMounts:
             - name: log4j-config
-              mountPath: /opt/kafka/config/connect-log4j2.properties
-              subPath: connect-log4j2.properties
+              mountPath: /kafka/config/log4j.properties
+              subPath: log4j.properties
             {{- if .Values.metrics.enabled }}
             - name: jmx-exporter
               mountPath: /opt/jmx-exporter
