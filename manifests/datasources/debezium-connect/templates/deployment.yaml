@@ -14,6 +14,10 @@ spec:
     metadata:
       labels:
         app: debezium-connect
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
 
       {{- if .Values.metrics.enabled }}
@@ -47,8 +51,11 @@ spec:
           envFrom:
             - configMapRef:
                 name: debezium-connect
-          {{- if .Values.metrics.enabled }}
           volumeMounts:
+            - name: log4j-config
+              mountPath: /kafka/config/connect-log4j.properties
+              subPath: connect-log4j.properties
+            {{- if .Values.metrics.enabled }}
             - name: jmx-exporter
               mountPath: /opt/jmx-exporter
             {{- end }}
@@ -75,11 +82,14 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
-      {{- if .Values.metrics.enabled }}
       volumes:
+        - name: log4j-config
+          configMap:
+            name: debezium-connect-log4j
+        {{- if .Values.metrics.enabled }}
         - name: jmx-exporter
           emptyDir: {}
         - name: jmx-config
           configMap:
             name: debezium-connect-jmx
-      {{- end }}
+        {{- end }}
