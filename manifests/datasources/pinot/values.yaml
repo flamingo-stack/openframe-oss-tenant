@@ -14,11 +14,11 @@ pinot:
   server:
     replicaCount: 2
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms512M -Xmx2G"
-    service:
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8008"
-        prometheus.io/path: "/metrics"
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
       extraPorts:
         - containerPort: 8008
           protocol: TCP
@@ -28,11 +28,11 @@ pinot:
     external:
       enabled: false
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
-    service:
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8008"
-        prometheus.io/path: "/metrics"
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
       extraPorts:
         - containerPort: 8008
           protocol: TCP
@@ -42,11 +42,11 @@ pinot:
     external:
       enabled: false
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
-    service:
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8008"
-        prometheus.io/path: "/metrics"
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
       extraPorts:
         - containerPort: 8008
           protocol: TCP
@@ -54,11 +54,11 @@ pinot:
 
   minion:
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
-    service:
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8008"
-        prometheus.io/path: "/metrics"
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8008"
+      prometheus.io/path: "/metrics"
       extraPorts:
         - containerPort: 8008
           protocol: TCP

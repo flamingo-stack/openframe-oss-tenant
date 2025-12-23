@@ -101,7 +101,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"pinot\"}[2m])) by (pod) > 0",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-.*\", container!=\"\"}[2m])) by (pod) > 0",
           "instant": true,
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -196,7 +196,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"pinot\"}[2m])) by (pod) > 0",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-.*\", container!=\"\"}[2m])) by (pod) > 0",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -305,7 +305,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot.*\", container=~\"pinot.*\"}[5m])) by (pod)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-.*\", container!=\"\"}[5m])) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -401,7 +401,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"datasources\", pod=~\"pinot.*\", container=~\"pinot.*\"}) by (pod)",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"datasources\", pod=~\"pinot-.*\", container!=\"\"}) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
