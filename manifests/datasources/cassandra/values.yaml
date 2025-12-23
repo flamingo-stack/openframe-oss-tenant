@@ -51,10 +51,9 @@ cassandra:
     - name: logback-config
       configMap:
         name: cassandra-logback
-
   extraVolumeMounts:
     - name: logback-config
-      mountPath: /opt/bitnami/cassandra/conf/logback.xml
+      mountPath: /bitnami/cassandra/conf/logback.xml
       subPath: logback.xml
 
   extraEnvVars:
