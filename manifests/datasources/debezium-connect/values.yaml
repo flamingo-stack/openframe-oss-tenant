@@ -5,8 +5,9 @@ registerJob:
     tag: "8.9.1"
 
 image:
-  repository: quay.io/debezium/connect
-  tag: 3.3.2
+  registry: ghcr.io/flamingo-stack/registry
+  repository: debezium/connect
+  tag: "3.3.2"
 
 resources:
   requests:

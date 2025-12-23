@@ -36,7 +36,7 @@ spec:
 
       containers:
         - name: debezium-connect
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
           ports:
             - containerPort: 8083
               name: connect-api
