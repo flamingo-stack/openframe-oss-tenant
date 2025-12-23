@@ -56,6 +56,12 @@ nats:
           mountPath: /var/run/nats
   podTemplate:
     merge:
+      metadata:
+        annotations:
+          loki.grafana.com/scrape: "true"
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "7777"
+          prometheus.io/path: "/metrics"
       spec:
         volumes:
           - name: nats-config
@@ -106,12 +112,6 @@ nats:
         enabled: true
       monitor:
         enabled: true
-    merge:
-      metadata:
-        annotations:
-          prometheus.io/scrape: "true"
-          prometheus.io/port: "7777"
-          prometheus.io/path: "/metrics"
 
 
   natsBox:
