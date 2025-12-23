@@ -63,7 +63,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -75,8 +75,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 4,
+        "h": 3,
+        "w": 3,
         "x": 0,
         "y": 1
       },
@@ -101,12 +101,13 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "up{service=\"kafka-jmx-metrics\"}",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\"}[2m])) by (pod) > 0",
+          "instant": true,
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Kafka Status",
+      "title": "Status",
       "type": "stat"
     },
     {
@@ -117,323 +118,91 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
+          "max": 1,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
+                "color": "red",
+                "value": 0
+              },
+              {
                 "color": "green",
-                "value": null
+                "value": 1
               }
             ]
-          },
-          "unit": "s"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 4,
-        "x": 4,
+        "h": 3,
+        "w": 7,
+        "x": 3,
         "y": 1
       },
       "id": 3,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
         },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "java_lang_runtime_uptime{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"} / 1000",
-          "legendFormat": "Broker {{pod}}",
-          "refId": "A"
-        },
-        {
-          "expr": "java_lang_runtime_uptime{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"} / 1000",
-          "legendFormat": "Controller {{pod}}",
-          "refId": "B"
-        }
-      ],
-      "title": "Uptime",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 4,
-        "x": 8,
-        "y": 1
-      },
-      "id": 5,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(count by (topic) (kafka_log_log_size{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}))",
-          "legendFormat": "topics",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\"}[2m])) by (pod) > 0",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Topics",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 4,
-        "x": 12,
-        "y": 1
-      },
-      "id": 27,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(count by (partition) (kafka_log_log_size{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}))",
-          "legendFormat": "partitions",
-          "refId": "A"
-        }
-      ],
-      "title": "Partitions",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 4,
-        "x": 16,
-        "y": 1
-      },
-      "id": 14,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "100 * java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"} / java_lang_memory_heapmemoryusage_max{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}",
-          "legendFormat": "Broker {{pod}}",
-          "refId": "A"
-        },
-        {
-          "expr": "100 * java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"} / java_lang_memory_heapmemoryusage_max{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}",
-          "legendFormat": "Controller {{pod}}",
-          "refId": "B"
-        }
-      ],
-      "title": "Heap %",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 30
-              },
-              {
-                "color": "green",
-                "value": 50
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 4,
-        "x": 20,
-        "y": 1
-      },
-      "id": 15,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "avg(kafka_network_processor_idlepercent_value{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}) by (pod) * 100",
-          "legendFormat": "Broker {{pod}}",
-          "refId": "A"
-        },
-        {
-          "expr": "avg(kafka_network_processor_idlepercent_value{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}) by (pod) * 100",
-          "legendFormat": "Controller {{pod}}",
-          "refId": "B"
-        }
-      ],
-      "title": "Network Idle %",
-      "type": "gauge"
+      "title": "History",
+      "type": "timeseries"
     },
     {
       "collapsed": false,
@@ -441,7 +210,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 4
       },
       "id": 6,
       "panels": [],
@@ -510,10 +279,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 8,
         "x": 0,
-        "y": 11
+        "y": 5
       },
       "id": 7,
       "options": {
@@ -610,10 +379,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 8,
         "x": 8,
-        "y": 11
+        "y": 5
       },
       "id": 16,
       "options": {
@@ -710,10 +479,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 8,
         "x": 16,
-        "y": 11
+        "y": 5
       },
       "id": 24,
       "options": {
@@ -754,7 +523,331 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 15
+      },
+      "id": 17,
+      "panels": [],
+      "title": "Logs",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 18,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{pod=~\"kafka.*\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs",
+      "type": "logs"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 19,
+      "panels": [],
+      "title": "Kafka Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 25
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "count(count by (topic) (kafka_log_log_size{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}))",
+          "legendFormat": "topics",
+          "refId": "A"
+        }
+      ],
+      "title": "Topics",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 25
+      },
+      "id": 27,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "count(count by (partition) (kafka_log_log_size{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}))",
+          "legendFormat": "partitions",
+          "refId": "A"
+        }
+      ],
+      "title": "Partitions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 25
+      },
+      "id": 14,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "100 * java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"} / java_lang_memory_heapmemoryusage_max{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}",
+          "legendFormat": "Broker {{pod}}",
+          "refId": "A"
+        },
+        {
+          "expr": "100 * java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"} / java_lang_memory_heapmemoryusage_max{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}",
+          "legendFormat": "Controller {{pod}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Heap %",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 25
+      },
+      "id": 15,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "avg(kafka_network_processor_idlepercent_value{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}) by (pod) * 100",
+          "legendFormat": "Broker {{pod}}",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(kafka_network_processor_idlepercent_value{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}) by (pod) * 100",
+          "legendFormat": "Controller {{pod}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Network Idle %",
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
       },
       "id": 9,
       "panels": [],
@@ -826,7 +919,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 20
+        "y": 30
       },
       "id": 29,
       "options": {
@@ -930,9 +1023,9 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 20
+        "y": 30
       },
-      "id": 19,
+      "id": 20,
       "options": {
         "legend": {
           "calcs": [
@@ -1025,7 +1118,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 20
+        "y": 30
       },
       "id": 12,
       "options": {
@@ -1066,11 +1159,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 38
       },
-      "id": 20,
+      "id": 21,
       "panels": [],
-      "title": "Topics & Logs",
+      "title": "Topics & Storage",
       "type": "row"
     },
     {
@@ -1138,9 +1231,9 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 29
+        "y": 39
       },
-      "id": 21,
+      "id": 22,
       "options": {
         "legend": {
           "calcs": [
@@ -1232,9 +1325,9 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 29
+        "y": 39
       },
-      "id": 22,
+      "id": 23,
       "options": {
         "legend": {
           "calcs": [
@@ -1267,9 +1360,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 47
       },
-      "id": 23,
+      "id": 25,
       "panels": [],
       "title": "Operations",
       "type": "row"
@@ -1339,7 +1432,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 38
+        "y": 48
       },
       "id": 8,
       "options": {
@@ -1439,7 +1532,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 38
+        "y": 48
       },
       "id": 35,
       "options": {
