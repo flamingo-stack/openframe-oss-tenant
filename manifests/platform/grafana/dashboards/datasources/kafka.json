@@ -609,7 +609,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"kafka.*\"}",
+          "expr": "{pod=~\"kafka.*\", namespace=\"datasources\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],

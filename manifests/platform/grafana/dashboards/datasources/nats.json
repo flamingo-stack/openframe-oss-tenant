@@ -609,7 +609,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"nats.*\"}",
+          "expr": "{pod=~\"nats.*\", namespace=\"datasources\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],

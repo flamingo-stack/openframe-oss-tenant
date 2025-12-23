@@ -525,12 +525,12 @@
       "targets": [
         {
           "expr": "kubelet_volume_stats_used_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"data-pinot.*\"}",
-          "legendFormat": "Used",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "A"
         },
         {
           "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"data-pinot.*\"}",
-          "legendFormat": "Capacity",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
       ],
@@ -579,7 +579,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"pinot.*\"}",
+          "expr": "{pod=~\"pinot.*\", namespace=\"datasources\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],

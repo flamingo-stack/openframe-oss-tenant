@@ -526,12 +526,12 @@
       "targets": [
         {
           "expr": "kubelet_volume_stats_used_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"data-cassandra.*\"}",
-          "legendFormat": "Used",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "A"
         },
         {
           "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"data-cassandra.*\"}",
-          "legendFormat": "Capacity",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
       ],
@@ -580,7 +580,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"cassandra.*\"}",
+          "expr": "{pod=~\"cassandra.*\", namespace=\"datasources\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],

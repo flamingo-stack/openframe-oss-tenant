@@ -451,7 +451,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"debezium.*\"}",
+          "expr": "{pod=~\"debezium.*\", namespace=\"datasources\"} | logfmt | line_format \"{{.msg}}\"",
           "refId": "A"
         }
       ],
