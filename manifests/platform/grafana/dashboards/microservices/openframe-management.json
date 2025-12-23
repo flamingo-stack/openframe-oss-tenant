@@ -402,8 +402,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"microservices\", container=\"openframe-management\"}) by (container)",
-          "legendFormat": "{{container}}",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"microservices\", pod=~\"openframe-management.*\", container=\"openframe-management\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
