@@ -365,12 +365,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"argocd\", container!=\"\", container!=\"POD\"}[5m])) by (container)",
-          "legendFormat": "{{container}}",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"argocd\", container!=\"\", container!=\"POD\"}[5m])) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage by Container",
+      "title": "CPU Usage by Pod",
       "type": "timeseries"
     },
     {
@@ -461,12 +461,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"argocd\", container!=\"\", container!=\"POD\"}) by (container)",
-          "legendFormat": "{{container}}",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"argocd\", container!=\"\", container!=\"POD\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Memory Usage by Container",
+      "title": "Memory Usage by Pod",
       "type": "timeseries"
     },
     {

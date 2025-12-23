@@ -306,8 +306,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"client-tools\", container=\"traffic-manager\"}[5m])) by (container)",
-          "legendFormat": "{{container}}",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"client-tools\", pod=~\"traffic-manager.*\", container=\"traffic-manager\"}[5m])) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -402,8 +402,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"client-tools\", container=\"traffic-manager\"}) by (container)",
-          "legendFormat": "{{container}}",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"client-tools\", pod=~\"traffic-manager.*\", container=\"traffic-manager\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
