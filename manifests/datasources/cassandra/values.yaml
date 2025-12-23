@@ -47,6 +47,16 @@ cassandra:
       prometheus.io/path: "/metrics"   
 
 
+  extraVolumes:
+    - name: logback-config
+      configMap:
+        name: cassandra-logback
+
+  extraVolumeMounts:
+    - name: logback-config
+      mountPath: /opt/bitnami/cassandra/conf/logback.xml
+      subPath: logback.xml
+
   extraEnvVars:
     - name: CASSANDRA_AUTHENTICATOR
       value: AllowAllAuthenticator
