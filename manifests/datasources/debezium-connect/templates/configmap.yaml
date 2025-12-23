@@ -11,7 +11,3 @@ data:
   {{- if .Values.metrics.enabled }}
   KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar={{ .Values.metrics.port }}:/opt/jmx-exporter/config.yaml"
   {{- end }}
-
-  # Log4j configuration for logfmt format
-  CONNECT_LOG4J_LOGGERS: "INFO, stdout"
-  CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "level=%p ts=%d{ISO8601} logger=%c thread=%t msg=\"%m\"%n"
