@@ -19,10 +19,6 @@ pinot:
       prometheus.io/scrape: "true"
       prometheus.io/port: "8008"
       prometheus.io/path: "/metrics"
-      extraPorts:
-        - containerPort: 8008
-          protocol: TCP
-          name: prometheus
 
   controller:
     external:
@@ -33,10 +29,6 @@ pinot:
       prometheus.io/scrape: "true"
       prometheus.io/port: "8008"
       prometheus.io/path: "/metrics"
-      extraPorts:
-        - containerPort: 8008
-          protocol: TCP
-          name: prometheus
 
   broker:
     external:
@@ -47,10 +39,6 @@ pinot:
       prometheus.io/scrape: "true"
       prometheus.io/port: "8008"
       prometheus.io/path: "/metrics"
-      extraPorts:
-        - containerPort: 8008
-          protocol: TCP
-          name: prometheus
 
   minion:
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
@@ -59,10 +47,6 @@ pinot:
       prometheus.io/scrape: "true"
       prometheus.io/port: "8008"
       prometheus.io/path: "/metrics"
-      extraPorts:
-        - containerPort: 8008
-          protocol: TCP
-          name: prometheus
 
 
   zookeeper:
