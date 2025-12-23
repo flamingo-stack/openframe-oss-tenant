@@ -23,6 +23,11 @@ kafka:
     replicaCount: 1
     podAntiAffinityPreset: soft
     priorityClassName: kafka
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "5556"
+      prometheus.io/path: "/metrics"
     resources:
       requests:
         cpu: 500m
@@ -37,6 +42,11 @@ kafka:
     replicaCount: 1
     podAntiAffinityPreset: soft
     priorityClassName: kafka
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "5556"
+      prometheus.io/path: "/metrics"
     resources:
       requests:
         cpu: 250m
@@ -54,6 +64,9 @@ kafka:
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0
       kafkaJmxPort: 5555
+      service:
+        annotations:
+          prometheus.io/scrape: "false"
       livenessProbe:
         initialDelaySeconds: 90 
         periodSeconds: 20        
