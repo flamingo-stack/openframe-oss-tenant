@@ -4,16 +4,16 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     tag: "8.9.1"
 
+
 image:
   registry: ghcr.io/flamingo-stack/registry
   repository: mongo
   tag: "7.0.18"
-
-service:
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "9216"
-    prometheus.io/path: "/metrics"
+podAnnotations:
+  loki.grafana.com/scrape: "true"
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9216"
+  prometheus.io/path: "/metrics"
 
 persistence:
   size: 5Gi

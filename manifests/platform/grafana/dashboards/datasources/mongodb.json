@@ -552,12 +552,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kubelet_volume_stats_used_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"datadir-mongodb.*\"}",
+          "expr": "kubelet_volume_stats_used_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"mongodb-storage.*\"}",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "A"
         },
         {
-          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"datadir-mongodb.*\"}",
+          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"mongodb-storage.*\"}",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
