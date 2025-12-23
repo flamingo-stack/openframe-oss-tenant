@@ -9,7 +9,7 @@ data:
 
       <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-          <pattern>level=%level ts=%d{ISO8601} logger=%logger{36} thread=%thread msg=%msg%n</pattern>
+          <pattern>level=%level ts=%d{ISO8601} logger=%logger{36} thread=%thread msg="%msg"%n</pattern>
         </encoder>
       </appender>
 
