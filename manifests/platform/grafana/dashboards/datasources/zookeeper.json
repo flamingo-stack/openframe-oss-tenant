@@ -1017,7 +1017,7 @@
     }
   ],
   "preload": false,
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
     "zookeeper",
