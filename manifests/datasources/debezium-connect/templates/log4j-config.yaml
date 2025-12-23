@@ -8,7 +8,7 @@ data:
 
     log4j.appender.stdout=org.apache.log4j.ConsoleAppender
     log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-    log4j.appender.stdout.layout.ConversionPattern=%t | %-5p | %c | %m%n
+    log4j.appender.stdout.layout.ConversionPattern=%t | %c | %m%n
 
     log4j.logger.org.apache.zookeeper=WARN
     log4j.logger.org.apache.kafka=WARN
