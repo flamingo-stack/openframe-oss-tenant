@@ -51,9 +51,7 @@ grafana:
 
   persistence:
     enabled: true
-    accessModes:
-      - ReadWriteOnce
-    size: 5Gi
+    existingClaim: "grafana"
 
   admin: # pre applyed 
     existingSecret: "grafana"

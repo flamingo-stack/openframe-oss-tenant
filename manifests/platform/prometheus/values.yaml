@@ -11,8 +11,6 @@ prometheus:
     image:
       repository: ghcr.io/flamingo-stack/registry/prometheus/prometheus
       tag: v3.7.3
-
-    # Pod annotations for log collection
     podAnnotations:
       loki.grafana.com/scrape: "true"
 
@@ -30,7 +28,7 @@ prometheus:
 
     persistentVolume:
       enabled: true
-      size: 20Gi
+      existingClaim: "prometheus"
 
     # Enable remote write receiver for Alloy
     extraFlags:
