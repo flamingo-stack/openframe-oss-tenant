@@ -365,7 +365,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(kube_pod_container_resource_limits{namespace=\"datasources\", container=\"cassandra\", resource=\"cpu\"}) by (container)",
+          "expr": "sum(kube_pod_container_resource_limits{namespace=\"datasources\", pod=~\"cassandra.*\", resource=\"cpu\"}) by (pod)",
           "legendFormat": "{{container}}",
           "refId": "B"
         }
