@@ -76,7 +76,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
+        "w": 12,
         "x": 0,
         "y": 1
       },
@@ -101,10 +101,24 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-.*\", container!=\"\"}[2m])) by (pod) > 0",
-          "instant": true,
-          "legendFormat": "{{pod}}",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-server.*\", container!=\"\"}) > 0 or vector(0)",
+          "legendFormat": "server",
           "refId": "A"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-controller.*\", container!=\"\"}) > 0 or vector(0)",
+          "legendFormat": "controller",
+          "refId": "B"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-broker.*\", container!=\"\"}) > 0 or vector(0)",
+          "legendFormat": "broker",
+          "refId": "C"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-minion.*\", container!=\"\"}) > 0 or vector(0)",
+          "legendFormat": "minion",
+          "refId": "D"
         }
       ],
       "title": "Status",
@@ -477,13 +491,6 @@
             },
             "properties": [
               {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
-              {
                 "id": "custom.fillOpacity",
                 "value": 25
               }
@@ -495,13 +502,6 @@
               "options": "B"
             },
             "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
               {
                 "id": "custom.lineStyle",
                 "value": {
