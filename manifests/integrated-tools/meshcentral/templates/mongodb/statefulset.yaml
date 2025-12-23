@@ -14,10 +14,6 @@ spec:
       labels:
         app: meshcentral-mongodb
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
       securityContext:
         runAsUser: 999
         runAsGroup: 999
@@ -25,7 +21,7 @@ spec:
 
       initContainers:
         - name: keyfile-prepare
-          image: busybox:1.36
+          image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
           securityContext:
             runAsUser: 0
           command:
@@ -42,7 +38,7 @@ spec:
               mountPath: /work
 
         - name: fix-perms
-          image: busybox:1.36
+          image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
           securityContext:
             runAsUser: 0
           command:
@@ -57,7 +53,7 @@ spec:
 
       containers:
         - name: mongodb
-          image: mongo:8.0.9
+          image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
           command: ["/usr/local/bin/mongodb-entrypoint.sh"]
           ports:
             - name: mongodb

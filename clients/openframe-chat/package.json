@@ -5,18 +5,15 @@
   "type": "module",
   "description": "Fae Chat Desktop Client - Tauri + React",
   "scripts": {
-    "postinstall": "node scripts/ensure-ui-kit-built.cjs",
-    "predev": "node scripts/ensure-ui-kit-built.cjs",
     "dev": "tauri dev",
     "frontend:dev": "vite",
-    "prebuild": "node scripts/ensure-ui-kit-built.cjs",
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
-    "@flamingo/ui-kit": "github:flamingo-stack/ui-kit#main",
+    "@flamingo-stack/openframe-frontend-core": "0.0.4",
     "@tauri-apps/api": "^2.0.0",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
@@ -32,6 +29,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",
+    "@types/node": "^25.0.2",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^4.2.1",

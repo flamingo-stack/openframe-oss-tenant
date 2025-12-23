@@ -20,7 +20,7 @@ spec:
 
       containers:
       - name: fleetmdm
-        image: "{{ .Values.server.image.repo }}:{{ .Values.server.image.tag }}"
+        image: "{{ .Values.server.image.registry }}/{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
         ports:
         - containerPort: 8070
         envFrom:

@@ -48,7 +48,7 @@ tests:
           value: register
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "curlimages/curl:8.5.0"
+          value: "ghcr.io/flamingo-stack/registry/curlimages/curl:8.9.1"
 
   # ArgoCD annotations
   - it: should include ArgoCD annotations

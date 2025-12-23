@@ -134,7 +134,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           secrets: |
-            github_token=${{ secrets.GITHUB_TOKEN }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             GITHUB_ACTOR=${{ github.actor }}
             ${{ env.BUILD_ARGS }}
@@ -209,6 +209,7 @@ jobs:
     env:
       CARGO_INCREMENTAL: 0
       BINARY_NAME: ${{ matrix.name }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     defaults:
       run:
         shell: bash

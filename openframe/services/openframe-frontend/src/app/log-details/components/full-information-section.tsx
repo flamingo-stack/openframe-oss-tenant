@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react'
-import { InfoRow } from '@flamingo/ui-kit'
-import { ToolBadge } from '@flamingo/ui-kit/components/platform'
+import { InfoRow } from '@flamingo-stack/openframe-frontend-core'
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
 import { toUiKitToolType } from '@lib/tool-labels'
 
 interface LogEntry {

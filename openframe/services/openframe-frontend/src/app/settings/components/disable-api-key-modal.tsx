@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo/ui-kit'
+import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo-stack/openframe-frontend-core'
 
 interface DisableApiKeyModalProps {
   isOpen: boolean

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { useLocalStorage } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
 import { apiClient } from '@lib/api-client'
@@ -33,6 +33,15 @@ interface RegisterRequest {
   email: string
   password: string
   accessCode: string
+}
+
+interface SSORegisterRequest {
+  tenantName: string
+  tenantDomain: string
+  email: string
+  provider: 'google' | 'microsoft'
+  accessCode: string
+  redirectTo?: string
 }
 
 export function useAuth() {
@@ -356,7 +365,13 @@ export function useAuth() {
         variant: "success"
       })
       
-      window.location.href = '/auth'
+      const discoveryResult = await discoverTenants(data.email)
+      
+      if (discoveryResult && discoveryResult.has_existing_accounts) {
+        window.location.href = '/auth/login'
+      } else {
+        window.location.href = '/auth'
+      }
     } catch (error: any) {
       console.error('❌ [Auth] Registration failed:', error)
       toast({
@@ -366,6 +381,23 @@ export function useAuth() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const registerOrganizationSSO = async (data: SSORegisterRequest) => {
+    setIsLoading(true)
+    
+    try {
+      await authApiClient.registerOrganizationSSO(data)
+      return true
+    } catch (error: any) {
+      toast({
+        title: "SSO Registration Failed",
+        description: error instanceof Error ? error.message : "Unable to register organization with SSO",
+        variant: "destructive"
+      })
+      setIsLoading(false)
+      return false
     }
   }
 
@@ -456,6 +488,7 @@ export function useAuth() {
     isInitialized,
     discoverTenants,
     registerOrganization,
+    registerOrganizationSSO,
     loginWithSSO,
     logout,
     reset,

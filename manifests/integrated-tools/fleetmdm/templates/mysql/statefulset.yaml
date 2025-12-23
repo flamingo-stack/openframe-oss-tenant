@@ -14,14 +14,9 @@ spec:
       labels:
         app: fleetmdm-mysql
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-
       containers:
       - name: mysql
-        image: mysql:8.0.35
+        image: {{ .Values.mysql.image.registry }}/{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
         args:
           - --default-authentication-plugin=mysql_native_password
           - --skip-mysqlx

@@ -1,12 +1,118 @@
 registerJob:
   enabled: true
-servicemonitor:
-  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
 
-credentials:
-  admin_user: "admin"            
-  admin_pass: "admin_password"
-  device_user: "machine"
-  service_user: "service"
-  service_pass: "service_pass"
 
+nats:
+  config:
+    cluster:
+      enabled: false
+
+    jetstream:
+      enabled: true
+      fileStore:
+        enabled: true
+        dir: /data/jetstream
+        pvc:
+          size: 10Gi
+
+    websocket:
+      enabled: true
+    monitor:
+      enabled: true
+
+    merge:
+      pid_file: /var/run/nats/nats.pid
+      $include: ../nats-custom-config/nats.conf
+
+
+  container:
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: nats
+      tag: 2.10-alpine
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    merge:
+      envFrom:
+        - secretRef:
+            name: nats-credentials
+      volumeMounts:
+        - name: nats-js
+          mountPath: /data/jetstream
+        - name: nats-config
+          mountPath: /etc/nats-config
+        - name: nats-custom-config
+          mountPath: /etc/nats-custom-config
+        - name: pid
+          mountPath: /var/run/nats
+  podTemplate:
+    merge:
+      spec:
+        volumes:
+          - name: nats-config
+            configMap:
+              name: nats-config
+          - name: nats-custom-config
+            configMap:
+              name: nats-custom-config
+          - name: pid
+            emptyDir: {}
+  statefulSet:
+    merge:
+      spec:
+        revisionHistoryLimit: 2
+
+
+  reloader:
+    enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: natsio/nats-server-config-reloader
+      tag: 0.21.1
+    merge:
+      volumeMounts:
+        - name: nats-config
+          mountPath: /etc/nats-config
+        - name: nats-custom-config
+          mountPath: /etc/nats-custom-config
+        - name: pid
+          mountPath: /var/run/nats
+
+
+  promExporter:
+    enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: natsio/prometheus-nats-exporter
+      tag: 0.18.0
+    port: 7777
+
+
+  service:
+    enabled: true
+    ports:
+      nats:
+        enabled: true
+      websocket:
+        enabled: true
+      monitor:
+        enabled: true
+    merge:
+      metadata:
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "7777"
+          prometheus.io/path: "/metrics"
+
+
+  natsBox:
+    enabled: false

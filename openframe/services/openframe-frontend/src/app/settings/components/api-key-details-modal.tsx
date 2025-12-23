@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Button, StatusTag, Modal, ModalHeader, ModalTitle, ModalFooter, Label, Input } from '@flamingo/ui-kit/components/ui'
+import { Button, StatusTag, Modal, ModalHeader, ModalTitle, ModalFooter, Label, Input } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import type { ApiKeyRecord } from '../hooks/use-api-keys'
 
 interface ApiKeyDetailsModalProps {

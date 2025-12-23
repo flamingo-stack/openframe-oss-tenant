@@ -11,12 +11,22 @@ import { forceLogout, clearStoredTokens } from './force-logout'
 
 function getDomainSuffix(): string {
   const sharedUrl = runtimeEnv.sharedHostUrl()
-  if (!sharedUrl) return 'openframe.ai'
+  if (!sharedUrl) {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      const hostname = window.location.hostname
+      const parts = hostname.split('.')
+      if (parts.length >= 2) {
+        return parts.slice(-2).join('.')
+      }
+      return hostname
+    }
+    return 'localhost'
+  }
   
   const withoutProtocol = sharedUrl.replace(/^https?:\/\//, '')
   const domain = withoutProtocol.split('/')[0].split(':')[0]
   
-  return domain || 'openframe.ai'
+  return domain || 'localhost'
 }
 
 export const SAAS_DOMAIN_SUFFIX = getDomainSuffix()
@@ -178,6 +188,11 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' })
   }
 
+  validateAccessCode<T = any>(email: string, code: string) {
+    const path = `/sas/oauth/access-code/validate?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`
+    return requestPublic<T>(path, { method: 'GET' })
+  }
+
   registerOrganization<T = any>(payload: {
     email: string,
     firstName: string,
@@ -190,6 +205,44 @@ class AuthApiClient {
     return request<T>(`/sas/oauth/register`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    })
+  }
+
+  registerOrganizationSSO(payload: {
+    tenantName: string,
+    tenantDomain: string,
+    email: string,
+    provider: 'google' | 'microsoft',
+    accessCode: string,
+    redirectTo?: string,
+  }) {
+    const params = new URLSearchParams({
+      tenantName: payload.tenantName,
+      tenantDomain: payload.tenantDomain,
+      email: payload.email,
+      provider: payload.provider,
+      accessCode: payload.accessCode,
+    })
+    
+    if (payload.redirectTo) {
+      params.append('redirectTo', payload.redirectTo)
+    }
+    
+    const url = buildAuthUrl(`/sas/oauth/register/sso?${params.toString()}`)
+    window.location.href = url
+    
+    return Promise.resolve({ ok: true, status: 302, data: null, error: null })
+  }
+
+  getRegistrationProviders<T = any>() {
+    return request<T>(`/sas/sso/providers/registration`, {
+      method: 'GET',
+    })
+  }
+
+  getInviteProviders<T = any>(invitationId: string) {
+    return request<T>(`/sas/sso/providers/invite?invitationId=${encodeURIComponent(invitationId)}`, {
+      method: 'GET',
     })
   }
 
@@ -207,6 +260,31 @@ class AuthApiClient {
         switchTenant: payload.switchTenant || false
       }),
     })
+  }
+
+  acceptInvitationSSO(payload: {
+    invitationId: string,
+    provider: 'google' | 'microsoft',
+    switchTenant?: boolean,
+    redirectTo?: string
+  }) {
+    const params = new URLSearchParams({
+      invitationId: payload.invitationId,
+      provider: payload.provider,
+    })
+    
+    if (payload.switchTenant !== undefined) {
+      params.append('switchTenant', payload.switchTenant.toString())
+    }
+
+    if (payload.redirectTo) {
+      params.append('redirectTo', payload.redirectTo)
+    }
+    
+    const url = buildAuthUrl(`/sas/invitations/accept/sso?${params.toString()}`)
+    window.location.href = url
+    
+    return Promise.resolve({ ok: true, status: 302, data: null, error: null })
   }
 
   confirmPasswordReset<T = any>(payload: {

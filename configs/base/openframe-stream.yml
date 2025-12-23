@@ -58,6 +58,8 @@ openframe:
           fleet-mdm-query-result-events: fleet.query_results.events
         outbound:
           integrated-tool-events: integrated-tool.events.pinot
+          devices-topic: devices-topic
+
   integration:
     tool:
       enabled: true

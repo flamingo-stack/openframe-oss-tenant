@@ -2,19 +2,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { StatusTag, DetailPageContainer, Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, ActionsMenu, normalizeOSType } from '@flamingo/ui-kit'
-import type { ActionsMenuGroup } from '@flamingo/ui-kit'
-import { RemoteControlIcon, ShellIcon, CmdIcon, PowerShellIcon } from '@flamingo/ui-kit/components/icons'
-import { ChevronDown } from 'lucide-react'
+import { StatusTag, DetailPageContainer, Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, ActionsMenu, normalizeOSType } from '@flamingo-stack/openframe-frontend-core'
+import { RemoteControlIcon, ShellIcon, CmdIcon, PowerShellIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { ChevronDown, Folder } from 'lucide-react'
 import { RemoteShellModal } from './remote-shell-modal'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
-import { CardLoader, LoadError, NotFoundError } from '@flamingo/ui-kit'
+import { CardLoader, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
 import { ScriptsModal } from './scripts-modal'
-import { TabNavigation, TabContent, getTabComponent } from '@flamingo/ui-kit'
+import { TabNavigation, TabContent, getTabComponent } from '@flamingo-stack/openframe-frontend-core'
 import { DEVICE_TABS } from './tabs/device-tabs'
 import { getDeviceStatusConfig } from '../utils/device-status'
-import { formatRelativeTime } from '@flamingo/ui-kit/utils/format-relative-time'
+import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils'
 import { DeviceActionsDropdown } from './device-actions-dropdown'
 import { getDeviceActionAvailability } from '../utils/device-action-utils'
 
@@ -132,11 +131,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       <Button
         variant="device-action"
         leftIcon={<RemoteControlIcon className="h-5 w-5" />}
-        onClick={() => {
-          if (actionAvailability?.meshcentralAgentId) {
-            router.push(`/devices/details/${deviceId}/remote-desktop`)
-          }
-        }}
+        href={`/devices/details/${deviceId}/remote-desktop`}
+        showExternalLinkOnHover
         disabled={!actionAvailability?.remoteControlEnabled}
       >
         Remote Control
@@ -163,6 +159,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                     id: 'cmd',
                     label: 'CMD',
                     icon: <CmdIcon className="w-6 h-6" />,
+                    href: `/devices/details/${deviceId}?action=remoteShell&shellType=cmd`,
+                    showExternalLinkOnHover: true,
                     onClick: () => {
                       setShellDropdownOpen(false)
                       handleRemoteShell('cmd')
@@ -172,6 +170,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                     id: 'powershell',
                     label: 'PowerShell',
                     icon: <PowerShellIcon className="w-6 h-6" />,
+                    href: `/devices/details/${deviceId}?action=remoteShell&shellType=powershell`,
+                    showExternalLinkOnHover: true,
                     onClick: () => {
                       setShellDropdownOpen(false)
                       handleRemoteShell('powershell')
@@ -193,6 +193,17 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           Remote Shell
         </Button>
       )}
+
+      {/* Manage Files Button */}
+      <Button
+        variant="device-action"
+        leftIcon={<Folder className="h-5 w-5" />}
+        href={`/devices/details/${deviceId}/file-manager`}
+        showExternalLinkOnHover
+        disabled={!actionAvailability?.manageFilesEnabled}
+      >
+        Manage Files
+      </Button>
 
       {/* More Actions Dropdown (3 dots) */}
       <DeviceActionsDropdown

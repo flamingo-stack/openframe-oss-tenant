@@ -1,7 +1,7 @@
 'use client'
 
-import { DashboardInfoCard, LogsList } from '@flamingo/ui-kit'
-import type { LogEntry, LogSeverity } from '@flamingo/ui-kit'
+import { DashboardInfoCard, LogsList } from '@flamingo-stack/openframe-frontend-core'
+import type { LogEntry, LogSeverity } from '@flamingo-stack/openframe-frontend-core'
 import { toUiKitToolType } from '@lib/tool-labels'
 import { navigateToLogDetails } from '@lib/log-navigation'
 import { useLogsOverview } from '../hooks/use-dashboard-stats'

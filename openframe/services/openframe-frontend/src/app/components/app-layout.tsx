@@ -2,15 +2,16 @@
 
 import { useCallback, useMemo, Suspense, useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { NavigationSidebar } from '@flamingo/ui-kit/components/navigation'
-import { AppHeader } from '@flamingo/ui-kit/components/navigation'
-import type { NavigationSidebarConfig } from '@flamingo/ui-kit/types/navigation'
+import { NavigationSidebar } from '@flamingo-stack/openframe-frontend-core/components/navigation'
+import { AppHeader } from '@flamingo-stack/openframe-frontend-core/components/navigation'
+import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation'
 import { useAuthStore } from '../auth/stores/auth-store'
 import { useAuth } from '../auth/hooks/use-auth'
 import { getNavigationItems } from '../../lib/navigation-config'
 import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, isSaasTenantMode, isOssTenantMode } from '../../lib/app-mode'
 import { UnauthorizedOverlay } from './unauthorized-overlay'
-import { PageLoader, CompactPageLoader } from '@flamingo/ui-kit/components/ui'
+import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { AppShellSkeleton } from './app-shell-skeleton'
 import { runtimeEnv } from '@lib/runtime-config'
 import { apiClient } from '@/src/lib/api-client'
 
@@ -152,7 +153,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated])
 
   if (isOssTenantMode() && !isHydrated) {
-    return <PageLoader title="Initializing" description="Loading application..." />
+    return <AppShellSkeleton />
   }
 
   if (isAuthOnlyMode()) {
@@ -161,13 +162,13 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
   if (isSaasTenantMode() && !isAuthenticated) {
     if (!hasCheckedAuth || isCheckingAuth) {
-      return <PageLoader title="Checking session" description="Verifying your session..." />
+      return <AppShellSkeleton />
     }
     return <UnauthorizedOverlay />
   }
 
   if (isOssTenantMode() && isHydrated && !isAuthenticated) {
-    return <PageLoader />
+    return <AppShellSkeleton />
   }
 
   return <AppShell>{children}</AppShell>
@@ -175,7 +176,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<PageLoader title="Loading" description="Initializing application..." />}>
+    <Suspense fallback={<AppShellSkeleton />}>
       <AppLayoutInner>{children}</AppLayoutInner>
     </Suspense>
   )

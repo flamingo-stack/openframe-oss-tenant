@@ -1,9 +1,9 @@
 'use client'
 
 import React from 'react'
-import { ShellTypeBadge } from '@flamingo/ui-kit/components/platform'
-import { OSTypeBadgeGroup } from '@flamingo/ui-kit/components/features'
-import type { ShellType } from '@flamingo/ui-kit'
+import { ShellTypeBadge } from '@flamingo-stack/openframe-frontend-core/components'
+import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features'
+import type { ShellType } from '@flamingo-stack/openframe-frontend-core'
 
 interface ScriptInfoSectionProps {
   script: any | null

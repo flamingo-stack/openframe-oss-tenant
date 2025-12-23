@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { fleetApiClient } from '@lib/fleet-api-client'
 import { apiClient } from '@lib/api-client'

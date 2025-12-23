@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { OSTypeLabel } from '@flamingo/ui-kit/components/features'
+import { OSTypeLabel } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { Device } from '../types/device.types'
 
 interface DeviceInfoSectionProps {

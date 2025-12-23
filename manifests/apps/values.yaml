@@ -77,7 +77,7 @@ apps:
     project: platform
     namespace: platform
     syncWave: "0"
-  promtail:
+  alloy:
     enabled: true
     project: platform
     namespace: platform
@@ -88,7 +88,7 @@ apps:
     namespace: platform
     syncWave: "0"
   prometheus:
-    enabled: true
+    enabled: false
     project: platform
     namespace: platform
     syncWave: "0"
@@ -138,17 +138,17 @@ apps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-  mongodb-exporter:
-    enabled: true
-    project: datasources
-    namespace: datasources
-    syncWave: "1"
   redis:
     enabled: true
     project: datasources
     namespace: datasources
     syncWave: "1"
-  redis-exporter:
+  zookeeper:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  zookeeper:
     enabled: true
     project: datasources
     namespace: datasources

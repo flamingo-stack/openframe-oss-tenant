@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@flamingo/ui-kit/components/ui'
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { runtimeEnv } from '../../lib/runtime-config'
 
 interface UnauthorizedOverlayProps {

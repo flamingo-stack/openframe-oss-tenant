@@ -5,8 +5,8 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, 
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
   Button, Input, Label
-} from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { authApiClient } from '@lib/auth-api-client'
 
 interface ForgotPasswordModalProps {

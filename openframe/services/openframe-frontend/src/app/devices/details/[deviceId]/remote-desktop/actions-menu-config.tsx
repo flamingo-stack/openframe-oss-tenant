@@ -1,6 +1,6 @@
 import React from 'react'
 import { Keyboard, Sunrise, Moon, RotateCcw, Power } from 'lucide-react'
-import { ActionsMenuGroup } from '@flamingo/ui-kit'
+import { ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core'
 
 // Virtual key codes based on Windows Virtual-Key Codes
 export const VK = {

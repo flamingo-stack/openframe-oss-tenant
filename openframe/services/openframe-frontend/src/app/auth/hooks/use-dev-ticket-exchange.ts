@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { useTokenStorage } from '../hooks/use-token-storage'
 import { useAuthStore } from '../stores/auth-store'
 import { apiClient } from '@lib/api-client'

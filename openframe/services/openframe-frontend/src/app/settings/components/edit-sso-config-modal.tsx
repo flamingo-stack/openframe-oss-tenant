@@ -2,10 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { Copy, Eye, EyeOff } from 'lucide-react'
-import { Button, Label, Modal, ModalHeader, ModalTitle, ModalFooter, CheckboxWithDescription, AllowedDomainsInput } from '@flamingo/ui-kit'
-import { Input } from '@flamingo/ui-kit/components/ui'
-import { useToast } from '@flamingo/ui-kit/hooks'
-import { validateEmailDomain } from '@flamingo/ui-kit/utils'
+import { Button, Label, Modal, ModalHeader, ModalTitle, ModalFooter, CheckboxWithDescription, AllowedDomainsInput } from '@flamingo-stack/openframe-frontend-core'
+import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { validateEmailDomain } from '@flamingo-stack/openframe-frontend-core/utils'
 import { runtimeEnv } from '@lib/runtime-config'
 import { getProviderIcon } from '../utils/get-provider-icon'
 import { featureFlags } from '@/src/lib/feature-flags'
@@ -270,8 +270,8 @@ export function SsoConfigModal({
                 id="auto-provision-users"
                 checked={autoProvisionUsers}
                 onCheckedChange={setAutoProvisionUsers}
-                title="Allow All Users from Domain"
-                description="Automatically grant access to all users with email addresses from your organization's domain."
+                title="Auto-provision accounts from domain"
+                description="Automatically create user accounts when signing in via this SSO provider."
               />
 
               {autoProvisionUsers && (

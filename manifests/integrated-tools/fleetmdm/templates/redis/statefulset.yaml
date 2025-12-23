@@ -14,11 +14,6 @@ spec:
       labels:
         app: fleetmdm-redis
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-
       securityContext:
         runAsUser: 999
         runAsGroup: 999
@@ -26,7 +21,7 @@ spec:
       
       containers:
       - name: redis
-        image: redis:latest
+        image: {{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
         ports:
         - containerPort: 6379
         volumeMounts:

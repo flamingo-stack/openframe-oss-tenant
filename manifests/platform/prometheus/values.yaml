@@ -2,85 +2,71 @@ registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
 
 
-kube-prometheus-stack:
-  grafana:
+prometheus:
+  server:
+    image:
+      repository: ghcr.io/flamingo-stack/registry/prometheus/prometheus
+      tag: v3.7.3
+
+    # Pod annotations for log collection
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+
+    # 14 days retention
+    retention: "14d"
+
+    # Resources
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 1
+        memory: 2Gi
+
+    persistentVolume:
+      enabled: true
+      size: 20Gi
+
+    # Enable remote write receiver for Alloy
+    extraFlags:
+      - "web.enable-remote-write-receiver"
+      - "web.enable-lifecycle"
+      - "storage.tsdb.retention.size=18GB" 
+
+    # Global settings
+    global:
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      evaluation_interval: 30s
+
+  # Disable sub-charts - Alloy handles collection
+  prometheus-node-exporter:
+    enabled: false
+
+  kube-state-metrics:
     enabled: false
 
   alertmanager:
     enabled: false
-    alertmanagerSpec:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: prometheus/alertmanager
-        tag: v0.29.0
 
-  prometheus:
-    ingress:
-      enabled: false
+  prometheus-pushgateway:
+    enabled: false
 
-    prometheusSpec:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: prometheus/prometheus
-        tag: v3.7.3
-        
-      serviceMonitorSelectorNilUsesHelmValues: false
-      podMonitorSelectorNilUsesHelmValues: false
-      probeSelectorNilUsesHelmValues: false
-      scrapeConfigSelectorNilUsesHelmValues: false
-      ruleSelectorNilUsesHelmValues: false
-      externalPrefixNilUsesHelmValues: false
-      scrapeInterval: 30s
-      evaluationInterval: 15s
-      retention: 3d  
-      
-      resources:
-        requests:
-          memory: 1Gi
-          cpu: 500m
-        limits:
-          memory: 2Gi
-          cpu: 1
-      
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            accessModes: 
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 15Gi
+  # Prometheus configuration
+  serverFiles:
+    prometheus.yml:
+      # Enable out-of-order ingestion for remote write
+      storage:
+        tsdb:
+          out_of_order_time_window: 10m
 
-  prometheus-node-exporter:
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: prometheus/node-exporter
-      tag: v1.10.2
-
-  kube-state-metrics:
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: kube-state-metrics/kube-state-metrics
-      tag: v2.17.0
-
-  prometheusOperator:
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: prometheus-operator/prometheus-operator
-      tag: v0.86.2
-    prometheusConfigReloader:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: prometheus-operator/prometheus-config-reloader
-        tag: v0.86.2
-    admissionWebhooks:
-      patch:
-        image:
-          registry: ghcr.io/flamingo-stack/registry
-          repository: ingress-nginx/kube-webhook-certgen
-          tag: v1.6.4
-        
-      
+      scrape_configs:
+        - job_name: prometheus
+          static_configs:
+            - targets:
+                - localhost:9090

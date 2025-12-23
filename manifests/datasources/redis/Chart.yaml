@@ -7,5 +7,5 @@ appVersion: "0.0.1"
 
 dependencies:
   - name: redis
-    version: ">=21.2.10"
-    repository: oci://registry-1.docker.io/bitnamicharts  # should be migrated
+    version: "~23.2.6"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts

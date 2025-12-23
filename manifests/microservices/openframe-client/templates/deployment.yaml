@@ -12,18 +12,19 @@ spec:
     metadata:
       labels:
         app: openframe-client
-    spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
-
+    spec:
       initContainers:
         - name: wait-for-config-server
-          image: curlimages/curl:latest
+          image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
           command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
+
+        - name: wait-for-management-server
+          image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
+          command: ["sh", "-c", "until curl -f http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do sleep 1; done"]
 
       containers:
         - name: openframe-client
@@ -34,8 +35,6 @@ spec:
             - containerPort: 8102
               name: management
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "{{ .Values.deployment.oss.repository.profile }}"
             - name: SPRING_CONFIG_URL
               value: "http://openframe-config.microservices.svc.cluster.local:8888"
             - name: OPENFRAME_MANAGEMENT_KEY

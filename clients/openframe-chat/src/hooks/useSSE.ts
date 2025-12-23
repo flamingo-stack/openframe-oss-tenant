@@ -12,15 +12,17 @@ interface UseSSEOptions {
   apiToken?: string
   apiBaseUrl?: string
   debugMode?: boolean
+  useNats?: boolean
   onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void
 }
 
 let sharedApiService: ChatApiService | null = null
 let isInitialized = false
 
-export function useSSE({ url, useMock = false, useApi = true, debugMode = false, onMetadataUpdate }: UseSSEOptions = {}) {
+export function useSSE({ url, useMock = false, useApi = true, debugMode = false, useNats = false, onMetadataUpdate }: UseSSEOptions = {}) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dialogId, setDialogId] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   
   const mockService = useRef(new MockChatService())
@@ -49,9 +51,21 @@ export function useSSE({ url, useMock = false, useApi = true, debugMode = false,
 
   useEffect(() => {
     if (apiService.current) {
+      apiService.current.setUseNatsTransport(useNats)
+    }
+  }, [useNats])
+
+  useEffect(() => {
+    if (apiService.current) {
       apiService.current.setMetadataCallback(onMetadataUpdate)
     }
   }, [onMetadataUpdate])
+
+  useEffect(() => {
+    if (!apiService.current) return
+    const unsubscribe = apiService.current.onDialogIdUpdate((id) => setDialogId(id))
+    return () => unsubscribe()
+  }, [])
 
   useEffect(() => {
     if (url) {
@@ -119,6 +133,7 @@ export function useSSE({ url, useMock = false, useApi = true, debugMode = false,
     isStreaming,
     error,
     abort,
-    reset
+    reset,
+    dialogId
   }
 }

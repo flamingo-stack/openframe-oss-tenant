@@ -3,7 +3,7 @@
 import React, { useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Edit2, Play } from 'lucide-react'
-import { InfoCard, Button, CardLoader, DetailPageContainer, LoadError, NotFoundError } from '@flamingo/ui-kit'
+import { InfoCard, Button, CardLoader, DetailPageContainer, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
 import { useScriptDetails } from '../hooks/use-script-details'
 import { ScriptInfoSection } from './script-info-section'
 
