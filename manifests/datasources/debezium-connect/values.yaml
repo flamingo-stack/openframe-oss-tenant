@@ -6,7 +6,7 @@ registerJob:
 
 image:
   repository: quay.io/debezium/connect
-  tag: 3.1.1.Final
+  tag: 3.3.2
 
 resources:
   requests:
