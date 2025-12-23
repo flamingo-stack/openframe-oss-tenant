@@ -306,8 +306,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{service=\"mongodb\"}[5m])",
-          "legendFormat": "{{pod}}",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"mongodb\"}[5m])) by (container)",
+          "legendFormat": "{{container}}",
           "refId": "A"
         }
       ],
@@ -372,7 +372,7 @@
               }
             ]
           },
-          "unit": "decmbytes"
+          "unit": "bytes"
         },
         "overrides": []
       },
@@ -402,14 +402,9 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_mem_resident{service=\"mongodb\"}",
-          "legendFormat": "resident",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"datasources\", container=\"mongodb\"}) by (container)",
+          "legendFormat": "{{container}}",
           "refId": "A"
-        },
-        {
-          "expr": "mongodb_ss_mem_virtual{service=\"mongodb\"}",
-          "legendFormat": "virtual",
-          "refId": "B"
         }
       ],
       "title": "Memory Usage",
@@ -473,9 +468,36 @@
               }
             ]
           },
-          "unit": "Bps"
+          "unit": "bytes"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Capacity"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [10, 10],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 10,
@@ -503,17 +525,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(mongodb_ss_network_bytesIn{service=\"mongodb\"}[5m])",
-          "legendFormat": "in",
+          "expr": "kubelet_volume_stats_used_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"datadir-mongodb.*\"}",
+          "legendFormat": "Used",
           "refId": "A"
         },
         {
-          "expr": "rate(mongodb_ss_network_bytesOut{service=\"mongodb\"}[5m])",
-          "legendFormat": "out",
+          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"datadir-mongodb.*\"}",
+          "legendFormat": "Capacity",
           "refId": "B"
         }
       ],
-      "title": "Network Traffic",
+      "title": "Storage",
       "type": "timeseries"
     },
     {

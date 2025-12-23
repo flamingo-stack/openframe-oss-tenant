@@ -251,6 +251,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -266,7 +267,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -274,7 +275,7 @@
               }
             ]
           },
-          "unit": "percentunit"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -304,14 +305,9 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "java_lang_operatingsystem_processcpuload{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}",
-          "legendFormat": "Broker {{pod}}",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=~\"kafka.*\"}[5m])) by (container)",
+          "legendFormat": "{{container}}",
           "refId": "A"
-        },
-        {
-          "expr": "java_lang_operatingsystem_processcpuload{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}",
-          "legendFormat": "Controller {{pod}}",
-          "refId": "B"
         }
       ],
       "title": "CPU Usage",
@@ -351,6 +347,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -366,7 +363,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -404,17 +401,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}",
-          "legendFormat": "Broker {{pod}}",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"datasources\", container=~\"kafka.*\"}) by (container)",
+          "legendFormat": "{{container}}",
           "refId": "A"
-        },
-        {
-          "expr": "java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}",
-          "legendFormat": "Controller {{pod}}",
-          "refId": "B"
         }
       ],
-      "title": "Heap Memory",
+      "title": "Memory Usage",
       "type": "timeseries"
     },
     {
@@ -451,6 +443,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -466,7 +459,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -474,9 +467,66 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "bytes"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    10,
+                    10
+                  ],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 10,
@@ -504,17 +554,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "java_lang_threading_threadcount{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}",
-          "legendFormat": "Broker {{pod}}",
+          "expr": "kubelet_volume_stats_used_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"data-kafka.*\"}",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "A"
         },
         {
-          "expr": "java_lang_threading_threadcount{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}",
-          "legendFormat": "Controller {{pod}}",
+          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"data-kafka.*\"}",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
       ],
-      "title": "Thread Count",
+      "title": "Storage",
       "type": "timeseries"
     },
     {

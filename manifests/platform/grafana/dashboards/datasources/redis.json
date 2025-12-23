@@ -306,81 +306,13 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "avg(label_replace(rate(redis_cpu_sys_seconds_total{service=~\"redis-.*\"}[5m]) + rate(redis_cpu_user_seconds_total{service=~\"redis-.*\"}[5m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
-          "legendFormat": "{{role}}",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\"}[5m])) by (container)",
+          "legendFormat": "{{container}}",
           "refId": "A"
         }
       ],
       "title": "CPU Usage",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 8,
-        "y": 5
-      },
-      "id": 16,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "100 * sum(label_replace(redis_memory_used_bytes{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role) / sum(label_replace(redis_memory_max_bytes{service=~\"redis-.*\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
-          "legendFormat": "{{role}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Memory %",
-      "type": "gauge"
     },
     {
       "datasource": {
@@ -440,21 +372,24 @@
               }
             ]
           },
-          "unit": "Bps"
+          "unit": "bytes"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 10,
         "w": 8,
-        "x": 16,
+        "x": 8,
         "y": 5
       },
-      "id": 11,
+      "id": 16,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
@@ -467,17 +402,140 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(redis_net_input_bytes_total{service=~\"redis-.*\"}[5m]))",
-          "legendFormat": "in",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"datasources\", container=\"redis\"}) by (container)",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Capacity"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [10, 10],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 16,
+        "y": 5
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "kubelet_volume_stats_used_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"redis-data-redis.*\"}",
+          "legendFormat": "Used",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(redis_net_output_bytes_total{service=~\"redis-.*\"}[5m]))",
-          "legendFormat": "out",
+          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"datasources\", persistentvolumeclaim=~\"redis-data-redis.*\"}",
+          "legendFormat": "Capacity",
           "refId": "B"
         }
       ],
-      "title": "Network Traffic",
+      "title": "Storage",
       "type": "timeseries"
     },
     {
