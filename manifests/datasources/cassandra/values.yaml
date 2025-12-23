@@ -15,12 +15,6 @@ cassandra:
     registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/cassandra
     tag: 5.0.5-debian-12-r7
-
-  service:
-    annotations:
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "8080"
-      prometheus.io/path: "/metrics"    
   
   dbUser:
     user: cassandra
@@ -47,7 +41,10 @@ cassandra:
       repository: bitnamilegacy/cassandra-exporter
       tag: 2.3.8-debian-12-r51
     podAnnotations:
-      prometheus.io/scrape: "false"
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+      prometheus.io/path: "/metrics"   
 
 
   extraEnvVars:
