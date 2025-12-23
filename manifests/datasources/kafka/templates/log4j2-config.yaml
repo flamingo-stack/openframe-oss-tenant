@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-log4j2
+data:
+  log4j2.properties: |
+    name=KafkaLog4j2Config
+
+    appenders=stdout
+    appender.stdout.type=Console
+    appender.stdout.name=STDOUT
+    appender.stdout.layout.type=PatternLayout
+    appender.stdout.layout.pattern=level=%p ts=%d{ISO8601} logger=%c thread=%t msg="%m"%n
+
+    rootLogger.level=INFO
+    rootLogger.appenderRefs=stdout
+    rootLogger.appenderRef.stdout.ref=STDOUT
+
+    logger.zookeeper.name=org.apache.zookeeper
+    logger.zookeeper.level=WARN
+    logger.kafka.name=org.apache.kafka
+    logger.kafka.level=INFO
+    logger.kafkacore.name=kafka
+    logger.kafkacore.level=INFO
+    logger.controller.name=kafka.controller
+    logger.controller.level=INFO
+    logger.statechange.name=state.change.logger
+    logger.statechange.level=INFO

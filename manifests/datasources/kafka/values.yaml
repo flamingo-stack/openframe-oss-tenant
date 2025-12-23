@@ -63,7 +63,6 @@ kafka:
         registry: ghcr.io/flamingo-stack/registry
         repository: bitnamilegacy/jmx-exporter
         tag: 1.4.0
-      kafkaJmxPort: 5555
       service:
         annotations:
           prometheus.io/scrape: "false"
@@ -82,6 +81,7 @@ kafka:
         limits:
           cpu: 100m
           memory: 256Mi
+  existingLog4j2ConfigMap: "kafka-log4j2"
 
 
   listeners:
