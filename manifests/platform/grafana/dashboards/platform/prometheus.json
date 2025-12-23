@@ -616,7 +616,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"prometheus.*\", namespace=\"platform\"} | logfmt | line_format \"{{.msg}}\"",
+          "expr": "{pod=~\"prometheus.*\", namespace=\"platform\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "refId": "A"
         }
       ],

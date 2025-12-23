@@ -452,7 +452,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"openframe-client.*\", namespace=\"microservices\"} | logfmt | line_format \"{{.msg}}\"",
+          "expr": "{pod=~\"openframe-client.*\", namespace=\"microservices\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "refId": "A"
         }
       ],

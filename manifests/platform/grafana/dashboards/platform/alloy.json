@@ -460,7 +460,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{pod=~\"alloy.*\", namespace=\"platform\"} | logfmt | line_format \"{{.msg}}\"",
+          "expr": "{pod=~\"alloy.*\", namespace=\"platform\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "queryType": "range",
           "refId": "A"
         }

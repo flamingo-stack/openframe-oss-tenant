@@ -517,7 +517,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"argocd-server.*\", namespace=\"argocd\"} | logfmt | line_format \"{{.msg}}\"",
+          "expr": "{pod=~\"argocd-server.*\", namespace=\"argocd\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "refId": "A"
         }
       ],
@@ -559,7 +559,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"argocd-application-controller.*\", namespace=\"argocd\"} | logfmt | line_format \"{{.msg}}\"",
+          "expr": "{pod=~\"argocd-application-controller.*\", namespace=\"argocd\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "refId": "A"
         }
       ],
@@ -601,7 +601,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"argocd-repo-server.*\", namespace=\"argocd\"} | logfmt | line_format \"{{.msg}}\"",
+          "expr": "{pod=~\"argocd-repo-server.*\", namespace=\"argocd\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "refId": "A"
         }
       ],
