@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: debezium-connect-log4j
 data:
-  connect-log4j2.properties: |
+  log4j.properties: |
     name=DebeziumConnectConfig
 
     appenders=stdout
