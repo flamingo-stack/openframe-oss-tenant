@@ -18,6 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
+  "id": 13,
   "links": [],
   "panels": [
     {
@@ -76,7 +77,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 1
       },
@@ -190,7 +191,7 @@
       "gridPos": {
         "h": 3,
         "w": 7,
-        "x": 3,
+        "x": 8,
         "y": 1
       },
       "id": 3,
@@ -505,7 +506,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -704,54 +708,12 @@
       "type": "logs"
     },
     {
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "id": 32,
-      "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": false,
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showControls": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "expr": "{pod=~\"pinot-minion.*\", namespace=\"datasources\"}",
-          "refId": "A"
-        }
-      ],
-      "title": "Minion",
-      "type": "logs"
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 28
       },
       "id": 19,
       "panels": [],
@@ -786,7 +748,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 25
+        "y": 29
       },
       "id": 4,
       "options": {
@@ -844,7 +806,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 25
+        "y": 29
       },
       "id": 5,
       "options": {
@@ -914,7 +876,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 25
+        "y": 29
       },
       "id": 14,
       "options": {
@@ -944,12 +906,54 @@
       "type": "gauge"
     },
     {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "id": 32,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showControls": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{pod=~\"pinot-minion.*\", namespace=\"datasources\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Minion",
+      "type": "logs"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 37
       },
       "id": 9,
       "panels": [],
@@ -1021,7 +1025,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 38
       },
       "id": 10,
       "options": {
@@ -1117,7 +1121,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 38
       },
       "id": 11,
       "options": {
@@ -1167,5 +1171,5 @@
   "timezone": "",
   "title": "Pinot",
   "uid": "pinot",
-  "version": 1
+  "version": 9
 }
