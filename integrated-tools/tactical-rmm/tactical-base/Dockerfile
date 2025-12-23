@@ -20,7 +20,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends git gcc libc6-dev redis-tools
 
 # Clone the repository and install dependencies
-ENV test
+
 RUN git clone https://github.com/flamingo-stack/tacticalrmm.git .
 
 RUN pip install --upgrade pip && \
