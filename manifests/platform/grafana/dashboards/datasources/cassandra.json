@@ -278,61 +278,7 @@
           },
           "unit": "short"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 25
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "dash": [10, 10],
-                  "fill": "dash"
-                }
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              },
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": true,
-                  "tooltip": false,
-                  "viz": false
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 10,
@@ -363,11 +309,6 @@
           "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[5m])) by (container)",
           "legendFormat": "{{container}}",
           "refId": "A"
-        },
-        {
-          "expr": "sum(kube_pod_container_resource_limits{namespace=\"datasources\", pod=~\"cassandra.*\", resource=\"cpu\"}) by (pod)",
-          "legendFormat": "{{container}}",
-          "refId": "B"
         }
       ],
       "title": "CPU Usage",
