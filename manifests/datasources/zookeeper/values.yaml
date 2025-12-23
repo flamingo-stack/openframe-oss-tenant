@@ -14,6 +14,11 @@ zookeeper:
     registry: ghcr.io/flamingo-stack/registry
     repository: bitnamilegacy/zookeeper
     tag: 3.9.3-debian-12-r22
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8008"
+    prometheus.io/path: "/metrics"
 
   replicaCount: 1
   revisionHistoryLimit: 2
@@ -28,3 +33,6 @@ zookeeper:
 
   metrics:
     enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: "false"
