@@ -3,13 +3,20 @@ kind: ConfigMap
 metadata:
   name: debezium-connect-log4j
 data:
-  log4j.properties: |
-    log4j.rootLogger=INFO, stdout
+  log4j2.properties: |
+    appenders=console
+    appender.console.type=Console
+    appender.console.name=STDOUT
+    appender.console.layout.type=JsonTemplateLayout
+    appender.console.layout.eventTemplateUri=classpath:EcsLayout.json
 
-    log4j.appender.stdout=org.apache.log4j.ConsoleAppender
-    log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-    log4j.appender.stdout.layout.ConversionPattern=level=%p ts="%d{ISO8601}" logger=%c thread=%t msg='%m'%n
+    rootLogger.level=INFO
+    rootLogger.appenderRefs=console
+    rootLogger.appenderRef.console.ref=STDOUT
 
-    log4j.logger.org.apache.zookeeper=WARN
-    log4j.logger.org.apache.kafka=WARN
-    log4j.logger.org.apache.kafka.connect=INFO
+    logger.zookeeper.name=org.apache.zookeeper
+    logger.zookeeper.level=WARN
+    logger.kafka.name=org.apache.kafka
+    logger.kafka.level=WARN
+    logger.connect.name=org.apache.kafka.connect
+    logger.connect.level=INFO
