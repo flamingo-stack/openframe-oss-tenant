@@ -140,7 +140,7 @@ spec:
       volumes:
         - name: mongodb-readiness-command
           configMap:
-            name: meshcentral-mongodb-readiness
+            name: meshcentral-mongodb-readiness  # from mondodb-meshcentral chart
             defaultMode: 0755
         - name: meshcentral-data
           persistentVolumeClaim:

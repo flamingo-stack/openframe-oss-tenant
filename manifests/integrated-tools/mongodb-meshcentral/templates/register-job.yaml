@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -11,7 +12,7 @@ spec:
   backoffLimit: 3
   template:
     spec:
-      restartPolicy: Never
+
       containers:
       - name: register
         image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
@@ -94,4 +95,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "MeshCentral MongoDB Registration failed..."; exit 1; }
             echo "MeshCentral MongoDB Registration complete."
+
 {{- end }}

@@ -261,6 +261,11 @@ apps:
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
+  mongodb-meshcentral:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
   tactical-rmm: 
     enabled: true
     project: integrated-tools
