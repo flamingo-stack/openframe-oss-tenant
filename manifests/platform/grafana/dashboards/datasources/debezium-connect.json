@@ -468,67 +468,8 @@
       },
       "id": 25,
       "panels": [],
-      "title": "Debezium Metrics",
+      "title": "Kafka Connect",
       "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 0,
-        "y": 25
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "time() - process_start_time_seconds{app=\"debezium-connect\", namespace=\"datasources\"} and on(pod) up{app=\"debezium-connect\", namespace=\"datasources\"} == 1",
-          "legendFormat": "{{service}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Uptime",
-      "type": "stat"
     },
     {
       "datasource": {
@@ -555,8 +496,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 4,
+        "w": 4,
+        "x": 0,
         "y": 25
       },
       "id": 5,
@@ -613,8 +554,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 7,
+        "w": 4,
+        "x": 4,
         "y": 25
       },
       "id": 26,
@@ -684,7 +625,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 10,
+        "x": 8,
         "y": 25
       },
       "id": 14,
@@ -1320,7 +1261,7 @@
       "targets": [
         {
           "expr": "process_resident_memory_bytes{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}",
-          "legendFormat": "{{service}}",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
