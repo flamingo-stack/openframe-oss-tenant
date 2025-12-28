@@ -18,6 +18,7 @@ redis:
   auth:
     enabled: false
 
+
   commonConfiguration: |-
     maxmemory 200mb
     maxmemory-policy allkeys-lru
