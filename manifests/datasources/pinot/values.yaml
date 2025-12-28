@@ -40,7 +40,7 @@ pinot:
       prometheus.io/port: "8008"
       prometheus.io/path: "/metrics"
 
-  minion:
+  minionStateless:
     jvmOpts: "-javaagent:/opt/pinot/etc/jmx_prometheus_javaagent/jmx_prometheus_javaagent.jar=8008:/opt/pinot/etc/jmx_prometheus_javaagent/configs/pinot.yml -Xms256M -Xmx1G"
     podAnnotations:
       loki.grafana.com/scrape: "true"
