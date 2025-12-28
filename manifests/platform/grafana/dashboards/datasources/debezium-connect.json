@@ -521,7 +521,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_connect_worker_connector_count{app=\"debezium-connect\", namespace=\"datasources\"}",
+          "expr": "kafka_connect_worker_connector_count{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}",
           "legendFormat": "connectors",
           "refId": "A"
         }
@@ -579,7 +579,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_connect_worker_task_count{app=\"debezium-connect\", namespace=\"datasources\"}",
+          "expr": "kafka_connect_worker_task_count{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}",
           "legendFormat": "tasks",
           "refId": "A"
         }
@@ -756,7 +756,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(kafka_connect_source_task_source_record_poll_total{app=\"debezium-connect\", namespace=\"datasources\"}[5m])",
+          "expr": "rate(kafka_connect_source_task_source_record_poll_total{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}[5m])",
           "legendFormat": "{{connector}}-{{task}}",
           "refId": "A"
         }
@@ -856,7 +856,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "debezium_mongodb_millisecondssincelastEvent{app=\"debezium-connect\", namespace=\"datasources\"} or debezium_mysql_millisecondssincelastEvent{app=\"debezium-connect\", namespace=\"datasources\"} or debezium_postgres_millisecondssincelastEvent{app=\"debezium-connect\", namespace=\"datasources\"}",
+          "expr": "debezium_mongodb_millisecondssincelastEvent{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"} or debezium_mysql_millisecondssincelastEvent{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"} or debezium_postgres_millisecondssincelastEvent{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}",
           "legendFormat": "{{server}}",
           "refId": "A"
         }
@@ -956,7 +956,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "debezium_mongodb_millisecondsbehindsource{app=\"debezium-connect\", namespace=\"datasources\"} or debezium_mysql_millisecondsbehindsource{app=\"debezium-connect\", namespace=\"datasources\"} or debezium_postgres_millisecondsbehindsource{app=\"debezium-connect\", namespace=\"datasources\"}",
+          "expr": "debezium_mongodb_millisecondsbehindsource{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"} or debezium_mysql_millisecondsbehindsource{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"} or debezium_postgres_millisecondsbehindsource{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}",
           "legendFormat": "{{server}}",
           "refId": "A"
         }
@@ -1056,7 +1056,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_connect_task_error_total_errors_logged{app=\"debezium-connect\", namespace=\"datasources\"}",
+          "expr": "kafka_connect_task_error_total_errors_logged{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}",
           "legendFormat": "{{connector}}-{{task}}",
           "refId": "A"
         }
