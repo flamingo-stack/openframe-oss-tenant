@@ -679,7 +679,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_varz_connections{service=\"nats\"}",
+          "expr": "nats_varz_connections{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -737,7 +737,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_connz_subscriptions{service=\"nats\"}",
+          "expr": "nats_connz_subscriptions{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -803,7 +803,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_varz_slow_consumers{service=\"nats\"}",
+          "expr": "nats_varz_slow_consumers{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -871,7 +871,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_subsz_cache_hit_rate{service=\"nats\"} * 100",
+          "expr": "nats_subsz_cache_hit_rate{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"} * 100",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -979,12 +979,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(nats_varz_in_msgs{service=\"nats\"}[5m])",
+          "expr": "rate(nats_varz_in_msgs{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}[5m])",
           "legendFormat": "In",
           "refId": "A"
         },
         {
-          "expr": "rate(nats_varz_out_msgs{service=\"nats\"}[5m])",
+          "expr": "rate(nats_varz_out_msgs{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}[5m])",
           "legendFormat": "Out",
           "refId": "B"
         }
@@ -1079,12 +1079,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(nats_varz_in_bytes{service=\"nats\"}[5m])",
+          "expr": "rate(nats_varz_in_bytes{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}[5m])",
           "legendFormat": "In",
           "refId": "A"
         },
         {
-          "expr": "rate(nats_varz_out_bytes{service=\"nats\"}[5m])",
+          "expr": "rate(nats_varz_out_bytes{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}[5m])",
           "legendFormat": "Out",
           "refId": "B"
         }
@@ -1179,12 +1179,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_varz_connections{service=\"nats\"}",
+          "expr": "nats_varz_connections{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "Current",
           "refId": "A"
         },
         {
-          "expr": "nats_varz_total_connections{service=\"nats\"}",
+          "expr": "nats_varz_total_connections{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "Total",
           "refId": "B"
         }
@@ -1255,7 +1255,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_server_total_streams{service=\"nats\"}",
+          "expr": "nats_server_total_streams{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1313,7 +1313,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_server_total_consumers{service=\"nats\"}",
+          "expr": "nats_server_total_consumers{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1371,7 +1371,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_server_total_messages{service=\"nats\"}",
+          "expr": "nats_server_total_messages{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1437,7 +1437,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_varz_jetstream_stats_api_errors{service=\"nats\"}",
+          "expr": "nats_varz_jetstream_stats_api_errors{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1505,7 +1505,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * nats_varz_jetstream_stats_storage{service=\"nats\"} / nats_varz_jetstream_config_max_storage{service=\"nats\"}",
+          "expr": "100 * nats_varz_jetstream_stats_storage{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"} / nats_varz_jetstream_config_max_storage{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1564,7 +1564,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_varz_jetstream_stats_storage{service=\"nats\"}",
+          "expr": "nats_varz_jetstream_stats_storage{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1658,12 +1658,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_varz_jetstream_stats_storage{service=\"nats\"}",
+          "expr": "nats_varz_jetstream_stats_storage{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "Used",
           "refId": "A"
         },
         {
-          "expr": "nats_varz_jetstream_config_max_storage{service=\"nats\"}",
+          "expr": "nats_varz_jetstream_config_max_storage{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}",
           "legendFormat": "Max",
           "refId": "B"
         }
@@ -1758,12 +1758,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(nats_varz_jetstream_stats_api_total{service=\"nats\"}[5m])",
+          "expr": "rate(nats_varz_jetstream_stats_api_total{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}[5m])",
           "legendFormat": "Total",
           "refId": "A"
         },
         {
-          "expr": "rate(nats_varz_jetstream_stats_api_errors{service=\"nats\"}[5m])",
+          "expr": "rate(nats_varz_jetstream_stats_api_errors{app_kubernetes_io_name=\"nats\", namespace=\"datasources\"}[5m])",
           "legendFormat": "Errors",
           "refId": "B"
         }
@@ -1776,9 +1776,9 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
+    "datasources",
     "nats",
-    "messaging",
-    "streaming"
+    "messaging"
   ],
   "templating": {
     "list": []

@@ -677,7 +677,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_connections{service=\"mongodb\", conn_type=\"current\"}",
+          "expr": "mongodb_ss_connections{app=\"mongodb\", namespace=\"datasources\", conn_type=\"current\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -736,7 +736,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_mem_resident{service=\"mongodb\"}",
+          "expr": "mongodb_ss_mem_resident{app=\"mongodb\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -794,7 +794,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_globalLock_activeClients_total{service=\"mongodb\"}",
+          "expr": "mongodb_ss_globalLock_activeClients_total{app=\"mongodb\", namespace=\"datasources\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -860,7 +860,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_globalLock_currentQueue{service=\"mongodb\", count_type=\"total\"}",
+          "expr": "mongodb_ss_globalLock_currentQueue{app=\"mongodb\", namespace=\"datasources\", count_type=\"total\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -969,22 +969,22 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(mongodb_ss_opcounters{service=\"mongodb\", legacy_op_type=\"query\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{app=\"mongodb\", namespace=\"datasources\", legacy_op_type=\"query\"}[5m])",
           "legendFormat": "query",
           "refId": "A"
         },
         {
-          "expr": "rate(mongodb_ss_opcounters{service=\"mongodb\", legacy_op_type=\"insert\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{app=\"mongodb\", namespace=\"datasources\", legacy_op_type=\"insert\"}[5m])",
           "legendFormat": "insert",
           "refId": "B"
         },
         {
-          "expr": "rate(mongodb_ss_opcounters{service=\"mongodb\", legacy_op_type=\"update\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{app=\"mongodb\", namespace=\"datasources\", legacy_op_type=\"update\"}[5m])",
           "legendFormat": "update",
           "refId": "C"
         },
         {
-          "expr": "rate(mongodb_ss_opcounters{service=\"mongodb\", legacy_op_type=\"delete\"}[5m])",
+          "expr": "rate(mongodb_ss_opcounters{app=\"mongodb\", namespace=\"datasources\", legacy_op_type=\"delete\"}[5m])",
           "legendFormat": "delete",
           "refId": "D"
         }
@@ -1080,22 +1080,22 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(mongodb_ss_metrics_document{service=\"mongodb\", doc_op_type=\"returned\"}[5m])",
+          "expr": "rate(mongodb_ss_metrics_document{app=\"mongodb\", namespace=\"datasources\", doc_op_type=\"returned\"}[5m])",
           "legendFormat": "returned",
           "refId": "A"
         },
         {
-          "expr": "rate(mongodb_ss_metrics_document{service=\"mongodb\", doc_op_type=\"inserted\"}[5m])",
+          "expr": "rate(mongodb_ss_metrics_document{app=\"mongodb\", namespace=\"datasources\", doc_op_type=\"inserted\"}[5m])",
           "legendFormat": "inserted",
           "refId": "B"
         },
         {
-          "expr": "rate(mongodb_ss_metrics_document{service=\"mongodb\", doc_op_type=\"updated\"}[5m])",
+          "expr": "rate(mongodb_ss_metrics_document{app=\"mongodb\", namespace=\"datasources\", doc_op_type=\"updated\"}[5m])",
           "legendFormat": "updated",
           "refId": "C"
         },
         {
-          "expr": "rate(mongodb_ss_metrics_document{service=\"mongodb\", doc_op_type=\"deleted\"}[5m])",
+          "expr": "rate(mongodb_ss_metrics_document{app=\"mongodb\", namespace=\"datasources\", doc_op_type=\"deleted\"}[5m])",
           "legendFormat": "deleted",
           "refId": "D"
         }
@@ -1191,12 +1191,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mongodb_ss_connections{service=\"mongodb\", conn_type=\"current\"}",
+          "expr": "mongodb_ss_connections{app=\"mongodb\", namespace=\"datasources\", conn_type=\"current\"}",
           "legendFormat": "current",
           "refId": "A"
         },
         {
-          "expr": "mongodb_ss_connections{service=\"mongodb\", conn_type=\"active\"}",
+          "expr": "mongodb_ss_connections{app=\"mongodb\", namespace=\"datasources\", conn_type=\"active\"}",
           "legendFormat": "active",
           "refId": "B"
         }
@@ -1209,9 +1209,9 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
+    "datasources",
     "mongodb",
-    "database",
-    "storage"
+    "database"
   ],
   "templating": {
     "list": []

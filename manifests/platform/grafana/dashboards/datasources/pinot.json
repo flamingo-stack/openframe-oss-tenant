@@ -816,7 +816,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "min(time() - process_start_time_seconds{service=~\"pinot-.*\"}) by (service)",
+          "expr": "min(time() - process_start_time_seconds{app=\"pinot\", namespace=\"datasources\"}) by (service)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -874,7 +874,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_current{service=~\"pinot-.*\"}) by (service)",
+          "expr": "sum(jvm_threads_current{app=\"pinot\", namespace=\"datasources\"}) by (service)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -942,7 +942,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * sum(jvm_memory_bytes_used{area=\"heap\", service=~\"pinot-.*\"}) by (service) / sum(jvm_memory_bytes_max{area=\"heap\", service=~\"pinot-.*\"}) by (service)",
+          "expr": "100 * sum(jvm_memory_bytes_used{area=\"heap\", app=\"pinot\", namespace=\"datasources\"}) by (service) / sum(jvm_memory_bytes_max{area=\"heap\", app=\"pinot\", namespace=\"datasources\"}) by (service)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -1092,7 +1092,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_state{service=~\"pinot-.*\"}) by (state)",
+          "expr": "sum(jvm_threads_state{app=\"pinot\", namespace=\"datasources\"}) by (state)",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
@@ -1188,7 +1188,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(process_resident_memory_bytes{service=~\"pinot-.*\"}) by (service)",
+          "expr": "sum(process_resident_memory_bytes{app=\"pinot\", namespace=\"datasources\"}) by (service)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -1201,8 +1201,8 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
+    "datasources",
     "pinot",
-    "analytics",
     "database"
   ],
   "templating": {

@@ -677,7 +677,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "time() - process_start_time_seconds{service=~\"zookeeper-.*\"}",
+          "expr": "time() - process_start_time_seconds{app_kubernetes_io_name=\"zookeeper\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -735,7 +735,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "jvm_threads_current{service=~\"zookeeper-.*\"}",
+          "expr": "jvm_threads_current{app_kubernetes_io_name=\"zookeeper\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -803,7 +803,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", service=~\"zookeeper-.*\"} / jvm_memory_bytes_max{area=\"heap\", service=~\"zookeeper-.*\"}",
+          "expr": "100 * jvm_memory_bytes_used{area=\"heap\", app_kubernetes_io_name=\"zookeeper\", namespace=\"datasources\"} / jvm_memory_bytes_max{area=\"heap\", app_kubernetes_io_name=\"zookeeper\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -911,7 +911,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_state{service=~\"zookeeper-.*\"}) by (state)",
+          "expr": "sum(jvm_threads_state{app_kubernetes_io_name=\"zookeeper\", namespace=\"datasources\"}) by (state)",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
@@ -1007,7 +1007,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{service=~\"zookeeper-.*\"}",
+          "expr": "process_resident_memory_bytes{app_kubernetes_io_name=\"zookeeper\", namespace=\"datasources\"}",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1020,9 +1020,9 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
+    "datasources",
     "zookeeper",
-    "coordination",
-    "service"
+    "coordination"
   ],
   "templating": {
     "list": []

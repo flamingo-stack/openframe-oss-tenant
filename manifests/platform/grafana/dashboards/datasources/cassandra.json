@@ -1770,9 +1770,9 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
+    "datasources",
     "cassandra",
-    "database",
-    "storage"
+    "database"
   ],
   "templating": {
     "list": []

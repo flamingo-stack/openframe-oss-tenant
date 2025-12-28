@@ -769,7 +769,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(count by (topic) (kafka_log_log_size{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}))",
+          "expr": "count(count by (topic) (kafka_log_log_size{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", topic!~\"__.*|connect-.*\"}))",
           "legendFormat": "topics",
           "refId": "A"
         }
@@ -827,7 +827,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(count by (partition) (kafka_log_log_size{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}))",
+          "expr": "count(count by (partition) (kafka_log_log_size{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", topic!~\"__.*|connect-.*\"}))",
           "legendFormat": "partitions",
           "refId": "A"
         }
@@ -895,12 +895,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"} / java_lang_memory_heapmemoryusage_max{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}",
+          "expr": "100 * java_lang_memory_heapmemoryusage_used{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", pod=~\".*broker.*\"} / java_lang_memory_heapmemoryusage_max{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", pod=~\".*broker.*\"}",
           "legendFormat": "Broker {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "100 * java_lang_memory_heapmemoryusage_used{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"} / java_lang_memory_heapmemoryusage_max{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}",
+          "expr": "100 * java_lang_memory_heapmemoryusage_used{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", pod=~\".*controller.*\"} / java_lang_memory_heapmemoryusage_max{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", pod=~\".*controller.*\"}",
           "legendFormat": "Controller {{pod}}",
           "refId": "B"
         }
@@ -968,12 +968,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "avg(kafka_network_processor_idlepercent_value{service=\"kafka-jmx-metrics\", pod=~\".*broker.*\"}) by (pod) * 100",
+          "expr": "avg(kafka_network_processor_idlepercent_value{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", pod=~\".*broker.*\"}) by (pod) * 100",
           "legendFormat": "Broker {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "avg(kafka_network_processor_idlepercent_value{service=\"kafka-jmx-metrics\", pod=~\".*controller.*\"}) by (pod) * 100",
+          "expr": "avg(kafka_network_processor_idlepercent_value{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", pod=~\".*controller.*\"}) by (pod) * 100",
           "legendFormat": "Controller {{pod}}",
           "refId": "B"
         }
@@ -1081,12 +1081,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_network_requestmetrics_requestspersec_count{service=\"kafka-jmx-metrics\", request=\"Produce\"}[5m])) by (pod)",
+          "expr": "sum(rate(kafka_network_requestmetrics_requestspersec_count{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", request=\"Produce\"}[5m])) by (pod)",
           "legendFormat": "Produce",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(kafka_network_requestmetrics_requestspersec_count{service=\"kafka-jmx-metrics\", request=~\"Fetch.*\"}[5m])) by (pod)",
+          "expr": "sum(rate(kafka_network_requestmetrics_requestspersec_count{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", request=~\"Fetch.*\"}[5m])) by (pod)",
           "legendFormat": "Fetch",
           "refId": "B"
         }
@@ -1185,7 +1185,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_network_requestmetrics_errorspersec_count{service=\"kafka-jmx-metrics\"}[5m])) by (pod, error)",
+          "expr": "sum(rate(kafka_network_requestmetrics_errorspersec_count{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\"}[5m])) by (pod, error)",
           "legendFormat": "{{error}}",
           "refId": "A"
         }
@@ -1280,12 +1280,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_network_requestchannel_requestqueuesize_value{service=\"kafka-jmx-metrics\"}",
+          "expr": "kafka_network_requestchannel_requestqueuesize_value{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\"}",
           "legendFormat": "Request",
           "refId": "A"
         },
         {
-          "expr": "kafka_network_requestchannel_responsequeuesize_value{service=\"kafka-jmx-metrics\"}",
+          "expr": "kafka_network_requestchannel_responsequeuesize_value{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\"}",
           "legendFormat": "Response",
           "refId": "B"
         }
@@ -1392,7 +1392,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(kafka_log_log_size{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}) by (topic)",
+          "expr": "sum(kafka_log_log_size{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", topic!~\"__.*|connect-.*\"}) by (topic)",
           "legendFormat": "{{topic}}",
           "refId": "A"
         }
@@ -1486,7 +1486,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(kafka_log_log_logendoffset{service=\"kafka-jmx-metrics\", topic!~\"__.*|connect-.*\"}[5m])) by (topic)",
+          "expr": "sum(rate(kafka_log_log_logendoffset{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", topic!~\"__.*|connect-.*\"}[5m])) by (topic)",
           "legendFormat": "{{topic}}",
           "refId": "A"
         }
@@ -1594,12 +1594,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "java_lang_operatingsystem_openfiledescriptorcount{service=\"kafka-jmx-metrics\"}",
+          "expr": "java_lang_operatingsystem_openfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\"}",
           "legendFormat": "Open",
           "refId": "A"
         },
         {
-          "expr": "java_lang_operatingsystem_maxfiledescriptorcount{service=\"kafka-jmx-metrics\"}",
+          "expr": "java_lang_operatingsystem_maxfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\"}",
           "legendFormat": "Max",
           "refId": "B"
         }
@@ -1694,7 +1694,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(kafka_log_log_size{service=\"kafka-jmx-metrics\"}) by (pod)",
+          "expr": "sum(kafka_log_log_size{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\"}) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1707,9 +1707,9 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
+    "datasources",
     "kafka",
-    "messaging",
-    "streaming"
+    "messaging"
   ],
   "templating": {
     "list": []
