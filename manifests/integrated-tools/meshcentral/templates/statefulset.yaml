@@ -22,7 +22,7 @@ spec:
 
       initContainers:
       - name: wait-mongodb
-        image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
+        image: {{ .Values.server.waitMongodbImage.registry }}/{{ .Values.server.waitMongodbImage.repository }}:{{ .Values.server.waitMongodbImage.tag }}
         envFrom:
           - configMapRef:
               name: meshcentral-mongodb
@@ -80,7 +80,7 @@ spec:
 
       containers:
         - name: meshcentral
-          image: "{{ .Values.server.image.repo }}:{{ .Values.server.image.tag }}"
+          image: "{{ .Values.server.image.registry }}/{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
           ports:
           - name: meshcentral
             containerPort: 8383

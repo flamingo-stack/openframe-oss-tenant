@@ -6,11 +6,17 @@ registerJob:
     repository: curlimages/curl
     tag: "8.9.1"
 
+
 server:
-  image: 
-    repo: ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral
+  image:
+    registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+    repository: meshcentral
     tag: latest
   initImage:
     registry: ghcr.io/flamingo-stack/registry
     repository: busybox
     tag: "1.36.0"
+  waitMongodbImage:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: mongo
+    tag: "8.0.9"
