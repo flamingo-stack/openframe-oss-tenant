@@ -236,7 +236,17 @@ apps:
     project: default
     namespace: integrated-tools
     syncWave: "3"
-  # authentik: 
+  # postgres-authentik:
+  #   enabled: true
+  #   project: integrated-tools
+  #   namespace: integrated-tools
+  #   syncWave: "3"
+  # redis-authentik:
+  #   enabled: true
+  #   project: integrated-tools
+  #   namespace: integrated-tools
+  #   syncWave: "3"
+  # authentik:
   #   enabled: true
   #   project: integrated-tools
   #   namespace: integrated-tools
