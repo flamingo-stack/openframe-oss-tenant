@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tactical-redis
+spec:
+  serviceName: tactical-redis
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: tactical-redis
+  template:
+    metadata:
+      labels:
+        app: tactical-redis
+    spec:
+
+      containers:
+      - name: redis
+        image: {{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
+        command: ["redis-server", "--save", "3600", "1", "300", "100", "60", "10000"]
+        ports:
+        - containerPort: 6379
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi

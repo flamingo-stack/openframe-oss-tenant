@@ -276,7 +276,17 @@ apps:
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
-  tactical-rmm: 
+  redis-tactical-rmm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  postgres-tactical-rmm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  tactical-rmm:
     enabled: true
     project: integrated-tools
     namespace: integrated-tools

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: redis-tactical-rmm
+description: Chart for Tactical RMM Redis
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
