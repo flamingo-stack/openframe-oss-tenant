@@ -725,7 +725,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(label_replace(redis_connected_clients{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "expr": "sum(label_replace(redis_connected_clients{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
           "legendFormat": "{{role}}",
           "refId": "A"
         }
@@ -793,7 +793,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}[5m])) / clamp_min(sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}[5m])) + sum(rate(redis_keyspace_misses_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}[5m])), 1e-10) or vector(100)",
+          "expr": "100 * sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m])) / clamp_min(sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m])) + sum(rate(redis_keyspace_misses_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m])), 1e-10) or vector(100)",
           "legendFormat": "hit rate",
           "refId": "A"
         }
@@ -859,7 +859,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(label_replace(redis_blocked_clients{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "expr": "sum(label_replace(redis_blocked_clients{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
           "legendFormat": "{{role}}",
           "refId": "A"
         }
@@ -918,7 +918,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(label_replace(irate(redis_commands_processed_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}[1m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "expr": "sum(label_replace(irate(redis_commands_processed_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[1m]), \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
           "legendFormat": "{{role}}",
           "refId": "A"
         }
@@ -978,7 +978,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "avg(label_replace(redis_mem_fragmentation_ratio{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
+          "expr": "avg(label_replace(redis_mem_fragmentation_ratio{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}, \"role\", \"$1\", \"pod\", \"redis-(master|replicas)-.*\")) by (role)",
           "legendFormat": "{{role}}",
           "refId": "A"
         }
@@ -1084,7 +1084,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(redis_commands_processed_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}[5m]))",
+          "expr": "sum(rate(redis_commands_processed_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m]))",
           "legendFormat": "total",
           "refId": "A"
         }
@@ -1177,12 +1177,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}[5m]))",
+          "expr": "sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m]))",
           "legendFormat": "hits",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(redis_keyspace_misses_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\"}[5m]))",
+          "expr": "sum(rate(redis_keyspace_misses_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m]))",
           "legendFormat": "misses",
           "refId": "B"
         }
