@@ -1569,8 +1569,8 @@
         "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*broker.*"
+              "id": "byName",
+              "options": "Broker"
             },
             "properties": [
               {
@@ -1584,14 +1584,40 @@
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*controller.*"
+              "id": "byName",
+              "options": "Max Broker"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "blue",
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [10, 10],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Controller"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
                   "mode": "fixed"
                 }
               }
@@ -1599,10 +1625,17 @@
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "Max.*"
+              "id": "byName",
+              "options": "Max Controller"
             },
             "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              },
               {
                 "id": "custom.lineStyle",
                 "value": {
