@@ -251,6 +251,16 @@ apps:
   #   project: integrated-tools
   #   namespace: integrated-tools
   #   syncWave: "3"
+  mysql-fleetmdm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  redis-fleetmdm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
   fleetmdm: 
     enabled: true
     project: integrated-tools
