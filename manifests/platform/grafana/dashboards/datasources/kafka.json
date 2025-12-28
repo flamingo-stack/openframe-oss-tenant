@@ -1566,7 +1566,57 @@
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*broker.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*controller.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Max.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [10, 10],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -1594,14 +1644,24 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "java_lang_operatingsystem_openfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", container=\"kafka\"}",
-          "legendFormat": "Open {{pod}}",
+          "expr": "java_lang_operatingsystem_openfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", container=\"kafka\", pod=~\".*broker.*\"}",
+          "legendFormat": "Broker",
           "refId": "A"
         },
         {
-          "expr": "java_lang_operatingsystem_maxfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", container=\"kafka\"}",
-          "legendFormat": "Max {{pod}}",
+          "expr": "java_lang_operatingsystem_openfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", container=\"kafka\", pod=~\".*controller.*\"}",
+          "legendFormat": "Controller",
           "refId": "B"
+        },
+        {
+          "expr": "java_lang_operatingsystem_maxfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", container=\"kafka\", pod=~\".*broker.*\"}",
+          "legendFormat": "Max Broker",
+          "refId": "C"
+        },
+        {
+          "expr": "java_lang_operatingsystem_maxfiledescriptorcount{app_kubernetes_io_name=\"kafka\", namespace=\"datasources\", container=\"kafka\", pod=~\".*controller.*\"}",
+          "legendFormat": "Max Controller",
+          "refId": "D"
         }
       ],
       "title": "File Descriptors",
