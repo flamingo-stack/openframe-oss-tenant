@@ -17,7 +17,7 @@ zookeeper:
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"
-    prometheus.io/port: "8008"
+    prometheus.io/port: "9141"
     prometheus.io/path: "/metrics"
 
   replicaCount: 1

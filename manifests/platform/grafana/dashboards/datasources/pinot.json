@@ -1092,7 +1092,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_state{app=\"pinot\", namespace=\"datasources\"}) by (state)",
+          "expr": "sum(jvm_threads_state{app=\"pinot\", namespace=\"datasources\", container=\"pinot\"}) by (state)",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
