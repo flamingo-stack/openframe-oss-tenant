@@ -1631,7 +1631,57 @@
           },
           "unit": "bytes"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [10, 10],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -1639,7 +1689,7 @@
         "x": 0,
         "y": 43
       },
-      "id": 23,
+      "id": 28,
       "options": {
         "legend": {
           "calcs": [
@@ -1658,17 +1708,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "nats_varz_jetstream_stats_storage{app_kubernetes_io_name=\"nats\", namespace=\"datasources\", container=\"prom-exporter\"}",
+          "expr": "nats_varz_jetstream_stats_memory{app_kubernetes_io_name=\"nats\", namespace=\"datasources\", container=\"prom-exporter\"}",
           "legendFormat": "Used",
           "refId": "A"
         },
         {
-          "expr": "nats_varz_jetstream_config_max_storage{app_kubernetes_io_name=\"nats\", namespace=\"datasources\", container=\"prom-exporter\"}",
+          "expr": "nats_varz_jetstream_config_max_memory{app_kubernetes_io_name=\"nats\", namespace=\"datasources\", container=\"prom-exporter\"}",
           "legendFormat": "Max",
           "refId": "B"
         }
       ],
-      "title": "JetStream Storage",
+      "title": "JetStream Memory",
       "type": "timeseries"
     },
     {
