@@ -1056,7 +1056,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kafka_connect_task_error_total_errors_logged{app=\"debezium-connect\", namespace=\"datasources\", container=\"debezium-connect\"}",
+          "expr": "kafka_connect_task_error_total_errors_logged{app=\"debezium-connect\", namespace=\"datasources\"}",
           "legendFormat": "{{connector}}-{{task}}",
           "refId": "A"
         }

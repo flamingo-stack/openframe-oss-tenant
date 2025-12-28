@@ -816,8 +816,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "min(time() - process_start_time_seconds{app=\"pinot\", namespace=\"datasources\"}) by (service)",
-          "legendFormat": "{{service}}",
+          "expr": "min(time() - process_start_time_seconds{app=\"pinot\", namespace=\"datasources\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -874,8 +874,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(jvm_threads_current{app=\"pinot\", namespace=\"datasources\"}) by (service)",
-          "legendFormat": "{{service}}",
+          "expr": "sum(jvm_threads_current{app=\"pinot\", namespace=\"datasources\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -942,8 +942,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * sum(jvm_memory_bytes_used{area=\"heap\", app=\"pinot\", namespace=\"datasources\"}) by (service) / sum(jvm_memory_bytes_max{area=\"heap\", app=\"pinot\", namespace=\"datasources\"}) by (service)",
-          "legendFormat": "{{service}}",
+          "expr": "100 * sum(jvm_memory_bytes_used{area=\"heap\", app=\"pinot\", namespace=\"datasources\"}) by (pod) / sum(jvm_memory_bytes_max{area=\"heap\", app=\"pinot\", namespace=\"datasources\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -1188,8 +1188,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(process_resident_memory_bytes{app=\"pinot\", namespace=\"datasources\"}) by (service)",
-          "legendFormat": "{{service}}",
+          "expr": "sum(process_resident_memory_bytes{app=\"pinot\", namespace=\"datasources\"}) by (pod)",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
