@@ -365,7 +365,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-.*\", container!=\"\", container!=\"POD\"}[5m])) by (pod)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-.*\", pod!~\"tactical-(redis|postgres).*\", container!=\"\", container!=\"POD\"}[5m])) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -461,7 +461,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{namespace=\"integrated-tools\", pod=~\"tactical-.*\", container!=\"\", container!=\"POD\"}) by (pod)",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"integrated-tools\", pod=~\"tactical-.*\", pod!~\"tactical-(redis|postgres).*\", container!=\"\", container!=\"POD\"}) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -492,7 +492,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 8,
         "w": 24,
         "x": 0,
         "y": 16
@@ -505,7 +505,7 @@
         "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showControls": false,
-        "showLabels": false,
+        "showLabels": true,
         "showTime": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
@@ -517,95 +517,11 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"tactical-backend.*\", namespace=\"integrated-tools\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
+          "expr": "{pod=~\"tactical-.*\", pod!~\"tactical-(redis|postgres)-.*\", namespace=\"integrated-tools\"} | logfmt | line_format \"[{{.pod}}] {{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "refId": "A"
         }
       ],
-      "title": "Backend",
-      "type": "logs"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 20
-      },
-      "id": 9,
-      "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": false,
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showControls": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "expr": "{pod=~\"tactical-nginx.*\", namespace=\"integrated-tools\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
-          "refId": "A"
-        }
-      ],
-      "title": "Nginx",
-      "type": "logs"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 10,
-      "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": false,
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showControls": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "expr": "{pod=~\"tactical-nats.*\", namespace=\"integrated-tools\"} | logfmt | line_format \"{{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
-          "refId": "A"
-        }
-      ],
-      "title": "NATS",
+      "title": "Logs",
       "type": "logs"
     }
   ],
