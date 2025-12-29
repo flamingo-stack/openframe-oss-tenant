@@ -517,7 +517,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"tactical-.*\", pod!~\"tactical-(redis|postgres)-.*\", namespace=\"integrated-tools\"} | logfmt | line_format \"[{{.pod}}] {{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
+          "expr": "{pod=~\"tactical-.*\", pod!~\"tactical-(redis|postgres)-.*\", namespace=\"integrated-tools\"} | drop container, service_name, stream | logfmt | line_format \"[{{.pod}}] {{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
           "refId": "A"
         }
       ],
