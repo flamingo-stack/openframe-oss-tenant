@@ -1,8 +1,9 @@
-{{- if .Values.global.registerJob.enabled }}
+{{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: authentik-postgres
+  name: postgres-tactical
   annotations:
     "argocd.argoproj.io/hook": PostSync
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
@@ -12,30 +13,29 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        - name: docker-pat-secret
-      {{- end }}
-      
+
       containers:
       - name: register
-        image: curlimages/curl:8.5.0
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        envFrom:
+        - secretRef:
+            name: tactical-postgres
         env:
-        - name: POSTGRES_USER
+        - name: POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
-              name: authentik-postgres
-              key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
+              name: tactical-postgres
+              key: POSTGRES_HOST
+        - name: POSTGRES_PORT
           valueFrom:
-            secretKeyRef:
-              name: authentik-postgres
-              key: POSTGRES_PASSWORD
+            configMapKeyRef:
+              name: tactical-postgres
+              key: POSTGRES_PORT
         command:
           - /bin/sh
           - -uc
           - |
-            echo "Registering Authentik PostgreSQL..."
+            echo "Registering TacticalRMM PostgreSQL..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
@@ -43,20 +43,20 @@ spec:
             done
             echo "Sending registration request..."
             http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgres" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-postgres" \
               -H "Content-Type: application/json" \
               --connect-timeout 5 \
               --max-time 20 \
               -d '{
                 "tool": {
-                  "id": "authentik-postgres",
+                  "id": "tactical-postgres",
                   "toolType": "POSTGRESQL",
-                  "name": "Authentik PostgreSQL",
-                  "description": "PostgreSQL Database Backend for Authentik",
+                  "name": "TacticalRMM PostgreSQL",
+                  "description": "PostgreSQL Database Backend for TacticalRMM",
                   "toolUrls": [
                     {
-                      "url": "postgresql://authentik-postgres-0.authentik-postgres.integrated-tools.svc.cluster.local",
-                      "port": "5432",
+                      "url": "postgresql://'"${POSTGRES_HOST}"'",
+                      "port": "'"${POSTGRES_PORT}"'",
                       "type": "DATABASE"
                     }
                   ],
@@ -87,6 +87,7 @@ spec:
             cat /tmp/response.txt || true
             echo "-------------------------"
 
-            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Authentik PostgreSQL Registration failed..."; exit 1; }
-            echo "Authentik PostgreSQL Registration complete."
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "TacticalRMM PostgreSQL Registration failed..."; exit 1; }
+            echo "TacticalRMM PostgreSQL Registration complete."
+
 {{- end }}

@@ -5,3 +5,9 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
     tag: "8.9.1"
+
+
+image: 
+  registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+  repository: authentik-postgresql
+  tag: latest

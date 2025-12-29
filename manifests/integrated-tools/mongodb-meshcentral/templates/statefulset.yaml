@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meshcentral-mongodb
+spec:
+  serviceName: meshcentral-mongodb
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: meshcentral-mongodb
+  template:
+    metadata:
+      labels:
+        app: meshcentral-mongodb
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+
+      initContainers:
+        - name: keyfile-prepare
+          image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
+          securityContext:
+            runAsUser: 0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp /secret/keyfile /work/keyfile
+              chown 999:999 /work/keyfile
+              chmod 400 /work/keyfile
+          volumeMounts:
+            - name: mongo-keyfile          # secret
+              mountPath: /secret
+            - name: mongo-keyfile-work     # emptyDir
+              mountPath: /work
+
+        - name: fix-perms
+          image: {{ .Values.mongodb.initImage.registry }}/{{ .Values.mongodb.initImage.repository }}:{{ .Values.mongodb.initImage.tag }}
+          securityContext:
+            runAsUser: 0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              chown -R 999:999 /data/db
+              chmod -R u+rwX,g+rwX /data/db
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+
+      containers:
+        - name: mongodb
+          image: {{ .Values.mongodb.image.registry }}/{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
+          command: ["/usr/local/bin/mongodb-entrypoint.sh"]
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          env:
+            - name: SERVICE_NAME
+              value: "meshcentral-mongodb"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - secretRef:
+                name: meshcentral-mongodb
+            - configMapRef:
+                name: meshcentral-mongodb
+          readinessProbe:
+            exec:
+              command: ["/bin/bash", "/usr/local/bin/readiness-command.sh"]
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 24
+            successThreshold: 1
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
+
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+            - name: init-script
+              mountPath: /usr/local/bin/mongo-init.sh
+              subPath: mongo-init.sh
+              readOnly: true
+            - name: init-script
+              mountPath: /usr/local/bin/mongodb-entrypoint.sh
+              subPath: mongodb-entrypoint.sh
+              readOnly: true
+            - name: readiness-command
+              mountPath: /usr/local/bin/readiness-command.sh
+              subPath: readiness-command.sh
+              readOnly: true
+            - name: mongo-keyfile-work
+              mountPath: /etc/mongo-keyfile
+              readOnly: true
+
+      volumes:
+        - name: init-script
+          configMap:
+            name: meshcentral-mongodb-init
+            defaultMode: 0755  
+        - name: readiness-command
+          configMap:
+            name: meshcentral-mongodb-readiness
+            defaultMode: 0755
+        - name: mongo-keyfile
+          secret:
+            secretName: meshcentral-mongodb-keyfile
+            defaultMode: 0400
+
+        - name: mongo-keyfile-work
+          emptyDir: {}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi

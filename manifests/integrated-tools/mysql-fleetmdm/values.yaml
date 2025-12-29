@@ -5,3 +5,10 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
     tag: "8.9.1"
+
+
+mysql:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: mysql
+    tag: "8.0.35"

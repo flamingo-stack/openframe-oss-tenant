@@ -13,12 +13,6 @@ spec:
       labels:
         app: authentik-server
     spec:
-      {{- if ne .Values.registry.docker.password "" }}
-      imagePullSecrets:
-        {{- if ne .Values.registry.docker.password "" }}
-        - name: docker-pat-secret
-        {{- end }}
-      {{- end }}
 
       initContainers:
       - name: wait-for-postgres
@@ -34,6 +28,11 @@ spec:
             secretKeyRef:
               name: authentik-postgres
               key: POSTGRES_PASSWORD
+
+      - name: wait-for-redis
+        image: redis:latest
+        command: ['sh', '-c',
+          'until redis-cli -h authentik-redis-0.authentik-redis.integrated-tools.svc.cluster.local ping | grep -q PONG; do echo waiting for redis; sleep 2; done;']
 
       containers:
       - name: server
@@ -130,8 +129,13 @@ spec:
               name: authentik-postgres
               key: POSTGRES_PASSWORD
 
+      - name: wait-for-redis
+        image: redis:latest
+        command: ['sh', '-c',
+          'until redis-cli -h authentik-redis-0.authentik-redis.integrated-tools.svc.cluster.local ping | grep -q PONG; do echo waiting for redis; sleep 2; done;']
+
       - name: wait-for-server
-        image: curlimages/curl:latest
+        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         command: ['sh', '-c',
           'until curl -s http://authentik-server:9000/-/health/ready/; do echo waiting for authentik-server; sleep 2; done;']
 

@@ -236,11 +236,31 @@ apps:
     project: default
     namespace: integrated-tools
     syncWave: "3"
-  # authentik: 
+  # postgres-authentik:
   #   enabled: true
   #   project: integrated-tools
   #   namespace: integrated-tools
   #   syncWave: "3"
+  # redis-authentik:
+  #   enabled: true
+  #   project: integrated-tools
+  #   namespace: integrated-tools
+  #   syncWave: "3"
+  # authentik:
+  #   enabled: true
+  #   project: integrated-tools
+  #   namespace: integrated-tools
+  #   syncWave: "3"
+  mysql-fleetmdm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  redis-fleetmdm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
   fleetmdm: 
     enabled: true
     project: integrated-tools
@@ -251,7 +271,22 @@ apps:
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
-  tactical-rmm: 
+  mongodb-meshcentral:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  redis-tactical:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  postgres-tactical:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "3"
+  tactical-rmm:
     enabled: true
     project: integrated-tools
     namespace: integrated-tools
