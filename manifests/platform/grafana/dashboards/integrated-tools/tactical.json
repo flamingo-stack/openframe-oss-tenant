@@ -47,30 +47,13 @@
           "mappings": [
             {
               "options": {
-                "from": 1,
-                "to": 999999,
-                "result": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "range"
-            },
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "red",
-                  "text": "Down"
-                }
-              },
-              "type": "special"
-            },
-            {
-              "options": {
                 "0": {
                   "color": "red",
                   "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
                 }
               },
               "type": "value"
@@ -124,7 +107,7 @@
           "refId": "A"
         },
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery.*\", container=\"tactical-base\"}) > 0 or vector(0)",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "celery",
           "refId": "B"
         },
@@ -248,7 +231,7 @@
           "refId": "A"
         },
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery.*\", container=\"tactical-base\"}) > 0 or vector(0)",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "celery",
           "refId": "B"
         },
