@@ -555,12 +555,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "kubelet_volume_stats_used_bytes{namespace=\"platform\", persistentvolumeclaim=\"prometheus-server\"}",
+          "expr": "kubelet_volume_stats_used_bytes{namespace=\"platform\", persistentvolumeclaim=\"prometheus\"}",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "A"
         },
         {
-          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"platform\", persistentvolumeclaim=\"prometheus-server\"}",
+          "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"platform\", persistentvolumeclaim=\"prometheus\"}",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
