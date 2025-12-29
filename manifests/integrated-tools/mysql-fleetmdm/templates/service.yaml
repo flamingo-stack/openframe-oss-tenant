@@ -7,6 +7,13 @@ spec:
   selector:
     app: fleetmdm-mysql
   ports:
-  - port: 3306
+  - name: mysql
+    port: 3306
     targetPort: 3306
     protocol: TCP
+  {{- if .Values.mysql.metrics.enabled }}
+  - name: metrics
+    port: 9104
+    targetPort: 9104
+    protocol: TCP
+  {{- end }}

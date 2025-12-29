@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: fleetmdm-mysql
+      {{- with .Values.mysql.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
 
       containers:
@@ -53,6 +57,42 @@ spec:
         volumeMounts:
         - name: mysql-data
           mountPath: /var/lib/mysql
+
+      {{- if .Values.mysql.metrics.enabled }}
+      - name: mysqld-exporter
+        image: {{ .Values.mysql.metrics.image.registry }}/{{ .Values.mysql.metrics.image.repository }}:{{ .Values.mysql.metrics.image.tag }}
+        args:
+          - --mysqld.address=localhost:3306
+          - --mysqld.username=root
+        env:
+          - name: MYSQLD_EXPORTER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: fleetmdm-mysql
+                key: MYSQL_ROOT_PASSWORD
+        ports:
+          - name: metrics
+            containerPort: 9104
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9104
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9104
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          {{- toYaml .Values.mysql.metrics.resources | nindent 10 }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+      {{- end }}
 
   volumeClaimTemplates:
   - metadata:
