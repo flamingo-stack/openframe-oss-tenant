@@ -2002,7 +2002,7 @@
   "schemaVersion": 42,
   "tags": [
     "overview",
-    "platform-health"
+    "health"
   ],
   "templating": {
     "list": []
@@ -2013,7 +2013,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Platform Health Overview",
-  "uid": "platform-health",
+  "title": "Health Overview",
+  "uid": "health",
   "version": 1
 }
