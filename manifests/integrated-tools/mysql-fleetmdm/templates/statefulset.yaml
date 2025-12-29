@@ -64,6 +64,14 @@ spec:
         args:
           - --mysqld.address=localhost:3306
           - --mysqld.username=root
+          - --collect.info_schema.innodb_metrics
+          - --collect.info_schema.processlist
+          - --collect.info_schema.tables
+          - --collect.perf_schema.tableiowaits
+          - --collect.perf_schema.tablelocks
+          - --collect.perf_schema.eventswaits
+          - --collect.binlog_size
+          - --collect.engine_innodb_status
         env:
           - name: MYSQLD_EXPORTER_PASSWORD
             valueFrom:
