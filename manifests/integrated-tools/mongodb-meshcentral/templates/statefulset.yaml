@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: meshcentral-mongodb
+      {{- with .Values.mongodb.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       securityContext:
         runAsUser: 999
@@ -111,6 +115,32 @@ spec:
             - name: mongo-keyfile-work
               mountPath: /etc/mongo-keyfile
               readOnly: true
+
+        {{- if .Values.mongodb.metrics.enabled }}
+        - name: mongodb-exporter
+          image: "{{ .Values.mongodb.metrics.image.registry }}/{{ .Values.mongodb.metrics.image.repository }}:{{ .Values.mongodb.metrics.image.tag }}"
+          args:
+            - --mongodb.uri=mongodb://$(MONGODB_ROOT_USERNAME):$(MONGODB_ROOT_PASSWORD)@localhost:27017/admin
+            - --collect-all
+            - --discovering-mode
+            - --collector.diagnosticdata
+          ports:
+            - name: metrics
+              containerPort: 9216
+          env:
+            - name: MONGODB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: meshcentral-mongodb
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGODB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: meshcentral-mongodb
+                  key: MONGO_INITDB_ROOT_USERNAME
+          resources:
+            {{- toYaml .Values.mongodb.metrics.resources | nindent 12 }}
+        {{- end }}
 
       volumes:
         - name: init-script

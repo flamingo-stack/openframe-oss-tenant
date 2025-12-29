@@ -8,7 +8,12 @@ registerJob:
 
 
 server:
-  image: 
+  image:
     registry: ghcr.io/flamingo-stack/openframe-oss-tenant
     repository: fleetmdm
     tag: latest
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8070"
+    prometheus.io/path: "/metrics"

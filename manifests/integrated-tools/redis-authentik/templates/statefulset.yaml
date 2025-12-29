@@ -13,11 +13,17 @@ spec:
     metadata:
       labels:
         app: authentik-redis
+      {{- if .Values.redis.metrics.enabled }}
+      {{- with .Values.redis.metrics.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
     spec:
 
       containers:
       - name: redis
-        image: redis:latest
+        image: {{ .Values.redis.image.registry }}/{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
         ports:
         - containerPort: 6379
         livenessProbe:
@@ -33,6 +39,25 @@ spec:
         volumeMounts:
         - name: redis-data
           mountPath: /data
+
+      {{- if .Values.redis.metrics.enabled }}
+      - name: metrics
+        image: {{ .Values.redis.metrics.image.registry }}/{{ .Values.redis.metrics.image.repository }}:{{ .Values.redis.metrics.image.tag }}
+        ports:
+        - containerPort: 9121
+          name: metrics
+        env:
+        - name: REDIS_ADDR
+          value: "redis://localhost:6379"
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+      {{- end }}
+
       volumes:
       - name: redis-data
         persistentVolumeClaim:

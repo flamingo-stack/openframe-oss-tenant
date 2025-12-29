@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: fleetmdm-server
+      {{- with .Values.server.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
 
       containers:

@@ -12,3 +12,22 @@ postgres:
     registry: ghcr.io/flamingo-stack/registry
     repository: postgres
     tag: "13-alpine"
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9187"
+    prometheus.io/path: "/metrics"
+
+  metrics:
+    enabled: true
+    image:
+      registry: quay.io
+      repository: prometheuscommunity/postgres-exporter
+      tag: "v0.16.0"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi

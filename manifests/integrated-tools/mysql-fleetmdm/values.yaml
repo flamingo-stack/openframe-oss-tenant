@@ -12,3 +12,17 @@ mysql:
     registry: ghcr.io/flamingo-stack/registry
     repository: mysql
     tag: "8.0.35"
+  
+  metrics:
+    enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/mysqld-exporter
+      tag: 0.17.2-debian-12-r16
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi

@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: tactical-backend
+      {{- with .Values.tactical.base.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
 
       initContainers:

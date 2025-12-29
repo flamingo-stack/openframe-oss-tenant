@@ -5,3 +5,18 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
     tag: "8.9.1"
+
+
+server:
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9000"
+    prometheus.io/path: "/metrics"
+
+worker:
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9000"
+    prometheus.io/path: "/metrics"

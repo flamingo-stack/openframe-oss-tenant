@@ -12,6 +12,12 @@ server:
     registry: ghcr.io/flamingo-stack/openframe-oss-tenant
     repository: meshcentral
     tag: latest
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8383"
+    prometheus.io/path: "/metrics"
+
   initImage:
     registry: ghcr.io/flamingo-stack/registry
     repository: busybox

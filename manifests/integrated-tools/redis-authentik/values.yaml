@@ -5,3 +5,20 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
     tag: "8.9.1"
+
+redis:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: redis
+    tag: "latest"
+  metrics:
+    enabled: true
+    image:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: bitnamilegacy/redis-exporter
+      tag: 1.76.0-debian-12-r0
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9121"
+      prometheus.io/path: "/metrics"

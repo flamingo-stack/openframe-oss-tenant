@@ -7,6 +7,13 @@ spec:
   selector:
     app: authentik-redis
   ports:
-  - port: 6379
+  - name: redis
+    port: 6379
     targetPort: 6379
     protocol: TCP
+  {{- if .Values.redis.metrics.enabled }}
+  - name: metrics
+    port: 9121
+    targetPort: 9121
+    protocol: TCP
+  {{- end }}

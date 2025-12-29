@@ -13,18 +13,36 @@ tactical:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-frontend
       tag: latest
-      
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+      prometheus.io/path: "/metrics"
+
+
   nginx:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-nginx
       tag: latest
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+      prometheus.io/path: "/metrics"
+
 
   base:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-base
       tag: latest
+    podAnnotations:
+      loki.grafana.com/scrape: "true"
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8000"
+      prometheus.io/path: "/metrics"
+
     initImage:
       registry: ghcr.io/flamingo-stack/registry
       repository: busybox

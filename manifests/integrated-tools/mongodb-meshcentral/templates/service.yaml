@@ -5,7 +5,7 @@ metadata:
   labels:
     app: meshcentral-mongodb
 spec:
-  clusterIP: None 
+  clusterIP: None
   publishNotReadyAddresses: true  # Important for replica set discovery
   selector:
     app: meshcentral-mongodb
@@ -14,3 +14,9 @@ spec:
       port: 27017
       targetPort: 27017
       protocol: TCP
+    {{- if .Values.mongodb.metrics.enabled }}
+    - name: metrics
+      port: 9216
+      targetPort: 9216
+      protocol: TCP
+    {{- end }}

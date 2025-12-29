@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: authentik-server
+      {{- with .Values.server.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
 
       initContainers:
@@ -112,6 +116,10 @@ spec:
     metadata:
       labels:
         app: authentik-worker
+      {{- with .Values.worker.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
     
       initContainers:

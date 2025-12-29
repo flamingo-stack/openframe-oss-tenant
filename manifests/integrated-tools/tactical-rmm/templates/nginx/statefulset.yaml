@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: tactical-nginx
+      {{- with .Values.tactical.nginx.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
 
       containers:
