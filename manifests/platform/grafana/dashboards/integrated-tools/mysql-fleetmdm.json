@@ -169,28 +169,14 @@
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
-        "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "s"},
-        "overrides": []
-      },
-      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 25},
-      "id": 11,
-      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
-      "pluginVersion": "12.3.0",
-      "targets": [{"expr": "mysql_global_status_uptime{job=\"fleetmdm-mysql\"}", "instant": true, "legendFormat": "Uptime", "refId": "A"}],
-      "title": "Uptime",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
         "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 100}, {"color": "red", "value": 200}]}, "unit": "short"},
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 25},
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 25},
       "id": 12,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
       "pluginVersion": "12.3.0",
-      "targets": [{"expr": "mysql_global_status_threads_connected{job=\"fleetmdm-mysql\"}", "instant": true, "legendFormat": "Connected", "refId": "A"}],
+      "targets": [{"expr": "mysql_global_status_threads_connected{app=\"fleetmdm-mysql\"}", "instant": true, "legendFormat": "Connected", "refId": "A"}],
       "title": "Connections",
       "type": "stat"
     },
@@ -200,11 +186,11 @@
         "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "short"},
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 25},
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 25},
       "id": 13,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
       "pluginVersion": "12.3.0",
-      "targets": [{"expr": "rate(mysql_global_status_queries{job=\"fleetmdm-mysql\"}[5m])", "instant": true, "legendFormat": "QPS", "refId": "A"}],
+      "targets": [{"expr": "rate(mysql_global_status_queries{app=\"fleetmdm-mysql\"}[5m])", "instant": true, "legendFormat": "QPS", "refId": "A"}],
       "title": "Queries/sec",
       "type": "stat"
     },
@@ -214,11 +200,11 @@
         "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 10}]}, "unit": "short"},
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 25},
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 25},
       "id": 14,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
       "pluginVersion": "12.3.0",
-      "targets": [{"expr": "rate(mysql_global_status_slow_queries{job=\"fleetmdm-mysql\"}[5m])", "instant": true, "legendFormat": "Slow", "refId": "A"}],
+      "targets": [{"expr": "rate(mysql_global_status_slow_queries{app=\"fleetmdm-mysql\"}[5m])", "instant": true, "legendFormat": "Slow", "refId": "A"}],
       "title": "Slow Queries/sec",
       "type": "stat"
     },
@@ -228,11 +214,11 @@
         "defaults": {"color": {"mode": "thresholds"}, "max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 80}, {"color": "green", "value": 95}]}, "unit": "percent"},
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 25},
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 25},
       "id": 15,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
       "pluginVersion": "12.3.0",
-      "targets": [{"expr": "100 * mysql_global_status_innodb_buffer_pool_read_requests{job=\"fleetmdm-mysql\"} / (mysql_global_status_innodb_buffer_pool_read_requests{job=\"fleetmdm-mysql\"} + mysql_global_status_innodb_buffer_pool_reads{job=\"fleetmdm-mysql\"})", "instant": true, "legendFormat": "Hit Ratio", "refId": "A"}],
+      "targets": [{"expr": "100 * mysql_global_status_innodb_buffer_pool_read_requests{app=\"fleetmdm-mysql\"} / (mysql_global_status_innodb_buffer_pool_read_requests{app=\"fleetmdm-mysql\"} + mysql_global_status_innodb_buffer_pool_reads{app=\"fleetmdm-mysql\"})", "instant": true, "legendFormat": "Hit Ratio", "refId": "A"}],
       "title": "Buffer Pool Hit %",
       "type": "stat"
     },
@@ -242,11 +228,11 @@
         "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "bytes"},
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 25},
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 25},
       "id": 16,
       "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
       "pluginVersion": "12.3.0",
-      "targets": [{"expr": "mysql_binlog_size_bytes{job=\"fleetmdm-mysql\"}", "instant": true, "legendFormat": "Binlog", "refId": "A"}],
+      "targets": [{"expr": "mysql_binlog_size_bytes{app=\"fleetmdm-mysql\"}", "instant": true, "legendFormat": "Binlog", "refId": "A"}],
       "title": "Binlog Size",
       "type": "stat"
     },
@@ -267,10 +253,10 @@
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "pluginVersion": "12.3.0",
       "targets": [
-        {"expr": "mysql_global_status_threads_connected{job=\"fleetmdm-mysql\"}", "legendFormat": "Connected", "refId": "A"},
-        {"expr": "mysql_global_status_threads_running{job=\"fleetmdm-mysql\"}", "legendFormat": "Running", "refId": "B"},
-        {"expr": "mysql_global_status_threads_cached{job=\"fleetmdm-mysql\"}", "legendFormat": "Cached", "refId": "C"},
-        {"expr": "mysql_global_variables_max_connections{job=\"fleetmdm-mysql\"}", "legendFormat": "Max Connections", "refId": "D"}
+        {"expr": "mysql_global_status_threads_connected{app=\"fleetmdm-mysql\"}", "legendFormat": "Connected", "refId": "A"},
+        {"expr": "mysql_global_status_threads_running{app=\"fleetmdm-mysql\"}", "legendFormat": "Running", "refId": "B"},
+        {"expr": "mysql_global_status_threads_cached{app=\"fleetmdm-mysql\"}", "legendFormat": "Cached", "refId": "C"},
+        {"expr": "mysql_global_variables_max_connections{app=\"fleetmdm-mysql\"}", "legendFormat": "Max Connections", "refId": "D"}
       ],
       "title": "Connections",
       "type": "timeseries"
@@ -292,9 +278,9 @@
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "pluginVersion": "12.3.0",
       "targets": [
-        {"expr": "rate(mysql_global_status_queries{job=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Queries", "refId": "A"},
-        {"expr": "rate(mysql_global_status_questions{job=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Questions", "refId": "B"},
-        {"expr": "rate(mysql_global_status_slow_queries{job=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Slow Queries", "refId": "C"}
+        {"expr": "rate(mysql_global_status_queries{app=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Queries", "refId": "A"},
+        {"expr": "rate(mysql_global_status_questions{app=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Questions", "refId": "B"},
+        {"expr": "rate(mysql_global_status_slow_queries{app=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Slow Queries", "refId": "C"}
       ],
       "title": "Query Rate",
       "type": "timeseries"
@@ -316,10 +302,10 @@
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "pluginVersion": "12.3.0",
       "targets": [
-        {"expr": "rate(mysql_global_status_commands_total{job=\"fleetmdm-mysql\", command=\"select\"}[5m])", "legendFormat": "SELECT", "refId": "A"},
-        {"expr": "rate(mysql_global_status_commands_total{job=\"fleetmdm-mysql\", command=\"insert\"}[5m])", "legendFormat": "INSERT", "refId": "B"},
-        {"expr": "rate(mysql_global_status_commands_total{job=\"fleetmdm-mysql\", command=\"update\"}[5m])", "legendFormat": "UPDATE", "refId": "C"},
-        {"expr": "rate(mysql_global_status_commands_total{job=\"fleetmdm-mysql\", command=\"delete\"}[5m])", "legendFormat": "DELETE", "refId": "D"}
+        {"expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", command=\"select\"}[5m])", "legendFormat": "SELECT", "refId": "A"},
+        {"expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", command=\"insert\"}[5m])", "legendFormat": "INSERT", "refId": "B"},
+        {"expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", command=\"update\"}[5m])", "legendFormat": "UPDATE", "refId": "C"},
+        {"expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", command=\"delete\"}[5m])", "legendFormat": "DELETE", "refId": "D"}
       ],
       "title": "Commands",
       "type": "timeseries"
@@ -341,9 +327,9 @@
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "pluginVersion": "12.3.0",
       "targets": [
-        {"expr": "mysql_global_status_innodb_buffer_pool_bytes_data{job=\"fleetmdm-mysql\"}", "legendFormat": "Data", "refId": "A"},
-        {"expr": "mysql_global_status_innodb_buffer_pool_bytes_dirty{job=\"fleetmdm-mysql\"}", "legendFormat": "Dirty", "refId": "B"},
-        {"expr": "mysql_global_variables_innodb_buffer_pool_size{job=\"fleetmdm-mysql\"}", "legendFormat": "Pool Size", "refId": "C"}
+        {"expr": "mysql_global_status_innodb_buffer_pool_bytes_data{app=\"fleetmdm-mysql\"}", "legendFormat": "Data", "refId": "A"},
+        {"expr": "mysql_global_status_innodb_buffer_pool_bytes_dirty{app=\"fleetmdm-mysql\"}", "legendFormat": "Dirty", "refId": "B"},
+        {"expr": "mysql_global_variables_innodb_buffer_pool_size{app=\"fleetmdm-mysql\"}", "legendFormat": "Pool Size", "refId": "C"}
       ],
       "title": "InnoDB Buffer Pool",
       "type": "timeseries"
@@ -364,7 +350,7 @@
       "id": 21,
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "pluginVersion": "12.3.0",
-      "targets": [{"expr": "rate(mysql_global_status_innodb_row_ops_total{job=\"fleetmdm-mysql\"}[5m])", "legendFormat": "{{operation}}", "refId": "A"}],
+      "targets": [{"expr": "rate(mysql_global_status_innodb_row_ops_total{app=\"fleetmdm-mysql\"}[5m])", "legendFormat": "{{operation}}", "refId": "A"}],
       "title": "InnoDB Row Operations",
       "type": "timeseries"
     },
@@ -385,8 +371,8 @@
       "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "pluginVersion": "12.3.0",
       "targets": [
-        {"expr": "rate(mysql_global_status_bytes_received{job=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Received", "refId": "A"},
-        {"expr": "rate(mysql_global_status_bytes_sent{job=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Sent", "refId": "B"}
+        {"expr": "rate(mysql_global_status_bytes_received{app=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Received", "refId": "A"},
+        {"expr": "rate(mysql_global_status_bytes_sent{app=\"fleetmdm-mysql\"}[5m])", "legendFormat": "Sent", "refId": "B"}
       ],
       "title": "Network Traffic",
       "type": "timeseries"
