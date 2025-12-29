@@ -131,6 +131,13 @@ grafana:
           editable: true
           options:
             path: /var/lib/grafana/dashboards/integrated-tools
+        - name: 'general'
+          folder: 'general'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/general
 
   extraVolumeMounts:
     - name: platform
@@ -143,6 +150,8 @@ grafana:
       mountPath: /var/lib/grafana/dashboards/client-tools
     - name: integrated-tools
       mountPath: /var/lib/grafana/dashboards/integrated-tools
+    - name: general
+      mountPath: /var/lib/grafana/dashboards/general
 
   extraVolumes:
     - name: platform
@@ -160,3 +169,6 @@ grafana:
     - name: integrated-tools
       configMap:
         name: integrated-tools
+    - name: general
+      configMap:
+        name: general
