@@ -1,0 +1,153 @@
+{{- if .Values.registerJob.enabled }}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fleetmdm-server
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
+    "argocd.argoproj.io/sync-options": Replace=true
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+
+      containers:
+      - name: register
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        envFrom:
+          - configMapRef:
+              name: fleetmdm-mysql
+          - secretRef:
+              name: fleetmdm-mysql
+        env:
+        - name: FLEET_API_USER_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: fleetmdm-server
+              key: FLEET_API_USER_EMAIL
+        - name: FLEET_API_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fleetmdm-server
+              key: FLEET_API_USER_PASSWORD
+        command:
+          - /bin/sh
+          - -uc
+          - |
+            echo "Getting FLEET_TOKEN..."
+            POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath='{.items[0].metadata.name}')
+            until kubectl exec -n integrated-tools "$POD" -- test -f /etc/fleet/api_token.txt 2>/dev/null; do
+              echo "Waiting for /etc/fleet/api_token.txt to be available..."
+              sleep 5
+            done
+            FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
+
+            echo "Registering FleetMDM Server..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+              echo "Still waiting..."
+              sleep 10
+            done
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-server" \
+              -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
+              -d '{
+                "tool": {
+                  "id": "fleetmdm-server",
+                  "toolType": "FLEET_MDM",
+                  "name": "FleetMDM Server",
+                  "description": "Fleet Device Management Platform",
+                  "toolUrls": [
+                    {
+                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
+                      "port": "8070",
+                      "type": "API"
+                    },
+                    {
+                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
+                      "port": "8070",
+                      "type": "DASHBOARD"
+                    }
+                  ],
+                  "category": "Device Management",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {
+                    "username": "'"${FLEET_API_USER_EMAIL}"'",
+                    "password": "'"${FLEET_API_USER_PASSWORD}"'",
+                    "apiKey": {
+                      "key": "'"${FLEET_TOKEN}"'",
+                      "type": "BEARER_TOKEN"
+                    }
+                  },
+                  "layer": "Integrated Tools",
+                  "layerOrder": 4,
+                  "layerColor": "#455A64",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/api/v1/*","/metrics"],
+                  "debeziumConnectors": [{
+                    "name": "fleet-mysql-connector",
+                    "config": {
+                      "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+                      "tasks.max": "1",
+                      "database.hostname": "'"${FLEET_MYSQL_HOST}"'",
+                      "database.port": "'"${FLEET_MYSQL_PORT}"'",
+                      "database.user": "'"${MYSQL_USER}"'",
+                      "database.password": "'"${MYSQL_PASSWORD}"'",
+                      "database.server.name": "'"${MYSQL_DATABASE}"'",
+                      "database.server.id": "1",
+                      "database.include.list": "'"${MYSQL_DATABASE}"'",
+                      "topic.prefix": "fleet_mysql",
+                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities, '"${MYSQL_DATABASE}"'.query_results",
+                      "topic.creation.default.replication.factor": 1,
+                      "topic.creation.default.partitions": 10,
+                      "topic.creation.default.cleanup.policy": "compact",
+                      "topic.creation.default.compression.type": "lz4",
+                      "transforms": "addHeaderQueryResult,addHeaderJSONType,route",
+                      "tombstones.on.delete": "false",
+                      "predicates": "isQueryResult",
+                      "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
+                      "transforms.route.topic.regex": "fleet_mysql\\.'"${MYSQL_DATABASE}"'\\.(.*)",
+                      "transforms.route.topic.replacement": "fleet.$1.events",
+                      "transforms.addHeaderQueryResult.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderQueryResult.header": "message-type",
+                      "transforms.addHeaderQueryResult.value.literal": "FLEET_MDM_QUERY_RESULT_EVENT",
+                      "transforms.addHeaderQueryResult.predicate": "isQueryResult",
+                      "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderJSONType.header": "__TypeId__",
+                      "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage",
+                      "transforms.addHeaderJSONType.predicate": "isQueryResult",
+                      "snapshot.mode": "initial",
+                      "include.schema.changes": "false",
+                      "database.allowPublicKeyRetrieval": "true",
+                      "database.useSSL": "false",
+                      "schema.history.internal.kafka.topic": "fleet_mysql_schema_history",
+                      "schema.history.internal.kafka.bootstrap.servers": "kafka-broker-headless.datasources.svc.cluster.local:9092",
+                      "predicates.isQueryResult.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
+                      "predicates.isQueryResult.pattern": "fleet_mysql.'"${MYSQL_DATABASE}"'.query_results"
+                    }
+                  }]
+                }
+              }' \
+              --retry 5 \
+              --retry-delay 2 \
+              --retry-all-errors)
+
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "FleetMDM Server Registration failed..."; exit 1; }
+            echo "FleetMDM Server Registration complete."
+
+{{- end }}

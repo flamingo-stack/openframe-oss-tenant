@@ -1,6 +1,6 @@
 apiVersion: v2
-name: fleetmdm
-description: Chart for FleetMDM Server
+name: redis-authentik
+description: Chart for Authentik Redis
 type: application
 version: 0.0.1
 appVersion: "0.0.1"

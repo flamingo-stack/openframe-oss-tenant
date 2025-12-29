@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tactical-nats
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+spec:
+  serviceName: tactical-nats
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: tactical-nats
+  template:
+    metadata:
+      labels:
+        app: tactical-nats
+    spec:
+
+      initContainers:
+      - name: wait-for-redis
+        image: {{ .Values.tactical.base.waitRedisImage.registry }}/{{ .Values.tactical.base.waitRedisImage.repository }}:{{ .Values.tactical.base.waitRedisImage.tag }}
+        command: ['sh', '-c', '
+          echo "Waiting for Redis..." &&
+          until redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_rmm_conf" > /dev/null; do sleep 2; done &&
+          until redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_api_conf" > /dev/null; do sleep 2; done &&
+          echo "Redis is ready!"
+          ']
+        envFrom:
+        - configMapRef:
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+
+      - name: wait-for-backend
+        image: {{ .Values.tactical.base.waitPostgresImage.registry }}/{{ .Values.tactical.base.waitPostgresImage.repository }}:{{ .Values.tactical.base.waitPostgresImage.tag }}
+        command:
+        - sh
+        - -c
+        - |
+          echo "Checking PostgreSQL connection..." &&
+          until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT; do
+            echo "Waiting for PostgreSQL to accept connections...";
+            sleep 2;
+          done &&
+          echo "PostgreSQL is accepting connections!" &&
+          echo "Verifying PostgreSQL query execution..." &&
+          until PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -c "SELECT 1;" > /dev/null 2>&1; do
+            echo "Waiting for PostgreSQL to execute queries...";
+            sleep 2;
+          done &&
+          echo "PostgreSQL is fully operational!" &&
+          echo "Waiting for Backend port..." &&
+          HOST_IP=$(echo $API_HOST | cut -d':' -f1) &&
+          HOST_PORT=$(echo $API_HOST | cut -d':' -f2) &&
+          until nc -z $HOST_IP $HOST_PORT; do
+            echo "Waiting for backend port to be ready...";
+            sleep 2;
+          done &&
+          echo "Backend port is ready!" &&
+          echo "Checking Backend health endpoint..." &&
+          until wget -q --spider ${TRMM_PROTO}://$API_HOST 2>/dev/null; do
+            echo "Waiting for backend health endpoint...";
+            sleep 2;
+          done &&
+          echo "Backend is fully ready!"
+        envFrom:
+        - configMapRef:
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+
+      containers:
+      - name: tactical-base
+        image: "{{ .Values.tactical.base.image.registry }}/{{ .Values.tactical.base.image.repository }}:{{ .Values.tactical.base.image.tag }}"
+        args: ["tactical-nats"]
+        ports:
+        - containerPort: 9235
+        - containerPort: 4222
+        envFrom:
+        - configMapRef:
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 15
+
+        volumeMounts:
+        - name: nats-data
+          mountPath: /opt/tactical
+      volumes:
+      - name: nats-data
+        persistentVolumeClaim:
+          claimName: tactical-nats

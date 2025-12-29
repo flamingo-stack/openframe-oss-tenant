@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: authentik-postgres
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+spec:
+  serviceName: authentik-postgres
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: authentik-postgres
+  template:
+    metadata:
+      labels:
+        app: authentik-postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 999:999 /var/lib/postgresql/data && chmod 0700 -R /var/lib/postgresql/data"]
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+
+      containers:
+      - name: authentik-postgresql
+        image: {{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - configMapRef:
+            name: authentik-postgres
+        - secretRef:
+            name: authentik-postgres
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - authentik-user
+            - -d
+            - authentik-database-authentik
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - authentik-user
+            - -d
+            - authentik-database-authentik
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: authentik-postgres

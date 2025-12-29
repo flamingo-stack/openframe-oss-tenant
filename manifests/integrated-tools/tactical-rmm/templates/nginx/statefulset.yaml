@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tactical-nginx
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+spec:
+  serviceName: tactical-nginx
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: tactical-nginx
+  template:
+    metadata:
+      labels:
+        app: tactical-nginx
+    spec:
+
+      containers:
+      - name: tactical-nginx
+        image: "{{ .Values.tactical.nginx.image.registry }}/{{ .Values.tactical.nginx.image.repository }}:{{ .Values.tactical.nginx.image.tag }}"
+        ports:
+        - containerPort: 8080
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: tactical-nginx
+        startupProbe:
+          httpGet:
+            path: /nginx_status
+            port: 8081
+          failureThreshold: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /nginx_status
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: nginx-data
+          mountPath: /opt/tactical
+      volumes:
+      - name: nginx-data
+        persistentVolumeClaim:
+          claimName: tactical-nginx

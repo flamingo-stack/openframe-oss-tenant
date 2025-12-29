@@ -1,6 +1,6 @@
 apiVersion: v2
 name: authentik
-description: Chart for Authentik
+description: Chart for Authentik Server
 type: application
 version: 0.0.1
 appVersion: "0.0.1"

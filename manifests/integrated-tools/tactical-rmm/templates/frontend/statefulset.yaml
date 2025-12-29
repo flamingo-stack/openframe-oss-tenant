@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tactical-frontend
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+spec:
+  serviceName: tactical-frontend
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: tactical-frontend
+  template:
+    metadata:
+      labels:
+        app: tactical-frontend
+    spec:
+
+      containers:
+      - name: tactical-frontend
+        image: "{{ .Values.tactical.frontend.image.registry }}/{{ .Values.tactical.frontend.image.repository }}:{{ .Values.tactical.frontend.image.tag }}"
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+
+        volumeMounts:
+        - name: frontend-data
+          mountPath: /opt/tactical
+      volumes:
+      - name: frontend-data
+        persistentVolumeClaim:
+          claimName: tactical-frontend

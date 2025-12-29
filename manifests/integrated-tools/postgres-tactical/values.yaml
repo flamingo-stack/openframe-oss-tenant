@@ -5,3 +5,10 @@ registerJob:
     registry: ghcr.io/flamingo-stack/registry
     repository: curlimages/curl
     tag: "8.9.1"
+
+
+postgres:
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: postgres
+    tag: "13-alpine"

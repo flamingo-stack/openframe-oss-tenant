@@ -67,19 +67,21 @@ kafka:
         annotations:
           prometheus.io/scrape: "false"
       livenessProbe:
-        initialDelaySeconds: 90 
-        periodSeconds: 20        
-        failureThreshold: 6   
+        initialDelaySeconds: 90
+        periodSeconds: 20
+        timeoutSeconds: 15
+        failureThreshold: 6
       readinessProbe:
         initialDelaySeconds: 60
         periodSeconds: 15
+        timeoutSeconds: 15
         failureThreshold: 5
       resources:
         requests:
-          cpu: 50m
+          cpu: 100m
           memory: 128Mi
         limits:
-          cpu: 100m
+          cpu: 250m
           memory: 256Mi
   existingLog4j2ConfigMap: "kafka-log4j2"
 

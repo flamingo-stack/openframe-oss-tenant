@@ -1,6 +1,6 @@
 apiVersion: v2
-name: fleetmdm
-description: Chart for FleetMDM Server
+name: mysql-fleetmdm
+description: Chart for FleetMDM MySQL
 type: application
 version: 0.0.1
 appVersion: "0.0.1"
