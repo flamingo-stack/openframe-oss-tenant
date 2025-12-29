@@ -21,9 +21,9 @@ postgres:
   metrics:
     enabled: true
     image:
-      registry: quay.io
+      registry: ghcr.io/flamingo-stack/registry
       repository: prometheuscommunity/postgres-exporter
-      tag: "v0.16.0"
+      tag: "v0.18.0"
     resources:
       requests:
         cpu: 50m
