@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import {
   Card,
   CardHeader,
   CardContent,
   Button,
+  RadioGroup,
+  RadioGroupItem,
   Select,
   SelectContent,
   SelectItem,
@@ -18,9 +21,13 @@ import {
   OpenAiIcon,
   GoogleGeminiIcon
 } from '@flamingo-stack/openframe-frontend-core'
+import type { ApprovalLevel, PermissionCategory } from '@flamingo-stack/openframe-frontend-core'
 import { Edit2, Save, X, Shield, Check, AlertCircle, Bot } from 'lucide-react'
 import { ClaudeIcon, GoogleLogo, AiRobotIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { useAIConfiguration } from '../../hooks/use-ai-configuration'
+import { useAIPolicies, type PolicyRule } from '../../hooks/use-ai-policies'
+import { PolicyConfigurationPanel } from '@flamingo-stack/openframe-frontend-core/components/features'
+import { toUiKitToolType } from '@lib/tool-labels'
 
 // Provider configuration mapping
 const PROVIDER_CONFIG = {
@@ -60,10 +67,25 @@ export function AISettingsTab() {
     updateConfiguration
   } = useAIConfiguration()
 
+  const {
+    templateOptions,
+    selectedTemplateId,
+    setSelectedTemplateId,
+    selectedTemplate,
+    isLoading: isPoliciesLoading,
+    isLoadingTemplate: isPolicyTemplateLoading,
+    activeTemplateId,
+    isActivating: isPolicyActivating,
+    activateTemplate,
+  } = useAIPolicies()
+
   const [isEditMode, setIsEditMode] = useState(false)
 
   const [selectedProvider, setSelectedProvider] = useState<string>('')
   const [selectedModel, setSelectedModel] = useState<string>('')
+
+  const [isPoliciesEditMode, setIsPoliciesEditMode] = useState(false)
+  const [policyCategories, setPolicyCategories] = useState<PermissionCategory[]>([])
 
   useEffect(() => {
     if (configuration) {
@@ -71,6 +93,75 @@ export function AISettingsTab() {
       setSelectedModel(configuration.modelName)
     }
   }, [configuration])
+
+  useEffect(() => {
+    if (!selectedTemplate?.rules) {
+      setPolicyCategories([])
+      return
+    }
+
+    const slugify = (value: string) =>
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+
+    const pickCategoryIcon = (name: string) => {
+      const n = name.toLowerCase()
+      if (n.includes('download')) return <Shield className="w-4 h-4" />
+      if (n.includes('upload')) return <Shield className="w-4 h-4" />
+      if (n.includes('file')) return <Shield className="w-4 h-4" />
+      return <Shield className="w-4 h-4" />
+    }
+
+    const grouped = new Map<
+      string,
+      {
+        id: string
+        name: string
+        icon: ReactNode
+        policies: PermissionCategory['policies']
+      }
+    >()
+
+    for (const rule of selectedTemplate.rules as PolicyRule[]) {
+      const categoryName = rule.category || rule.policyGroup || 'Other'
+      const categoryId = slugify(`${rule.policyGroup}:${categoryName}`) || 'other'
+
+      if (!grouped.has(categoryId)) {
+        grouped.set(categoryId, {
+          id: categoryId,
+          name: categoryName,
+          icon: pickCategoryIcon(categoryName),
+          policies: [],
+        })
+      }
+
+      const g = grouped.get(categoryId)!
+      g.policies.push({
+        id: rule.naturalKey,
+        naturalKey: rule.naturalKey,
+        name: rule.operation || rule.naturalKey,
+        commandPattern: rule.commandPattern,
+        toolName: toUiKitToolType(rule.tool),
+        approvalLevel: rule.approvalLevel as ApprovalLevel,
+      })
+    }
+
+    const categories = Array.from(grouped.values())
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(c => ({
+        id: c.id,
+        name: c.name,
+        icon: c.icon,
+        configurationsCount: c.policies.length,
+        globalPermission: undefined,
+        isExpanded: false,
+        policies: c.policies,
+      })) satisfies PermissionCategory[]
+
+    setPolicyCategories(categories)
+  }, [selectedTemplate])
 
   const handleSave = async () => {
     try {
@@ -96,6 +187,53 @@ export function AISettingsTab() {
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider)
     setSelectedModel('')
+  }
+
+  const handlePolicyCategoryToggle = (categoryId: string) => {
+    setPolicyCategories(prev =>
+      prev.map(cat => (cat.id === categoryId ? { ...cat, isExpanded: !cat.isExpanded } : cat))
+    )
+  }
+
+  const handlePolicyGlobalPermissionChange = (categoryId: string, level: ApprovalLevel | undefined) => {
+    setPolicyCategories(prev =>
+      prev.map(cat => {
+        if (cat.id !== categoryId) return cat
+        const updated = { ...cat, globalPermission: level }
+        if (level) {
+          updated.policies = cat.policies.map(p => ({ ...p, approvalLevel: level }))
+        }
+        return updated
+      })
+    )
+  }
+
+  const handlePolicyPermissionChange = (categoryId: string, policyId: string, level: ApprovalLevel) => {
+    setPolicyCategories(prev =>
+      prev.map(cat =>
+        cat.id === categoryId
+          ? {
+              ...cat,
+              policies: cat.policies.map(p => (p.id === policyId ? { ...p, approvalLevel: level } : p)),
+            }
+          : cat
+      )
+    )
+  }
+
+  const handlePoliciesSave = async () => {
+    // Only activate when selecting a different template than the current active one.
+    if (!selectedTemplateId || selectedTemplateId === activeTemplateId) {
+      setIsPoliciesEditMode(false)
+      return
+    }
+
+    try {
+      await activateTemplate(selectedTemplateId)
+      setIsPoliciesEditMode(false)
+    } catch {
+      // toast handled in hook; keep edit mode open
+    }
   }
 
   const getAvailableModels = () => {
@@ -296,6 +434,117 @@ export function AISettingsTab() {
                 </div>
               )}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-ods-card border-ods-border">
+        <CardHeader className="border-b border-ods-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-ods-text-primary">AI Guardrails</h3>
+            </div>
+            <Button
+              variant="outline"
+              leftIcon={isPoliciesEditMode ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+              onClick={() => {
+                if (isPoliciesEditMode) {
+                  handlePoliciesSave()
+                } else {
+                  setIsPoliciesEditMode(true)
+                }
+              }}
+              className="bg-ods-card border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
+              disabled={isPoliciesLoading || isPolicyTemplateLoading || isPolicyActivating}
+            >
+              {isPoliciesEditMode ? (isPolicyActivating ? 'Saving...' : 'Save') : 'Edit Guardrails'}
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-6 space-y-4">
+          {isPoliciesLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : templateOptions.length === 0 ? (
+            <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
+              <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
+              <AlertDescription className="text-ods-text-secondary">
+                No policy templates available.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              {/* Read-only current template (shown when not editing) */}
+              {!isPoliciesEditMode && (
+                <div className="space-y-2">
+                  <Label className="text-ods-text-primary">Policy Template</Label>
+                  <div className="flex items-center justify-between gap-3 p-3 bg-ods-system-greys-soft-grey rounded-md">
+                    <span className="text-ods-text-primary font-medium">
+                      {templateOptions.find(t => t.id === (selectedTemplateId || activeTemplateId))?.label ||
+                        selectedTemplateId ||
+                        activeTemplateId ||
+                        '—'}
+                    </span>
+                    {(selectedTemplateId || activeTemplateId) === activeTemplateId && (
+                      <span className="text-xs text-ods-text-secondary">Active</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Template chooser (shown only in edit mode) */}
+              {isPoliciesEditMode && (
+                <div className="space-y-2">
+                  <Label className="text-ods-text-primary">Policy Template</Label>
+                  <RadioGroup
+                    value={selectedTemplateId || ''}
+                    onValueChange={(v) => setSelectedTemplateId(v)}
+                    className="space-y-2"
+                    disabled={isPolicyTemplateLoading}
+                  >
+                    {templateOptions.map((opt) => {
+                      const id = `policy-template-${opt.id}`
+                      return (
+                        <div
+                          key={opt.id}
+                          className="flex items-center gap-3 p-3 rounded-md border border-ods-border bg-ods-card"
+                        >
+                          <RadioGroupItem id={id} value={opt.id} />
+                          <Label htmlFor={id} className="text-ods-text-primary flex-1 cursor-pointer">
+                            {opt.label}
+                          </Label>
+                          {opt.id === activeTemplateId && (
+                            <span className="text-xs text-ods-text-secondary">Active</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </RadioGroup>
+                </div>
+              )}
+
+              {isPolicyTemplateLoading ? (
+                <Skeleton className="h-64 w-full" />
+              ) : policyCategories.length === 0 ? (
+                <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
+                  <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
+                  <AlertDescription className="text-ods-text-secondary">
+                    This policy template has no rules.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <PolicyConfigurationPanel
+                  categories={policyCategories}
+                  editMode={isPoliciesEditMode}
+                  onCategoryToggle={handlePolicyCategoryToggle}
+                  onGlobalPermissionChange={handlePolicyGlobalPermissionChange}
+                  onPolicyPermissionChange={handlePolicyPermissionChange}
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>
