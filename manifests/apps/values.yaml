@@ -281,7 +281,7 @@ apps:
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
-  tactical:
+  tactical-rmm:
     enabled: true
     project: integrated-tools
     namespace: integrated-tools
