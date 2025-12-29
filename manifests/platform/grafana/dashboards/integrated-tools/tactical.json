@@ -47,13 +47,30 @@
           "mappings": [
             {
               "options": {
+                "from": 1,
+                "to": 999999,
+                "result": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "range"
+            },
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "red",
+                  "text": "Down"
+                }
+              },
+              "type": "special"
+            },
+            {
+              "options": {
                 "0": {
                   "color": "red",
                   "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
                 }
               },
               "type": "value"
@@ -132,7 +149,7 @@
           "refId": "F"
         },
         {
-          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-base\"}) > 0 or vector(0)",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0)",
           "legendFormat": "frontend",
           "refId": "G"
         }
@@ -244,6 +261,21 @@
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nginx.*\", container=\"tactical-nginx\"}) > 0 or vector(0)",
           "legendFormat": "nginx",
           "refId": "D"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celerybeat.*\", container=\"tactical-base\"}) > 0 or vector(0)",
+          "legendFormat": "celerybeat",
+          "refId": "E"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-websockets.*\", container=\"tactical-base\"}) > 0 or vector(0)",
+          "legendFormat": "websockets",
+          "refId": "F"
+        },
+        {
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0)",
+          "legendFormat": "frontend",
+          "refId": "G"
         }
       ],
       "title": "History",
