@@ -1,6 +1,6 @@
 apiVersion: v2
-name: tactical-rmm
-description: Chart for Tactical RMM
+name: tactical
+description: Chart for Tactical
 type: application
 version: 0.0.1
 appVersion: "0.0.1"
