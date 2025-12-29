@@ -1,9 +1,9 @@
-{{- if .Values.global.registerJob.enabled }}
+{{- if .Values.registerJob.enabled }}
 
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: postgres-authentik
+  name: redis-tactical
   annotations:
     "argocd.argoproj.io/hook": PostSync
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
@@ -13,26 +13,21 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      
+
       containers:
       - name: register
         image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         env:
-        - name: POSTGRES_USER
+        - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
-              name: authentik-postgres
-              key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: authentik-postgres
-              key: POSTGRES_PASSWORD
+              name: tactical-redis
+              key: REDIS_HOST
         command:
           - /bin/sh
           - -uc
           - |
-            echo "Registering Authentik PostgreSQL..."
+            echo "Registering Tactical RMM Redis..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
@@ -40,33 +35,30 @@ spec:
             done
             echo "Sending registration request..."
             http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
-              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/authentik-postgres" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-redis" \
               -H "Content-Type: application/json" \
               --connect-timeout 5 \
               --max-time 20 \
               -d '{
                 "tool": {
-                  "id": "authentik-postgres",
-                  "toolType": "POSTGRESQL",
-                  "name": "Authentik PostgreSQL",
-                  "description": "PostgreSQL Database Backend for Authentik",
+                  "id": "tactical-redis",
+                  "toolType": "REDIS",
+                  "name": "Tactical RMM Redis",
+                  "description": "Redis Backend for Tactical RMM",
                   "toolUrls": [
                     {
-                      "url": "postgresql://authentik-postgres-0.authentik-postgres.integrated-tools.svc.cluster.local",
-                      "port": "5432",
+                      "url": "redis://'"${REDIS_HOST}"'",
+                      "port": "6379",
                       "type": "DATABASE"
                     }
                   ],
-                  "category": "SQL Database",
+                  "category": "In-Memory Database",
                   "platformCategory": "Integrated Tool",
                   "enabled": true,
-                  "credentials": {
-                    "username": "'"${POSTGRES_USER}"'",
-                    "password": "'"${POSTGRES_PASSWORD}"'"
-                  },
+                  "credentials": {},
                   "layer": "Integrated Tools",
-                  "layerOrder": 6,
-                  "layerColor": "#3949AB",
+                  "layerOrder": 5,
+                  "layerColor": "#B71C1C",
                   "metricsPath": "/metrics",
                   "healthCheckEndpoint": "/",
                   "healthCheckInterval": 30,
@@ -84,7 +76,7 @@ spec:
             cat /tmp/response.txt || true
             echo "-------------------------"
 
-            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Authentik PostgreSQL Registration failed..."; exit 1; }
-            echo "Authentik PostgreSQL Registration complete."
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Tactical RMM Redis Registration failed..."; exit 1; }
+            echo "Tactical RMM Redis Registration complete."
 
 {{- end }}

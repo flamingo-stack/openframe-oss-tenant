@@ -1,0 +1,150 @@
+{{- if .Values.registerJob.enabled }}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tactical-rmm
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
+    "argocd.argoproj.io/sync-options": Replace=true
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+
+      containers:
+      - name: register
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        envFrom:
+        - configMapRef:
+            name: tactical-postgres
+        - secretRef:
+            name: tactical-postgres
+        env:
+        - name: TRMM_USER
+          valueFrom:
+            configMapKeyRef:
+              name: tactical-default
+              key: TRMM_USER
+        - name: TRMM_PASS
+          valueFrom:
+            configMapKeyRef:
+              name: tactical-default
+              key: TRMM_PASS
+        command:
+          - /bin/sh
+          - -uc
+          - |
+            echo "Getting Tactical RMM API key..."
+            POD=$(kubectl -n integrated-tools get pods -o name -l app=tactical-backend)
+            until kubectl exec -n integrated-tools $POD -c tactical-base -- test -f /opt/tactical/api_key.txt 2>/dev/null; do
+              echo "Waiting for /opt/tactical/api_key.txt to be available..."
+              sleep 5
+            done
+            TACTICAL_API_KEY=$(kubectl exec -n integrated-tools $POD -c tactical-base -- cat /opt/tactical/api_key.txt)
+
+            echo "Registering Tactical RMM..."
+            echo "Waiting for OpenFrame Management API to become reachable..."
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+              echo "Still waiting..."
+              sleep 10
+            done
+            echo "Sending registration request..."
+            http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
+              -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/tactical-rmm" \
+              -H "Content-Type: application/json" \
+              --connect-timeout 5 \
+              --max-time 20 \
+              -d '{
+                "tool": {
+                  "id": "tactical-rmm",
+                  "toolType": "TACTICAL_RMM",
+                  "name": "Tactical RMM",
+                  "description": "Remote Monitoring and Management Platform",
+                  "toolUrls": [
+                    { "url": "http://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8000", "type": "API" },
+                    { "url": "http://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8080", "type": "DASHBOARD" },
+                    { "url": "ws://tactical-nginx.integrated-tools.svc.cluster.local", "port": "8000", "type": "WS" }
+                  ],
+                  "category": "Device Management",
+                  "platformCategory": "Integrated Tool",
+                  "enabled": true,
+                  "credentials": {
+                    "username": "'"${TRMM_USER}"'",
+                    "password": "'"${TRMM_PASS}"'",
+                    "apiKey": {
+                      "key": "'"${TACTICAL_API_KEY}"'",
+                      "type": "HEADER",
+                      "keyName": "X-API-KEY"
+                    }
+                  },
+                  "layer": "Integrated Tools",
+                  "layerOrder": 3,
+                  "layerColor": "#455A64",
+                  "metricsPath": "/metrics",
+                  "healthCheckEndpoint": "/",
+                  "healthCheckInterval": 30,
+                  "connectionTimeout": 5000,
+                  "readTimeout": 5000,
+                  "allowedEndpoints": ["/metrics"],
+                  "debeziumConnectors": [{
+                    "name": "tactical-rmm-psql-connector",
+                    "config": {
+                      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+                      "tasks.max": "1",
+                      "database.hostname": "'"${POSTGRES_HOST}"'",
+                      "database.port": "'"${POSTGRES_PORT}"'",
+                      "database.user": "'"${POSTGRES_USER}"'",
+                      "database.password": "'"${POSTGRES_PASSWORD}"'",
+                      "database.dbname": "'"${POSTGRES_DB}"'",
+                      "plugin.name": "pgoutput",
+                      "topic.prefix": "trmm",
+                      "table.include.list": "public.logs_auditlog,public.agents_agenthistory",
+                      "slot.name": "dbz_slot_trmm_combined",
+                      "publication.name": "dbz_pub_trmm_combined",
+                      "publication.autocreate.mode": "filtered",
+                      "heartbeat.interval.ms": "10000",
+                      "heartbeat.action.query": "SELECT 1",
+                      "heartbeat.topic.prefix": "__debezium_heartbeats",
+                      "topic.creation.default.replication.factor": 1,
+                      "topic.creation.default.partitions": 10,
+                      "topic.creation.default.cleanup.policy": "compact",
+                      "topic.creation.default.compression.type": "lz4",
+                      "transforms": "addHeaderAudit,addHeaderAgentHistory,addHeaderJSONType,route",
+                      "predicates": "isAudit,isAgentHistory",
+                      "transforms.addHeaderAudit.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderAudit.header": "message-type",
+                      "transforms.addHeaderAudit.value.literal": "TACTICAL_RMM_AUDIT_EVENT",
+                      "transforms.addHeaderAudit.predicate": "isAudit",
+                      "transforms.addHeaderAgentHistory.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderAgentHistory.header": "message-type",
+                      "transforms.addHeaderAgentHistory.value.literal": "TACTICAL_RMM_AGENT_HISTORY_EVENT",
+                      "transforms.addHeaderAgentHistory.predicate": "isAgentHistory",
+                      "transforms.addHeaderJSONType.type": "org.apache.kafka.connect.transforms.InsertHeader",
+                      "transforms.addHeaderJSONType.header": "__TypeId__",
+                      "transforms.addHeaderJSONType.value.literal": "com.openframe.kafka.model.debezium.CommonDebeziumMessage",
+                      "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
+                      "transforms.route.topic.regex": "trmm\\.(.*)",
+                      "transforms.route.topic.replacement": "tactical-rmm.postgres.events",
+                      "predicates.isAudit.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
+                      "predicates.isAudit.pattern": "trmm.public.logs_auditlog",
+                      "predicates.isAgentHistory.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
+                      "predicates.isAgentHistory.pattern": "trmm.public.agents_agenthistory"
+                    }
+                  }]
+                }
+              }' \
+              --retry 5 \
+              --retry-delay 2 \
+              --retry-all-errors)
+
+            echo "----- Response body -----"
+            cat /tmp/response.txt || true
+            echo "-------------------------"
+
+            [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Tactical RMM Registration failed..."; exit 1; }
+            echo "Tactical RMM Registration complete."
+
+{{- end }}

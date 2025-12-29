@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tactical-celery
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+spec:
+  serviceName: tactical-celery
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: tactical-celery
+  template:
+    metadata:
+      labels:
+        app: tactical-celery
+    spec:
+
+      initContainers:
+      - name: wait-for-dependencies
+        image: {{ .Values.tactical.base.initImage.registry }}/{{ .Values.tactical.base.initImage.repository }}:{{ .Values.tactical.base.initImage.tag }}
+        command: ['sh', '-c', '
+          echo "Waiting for PostgreSQL..." &&
+          until nc -z tactical-postgres-0.tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
+          echo "PostgreSQL is ready!" &&
+          echo "Waiting for Redis..." &&
+          until nc -z tactical-redis-0.tactical-redis.integrated-tools.svc.cluster.local 6379; do sleep 2; done &&
+          echo "Redis is ready!" &&
+          echo "Waiting for Backend..." &&
+          until nc -z tactical-backend-0.tactical-backend.integrated-tools.svc.cluster.local 8000; do sleep 2; done &&
+          echo "Backend is ready!"
+          ']
+
+      containers:
+      - name: tactical-base
+        image: "{{ .Values.tactical.base.image.registry }}/{{ .Values.tactical.base.image.repository }}:{{ .Values.tactical.base.image.tag }}"
+        args: ["tactical-celery"]
+        envFrom:
+        - configMapRef:
+            name: tactical-default
+        - configMapRef:
+            name: tactical-postgres
+        - configMapRef:
+            name: tactical-redis
+        - secretRef:
+            name: tactical-postgres
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /opt/tactical/tmp/tactical/ready
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        volumeMounts:
+        - name: celery-data
+          mountPath: /opt/tactical
+      volumes:
+      - name: celery-data
+        persistentVolumeClaim:
+          claimName: tactical-celery
