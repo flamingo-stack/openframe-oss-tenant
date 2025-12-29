@@ -7,6 +7,13 @@ spec:
   selector:
     app: authentik-postgres
   ports:
-  - port: 5432
+  - name: postgres
+    port: 5432
     targetPort: 5432
     protocol: TCP
+  {{- if .Values.postgres.metrics.enabled }}
+  - name: metrics
+    port: 9187
+    targetPort: 9187
+    protocol: TCP
+  {{- end }}
