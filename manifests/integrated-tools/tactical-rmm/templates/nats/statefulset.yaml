@@ -17,9 +17,10 @@ spec:
       labels:
         app: tactical-nats
     spec:
+
       initContainers:
       - name: wait-for-redis
-        image: {{ .Values.tactical.base.waitRedis.image.registry }}/{{ .Values.tactical.base.waitRedis.image.repository }}:{{ .Values.tactical.base.waitRedis.image.tag }}
+        image: {{ .Values.tactical.base.waitRedisImage.registry }}/{{ .Values.tactical.base.waitRedisImage.repository }}:{{ .Values.tactical.base.waitRedisImage.tag }}
         command: ['sh', '-c', '
           echo "Waiting for Redis..." &&
           until redis-cli -h $REDIS_HOST -p 6379 get "tactical_nats_rmm_conf" > /dev/null; do sleep 2; done &&
@@ -37,7 +38,7 @@ spec:
             name: tactical-postgres
 
       - name: wait-for-backend
-        image: {{ .Values.tactical.base.waitPostgres.image.registry }}/{{ .Values.tactical.base.waitPostgres.image.repository }}:{{ .Values.tactical.base.waitPostgres.image.tag }}
+        image: {{ .Values.tactical.base.waitPostgresImage.registry }}/{{ .Values.tactical.base.waitPostgresImage.repository }}:{{ .Values.tactical.base.waitPostgresImage.tag }}
         command:
         - sh
         - -c
@@ -101,6 +102,7 @@ spec:
             - /opt/tactical/tmp/tactical/ready
           initialDelaySeconds: 30
           periodSeconds: 15
+
         volumeMounts:
         - name: nats-data
           mountPath: /opt/tactical

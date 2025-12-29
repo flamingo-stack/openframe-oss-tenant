@@ -39,6 +39,7 @@ spec:
             port: 8081
           initialDelaySeconds: 30
           periodSeconds: 10
+
         volumeMounts:
         - name: nginx-data
           mountPath: /opt/tactical

@@ -1,57 +1,39 @@
+
 registerJob:
   enabled: true
   image:
-    registry: ghcr.io/flamingo-stack/registry
-    repository: curlimages/curl
-    tag: "8.9.1"
-  imageSap:
     registry: ghcr.io/flamingo-stack/registry
     repository: sap/kubectl-container
     tag: "v1.31.6"
 
 
 tactical:
-  init:
-    image:
-      registry: ghcr.io/flamingo-stack/registry
-      repository: busybox
-      tag: "1.36.0"
   frontend:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-frontend
       tag: latest
+      
   nginx:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-nginx
       tag: latest
+
   base:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-base
       tag: latest
-    waitRedis:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: redis
-        tag: "6.0-alpine"
-    waitPostgres:
-      image:
-        registry: ghcr.io/flamingo-stack/registry
-        repository: postgres
-        tag: "14-alpine"
-
-
-postgres:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-    repository: postgres
-    tag: "13-alpine"
-
-
-redis:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-    repository: redis
-    tag: "6.0-alpine"
+    initImage:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: busybox
+      tag: "1.36.0"
+    waitRedisImage:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: redis
+      tag: "6.0-alpine"
+    waitPostgresImage:
+      registry: ghcr.io/flamingo-stack/registry
+      repository: postgres
+      tag: "14-alpine"

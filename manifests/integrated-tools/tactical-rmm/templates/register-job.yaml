@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -15,7 +16,7 @@ spec:
 
       containers:
       - name: register
-        image: {{ .Values.registerJob.imageSap.registry }}/{{ .Values.registerJob.imageSap.repository }}:{{ .Values.registerJob.imageSap.tag }}
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         envFrom:
         - configMapRef:
             name: tactical-postgres
@@ -145,4 +146,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "Tactical RMM Registration failed..."; exit 1; }
             echo "Tactical RMM Registration complete."
+
 {{- end }}

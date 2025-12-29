@@ -1,4 +1,5 @@
 {{- if .Values.registerJob.enabled }}
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -15,7 +16,7 @@ spec:
 
       containers:
       - name: register
-        image: {{ .Values.registerJob.sapImage.registry }}/{{ .Values.registerJob.sapImage.repository }}:{{ .Values.registerJob.sapImage.tag }}
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         envFrom:
           - configMapRef:
               name: fleetmdm-mysql
@@ -148,4 +149,5 @@ spec:
 
             [ -z "$http_code" ] || [ "$http_code" != 200 ] && { echo "FleetMDM Server Registration failed..."; exit 1; }
             echo "FleetMDM Server Registration complete."
+
 {{- end }}
