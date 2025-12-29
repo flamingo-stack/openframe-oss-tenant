@@ -21,9 +21,9 @@ mysql:
   metrics:
     enabled: true
     image:
-      registry: ghcr.io/flamingo-stack/registry
+      registry: docker.io
       repository: prom/mysqld-exporter
-      tag: "v0.16.0"
+      tag: "v0.18.0"
     resources:
       requests:
         cpu: 10m
