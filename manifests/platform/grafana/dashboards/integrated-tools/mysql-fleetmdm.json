@@ -720,17 +720,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mysql_global_status_threads_connected{app=\"fleetmdm-mysql\", container=\"mysql\"}",
+          "expr": "mysql_global_status_threads_connected{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}",
           "legendFormat": "Connected",
           "refId": "A"
         },
         {
-          "expr": "mysql_global_status_threads_running{app=\"fleetmdm-mysql\", container=\"mysql\"}",
+          "expr": "mysql_global_status_threads_running{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}",
           "legendFormat": "Running",
           "refId": "B"
         },
         {
-          "expr": "mysql_global_variables_max_connections{app=\"fleetmdm-mysql\", container=\"mysql\"}",
+          "expr": "mysql_global_variables_max_connections{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}",
           "legendFormat": "Max Connections",
           "refId": "C"
         }
@@ -822,17 +822,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(mysql_global_status_queries{app=\"fleetmdm-mysql\", container=\"mysql\"}[5m])",
+          "expr": "rate(mysql_global_status_queries{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}[5m])",
           "legendFormat": "Queries",
           "refId": "A"
         },
         {
-          "expr": "rate(mysql_global_status_questions{app=\"fleetmdm-mysql\", container=\"mysql\"}[5m])",
+          "expr": "rate(mysql_global_status_questions{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}[5m])",
           "legendFormat": "Questions",
           "refId": "B"
         },
         {
-          "expr": "rate(mysql_global_status_slow_queries{app=\"fleetmdm-mysql\", container=\"mysql\"}[5m])",
+          "expr": "rate(mysql_global_status_slow_queries{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}[5m])",
           "legendFormat": "Slow Queries",
           "refId": "C"
         }
@@ -924,22 +924,22 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysql\", command=\"select\"}[5m])",
+          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\", command=\"select\"}[5m])",
           "legendFormat": "SELECT",
           "refId": "A"
         },
         {
-          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysql\", command=\"insert\"}[5m])",
+          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\", command=\"insert\"}[5m])",
           "legendFormat": "INSERT",
           "refId": "B"
         },
         {
-          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysql\", command=\"update\"}[5m])",
+          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\", command=\"update\"}[5m])",
           "legendFormat": "UPDATE",
           "refId": "C"
         },
         {
-          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysql\", command=\"delete\"}[5m])",
+          "expr": "rate(mysql_global_status_commands_total{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\", command=\"delete\"}[5m])",
           "legendFormat": "DELETE",
           "refId": "D"
         }
@@ -1031,17 +1031,17 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "mysql_global_status_innodb_buffer_pool_bytes_data{app=\"fleetmdm-mysql\", container=\"mysql\"}",
+          "expr": "mysql_global_status_innodb_buffer_pool_bytes_data{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}",
           "legendFormat": "Data",
           "refId": "A"
         },
         {
-          "expr": "mysql_global_status_innodb_buffer_pool_bytes_dirty{app=\"fleetmdm-mysql\", container=\"mysql\"}",
+          "expr": "mysql_global_status_innodb_buffer_pool_bytes_dirty{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}",
           "legendFormat": "Dirty",
           "refId": "B"
         },
         {
-          "expr": "mysql_global_variables_innodb_buffer_pool_size{app=\"fleetmdm-mysql\", container=\"mysql\"}",
+          "expr": "mysql_global_variables_innodb_buffer_pool_size{app=\"fleetmdm-mysql\", container=\"mysqld-exporter\"}",
           "legendFormat": "Pool Size",
           "refId": "C"
         }
