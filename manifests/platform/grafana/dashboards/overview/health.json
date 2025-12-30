@@ -86,8 +86,8 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(count(container_cpu_usage_seconds_total{}) by (pod))",
-          "legendFormat": "{{pod}}",
+          "expr": "count(kube_pod_status_phase{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", phase=\"Running\"} == 1)",
+          "legendFormat": "Running",
           "range": true,
           "refId": "A"
         }
@@ -111,7 +111,11 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
               }
             ]
           },
@@ -147,8 +151,8 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(count(container_cpu_usage_seconds_total{}) by (pod))",
-          "legendFormat": "{{pod}}",
+          "expr": "count(kube_pod_status_phase{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", phase=~\"Failed|Pending|Unknown\"} == 1) or vector(0)",
+          "legendFormat": "Not Running",
           "range": true,
           "refId": "A"
         }
