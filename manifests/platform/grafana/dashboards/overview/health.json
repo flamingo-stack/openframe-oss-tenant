@@ -170,27 +170,18 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 2,
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 85
               }
             ]
           },
-          "unit": "percent"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -202,9 +193,11 @@
       },
       "id": 20,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -212,22 +205,22 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.3.0",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) * 100",
-          "legendFormat": "CPU Cores %",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}[5m]))",
+          "legendFormat": "CPU Cores",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "CPU",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -239,27 +232,18 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 2,
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 85
               }
             ]
           },
-          "unit": "percent"
+          "unit": "decgbytes"
         },
         "overrides": []
       },
@@ -271,9 +255,11 @@
       },
       "id": 21,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -281,21 +267,22 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.3.0",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "100 * sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
-          "legendFormat": "Memory %",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}) / 1024 / 1024 / 1024",
+          "legendFormat": "Memory",
+          "range": true,
           "refId": "A"
         }
       ],
       "title": "Memory",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -339,9 +326,11 @@
       },
       "id": 22,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -349,20 +338,20 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * sum(kubelet_volume_stats_used_bytes{namespace=~\"microservices|datasources\"}) / sum(kubelet_volume_stats_capacity_bytes{namespace=~\"microservices|datasources\"})",
+          "expr": "sum(kubelet_volume_stats_used_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}) / sum(kubelet_volume_stats_capacity_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}) * 100",
           "legendFormat": "Storage %",
           "refId": "A"
         }
       ],
       "title": "Storage",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "collapsed": false,
@@ -3048,5 +3037,5 @@
   "timezone": "",
   "title": "Health",
   "uid": "health",
-  "version": 10
+  "version": 11
 }
