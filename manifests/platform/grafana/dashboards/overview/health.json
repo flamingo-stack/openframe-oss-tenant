@@ -213,7 +213,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}[5m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\"}[5m]))",
           "legendFormat": "CPU Cores",
           "range": true,
           "refId": "A"
@@ -275,7 +275,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}) / 1024 / 1024 / 1024",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\"}) / 1024 / 1024 / 1024",
           "legendFormat": "Memory",
           "range": true,
           "refId": "A"
@@ -294,27 +294,18 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 2,
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 85
               }
             ]
           },
-          "unit": "percent"
+          "unit": "decgbytes"
         },
         "overrides": []
       },
@@ -345,8 +336,10 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "sum(kubelet_volume_stats_used_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}) / sum(kubelet_volume_stats_capacity_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}) * 100",
-          "legendFormat": "Storage %",
+          "editorMode": "code",
+          "expr": "sum(kubelet_volume_stats_used_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}) / 1024 / 1024 / 1024",
+          "legendFormat": "Storage",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -3037,5 +3030,5 @@
   "timezone": "",
   "title": "Health",
   "uid": "health",
-  "version": 11
+  "version": 12
 }
