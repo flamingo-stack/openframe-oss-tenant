@@ -111,7 +111,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1307,10 +1307,23 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\"}[2m])) > 0 or vector(0)",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "kafka-broker",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "kafka-controller",
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Kafka",
@@ -1687,10 +1700,26 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\"}[2m])) > 0 or vector(0)",
-          "instant": true,
-          "legendFormat": "__auto",
+          "exemplar": false,
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-master.*\"}[2m])) > 0 or vector(0)",
+          "instant": false,
+          "legendFormat": "redis-master",
+          "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-replica.*\"}[2m])) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "redis-replica",
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Redis",
@@ -1988,7 +2017,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 6,
+        "w": 3,
         "x": 0,
         "y": 20
       },
@@ -2074,7 +2103,7 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 6,
+        "x": 3,
         "y": 20
       },
       "id": 42,
@@ -2159,7 +2188,7 @@
       "gridPos": {
         "h": 3,
         "w": 4,
-        "x": 9,
+        "x": 6,
         "y": 20
       },
       "id": 40,
@@ -2244,7 +2273,7 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 13,
+        "x": 10,
         "y": 20
       },
       "id": 41,
@@ -3019,5 +3048,5 @@
   "timezone": "",
   "title": "Health",
   "uid": "health",
-  "version": 5
+  "version": 10
 }
