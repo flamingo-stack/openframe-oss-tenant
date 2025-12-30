@@ -86,7 +86,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(kube_pod_status_phase{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", phase=\"Running\"} == 1)",
+          "expr": "count(count by (pod) (container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}))",
           "legendFormat": "Running",
           "range": true,
           "refId": "A"
