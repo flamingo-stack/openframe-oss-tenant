@@ -27,7 +27,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 6
       },
       "id": 1,
       "panels": [],
@@ -79,7 +79,7 @@
         "h": 3,
         "w": 3,
         "x": 0,
-        "y": 1
+        "y": 7
       },
       "id": 7,
       "links": [
@@ -163,7 +163,7 @@
         "h": 3,
         "w": 4,
         "x": 3,
-        "y": 1
+        "y": 7
       },
       "id": 4,
       "links": [
@@ -247,7 +247,7 @@
         "h": 3,
         "w": 3,
         "x": 7,
-        "y": 1
+        "y": 7
       },
       "id": 2,
       "links": [
@@ -331,7 +331,7 @@
         "h": 3,
         "w": 4,
         "x": 10,
-        "y": 1
+        "y": 7
       },
       "id": 9,
       "links": [
@@ -415,7 +415,7 @@
         "h": 3,
         "w": 3,
         "x": 14,
-        "y": 1
+        "y": 7
       },
       "id": 6,
       "links": [
@@ -2663,11 +2663,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 0
       },
       "id": 19,
       "panels": [],
-      "title": "Resource Utilization",
+      "title": "Total",
       "type": "row"
     },
     {
@@ -2708,7 +2708,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 25
+        "y": 1
       },
       "id": 20,
       "options": {
@@ -2730,8 +2730,8 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "100 * sum(rate(container_cpu_usage_seconds_total{}[5m]))",
-          "legendFormat": "CPU %",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}[5m])) * 100",
+          "legendFormat": "CPU Cores %",
           "range": true,
           "refId": "A"
         }
@@ -2777,7 +2777,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 25
+        "y": 1
       },
       "id": 21,
       "options": {
@@ -2798,7 +2798,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources\"}) / sum(machine_memory_bytes)",
+          "editorMode": "code",
+          "expr": "100 * sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
           "legendFormat": "Memory %",
           "refId": "A"
         }
@@ -2844,7 +2845,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 25
+        "y": 1
       },
       "id": 22,
       "options": {
@@ -2901,7 +2902,7 @@
         "h": 5,
         "w": 3,
         "x": 18,
-        "y": 25
+        "y": 1
       },
       "id": 23,
       "options": {
@@ -2924,7 +2925,8 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{namespace=~\"microservices|datasources\", phase=\"Running\"} == 1)",
+          "editorMode": "code",
+          "expr": "count(count by (pod) (container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}))",
           "legendFormat": "Running",
           "refId": "A"
         }
@@ -2968,7 +2970,7 @@
         "h": 5,
         "w": 3,
         "x": 21,
-        "y": 25
+        "y": 1
       },
       "id": 24,
       "options": {
@@ -3018,5 +3020,5 @@
   "timezone": "",
   "title": "Health",
   "uid": "health",
-  "version": 3
+  "version": 4
 }
