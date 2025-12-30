@@ -529,7 +529,7 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
-    "tactical-rmm",
+    "tactical",
     "rmm",
     "integrated-tools"
   ],
@@ -543,6 +543,6 @@
   "timepicker": {},
   "timezone": "",
   "title": "Tactical",
-  "uid": "tactical-rmm",
+  "uid": "tactical",
   "version": 5
 }

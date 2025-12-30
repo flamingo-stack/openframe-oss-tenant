@@ -1481,9 +1481,343 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 4,
+        "w": 12,
         "x": 7,
         "y": 11
+      },
+      "id": 43,
+      "links": [
+        {
+          "targetBlank": false,
+          "title": "View Details",
+          "url": "/d/argocd"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0)",
+          "instant": false,
+          "legendFormat": "server",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "controller",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "repo-server",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "redis",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "appset-controller",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "notifications",
+          "range": true,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "dex",
+          "range": true,
+          "refId": "G"
+        }
+      ],
+      "title": "ArgoCD",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 0,
+        "y": 14
+      },
+      "id": 44,
+      "links": [
+        {
+          "targetBlank": false,
+          "title": "View Details",
+          "url": "/d/alloy"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"alloy\"}[2m])) by (pod) > 0",
+          "instant": true,
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Alloy",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 6,
+        "y": 14
+      },
+      "id": 42,
+      "links": [
+        {
+          "targetBlank": false,
+          "title": "View Details",
+          "url": "/d/loki"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[2m])) by (pod) > 0",
+          "instant": true,
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Loki",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 9,
+        "y": 14
       },
       "id": 40,
       "links": [
@@ -1513,9 +1847,10 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"prometheus\"}[2m])) > 0",
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"prometheus-server\"}[2m])) by (pod) > 0",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -1566,8 +1901,8 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 11,
-        "y": 11
+        "x": 13,
+        "y": 14
       },
       "id": 41,
       "links": [
@@ -1597,265 +1932,14 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}[2m])) > 0",
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}[2m])) by (pod) > 0",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
       "title": "Grafana",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 3,
-        "w": 3,
-        "x": 14,
-        "y": 11
-      },
-      "id": 42,
-      "links": [
-        {
-          "targetBlank": false,
-          "title": "View Details",
-          "url": "/d/loki"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[2m])) > 0",
-          "instant": true,
-          "legendFormat": "__auto",
-          "refId": "A"
-        }
-      ],
-      "title": "Loki",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 3,
-        "w": 3,
-        "x": 17,
-        "y": 11
-      },
-      "id": 43,
-      "links": [
-        {
-          "targetBlank": false,
-          "title": "View Details",
-          "url": "/d/argocd"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", pod=~\"argocd.*\"}[2m])) > 0",
-          "instant": true,
-          "legendFormat": "__auto",
-          "refId": "A"
-        }
-      ],
-      "title": "ArgoCD",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 3,
-        "w": 3,
-        "x": 20,
-        "y": 11
-      },
-      "id": 44,
-      "links": [
-        {
-          "targetBlank": false,
-          "title": "View Details",
-          "url": "/d/alloy"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"alloy\"}[2m])) > 0",
-          "instant": true,
-          "legendFormat": "__auto",
-          "refId": "A"
-        }
-      ],
-      "title": "Alloy",
       "type": "stat"
     },
     {
@@ -1864,7 +1948,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 17
       },
       "id": 34,
       "panels": [],
@@ -1914,9 +1998,9 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 4,
+        "w": 11,
         "x": 0,
-        "y": 15
+        "y": 18
       },
       "id": 35,
       "links": [
@@ -1981,7 +2065,7 @@
           "refId": "G"
         }
       ],
-      "title": "Tactical RMM",
+      "title": "Tactical",
       "type": "stat"
     },
     {
@@ -2027,261 +2111,9 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
-        "x": 4,
-        "y": 15
-      },
-      "id": 36,
-      "links": [
-        {
-          "targetBlank": false,
-          "title": "View Details",
-          "url": "/d/meshcentral"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"meshcentral\"}[2m])) by (pod) > 0",
-          "instant": true,
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "title": "MeshCentral",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 3,
-        "w": 3,
-        "x": 7,
-        "y": 15
-      },
-      "id": 37,
-      "links": [
-        {
-          "targetBlank": false,
-          "title": "View Details",
-          "url": "/d/fleetmdm"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"fleetmdm\"}[2m])) by (pod) > 0",
-          "instant": true,
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "title": "FleetMDM",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 3,
-        "w": 3,
-        "x": 10,
-        "y": 15
-      },
-      "id": 50,
-      "links": [
-        {
-          "targetBlank": false,
-          "title": "View Details",
-          "url": "/d/postgres-tactical"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) by (pod) > 0",
-          "instant": true,
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Tactical PG",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 3,
-        "w": 3,
-        "x": 13,
-        "y": 15
+        "w": 4,
+        "x": 11,
+        "y": 18
       },
       "id": 51,
       "links": [
@@ -2363,9 +2195,178 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
-        "x": 16,
-        "y": 15
+        "w": 4,
+        "x": 15,
+        "y": 18
+      },
+      "id": 50,
+      "links": [
+        {
+          "targetBlank": false,
+          "title": "View Details",
+          "url": "/d/postgres-tactical"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) by (pod) > 0",
+          "instant": true,
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Tactical PSQL",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 21
+      },
+      "id": 36,
+      "links": [
+        {
+          "targetBlank": false,
+          "title": "View Details",
+          "url": "/d/meshcentral"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"meshcentral\"}[2m])) by (pod) > 0",
+          "instant": true,
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "MeshCentral",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 4,
+        "y": 21
       },
       "id": 52,
       "links": [
@@ -2447,16 +2448,16 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
-        "x": 19,
-        "y": 15
+        "w": 4,
+        "x": 8,
+        "y": 21
       },
-      "id": 53,
+      "id": 37,
       "links": [
         {
           "targetBlank": false,
           "title": "View Details",
-          "url": "/d/mysql-fleetmdm"
+          "url": "/d/fleetmdm"
         }
       ],
       "options": {
@@ -2479,13 +2480,13 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mysql\", pod=~\"fleetmdm-mysql.*\"}[2m])) by (pod) > 0",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"fleetmdm\"}[2m])) by (pod) > 0",
           "instant": true,
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Fleet MySQL",
+      "title": "FleetMDM",
       "type": "stat"
     },
     {
@@ -2531,9 +2532,9 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 2,
-        "x": 22,
-        "y": 15
+        "w": 4,
+        "x": 12,
+        "y": 21
       },
       "id": 54,
       "links": [
@@ -2573,12 +2574,96 @@
       "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 16,
+        "y": 21
+      },
+      "id": 53,
+      "links": [
+        {
+          "targetBlank": false,
+          "title": "View Details",
+          "url": "/d/mysql-fleetmdm"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mysql\", pod=~\"fleetmdm-mysql.*\"}[2m])) by (pod) > 0",
+          "instant": true,
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Fleet MySQL",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 24
       },
       "id": 19,
       "panels": [],
@@ -2623,7 +2708,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 19
+        "y": 25
       },
       "id": 20,
       "options": {
@@ -2692,7 +2777,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 19
+        "y": 25
       },
       "id": 21,
       "options": {
@@ -2759,7 +2844,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 19
+        "y": 25
       },
       "id": 22,
       "options": {
@@ -2816,7 +2901,7 @@
         "h": 5,
         "w": 3,
         "x": 18,
-        "y": 19
+        "y": 25
       },
       "id": 23,
       "options": {
@@ -2883,7 +2968,7 @@
         "h": 5,
         "w": 3,
         "x": 21,
-        "y": 19
+        "y": 25
       },
       "id": 24,
       "options": {
@@ -2933,5 +3018,5 @@
   "timezone": "",
   "title": "Health",
   "uid": "health",
-  "version": 2
+  "version": 3
 }
