@@ -50,13 +50,38 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Down"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 5,
@@ -69,7 +94,7 @@
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
-        "orientation": "auto",
+        "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
@@ -85,11 +110,16 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "editorMode": "code",
-          "expr": "count(count by (pod) (container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}))",
+          "expr": "(count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-config\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-management\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-external-api\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-client\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-stream\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-authorization-server\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-gateway\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-frontend\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"mongodb\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-server.*\", container!=\"\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-controller.*\", container!=\"\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-broker.*\", container!=\"\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-minion.*\", container!=\"\"}) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"zookeeper\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"debezium-connect\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-master.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-replica.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"nats\"}[2m])) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"alloy\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\", pod=~\"loki-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-chunks-cache-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-results-cache-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"prometheus-server\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}[2m])) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-backend.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celerybeat.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nats.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nginx.*\", container=\"tactical-nginx\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-websockets.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"tactical-redis.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"meshcentral\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mongodb\", pod=~\"meshcentral-mongodb.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"fleetmdm\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"fleetmdm-redis.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mysql\", pod=~\"fleetmdm-mysql.*\"}[2m])) > 0 or vector(0))",
           "legendFormat": "Up",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "instant": false
         },
         {
           "datasource": {
@@ -97,12 +127,11 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(count by (pod) (container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\"}))",
-          "hide": false,
-          "instant": false,
+          "expr": "(1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-config\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-management\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-external-api\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-client\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-stream\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-authorization-server\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-gateway\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-frontend\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"mongodb\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-server.*\", container!=\"\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-controller.*\", container!=\"\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-broker.*\", container!=\"\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-minion.*\", container!=\"\"}) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"zookeeper\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"debezium-connect\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-master.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-replica.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"nats\"}[2m])) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"alloy\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\", pod=~\"loki-.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-chunks-cache-.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-results-cache-.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"prometheus-server\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}[2m])) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-backend.*\", container=\"tactical-base\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celerybeat.*\", container=\"tactical-base\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nats.*\", container=\"tactical-base\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nginx.*\", container=\"tactical-nginx\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-websockets.*\", container=\"tactical-base\"}) > 0 or vector(0))) + (1 - (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"tactical-redis.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"meshcentral\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mongodb\", pod=~\"meshcentral-mongodb.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"fleetmdm\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"fleetmdm-redis.*\"}[2m])) > 0 or vector(0))) + (1 - (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mysql\", pod=~\"fleetmdm-mysql.*\"}[2m])) > 0 or vector(0)))",
           "legendFormat": "Down",
           "range": true,
-          "refId": "B"
+          "refId": "B",
+          "instant": false
         }
       ],
       "title": "Status",
