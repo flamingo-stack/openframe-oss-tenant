@@ -110,8 +110,8 @@
           "legendFormat": "server",
           "refId": "A",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -122,8 +122,8 @@
           "legendFormat": "controller",
           "refId": "B",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -134,8 +134,8 @@
           "legendFormat": "broker",
           "refId": "C",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -146,8 +146,8 @@
           "legendFormat": "minion",
           "refId": "D",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         }
       ],
       "title": "Status",

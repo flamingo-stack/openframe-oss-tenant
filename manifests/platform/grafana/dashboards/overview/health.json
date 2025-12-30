@@ -117,9 +117,9 @@
           "editorMode": "code",
           "expr": "(count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-config\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-management\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-external-api\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-client\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-stream\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-authorization-server\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-gateway\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-frontend\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"mongodb\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-server.*\", container!=\"\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-controller.*\", container!=\"\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-broker.*\", container!=\"\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-minion.*\", container!=\"\"}) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"zookeeper\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"debezium-connect\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-master.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-replica.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"nats\"}[2m])) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"alloy\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\", pod=~\"loki-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-chunks-cache-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-results-cache-.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"prometheus-server\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}[2m])) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-backend.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celerybeat.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nats.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nginx.*\", container=\"tactical-nginx\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-websockets.*\", container=\"tactical-base\"}) > 0 or vector(0)) + (count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"tactical-redis.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"meshcentral\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mongodb\", pod=~\"meshcentral-mongodb.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"fleetmdm\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"fleetmdm-redis.*\"}[2m])) > 0 or vector(0)) + (count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mysql\", pod=~\"fleetmdm-mysql.*\"}[2m])) > 0 or vector(0))",
           "legendFormat": "Up",
-          "range": true,
+          "range": false,
           "refId": "A",
-          "instant": false
+          "instant": true
         },
         {
           "datasource": {
@@ -129,9 +129,9 @@
           "editorMode": "code",
           "expr": "(((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-config\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-management\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-external-api\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-client\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-stream\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-authorization-server\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-gateway\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-frontend\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"mongodb\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-server.*\", container!=\"\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-controller.*\", container!=\"\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-broker.*\", container!=\"\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-minion.*\", container!=\"\"}) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"zookeeper\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"debezium-connect\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-master.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-replica.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"nats\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"alloy\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\", pod=~\"loki-.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-chunks-cache-.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-results-cache-.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"prometheus-server\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"grafana\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-backend.*\", container=\"tactical-base\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celerybeat.*\", container=\"tactical-base\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nats.*\", container=\"tactical-base\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nginx.*\", container=\"tactical-nginx\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-websockets.*\", container=\"tactical-base\"}) > 0 or vector(0))) == bool 0) + (((count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"tactical-redis.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"meshcentral\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mongodb\", pod=~\"meshcentral-mongodb.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"fleetmdm\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"redis\", pod=~\"fleetmdm-redis.*\"}[2m])) > 0 or vector(0))) == bool 0) + (((count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"mysql\", pod=~\"fleetmdm-mysql.*\"}[2m])) > 0 or vector(0))) == bool 0)",
           "legendFormat": "Down",
-          "range": true,
+          "range": false,
           "refId": "B",
-          "instant": false
+          "instant": true
         }
       ],
       "title": "Status",
@@ -413,7 +413,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-config\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Config",
           "refId": "A"
         }
       ],
@@ -497,7 +497,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-management\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Management",
           "refId": "A"
         }
       ],
@@ -581,7 +581,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-api\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "API",
           "refId": "A"
         }
       ],
@@ -665,7 +665,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-external-api\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "External API",
           "refId": "A"
         }
       ],
@@ -749,7 +749,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-client\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Client",
           "refId": "A"
         }
       ],
@@ -833,7 +833,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-stream\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Stream",
           "refId": "A"
         }
       ],
@@ -917,7 +917,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-authorization-server\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Auth Server",
           "refId": "A"
         }
       ],
@@ -1001,7 +1001,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-gateway\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Gateway",
           "refId": "A"
         }
       ],
@@ -1085,7 +1085,7 @@
         {
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-frontend\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Frontend",
           "refId": "A"
         }
       ],
@@ -1183,7 +1183,7 @@
           "editorMode": "code",
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"mongodb\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "MongoDB",
           "refId": "A"
         }
       ],
@@ -1491,7 +1491,7 @@
           "editorMode": "code",
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"zookeeper\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Zookeeper",
           "refId": "A"
         }
       ],
@@ -1661,7 +1661,7 @@
           "editorMode": "code",
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "Cassandra",
           "refId": "A"
         }
       ],
@@ -1847,7 +1847,7 @@
           "editorMode": "code",
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"nats\"}[2m])) > 0 or vector(0)",
           "instant": true,
-          "legendFormat": "__auto",
+          "legendFormat": "NATS",
           "refId": "A"
         }
       ],

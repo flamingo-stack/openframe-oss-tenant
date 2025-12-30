@@ -110,7 +110,7 @@
           "legendFormat": "{{pod}}",
           "refId": "A",
           "editorMode": "code",
-          "range": true,
+          "range": false,
           "instant": true
         }
       ],

@@ -110,8 +110,8 @@
           "legendFormat": "redis-master",
           "refId": "A",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -122,8 +122,8 @@
           "legendFormat": "redis-replica",
           "refId": "B",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         }
       ],
       "title": "Status",

@@ -107,10 +107,10 @@
             "uid": "prometheus"
           },
           "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-frontend\"}[2m])) > 0 or vector(0)",
-          "legendFormat": "__auto",
+          "legendFormat": "Status",
           "refId": "A",
           "editorMode": "code",
-          "range": true,
+          "range": false,
           "instant": true
         }
       ],

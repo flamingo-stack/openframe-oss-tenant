@@ -110,8 +110,8 @@
           "legendFormat": "backend",
           "refId": "A",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -122,8 +122,8 @@
           "legendFormat": "celery",
           "refId": "B",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -134,8 +134,8 @@
           "legendFormat": "celerybeat",
           "refId": "C",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -146,8 +146,8 @@
           "legendFormat": "nats",
           "refId": "D",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -158,8 +158,8 @@
           "legendFormat": "nginx",
           "refId": "E",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -170,8 +170,8 @@
           "legendFormat": "websockets",
           "refId": "F",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -182,8 +182,8 @@
           "legendFormat": "frontend",
           "refId": "G",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         }
       ],
       "title": "Status",

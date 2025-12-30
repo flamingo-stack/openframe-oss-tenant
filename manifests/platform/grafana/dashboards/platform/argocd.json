@@ -110,8 +110,8 @@
           "legendFormat": "server",
           "refId": "A",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -122,8 +122,8 @@
           "legendFormat": "controller",
           "refId": "B",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -134,8 +134,8 @@
           "legendFormat": "repo-server",
           "refId": "C",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -146,8 +146,8 @@
           "legendFormat": "redis",
           "refId": "D",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -158,8 +158,8 @@
           "legendFormat": "appset-controller",
           "refId": "E",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -170,8 +170,8 @@
           "legendFormat": "notifications",
           "refId": "F",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -182,8 +182,8 @@
           "legendFormat": "dex",
           "refId": "G",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         }
       ],
       "title": "Status",

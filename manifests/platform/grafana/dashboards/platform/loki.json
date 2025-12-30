@@ -110,8 +110,8 @@
           "legendFormat": "loki",
           "refId": "A",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -122,8 +122,8 @@
           "legendFormat": "chunks-cache",
           "refId": "B",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         },
         {
           "datasource": {
@@ -134,8 +134,8 @@
           "legendFormat": "results-cache",
           "refId": "C",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         }
       ],
       "title": "Status",
