@@ -2032,7 +2032,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
+        "w": 5,
         "x": 3,
         "y": 20
       },
@@ -2065,10 +2065,37 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\"}[2m])) > 0 or vector(0)",
-          "instant": true,
-          "legendFormat": "{{pod}}",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"loki\", pod=~\"loki-.*\"}[2m])) > 0 or vector(0)",
+          "instant": false,
+          "legendFormat": "loki",
+          "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-chunks-cache-.*\"}[2m])) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "chunks-cache",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"platform\", container=\"memcached\", pod=~\"loki-results-cache-.*\"}[2m])) > 0 or vector(0)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "results-cache",
+          "range": true,
+          "refId": "C"
         }
       ],
       "title": "Loki",
@@ -2118,7 +2145,7 @@
       "gridPos": {
         "h": 3,
         "w": 4,
-        "x": 6,
+        "x": 8,
         "y": 20
       },
       "id": 40,
@@ -2203,7 +2230,7 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 10,
+        "x": 12,
         "y": 20
       },
       "id": 41,
