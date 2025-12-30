@@ -158,9 +158,6 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Install tools and validate environment
-        uses: ./.github/steps/requirements-for-run.sh
-
       - name: Override helm values
         uses: ./.github/steps/helm-override
         with:
