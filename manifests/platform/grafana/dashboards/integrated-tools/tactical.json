@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "id": 35,
+  "id": 39,
   "links": [],
   "panels": [
     {
@@ -102,88 +102,39 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-backend.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "backend",
-          "refId": "A",
-          "editorMode": "code",
-          "range": false,
-          "instant": true
+          "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "celery",
-          "refId": "B",
-          "editorMode": "code",
-          "range": false,
-          "instant": true
+          "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celerybeat.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "celerybeat",
-          "refId": "C",
-          "editorMode": "code",
-          "range": false,
-          "instant": true
+          "refId": "C"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nats.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "nats",
-          "refId": "D",
-          "editorMode": "code",
-          "range": false,
-          "instant": true
+          "refId": "D"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nginx.*\", container=\"tactical-nginx\"}) > 0 or vector(0)",
           "legendFormat": "nginx",
-          "refId": "E",
-          "editorMode": "code",
-          "range": false,
-          "instant": true
+          "refId": "E"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-websockets.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "websockets",
-          "refId": "F",
-          "editorMode": "code",
-          "range": false,
-          "instant": true
+          "refId": "F"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0)",
           "legendFormat": "frontend",
-          "refId": "G",
-          "editorMode": "code",
-          "range": false,
-          "instant": true
+          "refId": "G"
         }
       ],
       "title": "Status",
@@ -554,7 +505,7 @@
         "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showControls": false,
-        "showLabels": true,
+        "showLabels": false,
         "showTime": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
@@ -566,7 +517,10 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{pod=~\"tactical-.*\", pod!~\"tactical-(redis|postgres)-.*\", namespace=\"integrated-tools\"} | drop container, service_name, stream | logfmt | line_format \"[{{.pod}}] {{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{pod=~\"tactical-.*\", pod!~\"tactical-(redis|postgres)-.*\", namespace=\"integrated-tools\"} |  logfmt | line_format \"{{.pod}}: {{if .msg}}{{.msg}}{{else}}{{__line__}}{{end}}\"",
+          "queryType": "range",
           "refId": "A"
         }
       ],
@@ -578,7 +532,7 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
-    "tactical",
+    "tactical-rmm",
     "rmm",
     "integrated-tools"
   ],
@@ -592,6 +546,6 @@
   "timepicker": {},
   "timezone": "",
   "title": "Tactical",
-  "uid": "tactical",
-  "version": 5
+  "uid": "tactical-rmm",
+  "version": 1
 }

@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "id": 24,
+  "id": 16,
   "links": [],
   "panels": [
     {
@@ -106,12 +106,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[2m])) > 0 or vector(0)",
-          "legendFormat": "Status",
-          "refId": "A",
           "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"cassandra\"}[2m])) > 0 or vector(0)",
+          "instant": true,
+          "legendFormat": "Status",
           "range": false,
-          "instant": true
+          "refId": "A"
         }
       ],
       "title": "Status",
@@ -592,6 +592,10 @@
         "type": "loki",
         "uid": "loki"
       },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -601,9 +605,11 @@
       "id": 26,
       "options": {
         "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
         "enableLogDetails": true,
         "prettifyLogMessage": false,
         "showCommonLabels": false,
+        "showControls": false,
         "showLabels": false,
         "showTime": true,
         "sortOrder": "Descending",
@@ -754,8 +760,10 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "(100 * cassandra_stats{name=\"java:lang:memory:heapmemoryusage:used\", namespace=\"datasources\", pod=~\"cassandra.*\"} / cassandra_stats{name=\"java:lang:memory:heapmemoryusage:max\", namespace=\"datasources\", pod=~\"cassandra.*\"}) or vector(0)",
+          "editorMode": "code",
+          "expr": "100 * sum by (pod) (cassandra_stats{name=\"java:lang:memory:heapmemoryusage:used\", namespace=\"datasources\", pod=~\"cassandra.*\"}) /\n  sum by (pod) (cassandra_stats{name=\"java:lang:memory:heapmemoryusage:max\", namespace=\"datasources\", pod=~\"cassandra.*\"})",
           "legendFormat": "{{pod}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -822,8 +830,10 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "100 * (cassandra_stats{name=\"org:apache:cassandra:metrics:cache:keycache:hits:oneminuterate\", namespace=\"datasources\", pod=~\"cassandra.*\"} / (cassandra_stats{name=\"org:apache:cassandra:metrics:cache:keycache:requests:oneminuterate\", namespace=\"datasources\", pod=~\"cassandra.*\"} > 0)) or vector(0)",
+          "editorMode": "code",
+          "expr": "100 * cassandra_stats{name=\"org:apache:cassandra:metrics:table:keycachehitrate:value\", namespace=\"datasources\", pod=~\"cassandra.*\",\n   container=\"cassandra\"}",
           "legendFormat": "Key Cache",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -905,7 +915,7 @@
               }
             ]
           },
-          "unit": "\u00b5s"
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -1010,7 +1020,7 @@
               }
             ]
           },
-          "unit": "\u00b5s"
+          "unit": "µs"
         },
         "overrides": []
       },
@@ -1794,5 +1804,5 @@
   "timezone": "",
   "title": "Cassandra",
   "uid": "cassandra",
-  "version": 1
+  "version": 2
 }

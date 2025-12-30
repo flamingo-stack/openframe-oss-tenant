@@ -18,6 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
+  "id": 10,
   "links": [],
   "panels": [
     {
@@ -76,7 +77,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
+        "w": 4,
         "x": 0,
         "y": 1
       },
@@ -105,24 +106,24 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0)",
-          "legendFormat": "kafka-broker",
-          "refId": "A",
           "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0)",
+          "instant": true,
+          "legendFormat": "kafka-broker",
           "range": false,
-          "instant": true
+          "refId": "A"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0)",
-          "legendFormat": "kafka-controller",
-          "refId": "B",
           "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0)",
+          "instant": true,
+          "legendFormat": "kafka-controller",
           "range": false,
-          "instant": true
+          "refId": "B"
         }
       ],
       "title": "Status",
@@ -194,7 +195,7 @@
       "gridPos": {
         "h": 3,
         "w": 7,
-        "x": 3,
+        "x": 4,
         "y": 1
       },
       "id": 3,
@@ -759,7 +760,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -817,7 +818,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -878,7 +879,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -896,7 +897,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 7,
         "x": 8,
         "y": 25
       },
@@ -951,7 +952,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -969,8 +970,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 12,
+        "w": 7,
+        "x": 15,
         "y": 25
       },
       "id": 15,
@@ -1052,6 +1053,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1067,7 +1069,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1152,6 +1154,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1167,7 +1170,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -1251,6 +1254,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1266,7 +1270,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1364,6 +1368,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1379,7 +1384,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1458,6 +1463,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1473,7 +1479,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1565,6 +1571,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1580,7 +1587,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1780,6 +1787,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1795,7 +1803,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1861,5 +1869,5 @@
   "timezone": "",
   "title": "Kafka",
   "uid": "kafka",
-  "version": 1
+  "version": 2
 }

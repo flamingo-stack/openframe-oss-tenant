@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
-  "id": 17,
+  "id": 14,
   "links": [],
   "panels": [
     {
@@ -77,7 +77,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 3,
+        "w": 4,
         "x": 0,
         "y": 1
       },
@@ -106,24 +106,24 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-master.*\"}[2m])) > 0 or vector(0)",
-          "legendFormat": "redis-master",
-          "refId": "A",
           "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-master.*\"}[2m])) > 0 or vector(0)",
+          "instant": true,
+          "legendFormat": "redis-master",
           "range": false,
-          "instant": true
+          "refId": "A"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-replica.*\"}[2m])) > 0 or vector(0)",
-          "legendFormat": "redis-replica",
-          "refId": "B",
           "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"redis\", pod=~\"redis-replica.*\"}[2m])) > 0 or vector(0)",
+          "instant": true,
+          "legendFormat": "redis-replica",
           "range": false,
-          "instant": true
+          "refId": "B"
         }
       ],
       "title": "Status",
@@ -195,7 +195,7 @@
       "gridPos": {
         "h": 3,
         "w": 7,
-        "x": 3,
+        "x": 4,
         "y": 1
       },
       "id": 3,
@@ -814,8 +814,10 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
+          "editorMode": "code",
           "expr": "100 * sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m])) / clamp_min(sum(rate(redis_keyspace_hits_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m])) + sum(rate(redis_keyspace_misses_total{app_kubernetes_io_name=\"redis\", namespace=\"datasources\", container=\"metrics\"}[5m])), 1e-10) or vector(100)",
           "legendFormat": "hit rate",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -1239,5 +1241,5 @@
   "timezone": "",
   "title": "Redis",
   "uid": "redis",
-  "version": 12
+  "version": 2
 }
