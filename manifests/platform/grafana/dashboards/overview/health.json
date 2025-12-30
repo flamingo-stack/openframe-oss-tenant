@@ -27,6 +27,345 @@
         "h": 1,
         "w": 24,
         "x": 0,
+        "y": 0
+      },
+      "id": 19,
+      "panels": [],
+      "title": "Total",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 0,
+        "y": 1
+      },
+      "id": 23,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "count(count(container_cpu_usage_seconds_total{}) by (pod))",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Up",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
+      "id": 55,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "count(count(container_cpu_usage_seconds_total{}) by (pod))",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Down",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 6,
+        "y": 1
+      },
+      "id": 20,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) * 100",
+          "legendFormat": "CPU Cores %",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "CPU",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 11,
+        "y": 1
+      },
+      "id": 21,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "100 * sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
+          "legendFormat": "Memory %",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 16,
+        "y": 1
+      },
+      "id": 22,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "expr": "100 * sum(kubelet_volume_stats_used_bytes{namespace=~\"microservices|datasources\"}) / sum(kubelet_volume_stats_capacity_bytes{namespace=~\"microservices|datasources\"})",
+          "legendFormat": "Storage %",
+          "refId": "A"
+        }
+      ],
+      "title": "Storage",
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
         "y": 6
       },
       "id": 1,
@@ -499,7 +838,7 @@
         "h": 3,
         "w": 3,
         "x": 0,
-        "y": 4
+        "y": 10
       },
       "id": 8,
       "links": [
@@ -583,7 +922,7 @@
         "h": 3,
         "w": 4,
         "x": 3,
-        "y": 4
+        "y": 10
       },
       "id": 5,
       "links": [
@@ -667,7 +1006,7 @@
         "h": 3,
         "w": 3,
         "x": 7,
-        "y": 4
+        "y": 10
       },
       "id": 3,
       "links": [
@@ -751,7 +1090,7 @@
         "h": 3,
         "w": 3,
         "x": 10,
-        "y": 4
+        "y": 10
       },
       "id": 10,
       "links": [
@@ -796,7 +1135,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 13
       },
       "id": 11,
       "panels": [],
@@ -848,7 +1187,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 8
+        "y": 14
       },
       "id": 14,
       "links": [
@@ -933,7 +1272,7 @@
         "h": 3,
         "w": 4,
         "x": 4,
-        "y": 8
+        "y": 14
       },
       "id": 12,
       "links": [
@@ -1018,7 +1357,7 @@
         "h": 3,
         "w": 6,
         "x": 8,
-        "y": 8
+        "y": 14
       },
       "id": 16,
       "links": [
@@ -1143,7 +1482,7 @@
         "h": 3,
         "w": 4,
         "x": 14,
-        "y": 8
+        "y": 14
       },
       "id": 17,
       "links": [
@@ -1228,7 +1567,7 @@
         "h": 3,
         "w": 4,
         "x": 18,
-        "y": 8
+        "y": 14
       },
       "id": 15,
       "links": [
@@ -1313,7 +1652,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 11
+        "y": 17
       },
       "id": 13,
       "links": [
@@ -1398,7 +1737,7 @@
         "h": 3,
         "w": 3,
         "x": 4,
-        "y": 11
+        "y": 17
       },
       "id": 18,
       "links": [
@@ -1483,7 +1822,7 @@
         "h": 3,
         "w": 12,
         "x": 7,
-        "y": 11
+        "y": 17
       },
       "id": 43,
       "links": [
@@ -1647,7 +1986,7 @@
         "h": 3,
         "w": 6,
         "x": 0,
-        "y": 14
+        "y": 20
       },
       "id": 44,
       "links": [
@@ -1732,7 +2071,7 @@
         "h": 3,
         "w": 3,
         "x": 6,
-        "y": 14
+        "y": 20
       },
       "id": 42,
       "links": [
@@ -1817,7 +2156,7 @@
         "h": 3,
         "w": 4,
         "x": 9,
-        "y": 14
+        "y": 20
       },
       "id": 40,
       "links": [
@@ -1902,7 +2241,7 @@
         "h": 3,
         "w": 3,
         "x": 13,
-        "y": 14
+        "y": 20
       },
       "id": 41,
       "links": [
@@ -1948,7 +2287,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 23
       },
       "id": 34,
       "panels": [],
@@ -2000,7 +2339,7 @@
         "h": 3,
         "w": 11,
         "x": 0,
-        "y": 18
+        "y": 24
       },
       "id": 35,
       "links": [
@@ -2113,7 +2452,7 @@
         "h": 3,
         "w": 4,
         "x": 11,
-        "y": 18
+        "y": 24
       },
       "id": 51,
       "links": [
@@ -2197,7 +2536,7 @@
         "h": 3,
         "w": 4,
         "x": 15,
-        "y": 18
+        "y": 24
       },
       "id": 50,
       "links": [
@@ -2281,7 +2620,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 21
+        "y": 27
       },
       "id": 36,
       "links": [
@@ -2366,7 +2705,7 @@
         "h": 3,
         "w": 4,
         "x": 4,
-        "y": 21
+        "y": 27
       },
       "id": 52,
       "links": [
@@ -2450,7 +2789,7 @@
         "h": 3,
         "w": 4,
         "x": 8,
-        "y": 21
+        "y": 27
       },
       "id": 37,
       "links": [
@@ -2534,7 +2873,7 @@
         "h": 3,
         "w": 4,
         "x": 12,
-        "y": 21
+        "y": 27
       },
       "id": 54,
       "links": [
@@ -2618,7 +2957,7 @@
         "h": 3,
         "w": 4,
         "x": 16,
-        "y": 21
+        "y": 27
       },
       "id": 53,
       "links": [
@@ -2656,350 +2995,6 @@
       ],
       "title": "Fleet MySQL",
       "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 19,
-      "panels": [],
-      "title": "Total",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 85
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 0,
-        "y": 1
-      },
-      "id": 20,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}[5m])) * 100",
-          "legendFormat": "CPU Cores %",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Total CPU",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 85
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 6,
-        "y": 1
-      },
-      "id": 21,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "100 * sum(container_memory_working_set_bytes{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}) / sum(kube_node_status_allocatable{resource=\"memory\"})",
-          "legendFormat": "Memory %",
-          "refId": "A"
-        }
-      ],
-      "title": "Total Memory",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 85
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 12,
-        "y": 1
-      },
-      "id": 22,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "100 * sum(kubelet_volume_stats_used_bytes{namespace=~\"microservices|datasources\"}) / sum(kubelet_volume_stats_capacity_bytes{namespace=~\"microservices|datasources\"})",
-          "legendFormat": "Storage %",
-          "refId": "A"
-        }
-      ],
-      "title": "Storage Used",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 3,
-        "x": 18,
-        "y": 1
-      },
-      "id": 23,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "count(count by (pod) (container_cpu_usage_seconds_total{namespace=~\"microservices|datasources|platform|integrated-tools|argocd\", container!=\"\", container!=\"POD\"}))",
-          "legendFormat": "Running",
-          "refId": "A"
-        }
-      ],
-      "title": "Pods Running",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 3
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 3,
-        "x": 21,
-        "y": 1
-      },
-      "id": 24,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "expr": "count(kube_pod_status_phase{namespace=~\"microservices|datasources\", phase!=\"Running\"} == 1) or vector(0)",
-          "legendFormat": "Not Ready",
-          "refId": "A"
-        }
-      ],
-      "title": "Pods Not Ready",
-      "type": "stat"
     }
   ],
   "preload": false,
@@ -3020,5 +3015,5 @@
   "timezone": "",
   "title": "Health",
   "uid": "health",
-  "version": 4
+  "version": 5
 }
