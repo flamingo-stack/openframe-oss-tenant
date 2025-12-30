@@ -1516,6 +1516,91 @@
         "x": 18,
         "y": 14
       },
+      "id": 55,
+      "links": [
+        {
+          "targetBlank": false,
+          "title": "View Details",
+          "url": "/d/debezium-connect"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"debezium-connect\"}[2m])) > 0 or vector(0)",
+          "instant": true,
+          "legendFormat": "debezium-connect",
+          "refId": "A"
+        }
+      ],
+      "title": "Debezium",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 17
+      },
       "id": 15,
       "links": [
         {
@@ -1598,7 +1683,7 @@
       "gridPos": {
         "h": 3,
         "w": 4,
-        "x": 0,
+        "x": 4,
         "y": 17
       },
       "id": 13,
@@ -1699,7 +1784,7 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 4,
+        "x": 8,
         "y": 17
       },
       "id": 18,
@@ -1784,7 +1869,7 @@
       "gridPos": {
         "h": 3,
         "w": 12,
-        "x": 7,
+        "x": 11,
         "y": 17
       },
       "id": 43,
@@ -3005,5 +3090,5 @@
   "timezone": "",
   "title": "Health",
   "uid": "health",
-  "version": 13
+  "version": 14
 }
