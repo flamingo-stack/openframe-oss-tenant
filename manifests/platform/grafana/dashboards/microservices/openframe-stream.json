@@ -102,10 +102,16 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-stream\"}[2m])) by (pod) > 0",
-          "instant": true,
-          "legendFormat": "{{pod}}",
-          "refId": "A"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"microservices\", container=\"openframe-stream\"}[2m])) > 0 or vector(0)",
+          "legendFormat": "__auto",
+          "refId": "A",
+          "editorMode": "code",
+          "range": true,
+          "instant": true
         }
       ],
       "title": "Status",

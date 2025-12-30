@@ -102,7 +102,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"client-tools\", container=\"mongo-express\"}[2m])) by (pod) > 0",
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"client-tools\", container=\"mongo-express\"}[2m])) > 0 or vector(0)",
           "instant": true,
           "legendFormat": "{{pod}}",
           "refId": "A"

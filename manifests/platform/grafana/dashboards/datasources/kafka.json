@@ -101,10 +101,28 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\"}[2m])) by (pod) > 0",
-          "instant": true,
-          "legendFormat": "{{pod}}",
-          "refId": "A"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-broker-.*\"}[2m])) > 0 or vector(0)",
+          "legendFormat": "kafka-broker",
+          "refId": "A",
+          "editorMode": "code",
+          "range": true,
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"datasources\", container=\"kafka\", pod=~\"kafka-controller-.*\"}[2m])) > 0 or vector(0)",
+          "legendFormat": "kafka-controller",
+          "refId": "B",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         }
       ],
       "title": "Status",
@@ -501,7 +519,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -550,7 +571,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -1598,7 +1622,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -1647,7 +1674,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },

@@ -102,10 +102,16 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) by (pod) > 0",
-          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(rate(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", container=\"postgres\", pod=~\"tactical-postgres.*\"}[2m])) > 0 or vector(0)",
           "legendFormat": "{{pod}}",
-          "refId": "A"
+          "refId": "A",
+          "editorMode": "code",
+          "range": true,
+          "instant": true
         }
       ],
       "title": "Status",

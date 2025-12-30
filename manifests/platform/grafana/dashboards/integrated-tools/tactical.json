@@ -102,39 +102,88 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-backend.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "backend",
-          "refId": "A"
+          "refId": "A",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celery-.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "celery",
-          "refId": "B"
+          "refId": "B",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-celerybeat.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "celerybeat",
-          "refId": "C"
+          "refId": "C",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nats.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "nats",
-          "refId": "D"
+          "refId": "D",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-nginx.*\", container=\"tactical-nginx\"}) > 0 or vector(0)",
           "legendFormat": "nginx",
-          "refId": "E"
+          "refId": "E",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-websockets.*\", container=\"tactical-base\"}) > 0 or vector(0)",
           "legendFormat": "websockets",
-          "refId": "F"
+          "refId": "F",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"integrated-tools\", pod=~\"tactical-frontend.*\", container=\"tactical-frontend\"}) > 0 or vector(0)",
           "legendFormat": "frontend",
-          "refId": "G"
+          "refId": "G",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         }
       ],
       "title": "Status",

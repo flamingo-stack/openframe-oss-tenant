@@ -102,39 +102,88 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"server\"}) > 0 or vector(0)",
           "legendFormat": "server",
-          "refId": "A"
+          "refId": "A",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"application-controller\"}) > 0 or vector(0)",
           "legendFormat": "controller",
-          "refId": "B"
+          "refId": "B",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"repo-server\"}) > 0 or vector(0)",
           "legendFormat": "repo-server",
-          "refId": "C"
+          "refId": "C",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"redis\"}) > 0 or vector(0)",
           "legendFormat": "redis",
-          "refId": "D"
+          "refId": "D",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"applicationset-controller\"}) > 0 or vector(0)",
           "legendFormat": "appset-controller",
-          "refId": "E"
+          "refId": "E",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"notifications-controller\"}) > 0 or vector(0)",
           "legendFormat": "notifications",
-          "refId": "F"
+          "refId": "F",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"argocd\", container=\"dex-server\"}) > 0 or vector(0)",
           "legendFormat": "dex",
-          "refId": "G"
+          "refId": "G",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         }
       ],
       "title": "Status",

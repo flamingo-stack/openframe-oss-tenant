@@ -102,24 +102,52 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-server.*\", container!=\"\"}) > 0 or vector(0)",
           "legendFormat": "server",
-          "refId": "A"
+          "refId": "A",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-controller.*\", container!=\"\"}) > 0 or vector(0)",
           "legendFormat": "controller",
-          "refId": "B"
+          "refId": "B",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-broker.*\", container!=\"\"}) > 0 or vector(0)",
           "legendFormat": "broker",
-          "refId": "C"
+          "refId": "C",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "count(container_cpu_usage_seconds_total{namespace=\"datasources\", pod=~\"pinot-minion.*\", container!=\"\"}) > 0 or vector(0)",
           "legendFormat": "minion",
-          "refId": "D"
+          "refId": "D",
+          "editorMode": "code",
+          "range": true,
+          "instant": false
         }
       ],
       "title": "Status",
