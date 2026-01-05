@@ -281,9 +281,6 @@ jobs:
     name: "Create Release"
     needs: [changes, matrix, build_images, build_clients, build_helm]
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' && 
-      inputs.version != ''
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -295,9 +292,11 @@ jobs:
         continue-on-error: true
 
       - name: Prepare release artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
-          mkdir -p final-artifacts/clients
+          set -e && mkdir -p final-artifacts/clients
+          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true          
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
@@ -318,7 +317,8 @@ jobs:
 
       - name: Generate release header
         run: |
-          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${{ inputs.version }}`"')
+          VERSION="${{ inputs.version || 'latest' }}"
+          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):'"${VERSION}"'`"')
 
           cat > RELEASE_HEADER.md <<EOF
           ## Images
@@ -331,17 +331,17 @@ jobs:
           - **Windows** (x64): \`openframe-chat_windows.zip\`
 
           ## Helm Chart
-          - \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${{ inputs.version }}\`
+          - \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${VERSION}\`
           ---
           EOF
       
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version }}
-          name: "🦩 ${{ inputs.version }}"
+          tag_name: ${{ inputs.version || 'latest' }}
+          name: "🦩 ${{ inputs.version || 'latest' }}"
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}
           body_path: RELEASE_HEADER.md
           files: |
@@ -349,11 +349,13 @@ jobs:
             final-artifacts/clients/*.tar.gz
 
       - name: Configure Git
+        if: ${{ inputs.version != '' }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
 
       - name: Create Stage Release PR
+        if: ${{ inputs.version != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_PR_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
@@ -367,3 +369,6 @@ jobs:
           GH_TOKEN=$GH_PR_TOKEN gh pr ready "${PR_URL}"  # to trigger the workflow
           GH_TOKEN=$GH_PR_TOKEN gh pr review "${PR_URL}" --approve
           gh pr merge "${PR_URL}" --squash --auto
+
+
+
