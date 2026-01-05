@@ -316,7 +316,7 @@ jobs:
       - name: Generate release header
         run: |
           VERSION="${{ inputs.version || 'latest' }}"
-          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r ".[] | \"- \\\`${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):${VERSION}\\\`\"")
+          IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):'"${VERSION}"'`"')
 
           cat > RELEASE_HEADER.md <<EOF
           ## Images
