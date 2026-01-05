@@ -26,7 +26,6 @@ import { useAIPolicies, type PolicyRule, type CustomPolicyRequest, type PolicyTe
 import { PolicyConfigurationPanel } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { toUiKitToolType } from '@lib/tool-labels'
 
-// Provider configuration mapping
 const PROVIDER_CONFIG = {
   ANTHROPIC: {
     apiKey: 'anthropic',
@@ -47,12 +46,11 @@ const PROVIDER_CONFIG = {
 
 type ProviderKey = keyof typeof PROVIDER_CONFIG
 
-// Maps API response keys to provider keys
 const API_KEY_TO_PROVIDER: Record<string, ProviderKey> = {
   'anthropic': 'ANTHROPIC',
   'openai': 'OPENAI',
   'google-gemini': 'GOOGLE_GEMINI',
-  'google': 'GOOGLE_GEMINI' // Handle legacy 'google' key
+  'google': 'GOOGLE_GEMINI' 
 }
 
 export function AISettingsTab() {
@@ -88,7 +86,6 @@ export function AISettingsTab() {
   const [initialPolicyGroups, setInitialPolicyGroups] = useState<Map<string, PermissionCategory[]>>(new Map())
   const [initialTemplateId, setInitialTemplateId] = useState<string | null>(null)
   
-  // Custom policy state
   const [isCustomPolicy, setIsCustomPolicy] = useState(false)
   const [customBaseTemplateId, setCustomBaseTemplateId] = useState<string | null>(null)
   const [originalRules, setOriginalRules] = useState<Map<string, ApprovalLevel>>(new Map())
@@ -99,7 +96,7 @@ export function AISettingsTab() {
     if (configuration) {
       setSelectedProvider(configuration.provider)
       setSelectedModel(configuration.modelName)
-      // Only set initial values if not in edit mode
+      
       if (!isEditMode) {
         setInitialProvider(configuration.provider)
         setInitialModel(configuration.modelName)
@@ -108,7 +105,6 @@ export function AISettingsTab() {
   }, [configuration, isEditMode])
 
   useEffect(() => {
-    // Only set initial template if not in edit mode and not already set
     if (!isEditMode && !initialTemplateId && activeTemplateId) {
       setInitialTemplateId(activeTemplateId || null)
     }
@@ -191,7 +187,7 @@ export function AISettingsTab() {
     }
 
     setPolicyGroups(finalGroups)
-    // Store initial state when loading a new template (only when not in edit mode)
+    
     if (!isEditMode) {
       setInitialPolicyGroups(new Map(
         Array.from(finalGroups.entries()).map(([groupName, categories]) => [
@@ -201,15 +197,13 @@ export function AISettingsTab() {
       ))
     }
     
-    // Handle pending custom policy setup
     if (pendingCustomTemplateId && selectedTemplate?.id === pendingCustomTemplateId) {
       setupCustomPolicy(selectedTemplate)
       return
     }
     
-    // Don't reload rules when in custom policy creation mode - we want to keep the base template rules
     if (selectedTemplateId === 'CUSTOM_CREATION') {
-      return // Keep existing rules from base template
+      return 
     }
   }, [selectedTemplate, selectedTemplateId, pendingCustomTemplateId, isEditMode])
 
@@ -217,7 +211,6 @@ export function AISettingsTab() {
     let hasChanges = false
     let savePromises = []
 
-    // Check if AI configuration changed
     const aiConfigChanged = (selectedProvider !== initialProvider) || (selectedModel !== initialModel)
     
     if (aiConfigChanged) {
@@ -233,7 +226,6 @@ export function AISettingsTab() {
       )
     }
 
-    // Handle custom policy creation save
     if (isCustomPolicy && customPolicyChanges.size > 0 && customBaseTemplateId) {
       hasChanges = true
       const overrides: Record<string, ApprovalLevel> = {}
@@ -243,18 +235,13 @@ export function AISettingsTab() {
       
       savePromises.push(
         createOrUpdateCustomPolicy(customBaseTemplateId, overrides).then(() => {
-          // Reset custom policy creation state after save
           setIsCustomPolicy(false)
           setCustomBaseTemplateId(null)
           setOriginalRules(new Map())
           setCustomPolicyChanges(new Map())
-          
-          // After creating custom policy, it should appear in the template list
-          // The template will be automatically selected if it becomes active
         })
       )
     } else {
-      // Handle regular template selection (including existing custom template)
       const policyChanged = selectedTemplateId && 
         selectedTemplateId !== 'CUSTOM_CREATION' && 
         selectedTemplateId !== (initialTemplateId || activeTemplateId)
@@ -274,7 +261,7 @@ export function AISettingsTab() {
         await Promise.all(savePromises)
         setIsEditMode(false)
       } catch (error) {
-        // Errors are already handled in the hooks
+        
       }
     } else {
       setIsEditMode(false)
@@ -282,27 +269,21 @@ export function AISettingsTab() {
   }
 
   const handleCancel = () => {
-    // Reset AI configuration
     setSelectedProvider(initialProvider)
     setSelectedModel(initialModel)
     
-    // Handle policy template reset carefully
     if (isCustomPolicy) {
-      // If we were in custom policy creation mode, restore the base template
       if (customBaseTemplateId) {
         setSelectedTemplateId(customBaseTemplateId)
       } else {
         setSelectedTemplateId(initialTemplateId || activeTemplateId || null)
       }
     } else {
-      // Normal case - restore original template
       setSelectedTemplateId(initialTemplateId || activeTemplateId || null)
     }
     
-    // Reset policy groups to their initial state
     setPolicyGroups(new Map(initialPolicyGroups))
     
-    // Reset custom policy state
     setIsCustomPolicy(false)
     setCustomBaseTemplateId(null)
     setOriginalRules(new Map())
@@ -320,41 +301,31 @@ export function AISettingsTab() {
   const handleUseForCustomPolicy = (templateId: string) => {
     console.log({templateId})
     
-    // Check if we have the template loaded
     const baseTemplate = selectedTemplate?.id === templateId ? selectedTemplate : null
     
     if (!baseTemplate) {
-      // First load the template, then set up custom policy
       setSelectedTemplateId(templateId)
-      // Store the templateId to set up custom policy once template loads
       setPendingCustomTemplateId(templateId)
       return
     }
     
-    // We have the template loaded, set up custom policy immediately
     setupCustomPolicy(baseTemplate)
   }
   
   const setupCustomPolicy = (baseTemplate: PolicyTemplateDetail) => {
-    // Store original rules from the BASE template
     const rulesMap = new Map<string, ApprovalLevel>()
     baseTemplate.rules.forEach((rule: PolicyRule) => {
       rulesMap.set(rule.naturalKey, rule.approvalLevel)
     })
     setOriginalRules(rulesMap)
-    
-    // Set up custom policy creation state
     setIsCustomPolicy(true)
     setCustomBaseTemplateId(baseTemplate.id)
-    setSelectedTemplateId('CUSTOM_CREATION') // Special ID for custom policy creation
-    
-    // Clear any previous changes and pending state
+    setSelectedTemplateId('CUSTOM_CREATION') 
     setCustomPolicyChanges(new Map())
     setPendingCustomTemplateId(null)
   }
 
   const handlePolicyCategoryToggle = (policyGroupName: string, categoryId: string) => {
-    // Allow toggling expansion regardless of edit mode
     setPolicyGroups(prev => {
       const newGroups = new Map(prev)
       const categories = newGroups.get(policyGroupName)
@@ -369,7 +340,6 @@ export function AISettingsTab() {
   }
 
   const handlePolicyGlobalPermissionChange = (policyGroupName: string, categoryId: string, level: ApprovalLevel | undefined) => {
-    // Only allow changes in edit mode and for custom policies
     if (!isEditMode || (!isCustomPolicy && selectedTemplate?.type !== 'CUSTOM')) return
     
     setPolicyGroups(prev => {
@@ -384,19 +354,16 @@ export function AISettingsTab() {
             if (level) {
               updated.policies = cat.policies.map(p => ({ ...p, approvalLevel: level }))
               
-              // Track changes for custom policy
               if (isCustomPolicy) {
                 cat.policies.forEach(p => {
                   const originalLevel = originalRules.get(p.naturalKey)
                   if (originalLevel === level) {
-                    // Remove from changes if reverted to original
                     setCustomPolicyChanges(prev => {
                       const newChanges = new Map(prev)
                       newChanges.delete(p.naturalKey)
                       return newChanges
                     })
                   } else if (level) {
-                    // Track the change
                     setCustomPolicyChanges(prev => new Map(prev).set(p.naturalKey, level))
                   }
                 })
@@ -411,11 +378,9 @@ export function AISettingsTab() {
   }
 
   const handlePolicyPermissionChange = (policyGroupName: string, categoryId: string, policyId: string, level: ApprovalLevel) => {
-    // Only allow changes in edit mode and for custom policies
     if (!isEditMode || (!isCustomPolicy && selectedTemplate?.type !== 'CUSTOM')) return
     
-    // Find the actual policy to get its naturalKey
-    let naturalKey = policyId // Default to policyId
+    let naturalKey = policyId 
     policyGroups.forEach(categories => {
       categories.forEach(cat => {
         const policy = cat.policies.find(p => p.id === policyId)
@@ -444,23 +409,19 @@ export function AISettingsTab() {
       return newGroups
     })
     
-    // Track changes for custom policy using naturalKey
     if (isCustomPolicy) {
       const originalLevel = originalRules.get(naturalKey)
       if (originalLevel === level) {
-        // Remove from changes if reverted to original
         setCustomPolicyChanges(prev => {
           const newChanges = new Map(prev)
           newChanges.delete(naturalKey)
           return newChanges
         })
       } else {
-        // Track the change
         setCustomPolicyChanges(prev => new Map(prev).set(naturalKey, level))
       }
     }
   }
-
 
   const getAvailableModels = () => {
     if (!selectedProvider) return []
@@ -496,7 +457,6 @@ export function AISettingsTab() {
             variant="outline"
             leftIcon={<Edit2 className="w-4 h-4" />}
             onClick={() => {
-              // Store current state as initial when entering edit mode
               setInitialProvider(selectedProvider)
               setInitialModel(selectedModel)
               setInitialTemplateId(selectedTemplateId || activeTemplateId || null)
@@ -712,14 +672,10 @@ export function AISettingsTab() {
                     value={isCustomPolicy ? 'CUSTOM_CREATION' : (selectedTemplateId || '')}
                     onValueChange={(v) => {
                       if (v === 'CUSTOM_CREATION') {
-                        // Don't switch away from custom creation mode when clicking on the custom creation option
                         return
                       }
                       
-                      // Switching to a regular template or existing custom template
                       setSelectedTemplateId(v)
-                      
-                      // Reset custom policy creation state
                       setIsCustomPolicy(false)
                       setCustomBaseTemplateId(null)
                       setOriginalRules(new Map())
