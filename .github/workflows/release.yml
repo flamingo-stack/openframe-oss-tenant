@@ -334,7 +334,11 @@ jobs:
           - \`oci://${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/app-of-apps:${VERSION}\`
           ---
           EOF
-      
+
+      - name: Force update latest tag
+        if: ${{ github.event_name == 'push' }}
+        run: git tag -f latest && git push -f origin latest
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
