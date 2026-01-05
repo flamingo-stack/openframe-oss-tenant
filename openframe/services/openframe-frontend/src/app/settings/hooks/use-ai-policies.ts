@@ -6,7 +6,7 @@ import { apiClient } from '@lib/api-client'
 export interface PolicyTemplateSummary {
   id: string
   displayName: string
-  type: 'TEMPLATE' | string
+  type: 'TEMPLATE' | 'CUSTOM' | string
   isActive: boolean
   customOverridesCount: number
 }
@@ -25,10 +25,15 @@ export interface PolicyRule {
 export interface PolicyTemplateDetail {
   id: string
   displayName: string
-  type: 'TEMPLATE' | string
+  type: 'TEMPLATE' | 'CUSTOM' | string
   rules: PolicyRule[]
   customOverrides: Record<string, unknown>
   active: boolean
+}
+
+export interface CustomPolicyRequest {
+  templateId: string
+  overrides: Record<string, ApprovalLevel>
 }
 
 export function useAIPolicies() {
@@ -136,7 +141,11 @@ export function useAIPolicies() {
   }, [fetchTemplates])
 
   useEffect(() => {
-    if (!selectedTemplateId) {
+    if (!selectedTemplateId || selectedTemplateId === 'CUSTOM_CREATION') {
+      if (selectedTemplateId === 'CUSTOM_CREATION') {
+        // Don't clear selectedTemplate when in custom creation mode
+        return
+      }
       setSelectedTemplate(null)
       return
     }
@@ -155,6 +164,40 @@ export function useAIPolicies() {
     [templates]
   )
 
+  const createOrUpdateCustomPolicy = useCallback(
+    async (baseTemplateId: string, overrides: Record<string, ApprovalLevel>) => {
+      try {
+        const requestBody: CustomPolicyRequest = {
+          templateId: baseTemplateId,
+          overrides,
+        }
+
+        const res = await apiClient.put('/chat/api/v1/policies/custom', requestBody)
+        if (!res.ok) throw new Error(res.error || 'Failed to save custom policy')
+
+        toast({
+          title: 'Custom Policy Saved',
+          description: 'Your custom policy has been created successfully',
+          variant: 'success',
+          duration: 4000,
+        })
+
+        // Refresh templates to include the new/updated custom policy
+        await fetchTemplates()
+        return true
+      } catch (error) {
+        toast({
+          title: 'Save Failed',
+          description: error instanceof Error ? error.message : 'Unable to save custom policy',
+          variant: 'destructive',
+          duration: 5000,
+        })
+        throw error
+      }
+    },
+    [toast, fetchTemplates]
+  )
+
   return {
     templates,
     templateOptions,
@@ -166,9 +209,8 @@ export function useAIPolicies() {
     isLoadingTemplate,
     isActivating,
     activateTemplate,
+    createOrUpdateCustomPolicy,
     refetchTemplates: fetchTemplates,
     refetchSelectedTemplate: selectedTemplateId ? () => fetchTemplate(selectedTemplateId) : undefined,
   }
 }
-
-
