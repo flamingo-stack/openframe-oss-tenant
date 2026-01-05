@@ -297,10 +297,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e && mkdir -p final-artifacts/clients
-          
-          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
-          ls -lh final-artifacts/clients/ || true
-          
+          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true          
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then

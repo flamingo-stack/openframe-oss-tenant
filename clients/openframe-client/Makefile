@@ -36,5 +36,3 @@ crossinstall:
 
 crossbuild:
 	cross build --release $(TARGET_FLAG)
-
-
