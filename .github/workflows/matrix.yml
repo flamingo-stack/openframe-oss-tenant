@@ -75,10 +75,6 @@ jobs:
                 "POSTGRES_MULTIPLE_DATABASES": "authentik-database,authentik-database-authentik"
               }
             },
-            { 
-              "name": "fleetmdm",
-              "path": "./integrated-tools/fleetmdm"
-            },
             {
               "name": "meshcentral",
               "path": "./integrated-tools/meshcentral/server",
