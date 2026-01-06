@@ -11,7 +11,7 @@ server:
   image:
     registry: ghcr.io/flamingo-stack
     repository: fleetmdm
-    tag: f23e7268e17f01e9d53dd70f17a0dc23c5da44ace15036f5f297d6cab4cb6603
+    tag: feature-build-migration
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"
