@@ -55,11 +55,11 @@ apps:
   #     postgres:
   #       image: 
   #         tag: latest
-  fleetmdm: 
+  fleetmdm:
     values:
       server:
-        image: 
-#          tag: latest
+        image:
+          tag: feature-build-migration
   meshcentral: 
     values:
       server:
