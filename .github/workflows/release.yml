@@ -297,7 +297,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e && mkdir -p final-artifacts/clients
-          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true          
+          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
+          echo "Downloaded from previous release:"
+          ls -lhT final-artifacts/clients/
+          echo "---"
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
@@ -305,6 +308,9 @@ jobs:
                 cp "release-artifacts/${client}-macos/${client}" "final-artifacts/clients/${client}_macos"
               tar -czf "final-artifacts/clients/${client}_macos.tar.gz" \
                 -C "release-artifacts/${client}-macos" .
+              ls -lhT final-artifacts/clients/
+            else
+              echo "Keeping existing ${client}_macos.tar.gz from previous release"
             fi
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
@@ -312,9 +318,12 @@ jobs:
                 cp "release-artifacts/${client}-windows/${client}.exe" "final-artifacts/clients/${client}_windows.exe"
               (cd "release-artifacts/${client}-windows" && \
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
+                ls -lhT final-artifacts/clients/
+            else
+              echo "Keeping existing ${client}_windows.zip from previous release"
             fi
           done
-          ls -lh final-artifacts/clients/
+          ls -lhT final-artifacts/clients/
 
       - name: Generate release header
         run: |
