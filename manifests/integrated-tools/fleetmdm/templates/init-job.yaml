@@ -36,92 +36,113 @@ spec:
           done
           echo "Fleet is ready!"
 
-          # Check if already initialized by trying the setup endpoint
-          SETUP_RESPONSE=$(curl -s "${FLEET_URL}/api/v1/setup")
-          echo "Setup check response: $SETUP_RESPONSE"
+          # Check if setup is needed (404 means already setup)
+          SETUP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${FLEET_URL}/api/v1/setup")
+          echo "Setup endpoint status: $SETUP_STATUS"
 
-          if echo "$SETUP_RESPONSE" | grep -q "already completed"; then
-            echo "Fleet already initialized"
-          else
+          if [ "$SETUP_STATUS" != "404" ]; then
             echo "Performing initial Fleet setup..."
-            SETUP_RESULT=$(curl -sf -X POST "${FLEET_URL}/api/v1/setup" \
+            cat > /tmp/setup.json << EOF
+          {
+            "admin": {
+              "email": "${FLEET_SETUP_ADMIN_EMAIL}",
+              "name": "${FLEET_SETUP_ADMIN_NAME:-Admin}",
+              "password": "${FLEET_SETUP_ADMIN_PASSWORD}"
+            },
+            "org_info": {
+              "org_name": "${FLEET_SETUP_ORG_NAME}"
+            },
+            "server_url": "${FLEET_URL}"
+          }
+          EOF
+            SETUP_RESPONSE=$(curl -s -X POST "${FLEET_URL}/api/v1/setup" \
               -H "Content-Type: application/json" \
-              -d '{
-                "admin": {
-                  "email": "'"${FLEET_SETUP_ADMIN_EMAIL}"'",
-                  "password": "'"${FLEET_SETUP_ADMIN_PASSWORD}"'",
-                  "name": "'"${FLEET_SETUP_ADMIN_NAME:-Admin}"'"
-                },
-                "org_info": {
-                  "org_name": "'"${FLEET_SETUP_ORG_NAME}"'"
-                },
-                "server_url": "'"${FLEET_URL}"'"
-              }' 2>&1) || echo "Setup result: $SETUP_RESULT"
+              -d @/tmp/setup.json)
+            echo "Setup response: $SETUP_RESPONSE"
+
+            ADMIN_TOKEN=$(echo "$SETUP_RESPONSE" | jq -r '.token // empty')
+            if [ -n "$ADMIN_TOKEN" ]; then
+              echo "Got admin token from setup"
+            fi
+          else
+            echo "Fleet already initialized (setup returned 404)"
           fi
 
-          echo "Logging in as admin to get session token..."
-          LOGIN_RESPONSE=$(curl -sf -X POST "${FLEET_URL}/api/v1/login" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "email": "'"${FLEET_SETUP_ADMIN_EMAIL}"'",
-              "password": "'"${FLEET_SETUP_ADMIN_PASSWORD}"'"
-            }')
+          # If we don't have a token yet, try to login
+          if [ -z "$ADMIN_TOKEN" ]; then
+            echo "Logging in as admin..."
+            cat > /tmp/login.json << EOF
+          {"email":"${FLEET_SETUP_ADMIN_EMAIL}","password":"${FLEET_SETUP_ADMIN_PASSWORD}"}
+          EOF
+            LOGIN_RESPONSE=$(curl -s -X POST "${FLEET_URL}/api/v1/fleet/login" \
+              -H "Content-Type: application/json" \
+              -d @/tmp/login.json)
+            echo "Login response: $LOGIN_RESPONSE"
 
-          ADMIN_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.token // empty')
+            ADMIN_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.token // empty')
+          fi
 
           if [ -z "$ADMIN_TOKEN" ]; then
-            echo "Failed to get admin token. Response: $LOGIN_RESPONSE"
+            echo "ERROR: Failed to get admin token. Fleet may have different credentials."
+            echo "Please check FLEET_SETUP_ADMIN_EMAIL and FLEET_SETUP_ADMIN_PASSWORD"
             exit 1
           fi
           echo "Got admin token"
 
           # Check if API user exists
-          echo "Checking if API user exists..."
-          USERS_RESPONSE=$(curl -sf "${FLEET_URL}/api/v1/users" \
+          echo "Checking existing users..."
+          USERS_RESPONSE=$(curl -s "${FLEET_URL}/api/v1/fleet/users" \
             -H "Authorization: Bearer ${ADMIN_TOKEN}")
 
-          API_USER_EXISTS=$(echo "$USERS_RESPONSE" | jq -r '.users[]? | select(.email == "'"${FLEET_API_USER_EMAIL}"'") | .email // empty')
+          API_USER_EXISTS=$(echo "$USERS_RESPONSE" | jq -r '.users[]? | select(.email == "'"${FLEET_API_USER_EMAIL}"'") | .id // empty')
 
           if [ -z "$API_USER_EXISTS" ]; then
             echo "Creating API user..."
-            API_USER_RESPONSE=$(curl -sf -X POST "${FLEET_URL}/api/v1/users/admin" \
+            cat > /tmp/apiuser.json << EOF
+          {
+            "name": "${FLEET_API_USER_NAME}",
+            "email": "${FLEET_API_USER_EMAIL}",
+            "password": "${FLEET_API_USER_PASSWORD}",
+            "global_role": "admin",
+            "api_only": true
+          }
+          EOF
+            API_USER_RESPONSE=$(curl -s -X POST "${FLEET_URL}/api/v1/fleet/users/admin" \
               -H "Authorization: Bearer ${ADMIN_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d '{
-                "name": "'"${FLEET_API_USER_NAME}"'",
-                "email": "'"${FLEET_API_USER_EMAIL}"'",
-                "password": "'"${FLEET_API_USER_PASSWORD}"'",
-                "global_role": "admin",
-                "api_only": true
-              }')
+              -d @/tmp/apiuser.json)
+            echo "API user response: $API_USER_RESPONSE"
 
             API_TOKEN=$(echo "$API_USER_RESPONSE" | jq -r '.user.api_token // empty')
 
             if [ -z "$API_TOKEN" ]; then
-              echo "Failed to get API token from user creation. Response: $API_USER_RESPONSE"
-              exit 1
+              echo "WARNING: Could not extract api_token from response. Trying to login as API user..."
             fi
-            echo "API user created successfully"
           else
-            echo "API user already exists, logging in to get token..."
-            API_LOGIN_RESPONSE=$(curl -sf -X POST "${FLEET_URL}/api/v1/login" \
+            echo "API user already exists (id: $API_USER_EXISTS)"
+          fi
+
+          # If we don't have API token, try to login as API user
+          if [ -z "$API_TOKEN" ]; then
+            echo "Logging in as API user to get token..."
+            cat > /tmp/apilogin.json << EOF
+          {"email":"${FLEET_API_USER_EMAIL}","password":"${FLEET_API_USER_PASSWORD}"}
+          EOF
+            API_LOGIN_RESPONSE=$(curl -s -X POST "${FLEET_URL}/api/v1/fleet/login" \
               -H "Content-Type: application/json" \
-              -d '{
-                "email": "'"${FLEET_API_USER_EMAIL}"'",
-                "password": "'"${FLEET_API_USER_PASSWORD}"'"
-              }')
+              -d @/tmp/apilogin.json)
+            echo "API login response: $API_LOGIN_RESPONSE"
 
             API_TOKEN=$(echo "$API_LOGIN_RESPONSE" | jq -r '.token // empty')
           fi
 
           if [ -z "$API_TOKEN" ]; then
-            echo "Failed to obtain API token"
-            exit 1
+            echo "WARNING: Could not obtain API token. Using admin token instead."
+            API_TOKEN="$ADMIN_TOKEN"
           fi
 
-          echo "Got API token, storing in Secret..."
+          echo "Storing token in Secret..."
 
-          # Create/update the secret using kubectl
           kubectl create secret generic fleetmdm-api-token \
             --namespace=integrated-tools \
             --from-literal=token="${API_TOKEN}" \
