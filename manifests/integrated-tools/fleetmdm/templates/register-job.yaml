@@ -13,6 +13,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      serviceAccountName: fleetmdm-init
       containers:
       - name: register
         image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
