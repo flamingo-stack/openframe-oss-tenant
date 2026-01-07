@@ -26,6 +26,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 
+      # Fleet runs as user/group 3333
+      securityContext:
+        fsGroup: 3333
+
       initContainers:
       # Wait for MySQL to be ready
       - name: wait-mysql
@@ -36,6 +40,16 @@ spec:
       - name: wait-redis
         image: busybox:1.36
         command: ['sh', '-c', 'until nc -z fleetmdm-redis-0.fleetmdm-redis.integrated-tools.svc.cluster.local 6379; do echo waiting for redis; sleep 2; done']
+
+      # Fix permissions on logs volume
+      - name: fix-permissions
+        image: busybox:1.36
+        command: ['sh', '-c', 'chown -R 3333:3333 /logs && chmod 755 /logs']
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: fleet-logs
+          mountPath: /logs
 
       # Run database migrations
       - name: db-migrate
@@ -70,6 +84,9 @@ spec:
         ports:
         - containerPort: 8080
           name: http
+        securityContext:
+          runAsUser: 3333
+          runAsGroup: 3333
         envFrom:
         - configMapRef:
             name: fleetmdm-server
