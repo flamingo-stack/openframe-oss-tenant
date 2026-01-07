@@ -304,8 +304,6 @@ jobs:
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
-              [ -f "release-artifacts/${client}-macos/${client}" ] && \
-                cp "release-artifacts/${client}-macos/${client}" "final-artifacts/clients/${client}_macos"
               tar -czf "final-artifacts/clients/${client}_macos.tar.gz" \
                 -C "release-artifacts/${client}-macos" .
               ls -lh --full-time final-artifacts/clients/
@@ -314,11 +312,9 @@ jobs:
             fi
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
-              [ -f "release-artifacts/${client}-windows/${client}.exe" ] && \
-                cp "release-artifacts/${client}-windows/${client}.exe" "final-artifacts/clients/${client}_windows.exe"
               (cd "release-artifacts/${client}-windows" && \
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
-                ls -lh --full-time final-artifacts/clients/
+              ls -lh --full-time final-artifacts/clients/
             else
               echo "Keeping existing ${client}_windows.zip from previous release"
             fi
