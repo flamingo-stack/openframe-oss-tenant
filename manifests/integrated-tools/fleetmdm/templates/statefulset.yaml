@@ -21,8 +21,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
+      {{- with .Values.server.imagePullSecrets }}
       imagePullSecrets:
-      - name: ghcr-secret
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 
       initContainers:
       # Wait for MySQL to be ready

@@ -59,7 +59,9 @@ apps:
     values:
       server:
         image:
-          tag: feature-build-migration
+          # Using official FleetDM image
+          repository: fleetdm/fleet
+          tag: v4.78.0
   meshcentral: 
     values:
       server:
