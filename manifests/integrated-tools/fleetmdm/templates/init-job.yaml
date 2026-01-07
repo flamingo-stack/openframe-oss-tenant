@@ -1,0 +1,159 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fleetmdm-init
+  annotations:
+    "argocd.argoproj.io/hook": PostSync
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+    "argocd.argoproj.io/sync-wave": "0"
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: fleetmdm-init
+      containers:
+      - name: fleet-init
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        envFrom:
+        - configMapRef:
+            name: fleetmdm-server
+        - secretRef:
+            name: fleetmdm-server
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+
+          FLEET_URL="http://fleetmdm-server.integrated-tools.svc.cluster.local:8080"
+
+          echo "Waiting for Fleet to be ready..."
+          until curl -sf "${FLEET_URL}/healthz" >/dev/null 2>&1; do
+            echo "Fleet not ready yet, waiting..."
+            sleep 5
+          done
+          echo "Fleet is ready!"
+
+          # Check if already initialized by trying the setup endpoint
+          SETUP_RESPONSE=$(curl -s "${FLEET_URL}/api/v1/setup")
+          echo "Setup check response: $SETUP_RESPONSE"
+
+          if echo "$SETUP_RESPONSE" | grep -q "already completed"; then
+            echo "Fleet already initialized"
+          else
+            echo "Performing initial Fleet setup..."
+            SETUP_RESULT=$(curl -sf -X POST "${FLEET_URL}/api/v1/setup" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "admin": {
+                  "email": "'"${FLEET_SETUP_ADMIN_EMAIL}"'",
+                  "password": "'"${FLEET_SETUP_ADMIN_PASSWORD}"'",
+                  "name": "'"${FLEET_SETUP_ADMIN_NAME:-Admin}"'"
+                },
+                "org_info": {
+                  "org_name": "'"${FLEET_SETUP_ORG_NAME}"'"
+                },
+                "server_url": "'"${FLEET_URL}"'"
+              }' 2>&1) || echo "Setup result: $SETUP_RESULT"
+          fi
+
+          echo "Logging in as admin to get session token..."
+          LOGIN_RESPONSE=$(curl -sf -X POST "${FLEET_URL}/api/v1/login" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "email": "'"${FLEET_SETUP_ADMIN_EMAIL}"'",
+              "password": "'"${FLEET_SETUP_ADMIN_PASSWORD}"'"
+            }')
+
+          ADMIN_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.token // empty')
+
+          if [ -z "$ADMIN_TOKEN" ]; then
+            echo "Failed to get admin token. Response: $LOGIN_RESPONSE"
+            exit 1
+          fi
+          echo "Got admin token"
+
+          # Check if API user exists
+          echo "Checking if API user exists..."
+          USERS_RESPONSE=$(curl -sf "${FLEET_URL}/api/v1/users" \
+            -H "Authorization: Bearer ${ADMIN_TOKEN}")
+
+          API_USER_EXISTS=$(echo "$USERS_RESPONSE" | jq -r '.users[]? | select(.email == "'"${FLEET_API_USER_EMAIL}"'") | .email // empty')
+
+          if [ -z "$API_USER_EXISTS" ]; then
+            echo "Creating API user..."
+            API_USER_RESPONSE=$(curl -sf -X POST "${FLEET_URL}/api/v1/users/admin" \
+              -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "name": "'"${FLEET_API_USER_NAME}"'",
+                "email": "'"${FLEET_API_USER_EMAIL}"'",
+                "password": "'"${FLEET_API_USER_PASSWORD}"'",
+                "global_role": "admin",
+                "api_only": true
+              }')
+
+            API_TOKEN=$(echo "$API_USER_RESPONSE" | jq -r '.user.api_token // empty')
+
+            if [ -z "$API_TOKEN" ]; then
+              echo "Failed to get API token from user creation. Response: $API_USER_RESPONSE"
+              exit 1
+            fi
+            echo "API user created successfully"
+          else
+            echo "API user already exists, logging in to get token..."
+            API_LOGIN_RESPONSE=$(curl -sf -X POST "${FLEET_URL}/api/v1/login" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "email": "'"${FLEET_API_USER_EMAIL}"'",
+                "password": "'"${FLEET_API_USER_PASSWORD}"'"
+              }')
+
+            API_TOKEN=$(echo "$API_LOGIN_RESPONSE" | jq -r '.token // empty')
+          fi
+
+          if [ -z "$API_TOKEN" ]; then
+            echo "Failed to obtain API token"
+            exit 1
+          fi
+
+          echo "Got API token, storing in Secret..."
+
+          # Create/update the secret using kubectl
+          kubectl create secret generic fleetmdm-api-token \
+            --namespace=integrated-tools \
+            --from-literal=token="${API_TOKEN}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          echo "Fleet initialization complete! API token stored in secret 'fleetmdm-api-token'"
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fleetmdm-init
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: fleetmdm-init
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "update", "patch", "get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: fleetmdm-init
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: fleetmdm-init
+subjects:
+- kind: ServiceAccount
+  name: fleetmdm-init

@@ -7,6 +7,7 @@ spec:
   selector:
     app: fleetmdm-server
   ports:
-  - port: 8070
-    targetPort: 8070
+  - port: 8080
+    targetPort: 8080
     protocol: TCP
+    name: http

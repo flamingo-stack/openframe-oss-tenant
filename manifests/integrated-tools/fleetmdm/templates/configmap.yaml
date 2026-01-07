@@ -3,13 +3,21 @@ kind: ConfigMap
 metadata:
   name: fleetmdm-server
 data:
-  FLEET_CONFIG: "/etc/fleet/fleet.yml"
+  # Fleet server configuration via environment variables
+  # See: https://fleetdm.com/docs/configuration/fleet-server-configuration
+  FLEET_MYSQL_ADDRESS: "fleetmdm-mysql-0.fleetmdm-mysql.integrated-tools.svc.cluster.local:3306"
+  FLEET_REDIS_ADDRESS: "fleetmdm-redis-0.fleetmdm-redis.integrated-tools.svc.cluster.local:6379"
+  FLEET_SERVER_ADDRESS: "0.0.0.0:8080"
+  FLEET_SERVER_TLS: "false"
+  FLEET_LOGGING_JSON: "true"
+  FLEET_LOGGING_DISABLE_BANNER: "true"
+  FLEET_OSQUERY_STATUS_LOG_PLUGIN: "filesystem"
+  FLEET_OSQUERY_RESULT_LOG_PLUGIN: "filesystem"
+  FLEET_FILESYSTEM_STATUS_LOG_FILE: "/logs/status.log"
+  FLEET_FILESYSTEM_RESULT_LOG_FILE: "/logs/result.log"
+  # Init configuration
   FLEET_SETUP_ADMIN_EMAIL: "admin@openframe.local"
   FLEET_SETUP_ADMIN_NAME: "Admin"
   FLEET_SETUP_ORG_NAME: "OpenFrame"
-  FLEET_SETUP_AUTO_INIT: "true"
-  FLEET_MYSQL_ADDRESS: "fleetmdm-mysql-0.fleetmdm-mysql.integrated-tools.svc.cluster.local:3306"
-  FLEET_REDIS_ADDRESS: "fleetmdm-redis-0.fleetmdm-redis.integrated-tools.svc.cluster.local:6379"
   FLEET_API_USER_NAME: "API User"
   FLEET_API_USER_EMAIL: "api@openframe.local"
-  FLEET_SERVER_PORT: "8070"

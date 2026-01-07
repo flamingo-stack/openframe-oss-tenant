@@ -3,17 +3,16 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fleetmdm-server
+  name: fleetmdm-register
   annotations:
     "argocd.argoproj.io/hook": PostSync
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
-    "argocd.argoproj.io/sync-options": Replace=true
+    "argocd.argoproj.io/sync-wave": "1"
 spec:
   backoffLimit: 3
   template:
     spec:
       restartPolicy: Never
-
       containers:
       - name: register
         image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
@@ -33,24 +32,38 @@ spec:
             secretKeyRef:
               name: fleetmdm-server
               key: FLEET_API_USER_PASSWORD
+        - name: FLEET_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: fleetmdm-api-token
+              key: token
         command:
           - /bin/sh
-          - -uc
+          - -c
           - |
-            echo "Getting FLEET_TOKEN..."
-            POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath='{.items[0].metadata.name}')
-            until kubectl exec -n integrated-tools "$POD" -- test -f /etc/fleet/api_token.txt 2>/dev/null; do
-              echo "Waiting for /etc/fleet/api_token.txt to be available..."
+            echo "Registering FleetMDM Server with OpenFrame..."
+
+            # Wait for init job to create the secret
+            echo "Waiting for API token secret..."
+            until kubectl get secret fleetmdm-api-token -n integrated-tools 2>/dev/null; do
+              echo "Waiting for fleetmdm-api-token secret..."
               sleep 5
             done
-            FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
 
-            echo "Registering FleetMDM Server..."
+            # Read token from secret
+            FLEET_TOKEN=$(kubectl get secret fleetmdm-api-token -n integrated-tools -o jsonpath='{.data.token}' | base64 -d)
+
+            if [ -z "$FLEET_TOKEN" ]; then
+              echo "Failed to get FLEET_TOKEN from secret"
+              exit 1
+            fi
+
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
               echo "Still waiting..."
               sleep 10
             done
+
             echo "Sending registration request..."
             http_code=$(curl -sS -o /tmp/response.txt -w "%{http_code}" \
               -X POST "http://openframe-management.microservices.svc.cluster.local:8095/v1/tools/fleetmdm-server" \
@@ -65,13 +78,13 @@ spec:
                   "description": "Fleet Device Management Platform",
                   "toolUrls": [
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
-                      "port": "8070",
+                      "url": "http://fleetmdm-server.integrated-tools.svc.cluster.local",
+                      "port": "8080",
                       "type": "API"
                     },
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
-                      "port": "8070",
+                      "url": "http://fleetmdm-server.integrated-tools.svc.cluster.local",
+                      "port": "8080",
                       "type": "DASHBOARD"
                     }
                   ],
@@ -90,7 +103,7 @@ spec:
                   "layerOrder": 4,
                   "layerColor": "#455A64",
                   "metricsPath": "/metrics",
-                  "healthCheckEndpoint": "/",
+                  "healthCheckEndpoint": "/healthz",
                   "healthCheckInterval": 30,
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
@@ -100,15 +113,15 @@ spec:
                     "config": {
                       "connector.class": "io.debezium.connector.mysql.MySqlConnector",
                       "tasks.max": "1",
-                      "database.hostname": "'"${FLEET_MYSQL_HOST}"'",
-                      "database.port": "'"${FLEET_MYSQL_PORT}"'",
+                      "database.hostname": "fleetmdm-mysql-0.fleetmdm-mysql.integrated-tools.svc.cluster.local",
+                      "database.port": "3306",
                       "database.user": "'"${MYSQL_USER}"'",
                       "database.password": "'"${MYSQL_PASSWORD}"'",
                       "database.server.name": "'"${MYSQL_DATABASE}"'",
                       "database.server.id": "1",
                       "database.include.list": "'"${MYSQL_DATABASE}"'",
                       "topic.prefix": "fleet_mysql",
-                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities, '"${MYSQL_DATABASE}"'.query_results",
+                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities,'"${MYSQL_DATABASE}"'.query_results",
                       "topic.creation.default.replication.factor": 1,
                       "topic.creation.default.partitions": 10,
                       "topic.creation.default.cleanup.policy": "compact",
