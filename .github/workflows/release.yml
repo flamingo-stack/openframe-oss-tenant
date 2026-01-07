@@ -338,9 +338,9 @@ jobs:
           ---
           EOF
 
-      - name: Force update latest tag
-        if: ${{ github.event_name == 'push' }}
-        run: git tag -f latest && git push -f origin latest
+      # - name: Force update latest tag
+      #   if: ${{ github.event_name == 'push' }}
+      #   run: git tag -f latest && git push -f origin latest
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
