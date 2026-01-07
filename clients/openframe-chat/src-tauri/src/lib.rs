@@ -55,7 +55,7 @@ fn get_debug_mode(debug_mode_state: State<DebugModeState>) -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    println!("[INFO] OpenFrame Chat starting...");
+    println!("[INFO] OpenFrame Chat starting... ");
     
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
