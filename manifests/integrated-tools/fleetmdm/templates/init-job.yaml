@@ -58,7 +58,7 @@ spec:
             SETUP_RESPONSE=$(curl -s -X POST "${FLEET_URL}/api/v1/setup" \
               -H "Content-Type: application/json" \
               -d @/tmp/setup.json)
-            echo "Setup response: $SETUP_RESPONSE"
+            echo "Setup completed"
 
             ADMIN_TOKEN=$(echo "$SETUP_RESPONSE" | jq -r '.token // empty')
             if [ -n "$ADMIN_TOKEN" ]; then
@@ -77,7 +77,7 @@ spec:
             LOGIN_RESPONSE=$(curl -s -X POST "${FLEET_URL}/api/v1/fleet/login" \
               -H "Content-Type: application/json" \
               -d @/tmp/login.json)
-            echo "Login response: $LOGIN_RESPONSE"
+            echo "Login completed"
 
             ADMIN_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.token // empty')
           fi
@@ -111,7 +111,7 @@ spec:
               -H "Authorization: Bearer ${ADMIN_TOKEN}" \
               -H "Content-Type: application/json" \
               -d @/tmp/apiuser.json)
-            echo "API user response: $API_USER_RESPONSE"
+            echo "API user created"
 
             API_TOKEN=$(echo "$API_USER_RESPONSE" | jq -r '.user.api_token // empty')
 
@@ -131,7 +131,7 @@ spec:
             API_LOGIN_RESPONSE=$(curl -s -X POST "${FLEET_URL}/api/v1/fleet/login" \
               -H "Content-Type: application/json" \
               -d @/tmp/apilogin.json)
-            echo "API login response: $API_LOGIN_RESPONSE"
+            echo "API user login completed"
 
             API_TOKEN=$(echo "$API_LOGIN_RESPONSE" | jq -r '.token // empty')
           fi

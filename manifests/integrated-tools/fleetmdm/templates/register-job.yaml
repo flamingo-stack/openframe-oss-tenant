@@ -33,11 +33,6 @@ spec:
             secretKeyRef:
               name: fleetmdm-server
               key: FLEET_API_USER_PASSWORD
-        - name: FLEET_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: fleetmdm-api-token
-              key: token
         command:
           - /bin/sh
           - -c
