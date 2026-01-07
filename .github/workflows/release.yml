@@ -14,9 +14,8 @@ permissions:
 
 on:
   push:
-    branches: [main, hotfix/release-latest]
+    branches: [main]
     paths:
-      - '.github/**'
       - 'manifests/**'
       - 'openframe/**'
       - 'integrated-tools/**'
