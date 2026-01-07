@@ -298,28 +298,18 @@ jobs:
         run: |
           set -e && mkdir -p final-artifacts/clients
           gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
-          echo "Downloaded from previous release:"
-          ls -lh --full-time final-artifacts/clients/
-          echo "---"
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
               tar -czf "final-artifacts/clients/${client}_macos.tar.gz" \
                 -C "release-artifacts/${client}-macos" .
-              ls -lh --full-time final-artifacts/clients/
-            else
-              echo "Keeping existing ${client}_macos.tar.gz from previous release"
             fi
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
               (cd "release-artifacts/${client}-windows" && \
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
-              ls -lh --full-time final-artifacts/clients/
-            else
-              echo "Keeping existing ${client}_windows.zip from previous release"
             fi
           done
-          ls -lh --full-time final-artifacts/clients/
 
       - name: Generate release header
         run: |
@@ -341,10 +331,6 @@ jobs:
           ---
           EOF
 
-      # - name: Force update latest tag
-      #   if: ${{ github.event_name == 'push' }}
-      #   run: git tag -f latest && git push -f origin latest
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -357,6 +343,10 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
+      
+      - name: Force update latest tag
+        if: ${{ github.event_name == 'push' }}
+        run: git tag -f latest && git push -f origin latest
 
       - name: Configure Git
         if: ${{ inputs.version != '' }}
