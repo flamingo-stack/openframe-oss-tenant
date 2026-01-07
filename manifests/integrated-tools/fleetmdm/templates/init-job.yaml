@@ -27,7 +27,7 @@ spec:
         - |
           set -e
 
-          FLEET_URL="http://fleetmdm-server.integrated-tools.svc.cluster.local:8080"
+          FLEET_URL="http://fleetmdm-server.integrated-tools.svc.cluster.local:8070"
 
           echo "Waiting for Fleet to be ready..."
           until curl -sf "${FLEET_URL}/healthz" >/dev/null 2>&1; do

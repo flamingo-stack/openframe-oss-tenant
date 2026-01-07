@@ -13,5 +13,5 @@ server:
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"
-    prometheus.io/port: "8080"
+    prometheus.io/port: "8070"
     prometheus.io/path: "/metrics"

@@ -44,12 +44,12 @@ spec:
       # Fix permissions on logs volume
       - name: fix-permissions
         image: busybox:1.36
-        command: ['sh', '-c', 'chown -R 3333:3333 /logs && chmod 755 /logs']
+        command: ['sh', '-c', 'chown -R 3333:3333 /var/log/osquery && chmod 755 /var/log/osquery']
         securityContext:
           runAsUser: 0
         volumeMounts:
         - name: fleet-logs
-          mountPath: /logs
+          mountPath: /var/log/osquery
 
       # Run database migrations
       - name: db-migrate
@@ -82,7 +82,7 @@ spec:
         image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
         args: ['fleet', 'serve']
         ports:
-        - containerPort: 8080
+        - containerPort: 8070
           name: http
         securityContext:
           runAsUser: 3333
@@ -111,19 +111,19 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8080
+            port: 8070
           initialDelaySeconds: 30
           periodSeconds: 15
           failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 8080
+            port: 8070
           initialDelaySeconds: 10
           periodSeconds: 5
         volumeMounts:
         - name: fleet-logs
-          mountPath: /logs
+          mountPath: /var/log/osquery
 
   volumeClaimTemplates:
   - metadata:

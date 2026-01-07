@@ -79,12 +79,12 @@ spec:
                   "toolUrls": [
                     {
                       "url": "http://fleetmdm-server.integrated-tools.svc.cluster.local",
-                      "port": "8080",
+                      "port": "8070",
                       "type": "API"
                     },
                     {
                       "url": "http://fleetmdm-server.integrated-tools.svc.cluster.local",
-                      "port": "8080",
+                      "port": "8070",
                       "type": "DASHBOARD"
                     }
                   ],
