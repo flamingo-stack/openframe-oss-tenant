@@ -3,39 +3,15 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import type { ApprovalLevel } from '@flamingo-stack/openframe-frontend-core'
 import { apiClient } from '@lib/api-client'
 
-export interface PolicyTemplateSummary {
-  id: string
-  displayName: string
-  description?: string
-  type: 'TEMPLATE' | 'CUSTOM' | string
-  isActive: boolean
-  customOverridesCount: number
-}
+import {
+  CUSTOM_CREATION_TEMPLATE_ID,
+  type CustomPolicyRequest,
+  type PolicyTemplateDetail,
+  type PolicyTemplateSummary,
+} from '../types/ai-policies'
 
-export interface PolicyRule {
-  tool: string
-  function: string
-  policyGroup: string
-  category: string
-  operation: string
-  commandPattern: string
-  approvalLevel: ApprovalLevel
-  naturalKey: string
-}
-
-export interface PolicyTemplateDetail {
-  id: string
-  displayName: string
-  type: 'TEMPLATE' | 'CUSTOM' | string
-  sourceTemplate?: string  // Present for CUSTOM type templates
-  rules: PolicyRule[]
-  customOverrides: Record<string, unknown>
-  active: boolean
-}
-
-export interface CustomPolicyRequest {
-  templateId: string
-  overrides: Record<string, ApprovalLevel>
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
 }
 
 export function useAIPolicies() {
@@ -60,7 +36,6 @@ export function useAIPolicies() {
       const active = list.find(t => t.isActive)?.id || null
       setActiveTemplateId(active)
 
-      // Preserve selection if still valid, otherwise use active, otherwise first
       setSelectedTemplateId((prev) => {
         if (prev && list.some(t => t.id === prev)) return prev
         if (active) return active
@@ -69,7 +44,7 @@ export function useAIPolicies() {
     } catch (error) {
       toast({
         title: 'Failed to Load AI Policies',
-        description: error instanceof Error ? error.message : 'Unable to load policy templates',
+        description: getErrorMessage(error, 'Unable to load policy templates'),
         variant: 'destructive',
         duration: 5000,
       })
@@ -88,7 +63,7 @@ export function useAIPolicies() {
       } catch (error) {
         toast({
           title: 'Failed to Load Policy',
-          description: error instanceof Error ? error.message : 'Unable to load policy',
+          description: getErrorMessage(error, 'Unable to load policy'),
           variant: 'destructive',
           duration: 5000,
         })
@@ -115,12 +90,11 @@ export function useAIPolicies() {
         })
 
         await fetchTemplates()
-        // Ensure details reflect the now-active policy
         await fetchTemplate(policyId)
       } catch (error) {
         toast({
           title: 'Save Failed',
-          description: error instanceof Error ? error.message : 'Unable to activate policy template',
+          description: getErrorMessage(error, 'Unable to activate policy template'),
           variant: 'destructive',
           duration: 5000,
         })
@@ -143,14 +117,12 @@ export function useAIPolicies() {
   }, [fetchTemplates])
 
   useEffect(() => {
-    if (!selectedTemplateId || selectedTemplateId === 'CUSTOM_CREATION') {
-      if (selectedTemplateId === 'CUSTOM_CREATION') {
-        // Don't clear selectedTemplate when in custom creation mode
-        return
-      }
+    if (!selectedTemplateId) {
       setSelectedTemplate(null)
       return
     }
+    if (selectedTemplateId === CUSTOM_CREATION_TEMPLATE_ID) return
+
     fetchTemplate(selectedTemplateId).catch(() => {
       // toasts handled in hook
     })
@@ -163,13 +135,13 @@ export function useAIPolicies() {
         label: t.displayName,
         description: t.description,
         isActive: t.isActive,
-        type: t.type,  // Include type field to identify CUSTOM templates
+        type: t.type
       })),
     [templates]
   )
 
   const refetchSelectedTemplate = useCallback(() => {
-    if (selectedTemplateId && selectedTemplateId !== 'CUSTOM_CREATION') {
+    if (selectedTemplateId && selectedTemplateId !== CUSTOM_CREATION_TEMPLATE_ID) {
       return fetchTemplate(selectedTemplateId)
     }
     return Promise.resolve()
@@ -193,15 +165,13 @@ export function useAIPolicies() {
           duration: 4000,
         })
 
-        // Refresh templates to include the new/updated custom policy
         await fetchTemplates()
         
-        // Return the custom template ID so the component can handle the refetch
-        return 'custom' // Most CUSTOM templates have 'custom' as ID
+        return 'custom'
       } catch (error) {
         toast({
           title: 'Save Failed',
-          description: error instanceof Error ? error.message : 'Unable to save custom policy',
+          description: getErrorMessage(error, 'Unable to save custom policy'),
           variant: 'destructive',
           duration: 5000,
         })
