@@ -48,6 +48,8 @@ openframe:
   oss-tenant:
     kafka:
       topics:
+        outbound:
+          devices-topic: devices-topic
         inbound:
           devices-topic:
             name: devices-topic
