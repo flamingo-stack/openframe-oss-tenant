@@ -25,6 +25,9 @@ import { useAIConfiguration } from '../../hooks/use-ai-configuration'
 import { useAIPolicies, type PolicyRule, type CustomPolicyRequest, type PolicyTemplateDetail } from '../../hooks/use-ai-policies'
 import { PolicyConfigurationPanel } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { toUiKitToolType } from '@lib/tool-labels'
+import { apiClient } from '@lib/api-client'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { SlidersIcon } from '@flamingo-stack/openframe-frontend-core'
 
 const PROVIDER_CONFIG = {
   ANTHROPIC: {
@@ -54,6 +57,8 @@ const API_KEY_TO_PROVIDER: Record<string, ProviderKey> = {
 }
 
 export function AISettingsTab() {
+  const { toast } = useToast()
+  
   const {
     configuration,
     supportedModels,
@@ -73,9 +78,15 @@ export function AISettingsTab() {
     isActivating: isPolicyActivating,
     activateTemplate,
     createOrUpdateCustomPolicy,
+    refetchSelectedTemplate,
   } = useAIPolicies()
 
   const [isEditMode, setIsEditMode] = useState(false)
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
+  
+  // Helper to identify custom template by type
+  const customTemplate = templateOptions.find(t => t.type === 'CUSTOM')
+  const hasCustomTemplate = !!customTemplate
 
   const [selectedProvider, setSelectedProvider] = useState<string>('')
   const [selectedModel, setSelectedModel] = useState<string>('')
@@ -88,9 +99,12 @@ export function AISettingsTab() {
   
   const [isCustomPolicy, setIsCustomPolicy] = useState(false)
   const [customBaseTemplateId, setCustomBaseTemplateId] = useState<string | null>(null)
+  const [initialCustomBaseTemplateId, setInitialCustomBaseTemplateId] = useState<string | null>(null)
   const [originalRules, setOriginalRules] = useState<Map<string, ApprovalLevel>>(new Map())
   const [customPolicyChanges, setCustomPolicyChanges] = useState<Map<string, ApprovalLevel>>(new Map())
   const [pendingCustomTemplateId, setPendingCustomTemplateId] = useState<string | null>(null)
+  const [existingCustomOverrides, setExistingCustomOverrides] = useState<Record<string, ApprovalLevel>>({})
+  const [baseTemplateForDisplay, setBaseTemplateForDisplay] = useState<PolicyTemplateDetail | null>(null)
 
   useEffect(() => {
     if (configuration) {
@@ -111,9 +125,43 @@ export function AISettingsTab() {
   }, [activeTemplateId, initialTemplateId, isEditMode])
 
   useEffect(() => {
-    if (!selectedTemplate?.rules) {
+    // Use baseTemplateForDisplay when in custom policy creation mode, otherwise use selectedTemplate
+    const templateToDisplay = (isCustomPolicy && baseTemplateForDisplay) ? baseTemplateForDisplay : selectedTemplate
+    
+    if (!templateToDisplay?.rules) {
       setPolicyGroups(new Map())
       return
+    }
+    
+    // Check if we're selecting an existing CUSTOM template for editing
+    if (selectedTemplate?.type === 'CUSTOM' && selectedTemplateId !== 'CUSTOM_CREATION') {
+      // Set up for editing existing custom template
+      const rulesMap = new Map<string, ApprovalLevel>()
+      selectedTemplate.rules.forEach((rule: PolicyRule) => {
+        rulesMap.set(rule.naturalKey, rule.approvalLevel)
+      })
+      
+      if (!isCustomPolicy) {
+        // When first selecting a CUSTOM template for editing
+        setOriginalRules(rulesMap)
+        setIsCustomPolicy(true)
+        
+        // Extract the sourceTemplate from the existing CUSTOM template
+        const existingSourceTemplate = selectedTemplate.sourceTemplate || null
+        setCustomBaseTemplateId(existingSourceTemplate)
+        
+        // Track the initial source template ID when entering edit mode
+        if (isEditMode && !initialCustomBaseTemplateId) {
+          setInitialCustomBaseTemplateId(existingSourceTemplate)
+        }
+        
+        setCustomPolicyChanges(new Map()) // Start with empty changes
+        
+        // Store existing customOverrides to preserve them when saving
+        const overrides = (selectedTemplate.customOverrides as Record<string, ApprovalLevel>) || {}
+        setExistingCustomOverrides(overrides)
+        console.log('Loading CUSTOM template with sourceTemplate:', existingSourceTemplate, 'overrides:', overrides)
+      }
     }
 
     const slugify = (value: string) =>
@@ -137,7 +185,7 @@ export function AISettingsTab() {
       policies: PermissionCategory['policies']
     }>>()
 
-    for (const rule of selectedTemplate.rules as PolicyRule[]) {
+    for (const rule of templateToDisplay.rules as PolicyRule[]) {
       const policyGroupName = rule.policyGroup || 'General'
       const categoryName = rule.category || 'Other'
       const categoryId = slugify(`${policyGroupName}:${categoryName}`) || 'other'
@@ -205,7 +253,7 @@ export function AISettingsTab() {
     if (selectedTemplateId === 'CUSTOM_CREATION') {
       return 
     }
-  }, [selectedTemplate, selectedTemplateId, pendingCustomTemplateId, isEditMode])
+  }, [selectedTemplate, selectedTemplateId, pendingCustomTemplateId, isEditMode, isCustomPolicy, baseTemplateForDisplay])
 
   const handleSave = async () => {
     let hasChanges = false
@@ -226,21 +274,100 @@ export function AISettingsTab() {
       )
     }
 
-    if (isCustomPolicy && customPolicyChanges.size > 0 && customBaseTemplateId) {
+    // Check if we have any custom policy changes to save
+    const hasCustomChanges = customPolicyChanges.size > 0
+    const isEditingCustomTemplate = selectedTemplate?.type === 'CUSTOM'
+    const isCreatingNewCustomPolicy = isCustomPolicy && customBaseTemplateId && !hasCustomTemplate
+    
+    // Check if base template changed for existing custom policy
+    // This happens when user clicks "Use for Custom" on a different template while editing existing custom
+    const baseTemplateChanged = isCustomPolicy && customBaseTemplateId && 
+      initialCustomBaseTemplateId && customBaseTemplateId !== initialCustomBaseTemplateId
+    
+    // Allow saving if:
+    // 1. Creating new custom policy (even without overrides)
+    // 2. Editing existing custom with changes
+    // 3. Creating custom policy with changes
+    // 4. Base template changed for existing custom policy (even without additional changes)
+    if (isCreatingNewCustomPolicy || (isCustomPolicy && hasCustomChanges) || (isEditingCustomTemplate && hasCustomChanges) || baseTemplateChanged) {
       hasChanges = true
-      const overrides: Record<string, ApprovalLevel> = {}
-      customPolicyChanges.forEach((level, naturalKey) => {
-        overrides[naturalKey] = level
+      
+      // If base template changed, don't use existing overrides
+      let overrides: Record<string, ApprovalLevel> = {}
+      
+      if (baseTemplateChanged) {
+        // When base template changes, only use new changes
+        customPolicyChanges.forEach((level, naturalKey) => {
+          overrides[naturalKey] = level
+        })
+      } else {
+        // Otherwise, merge with existing overrides
+        overrides = { ...existingCustomOverrides }
+        customPolicyChanges.forEach((level, naturalKey) => {
+          overrides[naturalKey] = level
+        })
+      }
+      
+      console.log('Saving custom policy:', {
+        isCreatingNew: isCreatingNewCustomPolicy,
+        hasCustomChanges,
+        baseTemplateChanged,
+        existing: existingCustomOverrides,
+        newChanges: Object.fromEntries(customPolicyChanges),
+        merged: overrides,
+        baseTemplateId: customBaseTemplateId
       })
       
-      savePromises.push(
-        createOrUpdateCustomPolicy(customBaseTemplateId, overrides).then(() => {
-          setIsCustomPolicy(false)
-          setCustomBaseTemplateId(null)
-          setOriginalRules(new Map())
-          setCustomPolicyChanges(new Map())
+      // Determine the template ID to use for the API call
+      let templateIdForUpdate: string | null = null
+      
+      if (customBaseTemplateId) {
+        // Use the current base template ID (either new or changed)
+        templateIdForUpdate = customBaseTemplateId
+      } else if (isEditingCustomTemplate) {
+        // This shouldn't happen now since CUSTOM templates always have baseTemplateId
+        // But keep as fallback
+        const nonCustomTemplate = templateOptions.find(t => t.type !== 'CUSTOM')
+        templateIdForUpdate = nonCustomTemplate?.id || 'DEFAULT'
+      }
+      
+      if (templateIdForUpdate) {
+        console.log('Saving custom policy with:', { 
+          templateIdForUpdate, 
+          overrides, 
+          hasCustomChanges, 
+          isEditingCustomTemplate,
+          isCreatingNewCustomPolicy,
+          overrideCount: Object.keys(overrides).length
         })
-      )
+        savePromises.push(
+          createOrUpdateCustomPolicy(templateIdForUpdate, overrides).then(async () => {
+            // Clear the custom editing state first
+            setIsCustomPolicy(false)
+            setCustomBaseTemplateId(null)
+            setInitialCustomBaseTemplateId(null)
+            setOriginalRules(new Map())
+            setCustomPolicyChanges(new Map())
+            setExistingCustomOverrides({})
+            setBaseTemplateForDisplay(null)
+            
+            // Wait a bit for templates state to update, then refetch
+            await new Promise(resolve => setTimeout(resolve, 200))
+            
+            // Refetch the selected template to get updated rules
+            console.log('Refetching custom template after save...')
+            try {
+              await refetchSelectedTemplate()
+            } catch (error) {
+              console.error('Failed to refetch template:', error)
+            }
+            
+            console.log('Custom policy saved successfully')
+          })
+        )
+      } else {
+        console.warn('Cannot save custom policy: no template ID available')
+      }
     } else {
       const policyChanged = selectedTemplateId && 
         selectedTemplateId !== 'CUSTOM_CREATION' && 
@@ -269,26 +396,26 @@ export function AISettingsTab() {
   }
 
   const handleCancel = () => {
+    // Reset AI provider settings
     setSelectedProvider(initialProvider)
     setSelectedModel(initialModel)
     
-    if (isCustomPolicy) {
-      if (customBaseTemplateId) {
-        setSelectedTemplateId(customBaseTemplateId)
-      } else {
-        setSelectedTemplateId(initialTemplateId || activeTemplateId || null)
-      }
-    } else {
-      setSelectedTemplateId(initialTemplateId || activeTemplateId || null)
-    }
+    // Always reset to the initial/active template when canceling
+    // Don't use customBaseTemplateId as that's the template being customized, not the actual active one
+    setSelectedTemplateId(initialTemplateId || activeTemplateId || null)
     
+    // Reset policy groups to initial state
     setPolicyGroups(new Map(initialPolicyGroups))
     
+    // Clear all custom policy states
     setIsCustomPolicy(false)
     setCustomBaseTemplateId(null)
+    setInitialCustomBaseTemplateId(null)
     setOriginalRules(new Map())
     setCustomPolicyChanges(new Map())
     setPendingCustomTemplateId(null)
+    setExistingCustomOverrides({})
+    setBaseTemplateForDisplay(null)
     
     setIsEditMode(false)
   }
@@ -298,18 +425,40 @@ export function AISettingsTab() {
     setSelectedModel('')
   }
 
-  const handleUseForCustomPolicy = (templateId: string) => {
-    console.log({templateId})
-    
-    const baseTemplate = selectedTemplate?.id === templateId ? selectedTemplate : null
-    
-    if (!baseTemplate) {
-      setSelectedTemplateId(templateId)
-      setPendingCustomTemplateId(templateId)
-      return
+  const handleUseForCustomPolicy = async (templateId: string) => {
+    setIsLoadingTemplate(true)
+    try {
+      // Always fetch the base template directly from API to get fresh base rules
+      const res = await apiClient.get<PolicyTemplateDetail>(
+        `/chat/api/v1/policies/${encodeURIComponent(templateId)}`
+      )
+      if (!res.ok) throw new Error(res.error || 'Failed to fetch base template')
+      
+      const baseTemplate = res.data
+      if (baseTemplate) {
+        setupCustomPolicy(baseTemplate)
+        
+        // If CUSTOM template exists, we're changing its base template
+        if (customTemplate) {
+          setSelectedTemplateId(customTemplate.id)
+          // When changing base template for existing custom, don't preserve overrides
+          setExistingCustomOverrides({})
+          console.log('Changing base template for existing CUSTOM template to:', templateId)
+        } else {
+          // Only use CUSTOM_CREATION for new custom policy
+          setSelectedTemplateId('CUSTOM_CREATION')
+        }
+      }
+    } catch (error) {
+      toast({
+        title: 'Failed to Load Base Template',
+        description: error instanceof Error ? error.message : 'Unable to load template for custom policy',
+        variant: 'destructive',
+        duration: 5000
+      })
+    } finally {
+      setIsLoadingTemplate(false)
     }
-    
-    setupCustomPolicy(baseTemplate)
   }
   
   const setupCustomPolicy = (baseTemplate: PolicyTemplateDetail) => {
@@ -320,9 +469,22 @@ export function AISettingsTab() {
     setOriginalRules(rulesMap)
     setIsCustomPolicy(true)
     setCustomBaseTemplateId(baseTemplate.id)
-    setSelectedTemplateId('CUSTOM_CREATION') 
-    setCustomPolicyChanges(new Map())
+    
+    // Track initial base template only when first entering custom policy mode in this edit session
+    if (!initialCustomBaseTemplateId && isEditMode) {
+      setInitialCustomBaseTemplateId(baseTemplate.id)
+    }
+    
+    setCustomPolicyChanges(new Map()) // Reset changes when changing base template
     setPendingCustomTemplateId(null)
+    
+    // When changing base template, always clear existing overrides
+    // (they're already cleared in handleUseForCustomPolicy)
+    
+    // Store the base template for UI display
+    setBaseTemplateForDisplay(baseTemplate)
+    
+    console.log('Setup custom policy with base template:', baseTemplate.id, 'initial:', initialCustomBaseTemplateId, 'isEditMode:', isEditMode)
   }
 
   const handlePolicyCategoryToggle = (policyGroupName: string, categoryId: string) => {
@@ -461,6 +623,17 @@ export function AISettingsTab() {
               setInitialModel(selectedModel)
               setInitialTemplateId(selectedTemplateId || activeTemplateId || null)
               setInitialPolicyGroups(new Map(policyGroups))
+              
+              // If editing an existing CUSTOM template, track its current source template
+              const currentTemplate = templateOptions.find(t => t.id === (selectedTemplateId || activeTemplateId))
+              if (currentTemplate?.type === 'CUSTOM') {
+                const sourceTemplate = selectedTemplate?.sourceTemplate || customBaseTemplateId
+                setInitialCustomBaseTemplateId(sourceTemplate)
+                setCustomBaseTemplateId(sourceTemplate)
+              } else {
+                setInitialCustomBaseTemplateId(customBaseTemplateId)
+              }
+              
               setIsEditMode(true)
             }}
             className="bg-ods-card border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
@@ -473,7 +646,7 @@ export function AISettingsTab() {
               variant="primary"
               leftIcon={<Save className="w-4 h-4" />}
               onClick={handleSave}
-              disabled={(!selectedProvider || !selectedModel) || isSaving || isPolicyActivating}
+              disabled={(!selectedProvider || !selectedModel) || isSaving || isPolicyActivating || isLoadingTemplate}
               className="bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent/90"
             >
               {isSaving || isPolicyActivating ? 'Saving...' : 'Save Settings'}
@@ -482,7 +655,7 @@ export function AISettingsTab() {
               variant="outline"
               leftIcon={<X className="w-4 h-4" />}
               onClick={handleCancel}
-              disabled={isSaving || isPolicyActivating}
+              disabled={isSaving || isPolicyActivating || isLoadingTemplate}
               className="bg-ods-card border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
             >
               Cancel
@@ -667,58 +840,114 @@ export function AISettingsTab() {
             <>
               {/* Template chooser (shown only in edit mode) */}
               {isEditMode && (
-                <div className="space-y-2">
+                <div className="bg-ods-card border border-ods-border rounded-md overflow-hidden">
                   <RadioGroup
-                    value={isCustomPolicy ? 'CUSTOM_CREATION' : (selectedTemplateId || '')}
+                    value={isCustomPolicy && !hasCustomTemplate ? 'CUSTOM_CREATION' : (selectedTemplateId || '')}
                     onValueChange={(v) => {
                       if (v === 'CUSTOM_CREATION') {
-                        return
+                        return // Keep custom creation mode
                       }
                       
-                      setSelectedTemplateId(v)
-                      setIsCustomPolicy(false)
-                      setCustomBaseTemplateId(null)
-                      setOriginalRules(new Map())
-                      setCustomPolicyChanges(new Map())
+                      const selectedOpt = templateOptions.find(t => t.id === v)
+                      const isSelectingCustomType = selectedOpt?.type === 'CUSTOM'
+                      
+                      if (isSelectingCustomType) {
+                        // Selecting existing CUSTOM template for editing
+                        setSelectedTemplateId(v)
+                        // Note: Don't reset states here, let useEffect handle setup
+                      } else {
+                        // Regular template selection
+                        setSelectedTemplateId(v)
+                        setIsCustomPolicy(false)
+                        setCustomBaseTemplateId(null)
+                        setOriginalRules(new Map())
+                        setCustomPolicyChanges(new Map())
+                      }
                     }}
-                    className="space-y-2"
-                    disabled={isPolicyTemplateLoading}
+                    className="divide-y divide-ods-border gap-0"
+                    disabled={isPolicyTemplateLoading || isLoadingTemplate}
                   > 
-                    {/* Regular templates */}
-                    {templateOptions.filter(opt => opt.id !== 'custom' && opt.label?.toLowerCase() !== 'custom').map((opt) => {
+                    {/* All templates including custom if it exists */}
+                    {templateOptions.map((opt) => {
                       const id = `policy-template-${opt.id}`
+                      const isCustomType = opt.type === 'CUSTOM'
+                      
                       return (
                         <div
                           key={opt.id}
-                          className="flex items-center gap-3 p-3 rounded-md border border-ods-border bg-ods-card"
+                          className="flex items-start gap-6 pr-6 hover:bg-ods-bg-hover transition-colors"
                         >
-                          <RadioGroupItem id={id} value={opt.id} />
-                          <Label htmlFor={id} className="text-ods-text-primary flex-1 cursor-pointer">
-                            {opt.label}
-                          </Label>
-                          {opt.id?.toLowerCase() !== 'custom' && !templateOptions.some(t => t.id === 'custom' || t.label?.toLowerCase() === 'custom') && (
-                            <Button
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleUseForCustomPolicy(opt.id)
-                              }}
-                              className="text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action h-8 w-auto px-2"
-                              disabled={isPolicyTemplateLoading}
-                            >
-                              <span className="text-xs">Use for Custom</span>
-                            </Button>
+                          <div className="flex-1 flex gap-3 p-6">
+                            <RadioGroupItem 
+                              id={id} 
+                              value={opt.id}
+                              className="mt-0.5"
+                            />
+                            <div className="flex-1">
+                              <Label 
+                                htmlFor={id} 
+                                className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
+                              >
+                                {opt.label}
+                                {isCustomType && (() => {
+                                  // During edit mode with custom policy being modified, show the current base template
+                                  if (isCustomPolicy && customBaseTemplateId) {
+                                    const baseTemplate = templateOptions.find(t => t.id === customBaseTemplateId)
+                                    return baseTemplate ? ` (based on ${baseTemplate.label})` : ''
+                                  }
+                                  // For existing custom template not being modified, show its source template
+                                  if (selectedTemplate?.sourceTemplate) {
+                                    const sourceTemplate = templateOptions.find(t => t.id === selectedTemplate.sourceTemplate)
+                                    return sourceTemplate ? ` (based on ${sourceTemplate.label})` : ''
+                                  }
+                                  return ''
+                                })()}
+                              </Label>
+                              {opt.description && (
+                                <p className="text-sm text-ods-text-secondary leading-relaxed">
+                                  {opt.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {/* Show "Use for Custom" on all non-CUSTOM type templates */}
+                          {!isCustomType && (
+                            <div className="flex items-center py-6">
+                              <Button
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleUseForCustomPolicy(opt.id)
+                                }}
+                                className="text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold px-4 py-3 h-auto"
+                                leftIcon={<SlidersIcon className="w-5 h-5"/>}
+                                disabled={isPolicyTemplateLoading || isLoadingTemplate}
+                              >
+                                Use for Custom Policy
+                              </Button>
+                            </div>
                           )}
                         </div>
                       )
                     })}
-                    {/* Show custom policy creation option only when creating new custom policy */}
-                    {isCustomPolicy && (
-                      <div className="flex items-center gap-3 p-3 rounded-md border border-ods-border bg-ods-card">
-                        <RadioGroupItem id="policy-template-custom-creation" value="CUSTOM_CREATION" />
-                        <Label htmlFor="policy-template-custom-creation" className="text-ods-text-primary flex-1 cursor-pointer">
-                          Custom Policy {customBaseTemplateId && `(based on ${templateOptions.find(t => t.id === customBaseTemplateId)?.label})`}
-                        </Label>
+                    {/* Show custom creation option only when creating new custom and it doesn't exist yet */}
+                    {isCustomPolicy && !hasCustomTemplate && (
+                      <div className="flex items-start gap-6 pr-6 hover:bg-ods-system-greys-soft-grey/10 transition-colors">
+                        <div className="flex-1 flex gap-3 p-6">
+                          <RadioGroupItem 
+                            id="policy-template-custom-creation" 
+                            value="CUSTOM_CREATION"
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1">
+                            <Label 
+                              htmlFor="policy-template-custom-creation" 
+                              className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
+                            >
+                              Custom Policy {customBaseTemplateId && `(based on ${templateOptions.find(t => t.id === customBaseTemplateId)?.label})`}
+                            </Label>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </RadioGroup>

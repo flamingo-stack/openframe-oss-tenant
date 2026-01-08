@@ -6,6 +6,7 @@ import { apiClient } from '@lib/api-client'
 export interface PolicyTemplateSummary {
   id: string
   displayName: string
+  description?: string
   type: 'TEMPLATE' | 'CUSTOM' | string
   isActive: boolean
   customOverridesCount: number
@@ -26,6 +27,7 @@ export interface PolicyTemplateDetail {
   id: string
   displayName: string
   type: 'TEMPLATE' | 'CUSTOM' | string
+  sourceTemplate?: string  // Present for CUSTOM type templates
   rules: PolicyRule[]
   customOverrides: Record<string, unknown>
   active: boolean
@@ -159,10 +161,19 @@ export function useAIPolicies() {
       templates.map(t => ({
         id: t.id,
         label: t.displayName,
+        description: t.description,
         isActive: t.isActive,
+        type: t.type,  // Include type field to identify CUSTOM templates
       })),
     [templates]
   )
+
+  const refetchSelectedTemplate = useCallback(() => {
+    if (selectedTemplateId && selectedTemplateId !== 'CUSTOM_CREATION') {
+      return fetchTemplate(selectedTemplateId)
+    }
+    return Promise.resolve()
+  }, [selectedTemplateId, fetchTemplate])
 
   const createOrUpdateCustomPolicy = useCallback(
     async (baseTemplateId: string, overrides: Record<string, ApprovalLevel>) => {
@@ -184,7 +195,9 @@ export function useAIPolicies() {
 
         // Refresh templates to include the new/updated custom policy
         await fetchTemplates()
-        return true
+        
+        // Return the custom template ID so the component can handle the refetch
+        return 'custom' // Most CUSTOM templates have 'custom' as ID
       } catch (error) {
         toast({
           title: 'Save Failed',
@@ -211,6 +224,6 @@ export function useAIPolicies() {
     activateTemplate,
     createOrUpdateCustomPolicy,
     refetchTemplates: fetchTemplates,
-    refetchSelectedTemplate: selectedTemplateId ? () => fetchTemplate(selectedTemplateId) : undefined,
+    refetchSelectedTemplate,
   }
 }
