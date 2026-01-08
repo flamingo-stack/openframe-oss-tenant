@@ -138,9 +138,6 @@ export function useInvitations(page: number = 0, size: number = 20) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: invitationsQueryKeys.all })
     },
-    onError: (error) => {
-      handleApiError(error, toast, 'Failed to invite users')
-    },
   })
 
   return {

@@ -54,8 +54,6 @@ export function CompanyAndUsersTab() {
   const [isRemoveOpen, setIsRemoveOpen] = useState(false)
   const [isResendOpen, setIsResendOpen] = useState(false)
 
-  console.log(records)
-
   const columns: TableColumn<UnifiedUserRecord>[] = [
     {
       key: 'user',
