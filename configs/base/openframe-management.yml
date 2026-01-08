@@ -50,6 +50,11 @@ openframe:
       topics:
         outbound:
           devices-topic: devices-topic
+        inbound:
+          devices-topic:
+            name: devices-topic
+          integrated-tool-events:
+            name: integrated-tool.events.pinot
 
   gateway:
     oauth:
