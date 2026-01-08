@@ -82,7 +82,12 @@ impl ToolInstallationService {
         }
     }
 
-    pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
+    pub async fn install(&self, mut tool_installation_message: ToolInstallationMessage) -> Result<()> {
+        // Hardcode: fleetmdm-agent gets osquery from GitHub
+        if tool_installation_message.tool_agent_id == "fleetmdm-agent" {
+            Self::inject_osquery_github_asset(&mut tool_installation_message);
+        }
+
         let tool_agent_id = &tool_installation_message.tool_agent_id;
         info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
@@ -205,17 +210,29 @@ impl ToolInstallationService {
                         let path = asset.path.as_deref()
                             .with_context(|| format!("No uri path for tool {} asset {}", tool_agent_id, asset.id))?;
                         info!("Downloading tool API asset: {} with original path: {}", asset.id, path);
-                        
+
                         // Resolve URL parameters in the path
                         let resolved_path = self.url_params_resolver.process(path)
                             .with_context(|| format!("Failed to resolve URL parameters for asset: {}", asset.id))?;
                         info!("Resolved path: {}", resolved_path);
-                        
+
                         let tool_id = tool_installation_message.tool_id.clone();
                         self.tool_api_client
                             .get_tool_asset(tool_id, resolved_path)
                             .await
                             .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
+                    },
+                    AssetSource::Github => {
+                        let download_configs = asset.download_configurations.as_ref()
+                            .with_context(|| format!("No download configurations for Github asset: {}", asset.id))?;
+                        let asset_config = GithubDownloadService::find_asset_config_for_current_os(download_configs)
+                            .with_context(|| format!("Failed to find asset download configuration for current OS: {}", asset.id))?;
+                        info!("Downloading Github asset: {} from {}", asset.id, asset_config.link);
+
+                        self.github_download_service
+                            .download_and_extract(&asset_config.to_download_configuration())
+                            .await
+                            .with_context(|| format!("Failed to download and extract Github asset: {}", asset.id))?
                     }
                 };
                 
@@ -329,5 +346,49 @@ impl ToolInstallationService {
         }
 
         Ok(())
+    }
+
+    /// Hardcode: inject osquery as GitHub asset for fleetmdm-agent
+    fn inject_osquery_github_asset(msg: &mut ToolInstallationMessage) {
+        use crate::models::asset_download_configuration::AssetDownloadConfiguration;
+        use crate::models::tool_installation_message::{Asset, AssetSource};
+
+        const OSQUERY_VERSION: &str = "0.0.2";
+        const OSQUERY_BASE_URL: &str = "https://github.com/flamingo-stack/osquery/releases/download";
+
+        let osquery_asset = Asset {
+            id: "osqueryd".to_string(),
+            local_filename: "osqueryd".to_string(),
+            source: AssetSource::Github,
+            path: None,
+            executable: true,
+            download_configurations: Some(vec![
+                AssetDownloadConfiguration {
+                    os: "macos".to_string(),
+                    file_name: "osquery-macos-universal.tar.gz".to_string(),
+                    asset_file_name: "osqueryd".to_string(),
+                    link: format!("{}/{}/osquery-macos-universal.tar.gz", OSQUERY_BASE_URL, OSQUERY_VERSION),
+                },
+                AssetDownloadConfiguration {
+                    os: "windows".to_string(),
+                    file_name: "osquery-windows-amd64.zip".to_string(),
+                    asset_file_name: "osqueryd.exe".to_string(),
+                    link: format!("{}/{}/osquery-windows-amd64.zip", OSQUERY_BASE_URL, OSQUERY_VERSION),
+                },
+            ]),
+        };
+
+        // Replace existing osqueryd asset or add new one
+        if let Some(assets) = &mut msg.assets {
+            if let Some(pos) = assets.iter().position(|a| a.id == "osqueryd") {
+                assets[pos] = osquery_asset;
+            } else {
+                assets.push(osquery_asset);
+            }
+        } else {
+            msg.assets = Some(vec![osquery_asset]);
+        }
+
+        info!("Injected osquery GitHub asset for fleetmdm-agent");
     }
 }

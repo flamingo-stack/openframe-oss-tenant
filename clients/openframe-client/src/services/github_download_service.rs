@@ -1,6 +1,7 @@
 use anyhow::{Context, Result, anyhow};
 use tracing::{info, warn};
 use crate::models::download_configuration::DownloadConfiguration;
+use crate::models::asset_download_configuration::AssetDownloadConfiguration;
 use crate::config::update_config::{
     MAX_DOWNLOAD_RETRIES,
     DOWNLOAD_TIMEOUT_SECS,
@@ -262,6 +263,12 @@ impl GithubDownloadService {
         configs.iter()
             .find(|c| c.matches_current_os())
             .ok_or_else(|| anyhow!("No download configuration found for current OS"))
+    }
+
+    pub fn find_asset_config_for_current_os(configs: &[AssetDownloadConfiguration]) -> Result<&AssetDownloadConfiguration> {
+        configs.iter()
+            .find(|c| c.matches_current_os())
+            .ok_or_else(|| anyhow!("No asset download configuration found for current OS"))
     }
 }
 

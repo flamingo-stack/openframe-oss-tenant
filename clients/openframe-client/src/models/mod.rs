@@ -13,6 +13,7 @@ pub mod tool_agent_update_message;
 pub mod openframe_client_info;
 pub mod machine_heartbeat_message;
 pub mod download_configuration;
+pub mod asset_download_configuration;
 pub mod installed_agent_message;
 pub mod update_state;
 
@@ -33,5 +34,6 @@ pub use tool_agent_update_message::ToolAgentUpdateMessage;
 pub use openframe_client_info::OpenFrameClientInfo;
 pub use machine_heartbeat_message::MachineHeartbeatMessage;
 pub use download_configuration::DownloadConfiguration;
+pub use asset_download_configuration::AssetDownloadConfiguration;
 pub use installed_agent_message::InstalledAgentMessage;
 pub use update_state::{UpdateState, UpdatePhase};
