@@ -50,12 +50,18 @@ openframe:
     kafka:
       topics:
         inbound:
-          meshcentral-events: meshcentral.mongodb.events
-          tactical-rmm-events: tactical-rmm.postgres.events
-          fleet-mdm-events: fleet.mysql.events
-          fleet-mdm-activities: fleet.activities.events
-          fleet-mdm-host-activities: fleet.host_activities.events
-          fleet-mdm-query-result-events: fleet.query_results.events
+          meshcentral-events:
+            name: meshcentral.mongodb.events
+          tactical-rmm-events:
+            name: tactical-rmm.postgres.events
+          fleet-mdm-events:
+            name: fleet.mysql.events
+          fleet-mdm-activities:
+            name: fleet.activities.events
+          fleet-mdm-host-activities:
+            name: fleet.host_activities.events
+          fleet-mdm-query-result-events:
+            name: fleet.query_results.events
         outbound:
           integrated-tool-events: integrated-tool.events.pinot
           devices-topic: devices-topic
