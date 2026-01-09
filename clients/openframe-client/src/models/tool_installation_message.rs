@@ -1,6 +1,5 @@
 use serde::{Serialize, Deserialize};
 use super::download_configuration::DownloadConfiguration;
-use super::asset_download_configuration::AssetDownloadConfiguration;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -45,7 +44,7 @@ pub struct Asset {
     #[serde(default)]
     pub executable: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub download_configurations: Option<Vec<AssetDownloadConfiguration>>,
+    pub download_configurations: Option<Vec<DownloadConfiguration>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

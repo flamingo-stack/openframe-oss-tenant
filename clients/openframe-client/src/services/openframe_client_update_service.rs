@@ -163,7 +163,7 @@ impl OpenFrameClientUpdateService {
         update_state.set_phase(UpdatePhase::PreparingUpdater);
         self.update_state_service.save(update_state).await?;
 
-        let archive_path = match self.create_temp_archive(&binary_bytes, &download_config.agent_file_name).await {
+        let archive_path = match self.create_temp_archive(&binary_bytes, &download_config.target_file_name).await {
             Ok(path) => path,
             Err(e) => {
                 error!("Failed to create archive: {:#}", e);

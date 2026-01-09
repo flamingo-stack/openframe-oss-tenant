@@ -225,12 +225,12 @@ impl ToolInstallationService {
                     AssetSource::Github => {
                         let download_configs = asset.download_configurations.as_ref()
                             .with_context(|| format!("No download configurations for Github asset: {}", asset.id))?;
-                        let asset_config = GithubDownloadService::find_asset_config_for_current_os(download_configs)
-                            .with_context(|| format!("Failed to find asset download configuration for current OS: {}", asset.id))?;
-                        info!("Downloading Github asset: {} from {}", asset.id, asset_config.link);
+                        let config = GithubDownloadService::find_config_for_current_os(download_configs)
+                            .with_context(|| format!("Failed to find download configuration for current OS: {}", asset.id))?;
+                        info!("Downloading Github asset: {} from {}", asset.id, config.link);
 
                         self.github_download_service
-                            .download_and_extract(&asset_config.to_download_configuration())
+                            .download_and_extract(config)
                             .await
                             .with_context(|| format!("Failed to download and extract Github asset: {}", asset.id))?
                     }
@@ -350,7 +350,7 @@ impl ToolInstallationService {
 
     /// Hardcode: inject osquery as GitHub asset for fleetmdm-agent
     fn inject_osquery_github_asset(msg: &mut ToolInstallationMessage) {
-        use crate::models::asset_download_configuration::AssetDownloadConfiguration;
+        use crate::models::DownloadConfiguration;
         use crate::models::tool_installation_message::{Asset, AssetSource};
 
         const OSQUERY_VERSION: &str = "0.0.2";
@@ -363,16 +363,16 @@ impl ToolInstallationService {
             path: None,
             executable: true,
             download_configurations: Some(vec![
-                AssetDownloadConfiguration {
+                DownloadConfiguration {
                     os: "macos".to_string(),
                     file_name: "osquery-macos-universal.tar.gz".to_string(),
-                    asset_file_name: "osqueryd".to_string(),
+                    target_file_name: "osqueryd".to_string(),
                     link: format!("{}/{}/osquery-macos-universal.tar.gz", OSQUERY_BASE_URL, OSQUERY_VERSION),
                 },
-                AssetDownloadConfiguration {
+                DownloadConfiguration {
                     os: "windows".to_string(),
                     file_name: "osquery-windows-amd64.zip".to_string(),
-                    asset_file_name: "osqueryd.exe".to_string(),
+                    target_file_name: "osqueryd.exe".to_string(),
                     link: format!("{}/{}/osquery-windows-amd64.zip", OSQUERY_BASE_URL, OSQUERY_VERSION),
                 },
             ]),

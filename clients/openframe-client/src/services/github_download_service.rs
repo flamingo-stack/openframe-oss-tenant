@@ -1,7 +1,6 @@
 use anyhow::{Context, Result, anyhow};
 use tracing::{info, warn};
 use crate::models::download_configuration::DownloadConfiguration;
-use crate::models::asset_download_configuration::AssetDownloadConfiguration;
 use crate::config::update_config::{
     MAX_DOWNLOAD_RETRIES,
     DOWNLOAD_TIMEOUT_SECS,
@@ -43,15 +42,15 @@ impl GithubDownloadService {
         }
 
         // Extract based on file extension
-        info!("Archive file_name: '{}', agent_file_name: '{}'", config.file_name, config.agent_file_name);
+        info!("Archive file_name: '{}', target_file_name: '{}'", config.file_name, config.target_file_name);
 
         let binary_bytes = if config.file_name.ends_with(".zip") {
             info!("Detected ZIP format, extracting...");
-            self.extract_from_zip(archive_bytes, &config.agent_file_name)
+            self.extract_from_zip(archive_bytes, &config.target_file_name)
                 .with_context(|| "Failed to extract from ZIP archive")?
         } else if config.file_name.ends_with(".tar.gz") || config.file_name.ends_with(".tgz") {
             info!("Detected tar.gz format, extracting...");
-            self.extract_from_tar_gz(archive_bytes, &config.agent_file_name)
+            self.extract_from_tar_gz(archive_bytes, &config.target_file_name)
                 .with_context(|| "Failed to extract from tar.gz archive")?
         } else {
             return Err(anyhow!("Unsupported archive format: {}", config.file_name));
@@ -66,7 +65,7 @@ impl GithubDownloadService {
             ));
         }
 
-        info!("Extracted binary: {} ({} bytes)", config.agent_file_name, binary_bytes.len());
+        info!("Extracted binary: {} ({} bytes)", config.target_file_name, binary_bytes.len());
 
         Ok(binary_bytes)
     }
@@ -263,12 +262,6 @@ impl GithubDownloadService {
         configs.iter()
             .find(|c| c.matches_current_os())
             .ok_or_else(|| anyhow!("No download configuration found for current OS"))
-    }
-
-    pub fn find_asset_config_for_current_os(configs: &[AssetDownloadConfiguration]) -> Result<&AssetDownloadConfiguration> {
-        configs.iter()
-            .find(|c| c.matches_current_os())
-            .ok_or_else(|| anyhow!("No asset download configuration found for current OS"))
     }
 }
 

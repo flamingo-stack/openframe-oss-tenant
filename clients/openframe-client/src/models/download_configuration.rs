@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 pub struct DownloadConfiguration {
     pub os: String,
     pub file_name: String,
-    pub agent_file_name: String,
+    #[serde(alias = "agentFileName", alias = "assetFileName")]
+    pub target_file_name: String,
     pub link: String,
 }
 
