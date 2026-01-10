@@ -273,7 +273,7 @@ export class ChatApiService {
       throw new Error(`Failed to process message: ${response.status} ${response.statusText}\n${errorText}`)
     }
     
-    // yield* this.consumeSSE(response)
+    yield* this.consumeSSE(response)
   }
 
   private async *consumeSSE(response: Response): AsyncGenerator<MessageSegment> {
