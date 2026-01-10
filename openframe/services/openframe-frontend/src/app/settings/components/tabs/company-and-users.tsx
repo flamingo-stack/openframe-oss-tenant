@@ -1,71 +1,34 @@
 'use client'
 
+import React, { useEffect, useState } from 'react'
+import { ListPageContainer, Table, type TableColumn, StatusTag, MoreActionsMenu } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useUsers, type UserRecord } from '../../hooks/use-users'
+import { ConfirmDeleteUserModal } from '../confirm-delete-user-modal'
+import { AddUsersModal } from '../add-users-modal'
 import { Button } from '@flamingo-stack/openframe-frontend-core'
 import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
-import { ListPageContainer, MoreActionsMenu, StatusTag, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useState } from 'react'
 import { useAuthStore } from '../../../auth/stores/auth-store'
-import { InvitationStatus } from '../../hooks/use-invitations'
-import { UserStatus } from '../../hooks/use-users'
-import { RecordType, useUsersAndInvitations, type UnifiedUserRecord, type UnifiedUserStatus } from '../../hooks/use-users-and-invitations'
-import { AddUsersModal } from '../add-users-modal'
-import { ConfirmDeleteUserModal } from '../confirm-delete-user-modal'
-import { ConfirmRemoveInvitationModal } from '../confirm-remove-invitation-modal'
-import { ConfirmResendInvitationModal } from '../confirm-resend-invitation-modal'
-import { ConfirmRevokeInvitationModal } from '../confirm-revoke-invitation-modal'
-
-const statusToLabel = {
-  [UserStatus.ACTIVE]: 'ACTIVE',
-  [UserStatus.DELETED]: 'DELETED',
-  [InvitationStatus.PENDING]: 'INVITE SENT',
-  [InvitationStatus.EXPIRED]: 'INVITE EXPIRED',
-} as const satisfies Record<UnifiedUserStatus, string>;
-
-const statusToVariant = {
-  [UserStatus.ACTIVE]: 'success',
-  [UserStatus.DELETED]: 'info',
-  [InvitationStatus.PENDING]: 'warning',
-  [InvitationStatus.EXPIRED]: 'error',
-  // TODO: import status type from flamingo-stack-frontend-core
-} as const satisfies Record<UnifiedUserStatus, 'success' | 'info' | 'warning' | 'error'>;
+import { useInvitations } from '../../hooks/use-invitations'
 
 export function CompanyAndUsersTab() {
-  const {
-    records,
-    isLoading,
-    error,
-    deleteUser,
-    deleteUserMutation,
-    revokeInvitation,
-    revokeInvitationMutation,
-    resendInvitation,
-    resendInvitationMutation,
-    inviteUsers,
-  // get all users and invitations without pagination TODO: add pagination in the future
-  } = useUsersAndInvitations(0, 1000)
-
+  const { users, size, isLoading, error, fetchUsers, deleteUser } = useUsers()
   const { user: currentUser } = useAuthStore()
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const { inviteUsers } = useInvitations()
 
-  const [selectedUser, setSelectedUser] = useState<UnifiedUserRecord | null>(null)
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
-  const [selectedInvitation, setSelectedInvitation] = useState<UnifiedUserRecord | null>(null)
-  const [isRevokeOpen, setIsRevokeOpen] = useState(false)
-  const [isRemoveOpen, setIsRemoveOpen] = useState(false)
-  const [isResendOpen, setIsResendOpen] = useState(false)
+  useEffect(() => {
+    fetchUsers(0, size)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const columns: TableColumn<UnifiedUserRecord>[] = [
+  const columns: TableColumn<UserRecord>[] = [
     {
       key: 'user',
       label: 'USER',
       width: 'w-1/3',
       renderCell: (row) => (
         <div className="flex flex-col min-w-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-            {row.firstName || row.lastName
-              ? `${row.firstName || ''} ${row.lastName || ''}`.trim()
-              : row.email}
-          </span>
+          <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">{row.firstName || row.lastName ? `${row.firstName || ''} ${row.lastName || ''}`.trim() : row.email}</span>
           <span className="font-['Azeret_Mono'] text-[12px] text-ods-text-secondary truncate">{row.email}</span>
         </div>
       )
@@ -82,86 +45,30 @@ export function CompanyAndUsersTab() {
       key: 'status',
       label: 'STATUS',
       width: 'w-1/3',
-      renderCell: (row) => {
-        const statusLabel = row.status
-        const variant = statusToVariant[statusLabel];
-        const label = statusToLabel[statusLabel];
-        
-        return <div className=""><StatusTag label={label} variant={variant} /></div>
-      }
+      renderCell: (row) => (
+        <div className="">
+          <StatusTag label={row.status === 'ACTIVE' ? 'ACTIVE' : row.status || 'INACTIVE'} variant={row.status === 'ACTIVE' ? 'success' : 'info'} />
+        </div>
+      )
     }
   ]
 
-  const handleDeleteRequest = (record: UnifiedUserRecord) => {
-    if (record.type === RecordType.INVITATION) {
-      return
-    }
-    setSelectedUser(record)
+  const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+
+  const handleDeleteRequest = (user: UserRecord) => {
+    setSelectedUser(user)
     setIsConfirmOpen(true)
   }
 
   const handleConfirmDelete = async () => {
-    if (!selectedUser || selectedUser.type !== RecordType.USER) return
-    deleteUser(selectedUser.id, {
-      onSuccess: () => {
-        setIsConfirmOpen(false)
-        setSelectedUser(null)
-      },
-    })
-  }
-
-  const handleRevokeRequest = (record: UnifiedUserRecord) => {
-    if (record.type !== RecordType.INVITATION) {
-      return
-    }
-    setSelectedInvitation(record)
-    setIsRevokeOpen(true)
-  }
-
-  const handleConfirmRevoke = async () => {
-    if (!selectedInvitation || selectedInvitation.type !== RecordType.INVITATION) return
-    revokeInvitation(selectedInvitation.id, {
-      onSuccess: () => {
-        setIsRevokeOpen(false)
-        setSelectedInvitation(null)
-      },
-    })
-  }
-
-  const handleRemoveRequest = (record: UnifiedUserRecord) => {
-    if (record.type !== RecordType.INVITATION) return
-    setSelectedInvitation(record)
-    setIsRemoveOpen(true)
-  }
-
-  const handleConfirmRemove = async () => {
-    if (!selectedInvitation || selectedInvitation.type !== RecordType.INVITATION) return
-    revokeInvitation(selectedInvitation.id, {
-      onSuccess: () => {
-        setIsRemoveOpen(false)
-        setSelectedInvitation(null)
-      },
-    })
-  }
-
-  const handleResendRequest = (record: UnifiedUserRecord) => {
-    if (record.type !== RecordType.INVITATION) return
-    setSelectedInvitation(record)
-    setIsResendOpen(true)
-  }
-
-  const handleConfirmResend = async () => {
-    if (!selectedInvitation || selectedInvitation.type !== RecordType.INVITATION) return
-    resendInvitation(selectedInvitation.id, {
-      onSuccess: () => {
-        setIsResendOpen(false)
-        setSelectedInvitation(null)
-      },
-    })
-  }
-
-  const handleInviteUsers = async (rows: { email: string }[]) => {
-    await inviteUsers(rows.map((r) => r.email))
+    if (!selectedUser) return
+    try {
+      await deleteUser(selectedUser.id)
+      await fetchUsers(0, size)
+    } catch {}
+    setIsConfirmOpen(false)
+    setSelectedUser(null)
   }
 
   const headerActions = (
@@ -174,54 +81,25 @@ export function CompanyAndUsersTab() {
     </Button>
   )
 
-  const isMutating = deleteUserMutation.isPending || revokeInvitationMutation.isPending || resendInvitationMutation.isPending
-
   return (
     <ListPageContainer title="Openframe" headerActions={headerActions} background="default" padding="none" className="pt-6">
       <Table
-        data={records}
+        data={users}
         columns={columns}
         rowKey="id"
-        loading={isLoading || isMutating}
-        emptyMessage={error || 'No users or invitations found.'}
+        loading={isLoading}
+        emptyMessage={error || 'No users found.'}
         showFilters={false}
-        renderRowActions={(row: UnifiedUserRecord) => {
-          if (row.type === RecordType.INVITATION) {
-            const isExpired = row.status === InvitationStatus.EXPIRED
-
-            if (isExpired) {
-              return (
-                <MoreActionsMenu
-                  className="px-4"
-                  items={[
-                    { label: 'Resend', onClick: () => handleResendRequest(row) },
-                    { label: 'Remove', onClick: () => handleRemoveRequest(row), danger: true }
-                  ]}
-                />
-              )
-            }
-
-            return (
-              <MoreActionsMenu
-                className="px-4"
-                items={[
-                  { label: 'Revoke', onClick: () => handleRevokeRequest(row), danger: true }
-                ]}
-              />
-            )
-          }
-
-          const isDeleted = row.status === UserStatus.DELETED
+        renderRowActions={(row: UserRecord) => {
           const isOwner = (row.roles || []).some((r) => r?.toLowerCase?.() === 'owner')
           const isSelf = currentUser ? row.id === currentUser.id : false
-          const disableDelete = isOwner || isSelf || isDeleted
-
+          const disableDelete = isOwner || isSelf
           return (
-            <MoreActionsMenu
+            <MoreActionsMenu 
               className="px-4"
               items={[
                 { label: 'Delete', onClick: () => handleDeleteRequest(row), danger: true, disabled: disableDelete }
-              ]}
+              ]} 
             />
           )
         }}
@@ -232,29 +110,16 @@ export function CompanyAndUsersTab() {
         userName={`${selectedUser?.firstName || ''} ${selectedUser?.lastName || ''}`.trim() || (selectedUser?.email || 'user')}
         onConfirm={handleConfirmDelete}
       />
-      <ConfirmRevokeInvitationModal
-        open={isRevokeOpen}
-        onOpenChange={setIsRevokeOpen}
-        userEmail={selectedInvitation?.email || ''}
-        onConfirm={handleConfirmRevoke}
-      />
-      <ConfirmRemoveInvitationModal
-        open={isRemoveOpen}
-        onOpenChange={setIsRemoveOpen}
-        userEmail={selectedInvitation?.email || ''}
-        onConfirm={handleConfirmRemove}
-      />
-      <ConfirmResendInvitationModal
-        open={isResendOpen}
-        onOpenChange={setIsResendOpen}
-        userEmail={selectedInvitation?.email || ''}
-        onConfirm={handleConfirmResend}
-      />
       <AddUsersModal
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
-        invite={handleInviteUsers}
+        onInvited={async () => { await fetchUsers(0, size) }}
+        invite={async (rows) => {
+          await inviteUsers(rows.map(r => r.email))
+        }}
       />
     </ListPageContainer>
   )
 }
+
+

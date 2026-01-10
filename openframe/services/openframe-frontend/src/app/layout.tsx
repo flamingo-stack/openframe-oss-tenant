@@ -12,7 +12,6 @@ import { ImageConfigInitializer } from '../components/image-config-initializer'
 import { GraphQLIntrospectionInitializer } from '../components/graphql-introspection-initializer'
 import { RouteGuard } from '../components/route-guard'
 import { isAuthEnabled } from '../lib/app-mode'
-import { QueryClientProvider } from '../lib/query-client-provider'
 import { AppShellSkeleton } from './components/app-shell-skeleton'
 
 // Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
@@ -107,15 +106,13 @@ export default function RootLayout({
             <GraphQLIntrospectionInitializer />
           </Suspense>
         )}
-        <QueryClientProvider>
-          <RouteGuard>
-            <div className="relative flex min-h-screen flex-col">
-              <Suspense fallback={<AppShellSkeleton />}>
-                {children}
-              </Suspense>
-            </div>
-          </RouteGuard>
-        </QueryClientProvider>
+        <RouteGuard>
+          <div className="relative flex min-h-screen flex-col">
+            <Suspense fallback={<AppShellSkeleton />}>
+              {children}
+            </Suspense>
+          </div>
+        </RouteGuard>
         <Toaster />
       </body>
     </html>

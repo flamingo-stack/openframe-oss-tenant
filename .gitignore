@@ -70,4 +70,3 @@ openframe/services/openframe-frontend/pnpm-lock.yaml
 tsconfig.tsbuildinfo
 /artifacts/
 openframe/services/openframe-frontend/package-lock.json
-openframe/services/openframe-frontend/next-env.d.ts
