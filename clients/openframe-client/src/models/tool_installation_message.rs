@@ -45,6 +45,8 @@ pub struct Asset {
     pub executable: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub download_configurations: Option<Vec<DownloadConfiguration>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

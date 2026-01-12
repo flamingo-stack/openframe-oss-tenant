@@ -237,14 +237,27 @@ impl ToolInstallationService {
                 };
                 
                 File::create(&asset_path).await?.write_all(&asset_bytes).await?;
-                
+
                 // Set file permissions to executable only for executable assets
                 if is_executable {
                     self.set_executable_permissions(&asset_path).await
                         .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
                 }
-                
+
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
+
+                // Publish installed asset message if version is present
+                if let Some(ref version) = asset.version {
+                    info!("Publishing installed asset message for: {} v{}", asset.id, version);
+                    if let Ok(machine_id) = self.config_service.get_machine_id().await {
+                        if let Err(e) = self.installed_agent_publisher
+                            .publish(machine_id, asset.id.clone(), version.clone())
+                            .await
+                        {
+                            warn!("Failed to publish installed asset message for {}: {:#}", asset.id, e);
+                        }
+                    }
+                }
             }
         } else {
             info!("No assets to download for tool: {}", tool_agent_id);
@@ -376,6 +389,7 @@ impl ToolInstallationService {
                     link: format!("{}/{}/osquery-windows-amd64.zip", OSQUERY_BASE_URL, OSQUERY_VERSION),
                 },
             ]),
+            version: Some(OSQUERY_VERSION.to_string()),
         };
 
         // Replace existing osqueryd asset or add new one
