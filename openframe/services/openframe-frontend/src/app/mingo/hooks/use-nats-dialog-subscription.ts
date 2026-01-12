@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { runtimeEnv } from '@/src/lib/runtime-config'
 import { createNatsClient, type NatsClient, type NatsSubscriptionHandle } from '@flamingo-stack/openframe-frontend-core/nats'
-
-const ACCESS_TOKEN_KEY = 'of_access_token'
+import { STORAGE_KEYS, NETWORK_CONFIG, type NatsMessageType } from '../constants'
 
 type SharedConnection = {
   wsUrl: string
@@ -15,7 +14,6 @@ type SharedConnection = {
 }
 
 let shared: SharedConnection | null = null
-const SHARED_CLOSE_DELAY_MS = 750
 
 function getApiBaseUrl(): string | null {
   const envBase = runtimeEnv.tenantHostUrl()
@@ -25,8 +23,9 @@ function getApiBaseUrl(): string | null {
 }
 
 function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null
   try {
-    return typeof window !== 'undefined' ? (localStorage.getItem(ACCESS_TOKEN_KEY) || null) : null
+    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null
   } catch {
     return null
   }
@@ -50,30 +49,36 @@ function buildNatsWsUrl(apiBaseUrl: string): string {
 interface UseNatsDialogSubscriptionArgs {
   enabled: boolean
   dialogId: string | null
-  onEvent?: (payload: unknown) => void
+  onEvent?: (payload: unknown, messageType: NatsMessageType) => void
 }
 
 /**
- * Connects to NATS over WebSocket and subscribes to `chat.${dialogId}.message`.
+ * Connects to NATS over WebSocket and subscribes to `chat.${dialogId}.message` and `chat.${dialogId}.admin-message`.
  */
 export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNatsDialogSubscriptionArgs) {
-  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(getApiBaseUrl())
+  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(getApiBaseUrl)
   const [isConnected, setIsConnected] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
   
   const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
-  const [token, setToken] = useState<string | null>(() => 
-    isDevTicketEnabled ? getAccessToken() : null
+  const [token, setToken] = useState<string | null>(
+    isDevTicketEnabled ? getAccessToken : null
   )
 
   const clientRef = useRef<NatsClient | null>(null)
-  const subRef = useRef<NatsSubscriptionHandle | null>(null)
+  const messageSubRef = useRef<NatsSubscriptionHandle | null>(null)
+  const adminMessageSubRef = useRef<NatsSubscriptionHandle | null>(null)
+  
+  const onEventRef = useRef(onEvent)
+  useEffect(() => {
+    onEventRef.current = onEvent
+  }, [onEvent])
 
   useEffect(() => {
     if (!isDevTicketEnabled) return
     
     const handler = (e: StorageEvent) => {
-      if (e.key === ACCESS_TOKEN_KEY) {
+      if (e.key === STORAGE_KEYS.ACCESS_TOKEN) {
         setToken(getAccessToken())
       }
     }
@@ -94,51 +99,47 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNat
   }, [apiBaseUrl, token, isDevTicketEnabled])
 
   const acquireClient = useCallback((url: string): SharedConnection => {
-    if (shared && shared.wsUrl !== url) {
-      try {
+    if (shared?.wsUrl !== url) {
+      // Close existing connection if URL changed
+      if (shared) {
         shared.closeTimer && clearTimeout(shared.closeTimer)
-      } catch {
-        // ignore
+        const old = shared
+        shared = null
+        void old.client.close().catch(() => {})
       }
-      const old = shared
-      shared = null
-      void old.client.close().catch(() => {})
-    }
-
-    if (!shared) {
+      
       const client = createNatsClient({
         servers: url,
         name: 'openframe-frontend-mingo',
         user: 'machine',
         pass: '',
-        connectTimeoutMs: 5_000,
+        connectTimeoutMs: NETWORK_CONFIG.CONNECT_TIMEOUT_MS,
         reconnect: true,
-        maxReconnectAttempts: 10,
-        pingIntervalMs: 20_000,
-        maxPingOut: 2,
+        maxReconnectAttempts: -1, // Unlimited reconnection attempts
+        reconnectTimeWaitMs: NETWORK_CONFIG.RECONNECT_TIME_WAIT_MS,
+        pingIntervalMs: NETWORK_CONFIG.PING_INTERVAL_MS,
+        maxPingOut: NETWORK_CONFIG.MAX_PING_OUT,
       })
       shared = { wsUrl: url, client, connectPromise: null, refCount: 0, closeTimer: null }
     }
 
     shared.refCount += 1
-    if (shared.closeTimer) {
-      clearTimeout(shared.closeTimer)
-      shared.closeTimer = null
-    }
+    shared.closeTimer && clearTimeout(shared.closeTimer)
+    shared.closeTimer = null
     return shared
   }, [])
 
   const releaseClient = useCallback((url: string) => {
     if (!shared || shared.wsUrl !== url) return
+    
     shared.refCount = Math.max(0, shared.refCount - 1)
     if (shared.refCount > 0) return
 
     shared.closeTimer = setTimeout(() => {
       const s = shared
       shared = null
-      if (!s) return
-      void s.client.close().catch(() => {})
-    }, SHARED_CLOSE_DELAY_MS)
+      s && void s.client.close().catch(() => {})
+    }, NETWORK_CONFIG.SHARED_CLOSE_DELAY_MS)
   }, [])
 
   useEffect(() => {
@@ -151,55 +152,37 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNat
     setIsConnected(false)
 
     const unsubscribeStatus = client.onStatus((event) => {
-      if (event.status === 'connected') setIsConnected(true)
-      if (event.status === 'closed' || event.status === 'disconnected' || event.status === 'error') setIsConnected(false)
+      const connected = event.status === 'connected'
+      const disconnected = ['closed', 'disconnected', 'error'].includes(event.status)
+      if (connected) setIsConnected(true)
+      if (disconnected) setIsConnected(false)
     })
 
     let closed = false
     ;(async () => {
       try {
-        if (!sharedConn.connectPromise) {
-          sharedConn.connectPromise = client.connect()
-        }
+        sharedConn.connectPromise ||= client.connect()
         await sharedConn.connectPromise
-        if (closed) return
-        setIsConnected(true)
+        !closed && setIsConnected(true)
       } catch (e) {
         sharedConn.connectPromise = null
-        
         setIsConnected(false)
-        try {
-          await client.close()
-        } catch {
-          // ignore
-        }
+        await client.close().catch(() => {})
       }
-    })().catch(() => {
-      // ignore
-    })
+    })()
 
     return () => {
       closed = true
       setIsConnected(false)
-      try {
-        unsubscribeStatus()
-      } catch {
-        // ignore
-      }
-
-      try {
-        subRef.current?.unsubscribe()
-      } catch {
-        // ignore
-      } finally {
-        subRef.current = null
-      }
-
-      const c = clientRef.current
+      unsubscribeStatus()
+      
+      messageSubRef.current?.unsubscribe()
+      adminMessageSubRef.current?.unsubscribe()
+      messageSubRef.current = null
+      adminMessageSubRef.current = null
+      
+      clientRef.current && releaseClient(wsUrl)
       clientRef.current = null
-      if (c) {
-        releaseClient(wsUrl)
-      }
     }
   }, [enabled, wsUrl, acquireClient, releaseClient])
 
@@ -210,47 +193,48 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNat
 
     setIsSubscribed(false)
 
-    try {
-      subRef.current?.unsubscribe()
-    } catch {
-      // ignore
-    } finally {
-      subRef.current = null
-    }
+    messageSubRef.current?.unsubscribe()
+    adminMessageSubRef.current?.unsubscribe()
+    messageSubRef.current = null
+    adminMessageSubRef.current = null
 
     const abort = new AbortController()
-    subRef.current = client.subscribeBytes(
+    const decoder = new TextDecoder()
+    
+    const handleMessage = (messageType: NatsMessageType) => async (msg: any) => {
+      if (!onEventRef.current) return
+      try {
+        const dataStr = decoder.decode(msg.data)
+        const parsed = JSON.parse(dataStr)
+        onEventRef.current(parsed, messageType)
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    
+    messageSubRef.current = client.subscribeBytes(
       `chat.${dialogId}.message`,
-      async (msg) => {
-        if (!onEvent) return
-        try {
-          const dataStr = new TextDecoder().decode(msg.data)
-          const parsed = JSON.parse(dataStr)
-          onEvent(parsed)
-        } catch {
-          // ignore
-        }
-      },
-      { signal: abort.signal },
+      handleMessage('message' as NatsMessageType),
+      { signal: abort.signal }
     )
+    
+    adminMessageSubRef.current = client.subscribeBytes(
+      `chat.${dialogId}.admin-message`,
+      handleMessage('admin-message' as NatsMessageType),
+      { signal: abort.signal }
+    )
+    
     setIsSubscribed(true)
 
     return () => {
       setIsSubscribed(false)
-      try {
-        abort.abort()
-      } catch {
-        // ignore
-      }
-      try {
-        subRef.current?.unsubscribe()
-      } catch {
-        // ignore
-      } finally {
-        subRef.current = null
-      }
+      abort.abort()
+      messageSubRef.current?.unsubscribe()
+      adminMessageSubRef.current?.unsubscribe()
+      messageSubRef.current = null
+      adminMessageSubRef.current = null
     }
-  }, [enabled, isConnected, dialogId, onEvent])
+  }, [enabled, isConnected, dialogId])
 
   return { isConnected, isSubscribed }
 }

@@ -1,16 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { useSSE } from './useSSE'
 import { useChatConfig } from './useChatConfig'
 import { Message, MessageSegment, ToolExecutionData } from '../types/chat.types'
 import faeAvatar from '../assets/fae-avatar.png'
 import { useDebugMode } from '../contexts/DebugModeContext'
 import { useNatsChatSubscription } from './useNatsChatSubscription'
 import { tokenService } from '../services/tokenService'
+import { ChatApiService } from '../services/chatApiService'
 
 export type { Message } from '../types/chat.types'
 
 interface UseChatOptions {
-  sseUrl?: string
   useMock?: boolean
   useApi?: boolean
   apiToken?: string
@@ -23,18 +22,38 @@ function isToolSegment(segment: MessageSegment): segment is { type: 'tool_execut
   return segment.type === 'tool_execution'
 }
 
-export function useChat({ sseUrl, useMock = false, useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
+export function useChat({ useMock = false, useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [natsStreaming, setNatsStreaming] = useState(false)
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({})
+  const [awaitingTechnicianResponse, setAwaitingTechnicianResponse] = useState(false)
   const currentAssistantSegmentsRef = useRef<MessageSegment[]>([])
   const currentTextSegmentRef = useRef('')
   const natsDoneResolverRef = useRef<null | (() => void)>(null)
+  const natsSubscribedRef = useRef(false)
+  const natsDialogIdRef = useRef<string | null>(null)
   const { debugMode } = useDebugMode()
 
   const { quickActions } = useChatConfig()
+
+  const apiServiceRef = useRef<ChatApiService | null>(null)
+  if (!apiServiceRef.current) {
+    apiServiceRef.current = new ChatApiService(debugMode)
+    if (useApi) {
+      Promise.all([tokenService.requestToken().catch(() => null), tokenService.initApiUrl().catch(() => null)]).catch(() => null)
+    }
+  }
+
+  useEffect(() => {
+    apiServiceRef.current?.setDebugMode(debugMode)
+  }, [debugMode])
+
+  useEffect(() => {
+    natsDialogIdRef.current = natsDialogId
+  }, [natsDialogId])
   
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -72,14 +91,16 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
   }, [])
 
   const applyTextDelta = useCallback((text: string) => {
-    // stop typing as soon as we see any streamed content
     setIsTyping(false)
-    currentTextSegmentRef.current += text
 
     const updatedSegments = [...currentAssistantSegmentsRef.current]
-    if (updatedSegments.length > 0 && updatedSegments[updatedSegments.length - 1].type === 'text') {
+    const lastSegment = updatedSegments[updatedSegments.length - 1]
+    
+    if (lastSegment && lastSegment.type === 'text') {
+      currentTextSegmentRef.current += text
       updatedSegments[updatedSegments.length - 1] = { type: 'text', text: currentTextSegmentRef.current }
     } else {
+      currentTextSegmentRef.current = text
       updatedSegments.push({ type: 'text', text: currentTextSegmentRef.current })
     }
 
@@ -137,7 +158,6 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
       
       if (response.ok) {
         setApprovalStatuses(prev => ({ ...prev, [requestId]: 'approved' }))
-        // Update the message segments to reflect the new status
         updateApprovalStatus(requestId, 'approved')
       }
     } catch (error) {
@@ -163,7 +183,6 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
       
       if (response.ok) {
         setApprovalStatuses(prev => ({ ...prev, [requestId]: 'rejected' }))
-        // Update the message segments to reflect the new status
         updateApprovalStatus(requestId, 'rejected')
       }
     } catch (error) {
@@ -213,6 +232,18 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
   const handleNatsChunk = useCallback((chunk: any) => {
     if (!chunk || typeof chunk !== 'object') return
     const type = String(chunk.type || '')
+
+    if ((type === 'AI_METADATA') && onMetadataUpdate) {
+      const providerName = chunk.providerName || chunk.provider
+      if (typeof chunk.modelName === 'string' && typeof providerName === 'string') {
+        onMetadataUpdate({
+          modelName: chunk.modelName,
+          providerName,
+          contextWindow: typeof chunk.contextWindow === 'number' ? chunk.contextWindow : 0,
+        })
+      }
+      return
+    }
 
     if (type === 'MESSAGE_START') {
       ensureAssistantMessage()
@@ -268,6 +299,7 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
           type: 'approval_request',
           data: {
             command: chunk.command || '',
+            explanation: chunk.explanation || undefined,
             requestId: requestId,
             approvalType: approvalType
           },
@@ -280,15 +312,8 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
         currentAssistantSegmentsRef.current = updatedSegments
         updateLastAssistantMessage(updatedSegments)
       } else {
-        // For non-CLIENT approvals, show escalation message with typing indicator
-        const escalationSegment: MessageSegment = {
-          type: 'text',
-          text: 'Escalated to technician - awaiting response'
-        }
-        const updatedSegments = [...currentAssistantSegmentsRef.current, escalationSegment]
-        currentAssistantSegmentsRef.current = updatedSegments
-        updateLastAssistantMessage(updatedSegments)
-        setIsTyping(true)
+        // For non-CLIENT approvals, set awaiting response state instead of showing message
+        setAwaitingTechnicianResponse(true)
       }
       return
     }
@@ -304,7 +329,7 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
       updateApprovalStatus(requestId, newStatus)
       
       if (approvalType !== 'CLIENT') {
-        setIsTyping(false)
+        setAwaitingTechnicianResponse(false)
       }
       
       return
@@ -327,32 +352,29 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
     //   addMessage(errorMessage)
     //   return
     // }
-  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus])
+  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus, onMetadataUpdate])
 
-  // NATS connect happens whenever feature flag is on.
-  // Disable SSE message processing after we have an active subscription (natsSubscribed).
   const { isSubscribed: natsSubscribed } = useNatsChatSubscription({
     enabled: useNats,
     dialogId: natsDialogId,
     onChunk: handleNatsChunk,
   })
 
-  const useNatsTransport = useNats && natsSubscribed
-
-  const { streamMessage, isStreaming: sseStreaming, error: sseError, reset, dialogId: sseDialogId } = useSSE({ 
-    url: sseUrl, 
-    useMock, 
-    useApi,
-    useNats: useNatsTransport,
-    debugMode,
-    onMetadataUpdate
-  })
-
   useEffect(() => {
-    setNatsDialogId(sseDialogId)
-  }, [sseDialogId])
+    natsSubscribedRef.current = natsSubscribed
+  }, [natsSubscribed])
+
+  const waitForNatsSubscription = useCallback(async (expectedDialogId: string, timeoutMs: number = 8000) => {
+    const started = Date.now()
+    while (Date.now() - started < timeoutMs) {
+      if (natsSubscribedRef.current && natsDialogIdRef.current === expectedDialogId) return
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    throw new Error('NATS subscription was not ready in time')
+  }, [])
   
   const sendMessage = useCallback(async (text: string) => {
+    setError(null)
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -363,6 +385,7 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
     addMessage(userMessage)
     
     setIsTyping(true)
+    setNatsStreaming(true)
     currentAssistantSegmentsRef.current = []
 
     const assistantMessage: Message = {
@@ -376,110 +399,33 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
     addMessage(assistantMessage)
     
     try {
-      let waitForNatsDone: Promise<void> | null = null
-      if (useNatsTransport) {
-        waitForNatsDone = new Promise<void>((resolve) => {
-          natsDoneResolverRef.current = resolve
-        })
+      if (!useNats) {
+        throw new Error('NATS is required for incoming messages (SSE removed)')
       }
 
-      let receivedFirstChunk = false
-      let currentTextSegment = ''
-      
-      for await (const segment of streamMessage(text)) {
-        if (!receivedFirstChunk) {
-          setIsTyping(false)
-          receivedFirstChunk = true
-        }
-        
-        if (segment.type === 'text') {
-          currentTextSegment += segment.text
-          const updatedSegments = [...currentAssistantSegmentsRef.current]
-          
-          if (updatedSegments.length > 0 && updatedSegments[updatedSegments.length - 1].type === 'text') {
-            updatedSegments[updatedSegments.length - 1] = { type: 'text', text: currentTextSegment }
-          } else {
-            updatedSegments.push({ type: 'text', text: currentTextSegment })
-          }
-          
-          currentAssistantSegmentsRef.current = updatedSegments
-          updateLastAssistantMessage(updatedSegments)
-        } else if (segment.type === 'tool_execution') {
-          if (currentTextSegment) {
-            const updatedSegments = [...currentAssistantSegmentsRef.current]
-            
-            if (updatedSegments.length > 0 && updatedSegments[updatedSegments.length - 1].type === 'text') {
-              updatedSegments[updatedSegments.length - 1] = { type: 'text', text: currentTextSegment }
-            } else {
-              updatedSegments.push({ type: 'text', text: currentTextSegment })
-            }
-            
-            currentAssistantSegmentsRef.current = updatedSegments
-            currentTextSegment = ''
-          }
-          
-          const existingToolIndex = currentAssistantSegmentsRef.current.findIndex(
-            (s): s is { type: 'tool_execution'; data: ToolExecutionData } =>
-              isToolSegment(s) &&
-              s.data.type === 'EXECUTING_TOOL' &&
-              s.data.integratedToolType === segment.data.integratedToolType &&
-              s.data.toolFunction === segment.data.toolFunction
-          )
-          
-          if (existingToolIndex !== -1 && segment.data.type === 'EXECUTED_TOOL') {
-            const existingTool = currentAssistantSegmentsRef.current[existingToolIndex] as { type: 'tool_execution'; data: ToolExecutionData }
-            currentAssistantSegmentsRef.current[existingToolIndex] = {
-              ...segment,
-              data: {
-                ...segment.data,
-                parameters: segment.data.parameters || existingTool.data.parameters
-              }
-            }
-          } else {
-            currentAssistantSegmentsRef.current.push(segment)
-          }
-          
-          updateLastAssistantMessage([...currentAssistantSegmentsRef.current])
-        } else if ((segment as any).type === 'approval_request') {
-          const approvalSegment = segment as any
-          const requestId = approvalSegment.data.requestId || ''
-          const approvalType = approvalSegment.data.approvalType || 'USER'
-          
-          if (approvalType === 'CLIENT') {
-            const finalSegment: MessageSegment = {
-              type: 'approval_request',
-              data: {
-                command: approvalSegment.data.command || '',
-                requestId: requestId,
-                approvalType: approvalType
-              },
-              status: (approvalStatuses[requestId] || 'pending') as 'pending' | 'approved' | 'rejected',
-              onApprove: handleApproveRequest,
-              onReject: handleRejectRequest
-            }
-            
-            currentAssistantSegmentsRef.current.push(finalSegment)
-            updateLastAssistantMessage([...currentAssistantSegmentsRef.current])
-          } else {
-            const escalationSegment: MessageSegment = {
-              type: 'text',
-              text: 'Escalated to technician - awaiting response'
-            }
-            currentAssistantSegmentsRef.current.push(escalationSegment)
-            updateLastAssistantMessage([...currentAssistantSegmentsRef.current])
-            setIsTyping(true)
-          }
-        }
+      const api = apiServiceRef.current
+      if (!api) throw new Error('API service not initialized')
+
+      const dialogId = natsDialogIdRef.current || (await api.createDialog())
+      if (dialogId !== natsDialogIdRef.current) {
+        setNatsDialogId(dialogId)
       }
 
-      if (waitForNatsDone) {
-        await waitForNatsDone
-      }
+      await waitForNatsSubscription(dialogId)
+
+      const waitForNatsDone = new Promise<void>((resolve) => {
+        natsDoneResolverRef.current = resolve
+      })
+
+      await api.sendMessage({ dialogId, content: text, chatType: 'CLIENT_CHAT' })
+
+      await Promise.all([waitForNatsDone])
     } catch (err) {
       const errorText = err instanceof Error ? err.message : String(err)
       if (errorText.toLowerCase().includes('network error')) {
         return
       }
+      setError(errorText)
       
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
@@ -501,13 +447,11 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
         return [...prev, errorMessage]
       })
     } finally {
-      if (!useNatsTransport) {
-        setIsTyping(false)
-        currentAssistantSegmentsRef.current = []
-        currentTextSegmentRef.current = ''
-      }
+      setIsTyping(false)
+      setNatsStreaming(false)
+      natsDoneResolverRef.current = null
     }
-  }, [streamMessage, addMessage, updateLastAssistantMessage, useNatsTransport, natsDialogId, natsStreaming])
+  }, [addMessage, waitForNatsSubscription, useNats])
   
   const handleQuickAction = useCallback((actionText: string) => {
     sendMessage(actionText)
@@ -516,19 +460,26 @@ export function useChat({ sseUrl, useMock = false, useApi = true, useNats = fals
   const clearMessages = useCallback(() => {
     setMessages([])
     setIsTyping(false)
-    reset()
-  }, [reset])
+    setNatsStreaming(false)
+    setError(null)
+    currentAssistantSegmentsRef.current = []
+    currentTextSegmentRef.current = ''
+    setNatsDialogId(null)
+    setAwaitingTechnicianResponse(false)
+    apiServiceRef.current?.reset()
+  }, [])
   
   return {
     messages,
     isTyping,
-    isStreaming: useNatsTransport ? natsStreaming : sseStreaming,
-    error: sseError,
-    dialogId: sseDialogId,
+    isStreaming: natsStreaming,
+    error,
+    dialogId: natsDialogId,
     sendMessage,
     handleQuickAction,
     clearMessages,
     quickActions,
-    hasMessages: messages.length > 0
+    hasMessages: messages.length > 0,
+    awaitingTechnicianResponse
   }
 }
