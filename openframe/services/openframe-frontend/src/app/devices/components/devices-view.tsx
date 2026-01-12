@@ -1,21 +1,21 @@
 'use client'
 
-import React, { useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
-import { type Device } from '../types/device.types'
-import {
-  Table,
-  Button,
-  ListPageLayout
-} from "@flamingo-stack/openframe-frontend-core/components/ui"
-import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
 import { ViewToggle } from "@flamingo-stack/openframe-frontend-core/components/features"
-import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from "@flamingo-stack/openframe-frontend-core/hooks"
-import { useDevices } from '../hooks/use-devices'
-import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
-import { DevicesGrid } from './devices-grid'
+import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
+import {
+  Button,
+  ListPageLayout,
+  Table
+} from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { useApiParams, useBatchImages, useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { featureFlags } from '@lib/feature-flags'
+import { useRouter } from "next/navigation"
+import { useCallback, useMemo } from "react"
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
+import { useDevices } from '../hooks/use-devices'
+import { type Device } from '../types/device.types'
+import { DevicesGrid } from './devices-grid'
+import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns'
 
 export function DevicesView() {
   const router = useRouter()
