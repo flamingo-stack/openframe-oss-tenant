@@ -246,15 +246,17 @@ impl ToolInstallationService {
 
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
 
-                // Publish installed asset message if version is present
-                if let Some(ref version) = asset.version {
-                    info!("Publishing installed asset message for: {} v{}", asset.id, version);
-                    if let Ok(machine_id) = self.config_service.get_machine_id().await {
-                        if let Err(e) = self.installed_agent_publisher
-                            .publish(machine_id, asset.id.clone(), version.clone())
-                            .await
-                        {
-                            warn!("Failed to publish installed asset message for {}: {:#}", asset.id, e);
+                // Publish installed asset message only for executable assets with version
+                if is_executable {
+                    if let Some(ref version) = asset.version {
+                        info!("Publishing installed asset message for: {} v{}", asset.id, version);
+                        if let Ok(machine_id) = self.config_service.get_machine_id().await {
+                            if let Err(e) = self.installed_agent_publisher
+                                .publish(machine_id, asset.id.clone(), version.clone())
+                                .await
+                            {
+                                warn!("Failed to publish installed asset message for {}: {:#}", asset.id, e);
+                            }
                         }
                     }
                 }
