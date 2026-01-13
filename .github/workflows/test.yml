@@ -19,6 +19,7 @@ on:
     branches: [main]
     paths:
       - 'openframe/**'
+      - 'openframe-e2e-tests/**'
       - 'integrated-tools/**'
       - 'pom.xml'
       - '.github/**'
