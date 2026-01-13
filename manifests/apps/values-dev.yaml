@@ -59,7 +59,7 @@ apps:
     values:
       server:
         image: 
-          tag: latest
+          tag: 363980ad92
   meshcentral: 
     values:
       server:
