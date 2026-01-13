@@ -33,11 +33,12 @@ public class MongoDB {
     }
 
     public static void clean() {
-        MongoDBConnection mongoConnection = MongoDBConnection.fromConfig();
-        MongoCollection<Document> users = mongoConnection.getDatabase().getCollection("users");
+        MongoDatabase mongoDB = getDatabase();
+        MongoCollection<Document> users = mongoDB.getCollection("users");
         long deletedUsers = users.deleteMany(new Document()).getDeletedCount();
-        MongoCollection<Document> tenants = mongoConnection.getDatabase().getCollection("tenants");
+        MongoCollection<Document> tenants = mongoDB.getCollection("tenants");
         long deletedTenants = tenants.deleteMany(new Document()).getDeletedCount();
+        close();
         log.info("Cleared {} users from database", deletedUsers);
         log.info("Cleared {} tenants from database", deletedTenants);
     }

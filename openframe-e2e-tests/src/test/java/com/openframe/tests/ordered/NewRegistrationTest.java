@@ -17,7 +17,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 
 import static com.openframe.data.testData.OAuthLoginTestData.performCompleteLogin;
+import static com.openframe.data.testData.UserRegistrationDataGenerator.meResponse;
 import static com.openframe.support.constants.TestConstants.USER_FILE;
+import static com.openframe.support.utils.FileManager.read;
 import static com.openframe.support.utils.FileManager.save;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,16 +46,16 @@ public class NewRegistrationTest extends UnauthorizedTest {
     }
 
     @Order(2)
-    @ParameterizedTest
-    @MethodSource("com.openframe.data.dataProviders.UserRegistrationTestDataProvider#loginNewUser")
-    public void loginNewUser(User user, MeResponse expectedResponse) {
+    @Test
+    public void loginNewUser() {
+        User user = read(USER_FILE, User.class);
         OAuthTokenResponse tokens = performCompleteLogin(user);
         RequestSpecHelper.setTokens(tokens);
         MeResponse response = UserApi.me();
         assertThat(response.getUser().getId()).isNotNull();
         assertThat(response).usingRecursiveComparison()
                 .ignoringFields("user.password", "user.id")
-                .isEqualTo(expectedResponse);
+                .isEqualTo(meResponse(user));
     }
 
     @Order(3)

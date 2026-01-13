@@ -4,7 +4,9 @@ import com.openframe.config.MongoDB;
 import com.openframe.data.dto.db.AuthUser;
 import com.openframe.data.dto.request.UserRegistrationRequest;
 import com.openframe.data.dto.response.ErrorResponse;
+import com.openframe.data.dto.response.MeResponse;
 import com.openframe.data.dto.response.RegistrationResponse;
+import com.openframe.data.dto.test.User;
 import net.datafaker.Faker;
 
 import java.time.LocalTime;
@@ -75,6 +77,10 @@ public class UserRegistrationDataGenerator {
                 .updatedAt(LocalTime.now().toString())
                 .active(true)
                 .build();
+    }
+
+    public static MeResponse meResponse(User user) {
+        return MeResponse.builder().user(user).authenticated(true).build();
     }
 
     public static ErrorResponse registrationClosedResponse() {
