@@ -25,4 +25,4 @@ server:
   waitMongodbImage:
     registry: ghcr.io/flamingo-stack/registry
     repository: mongo
-    tag: "8.0.9"
+    tag: "8.0.17"

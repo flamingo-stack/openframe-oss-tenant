@@ -8,7 +8,7 @@ registerJob:
 image:
   registry: ghcr.io/flamingo-stack/registry
   repository: mongo
-  tag: "7.0.18"
+  tag: "7.0.28"
 podAnnotations:
   loki.grafana.com/scrape: "true"
   prometheus.io/scrape: "true"
