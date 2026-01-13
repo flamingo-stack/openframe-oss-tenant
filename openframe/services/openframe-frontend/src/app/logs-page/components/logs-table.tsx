@@ -1,24 +1,23 @@
 'use client'
 
-import React, { useState, useCallback, useMemo, useImperativeHandle, forwardRef, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { Input, ToolBadge } from "@flamingo-stack/openframe-frontend-core"
+import { RefreshIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
 import {
-  Table,
-  StatusTag,
   Button,
+  DeviceCardCompact,
   ListPageLayout,
+  StatusTag,
+  Table,
   TableDescriptionCell,
   TableTimestampCell,
-  DeviceCardCompact,
   type TableColumn
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
-import { RefreshIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
-import { ExternalLink } from "lucide-react"
-import { Input, ToolBadge } from "@flamingo-stack/openframe-frontend-core"
-import { useApiParams, useTablePagination, useCursorPaginationState } from "@flamingo-stack/openframe-frontend-core/hooks"
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { useApiParams, useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { transformOrganizationFilters } from '@lib/filter-utils'
-import { useLogs, useLogFilters } from '../hooks/use-logs'
+import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { ExternalLink } from "lucide-react"
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { useLogFilters, useLogs } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
 
 interface UILogEntry {
@@ -56,8 +55,7 @@ export interface LogsTableRef {
 }
 
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable({ deviceId, embedded = false }: LogsTableProps = {}, ref) {
-  const router = useRouter()
-
+ 
   // Extra URL params for filters (not search/cursor which are handled by pagination hook)
   const { params: filterParams, setParams: setFilterParams } = useApiParams({
     severities: { type: 'array', default: [] },
@@ -257,7 +255,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   // Refetch when filters change
   const initialFilterLoadDone = useRef(false)
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialFilterLoadDone.current) {
       // Only refetch if filters actually changed (not on mount)
       if (prevFiltersKeyRef.current !== null && prevFiltersKeyRef.current !== filtersKey) {

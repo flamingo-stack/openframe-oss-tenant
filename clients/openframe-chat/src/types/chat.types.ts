@@ -12,6 +12,7 @@ export interface ToolExecutionData {
 export interface ApprovalRequestData {
   command: string
   description?: string
+  explanation?: string
   approvalType?: string
   requestId?: string
 }

@@ -1,13 +1,15 @@
 'use client'
 
-import { useCallback, useState, useRef, useMemo, useEffect } from 'react'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
-import { useOrganizationsStore, OrganizationEntry } from '../stores/organizations-store'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GET_ORGANIZATIONS_QUERY } from '../queries/organizations-queries'
+import { OrganizationEntry, useOrganizationsStore } from '../stores/organizations-store'
+
+type LooseString<T extends string> = T | (string & {})
 
 interface OrganizationsFilterInput {
-  tiers?: Array<OrganizationEntry['tier']>
+  tiers?: LooseString<OrganizationEntry['tier']>[]
   industries?: string[]
 }
 

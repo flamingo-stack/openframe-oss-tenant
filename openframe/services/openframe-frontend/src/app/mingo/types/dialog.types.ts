@@ -122,9 +122,7 @@ export interface ApprovalRequestData extends MessageData {
   approvalRequestId: string
   approvalType: string
   command: string
-  description?: string
-  risk?: string
-  details?: any
+  explanation: string
 }
 
 export interface ApprovalResultData extends MessageData {

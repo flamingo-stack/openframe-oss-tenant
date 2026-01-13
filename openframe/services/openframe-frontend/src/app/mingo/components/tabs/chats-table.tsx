@@ -1,19 +1,19 @@
 'use client'
 
-import { useCallback, useMemo, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import {
-  Table,
-  Button,
-  ListPageLayout
-} from "@flamingo-stack/openframe-frontend-core/components/ui"
-import { useTablePagination, useCursorPaginationState } from "@flamingo-stack/openframe-frontend-core/hooks"
-import { useDialogsStore } from '../../stores/dialogs-store'
-import { useArchiveResolved } from '../../hooks/use-archive-resolved'
-import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup'
-import { Dialog, ClientDialogOwner } from '../../types/dialog.types'
-import { getDialogTableColumns } from '../dialog-table-columns'
 import { ArchiveIcon } from '@flamingo-stack/openframe-frontend-core'
+import {
+  Button,
+  ListPageLayout,
+  Table
+} from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
+import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useMemo } from "react"
+import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup'
+import { useArchiveResolved } from '../../hooks/use-archive-resolved'
+import { useDialogsStore } from '../../stores/dialogs-store'
+import { ClientDialogOwner, Dialog } from '../../types/dialog.types'
+import { getDialogTableColumns } from '../dialog-table-columns'
 
 interface ChatsTableProps {
   isArchived: boolean
@@ -82,7 +82,6 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
     handleResetToFirstPage,
     params
   } = useCursorPaginationState({
-    paramPrefix: isArchived ? 'archived' : 'current',
     onInitialLoad: (search, cursor) => fetchDialogs(isArchived, search, true, cursor),
     onSearchChange: (search) => fetchDialogs(isArchived, search)
   })
@@ -99,8 +98,7 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
   const handleArchiveResolved = useCallback(async () => {
     const success = await archiveResolvedDialogs(dialogs)
     if (success) {
-      const searchKey = isArchived ? 'archivedSearch' : 'currentSearch'
-      await fetchDialogs(isArchived, params[searchKey] || '', true)
+      await fetchDialogs(isArchived, params.search || '', true)
     }
   }, [archiveResolvedDialogs, dialogs, fetchDialogs, isArchived, params])
 
@@ -108,8 +106,7 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
     if (isArchived) return
     
     const statusFilters = columnFilters.status || []
-    const searchKey = 'currentSearch'
-    await fetchDialogs(false, params[searchKey] || '', true, null, statusFilters)
+    await fetchDialogs(false, params.search || '', true, null, statusFilters)
   }, [fetchDialogs, isArchived, params])
 
   const hasResolvedDialogs = useMemo(() => {
