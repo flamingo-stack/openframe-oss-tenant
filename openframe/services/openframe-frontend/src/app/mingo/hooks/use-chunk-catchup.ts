@@ -11,6 +11,11 @@ interface ChunkData {
   [key: string]: any
 }
 
+interface BufferedChunk {
+  chunk: ChunkData
+  messageType: 'message' | 'admin-message'
+}
+
 interface UseChunkCatchupOptions {
   dialogId: string | null
   onChunkReceived: (chunk: ChunkData, messageType: 'message' | 'admin-message') => void
@@ -23,6 +28,10 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
   const fetchingInProgress = useRef(false)
   const lastFetchParams = useRef<{ dialogId: string; fromSequenceId?: number | null } | null>(null)
   
+  // Buffer for NATS chunks that arrive during catchup
+  const chunkBuffer = useRef<BufferedChunk[]>([])
+  const isBuffering = useRef(false)
+  
   const onChunkReceivedRef = useRef(onChunkReceived)
   useEffect(() => {
     onChunkReceivedRef.current = onChunkReceived
@@ -30,8 +39,14 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
   
   const processChunk = useCallback((
     chunk: ChunkData,
-    messageType: 'message' | 'admin-message'
+    messageType: 'message' | 'admin-message',
+    forceProcess: boolean = false
   ): boolean => {
+    if (isBuffering.current && !forceProcess) {
+      chunkBuffer.current.push({ chunk, messageType })
+      return true
+    }
+    
     if (chunk.sequenceId !== undefined && chunk.sequenceId !== null) {
       if (processedSequenceIds.current.has(chunk.sequenceId)) {
         return false
@@ -63,6 +78,9 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
     fetchingInProgress.current = true
     lastFetchParams.current = { dialogId, fromSequenceId }
     
+    isBuffering.current = true
+    chunkBuffer.current = []
+    
     try {
       const fetchChunksForChatType = async (chatType: typeof CHAT_TYPE[keyof typeof CHAT_TYPE]) => {
         let url = `${API_ENDPOINTS.DIALOG_CHUNKS}/${dialogId}/chunks?chatType=${chatType}`
@@ -84,56 +102,72 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
         fetchChunksForChatType(CHAT_TYPE.ADMIN)
       ])
       
-      const processChunksArray = (
-        chunks: ChunkData[],
-        messageType: 'message' | 'admin-message'
-      ): number => {
-        if (!Array.isArray(chunks) || chunks.length === 0) {
-          return 0
+      const allCatchupChunks: BufferedChunk[] = []
+      
+      clientChunks.forEach(chunk => {
+        allCatchupChunks.push({ chunk, messageType: 'message' })
+      })
+      
+      adminChunks.forEach(chunk => {
+        allCatchupChunks.push({ chunk, messageType: 'admin-message' })
+      })
+      
+      isBuffering.current = false
+      const bufferedNatsChunks = [...chunkBuffer.current]
+      chunkBuffer.current = []
+      
+      const allChunks = [...allCatchupChunks, ...bufferedNatsChunks]
+      
+      allChunks.sort((a, b) => {
+        const seqA = a.chunk.sequenceId ?? 0
+        const seqB = b.chunk.sequenceId ?? 0
+        return seqA - seqB
+      })
+      
+      let lastMessageStartSeqId: number | null = null
+      let lastMessageEndSeqId: number | null = null
+      
+      for (let i = allChunks.length - 1; i >= 0; i--) {
+        if (allChunks[i].chunk.type === MESSAGE_TYPE.MESSAGE_END && allChunks[i].chunk.sequenceId) {
+          lastMessageEndSeqId = allChunks[i].chunk.sequenceId!
+          break
         }
-        
-        chunks.sort((a, b) => {
-          const seqA = a.sequenceId ?? 0
-          const seqB = b.sequenceId ?? 0
-          return seqA - seqB
-        })
-        
-        let lastMessageEndSeqId: number | null = null
-        for (let i = chunks.length - 1; i >= 0; i--) {
-          if (chunks[i].type === MESSAGE_TYPE.MESSAGE_END && chunks[i].sequenceId) {
-            lastMessageEndSeqId = chunks[i].sequenceId!
+      }
+      
+      for (let i = allChunks.length - 1; i >= 0; i--) {
+        const chunk = allChunks[i].chunk
+        if (chunk.type === MESSAGE_TYPE.MESSAGE_START && chunk.sequenceId) {
+          if (lastMessageEndSeqId === null || chunk.sequenceId > lastMessageEndSeqId) {
+            lastMessageStartSeqId = chunk.sequenceId!
             break
           }
         }
-        
-        const filteredChunks = lastMessageEndSeqId === null 
-          ? chunks 
-          : chunks.filter(chunk => 
-              chunk.sequenceId !== undefined && 
-              chunk.sequenceId > lastMessageEndSeqId!
-            )
-        
-        if (filteredChunks.length === 0) {
-          return 0
-        }
-        
-        let processedCount = 0
-        
-        filteredChunks.forEach(chunk => {
-          if (processChunk(chunk, messageType)) {
-            processedCount++
-          }
-        })
-        
-        return processedCount
       }
       
-      processChunksArray(clientChunks, 'message')
-      processChunksArray(adminChunks, 'admin-message')      
+      let chunksToProcess: BufferedChunk[]
+      
+      if (lastMessageStartSeqId !== null) {
+        chunksToProcess = allChunks.filter(item => 
+          item.chunk.sequenceId !== undefined && 
+          item.chunk.sequenceId >= lastMessageStartSeqId!
+        )
+      } else if (lastMessageEndSeqId !== null) {
+        chunksToProcess = allChunks.filter(item => 
+          item.chunk.sequenceId !== undefined && 
+          item.chunk.sequenceId > lastMessageEndSeqId!
+        )
+      } else {
+        chunksToProcess = allChunks
+      }
+      
+      chunksToProcess.forEach(({ chunk, messageType }) => {
+        processChunk(chunk, messageType, true)
+      })      
     } catch (error) {
       // noop
     } finally {
       fetchingInProgress.current = false
+      isBuffering.current = false
     }
   }, [dialogId, processChunk]) 
   
@@ -142,6 +176,8 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
     lastSequenceId.current = null
     fetchingInProgress.current = false
     lastFetchParams.current = null
+    chunkBuffer.current = []
+    isBuffering.current = false
   }, [])
   
   const getLastSequenceId = useCallback(() => {
