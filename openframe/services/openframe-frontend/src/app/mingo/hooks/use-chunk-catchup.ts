@@ -22,7 +22,7 @@ interface UseChunkCatchupOptions {
 }
 
 export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOptions) {
-  const processedSequenceIds = useRef<Set<number>>(new Set())
+  const processedSequenceKeys = useRef<Set<string>>(new Set())
   const lastSequenceId = useRef<number | null>(null)
   
   const fetchingInProgress = useRef(false)
@@ -30,38 +30,74 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
   
   // Buffer for NATS chunks that arrive during catchup
   const chunkBuffer = useRef<BufferedChunk[]>([])
-  const isBuffering = useRef(false)
+  const bufferUntilInitialCatchupComplete = useRef(false)
+  const hasCompletedInitialCatchup = useRef(false)
   
   const onChunkReceivedRef = useRef(onChunkReceived)
   useEffect(() => {
     onChunkReceivedRef.current = onChunkReceived
   }, [onChunkReceived])
+
+  function makeSeqKey(messageType: 'message' | 'admin-message', sequenceId: number): string {
+    return `${messageType}:${sequenceId}`
+  }
+
+  function makeBatchDedupKey(item: BufferedChunk): string {
+    const seq = item.chunk.sequenceId ?? 'na'
+    const type = typeof item.chunk.type === 'string' ? item.chunk.type : 'na'
+    const text = typeof item.chunk.text === 'string' ? item.chunk.text : ''
+    const integratedToolType = typeof item.chunk.integratedToolType === 'string' ? item.chunk.integratedToolType : ''
+    const toolFunction = typeof item.chunk.toolFunction === 'string' ? item.chunk.toolFunction : ''
+    const approvalRequestId =
+      typeof item.chunk.approvalRequestId === 'string'
+        ? item.chunk.approvalRequestId
+        : typeof item.chunk.approval_request_id === 'string'
+          ? item.chunk.approval_request_id
+          : ''
+
+    return `${item.messageType}:${seq}:${type}:${text}:${integratedToolType}:${toolFunction}:${approvalRequestId}`
+  }
   
   const processChunk = useCallback((
     chunk: ChunkData,
     messageType: 'message' | 'admin-message',
     forceProcess: boolean = false
   ): boolean => {
-    if (isBuffering.current && !forceProcess) {
+    if (bufferUntilInitialCatchupComplete.current && !forceProcess) {
       chunkBuffer.current.push({ chunk, messageType })
       return true
     }
     
     if (chunk.sequenceId !== undefined && chunk.sequenceId !== null) {
-      if (processedSequenceIds.current.has(chunk.sequenceId)) {
-        return false
-      }
-      
-      processedSequenceIds.current.add(chunk.sequenceId)
       lastSequenceId.current = chunk.sequenceId
     }
     
     onChunkReceivedRef.current(chunk, messageType)
     return true
   }, [])
+
+  const flushBufferedRealtimeChunks = useCallback(() => {
+    if (chunkBuffer.current.length === 0) return
+    const buffered = [...chunkBuffer.current]
+    chunkBuffer.current = []
+
+    buffered.sort((a, b) => {
+      const seqA = a.chunk.sequenceId ?? 0
+      const seqB = b.chunk.sequenceId ?? 0
+      return seqA - seqB
+    })
+
+    buffered.forEach(({ chunk, messageType }) => {
+      processChunk(chunk, messageType, true)
+    })
+  }, [processChunk])
   
   const catchUpChunks = useCallback(async (fromSequenceId?: number | null) => {
     if (!dialogId) {
+      return
+    }
+    
+    if (hasCompletedInitialCatchup.current) {
       return
     }
     
@@ -77,9 +113,6 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
     
     fetchingInProgress.current = true
     lastFetchParams.current = { dialogId, fromSequenceId }
-    
-    isBuffering.current = true
-    chunkBuffer.current = []
     
     try {
       const fetchChunksForChatType = async (chatType: typeof CHAT_TYPE[keyof typeof CHAT_TYPE]) => {
@@ -102,6 +135,13 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
         fetchChunksForChatType(CHAT_TYPE.ADMIN)
       ])
       
+      if (clientChunks.length === 0 && adminChunks.length === 0) {
+        flushBufferedRealtimeChunks()
+        bufferUntilInitialCatchupComplete.current = false
+        hasCompletedInitialCatchup.current = true
+        return
+      }
+      
       const allCatchupChunks: BufferedChunk[] = []
       
       clientChunks.forEach(chunk => {
@@ -112,10 +152,8 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
         allCatchupChunks.push({ chunk, messageType: 'admin-message' })
       })
       
-      isBuffering.current = false
       const bufferedNatsChunks = [...chunkBuffer.current]
       chunkBuffer.current = []
-      
       const allChunks = [...allCatchupChunks, ...bufferedNatsChunks]
       
       allChunks.sort((a, b) => {
@@ -123,22 +161,33 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
         const seqB = b.chunk.sequenceId ?? 0
         return seqA - seqB
       })
+    
+      const uniqueAllChunks: BufferedChunk[] = []
+      const seenInBatch = new Set<string>()
+      for (const item of allChunks) {
+        const k = makeBatchDedupKey(item)
+        if (seenInBatch.has(k)) continue
+        seenInBatch.add(k)
+        uniqueAllChunks.push(item)
+      }
       
       let lastMessageStartSeqId: number | null = null
       let lastMessageEndSeqId: number | null = null
       
-      for (let i = allChunks.length - 1; i >= 0; i--) {
-        if (allChunks[i].chunk.type === MESSAGE_TYPE.MESSAGE_END && allChunks[i].chunk.sequenceId) {
-          lastMessageEndSeqId = allChunks[i].chunk.sequenceId!
+      for (let i = uniqueAllChunks.length - 1; i >= 0; i--) {
+        const seq = uniqueAllChunks[i].chunk.sequenceId
+        if (uniqueAllChunks[i].chunk.type === MESSAGE_TYPE.MESSAGE_END && seq !== undefined && seq !== null) {
+          lastMessageEndSeqId = seq
           break
         }
       }
       
-      for (let i = allChunks.length - 1; i >= 0; i--) {
-        const chunk = allChunks[i].chunk
-        if (chunk.type === MESSAGE_TYPE.MESSAGE_START && chunk.sequenceId) {
-          if (lastMessageEndSeqId === null || chunk.sequenceId > lastMessageEndSeqId) {
-            lastMessageStartSeqId = chunk.sequenceId!
+      for (let i = uniqueAllChunks.length - 1; i >= 0; i--) {
+        const chunk = uniqueAllChunks[i].chunk
+        const seq = chunk.sequenceId
+        if (chunk.type === MESSAGE_TYPE.MESSAGE_START && seq !== undefined && seq !== null) {
+          if (lastMessageEndSeqId === null || seq > lastMessageEndSeqId) {
+            lastMessageStartSeqId = seq
             break
           }
         }
@@ -147,48 +196,66 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
       let chunksToProcess: BufferedChunk[]
       
       if (lastMessageStartSeqId !== null) {
-        chunksToProcess = allChunks.filter(item => 
+        chunksToProcess = uniqueAllChunks.filter(item => 
           item.chunk.sequenceId !== undefined && 
           item.chunk.sequenceId >= lastMessageStartSeqId!
         )
       } else if (lastMessageEndSeqId !== null) {
-        chunksToProcess = allChunks.filter(item => 
+        chunksToProcess = uniqueAllChunks.filter(item => 
           item.chunk.sequenceId !== undefined && 
           item.chunk.sequenceId > lastMessageEndSeqId!
         )
       } else {
-        chunksToProcess = allChunks
+        chunksToProcess = uniqueAllChunks
       }
       
       chunksToProcess.forEach(({ chunk, messageType }) => {
-        processChunk(chunk, messageType, true)
-      })      
+        if (chunk.sequenceId !== undefined && chunk.sequenceId !== null) {
+          processedSequenceKeys.current.add(makeSeqKey(messageType, chunk.sequenceId))
+          lastSequenceId.current = chunk.sequenceId
+        }
+        onChunkReceivedRef.current(chunk, messageType)
+      })
+
+      bufferUntilInitialCatchupComplete.current = false
+      hasCompletedInitialCatchup.current = true
     } catch (error) {
       // noop
     } finally {
       fetchingInProgress.current = false
-      isBuffering.current = false
+
+      if (bufferUntilInitialCatchupComplete.current) {
+        bufferUntilInitialCatchupComplete.current = false
+        hasCompletedInitialCatchup.current = true
+        flushBufferedRealtimeChunks()
+      }
     }
-  }, [dialogId, processChunk]) 
+  }, [dialogId, flushBufferedRealtimeChunks]) 
   
   const resetChunkTracking = useCallback(() => {
-    processedSequenceIds.current.clear()
+    processedSequenceKeys.current.clear()
     lastSequenceId.current = null
     fetchingInProgress.current = false
     lastFetchParams.current = null
     chunkBuffer.current = []
-    isBuffering.current = false
+    bufferUntilInitialCatchupComplete.current = false
+    hasCompletedInitialCatchup.current = false
   }, [])
   
-  const getLastSequenceId = useCallback(() => {
-    return lastSequenceId.current
+  const startInitialBuffering = useCallback(() => {
+    chunkBuffer.current = []
+    bufferUntilInitialCatchupComplete.current = true
+    hasCompletedInitialCatchup.current = false
   }, [])
+  
+  const isBufferingActive = useCallback(() => bufferUntilInitialCatchupComplete.current, [])
   
   return {
     catchUpChunks,
     processChunk,
     resetChunkTracking,
-    getLastSequenceId,
-    processedCount: processedSequenceIds.current.size
+    startInitialBuffering,
+    isBufferingActive,
+    processedCount: processedSequenceKeys.current.size
   }
 }
