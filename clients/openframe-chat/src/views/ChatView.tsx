@@ -38,7 +38,8 @@ export function ChatView() {
     handleQuickAction,
     quickActions,
     hasMessages,
-    clearMessages
+    clearMessages,
+    awaitingTechnicianResponse
   } = useChat({ 
     useApi: true, 
     useMock: false,
@@ -109,18 +110,32 @@ export function ChatView() {
         <ChatInput
           onSend={sendMessage}
           sending={isStreaming}
+          awaitingResponse={awaitingTechnicianResponse}
           placeholder="Enter your request here..."
-          className="px-12"
-          reserveAvatarOffset={false}
+          className={hasMessages ? "" : "px-4 max-w-2xl mx-auto"}
+          reserveAvatarOffset={hasMessages}
           disabled={isDisconnected}
         />
         {displayModel && isFullyLoaded && (
-          <div className="flex justify-start mt-3 px-12">
-            <ModelDisplay 
-              provider={displayModel.provider}
-              modelName={displayModel.modelName}
-              displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-            />
+          <div className={hasMessages ? "mx-auto w-full max-w-3xl px-4" : "mx-auto w-full max-w-2xl"}>
+            {hasMessages ? (
+              <div className="grid grid-cols-[32px_1fr] gap-4 mt-3">
+                <div className="invisible h-8 w-8" aria-hidden />
+                <ModelDisplay 
+                  provider={displayModel.provider}
+                  modelName={displayModel.modelName}
+                  displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                />
+              </div>
+            ) : (
+              <div className="mt-3">
+                <ModelDisplay 
+                  provider={displayModel.provider}
+                  modelName={displayModel.modelName}
+                  displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                />
+              </div>
+            )}
           </div>
         )}
       </ChatFooter>

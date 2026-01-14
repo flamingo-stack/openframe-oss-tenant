@@ -13,7 +13,7 @@ export const DEFAULT_VISIBLE_STATUSES = [
   'MAINTENANCE',
   'DECOMMISSIONED',
   'PENDING'
-] as const
+] as const satisfies string[]
 
 export type DefaultVisibleStatus = typeof DEFAULT_VISIBLE_STATUSES[number]
 

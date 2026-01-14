@@ -96,10 +96,8 @@ impl ToolAgentUpdateService {
         installed_tool: &mut crate::models::installed_tool::InstalledTool,
     ) -> Result<()> {
         // Get tool directory path
-        let base_folder_path = self.directory_manager.app_support_dir();
-        let tool_folder_path = base_folder_path.join(tool_agent_id);
-        let agent_file_path = tool_folder_path.join("agent");
-        let backup_file_path = tool_folder_path.join("agent.backup");
+        let agent_file_path = self.directory_manager.get_agent_path(tool_agent_id);
+        let backup_file_path = agent_file_path.with_extension("backup");
 
         info!("Stopping tool process for update: {}", tool_agent_id);
         self.tool_kill_service.stop_tool(tool_agent_id).await

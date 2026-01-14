@@ -98,18 +98,6 @@ export const GET_DIALOG_MESSAGES_QUERY = `
           createdAt
           owner {
             type
-            ... on ClientOwner {
-              machineId
-            }
-            ... on AssistantOwner {
-              model
-            }
-            ... on AdminOwner {
-              userId
-              user {
-                id
-              }
-            }
           }
           messageData {
             type
@@ -141,6 +129,7 @@ export const GET_DIALOG_MESSAGES_QUERY = `
               approvalRequestId
               approvalType
               command
+              explanation
             }
 
             ... on ApprovalResultData {

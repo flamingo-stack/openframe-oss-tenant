@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useOrganizations } from '../../organizations/hooks/use-organizations'
-import { useDevicesOverview } from './use-dashboard-stats'
 import { useSsoConfig } from '../../settings/hooks/use-sso-config'
 import { useUsers } from '../../settings/hooks/use-users'
+import { useDevicesOverview } from './use-dashboard-stats'
 
 /**
  * Hook to check onboarding step completion using existing data hooks
@@ -20,7 +20,8 @@ export function useOnboardingCompletion() {
   // Use existing hooks to get data
   const { organizations, isLoading: orgsLoading, fetchOrganizations } = useOrganizations({})
   const { total: deviceCount, isLoading: devicesLoading } = useDevicesOverview()
-  const { totalElements, isLoading: usersLoading, fetchUsers } = useUsers()
+  // useUsers now uses react-query and automatically fetches data
+  const { totalElements, isLoading: usersLoading } = useUsers(0, 10)
   const { fetchAvailableProviders, fetchProviderConfig } = useSsoConfig()
 
   const [ssoProvidersCount, setSsoProvidersCount] = useState(0)
@@ -28,7 +29,6 @@ export function useOnboardingCompletion() {
 
   // Refs to prevent duplicate fetches and track mount state
   const ssoFetchedRef = useRef(false)
-  const usersFetchedRef = useRef(false)
   const orgsFetchedRef = useRef(false)
   const isMountedRef = useRef(true)
 
@@ -66,18 +66,6 @@ export function useOnboardingCompletion() {
     }
   }, [fetchAvailableProviders, fetchProviderConfig])
 
-  // Stable callback for users fetch
-  const fetchUsersOnce = useCallback(async () => {
-    if (usersFetchedRef.current) return
-    usersFetchedRef.current = true
-
-    try {
-      await fetchUsers(0, 10)
-    } catch (err) {
-      console.error('Users fetch failed:', err)
-    }
-  }, [fetchUsers])
-
   // Stable callback for organizations fetch
   const fetchOrgsOnce = useCallback(async () => {
     if (orgsFetchedRef.current) return
@@ -94,11 +82,6 @@ export function useOnboardingCompletion() {
   useEffect(() => {
     fetchSsoProviders()
   }, [fetchSsoProviders])
-
-  // Fetch users once on mount
-  useEffect(() => {
-    fetchUsersOnce()
-  }, [fetchUsersOnce])
 
   // Fetch organizations once on mount
   useEffect(() => {

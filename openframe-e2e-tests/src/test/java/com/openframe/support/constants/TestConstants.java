@@ -4,7 +4,7 @@ import java.time.Duration;
 
 public final class TestConstants {
     
-    public static final String DEFAULT_BASE_URL = "https://artem.ngrok.app/";
+    public static final String DEFAULT_BASE_URL = "https://localhost/";
     public static final String CONTENT_TYPE_JSON = "application/json";
     public static final String CLIENT_ID = "openframe-gateway";
     public static final String TENANT_DOMAIN_NAME = "localhost";
@@ -33,4 +33,6 @@ public final class TestConstants {
     public static final int HTTP_NOT_FOUND = 404;
     public static final int HTTP_CONFLICT = 409;
     public static final int HTTP_INTERNAL_SERVER_ERROR = 500;
+
+    public static final String USER_FILE = "user.json";
 } 
