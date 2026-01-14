@@ -321,6 +321,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     if (!state.currentDialogId) return
 
     const asAny = payload as any
+    const nowIso = new Date().toISOString()
     
     const TEXT_TYPE = MESSAGE_TYPE.TEXT
     const ASSISTANT_TYPE = OWNER_TYPE.ASSISTANT
@@ -337,6 +338,37 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
       set(isAdmin ? { isAdminChatTyping: false } : { isClientChatTyping: false })
       return
     }
+    
+    if (asAny?.type === MESSAGE_TYPE.ERROR) {
+      const isAdmin = messageType === 'admin-message'
+      
+      set(isAdmin ? { isAdminChatTyping: false } : { isClientChatTyping: false })
+      
+      const id = `error-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const chatType = messageType === 'admin-message' ? 'ADMIN_AI_CHAT' : 'CLIENT_CHAT'
+      
+      const errorMessage: Message = {
+        id,
+        dialogId: state.currentDialogId,
+        chatType: chatType as any,
+        dialogMode: 'DEFAULT',
+        createdAt: nowIso,
+        owner: { type: 'ASSISTANT', model: '' } as any,
+        messageData: { 
+          type: 'ERROR', 
+          error: String(asAny.error ?? 'An error occurred'),
+          details: typeof asAny.details === 'string' ? asAny.details : undefined 
+        } as any,
+      }
+      
+      if (isAdmin) {
+        set((s) => ({ adminMessages: [...s.adminMessages, errorMessage] }))
+      } else {
+        set((s) => ({ currentMessages: [...s.currentMessages, errorMessage] }))
+      }
+      
+      return
+    }
     const isMessageObject =
       asAny &&
       typeof asAny === 'object' &&
@@ -345,7 +377,6 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
       asAny.messageData != null &&
       asAny.owner != null
 
-    const nowIso = new Date().toISOString()
     const message: Message | null = isMessageObject
       ? (asAny as Message)
       : (() => {

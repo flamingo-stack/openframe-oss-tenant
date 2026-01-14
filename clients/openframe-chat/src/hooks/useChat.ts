@@ -366,23 +366,50 @@ export function useChat({ useMock = false, useApi = true, useNats = false, onMet
       return
     }
     
-    // if (type === 'ERROR') {
-    //   setNatsStreaming(false)
-    //   const resolve = natsDoneResolverRef.current
-    //   natsDoneResolverRef.current = null
-    //   if (resolve) resolve()
+    if (type === 'ERROR') {
+      setNatsStreaming(false)
+      setIsTyping(false)
+      const resolve = natsDoneResolverRef.current
+      natsDoneResolverRef.current = null
+      if (resolve) resolve()
 
-    //   const errorMessage: Message = {
-    //     id: `error-${Date.now()}`,
-    //     role: 'error',
-    //     name: 'Fae',
-    //     timestamp: new Date(),
-    //     avatar: faeAvatar,
-    //     content: chunk.error || 'An error occurred.',
-    //   }
-    //   addMessage(errorMessage)
-    //   return
-    // }
+      const errorText = chunk.error || 'An error occurred'
+      
+      setMessages(prev => {
+        const newMessages = [...prev]
+        const lastMessage = newMessages[newMessages.length - 1]
+        
+        if (lastMessage && 
+            lastMessage.role === 'assistant' && 
+            (lastMessage.content === '' || 
+             (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))) {
+          newMessages[newMessages.length - 1] = {
+            id: `error-${Date.now()}`,
+            role: 'error',
+            name: 'Fae',
+            timestamp: new Date(),
+            avatar: faeAvatar,
+            content: errorText
+          }
+        } else {
+          newMessages.push({
+            id: `error-${Date.now()}`,
+            role: 'error',
+            name: 'Fae',
+            timestamp: new Date(),
+            avatar: faeAvatar,
+            content: errorText
+          })
+        }
+        
+        return newMessages
+      })
+      
+      currentAssistantSegmentsRef.current = []
+      currentTextSegmentRef.current = ''
+      
+      return
+    }
   }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus, onMetadataUpdate, pendingApprovalRequests])
 
   const { isSubscribed: natsSubscribed } = useNatsChatSubscription({

@@ -19,6 +19,7 @@ import { DetailLoader } from '@flamingo-stack/openframe-frontend-core/components
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription'
+import { useChunkCatchup } from '../hooks/use-chunk-catchup'
 import { apiClient } from '@lib/api-client'
 import { DeviceInfoSection } from '../../components/shared'
 import type { Message, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
@@ -67,20 +68,36 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false)
   const prevMessageLength = useRef<number>(0)
 
-  // Fetch dialog and messages on mount
+  const { 
+    catchUpChunks, 
+    processChunk, 
+    resetChunkTracking, 
+    getLastSequenceId 
+  } = useChunkCatchup({
+    dialogId,
+    onChunkReceived: ingestRealtimeEvent
+  })
+  
   useEffect(() => {
     if (!dialogId) return
     
     const loadData = async () => {
+      resetChunkTracking()
+      
       await Promise.all([
         fetchDialog(dialogId),
         fetchMessages(dialogId)
       ])
+      
+      await catchUpChunks()
     }
     
     loadData()
     
-    return () => clearCurrent()
+    return () => {
+      clearCurrent()
+      resetChunkTracking()
+    }
   }, [dialogId])
 
   // Extract approval statuses from messages
@@ -105,15 +122,21 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   // NATS subscription
   const handleNatsEvent = useCallback(
     (payload: unknown, messageType: NatsMessageType) => {
-      ingestRealtimeEvent(payload, messageType as 'message' | 'admin-message')
+      const processed = processChunk(payload as any, messageType as 'message' | 'admin-message')
+      if (!processed) return
     },
-    [ingestRealtimeEvent]
+    [processChunk]
   )
   
   useNatsDialogSubscription({
     enabled: !!dialogId,
     dialogId,
     onEvent: handleNatsEvent,
+    onConnect: useCallback(() => {
+      const lastSeqId = getLastSequenceId()
+      const fromSeqId = lastSeqId !== null ? lastSeqId + 1 : null
+      catchUpChunks(fromSeqId)
+    }, [catchUpChunks, getLastSequenceId]),
   })
 
   const handlePutOnHold = useCallback(async () => {
@@ -208,7 +231,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     const processedMessages: Array<{
       id: string
       content: string | MessageSegment[]
-      role: 'user' | 'assistant'
+      role: 'user' | 'assistant' | 'error'
       name?: string
       assistantType?: 'fae' | 'mingo'
       timestamp: Date
@@ -396,6 +419,27 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             if (pendingApproval) {
               pendingApprovals.delete(requestId)
             }
+          } else if (data.type === MESSAGE_TYPE.ERROR) {
+            if (currentAssistantMessage && currentAssistantMessage.segments.length > 0) {
+              processedMessages.push({
+                id: currentAssistantMessage.id,
+                content: currentAssistantMessage.segments,
+                role: 'assistant',
+                name: currentAssistantMessage.name,
+                assistantType: currentAssistantMessage.assistantType,
+                timestamp: currentAssistantMessage.timestamp
+              })
+            }
+            currentAssistantMessage = null
+            
+            processedMessages.push({
+              id: `${msg.id}-error`,
+              content: data.error || 'An error occurred',
+              role: 'error' as const,
+              name: assistantName,
+              assistantType: assistantType,
+              timestamp: new Date(msg.createdAt)
+            })
           }
         }
       })
