@@ -22,7 +22,7 @@ function isToolSegment(segment: MessageSegment): segment is { type: 'tool_execut
   return segment.type === 'tool_execution'
 }
 
-export function useChat({ useMock = false, useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
+export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [natsStreaming, setNatsStreaming] = useState(false)
@@ -355,9 +355,8 @@ export function useChat({ useMock = false, useApi = true, useNats = false, onMet
         updateLastAssistantMessage(updatedSegments)
 
         setPendingApprovalRequests(prev => {
-          const newPending = { ...prev }
-          delete newPending[requestId]
-          return newPending
+          const { [requestId]: _, ...rest } = prev;
+          return rest
         })
       } else if (approvalType === 'CLIENT') {
         updateApprovalStatus(requestId, newStatus)
