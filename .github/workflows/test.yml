@@ -324,3 +324,14 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
+  
+
+  all-checks:
+    name: "All Checks"
+    needs: [build_images, test, test_clients, test_helm, cleanup]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1
+      - run: echo "All checks passed"
