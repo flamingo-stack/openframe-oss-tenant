@@ -1,6 +1,7 @@
 package com.openframe.data.testData;
 
 import com.openframe.data.dto.response.OAuthTokenResponse;
+import com.openframe.data.dto.test.User;
 import com.openframe.support.enums.ApiEndpoints;
 import com.openframe.support.helpers.ApiCalls;
 import com.openframe.support.utils.CookieManager;
@@ -79,6 +80,10 @@ public class OAuthLoginTestData {
         
         log.info("Login completed successfully for: {}", email);
         return tokens;
+    }
+
+    public static OAuthTokenResponse performCompleteLogin(User user) {
+        return performCompleteLogin(user.getEmail(), user.getPassword(), user.getTenantId());
     }
 
     public static Response startOAuthFlow(OAuthLoginTestData data) {

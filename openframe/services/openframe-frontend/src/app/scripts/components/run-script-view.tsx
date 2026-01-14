@@ -1,17 +1,14 @@
 'use client'
 
-import React, { useMemo, useState, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button, ListLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { DetailPageContainer, SelectCard, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
-import { SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { ScriptInfoSection } from './script-info-section'
-import { useScriptDetails } from '../hooks/use-script-details'
-import { useDevices } from '../../devices/hooks/use-devices'
-import { getDeviceOperatingSystem } from '../../devices/utils/device-status'
-import { DeviceType } from '@flamingo-stack/openframe-frontend-core'
+import { DetailPageContainer, DeviceType, LoadError, NotFoundError, SelectCard } from '@flamingo-stack/openframe-frontend-core'
+import { Button, ListLoader, SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { tacticalApiClient } from '@lib/tactical-api-client'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { getDeviceOperatingSystem } from '../../devices/utils/device-status'
+import { useRunScriptData } from '../hooks/use-run-script-data'
+import { ScriptInfoSection } from './script-info-section'
 
 interface RunScriptViewProps {
   scriptId: string
@@ -21,9 +18,15 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
   const router = useRouter()
   const { toast } = useToast()
 
-  const { scriptDetails, isLoading: isLoadingScript, error: scriptError } = useScriptDetails(scriptId)
-
-  const { devices, isLoading: isLoadingDevices, error: devicesError, searchDevices, fetchDevices } = useDevices({})
+  const {
+    scriptDetails,
+    isLoadingScript,
+    scriptError,
+    devices,
+    isLoadingDevices,
+    devicesError,
+    searchDevices
+  } = useRunScriptData({ scriptId })
 
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearch = useDebounce(searchTerm, 300)
