@@ -52,7 +52,7 @@ export function useAuth() {
   const searchParams = useSearchParams()
 
   // Auth store for managing authentication state
-  const { login: storeLogin, user, isAuthenticated, setTenantId } = useAuthStore()
+  const { login: storeLogin, user, isAuthenticated, setTenantId, fetchFullProfile } = useAuthStore()
   
   // Token storage for managing tokens in localStorage
   const { getAccessToken, storeAccessToken, storeRefreshToken, clearTokens } = useTokenStorage()
@@ -95,14 +95,19 @@ export function useAuth() {
 
       // Store in auth store
       storeLogin(user)
-      
+
       // Store tenant ID if available
       const tenantId = userData.tenantId || userData.organizationId || tenantInfo?.tenantId
       if (tenantId) {
         setTenantId(tenantId)
       }
-      
+
       console.log('✅ [Auth] User authenticated:', user.email)
+
+      // Fetch full profile data in background
+      fetchFullProfile().catch((err) => {
+        console.warn('[Auth] Failed to fetch full profile:', err)
+      })
       
       toast({
         title: 'Welcome!',
@@ -124,7 +129,7 @@ export function useAuth() {
         router.push('/dashboard')
       }
     },
-    [email, tenantInfo, storeAccessToken, storeRefreshToken, storeLogin, toast, router, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, setTenantId, pathname]
+    [email, tenantInfo, storeAccessToken, storeRefreshToken, storeLogin, toast, router, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, setTenantId, pathname, fetchFullProfile]
   )
 
   // Track when localStorage is initialized

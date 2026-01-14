@@ -1,0 +1,94 @@
+'use client'
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useState } from 'react'
+import { runtimeEnv } from '../../../lib/runtime-config'
+
+interface EmailVerificationModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  userEmail: string
+  onSuccess?: () => void
+  onError?: (error: string) => void
+}
+
+export function EmailVerificationModal({
+  open,
+  onOpenChange,
+  userEmail,
+  onSuccess,
+  onError,
+}: EmailVerificationModalProps) {
+  const [isSending, setIsSending] = useState(false)
+
+  const handleResendVerification = async () => {
+    setIsSending(true)
+    try {
+      // Use shared host URL for root API (not tenant-specific)
+      const sharedHost = runtimeEnv.sharedHostUrl()
+      const baseUrl = sharedHost || ''
+      const url = `${baseUrl}/sas/email/verify/resend?email=${encodeURIComponent(userEmail)}`
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      console.log('🔐 [EmailVerificationModal] Response:', response)
+
+      if (response.ok) {
+        onSuccess?.()
+        onOpenChange(false)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData?.message || errorData?.error || 'Failed to send verification email'
+        onError?.(errorMessage)
+      }
+    } catch (error) {
+      onError?.(error instanceof Error ? error.message : 'Failed to send verification email')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="bg-ods-card border border-ods-border p-10 max-w-[600px] gap-6">
+        <AlertDialogHeader className="gap-0">
+          <AlertDialogTitle className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] tracking-[-0.64px] text-ods-text-primary">
+            Email Not Verified
+          </AlertDialogTitle>
+        </AlertDialogHeader>
+        <AlertDialogDescription className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
+          Your email <span className="text-warning">{userEmail}</span> has not been verified yet.
+          Would you like to resend the verification email?
+        </AlertDialogDescription>
+        <AlertDialogFooter className="gap-4">
+          <AlertDialogCancel
+            disabled={isSending}
+            className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface"
+          >
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleResendVerification}
+            disabled={isSending}
+            className="flex-1 bg-ods-accent text-ods-bg font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-accent/90"
+          >
+            {isSending ? 'Sending...' : 'Resend Verification'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
