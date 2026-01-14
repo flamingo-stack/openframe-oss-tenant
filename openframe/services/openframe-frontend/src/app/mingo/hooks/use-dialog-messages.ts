@@ -33,42 +33,52 @@ export function useDialogMessages(dialogId: string) {
     setError(null)
 
     try {
-      const response = await apiClient.post<GraphQLResponse<MessagesResponse>>('/chat/graphql', {
-        query: GET_DIALOG_MESSAGES_QUERY,
-        variables: {
-          dialogId,
-          cursor: append ? cursor : null,
-          limit: 50
+      let allMessages: Message[] = []
+      let currentCursor: string | null = append ? cursor : null
+      let hasNextPage = true
+
+      while (hasNextPage) {
+        const response = await apiClient.post<GraphQLResponse<MessagesResponse>>('/chat/graphql', {
+          query: GET_DIALOG_MESSAGES_QUERY,
+          variables: {
+            dialogId,
+            cursor: currentCursor,
+            limit: 100
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(response.error || `Request failed with status ${response.status}`)
         }
-      })
 
-      if (!response.ok) {
-        throw new Error(response.error || `Request failed with status ${response.status}`)
+        const graphqlResponse = response.data
+
+        if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
+        }
+
+        if (!graphqlResponse?.data) {
+          throw new Error('No data received from server')
+        }
+
+        const connection = graphqlResponse.data.messages
+        const batchMessages = (connection?.edges || []).map(edge => edge.node)
+        
+        allMessages = [...allMessages, ...batchMessages]
+        hasNextPage = connection?.pageInfo?.hasNextPage || false
+        currentCursor = connection?.pageInfo?.endCursor || null
       }
-
-      const graphqlResponse = response.data
-
-      if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred')
-      }
-
-      if (!graphqlResponse?.data) {
-        throw new Error('No data received from server')
-      }
-
-      const connection = graphqlResponse.data.messages
-      const newMessages = (connection?.edges || []).map(edge => edge.node)
       
       if (append) {
-        setMessages(prev => [...prev, ...newMessages])
+        setMessages(prev => [...prev, ...allMessages])
       } else {
-        setMessages(newMessages)
+        setMessages(allMessages)
       }
 
-      setHasMore(connection?.pageInfo?.hasNextPage || false)
-      setCursor(connection?.pageInfo?.endCursor || null)
+      setHasMore(false)
+      setCursor(null)
 
-      return newMessages
+      return allMessages
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch messages'
       console.error('Failed to fetch messages:', error)

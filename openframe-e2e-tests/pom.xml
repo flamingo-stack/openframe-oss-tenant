@@ -38,7 +38,7 @@
         <maven-surefire.version>3.2.3</maven-surefire.version>
         <maven-failsafe.version>3.2.3</maven-failsafe.version>
         <maven-compiler.version>3.13.0</maven-compiler.version>
-        <mongodb.version>5.5.0</mongodb.version>
+        <mongodb.version>5.6.0</mongodb.version>
     </properties>
 
     <dependencies>

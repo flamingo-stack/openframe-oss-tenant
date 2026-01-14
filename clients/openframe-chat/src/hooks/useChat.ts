@@ -22,13 +22,14 @@ function isToolSegment(segment: MessageSegment): segment is { type: 'tool_execut
   return segment.type === 'tool_execution'
 }
 
-export function useChat({ useMock = false, useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
+export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [natsStreaming, setNatsStreaming] = useState(false)
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({})
+  const [pendingApprovalRequests, setPendingApprovalRequests] = useState<Record<string, { command: string; explanation?: string; approvalType: string }>>({})
   const [awaitingTechnicianResponse, setAwaitingTechnicianResponse] = useState(false)
   const currentAssistantSegmentsRef = useRef<MessageSegment[]>([])
   const currentTextSegmentRef = useRef('')
@@ -292,14 +293,16 @@ export function useChat({ useMock = false, useApi = true, useNats = false, onMet
       
       const requestId = chunk.approvalRequestId || ''
       const approvalType = chunk.approvalType || 'USER'
+      const command = chunk.command || ''
+      const explanation = chunk.explanation || undefined
       
       // Only show CLIENT approval requests, others show as escalated
       if (approvalType === 'CLIENT') {
         const approvalSegment: MessageSegment = {
           type: 'approval_request',
           data: {
-            command: chunk.command || '',
-            explanation: chunk.explanation || undefined,
+            command: command,
+            explanation: explanation,
             requestId: requestId,
             approvalType: approvalType
           },
@@ -312,7 +315,10 @@ export function useChat({ useMock = false, useApi = true, useNats = false, onMet
         currentAssistantSegmentsRef.current = updatedSegments
         updateLastAssistantMessage(updatedSegments)
       } else {
-        // For non-CLIENT approvals, set awaiting response state instead of showing message
+        setPendingApprovalRequests(prev => ({
+          ...prev,
+          [requestId]: { command, explanation, approvalType }
+        }))
         setAwaitingTechnicianResponse(true)
       }
       return
@@ -326,33 +332,84 @@ export function useChat({ useMock = false, useApi = true, useNats = false, onMet
       const newStatus = approved ? 'approved' : 'rejected'
       setApprovalStatuses(prev => ({ ...prev, [requestId]: newStatus }))
       
-      updateApprovalStatus(requestId, newStatus)
+      const pendingRequest = pendingApprovalRequests[requestId]
       
-      if (approvalType !== 'CLIENT') {
+      if (pendingRequest && pendingRequest.approvalType !== 'CLIENT') {
         setAwaitingTechnicianResponse(false)
+        
+        const approvalSegment: MessageSegment = {
+          type: 'approval_request',
+          data: {
+            command: pendingRequest.command,
+            explanation: pendingRequest.explanation,
+            requestId: requestId,
+            approvalType: pendingRequest.approvalType
+          },
+          status: newStatus,
+          onApprove: handleApproveRequest,
+          onReject: handleRejectRequest
+        }
+        
+        const updatedSegments = [...currentAssistantSegmentsRef.current, approvalSegment]
+        currentAssistantSegmentsRef.current = updatedSegments
+        updateLastAssistantMessage(updatedSegments)
+
+        setPendingApprovalRequests(prev => {
+          const { [requestId]: _, ...rest } = prev;
+          return rest
+        })
+      } else if (approvalType === 'CLIENT') {
+        updateApprovalStatus(requestId, newStatus)
       }
       
       return
     }
     
-    // if (type === 'ERROR') {
-    //   setNatsStreaming(false)
-    //   const resolve = natsDoneResolverRef.current
-    //   natsDoneResolverRef.current = null
-    //   if (resolve) resolve()
+    if (type === 'ERROR') {
+      setNatsStreaming(false)
+      setIsTyping(false)
+      const resolve = natsDoneResolverRef.current
+      natsDoneResolverRef.current = null
+      if (resolve) resolve()
 
-    //   const errorMessage: Message = {
-    //     id: `error-${Date.now()}`,
-    //     role: 'error',
-    //     name: 'Fae',
-    //     timestamp: new Date(),
-    //     avatar: faeAvatar,
-    //     content: chunk.error || 'An error occurred.',
-    //   }
-    //   addMessage(errorMessage)
-    //   return
-    // }
-  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus, onMetadataUpdate])
+      const errorText = chunk.error || 'An error occurred'
+      
+      setMessages(prev => {
+        const newMessages = [...prev]
+        const lastMessage = newMessages[newMessages.length - 1]
+        
+        if (lastMessage && 
+            lastMessage.role === 'assistant' && 
+            (lastMessage.content === '' || 
+             (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))) {
+          newMessages[newMessages.length - 1] = {
+            id: `error-${Date.now()}`,
+            role: 'error',
+            name: 'Fae',
+            timestamp: new Date(),
+            avatar: faeAvatar,
+            content: errorText
+          }
+        } else {
+          newMessages.push({
+            id: `error-${Date.now()}`,
+            role: 'error',
+            name: 'Fae',
+            timestamp: new Date(),
+            avatar: faeAvatar,
+            content: errorText
+          })
+        }
+        
+        return newMessages
+      })
+      
+      currentAssistantSegmentsRef.current = []
+      currentTextSegmentRef.current = ''
+      
+      return
+    }
+  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus, onMetadataUpdate, pendingApprovalRequests])
 
   const { isSubscribed: natsSubscribed } = useNatsChatSubscription({
     enabled: useNats,
@@ -466,6 +523,7 @@ export function useChat({ useMock = false, useApi = true, useNats = false, onMet
     currentTextSegmentRef.current = ''
     setNatsDialogId(null)
     setAwaitingTechnicianResponse(false)
+    setPendingApprovalRequests({})
     apiServiceRef.current?.reset()
   }, [])
   
