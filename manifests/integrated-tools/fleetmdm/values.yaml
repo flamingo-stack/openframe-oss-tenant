@@ -9,9 +9,9 @@ registerJob:
 
 server:
   image:
-    registry: ghcr.io/flamingo-stack
-    repository: fleet
-    tag: 363980ad92
+    registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+    repository: fleetmdm
+    tag: latest
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"

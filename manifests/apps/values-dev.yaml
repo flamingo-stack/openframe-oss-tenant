@@ -55,11 +55,13 @@ apps:
   #     postgres:
   #       image: 
   #         tag: latest
-  fleetmdm: 
+  fleetmdm:
     values:
       server:
-        image: 
-          tag: 363980ad92
+        image:
+          registry: ghcr.io/flamingo-stack
+          repository: fleet
+          tag: 0.0.3
   meshcentral: 
     values:
       server:
