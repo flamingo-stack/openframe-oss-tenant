@@ -50,12 +50,14 @@ interface UseNatsDialogSubscriptionArgs {
   enabled: boolean
   dialogId: string | null
   onEvent?: (payload: unknown, messageType: NatsMessageType) => void
+  onConnect?: () => void
+  onDisconnect?: () => void
 }
 
 /**
  * Connects to NATS over WebSocket and subscribes to `chat.${dialogId}.message` and `chat.${dialogId}.admin-message`.
  */
-export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNatsDialogSubscriptionArgs) {
+export function useNatsDialogSubscription({ enabled, dialogId, onEvent, onConnect, onDisconnect }: UseNatsDialogSubscriptionArgs) {
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(getApiBaseUrl)
   const [isConnected, setIsConnected] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
@@ -73,6 +75,16 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNat
   useEffect(() => {
     onEventRef.current = onEvent
   }, [onEvent])
+  
+  const onConnectRef = useRef(onConnect)
+  useEffect(() => {
+    onConnectRef.current = onConnect
+  }, [onConnect])
+  
+  const onDisconnectRef = useRef(onDisconnect)
+  useEffect(() => {
+    onDisconnectRef.current = onDisconnect
+  }, [onDisconnect])
 
   useEffect(() => {
     if (!isDevTicketEnabled) return
@@ -150,12 +162,24 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNat
 
     clientRef.current = client
     setIsConnected(false)
+    
+    let hasConnected = false
 
     const unsubscribeStatus = client.onStatus((event) => {
       const connected = event.status === 'connected'
       const disconnected = ['closed', 'disconnected', 'error'].includes(event.status)
-      if (connected) setIsConnected(true)
-      if (disconnected) setIsConnected(false)
+      if (connected) {
+        setIsConnected(true)
+        if (!hasConnected) {
+          hasConnected = true
+          onConnectRef.current?.()
+        }
+      }
+      if (disconnected) {
+        setIsConnected(false)
+        hasConnected = false
+        onDisconnectRef.current?.()
+      }
     })
 
     let closed = false
@@ -163,10 +187,13 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent }: UseNat
       try {
         sharedConn.connectPromise ||= client.connect()
         await sharedConn.connectPromise
-        !closed && setIsConnected(true)
+        if (!closed) {
+          setIsConnected(true)
+        }
       } catch (e) {
         sharedConn.connectPromise = null
         setIsConnected(false)
+        onDisconnectRef.current?.()
         await client.close().catch(() => {})
       }
     })()

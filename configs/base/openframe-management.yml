@@ -97,3 +97,10 @@ nats:
     reconnect-wait: 5s
     ping-interval: 30s
     no-echo: true
+
+pinot:
+  tables:
+    devices:
+      name: devices
+    logs:
+      name: logs

@@ -1,8 +1,12 @@
 package com.openframe.data.dataProviders;
 
+import com.openframe.data.dto.request.UserRegistrationRequest;
+import com.openframe.data.dto.response.RegistrationResponse;
 import org.junit.jupiter.params.provider.Arguments;
 
 import java.util.stream.Stream;
+
+import static com.openframe.data.testData.UserRegistrationDataGenerator.*;
 
 /**
  * Centralized test data provider for User Registration negative tests
@@ -169,5 +173,19 @@ public class UserRegistrationTestDataProvider {
             Arguments.of("tenant\nname"),           // Contains newline
             Arguments.of("tenant\rname")            // Contains carriage return
         );
+    }
+
+    public static Stream<Arguments> registerNewUser() {
+        UserRegistrationRequest user = newUser();
+        RegistrationResponse expectedResponse = newUserRegistrationResponse(user);
+        return Stream.of(Arguments.of(user, expectedResponse));
+    }
+
+    public static Stream<Arguments> registerExistingUser() {
+        return Stream.of(Arguments.of(getExistingUser(), existingUserResponse()));
+    }
+
+    public static Stream<Arguments> registrationClosed() {
+        return Stream.of(Arguments.of(getExistingUser(), registrationClosedResponse()));
     }
 }
