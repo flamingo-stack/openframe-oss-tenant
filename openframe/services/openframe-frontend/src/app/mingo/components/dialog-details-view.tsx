@@ -272,6 +272,26 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           })
         } else if (role === 'assistant') {
           if (data.type === MESSAGE_TYPE.EXECUTING_TOOL) {
+            if (!currentAssistantMessage) {
+              currentAssistantMessage = {
+                id: msg.id,
+                segments: [],
+                name: assistantName,
+                assistantType: assistantType,
+                timestamp: new Date(msg.createdAt)
+              }
+            }
+            
+            currentAssistantMessage.segments.push({
+              type: 'tool_execution',
+              data: {
+                type: MESSAGE_TYPE.EXECUTING_TOOL,
+                integratedToolType: data.integratedToolType,
+                toolFunction: data.toolFunction,
+                parameters: data.parameters
+              }
+            })
+            
             const toolKey = `${data.integratedToolType}-${data.toolFunction}`
             executingTools.set(toolKey, {
               integratedToolType: data.integratedToolType,
@@ -292,8 +312,15 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               }
             }
             
-            currentAssistantMessage.segments.push({
-              type: 'tool_execution',
+            const existingToolIndex = currentAssistantMessage.segments.findIndex(
+              (s) => s.type === 'tool_execution' &&
+                     s.data?.type === MESSAGE_TYPE.EXECUTING_TOOL &&
+                     s.data?.integratedToolType === data.integratedToolType &&
+                     s.data?.toolFunction === data.toolFunction
+            )
+            
+            const executedSegment = {
+              type: 'tool_execution' as const,
               data: {
                 type: MESSAGE_TYPE.EXECUTED_TOOL,
                 integratedToolType: data.integratedToolType,
@@ -302,7 +329,13 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 result: data.result,
                 success: data.success
               }
-            })
+            }
+            
+            if (existingToolIndex !== -1) {
+              currentAssistantMessage.segments[existingToolIndex] = executedSegment
+            } else {
+              currentAssistantMessage.segments.push(executedSegment)
+            }
             
             executingTools.delete(toolKey)
           } else if (data.type === MESSAGE_TYPE.TEXT) {
@@ -561,8 +594,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               reserveAvatarOffset={false}
               placeholder="Enter your Request..."
               onSend={handleSendAdminMessage}
-              sending={isSendingAdminMessage}
-              disabled={isSendingAdminMessage}
+              sending={isSendingAdminMessage || isAdminChatTyping}
               autoFocus={false}
               className='mt-2 bg-ods-card rounded-lg'
             />

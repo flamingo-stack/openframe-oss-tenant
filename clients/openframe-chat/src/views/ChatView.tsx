@@ -112,7 +112,7 @@ export function ChatView() {
           sending={isStreaming}
           awaitingResponse={awaitingTechnicianResponse}
           placeholder="Enter your request here..."
-          className={hasMessages ? "" : "px-4 max-w-2xl mx-auto"}
+          className={hasMessages ? "" : "max-w-2xl mx-auto"}
           reserveAvatarOffset={hasMessages}
           disabled={isDisconnected}
         />
