@@ -7,70 +7,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses'
 import { GET_DEVICES_QUERY } from '../../devices/queries/devices-queries'
 import { Device, DevicesGraphQLNode, GraphQLResponse } from '../../devices/types/device.types'
+import { createDeviceListItem } from '../../devices/utils/device-transform'
+import { mapPlatformsToOsTypes } from '../utils/script-utils'
 import { ScriptDetails } from './use-script-details'
-
-/**
- * Map supported_platforms from script to osTypes filter values
- * Script uses: 'windows', 'linux', 'darwin'
- * Device filter expects similar values
- */
-function mapPlatformsToOsTypes(platforms: string[]): string[] {
-  const mapping: Record<string, string> = {
-    windows: "WINDOWS",
-    darwin: "MAC_OS"
-  }
-
-  return platforms
-    .map(p => mapping[p.toLowerCase()])
-    .filter((v): v is string => !!v)
-}
-
-/**
- * Create Device list item directly from GraphQL node
- */
-function createDeviceListItem(node: DevicesGraphQLNode): Device {
-  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')
-
-  return {
-    id: node.id,
-    machineId: node.machineId || node.id,
-    hostname: node.hostname || node.displayName || '',
-    displayName: node.displayName || node.hostname,
-    hardware_serial: node.serialNumber,
-    hardware_vendor: node.manufacturer,
-    hardware_model: node.model,
-    serial_number: node.serialNumber,
-    manufacturer: node.manufacturer,
-    model: node.model,
-    primary_ip: node.ip,
-    primary_mac: node.macAddress,
-    local_ips: node.ip ? [node.ip] : [],
-    ip: node.ip,
-    macAddress: node.macAddress,
-    status: node.status,
-    last_seen: node.lastSeen,
-    lastSeen: node.lastSeen,
-    last_enrolled_at: node.registeredAt,
-    platform: node.osType,
-    os_version: node.osVersion,
-    build: node.osBuild,
-    operating_system: node.osType,
-    osType: node.osType,
-    osVersion: node.osVersion,
-    osBuild: node.osBuild,
-    agentVersion: node.agentVersion,
-    organizationId: node.organization?.organizationId,
-    organization: node.organization?.name,
-    organizationImageUrl: node.organization?.image?.imageUrl || null,
-    tags: node.tags,
-    toolConnections: node.toolConnections,
-    type: node.type,
-    registeredAt: node.registeredAt,
-    updatedAt: node.updatedAt,
-    osUuid: node.osUuid,
-    tacticalAgentId: tactical?.agentToolId
-  }
-}
 
 interface UseRunScriptDataOptions {
   scriptId: string
