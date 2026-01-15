@@ -4,10 +4,10 @@
  * Uses SHARED_HOST_URL when provided; otherwise uses relative URLs.
  */
 
-import { runtimeEnv } from './runtime-config'
-import { isSaasSharedMode } from './app-mode'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@app/auth/hooks/use-token-storage'
-import { forceLogout, clearStoredTokens } from './force-logout'
+import { isSaasSharedMode } from './app-mode'
+import { clearStoredTokens, forceLogout } from './force-logout'
+import { runtimeEnv } from './runtime-config'
 
 function getDomainSuffix(): string {
   const sharedUrl = runtimeEnv.sharedHostUrl()
@@ -191,6 +191,11 @@ class AuthApiClient {
   validateAccessCode<T = any>(email: string, code: string) {
     const path = `/sas/oauth/access-code/validate?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`
     return requestPublic<T>(path, { method: 'GET' })
+  }
+
+  resendVerificationEmail<T = any>(email: string) {
+    const path = `/sas/email/verify/resend?email=${encodeURIComponent(email)}`
+    return requestPublic<T>(path, { method: 'POST' })
   }
 
   registerOrganization<T = any>(payload: {

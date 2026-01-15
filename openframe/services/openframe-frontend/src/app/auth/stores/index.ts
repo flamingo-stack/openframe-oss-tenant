@@ -1,5 +1,5 @@
 export { useAuthStore } from './auth-store'
-export type { AuthState } from './auth-store'
+export type { AuthState, User, UserImage } from './auth-store'
 
 export {
   selectUser,
