@@ -13,7 +13,7 @@
     "icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.8",
+    "@flamingo-stack/openframe-frontend-core": "0.0.9",
     "@tauri-apps/api": "^2.0.0",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
