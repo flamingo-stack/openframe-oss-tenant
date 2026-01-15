@@ -1,10 +1,6 @@
 #!/bin/sh
 set -e
 
-# Extract host and port from MySQL address
-MYSQL_HOST=$(echo $FLEET_MYSQL_ADDRESS | cut -d':' -f1)
-MYSQL_PORT=$(echo $FLEET_MYSQL_ADDRESS | cut -d':' -f2)
-
 # Extract host and port from Redis address
 REDIS_HOST=$(echo $FLEET_REDIS_ADDRESS | cut -d':' -f1)
 REDIS_PORT=$(echo $FLEET_REDIS_ADDRESS | cut -d':' -f2)
@@ -29,20 +25,11 @@ wait_for_fleet() {
     return 1
 }
 
-echo "Waiting for MySQL ($MYSQL_HOST:$MYSQL_PORT) to be ready..."
-until nc -z $MYSQL_HOST $MYSQL_PORT; do
-    echo "MySQL is not ready yet..."
-    sleep 2
-done
-
 echo "Waiting for Redis ($REDIS_HOST:$REDIS_PORT) to be ready..."
 until nc -z $REDIS_HOST $REDIS_PORT; do
     echo "Redis is not ready yet..."
     sleep 2
 done
-
-echo "Preparing database..."
-fleet prepare db --config "$FLEET_CONFIG" --no-prompt
 
 echo "Starting Fleet server..."
 fleet serve --config "$FLEET_CONFIG" &
