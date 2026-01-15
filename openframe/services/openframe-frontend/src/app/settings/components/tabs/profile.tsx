@@ -3,8 +3,9 @@
 import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core'
 import { PageError } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { authApiClient } from '@lib/auth-api-client'
 import { AlertCircle, Pencil } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { apiClient } from '../../../../lib/api-client'
 import { handleApiError } from '../../../../lib/handle-api-error'
 import { useAuthStore } from '../../../auth/stores'
@@ -16,12 +17,14 @@ export function ProfileTab() {
   const user = useAuthStore((state) => state.user)
   const isLoadingProfile = useAuthStore((state) => state.isLoadingProfile)
   const updateUser = useAuthStore((state) => state.updateUser)
+  const fetchFullProfile = useAuthStore((state) => state.fetchFullProfile)
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isSendingVerification, setIsSendingVerification] = useState(false)
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false)
   
-  const handleSave = useCallback(
+  const updateProfile = useCallback(
     async (data: { firstName: string; lastName: string }) => {
       if (!user?.id) return
 
@@ -57,12 +60,38 @@ export function ProfileTab() {
     [user?.id, updateUser, toast]
   )
 
+  const handleResendVerification = async () => {
+    setIsSendingVerification(true)
+    try {
+      const response = await authApiClient.resendVerificationEmail(user?.email || '')
+
+      if (!response.ok) {
+        throw new Error(response.error || 'Failed to send verification email')
+      }
+
+      toast({
+        title: 'Verification Email Sent',
+        description: 'Please check your inbox and follow the link to verify your email.',
+        variant: 'success',
+        duration: 5000,
+      })
+    } catch (error) {
+      handleApiError(error, toast, 'Failed to send verification email')
+    } finally {
+      setIsSendingVerification(false)
+    }
+  }
+
   // Get initials for avatar placeholder
   const getInitials = () => {
     const first = user?.firstName?.charAt(0) || ''
     const last = user?.lastName?.charAt(0) || ''
     return (first + last).toUpperCase() || 'UN'
   }
+
+  useEffect(() => {
+    fetchFullProfile()
+  }, [])
 
   // Get display name
   const displayName = user
@@ -168,7 +197,7 @@ export function ProfileTab() {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         user={user}
-        onSave={handleSave}
+        onSave={updateProfile}
         isSaving={isUpdating}
       />
 
@@ -177,22 +206,8 @@ export function ProfileTab() {
         open={isVerificationModalOpen}
         onOpenChange={setIsVerificationModalOpen}
         userEmail={user.email}
-        onSuccess={() => {
-          toast({
-            title: 'Verification Email Sent',
-            description: 'Please check your inbox and follow the link to verify your email.',
-            variant: 'success',
-            duration: 5000,
-          })
-        }}
-        onError={(error) => {
-          toast({
-            title: 'Failed to Send Verification',
-            description: error,
-            variant: 'destructive',
-            duration: 5000,
-          })
-        }}
+        onSubmit={handleResendVerification}
+        isSending={isSendingVerification}
       />
     </div>
   )

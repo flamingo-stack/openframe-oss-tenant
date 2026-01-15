@@ -15,7 +15,6 @@ interface UserImage {
 interface User {
   id: string
   email: string
-  name: string // computed: firstName + lastName
   // Fields populated from /me endpoint initially
   emailVerified?: boolean
   firstName?: string
@@ -50,7 +49,7 @@ export interface AuthState {
   setError: (error: string | null) => void
   clearError: () => void
   setTenantId: (tenantId: string | null) => void
-  fetchFullProfile: () => Promise<void>
+  fetchFullProfile: () => Promise<User | null>
 }
 
 const initialState = {
@@ -68,10 +67,7 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
     const { apiClient } = await import('../../../lib/api-client')
     const res = await apiClient.get<User>(`api/users/${encodeURIComponent(userId)}`)
     if (res.ok && res.data) {
-      return {
-        ...res.data,
-        name: `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim() || res.data.email,
-      }
+      return res.data
     }
     return null
   } catch (error) {
@@ -133,7 +129,7 @@ export const useAuthStore = create<AuthState>()(
 
         fetchFullProfile: async () => {
           const userId = get().user?.id
-          if (!userId) return
+          if (!userId) return null
 
           set((state) => {
             state.isLoadingProfile = true
@@ -141,6 +137,7 @@ export const useAuthStore = create<AuthState>()(
 
           try {
             const fullProfile = await fetchUserProfile(userId)
+
             if (fullProfile) {
               set((state) => {
                 if (state.user) {
@@ -153,10 +150,14 @@ export const useAuthStore = create<AuthState>()(
                 state.isLoadingProfile = false
               })
             }
-          } catch {
+
+            return fullProfile
+          } catch (error) {
+            console.error('[AuthStore] Failed to fetch user profile:', error)
             set((state) => {
               state.isLoadingProfile = false
             })
+            return null
           }
         },
       })),

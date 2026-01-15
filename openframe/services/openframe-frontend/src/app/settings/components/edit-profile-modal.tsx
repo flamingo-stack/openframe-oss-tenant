@@ -39,15 +39,11 @@ export function EditProfileModal({
   }, [isOpen, user])
 
   const handleSave = useCallback(async () => {
-    try {
-      await onSave({
-        firstName,
-        lastName,
-      })
-      onClose()
-    } catch {
-      // Error handled in parent
-    }
+    await onSave({
+      firstName,
+      lastName,
+    })
+    onClose()
   }, [firstName, lastName, onSave, onClose])
 
   const handleCancel = useCallback(() => {
