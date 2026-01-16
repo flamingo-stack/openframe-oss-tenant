@@ -4,7 +4,6 @@ import com.openframe.data.dto.organization.ContactInformationDto;
 import lombok.Builder;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -14,14 +13,14 @@ import java.time.LocalDate;
 @Data
 @Builder
 public class CreateOrganizationRequest {
-        String name;
-        String category;
-        Integer numberOfEmployees;
-        String websiteUrl;
-        String notes;
-        ContactInformationDto contactInformation;
-        String monthlyRevenue;
-        LocalDate contractStartDate;
-        LocalDate contractEndDate;
+    String name;
+    String category;
+    Integer numberOfEmployees;
+    String websiteUrl;
+    String notes;
+    ContactInformationDto contactInformation;
+    String monthlyRevenue;
+    LocalDate contractStartDate;
+    LocalDate contractEndDate;
 }
 

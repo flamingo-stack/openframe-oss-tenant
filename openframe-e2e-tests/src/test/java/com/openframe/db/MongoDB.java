@@ -4,19 +4,15 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.openframe.data.dto.db.AuthUser;
-import com.openframe.data.dto.organization.Organization;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
-import org.bson.types.ObjectId;
 
+import static com.mongodb.MongoClientSettings.getDefaultCodecRegistry;
 import static com.openframe.support.constants.DatabaseConstants.DATABASE_NAME;
 import static com.openframe.support.constants.DatabaseConstants.MONGODB_URI;
-import static com.mongodb.MongoClientSettings.getDefaultCodecRegistry;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 

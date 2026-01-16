@@ -6,9 +6,9 @@ import com.openframe.data.dto.organization.ContactPersonDto;
 import com.openframe.data.dto.request.CreateOrganizationRequest;
 import net.datafaker.Faker;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+
 
 public class OrganizationDataGenerator {
     private static final Faker faker = new Faker();
