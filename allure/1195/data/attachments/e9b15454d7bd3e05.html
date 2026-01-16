@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696a581f60aaae715ea125a2</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Carl Kuhic III&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(786) 812-8269 x8362&quot;,
+                &quot;email&quot;: &quot;kecia.gutkowski@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;788 Mosciski Island&quot;,
+            &quot;street2&quot;: &quot;Suite 961&quot;,
+            &quot;city&quot;: &quot;West Mauricemouth&quot;,
+            &quot;state&quot;: &quot;Maryland&quot;,
+            &quot;postalCode&quot;: &quot;30512&quot;,
+            &quot;country&quot;: &quot;Hong Kong&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;231 Graham Coves&quot;,
+            &quot;street2&quot;: &quot;Suite 115&quot;,
+            &quot;city&quot;: &quot;Sanoraview&quot;,
+            &quot;state&quot;: &quot;Kentucky&quot;,
+            &quot;postalCode&quot;: &quot;64116&quot;,
+            &quot;country&quot;: &quot;Grenada&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        16
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        16
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtZjFiOTYwYTMtZTlmNi00OTkzLWFiZWUtN2Q0YmJhNThiNTFmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjOTgyMzIwNi1hNmUxLTRkODQtYjhlMC1hYWMzNGYxOGUwOGQiLCJzdWIiOiJyaWxleS5zdHJvbWFuQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg1NzcwNTQsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2M5ODIzMjA2LWE2ZTEtNGQ4NC1iOGUwLWFhYzM0ZjE4ZTA4ZCIsImV4cCI6MTc2ODU3Nzk1NCwiaWF0IjoxNzY4NTc3MDU0LCJ1c2VySWQiOiJkM2Y2YjBiYS1jNzg1LTQ1NTMtOGNiZS05OTNlZjcxNTM1MmIiLCJqdGkiOiIxZjlhYzZhOC02Njg3LTQ3NWMtOGVhOC1kYWUwMTYxZjAxM2EifQ.MGmFU5LdZ5_hksgmzu3tbW-rNSR6rrmihzbXFYdyYmKDX2Gl6TkCQV0AaxP4CwH4juUihiePsFRcTsi5H1tpTjyFexbWG6_BWPCv-m4XF9Skgnxd4QTsXYrSNQ0JwIjtGa4BRJ9yAjDuodv_5gTIzsasMOE5mZ_jfxEVvNI-kM3BSDXCauPG2N38wTWmpZoo0cDtlH9ufzquCfs9gj_qFb5A_HVs0wuOBVz1YKTZR5Hh7HcT0x4dBykbwjiTu7vo2inO_t8PhhxOP0Dn3tUE82XoepT3gLXtA0Im5VFDSrDNW_jZ5yKe104_eZRMXtfJtVk_lZk72A4XsZ95aoZlrA; refresh_token=ftUAlIFT32K0dXDWtH_5ykkW0gHhSJL0rf8yAJC2ZcA4yPYbOa4CCfcqLdJhmKiZeDw1vJ_EFkwNq9pQQn7UvF0CFSpYYe30owTiXgWobKz5aPZZHRAh6yKQxvx1_p0k; of_oauth_MK77XfWAA0lPbyFFZZE6Ow=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696a581f60aaae715ea125a2&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtZjFiOTYwYTMtZTlmNi00OTkzLWFiZWUtN2Q0YmJhNThiNTFmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjOTgyMzIwNi1hNmUxLTRkODQtYjhlMC1hYWMzNGYxOGUwOGQiLCJzdWIiOiJyaWxleS5zdHJvbWFuQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg1NzcwNTQsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2M5ODIzMjA2LWE2ZTEtNGQ4NC1iOGUwLWFhYzM0ZjE4ZTA4ZCIsImV4cCI6MTc2ODU3Nzk1NCwiaWF0IjoxNzY4NTc3MDU0LCJ1c2VySWQiOiJkM2Y2YjBiYS1jNzg1LTQ1NTMtOGNiZS05OTNlZjcxNTM1MmIiLCJqdGkiOiIxZjlhYzZhOC02Njg3LTQ3NWMtOGVhOC1kYWUwMTYxZjAxM2EifQ.MGmFU5LdZ5_hksgmzu3tbW-rNSR6rrmihzbXFYdyYmKDX2Gl6TkCQV0AaxP4CwH4juUihiePsFRcTsi5H1tpTjyFexbWG6_BWPCv-m4XF9Skgnxd4QTsXYrSNQ0JwIjtGa4BRJ9yAjDuodv_5gTIzsasMOE5mZ_jfxEVvNI-kM3BSDXCauPG2N38wTWmpZoo0cDtlH9ufzquCfs9gj_qFb5A_HVs0wuOBVz1YKTZR5Hh7HcT0x4dBykbwjiTu7vo2inO_t8PhhxOP0Dn3tUE82XoepT3gLXtA0Im5VFDSrDNW_jZ5yKe104_eZRMXtfJtVk_lZk72A4XsZ95aoZlrA; refresh_token=ftUAlIFT32K0dXDWtH_5ykkW0gHhSJL0rf8yAJC2ZcA4yPYbOa4CCfcqLdJhmKiZeDw1vJ_EFkwNq9pQQn7UvF0CFSpYYe30owTiXgWobKz5aPZZHRAh6yKQxvx1_p0k; of_oauth_MK77XfWAA0lPbyFFZZE6Ow=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Carl Kuhic III&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(786) 812-8269 x8362&quot;,
+                &quot;email&quot;: &quot;kecia.gutkowski@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;788 Mosciski Island&quot;,
+            &quot;street2&quot;: &quot;Suite 961&quot;,
+            &quot;city&quot;: &quot;West Mauricemouth&quot;,
+            &quot;state&quot;: &quot;Maryland&quot;,
+            &quot;postalCode&quot;: &quot;30512&quot;,
+            &quot;country&quot;: &quot;Hong Kong&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;231 Graham Coves&quot;,
+            &quot;street2&quot;: &quot;Suite 115&quot;,
+            &quot;city&quot;: &quot;Sanoraview&quot;,
+            &quot;state&quot;: &quot;Kentucky&quot;,
+            &quot;postalCode&quot;: &quot;64116&quot;,
+            &quot;country&quot;: &quot;Grenada&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        16
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        16
+    ]
+}&#39;
+</div>
