@@ -52,12 +52,13 @@ interface UseNatsDialogSubscriptionArgs {
   onEvent?: (payload: unknown, messageType: NatsMessageType) => void
   onConnect?: () => void
   onDisconnect?: () => void
+  onSubscribed?: () => void
 }
 
 /**
  * Connects to NATS over WebSocket and subscribes to `chat.${dialogId}.message` and `chat.${dialogId}.admin-message`.
  */
-export function useNatsDialogSubscription({ enabled, dialogId, onEvent, onConnect, onDisconnect }: UseNatsDialogSubscriptionArgs) {
+export function useNatsDialogSubscription({ enabled, dialogId, onEvent, onConnect, onDisconnect, onSubscribed }: UseNatsDialogSubscriptionArgs) {
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(getApiBaseUrl)
   const [isConnected, setIsConnected] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
@@ -85,6 +86,11 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent, onConnec
   useEffect(() => {
     onDisconnectRef.current = onDisconnect
   }, [onDisconnect])
+  
+  const onSubscribedRef = useRef(onSubscribed)
+  useEffect(() => {
+    onSubscribedRef.current = onSubscribed
+  }, [onSubscribed])
 
   useEffect(() => {
     if (!isDevTicketEnabled) return
@@ -252,6 +258,7 @@ export function useNatsDialogSubscription({ enabled, dialogId, onEvent, onConnec
     )
     
     setIsSubscribed(true)
+    onSubscribedRef.current?.()
 
     return () => {
       setIsSubscribed(false)
