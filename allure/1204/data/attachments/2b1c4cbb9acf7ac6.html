@@ -1,0 +1,95 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Ed Pfeffer&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(818) 516-3713 x5828&quot;,
+                &quot;email&quot;: &quot;dollie.parisian@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;80920 Mills Ville&quot;,
+            &quot;street2&quot;: &quot;Apt. 903&quot;,
+            &quot;city&quot;: &quot;East Joshua&quot;,
+            &quot;state&quot;: &quot;Oregon&quot;,
+            &quot;postalCode&quot;: &quot;21073&quot;,
+            &quot;country&quot;: &quot;Wallis and Futuna&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        16
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        16
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtMGM4MDM5OTgtNjYxZC00MmQwLThhODMtMWRlOTlhNWMxMzQwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxNmQyZmQyZC1lNTQ5LTRiNjQtODA3My00ZjIyM2FhYWQ3MTgiLCJzdWIiOiJnaWEuYmF1Y2hAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg1NzU4MDYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzE2ZDJmZDJkLWU1NDktNGI2NC04MDczLTRmMjIzYWFhZDcxOCIsImV4cCI6MTc2ODU3NjcwNiwiaWF0IjoxNzY4NTc1ODA2LCJ1c2VySWQiOiJlMGQ4NjUyNi01ODgyLTQ0YjMtODMwNC1lODMwMDY1MzM1N2YiLCJqdGkiOiIwY2FmZjU2My1hMDc1LTQwNzItODg4Yi0xZDJlZTFjYzA3YmUifQ.vvmOUFpT_YWzafke8gHvCzq9YrJP1tdYmdSDmVPBhZCRukFWnzg6RQ3OxoIUgf8wnwjhDLJtN7d8DsFmdKdN5hZTHMGwiWdrebPn56RJz6-Vl4Ql8OkTXNciVjmoeqbHSYSnppWbk5_bjj4T6pon64-j5RvQzn_nlqJDA4VWCQVNpFaRNxX8lmhsYm52IoiFxPif4aaTdcDW5Vr2ENRafH2Df23DRPPFwrOO5HPdZuKXa5acW6VYJQEQ9BVLoZv25n6cUzpW-wIK_JvltM7HgNaWqpxOa1K70eWLep9IjHQ0TkitAHp0m9fTY2EPKEycx2qrIaeRf_1j7QTBGMvKyQ; refresh_token=JuI_Us4QA1cOifnAfl7EIfbpQs3rOlJN0M27Nh0jfQot3zpvZ5GpQuOAzi47IZtHMfdSpPVRytp0BmqsukYrJQWxp8jJ3VQHyUPTvNjM9ph_b16DR_wYLo17HEizB6sN; of_oauth_YJgMXw2SU4qS5QBAg_3kfw=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtMGM4MDM5OTgtNjYxZC00MmQwLThhODMtMWRlOTlhNWMxMzQwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxNmQyZmQyZC1lNTQ5LTRiNjQtODA3My00ZjIyM2FhYWQ3MTgiLCJzdWIiOiJnaWEuYmF1Y2hAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg1NzU4MDYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzE2ZDJmZDJkLWU1NDktNGI2NC04MDczLTRmMjIzYWFhZDcxOCIsImV4cCI6MTc2ODU3NjcwNiwiaWF0IjoxNzY4NTc1ODA2LCJ1c2VySWQiOiJlMGQ4NjUyNi01ODgyLTQ0YjMtODMwNC1lODMwMDY1MzM1N2YiLCJqdGkiOiIwY2FmZjU2My1hMDc1LTQwNzItODg4Yi0xZDJlZTFjYzA3YmUifQ.vvmOUFpT_YWzafke8gHvCzq9YrJP1tdYmdSDmVPBhZCRukFWnzg6RQ3OxoIUgf8wnwjhDLJtN7d8DsFmdKdN5hZTHMGwiWdrebPn56RJz6-Vl4Ql8OkTXNciVjmoeqbHSYSnppWbk5_bjj4T6pon64-j5RvQzn_nlqJDA4VWCQVNpFaRNxX8lmhsYm52IoiFxPif4aaTdcDW5Vr2ENRafH2Df23DRPPFwrOO5HPdZuKXa5acW6VYJQEQ9BVLoZv25n6cUzpW-wIK_JvltM7HgNaWqpxOa1K70eWLep9IjHQ0TkitAHp0m9fTY2EPKEycx2qrIaeRf_1j7QTBGMvKyQ; refresh_token=JuI_Us4QA1cOifnAfl7EIfbpQs3rOlJN0M27Nh0jfQot3zpvZ5GpQuOAzi47IZtHMfdSpPVRytp0BmqsukYrJQWxp8jJ3VQHyUPTvNjM9ph_b16DR_wYLo17HEizB6sN; of_oauth_YJgMXw2SU4qS5QBAg_3kfw=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Ed Pfeffer&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(818) 516-3713 x5828&quot;,
+                &quot;email&quot;: &quot;dollie.parisian@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;80920 Mills Ville&quot;,
+            &quot;street2&quot;: &quot;Apt. 903&quot;,
+            &quot;city&quot;: &quot;East Joshua&quot;,
+            &quot;state&quot;: &quot;Oregon&quot;,
+            &quot;postalCode&quot;: &quot;21073&quot;,
+            &quot;country&quot;: &quot;Wallis and Futuna&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        16
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        16
+    ]
+}&#39;
+</div>
