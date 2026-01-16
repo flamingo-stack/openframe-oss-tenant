@@ -1,19 +1,18 @@
 'use client'
 
-import { useCallback, useMemo, Suspense, useEffect, useState, useRef } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { NavigationSidebar } from '@flamingo-stack/openframe-frontend-core/components/navigation'
-import { AppHeader } from '@flamingo-stack/openframe-frontend-core/components/navigation'
-import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation'
-import { useAuthStore } from '../auth/stores/auth-store'
-import { useAuth } from '../auth/hooks/use-auth'
-import { getNavigationItems } from '../../lib/navigation-config'
-import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, isSaasTenantMode, isOssTenantMode } from '../../lib/app-mode'
-import { UnauthorizedOverlay } from './unauthorized-overlay'
-import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { AppShellSkeleton } from './app-shell-skeleton'
-import { runtimeEnv } from '@lib/runtime-config'
 import { apiClient } from '@/src/lib/api-client'
+import { AppHeader, NavigationSidebar } from '@flamingo-stack/openframe-frontend-core/components/navigation'
+import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation'
+import { runtimeEnv } from '@lib/runtime-config'
+import { usePathname, useRouter } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode, shouldShowNavigationSidebar } from '../../lib/app-mode'
+import { getNavigationItems } from '../../lib/navigation-config'
+import { useAuth } from '../auth/hooks/use-auth'
+import { useAuthStore } from '../auth/stores/auth-store'
+import { AppShellSkeleton } from './app-shell-skeleton'
+import { UnauthorizedOverlay } from './unauthorized-overlay'
 
 function ContentLoading() {
   return <CompactPageLoader />
@@ -48,6 +47,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
     [navigationItems, handleNavigate]
   )
 
+  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+
   return (
     <div className="flex h-screen bg-ods-bg">
       {/* Navigation Sidebar - Only show if navigation should be visible */}
@@ -61,7 +62,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         <AppHeader
           showNotifications
           showUser
-          userName={user?.name}
+          userName={displayName}
           userEmail={user?.email}
           onProfile={() => router.push('/settings/?tab=profile')}
           onLogout={logout}

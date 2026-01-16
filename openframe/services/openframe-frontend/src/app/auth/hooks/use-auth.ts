@@ -1,16 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { useLocalStorage, useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { apiClient } from '@lib/api-client'
+import { isSaasSharedMode } from '@lib/app-mode'
+import { authApiClient } from '@lib/auth-api-client'
+import { clearStoredTokens } from '@lib/force-logout'
+import { runtimeEnv } from '@lib/runtime-config'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from '../stores/auth-store'
 import { useTokenStorage } from './use-token-storage'
-import { apiClient } from '@lib/api-client'
-import { authApiClient } from '@lib/auth-api-client'
-import { runtimeEnv } from '@lib/runtime-config'
-import { isSaasSharedMode } from '@lib/app-mode'
-import { clearStoredTokens } from '@lib/force-logout'
 
 interface TenantInfo {
   tenantId?: string
@@ -52,7 +51,7 @@ export function useAuth() {
   const searchParams = useSearchParams()
 
   // Auth store for managing authentication state
-  const { login: storeLogin, user, isAuthenticated, setTenantId } = useAuthStore()
+  const { login: storeLogin, user, isAuthenticated, setTenantId, fetchFullProfile } = useAuthStore()
   
   // Token storage for managing tokens in localStorage
   const { getAccessToken, storeAccessToken, storeRefreshToken, clearTokens } = useTokenStorage()
@@ -69,7 +68,7 @@ export function useAuth() {
 
   // Handle successful authentication from any source
   const handleAuthenticationSuccess = useCallback(
-    (token: string, userData: any, redirectPath?: string) => {
+    async (token: string, userData: any, redirectPath?: string) => {
       console.log('✅ [Auth] Handling successful authentication')
       
       // Store token in localStorage using the token storage hook
@@ -84,7 +83,6 @@ export function useAuth() {
       const user = {
         id: userData.id || userData.userId || '',
         email: userData.email || email || '',
-        name: userData.name || userData.displayName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || '',
         tenantId: userData.tenantId || tenantInfo?.tenantId,
         tenantName: userData.tenantName || tenantInfo?.tenantName,
         role: userData.role || 'user'
@@ -95,18 +93,21 @@ export function useAuth() {
 
       // Store in auth store
       storeLogin(user)
-      
+
       // Store tenant ID if available
       const tenantId = userData.tenantId || userData.organizationId || tenantInfo?.tenantId
       if (tenantId) {
         setTenantId(tenantId)
       }
-      
-      console.log('✅ [Auth] User authenticated:', user.email)
-      
+
+      // Fetch full profile data in background
+      const fullProfile = await fetchFullProfile()
+
+      const displayName = `${fullProfile?.firstName || ''} ${fullProfile?.lastName || ''}`.trim()
+
       toast({
         title: 'Welcome!',
-        description: `Successfully signed in as ${user.name || user.email}`,
+        description: `Successfully signed in as ${displayName}`,
         variant: 'success',
       })
       
@@ -124,7 +125,7 @@ export function useAuth() {
         router.push('/dashboard')
       }
     },
-    [email, tenantInfo, storeAccessToken, storeRefreshToken, storeLogin, toast, router, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, setTenantId, pathname]
+    [email, tenantInfo, storeAccessToken, storeRefreshToken, storeLogin, toast, router, setHasDiscoveredTenants, setDiscoveryAttempted, setAvailableProviders, setTenantId, pathname, fetchFullProfile]
   )
 
   // Track when localStorage is initialized
@@ -179,7 +180,7 @@ export function useAuth() {
           if (userData && userData.email) {
             // For initial check or if user data changed, update auth store
             if (!isPeriodicCheck || !isAuthenticated) {
-              handleAuthenticationSuccess(token || 'cookie-auth', userData)
+              await handleAuthenticationSuccess(token || 'cookie-auth', userData)
             }
           }
         } else if (response.status === 401) {

@@ -72,7 +72,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     catchUpChunks, 
     processChunk, 
     resetChunkTracking, 
-    getLastSequenceId 
+    startInitialBuffering
   } = useChunkCatchup({
     dialogId,
     onChunkReceived: ingestRealtimeEvent
@@ -83,6 +83,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     
     const loadData = async () => {
       resetChunkTracking()
+      startInitialBuffering()
       
       await Promise.all([
         fetchDialog(dialogId),
@@ -132,11 +133,6 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     enabled: !!dialogId,
     dialogId,
     onEvent: handleNatsEvent,
-    onConnect: useCallback(() => {
-      const lastSeqId = getLastSequenceId()
-      const fromSeqId = lastSeqId !== null ? lastSeqId + 1 : null
-      catchUpChunks(fromSeqId)
-    }, [catchUpChunks, getLastSequenceId]),
   })
 
   const handlePutOnHold = useCallback(async () => {

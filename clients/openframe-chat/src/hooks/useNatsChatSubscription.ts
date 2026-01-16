@@ -75,7 +75,8 @@ export function useNatsChatSubscription({ enabled, dialogId, onChunk }: UseNatsC
         name: 'openframe-chat',
         connectTimeoutMs: 20000,
         reconnect: true,
-        maxReconnectAttempts: 10,
+        maxReconnectAttempts: -1,
+        reconnectTimeWaitMs: 1000,
       })
       shared = { wsUrl: url, client, connectPromise: null, refCount: 0, closeTimer: null }
     }
@@ -112,7 +113,9 @@ export function useNatsChatSubscription({ enabled, dialogId, onChunk }: UseNatsC
 
     const unsubscribeStatus = client.onStatus((event) => {
       if (event.status === 'connected') setIsConnected(true)
-      if (event.status === 'closed' || event.status === 'disconnected' || event.status === 'error') setIsConnected(false)
+      if (event.status === 'closed' || event.status === 'disconnected' || event.status === 'error') {
+        setIsConnected(false)
+      }
     })
 
     let closed = false
@@ -123,14 +126,10 @@ export function useNatsChatSubscription({ enabled, dialogId, onChunk }: UseNatsC
         }
         await sharedConn.connectPromise
         if (closed) return
-        setIsConnected(true)
+        setIsConnected(client.isConnected())
       } catch (e) {
         setIsConnected(false)
-        try {
-          await client.close()
-        } catch {
-          // ignore
-        }
+        sharedConn.connectPromise = null
       }
     })().catch(() => {
       // ignore
