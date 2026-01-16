@@ -5,9 +5,7 @@ import com.openframe.data.dto.organization.Organization;
 import com.openframe.data.dto.request.CreateOrganizationRequest;
 import com.openframe.db.OrganizationDB;
 import com.openframe.tests.ordered.base.AuthorizedTest;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -16,6 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("authorized")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class OrganizationCRUDTest extends AuthorizedTest {
 
     @Order(1)
