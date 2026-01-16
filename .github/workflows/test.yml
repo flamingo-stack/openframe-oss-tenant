@@ -188,7 +188,8 @@ jobs:
           API_BASE_URL: http://localhost:8100
         run: |
           cd openframe-e2e-tests
-          mvn test -Dgroups="smoke"
+          mvn test -Dgroups="start"
+          mvn test -Dgroups="authorized,unauthorized"
         continue-on-error: true
 
       - name: Generate and Deploy Allure Report
