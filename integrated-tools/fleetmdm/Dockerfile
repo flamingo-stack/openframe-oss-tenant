@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM fleetdm/fleet:v4.60.1
+FROM --platform=$BUILDPLATFORM fleetdm/fleet:v4.78.0
 
 # Metadata
 LABEL org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents."
