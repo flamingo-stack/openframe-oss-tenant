@@ -20,8 +20,6 @@ public class RestAssuredConfig {
         
         RestAssured.baseURI = baseUrl;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-        
-        RestAssured.filters(new AllureRestAssured());
 
         RestAssured.config = RestAssured.config()
                 .sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation())
