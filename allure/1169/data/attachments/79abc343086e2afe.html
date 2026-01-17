@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696ad307cff6ea1cc66eab69</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Rufus Murphy IV&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(434) 520-8381 x7050&quot;,
+                &quot;email&quot;: &quot;terence.gibson@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;54133 White Garden&quot;,
+            &quot;street2&quot;: &quot;Apt. 741&quot;,
+            &quot;city&quot;: &quot;West Januarychester&quot;,
+            &quot;state&quot;: &quot;Minnesota&quot;,
+            &quot;postalCode&quot;: &quot;42348&quot;,
+            &quot;country&quot;: &quot;Peru&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;209 Johnson Corner&quot;,
+            &quot;street2&quot;: &quot;Suite 877&quot;,
+            &quot;city&quot;: &quot;West Rochelmouth&quot;,
+            &quot;state&quot;: &quot;Vermont&quot;,
+            &quot;postalCode&quot;: &quot;72476&quot;,
+            &quot;country&quot;: &quot;Myanmar&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        17
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        17
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtYzJmYzMwNjAtNzkyZS00ODQwLWI5ZGUtMjcyOWQ4YmVlNjA3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiNTkxNmI5NC1jYzgxLTQyZWEtYmQ5Ny05YzdiYWU4MjQ2YmUiLCJzdWIiOiJjYXJvbC5rdWhsbWFuQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4NjA4NTE3LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9iNTkxNmI5NC1jYzgxLTQyZWEtYmQ5Ny05YzdiYWU4MjQ2YmUiLCJleHAiOjE3Njg2MDk0MTcsImlhdCI6MTc2ODYwODUxNywidXNlcklkIjoiMGEyNDRlNmItZGJjNS00MTJkLTkxOTAtMDA3MTkwNGQyZmI5IiwianRpIjoiN2Y2OWY1OGMtMDU1Yy00YjBmLTg0YjctM2Q2NmRkOGYwMTlkIn0.mSzt2js5y4p94aVRDWo6I9UKZkr2VY8pfukua0E2I8HEj8KPm9ebIAngZfAPBF5ZKgdynKNm3N-6unpRU53JvfSnC4I7Cj2zulEc-Oy-Nh8TJDHFvOi0Zm3OFudNDVHF6si1zDPmFub9mpIsB0XTdvYDQtRXo0ABi8hYINVjz9ivakJlr3ijHEdjDBns9xNqMghUMIVihJZPT0oC_Yxau7BNhwGPGbMy_QyK-262gwd6vQxf2xzJcCwIHLHUit4m-nsc2luM3TW3zksvge43gaz30TZ1ajF6S3jJCgTKMGzgPskGqRJwpnSHvmG5xkpYwOdPoLAIevJRHXKzuoaxtQ; refresh_token=h_bi2AA3QSj9tZd_dcnKt-x73GGXN8PicLevPqRdc7hqO0QdfoTLWb6itMZ1rzywIi_cUs9hQn-fax48iH23dioeXD8haUeQ62AYfWmPwfJ3WBr-lXxck3NcLSkZD0Qg; of_oauth_jh9xXSP5fv6P8e113KVnnA=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696ad307cff6ea1cc66eab69&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtYzJmYzMwNjAtNzkyZS00ODQwLWI5ZGUtMjcyOWQ4YmVlNjA3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiNTkxNmI5NC1jYzgxLTQyZWEtYmQ5Ny05YzdiYWU4MjQ2YmUiLCJzdWIiOiJjYXJvbC5rdWhsbWFuQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4NjA4NTE3LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9iNTkxNmI5NC1jYzgxLTQyZWEtYmQ5Ny05YzdiYWU4MjQ2YmUiLCJleHAiOjE3Njg2MDk0MTcsImlhdCI6MTc2ODYwODUxNywidXNlcklkIjoiMGEyNDRlNmItZGJjNS00MTJkLTkxOTAtMDA3MTkwNGQyZmI5IiwianRpIjoiN2Y2OWY1OGMtMDU1Yy00YjBmLTg0YjctM2Q2NmRkOGYwMTlkIn0.mSzt2js5y4p94aVRDWo6I9UKZkr2VY8pfukua0E2I8HEj8KPm9ebIAngZfAPBF5ZKgdynKNm3N-6unpRU53JvfSnC4I7Cj2zulEc-Oy-Nh8TJDHFvOi0Zm3OFudNDVHF6si1zDPmFub9mpIsB0XTdvYDQtRXo0ABi8hYINVjz9ivakJlr3ijHEdjDBns9xNqMghUMIVihJZPT0oC_Yxau7BNhwGPGbMy_QyK-262gwd6vQxf2xzJcCwIHLHUit4m-nsc2luM3TW3zksvge43gaz30TZ1ajF6S3jJCgTKMGzgPskGqRJwpnSHvmG5xkpYwOdPoLAIevJRHXKzuoaxtQ; refresh_token=h_bi2AA3QSj9tZd_dcnKt-x73GGXN8PicLevPqRdc7hqO0QdfoTLWb6itMZ1rzywIi_cUs9hQn-fax48iH23dioeXD8haUeQ62AYfWmPwfJ3WBr-lXxck3NcLSkZD0Qg; of_oauth_jh9xXSP5fv6P8e113KVnnA=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Rufus Murphy IV&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(434) 520-8381 x7050&quot;,
+                &quot;email&quot;: &quot;terence.gibson@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;54133 White Garden&quot;,
+            &quot;street2&quot;: &quot;Apt. 741&quot;,
+            &quot;city&quot;: &quot;West Januarychester&quot;,
+            &quot;state&quot;: &quot;Minnesota&quot;,
+            &quot;postalCode&quot;: &quot;42348&quot;,
+            &quot;country&quot;: &quot;Peru&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;209 Johnson Corner&quot;,
+            &quot;street2&quot;: &quot;Suite 877&quot;,
+            &quot;city&quot;: &quot;West Rochelmouth&quot;,
+            &quot;state&quot;: &quot;Vermont&quot;,
+            &quot;postalCode&quot;: &quot;72476&quot;,
+            &quot;country&quot;: &quot;Myanmar&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        17
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        17
+    ]
+}&#39;
+</div>
