@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696c4e66ed239b560eb51a16</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lois Morar&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(580) 641-1907&quot;,
+                &quot;email&quot;: &quot;deshawn.greenfelder@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;754 Hudson Mission&quot;,
+            &quot;street2&quot;: &quot;Apt. 796&quot;,
+            &quot;city&quot;: &quot;East Ulyssesside&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;23402&quot;,
+            &quot;country&quot;: &quot;Myanmar&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;299 Bernhard Parkway&quot;,
+            &quot;street2&quot;: &quot;Suite 715&quot;,
+            &quot;city&quot;: &quot;Romelialand&quot;,
+            &quot;state&quot;: &quot;North Dakota&quot;,
+            &quot;postalCode&quot;: &quot;61730&quot;,
+            &quot;country&quot;: &quot;Guinea-Bissau&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        18
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        18
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtOTdjNTA5NWMtZjA3ZS00MTVhLWE0ZjktMzZiMGU3ZTZiYjQyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3Y2QwMTQzMy05M2ExLTRjMzMtODQ1NS0wZTFiZmQyNjQyNDUiLCJzdWIiOiJ0b20uaG9wcGVAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg3MDU2MzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzdjZDAxNDMzLTkzYTEtNGMzMy04NDU1LTBlMWJmZDI2NDI0NSIsImV4cCI6MTc2ODcwNjUzNiwiaWF0IjoxNzY4NzA1NjM2LCJ1c2VySWQiOiI4YjQzNWNlYS1mMjE4LTQ0MmItYmQ3OC0yOTFhNzNiYWY4ZmMiLCJqdGkiOiIyMTljZTgwOS05ODlhLTQ4OWUtOTBiZS0xNWVmNzRiNmUzNzgifQ.abHiq-zsjNEX0WPqxSB_BBsreFuslJPVeDGInzeQqYT2R6ikCwFSqSxJCn7j6c0ihYLb1ROivRIa6264hwHDtUDeTU3hfLzSR--Ni4-3z6UHP12-mHgPXBTCzEz9KcPGfLkXInln1hXv4DNBQ59LpI316s97mwkOfNMSViDjRjRterVRDfoCY51qGKSoqZdA64Coiy3ouU90uwHz3Ga4HyxZCSpavRFkOk1fHPidAT8AxAZUP0cJElwRnI4M0wcxCi-OIznHvpuphvI4hfJmtFeIcaSQEHtwDs71C8ATANqb87y92SYh8bgHq-PJDb-6ZNtIvTJZzKQq8Rn9cBaunQ; refresh_token=9JWckGE3DWT1SuykiUi5SQhhFxEi_uOsgs4j3BmfazfLNCvjePSN3srArLAk8KJkohfIzbWzyqp-RkTOiPG-V0zP_YthXGVuI7-H9asY1nwUyEq9_cI71lUQYN5042Mu; of_oauth_DAIdYv5KDW7MzJFQIsnCQw=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696c4e66ed239b560eb51a16&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtOTdjNTA5NWMtZjA3ZS00MTVhLWE0ZjktMzZiMGU3ZTZiYjQyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3Y2QwMTQzMy05M2ExLTRjMzMtODQ1NS0wZTFiZmQyNjQyNDUiLCJzdWIiOiJ0b20uaG9wcGVAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg3MDU2MzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzdjZDAxNDMzLTkzYTEtNGMzMy04NDU1LTBlMWJmZDI2NDI0NSIsImV4cCI6MTc2ODcwNjUzNiwiaWF0IjoxNzY4NzA1NjM2LCJ1c2VySWQiOiI4YjQzNWNlYS1mMjE4LTQ0MmItYmQ3OC0yOTFhNzNiYWY4ZmMiLCJqdGkiOiIyMTljZTgwOS05ODlhLTQ4OWUtOTBiZS0xNWVmNzRiNmUzNzgifQ.abHiq-zsjNEX0WPqxSB_BBsreFuslJPVeDGInzeQqYT2R6ikCwFSqSxJCn7j6c0ihYLb1ROivRIa6264hwHDtUDeTU3hfLzSR--Ni4-3z6UHP12-mHgPXBTCzEz9KcPGfLkXInln1hXv4DNBQ59LpI316s97mwkOfNMSViDjRjRterVRDfoCY51qGKSoqZdA64Coiy3ouU90uwHz3Ga4HyxZCSpavRFkOk1fHPidAT8AxAZUP0cJElwRnI4M0wcxCi-OIznHvpuphvI4hfJmtFeIcaSQEHtwDs71C8ATANqb87y92SYh8bgHq-PJDb-6ZNtIvTJZzKQq8Rn9cBaunQ; refresh_token=9JWckGE3DWT1SuykiUi5SQhhFxEi_uOsgs4j3BmfazfLNCvjePSN3srArLAk8KJkohfIzbWzyqp-RkTOiPG-V0zP_YthXGVuI7-H9asY1nwUyEq9_cI71lUQYN5042Mu; of_oauth_DAIdYv5KDW7MzJFQIsnCQw=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lois Morar&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(580) 641-1907&quot;,
+                &quot;email&quot;: &quot;deshawn.greenfelder@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;754 Hudson Mission&quot;,
+            &quot;street2&quot;: &quot;Apt. 796&quot;,
+            &quot;city&quot;: &quot;East Ulyssesside&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;23402&quot;,
+            &quot;country&quot;: &quot;Myanmar&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;299 Bernhard Parkway&quot;,
+            &quot;street2&quot;: &quot;Suite 715&quot;,
+            &quot;city&quot;: &quot;Romelialand&quot;,
+            &quot;state&quot;: &quot;North Dakota&quot;,
+            &quot;postalCode&quot;: &quot;61730&quot;,
+            &quot;country&quot;: &quot;Guinea-Bissau&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        18
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        18
+    ]
+}&#39;
+</div>

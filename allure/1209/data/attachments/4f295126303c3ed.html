@@ -1,0 +1,95 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Gilberte Gutmann&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(650) 631-7105 x8550&quot;,
+                &quot;email&quot;: &quot;maritza.willms@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;5442 Howell Summit&quot;,
+            &quot;street2&quot;: &quot;Suite 295&quot;,
+            &quot;city&quot;: &quot;Tamaraberg&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;40577&quot;,
+            &quot;country&quot;: &quot;Montserrat&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        18
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        18
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtOTdjNTA5NWMtZjA3ZS00MTVhLWE0ZjktMzZiMGU3ZTZiYjQyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3Y2QwMTQzMy05M2ExLTRjMzMtODQ1NS0wZTFiZmQyNjQyNDUiLCJzdWIiOiJ0b20uaG9wcGVAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg3MDU2MzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzdjZDAxNDMzLTkzYTEtNGMzMy04NDU1LTBlMWJmZDI2NDI0NSIsImV4cCI6MTc2ODcwNjUzNiwiaWF0IjoxNzY4NzA1NjM2LCJ1c2VySWQiOiI4YjQzNWNlYS1mMjE4LTQ0MmItYmQ3OC0yOTFhNzNiYWY4ZmMiLCJqdGkiOiIyMTljZTgwOS05ODlhLTQ4OWUtOTBiZS0xNWVmNzRiNmUzNzgifQ.abHiq-zsjNEX0WPqxSB_BBsreFuslJPVeDGInzeQqYT2R6ikCwFSqSxJCn7j6c0ihYLb1ROivRIa6264hwHDtUDeTU3hfLzSR--Ni4-3z6UHP12-mHgPXBTCzEz9KcPGfLkXInln1hXv4DNBQ59LpI316s97mwkOfNMSViDjRjRterVRDfoCY51qGKSoqZdA64Coiy3ouU90uwHz3Ga4HyxZCSpavRFkOk1fHPidAT8AxAZUP0cJElwRnI4M0wcxCi-OIznHvpuphvI4hfJmtFeIcaSQEHtwDs71C8ATANqb87y92SYh8bgHq-PJDb-6ZNtIvTJZzKQq8Rn9cBaunQ; refresh_token=9JWckGE3DWT1SuykiUi5SQhhFxEi_uOsgs4j3BmfazfLNCvjePSN3srArLAk8KJkohfIzbWzyqp-RkTOiPG-V0zP_YthXGVuI7-H9asY1nwUyEq9_cI71lUQYN5042Mu; of_oauth_DAIdYv5KDW7MzJFQIsnCQw=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtOTdjNTA5NWMtZjA3ZS00MTVhLWE0ZjktMzZiMGU3ZTZiYjQyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3Y2QwMTQzMy05M2ExLTRjMzMtODQ1NS0wZTFiZmQyNjQyNDUiLCJzdWIiOiJ0b20uaG9wcGVAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg3MDU2MzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzdjZDAxNDMzLTkzYTEtNGMzMy04NDU1LTBlMWJmZDI2NDI0NSIsImV4cCI6MTc2ODcwNjUzNiwiaWF0IjoxNzY4NzA1NjM2LCJ1c2VySWQiOiI4YjQzNWNlYS1mMjE4LTQ0MmItYmQ3OC0yOTFhNzNiYWY4ZmMiLCJqdGkiOiIyMTljZTgwOS05ODlhLTQ4OWUtOTBiZS0xNWVmNzRiNmUzNzgifQ.abHiq-zsjNEX0WPqxSB_BBsreFuslJPVeDGInzeQqYT2R6ikCwFSqSxJCn7j6c0ihYLb1ROivRIa6264hwHDtUDeTU3hfLzSR--Ni4-3z6UHP12-mHgPXBTCzEz9KcPGfLkXInln1hXv4DNBQ59LpI316s97mwkOfNMSViDjRjRterVRDfoCY51qGKSoqZdA64Coiy3ouU90uwHz3Ga4HyxZCSpavRFkOk1fHPidAT8AxAZUP0cJElwRnI4M0wcxCi-OIznHvpuphvI4hfJmtFeIcaSQEHtwDs71C8ATANqb87y92SYh8bgHq-PJDb-6ZNtIvTJZzKQq8Rn9cBaunQ; refresh_token=9JWckGE3DWT1SuykiUi5SQhhFxEi_uOsgs4j3BmfazfLNCvjePSN3srArLAk8KJkohfIzbWzyqp-RkTOiPG-V0zP_YthXGVuI7-H9asY1nwUyEq9_cI71lUQYN5042Mu; of_oauth_DAIdYv5KDW7MzJFQIsnCQw=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Gilberte Gutmann&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(650) 631-7105 x8550&quot;,
+                &quot;email&quot;: &quot;maritza.willms@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;5442 Howell Summit&quot;,
+            &quot;street2&quot;: &quot;Suite 295&quot;,
+            &quot;city&quot;: &quot;Tamaraberg&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;40577&quot;,
+            &quot;country&quot;: &quot;Montserrat&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        18
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        18
+    ]
+}&#39;
+</div>
