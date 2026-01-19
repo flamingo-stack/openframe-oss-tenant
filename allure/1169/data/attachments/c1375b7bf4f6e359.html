@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696ebc0234cd3f1f61b31012</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Fredericka Wehner&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(931) 302-8733&quot;,
+                &quot;email&quot;: &quot;takako.ullrich@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;9802 Streich Plaza&quot;,
+            &quot;street2&quot;: &quot;Apt. 139&quot;,
+            &quot;city&quot;: &quot;East Jackieport&quot;,
+            &quot;state&quot;: &quot;Iowa&quot;,
+            &quot;postalCode&quot;: &quot;81790&quot;,
+            &quot;country&quot;: &quot;Guyana&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;11923 Reilly Burgs&quot;,
+            &quot;street2&quot;: &quot;Apt. 966&quot;,
+            &quot;city&quot;: &quot;Koreyfort&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;55251&quot;,
+            &quot;country&quot;: &quot;Palau&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtMmM5OGFlYTItYzgxNy00MzAyLWI1ZDctZGIyNjNkN2VjNjJhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmMGYwNzMxMi05ZjliLTRhZWEtYmFhMi0xZWNjZGJiYTFkNjkiLCJzdWIiOiJuYXRoYWxpZS53YWxzaEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODg2NDc2OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZjBmMDczMTItOWY5Yi00YWVhLWJhYTItMWVjY2RiYmExZDY5IiwiZXhwIjoxNzY4ODY1NjY5LCJpYXQiOjE3Njg4NjQ3NjksInVzZXJJZCI6ImUxMDA0NjA2LWIwNDItNDM3Mi1iN2FiLTBjYWYyZGI3OGQwZiIsImp0aSI6IjYzMWExOGNjLTNiNDItNDRlZC05NGIzLWZiZjRiY2QwOGIzMiJ9.q0r_r2ZHRnrYLXiHzJpomEjg3S9BRff_MohZuwOmDYW8-lHONH46csJwdaCdZ-ImEEAKjhsD3snhjVZF-FXI4AaO7z7bclXuUcIy7aFOGQ9EACGzzUpXqjNPNEsJNWoa1darqFYpHKM5y3nJE7Rntc9ppdLzawdkozeLm7Q7_RhGDl3bVba6zxX2Vb6F-jTryWTfpv6cCDWnopxLJ62yDhOD7hkSPzvuWR-2T6npQhl_eq3hMIu93XmvXlEeQPbunlhA04MgJwdCdQGMzSDDwaIzbbLPUFBF8y0VcWrpf8_vMhNvd1WNz_KlKEwbusl3roO933IOctW7A6KsSDt8Aw; refresh_token=_nC6eNPFT9EYClwUGxefXh2wTKX-n9TUHbiH9pkGFcDjKs9RVM5I6Iu2zeO2cAGsDV-ywxiLF_6kRFGzDzGY5acXL0DbPprO81fx-ogAFW4Hv3NZ4-0CSVc0lClpFcLW; of_oauth_S4X79k4hhSiOI3zHhi7sOQ=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696ebc0234cd3f1f61b31012&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtMmM5OGFlYTItYzgxNy00MzAyLWI1ZDctZGIyNjNkN2VjNjJhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmMGYwNzMxMi05ZjliLTRhZWEtYmFhMi0xZWNjZGJiYTFkNjkiLCJzdWIiOiJuYXRoYWxpZS53YWxzaEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODg2NDc2OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZjBmMDczMTItOWY5Yi00YWVhLWJhYTItMWVjY2RiYmExZDY5IiwiZXhwIjoxNzY4ODY1NjY5LCJpYXQiOjE3Njg4NjQ3NjksInVzZXJJZCI6ImUxMDA0NjA2LWIwNDItNDM3Mi1iN2FiLTBjYWYyZGI3OGQwZiIsImp0aSI6IjYzMWExOGNjLTNiNDItNDRlZC05NGIzLWZiZjRiY2QwOGIzMiJ9.q0r_r2ZHRnrYLXiHzJpomEjg3S9BRff_MohZuwOmDYW8-lHONH46csJwdaCdZ-ImEEAKjhsD3snhjVZF-FXI4AaO7z7bclXuUcIy7aFOGQ9EACGzzUpXqjNPNEsJNWoa1darqFYpHKM5y3nJE7Rntc9ppdLzawdkozeLm7Q7_RhGDl3bVba6zxX2Vb6F-jTryWTfpv6cCDWnopxLJ62yDhOD7hkSPzvuWR-2T6npQhl_eq3hMIu93XmvXlEeQPbunlhA04MgJwdCdQGMzSDDwaIzbbLPUFBF8y0VcWrpf8_vMhNvd1WNz_KlKEwbusl3roO933IOctW7A6KsSDt8Aw; refresh_token=_nC6eNPFT9EYClwUGxefXh2wTKX-n9TUHbiH9pkGFcDjKs9RVM5I6Iu2zeO2cAGsDV-ywxiLF_6kRFGzDzGY5acXL0DbPprO81fx-ogAFW4Hv3NZ4-0CSVc0lClpFcLW; of_oauth_S4X79k4hhSiOI3zHhi7sOQ=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Fredericka Wehner&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(931) 302-8733&quot;,
+                &quot;email&quot;: &quot;takako.ullrich@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;9802 Streich Plaza&quot;,
+            &quot;street2&quot;: &quot;Apt. 139&quot;,
+            &quot;city&quot;: &quot;East Jackieport&quot;,
+            &quot;state&quot;: &quot;Iowa&quot;,
+            &quot;postalCode&quot;: &quot;81790&quot;,
+            &quot;country&quot;: &quot;Guyana&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;11923 Reilly Burgs&quot;,
+            &quot;street2&quot;: &quot;Apt. 966&quot;,
+            &quot;city&quot;: &quot;Koreyfort&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;55251&quot;,
+            &quot;country&quot;: &quot;Palau&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}&#39;
+</div>
