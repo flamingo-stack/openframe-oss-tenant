@@ -16,6 +16,7 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
     spec:
       initContainers:
         - name: wait-for-config-server
@@ -42,8 +43,9 @@ spec:
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}
-            - name: SPRING_CONFIG_URL
-              value: "http://openframe-config.microservices.svc.cluster.local:8888"
+          envFrom:
+            - configMapRef:
+                name: microservices
 
           resources:
             {{- toYaml .Values.resources | nindent 10 }}
