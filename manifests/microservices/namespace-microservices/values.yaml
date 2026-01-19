@@ -1,6 +1,0 @@
-registry:
-  ghcr:
-    server: ghcr.io
-    username: ""
-    password: ""
-    email: ""

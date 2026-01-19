@@ -18,4 +18,11 @@ public class RequestSpecHelper {
                 .addFilter(new AllureRestAssured())
                 .build();
     }
+
+    public static RequestSpecification getUnAuthorizedSpec() {
+        return new RequestSpecBuilder()
+                .setContentType(ContentType.JSON)
+                .addFilter(new AllureRestAssured())
+                .build();
+    }
 }

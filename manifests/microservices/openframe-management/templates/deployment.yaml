@@ -16,6 +16,7 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
     spec:
       initContainers:
         - name: wait-for-config-server
@@ -42,12 +43,13 @@ spec:
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}
-            - name: SPRING_CONFIG_URL
-              {{- if .Values.deployment.saas.enabled }}
-              value: "http://openframe-saas-config.microservices.svc.cluster.local:8888"
-              {{- else }}
-              value: "http://openframe-config.microservices.svc.cluster.local:8888"
-              {{- end }}
+          envFrom:
+            - configMapRef:
+                name: microservices
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
           livenessProbe:
             httpGet:
               path: /management/v1/health
@@ -64,10 +66,3 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "0.5"
-            limits:
-              memory: "1Gi"
-              cpu: "1"
