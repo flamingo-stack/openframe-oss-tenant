@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthUser {
-    private String _id;
+    private String id;
     private String tenantId;
     private String passwordHash;
     private Boolean emailVerified;
