@@ -1,0 +1,25 @@
+<div>POST to http://localhost:8100/api/graphql</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;query&quot;: &quot;query {\n    organizations {\n        edges {\n            node { id }\n        }\n    }\n}\n&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtOTI1MWExMDktZWEzNS00NzkyLWEyYzUtMjRlYjM0ZWFkMDUyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhNTljODRhZS1jZDg2LTQzMTMtYTIxNC1kNGM3MmExNGM0OTkiLCJzdWIiOiJjaGFuZWwuYmF5ZXJAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODgyOTM0Niwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYTU5Yzg0YWUtY2Q4Ni00MzEzLWEyMTQtZDRjNzJhMTRjNDk5IiwiZXhwIjoxNzY4ODMwMjQ2LCJpYXQiOjE3Njg4MjkzNDYsInVzZXJJZCI6ImI5ZWQ4MDI5LTM0YjktNDk3Yy05MGIwLTM0Y2M3ZGYyNThlYSIsImp0aSI6ImM4NDc3ZDFiLThmNmQtNDc2Yi1iODUwLWEwYmFlZmFhNjkzYiJ9.OnKT2UzOuJOHkxBj8LOQePmg0pe3BOiGfPrp4Hxt3WSSISXUHwZf01MTf3STBV_xD354_3BeXKgpd8nRjDDjEzpKBKuxtyKB2sE60uyeuGJGGMkznVDVR-RzltHKTFaD2OxK7bt8LZKiRSeJ-7Y9TrB0FH8RrORv6wy_VGeWcRzOqVJZSLSh-M5gpEUxeqb3WYU-5fV7cld3E-lCo17ii0o8p2FuD5Wg1c2tN9zpopEgABf6RHaVp0804qtudnbr3s9fBXMRBmzz5SAwcxcziP2oHyNGjoPlg6fAWxTKqz975ScTfbajCwoEGjsLhPA6FpexU_9k3_94W6Ot3AOKQA; refresh_token=4CkqKbOR9iYTKos1sNw-ufic9lg56kORMiRtuhlX-JYj1DJiIT84NGWfbJlHzGS34sau8gR3Kwdc82c4FlkqhtbOtKsVcftLlFcKjRS__oN7V0sxvPnNug62dGP-vXqf; of_oauth_13KEC_pDFvpcyZl46wTuiw=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/graphql&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtOTI1MWExMDktZWEzNS00NzkyLWEyYzUtMjRlYjM0ZWFkMDUyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhNTljODRhZS1jZDg2LTQzMTMtYTIxNC1kNGM3MmExNGM0OTkiLCJzdWIiOiJjaGFuZWwuYmF5ZXJAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODgyOTM0Niwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYTU5Yzg0YWUtY2Q4Ni00MzEzLWEyMTQtZDRjNzJhMTRjNDk5IiwiZXhwIjoxNzY4ODMwMjQ2LCJpYXQiOjE3Njg4MjkzNDYsInVzZXJJZCI6ImI5ZWQ4MDI5LTM0YjktNDk3Yy05MGIwLTM0Y2M3ZGYyNThlYSIsImp0aSI6ImM4NDc3ZDFiLThmNmQtNDc2Yi1iODUwLWEwYmFlZmFhNjkzYiJ9.OnKT2UzOuJOHkxBj8LOQePmg0pe3BOiGfPrp4Hxt3WSSISXUHwZf01MTf3STBV_xD354_3BeXKgpd8nRjDDjEzpKBKuxtyKB2sE60uyeuGJGGMkznVDVR-RzltHKTFaD2OxK7bt8LZKiRSeJ-7Y9TrB0FH8RrORv6wy_VGeWcRzOqVJZSLSh-M5gpEUxeqb3WYU-5fV7cld3E-lCo17ii0o8p2FuD5Wg1c2tN9zpopEgABf6RHaVp0804qtudnbr3s9fBXMRBmzz5SAwcxcziP2oHyNGjoPlg6fAWxTKqz975ScTfbajCwoEGjsLhPA6FpexU_9k3_94W6Ot3AOKQA; refresh_token=4CkqKbOR9iYTKos1sNw-ufic9lg56kORMiRtuhlX-JYj1DJiIT84NGWfbJlHzGS34sau8gR3Kwdc82c4FlkqhtbOtKsVcftLlFcKjRS__oN7V0sxvPnNug62dGP-vXqf; of_oauth_13KEC_pDFvpcyZl46wTuiw=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;query&quot;: &quot;query {\n    organizations {\n        edges {\n            node { id }\n        }\n    }\n}\n&quot;
+}&#39;
+</div>

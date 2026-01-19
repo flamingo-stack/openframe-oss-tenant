@@ -1,0 +1,95 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Luciano Koelpin&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(828) 715-3754&quot;,
+                &quot;email&quot;: &quot;shannon.kuhlman@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;793 Chara Meadows&quot;,
+            &quot;street2&quot;: &quot;Suite 246&quot;,
+            &quot;city&quot;: &quot;East Jeffryburgh&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;16332&quot;,
+            &quot;country&quot;: &quot;Northern Mariana Islands&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        19
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtOTI1MWExMDktZWEzNS00NzkyLWEyYzUtMjRlYjM0ZWFkMDUyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhNTljODRhZS1jZDg2LTQzMTMtYTIxNC1kNGM3MmExNGM0OTkiLCJzdWIiOiJjaGFuZWwuYmF5ZXJAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODgyOTM0Niwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYTU5Yzg0YWUtY2Q4Ni00MzEzLWEyMTQtZDRjNzJhMTRjNDk5IiwiZXhwIjoxNzY4ODMwMjQ2LCJpYXQiOjE3Njg4MjkzNDYsInVzZXJJZCI6ImI5ZWQ4MDI5LTM0YjktNDk3Yy05MGIwLTM0Y2M3ZGYyNThlYSIsImp0aSI6ImM4NDc3ZDFiLThmNmQtNDc2Yi1iODUwLWEwYmFlZmFhNjkzYiJ9.OnKT2UzOuJOHkxBj8LOQePmg0pe3BOiGfPrp4Hxt3WSSISXUHwZf01MTf3STBV_xD354_3BeXKgpd8nRjDDjEzpKBKuxtyKB2sE60uyeuGJGGMkznVDVR-RzltHKTFaD2OxK7bt8LZKiRSeJ-7Y9TrB0FH8RrORv6wy_VGeWcRzOqVJZSLSh-M5gpEUxeqb3WYU-5fV7cld3E-lCo17ii0o8p2FuD5Wg1c2tN9zpopEgABf6RHaVp0804qtudnbr3s9fBXMRBmzz5SAwcxcziP2oHyNGjoPlg6fAWxTKqz975ScTfbajCwoEGjsLhPA6FpexU_9k3_94W6Ot3AOKQA; refresh_token=4CkqKbOR9iYTKos1sNw-ufic9lg56kORMiRtuhlX-JYj1DJiIT84NGWfbJlHzGS34sau8gR3Kwdc82c4FlkqhtbOtKsVcftLlFcKjRS__oN7V0sxvPnNug62dGP-vXqf; of_oauth_13KEC_pDFvpcyZl46wTuiw=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtOTI1MWExMDktZWEzNS00NzkyLWEyYzUtMjRlYjM0ZWFkMDUyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhNTljODRhZS1jZDg2LTQzMTMtYTIxNC1kNGM3MmExNGM0OTkiLCJzdWIiOiJjaGFuZWwuYmF5ZXJAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODgyOTM0Niwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYTU5Yzg0YWUtY2Q4Ni00MzEzLWEyMTQtZDRjNzJhMTRjNDk5IiwiZXhwIjoxNzY4ODMwMjQ2LCJpYXQiOjE3Njg4MjkzNDYsInVzZXJJZCI6ImI5ZWQ4MDI5LTM0YjktNDk3Yy05MGIwLTM0Y2M3ZGYyNThlYSIsImp0aSI6ImM4NDc3ZDFiLThmNmQtNDc2Yi1iODUwLWEwYmFlZmFhNjkzYiJ9.OnKT2UzOuJOHkxBj8LOQePmg0pe3BOiGfPrp4Hxt3WSSISXUHwZf01MTf3STBV_xD354_3BeXKgpd8nRjDDjEzpKBKuxtyKB2sE60uyeuGJGGMkznVDVR-RzltHKTFaD2OxK7bt8LZKiRSeJ-7Y9TrB0FH8RrORv6wy_VGeWcRzOqVJZSLSh-M5gpEUxeqb3WYU-5fV7cld3E-lCo17ii0o8p2FuD5Wg1c2tN9zpopEgABf6RHaVp0804qtudnbr3s9fBXMRBmzz5SAwcxcziP2oHyNGjoPlg6fAWxTKqz975ScTfbajCwoEGjsLhPA6FpexU_9k3_94W6Ot3AOKQA; refresh_token=4CkqKbOR9iYTKos1sNw-ufic9lg56kORMiRtuhlX-JYj1DJiIT84NGWfbJlHzGS34sau8gR3Kwdc82c4FlkqhtbOtKsVcftLlFcKjRS__oN7V0sxvPnNug62dGP-vXqf; of_oauth_13KEC_pDFvpcyZl46wTuiw=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Luciano Koelpin&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(828) 715-3754&quot;,
+                &quot;email&quot;: &quot;shannon.kuhlman@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;793 Chara Meadows&quot;,
+            &quot;street2&quot;: &quot;Suite 246&quot;,
+            &quot;city&quot;: &quot;East Jeffryburgh&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;16332&quot;,
+            &quot;country&quot;: &quot;Northern Mariana Islands&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        19
+    ]
+}&#39;
+</div>
