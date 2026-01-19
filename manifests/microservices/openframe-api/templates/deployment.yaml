@@ -46,7 +46,7 @@ spec:
               value: "http://openframe-config.microservices.svc.cluster.local:8888"
 
           resources:
-            {{- toYaml .Values.resources | nindent 10 }}
+            {{- toYaml .Values.resources | nindent 12 }}
 
           livenessProbe:
             httpGet:

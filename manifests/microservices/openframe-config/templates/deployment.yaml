@@ -32,7 +32,7 @@ spec:
                 name: openframe-config
 
           resources:
-            {{- toYaml .Values.resources | nindent 10 }}
+            {{- toYaml .Values.resources | nindent 12 }}
 
           livenessProbe:
             httpGet:

@@ -44,7 +44,7 @@ spec:
                   key: management-key
 
           resources:
-            {{- toYaml .Values.resources | nindent 10 }}
+            {{- toYaml .Values.resources | nindent 12 }}
 
           livenessProbe:
             httpGet:
