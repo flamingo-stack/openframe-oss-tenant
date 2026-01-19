@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: tactical-nginx
-  annotations:
-    keel.sh/policy: force
-    keel.sh/trigger: poll
 spec:
   serviceName: tactical-nginx
   replicas: 1

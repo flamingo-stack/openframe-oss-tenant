@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: authentik-postgres
-  annotations:
-    keel.sh/policy: force
-    keel.sh/trigger: poll
 spec:
   serviceName: authentik-postgres
   replicas: 1

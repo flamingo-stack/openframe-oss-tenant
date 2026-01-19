@@ -4,9 +4,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: openframe-frontend
-  annotations:
-    keel.sh/policy: force
-    keel.sh/trigger: poll
 spec:
   replicas: 1
   revisionHistoryLimit: 2

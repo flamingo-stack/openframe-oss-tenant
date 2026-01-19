@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: fleetmdm-server
-  annotations:
-    keel.sh/policy: force
-    keel.sh/trigger: poll
 spec:
   serviceName: fleetmdm-server
   replicas: 1
@@ -23,41 +20,21 @@ spec:
     spec:
 
       initContainers:
-      - name: fleet-prepare-db
+      - name: wait
         image: "{{ .Values.server.image.registry }}/{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
         command:
         - /bin/sh
         - -c
         - |
-          echo "Waiting for MySQL to be ready..."
-          until nc -z ${FLEET_MYSQL_ADDRESS%:*} ${FLEET_MYSQL_ADDRESS#*:}; do
-            echo "MySQL is not ready yet..."
-            sleep 2
-          done
-          echo "MySQL is ready. Running migrations..."
-          fleet prepare db --config "$FLEET_CONFIG" --no-prompt
-          echo "Migrations completed successfully."
+          (until nc -z $FLEET_MYSQL_HOST $FLEET_MYSQL_PORT; do sleep 2; done) &
+          (until nc -z $REDIS_HOST $REDIS_PORT; do sleep 2; done) &
+          wait
+          echo "MySQL and Redis are ready."
         envFrom:
         - configMapRef:
-            name: fleetmdm-server
-        - secretRef:
-            name: fleetmdm-server
-        env:
-        - name: FLEET_MYSQL_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: fleetmdm-mysql
-              key: MYSQL_DATABASE
-        - name: FLEET_MYSQL_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: fleetmdm-mysql
-              key: MYSQL_USER
-        - name: FLEET_MYSQL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: fleetmdm-mysql
-              key: MYSQL_PASSWORD
+            name: fleetmdm-mysql
+        - configMapRef:
+            name: fleetmdm-redis
 
       containers:
       - name: fleetmdm

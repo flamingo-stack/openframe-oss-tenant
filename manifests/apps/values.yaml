@@ -51,11 +51,7 @@ registry:
     username: ""
     password: ""
     email: ""
-  ghcr:
-    server: ghcr.io
-    username: ""
-    password: ""
-    email: ""
+
 
 global:  # not working yet
   image:

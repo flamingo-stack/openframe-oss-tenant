@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: tactical-frontend
-  annotations:
-    keel.sh/policy: force
-    keel.sh/trigger: poll
 spec:
   serviceName: tactical-frontend
   replicas: 1

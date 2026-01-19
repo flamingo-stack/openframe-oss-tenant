@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: meshcentral-server
-  annotations:
-    keel.sh/policy: force
-    keel.sh/trigger: poll
 spec:
   serviceName: meshcentral-server
   replicas: 1
