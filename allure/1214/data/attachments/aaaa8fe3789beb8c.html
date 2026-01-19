@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696e596becfb0b4aaccaa8f9</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Marion Murphy&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(813) 847-9490&quot;,
+                &quot;email&quot;: &quot;randy.crist@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;63550 Johanna Walks&quot;,
+            &quot;street2&quot;: &quot;Apt. 206&quot;,
+            &quot;city&quot;: &quot;West Shannonville&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;73459&quot;,
+            &quot;country&quot;: &quot;Faroe Islands&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5613 Connelly Via&quot;,
+            &quot;street2&quot;: &quot;Apt. 741&quot;,
+            &quot;city&quot;: &quot;Parisianfurt&quot;,
+            &quot;state&quot;: &quot;Mississippi&quot;,
+            &quot;postalCode&quot;: &quot;89335&quot;,
+            &quot;country&quot;: &quot;Croatia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtZThmNTA3ZDEtNjg2Yi00YWMyLWFjMzktYTgwN2M5NTZhMWJiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkODJlZmIxNy04ZGJmLTQ2OGEtYTZkNi0wMTMzNDEzNjRiYTQiLCJzdWIiOiJlbGlzaGEuYXJtc3Ryb25nQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4ODM5NTMwLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9kODJlZmIxNy04ZGJmLTQ2OGEtYTZkNi0wMTMzNDEzNjRiYTQiLCJleHAiOjE3Njg4NDA0MzAsImlhdCI6MTc2ODgzOTUzMCwidXNlcklkIjoiMTk5Y2VjODMtOGRlZS00OWViLWIwYmEtZjljM2YyYzlmZDNkIiwianRpIjoiODJkNzljZjAtZjc2Ni00ZTI1LWI2OGEtYzM4YjI5MDVlYWI0In0.tIkeioq_74Apog4BwBwUHZuHY2AYpVuozmJgY1DAqOudRMsHjtWMVMuVFl5TttSahYtNyV8os9zg5N2j7lgHFwv4rS8vIudqZndOhhGbv0BhjFiwYtnUMm_1QZIjGe2-fGq_iREbRYf0N6zm_DHoPatEU-Kh8R0Om4sWgKdhy1Boug-ZRF20IAPmzDr4LUrArdPioJ22SYSbCZqcI1tOUuXuw4X0wqzUY_Q4bsp06OA-jZHYEbgHFh7a08-8tyunxlgJNEH1zUmb57xGahS5Rt3nUanVPTq3KJYAM3kJCzux9YPWBXFYMsZgfYiiHXLAGGGgQaQGWug2FSQ783fr4A; refresh_token=BjV9Wl4C9i26JyTFFc9R69AEc9ZPL-q2torg4kIO3QcdXkoWg_c8r0x-uVyQ2KcNwqUkx_xw1g8ulxy7RzFFK7VqAXoHSbzJ4A81bEU7oul9injuCLlkqvP1Ahe8jFeL; of_oauth_UiNGUiRcNhhtk27txWucdA=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696e596becfb0b4aaccaa8f9&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtZThmNTA3ZDEtNjg2Yi00YWMyLWFjMzktYTgwN2M5NTZhMWJiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkODJlZmIxNy04ZGJmLTQ2OGEtYTZkNi0wMTMzNDEzNjRiYTQiLCJzdWIiOiJlbGlzaGEuYXJtc3Ryb25nQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4ODM5NTMwLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9kODJlZmIxNy04ZGJmLTQ2OGEtYTZkNi0wMTMzNDEzNjRiYTQiLCJleHAiOjE3Njg4NDA0MzAsImlhdCI6MTc2ODgzOTUzMCwidXNlcklkIjoiMTk5Y2VjODMtOGRlZS00OWViLWIwYmEtZjljM2YyYzlmZDNkIiwianRpIjoiODJkNzljZjAtZjc2Ni00ZTI1LWI2OGEtYzM4YjI5MDVlYWI0In0.tIkeioq_74Apog4BwBwUHZuHY2AYpVuozmJgY1DAqOudRMsHjtWMVMuVFl5TttSahYtNyV8os9zg5N2j7lgHFwv4rS8vIudqZndOhhGbv0BhjFiwYtnUMm_1QZIjGe2-fGq_iREbRYf0N6zm_DHoPatEU-Kh8R0Om4sWgKdhy1Boug-ZRF20IAPmzDr4LUrArdPioJ22SYSbCZqcI1tOUuXuw4X0wqzUY_Q4bsp06OA-jZHYEbgHFh7a08-8tyunxlgJNEH1zUmb57xGahS5Rt3nUanVPTq3KJYAM3kJCzux9YPWBXFYMsZgfYiiHXLAGGGgQaQGWug2FSQ783fr4A; refresh_token=BjV9Wl4C9i26JyTFFc9R69AEc9ZPL-q2torg4kIO3QcdXkoWg_c8r0x-uVyQ2KcNwqUkx_xw1g8ulxy7RzFFK7VqAXoHSbzJ4A81bEU7oul9injuCLlkqvP1Ahe8jFeL; of_oauth_UiNGUiRcNhhtk27txWucdA=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Marion Murphy&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(813) 847-9490&quot;,
+                &quot;email&quot;: &quot;randy.crist@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;63550 Johanna Walks&quot;,
+            &quot;street2&quot;: &quot;Apt. 206&quot;,
+            &quot;city&quot;: &quot;West Shannonville&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;73459&quot;,
+            &quot;country&quot;: &quot;Faroe Islands&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5613 Connelly Via&quot;,
+            &quot;street2&quot;: &quot;Apt. 741&quot;,
+            &quot;city&quot;: &quot;Parisianfurt&quot;,
+            &quot;state&quot;: &quot;Mississippi&quot;,
+            &quot;postalCode&quot;: &quot;89335&quot;,
+            &quot;country&quot;: &quot;Croatia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}&#39;
+</div>
