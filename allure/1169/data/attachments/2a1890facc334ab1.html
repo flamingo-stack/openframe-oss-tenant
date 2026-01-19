@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696e63cea5615b68f3c35f24</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jong Bergstrom&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(213) 551-6912 x7542&quot;,
+                &quot;email&quot;: &quot;latanya.johns@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;6454 Eladia Roads&quot;,
+            &quot;street2&quot;: &quot;Apt. 598&quot;,
+            &quot;city&quot;: &quot;Calvinborough&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;84919&quot;,
+            &quot;country&quot;: &quot;Sudan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;657 Toy Loaf&quot;,
+            &quot;street2&quot;: &quot;Apt. 657&quot;,
+            &quot;city&quot;: &quot;Steventon&quot;,
+            &quot;state&quot;: &quot;Kansas&quot;,
+            &quot;postalCode&quot;: &quot;90746&quot;,
+            &quot;country&quot;: &quot;Indonesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtZjFiNmQ1NzQtYTUyMS00NzUyLThjYjktMjZiYjgzOTFkNDMyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYTc1NjQ2Zi02ODEyLTQ1M2MtYjgzMy01NGNlNWZhMTdmMmQiLCJzdWIiOiJvdHRvLm1heWVyQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4ODQyMTg5LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8wYTc1NjQ2Zi02ODEyLTQ1M2MtYjgzMy01NGNlNWZhMTdmMmQiLCJleHAiOjE3Njg4NDMwODksImlhdCI6MTc2ODg0MjE4OSwidXNlcklkIjoiNjQ4ODU0ODAtMjU4My00OGM3LTk0MWUtN2IwOTk1MzViNDJiIiwianRpIjoiZjI5YjkyZGItN2JhNy00YzVhLWFmMjAtYmE2ODEwOGY0ZTQzIn0.mwglDYsoeIMXAB9VHWiY-4qrrPaRix262BTLI28hqfgiplIBtbG9CRK-nnOfI2WHWPGRjObzbQ5not7biuX3dafvqtIna1JB3WySpsSMuKN3NnuffjtP7d9H6ZzbtqDz6YM7YrQRxz94V_m6X2qLTCrZ-SUCMZixrlIqrhQK575CDmBpW4-iskA6YR_3Re5tkvcAKU84SNrilCzYKeW5iPdFw42rpG2YrlltuebiLzBwxdL7vFw7cLoeqZqAhYE-6ZgI9DgcEjkiG6vx_64h1i4E4-DKUqFsP6WUoWglY2DNqOmkKVgy1-_brhrOR58SX_8arTsLwVYY25-oDCGmWg; refresh_token=tKOyGhGcfYoPIGdjFKvbDYbzp6ausGNoW4ge01FIEHoTMQ5_BU4KnKexsnbhvNE7vTy1w0Mex0Qltv-X1pjJUK5HNqdfS0LFWZkbd7J-Tiy1on1giBB1jVwyLx9L2drU; of_oauth_S-Mg4WUgGwXkZe8jpjaj9A=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696e63cea5615b68f3c35f24&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtZjFiNmQ1NzQtYTUyMS00NzUyLThjYjktMjZiYjgzOTFkNDMyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYTc1NjQ2Zi02ODEyLTQ1M2MtYjgzMy01NGNlNWZhMTdmMmQiLCJzdWIiOiJvdHRvLm1heWVyQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4ODQyMTg5LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8wYTc1NjQ2Zi02ODEyLTQ1M2MtYjgzMy01NGNlNWZhMTdmMmQiLCJleHAiOjE3Njg4NDMwODksImlhdCI6MTc2ODg0MjE4OSwidXNlcklkIjoiNjQ4ODU0ODAtMjU4My00OGM3LTk0MWUtN2IwOTk1MzViNDJiIiwianRpIjoiZjI5YjkyZGItN2JhNy00YzVhLWFmMjAtYmE2ODEwOGY0ZTQzIn0.mwglDYsoeIMXAB9VHWiY-4qrrPaRix262BTLI28hqfgiplIBtbG9CRK-nnOfI2WHWPGRjObzbQ5not7biuX3dafvqtIna1JB3WySpsSMuKN3NnuffjtP7d9H6ZzbtqDz6YM7YrQRxz94V_m6X2qLTCrZ-SUCMZixrlIqrhQK575CDmBpW4-iskA6YR_3Re5tkvcAKU84SNrilCzYKeW5iPdFw42rpG2YrlltuebiLzBwxdL7vFw7cLoeqZqAhYE-6ZgI9DgcEjkiG6vx_64h1i4E4-DKUqFsP6WUoWglY2DNqOmkKVgy1-_brhrOR58SX_8arTsLwVYY25-oDCGmWg; refresh_token=tKOyGhGcfYoPIGdjFKvbDYbzp6ausGNoW4ge01FIEHoTMQ5_BU4KnKexsnbhvNE7vTy1w0Mex0Qltv-X1pjJUK5HNqdfS0LFWZkbd7J-Tiy1on1giBB1jVwyLx9L2drU; of_oauth_S-Mg4WUgGwXkZe8jpjaj9A=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jong Bergstrom&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(213) 551-6912 x7542&quot;,
+                &quot;email&quot;: &quot;latanya.johns@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;6454 Eladia Roads&quot;,
+            &quot;street2&quot;: &quot;Apt. 598&quot;,
+            &quot;city&quot;: &quot;Calvinborough&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;84919&quot;,
+            &quot;country&quot;: &quot;Sudan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;657 Toy Loaf&quot;,
+            &quot;street2&quot;: &quot;Apt. 657&quot;,
+            &quot;city&quot;: &quot;Steventon&quot;,
+            &quot;state&quot;: &quot;Kansas&quot;,
+            &quot;postalCode&quot;: &quot;90746&quot;,
+            &quot;country&quot;: &quot;Indonesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}&#39;
+</div>
