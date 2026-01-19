@@ -29,7 +29,13 @@ spec:
               name: management
           envFrom:
             - configMapRef:
+                name: microservices
+            - configMapRef:
                 name: openframe-config
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
           livenessProbe:
             httpGet:
               path: /xml/shared-logback-spring.xml
@@ -46,10 +52,3 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "0.5"
-            limits:
-              memory: "1Gi"
-              cpu: "1"

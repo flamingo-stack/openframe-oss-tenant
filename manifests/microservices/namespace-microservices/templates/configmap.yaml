@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microservices
+data:
+  # Spring values
+  SPRING_CONFIG_URL: "http://openframe-config.microservices.svc.cluster.local:8888"

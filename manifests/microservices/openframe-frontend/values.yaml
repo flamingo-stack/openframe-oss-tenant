@@ -36,5 +36,13 @@ image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-frontend
   tag: latest
 
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
 podAnnotations:
   loki.grafana.com/scrape: "true"
