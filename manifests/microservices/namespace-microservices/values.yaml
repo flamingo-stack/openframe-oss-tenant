@@ -1,6 +1,5 @@
-registry:
-  ghcr:
-    server: ghcr.io
-    username: ""
-    password: ""
-    email: ""
+
+deployment:
+  saas:
+    repository:
+      profile: "dev"
