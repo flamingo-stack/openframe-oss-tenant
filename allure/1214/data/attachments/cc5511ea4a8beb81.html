@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696e5e2a848f7e5e20f34e4d</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Bert Dooley&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(727) 620-1609 x8452&quot;,
+                &quot;email&quot;: &quot;arvilla.klein@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;62142 Sarina Brook&quot;,
+            &quot;street2&quot;: &quot;Suite 676&quot;,
+            &quot;city&quot;: &quot;Emardhaven&quot;,
+            &quot;state&quot;: &quot;West Virginia&quot;,
+            &quot;postalCode&quot;: &quot;36681&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;78999 Catheryn Lakes&quot;,
+            &quot;street2&quot;: &quot;Apt. 726&quot;,
+            &quot;city&quot;: &quot;North Orenbury&quot;,
+            &quot;state&quot;: &quot;Idaho&quot;,
+            &quot;postalCode&quot;: &quot;35029&quot;,
+            &quot;country&quot;: &quot;Uzbekistan&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtZGQwZjRiNzMtOWJkYy00MjdiLTlhYmQtM2YxNThhYzgzMDllIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0NzMyYjU5My1mMGQyLTQ0YzAtODdmZS01ODg1N2E4OWNjZTciLCJzdWIiOiJhcmxpZS5sdWJvd2l0ekBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODg0MDc0NCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNDczMmI1OTMtZjBkMi00NGMwLTg3ZmUtNTg4NTdhODljY2U3IiwiZXhwIjoxNzY4ODQxNjQ0LCJpYXQiOjE3Njg4NDA3NDQsInVzZXJJZCI6IjhhNDhkN2MyLTczOTAtNDZiMy1iMDVkLTMwZjNjODE0MWY0ZCIsImp0aSI6ImY1MDdkZjdiLTk5OWYtNDkwNy1hZjgyLWZjM2E5NDgzNWM0ZSJ9.Pm12K6HQIPpeP2e8X7zZCTHewqRXaoLW4XNoEY34akWhoFEo53ZgWeNobeSq_CepQyF0h2Dtflx9Oznh0UXJ4HcYi0PVB5y-MdxaLSL8Nnsk0G7X4-6HkhKG0xiDHddrA33a2cDOGa81IYoOzu5-Da2A-S8GL4Q7-h0g9Fz0w5SHAQW8EH8yktPc21Fr9h7X_hJfRyV6LNSMj6S88pmmXDAy-yivdTbGvJpOlQOFrV0LL7DCHEFuvBXhuQtuWLmZhBTOuoUNsKIEBfrgShQGXVLaVr-4LEsqebnf5KTa45u0zdDgjVEbYXQbl6vRQWje179I2i-OsyWcBJ7uR1Gj7w; refresh_token=1aYL4WD3e8B4I2vW4WUwQ9siejir7qU0yUuz8a6WpkmMScQpAfoumOsjIs293_vU7ps_4YE9yAVHcPwI0m-bFMCxk9fmPKMyxJOq_fZfd_2W22sNnZgNKMEN_Awta5yE; of_oauth_4PFkCE2NoA5Fp8V6HYkrdw=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696e5e2a848f7e5e20f34e4d&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtZGQwZjRiNzMtOWJkYy00MjdiLTlhYmQtM2YxNThhYzgzMDllIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0NzMyYjU5My1mMGQyLTQ0YzAtODdmZS01ODg1N2E4OWNjZTciLCJzdWIiOiJhcmxpZS5sdWJvd2l0ekBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2ODg0MDc0NCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNDczMmI1OTMtZjBkMi00NGMwLTg3ZmUtNTg4NTdhODljY2U3IiwiZXhwIjoxNzY4ODQxNjQ0LCJpYXQiOjE3Njg4NDA3NDQsInVzZXJJZCI6IjhhNDhkN2MyLTczOTAtNDZiMy1iMDVkLTMwZjNjODE0MWY0ZCIsImp0aSI6ImY1MDdkZjdiLTk5OWYtNDkwNy1hZjgyLWZjM2E5NDgzNWM0ZSJ9.Pm12K6HQIPpeP2e8X7zZCTHewqRXaoLW4XNoEY34akWhoFEo53ZgWeNobeSq_CepQyF0h2Dtflx9Oznh0UXJ4HcYi0PVB5y-MdxaLSL8Nnsk0G7X4-6HkhKG0xiDHddrA33a2cDOGa81IYoOzu5-Da2A-S8GL4Q7-h0g9Fz0w5SHAQW8EH8yktPc21Fr9h7X_hJfRyV6LNSMj6S88pmmXDAy-yivdTbGvJpOlQOFrV0LL7DCHEFuvBXhuQtuWLmZhBTOuoUNsKIEBfrgShQGXVLaVr-4LEsqebnf5KTa45u0zdDgjVEbYXQbl6vRQWje179I2i-OsyWcBJ7uR1Gj7w; refresh_token=1aYL4WD3e8B4I2vW4WUwQ9siejir7qU0yUuz8a6WpkmMScQpAfoumOsjIs293_vU7ps_4YE9yAVHcPwI0m-bFMCxk9fmPKMyxJOq_fZfd_2W22sNnZgNKMEN_Awta5yE; of_oauth_4PFkCE2NoA5Fp8V6HYkrdw=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Bert Dooley&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(727) 620-1609 x8452&quot;,
+                &quot;email&quot;: &quot;arvilla.klein@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;62142 Sarina Brook&quot;,
+            &quot;street2&quot;: &quot;Suite 676&quot;,
+            &quot;city&quot;: &quot;Emardhaven&quot;,
+            &quot;state&quot;: &quot;West Virginia&quot;,
+            &quot;postalCode&quot;: &quot;36681&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;78999 Catheryn Lakes&quot;,
+            &quot;street2&quot;: &quot;Apt. 726&quot;,
+            &quot;city&quot;: &quot;North Orenbury&quot;,
+            &quot;state&quot;: &quot;Idaho&quot;,
+            &quot;postalCode&quot;: &quot;35029&quot;,
+            &quot;country&quot;: &quot;Uzbekistan&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        19
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        19
+    ]
+}&#39;
+</div>
