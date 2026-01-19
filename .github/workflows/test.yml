@@ -188,7 +188,8 @@ jobs:
           API_BASE_URL: http://localhost:8100
         run: |
           cd openframe-e2e-tests
-          mvn test -Dgroups="smoke"
+          mvn test -Dgroups="start"
+          mvn test -Dgroups="authorized,unauthorized"
         continue-on-error: true
 
       - name: Generate and Deploy Allure Report
@@ -324,3 +325,14 @@ jobs:
           package: ${{ env.REPOSITORY }}/${{ matrix.name }}
           delete-ghost-images: true
           delete-tags: ${{ needs.changes.outputs.test_commit_sha }}
+  
+
+  all-checks:
+    name: "All Checks"
+    needs: [build_images, test, test_clients, test_helm, cleanup]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1
+      - run: echo "All checks passed"

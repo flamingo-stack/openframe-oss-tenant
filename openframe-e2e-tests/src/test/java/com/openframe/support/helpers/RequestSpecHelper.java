@@ -1,6 +1,7 @@
 package com.openframe.support.helpers;
 
 import com.openframe.data.dto.response.OAuthTokenResponse;
+import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
@@ -14,6 +15,7 @@ public class RequestSpecHelper {
         return new RequestSpecBuilder()
                 .addHeader("Cookie", tokens.cookies())
                 .setContentType(ContentType.JSON)
+                .addFilter(new AllureRestAssured())
                 .build();
     }
 }
