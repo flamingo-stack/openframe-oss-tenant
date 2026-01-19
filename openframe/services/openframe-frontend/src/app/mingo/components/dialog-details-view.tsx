@@ -67,6 +67,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({})
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false)
   const prevMessageLength = useRef<number>(0)
+  const hasCaughtUp = useRef(false)
 
   const { 
     catchUpChunks, 
@@ -81,16 +82,15 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   useEffect(() => {
     if (!dialogId) return
     
+    resetChunkTracking()
+    startInitialBuffering()
+    hasCaughtUp.current = false
+    
     const loadData = async () => {
-      resetChunkTracking()
-      startInitialBuffering()
-      
       await Promise.all([
         fetchDialog(dialogId),
         fetchMessages(dialogId)
       ])
-      
-      await catchUpChunks()
     }
     
     loadData()
@@ -98,6 +98,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     return () => {
       clearCurrent()
       resetChunkTracking()
+      hasCaughtUp.current = false
     }
   }, [dialogId])
 
@@ -129,10 +130,18 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     [processChunk]
   )
   
+  const handleNatsSubscribed = useCallback(async () => {
+    if (!hasCaughtUp.current && dialogId) {
+      hasCaughtUp.current = true
+      await catchUpChunks()
+    }
+  }, [dialogId, catchUpChunks])
+  
   useNatsDialogSubscription({
     enabled: !!dialogId,
     dialogId,
     onEvent: handleNatsEvent,
+    onSubscribed: handleNatsSubscribed,
   })
 
   const handlePutOnHold = useCallback(async () => {

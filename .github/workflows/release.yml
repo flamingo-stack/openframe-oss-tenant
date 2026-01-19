@@ -198,6 +198,18 @@ jobs:
             make build TARGET="${{ matrix.target }}"
           fi          
 
+      - name: Sign Windows package
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'Windows'
+        uses: ./.github/steps/sign-windows-package
+        with:
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          signing_endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          code_signing_account_name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
+          certificate_profile_name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
+          binary_path: ${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}.exe
+
       - name: Upload Rust Artifacts for Windows / Linux
         if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
         uses: actions/upload-artifact@v4

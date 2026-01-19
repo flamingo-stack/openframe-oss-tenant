@@ -358,7 +358,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
           const { [requestId]: _, ...rest } = prev;
           return rest
         })
-      } else if (approvalType === 'CLIENT') {
+      } else {
         updateApprovalStatus(requestId, newStatus)
       }
       
