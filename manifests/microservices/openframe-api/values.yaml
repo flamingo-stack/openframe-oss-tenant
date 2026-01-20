@@ -15,10 +15,10 @@ image:
 
 resources:
   requests:
-    cpu: "250m"
+    cpu: "350m"
     memory: "512Mi"
   limits:
-    cpu: "500m"
+    cpu: "650m"
     memory: "1Gi"
 
 podAnnotations:
