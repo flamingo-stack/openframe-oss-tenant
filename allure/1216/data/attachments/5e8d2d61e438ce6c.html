@@ -1,0 +1,25 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;magda.damore@yahoo.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtZDVlMzNhZWEtOGQ1OC00OTNlLThkYjgtMTIyMWI2MDUzOWZmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxNTFjYzI1Yi0zZjU3LTQ5NGYtYWE5MS0zYmUwOTliMDRhYjEiLCJzdWIiOiJpcnZpbmcucG93bG93c2tpQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4OTEyMTA1LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8xNTFjYzI1Yi0zZjU3LTQ5NGYtYWE5MS0zYmUwOTliMDRhYjEiLCJleHAiOjE3Njg5MTMwMDUsImlhdCI6MTc2ODkxMjEwNSwidXNlcklkIjoiZTQ0Y2U2YTctZWJhZC00MmMwLWI2ZGItYjEzNzE3OGE3YTg4IiwianRpIjoiMTYzNTdjYjUtOGRhMS00ZmQxLWFmMWUtYjIxMjZmYzkwZTA2In0.eP5HgJ8sV4wIHAdHPksP3eXs5DdFyfy3xNWJtKC6W4CJvddmuf_RQa-XX7OInHFJI4hxVnx7lKlqFFV3rTDUJU5-FHvvN1EBBF8MGHhrYVNVOW0xKpnSNMb65nIfbz_0O6psAyuWUzrYy53UEotd7yQrg7l8ZlN90tZ8v2jG_Ekf3giLWe5J0uWL_lZDDbEAFBUn9TRzfu2xN7mfJsAzZMBF6edKchm19NC_YzZUDX5GGHCueFimSm-D0DIYahebiBo_BYnsM2YNGLMWXhMhpa1RmhowrKFeDuYipT4IyICzas3_bfSA-ftclUvQAEDXTxqymxro9sKMaLcQ7dkbZA; refresh_token=x5V4FLXLqv1CNMrH9xkly3HMpSRN840YGN2QxOPMqISInGhFzT7bz_G9ynztlB9vskHeWdooMSOqgRG87R26ixAaCRdtFHVOuro585Q9JgvXJvinPu0gLmL5bswV1WIn; of_oauth_Mu4tU0v1gOCM-40ECWf_HQ=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtZDVlMzNhZWEtOGQ1OC00OTNlLThkYjgtMTIyMWI2MDUzOWZmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxNTFjYzI1Yi0zZjU3LTQ5NGYtYWE5MS0zYmUwOTliMDRhYjEiLCJzdWIiOiJpcnZpbmcucG93bG93c2tpQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY4OTEyMTA1LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8xNTFjYzI1Yi0zZjU3LTQ5NGYtYWE5MS0zYmUwOTliMDRhYjEiLCJleHAiOjE3Njg5MTMwMDUsImlhdCI6MTc2ODkxMjEwNSwidXNlcklkIjoiZTQ0Y2U2YTctZWJhZC00MmMwLWI2ZGItYjEzNzE3OGE3YTg4IiwianRpIjoiMTYzNTdjYjUtOGRhMS00ZmQxLWFmMWUtYjIxMjZmYzkwZTA2In0.eP5HgJ8sV4wIHAdHPksP3eXs5DdFyfy3xNWJtKC6W4CJvddmuf_RQa-XX7OInHFJI4hxVnx7lKlqFFV3rTDUJU5-FHvvN1EBBF8MGHhrYVNVOW0xKpnSNMb65nIfbz_0O6psAyuWUzrYy53UEotd7yQrg7l8ZlN90tZ8v2jG_Ekf3giLWe5J0uWL_lZDDbEAFBUn9TRzfu2xN7mfJsAzZMBF6edKchm19NC_YzZUDX5GGHCueFimSm-D0DIYahebiBo_BYnsM2YNGLMWXhMhpa1RmhowrKFeDuYipT4IyICzas3_bfSA-ftclUvQAEDXTxqymxro9sKMaLcQ7dkbZA; refresh_token=x5V4FLXLqv1CNMrH9xkly3HMpSRN840YGN2QxOPMqISInGhFzT7bz_G9ynztlB9vskHeWdooMSOqgRG87R26ixAaCRdtFHVOuro585Q9JgvXJvinPu0gLmL5bswV1WIn; of_oauth_Mu4tU0v1gOCM-40ECWf_HQ=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;email&quot;: &quot;magda.damore@yahoo.com&quot;
+}&#39;
+</div>
