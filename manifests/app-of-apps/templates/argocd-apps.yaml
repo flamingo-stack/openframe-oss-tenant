@@ -23,6 +23,7 @@ spec:
       helm:
         valueFiles:
           - "values-{{ .Values.environment }}.yaml"
+        ignoreMissingValueFiles: true
         values: |
           {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
     {{- end }}
