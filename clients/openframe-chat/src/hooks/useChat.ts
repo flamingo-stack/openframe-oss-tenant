@@ -4,8 +4,11 @@ import { Message, MessageSegment, ToolExecutionData } from '../types/chat.types'
 import faeAvatar from '../assets/fae-avatar.png'
 import { useDebugMode } from '../contexts/DebugModeContext'
 import { useNatsChatSubscription } from './useNatsChatSubscription'
+import { useChunkCatchup } from './useChunkCatchup'
 import { tokenService } from '../services/tokenService'
 import { ChatApiService } from '../services/chatApiService'
+import { dialogGraphQLService } from '../services/dialogGraphQLService'
+import { processHistoricalMessages } from '../utils/messageProcessor'
 
 export type { Message } from '../types/chat.types'
 
@@ -31,11 +34,20 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({})
   const [pendingApprovalRequests, setPendingApprovalRequests] = useState<Record<string, { command: string; explanation?: string; approvalType: string }>>({})
   const [awaitingTechnicianResponse, setAwaitingTechnicianResponse] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [isResumedDialog, setIsResumedDialog] = useState(false)
   const currentAssistantSegmentsRef = useRef<MessageSegment[]>([])
   const currentTextSegmentRef = useRef('')
   const natsDoneResolverRef = useRef<null | (() => void)>(null)
   const natsSubscribedRef = useRef(false)
   const natsDialogIdRef = useRef<string | null>(null)
+  const hasCaughtUp = useRef(false)
+  const hasCreatedStreamingMessage = useRef(false)
+  // Promise resolver for waiting on NATS subscription
+  const natsSubscriptionPromiseRef = useRef<{
+    resolve: () => void
+    reject: (error: Error) => void
+  } | null>(null)
   const { debugMode } = useDebugMode()
 
   const { quickActions } = useChatConfig()
@@ -230,7 +242,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     }
   }, [handleApproveRequest, handleRejectRequest, updateLastAssistantMessage])
   
-  const handleNatsChunk = useCallback((chunk: any) => {
+  const handleNatsChunk = useCallback((chunk: any, messageType: 'message' | 'admin-message' = 'message') => {
     if (!chunk || typeof chunk !== 'object') return
     const type = String(chunk.type || '')
 
@@ -247,16 +259,19 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     }
 
     if (type === 'MESSAGE_START') {
-      ensureAssistantMessage()
+      // MESSAGE_START is just a signal that streaming is starting
+      // Don't create any messages here - let the actual content chunks handle that
+      setNatsStreaming(true)
+      setIsTyping(true)
+      // Reset segment accumulators for new streaming message
       currentTextSegmentRef.current = ''
       currentAssistantSegmentsRef.current = []
-      updateLastAssistantMessage([])
-      setNatsStreaming(true)
       return
     }
 
     if (type === 'MESSAGE_END') {
       setNatsStreaming(false)
+      setIsTyping(false)
       const resolve = natsDoneResolverRef.current
       natsDoneResolverRef.current = null
       if (resolve) resolve()
@@ -264,15 +279,52 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     }
 
     if (type === 'TEXT' && typeof chunk.text === 'string') {
+      // // For resumed dialogs on first content chunk, we need a new assistant message
+      // // because historical messages are complete and this is new streaming content
+      // if (isResumedDialog && !hasCreatedStreamingMessage.current) {
+      //   // Create a new assistant message for the streaming content
+      //   const newAssistantMessage: Message = {
+      //     id: `assistant-streaming-${Date.now()}`,
+      //     role: 'assistant',
+      //     name: 'Fae',
+      //     content: [],
+      //     timestamp: new Date(),
+      //     avatar: faeAvatar
+      //   }
+      //   addMessage(newAssistantMessage)
+      //   hasCreatedStreamingMessage.current = true
+      // } else if (!isResumedDialog) {
+      //   // For regular dialogs, ensure assistant message exists
+      //   ensureAssistantMessage()
+      // }
+      
       ensureAssistantMessage()
       setNatsStreaming(true)
+      setIsTyping(false) // Clear typing since we have actual content
       applyTextDelta(chunk.text)
       return
     }
 
     if (type === 'EXECUTING_TOOL' || type === 'EXECUTED_TOOL') {
+      // Similar handling as TEXT chunks for resumed dialogs
+      // if (isResumedDialog && !hasCreatedStreamingMessage.current) {
+      //   const newAssistantMessage: Message = {
+      //     id: `assistant-streaming-${Date.now()}`,
+      //     role: 'assistant',
+      //     name: 'Fae',
+      //     content: [],
+      //     timestamp: new Date(),
+      //     avatar: faeAvatar
+      //   }
+      //   addMessage(newAssistantMessage)
+      //   hasCreatedStreamingMessage.current = true
+      // } else {
+      //   ensureAssistantMessage()
+      // }
+      
       ensureAssistantMessage()
       setNatsStreaming(true)
+      setIsTyping(false)
       applyToolSegment({
         type: 'tool_execution',
         data: {
@@ -409,25 +461,77 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       
       return
     }
-  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus, onMetadataUpdate, pendingApprovalRequests])
+  }, [addMessage, applyTextDelta, applyToolSegment, ensureAssistantMessage, updateLastAssistantMessage, approvalStatuses, handleApproveRequest, handleRejectRequest, updateApprovalStatus, onMetadataUpdate, pendingApprovalRequests, isResumedDialog])
+
+  // Chunk catchup for resumed dialogs
+  const { 
+    catchUpChunks, 
+    processChunk, 
+    resetChunkTracking, 
+    startInitialBuffering
+  } = useChunkCatchup({
+    dialogId: natsDialogId,
+    onChunkReceived: handleNatsChunk  // This will be called after buffering is complete
+  })
+
+  const handleNatsSubscribed = useCallback(async () => {
+    // Resolve any pending subscription promise
+    if (natsSubscriptionPromiseRef.current) {
+      natsSubscriptionPromiseRef.current.resolve()
+      natsSubscriptionPromiseRef.current = null
+    }
+
+    if (!hasCaughtUp.current && natsDialogId && isResumedDialog) {
+      hasCaughtUp.current = true
+      await catchUpChunks()
+    }
+  }, [natsDialogId, catchUpChunks, isResumedDialog])
+
+  const handleNatsChunkWithBuffer = useCallback(
+    (chunk: any) => {
+      if (isResumedDialog) {
+        // For resumed dialogs, always use processChunk which handles buffering
+        const processed = processChunk(chunk, 'message')
+        if (!processed) return  // Skip if already processed (duplicate)
+      } else {
+        // For new dialogs, handle directly
+        handleNatsChunk(chunk)
+      }
+    },
+    [handleNatsChunk, processChunk, isResumedDialog]
+  )
 
   const { isSubscribed: natsSubscribed } = useNatsChatSubscription({
     enabled: useNats,
     dialogId: natsDialogId,
-    onChunk: handleNatsChunk,
-  })
+    onChunk: handleNatsChunkWithBuffer,
+    onSubscribed: handleNatsSubscribed,
+  } as any)
 
   useEffect(() => {
     natsSubscribedRef.current = natsSubscribed
   }, [natsSubscribed])
 
-  const waitForNatsSubscription = useCallback(async (expectedDialogId: string, timeoutMs: number = 8000) => {
-    const started = Date.now()
-    while (Date.now() - started < timeoutMs) {
-      if (natsSubscribedRef.current && natsDialogIdRef.current === expectedDialogId) return
-      await new Promise((r) => setTimeout(r, 50))
+  // Cleanup subscription promise on unmount
+  useEffect(() => {
+    return () => {
+      if (natsSubscriptionPromiseRef.current) {
+        natsSubscriptionPromiseRef.current.reject(new Error('Component unmounted'))
+        natsSubscriptionPromiseRef.current = null
+      }
     }
-    throw new Error('NATS subscription was not ready in time')
+  }, [])
+
+  const waitForNatsSubscription = useCallback(async (expectedDialogId: string) => {
+    // If already subscribed to the expected dialog, return immediately
+    if (natsSubscribedRef.current && natsDialogIdRef.current === expectedDialogId) {
+      return
+    }
+
+    // Create a promise that will be resolved by the onSubscribed callback
+    return new Promise<void>((resolve, reject) => {
+      natsSubscriptionPromiseRef.current = { resolve, reject }
+    })
   }, [])
   
   const sendMessage = useCallback(async (text: string) => {
@@ -441,10 +545,14 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     }
     addMessage(userMessage)
     
+    // Reset streaming message flag for new messages
+    hasCreatedStreamingMessage.current = false
+    
     setIsTyping(true)
     setNatsStreaming(true)
     currentAssistantSegmentsRef.current = []
-
+    currentTextSegmentRef.current = ''
+    
     const assistantMessage: Message = {
       id: `assistant-${Date.now()}`,
       role: 'assistant',
@@ -524,8 +632,84 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     setNatsDialogId(null)
     setAwaitingTechnicianResponse(false)
     setPendingApprovalRequests({})
+    setApprovalStatuses({})
+    setIsResumedDialog(false)  // Reset resumed dialog state
+    hasCaughtUp.current = false
+    hasCreatedStreamingMessage.current = false
+    resetChunkTracking()
     apiServiceRef.current?.reset()
-  }, [])
+    // Clear any pending subscription promise
+    if (natsSubscriptionPromiseRef.current) {
+      natsSubscriptionPromiseRef.current.reject(new Error('Chat cleared'))
+      natsSubscriptionPromiseRef.current = null
+    }
+  }, [resetChunkTracking])
+
+  const resumeDialog = useCallback(async (dialogId: string): Promise<boolean> => {
+    try {
+      setIsLoadingHistory(true)
+      setError(null)
+      
+      // Clear current state completely
+      setMessages([])
+      setIsTyping(false)
+      setNatsStreaming(false)
+      currentAssistantSegmentsRef.current = []
+      currentTextSegmentRef.current = ''
+      setApprovalStatuses({})
+      setPendingApprovalRequests({})
+      setAwaitingTechnicianResponse(false)
+      
+      // Mark as resumed dialog BEFORE setting up buffering
+      setIsResumedDialog(true)
+      hasCaughtUp.current = false
+      hasCreatedStreamingMessage.current = false
+      
+      // Reset and start buffering for chunk catchup
+      resetChunkTracking()
+      startInitialBuffering()
+      
+      // Load message history
+      const messagesConnection = await dialogGraphQLService.getDialogMessages(dialogId, null, 100)
+      
+      if (!messagesConnection || !messagesConnection.edges) {
+        throw new Error('Failed to load dialog history')
+      }
+      
+      // Process historical messages
+      const historicalMessages = processHistoricalMessages(
+        messagesConnection.edges.map(edge => edge.node),
+        handleApproveRequest,
+        handleRejectRequest
+      )
+      
+      // Set the messages
+      setMessages(historicalMessages)
+      
+      // Update dialog ID for NATS subscription (this will trigger subscription)
+      setNatsDialogId(dialogId)
+      
+      // Also update the API service's dialog ID for resumed dialog
+      if (apiServiceRef.current) {
+        apiServiceRef.current.setDialogId(dialogId)
+      }
+      
+      // Wait for NATS subscription to be ready
+      await waitForNatsSubscription(dialogId)
+      
+      // Note: Chunk catchup will be triggered by handleNatsSubscribed callback
+      
+      setIsLoadingHistory(false)
+      return true
+    } catch (error) {
+      console.error('Failed to resume dialog:', error)
+      setError(error instanceof Error ? error.message : 'Failed to resume dialog')
+      setIsLoadingHistory(false)
+      setIsResumedDialog(false)
+      hasCaughtUp.current = false
+      return false
+    }
+  }, [handleApproveRequest, handleRejectRequest, resetChunkTracking, startInitialBuffering, waitForNatsSubscription])
   
   return {
     messages,
@@ -536,8 +720,11 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     sendMessage,
     handleQuickAction,
     clearMessages,
+    resumeDialog,
     quickActions,
     hasMessages: messages.length > 0,
-    awaitingTechnicianResponse
+    awaitingTechnicianResponse,
+    isLoadingHistory,
+    isResumedDialog
   }
 }

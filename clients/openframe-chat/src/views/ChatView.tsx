@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   ChatContainer,
   ChatHeader,
@@ -9,9 +9,11 @@ import {
   ChatQuickAction,
   ModelDisplay
 } from '@flamingo-stack/openframe-frontend-core'
+import { ClockHistoryIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { useChat } from '../hooks/useChat'
 import { useConnectionStatus } from '../hooks/useConnectionStatus'
 import { supportedModelsService } from '../services/supportedModelsService'
+import { dialogGraphQLService, type ResumableDialog } from '../services/dialogGraphQLService'
 import faeAvatar from '../assets/fae-avatar.png'
 import { features } from '../config/features'
 
@@ -21,7 +23,8 @@ export function ChatView() {
     provider: string
     contextWindow: number
   } | null>(null)
-  
+  const [resumableDialog, setResumableDialog] = useState<ResumableDialog | null>(null)
+
   const handleMetadataUpdate = useCallback((metadata: { modelName: string; providerName: string; contextWindow: number }) => {
     setCurrentModel({
       modelName: metadata.modelName,
@@ -29,7 +32,7 @@ export function ChatView() {
       contextWindow: metadata.contextWindow
     })
   }, [])
-  
+
   const { 
     messages,
     isTyping,
@@ -39,13 +42,32 @@ export function ChatView() {
     quickActions,
     hasMessages,
     clearMessages,
-    awaitingTechnicianResponse
+    resumeDialog,
+    awaitingTechnicianResponse,
+    isLoadingHistory
   } = useChat({ 
     useApi: true, 
     useMock: false,
     useNats: features.nats,
     onMetadataUpdate: handleMetadataUpdate
   })
+  
+  const fetchResumableDialog = useCallback(() => {
+    dialogGraphQLService.getResumableDialog().then(dialog => {
+      setResumableDialog(dialog)
+    })
+  }, [])
+
+  useEffect(() => {
+    // Fetch resumable dialog on component mount
+    fetchResumableDialog()
+  }, [fetchResumableDialog])
+  
+  const handleNewChat = useCallback(() => {
+    clearMessages()
+    // Fetch resumable dialog after clearing messages
+    fetchResumableDialog()
+  }, [clearMessages, fetchResumableDialog])
   
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus()
   const isDisconnected = status !== 'connected'
@@ -61,13 +83,20 @@ export function ChatView() {
       <ChatHeader 
         userAvatar={faeAvatar} 
         showNewChat={hasMessages}
-        onNewChat={clearMessages}
+        onNewChat={handleNewChat}
         connectionStatus={status}
         serverUrl={serverUrl}
       />
       
       <ChatContent>
-        {hasMessages ? (
+        {isLoadingHistory ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading conversation history...</p>
+            </div>
+          </div>
+        ) : hasMessages ? (
           <ChatMessageList
             messages={messages}
             isTyping={isTyping}
@@ -84,15 +113,46 @@ export function ChatView() {
               </p>
             </div>
             
+            {/* Resumable Dialog */}
+            {resumableDialog && (
+              <div className="w-full max-w-2xl mb-6">
+                <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">
+                  Resume Previous Conversation
+                </h3>
+                <div className="p-4 bg-ods-card rounded-lg border border-ods-border hover:bg-ods-bg-hover transition-colors cursor-pointer"
+                     onClick={async () => {
+                       const success = await resumeDialog(resumableDialog.id)
+                       if (success) {
+                         setResumableDialog(null) // Clear resumable dialog after successful resume
+                       }
+                     }}>
+                  <div className="flex justify-between items-start mb-2">
+                    
+                    <h4 className="flex gap-2 text-ods-text-primary font-medium">
+                      <ClockHistoryIcon/>
+                      Last Topic: {resumableDialog.title || 'Untitled Conversation'}
+                    </h4>
+                    <span className="text-xs text-ods-text-secondary">
+                      {new Date(resumableDialog.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex text-ods-text-secondary">
+                    Whould you like to continue?
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Quick Actions */}
             {quickActions.length > 0 && (
               <div className="w-full max-w-2xl">
-                <h3 className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+                <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">
                   Quick Help
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {quickActions.map((action) => (
                     <ChatQuickAction
+                      className='bg-ods-card'
                       key={action.id}
                       text={action.text}
                       onAction={handleQuickAction}

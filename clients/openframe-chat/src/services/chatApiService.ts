@@ -40,7 +40,7 @@ export class ChatApiService {
     }
   }
 
-  private setDialogId(dialogId: string | null) {
+  setDialogId(dialogId: string | null) {
     if (this.dialogId === dialogId) return
     this.dialogId = dialogId
     for (const listener of this.dialogIdListeners) {
@@ -65,36 +65,8 @@ export class ChatApiService {
     }
   }
   
-  private async ensureTokenReady(): Promise<void> {
-    let token = tokenService.getCurrentToken()
-    
-    if (!token) {
-      if (this.debugMode) {
-        console.log('[ChatApiService] Token not ready, requesting...')
-      }
-      token = await tokenService.requestToken()
-      
-      if (!token) {
-        throw new Error('Authentication token not available.')
-      }
-    }
-    
-    let apiUrl = tokenService.getCurrentApiBaseUrl()
-    if (!apiUrl) {
-      if (this.debugMode) {
-        console.log('[ChatApiService] API URL not ready, initializing...')
-      }
-      await tokenService.initApiUrl()
-      apiUrl = tokenService.getCurrentApiBaseUrl()
-      
-      if (!apiUrl) {
-        throw new Error('API server URL not configured.')
-      }
-    }
-  }
-
   async createDialog(): Promise<string> {
-    await this.ensureTokenReady()
+    await tokenService.ensureTokenReady()
 
     const url = `${this.getApiBaseUrl()}/chat/api/v2/dialogs`
     const response = await fetch(url, {
@@ -124,7 +96,7 @@ export class ChatApiService {
   }
 
   async sendMessage(args: { dialogId: string; content: string; chatType: 'CLIENT_CHAT' }): Promise<void> {
-    await this.ensureTokenReady()
+    await tokenService.ensureTokenReady()
 
     const url = `${this.getApiBaseUrl()}/chat/api/v2/messages`
     const response = await fetch(url, {

@@ -28,12 +28,14 @@ interface UseNatsChatSubscriptionArgs {
   enabled: boolean
   dialogId: string | null
   onChunk?: (chunk: any) => void
+  onSubscribed?: () => void
 }
 
 /**
  * Connects to NATS over WebSocket and subscribes to `chat.${dialogId}.message`.
+ * Uses the global natsService singleton for connection management.
  */
-export function useNatsChatSubscription({ enabled, dialogId, onChunk }: UseNatsChatSubscriptionArgs) {
+export function useNatsChatSubscription({ enabled, dialogId, onChunk, onSubscribed }: UseNatsChatSubscriptionArgs) {
   const [token, setToken] = useState<string | null>(tokenService.getCurrentToken())
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(tokenService.getCurrentApiBaseUrl())
   const [isConnected, setIsConnected] = useState(false)
@@ -192,6 +194,11 @@ export function useNatsChatSubscription({ enabled, dialogId, onChunk }: UseNatsC
       { signal: abort.signal },
     )
     setIsSubscribed(true)
+    
+    // Call onSubscribed callback when subscription is ready
+    if (onSubscribed) {
+      onSubscribed()
+    }
 
     return () => {
       setIsSubscribed(false)
