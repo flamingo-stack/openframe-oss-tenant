@@ -1,0 +1,95 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jermaine Treutel&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(828) 530-6905&quot;,
+                &quot;email&quot;: &quot;shaun.hand@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;24658 DuBuque Bridge&quot;,
+            &quot;street2&quot;: &quot;Suite 368&quot;,
+            &quot;city&quot;: &quot;Lake Phuongmouth&quot;,
+            &quot;state&quot;: &quot;Missouri&quot;,
+            &quot;postalCode&quot;: &quot;48991&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        20
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        20
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtODZjZGIxY2UtMTcxNS00Y2UwLWFiNTUtOWRkMTdhZDkyNDA5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4Yzc3NmZiZC1iMDI5LTRjNjQtYjJiOC0xZGQ2MjQ0YzRiMTEiLCJzdWIiOiJjcmlzdGVuLnNjaG1lbGVyQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg5MDc1MDQsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhjNzc2ZmJkLWIwMjktNGM2NC1iMmI4LTFkZDYyNDRjNGIxMSIsImV4cCI6MTc2ODkwODQwNCwiaWF0IjoxNzY4OTA3NTA0LCJ1c2VySWQiOiIzZmZiZDZmZi03N2IxLTQ1ZjgtYWUyZC0zZmE4M2NhNTBmNmEiLCJqdGkiOiI1MmUyNjc2NS0yZmMxLTRmMjgtOTVjZS02ODM1YTdiMzY3MjgifQ.J3nyxAwAzHoNpo062YhtCXBrDRW57UxZIeRi-W317oplFEZW5L5XHexeeghmejoSXzAdMN_2pbL0_YFzNMIaGbaPSKRAuT9IssJQAVVIqp1DWKLt6kXrcYdFpXzxoJhR9iQOCKrpkBBqUKq9ok2mSQn8MQhkR2WHCHab655OkT6DbEGkCISjG9U__VkJzGk_-r_FMivNVHd_ZAKIOOrxb17AmMaX2hicr7DSrpO01s7SoN2QvnKuxomRLI25NZG47jbR4jyXzEBF0Ea1sC9uian8QkQgtYv5ItTTrPWGiVkO5X7vHjr8KsKA_w-n4_o4nAXCSsT4C-xI43sDDnhVwg; refresh_token=5KrP5iO7crtzW8ERbgZbHe6Dh6puUelxQvyrekyvDTu7KcqglOr6u29RuEURbXKwWzYhG_eJk6uSEh63raXS7VGez7L4LZV8OSwYXiq9awcUmIt51-4Hl_hg9dH1NNxG; of_oauth_ASm15xffZML3oZHcQvieQw=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtODZjZGIxY2UtMTcxNS00Y2UwLWFiNTUtOWRkMTdhZDkyNDA5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4Yzc3NmZiZC1iMDI5LTRjNjQtYjJiOC0xZGQ2MjQ0YzRiMTEiLCJzdWIiOiJjcmlzdGVuLnNjaG1lbGVyQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg5MDc1MDQsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhjNzc2ZmJkLWIwMjktNGM2NC1iMmI4LTFkZDYyNDRjNGIxMSIsImV4cCI6MTc2ODkwODQwNCwiaWF0IjoxNzY4OTA3NTA0LCJ1c2VySWQiOiIzZmZiZDZmZi03N2IxLTQ1ZjgtYWUyZC0zZmE4M2NhNTBmNmEiLCJqdGkiOiI1MmUyNjc2NS0yZmMxLTRmMjgtOTVjZS02ODM1YTdiMzY3MjgifQ.J3nyxAwAzHoNpo062YhtCXBrDRW57UxZIeRi-W317oplFEZW5L5XHexeeghmejoSXzAdMN_2pbL0_YFzNMIaGbaPSKRAuT9IssJQAVVIqp1DWKLt6kXrcYdFpXzxoJhR9iQOCKrpkBBqUKq9ok2mSQn8MQhkR2WHCHab655OkT6DbEGkCISjG9U__VkJzGk_-r_FMivNVHd_ZAKIOOrxb17AmMaX2hicr7DSrpO01s7SoN2QvnKuxomRLI25NZG47jbR4jyXzEBF0Ea1sC9uian8QkQgtYv5ItTTrPWGiVkO5X7vHjr8KsKA_w-n4_o4nAXCSsT4C-xI43sDDnhVwg; refresh_token=5KrP5iO7crtzW8ERbgZbHe6Dh6puUelxQvyrekyvDTu7KcqglOr6u29RuEURbXKwWzYhG_eJk6uSEh63raXS7VGez7L4LZV8OSwYXiq9awcUmIt51-4Hl_hg9dH1NNxG; of_oauth_ASm15xffZML3oZHcQvieQw=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jermaine Treutel&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(828) 530-6905&quot;,
+                &quot;email&quot;: &quot;shaun.hand@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;24658 DuBuque Bridge&quot;,
+            &quot;street2&quot;: &quot;Suite 368&quot;,
+            &quot;city&quot;: &quot;Lake Phuongmouth&quot;,
+            &quot;state&quot;: &quot;Missouri&quot;,
+            &quot;postalCode&quot;: &quot;48991&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        20
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        20
+    ]
+}&#39;
+</div>
