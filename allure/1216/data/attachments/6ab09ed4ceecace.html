@@ -1,0 +1,25 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;lou.schmeler@yahoo.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtYjIwMDk0YzItMjViNC00YmExLTlkNGMtODk5ZjZlMDZhMTY3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzMDRjNTRlMC01ZWNiLTRjOTMtOWZjNy0yZTM0MGIyZmRmM2YiLCJzdWIiOiJtYXJjZWxsdXMuYm95ZXJAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg4ODgyNjMsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzMwNGM1NGUwLTVlY2ItNGM5My05ZmM3LTJlMzQwYjJmZGYzZiIsImV4cCI6MTc2ODg4OTE2MywiaWF0IjoxNzY4ODg4MjYzLCJ1c2VySWQiOiJkZjE1MTAxZi0zOTZmLTQ4MTItYmIwNC02M2RmZWJkMWZjZDUiLCJqdGkiOiI5NDAzMTMxNi1iMjEwLTRiOGMtOTgyNi02M2MwMGZjOGJlYTMifQ.IutxlQCShXN4K7MAZ6-DPqKT5PDWcCT0hTVWEEYfSrPNis5UQGhyjr0fpfc0ihG3cORUPshXD-iJ8YN8gZoCKEcwp9QeOXFd9Uvtcje2C52A2llw2jGtPWLSP_sOkrpLDzfemWiPwqUMj8GyZMX1I05mSSs49deyjTDmmLfuME474SebY0RzazLrURq8J8EW5H2S-k-ALz5kYzNDj9JIhYjS8z4VuONQtjFgdX2ldN13L_JJpgsZWTj0q7bs_sBiNlJ_2wpNJrUuyyewIaXpdQ2mO32PIKqNBTgC6gNT_T-CUVz8yWG1PoRam6sl5OFHuU42ofdEGcvClFZA9myYEw; refresh_token=mKBcx4el95KiLM2hWue4vBCokJ_sdPtnsCBygeNbrJPqaLHJK4b7s3OynabtmDQBctARVCYgVUiwjjWqZIFRP9DwrxKEe0-tTwGrmkE8PsRbdX3LqzC5ZFoh3YO6zcrP; of_oauth_0-Ib8VNzhGlHsqbCqyWNyA=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtYjIwMDk0YzItMjViNC00YmExLTlkNGMtODk5ZjZlMDZhMTY3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzMDRjNTRlMC01ZWNiLTRjOTMtOWZjNy0yZTM0MGIyZmRmM2YiLCJzdWIiOiJtYXJjZWxsdXMuYm95ZXJAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg4ODgyNjMsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzMwNGM1NGUwLTVlY2ItNGM5My05ZmM3LTJlMzQwYjJmZGYzZiIsImV4cCI6MTc2ODg4OTE2MywiaWF0IjoxNzY4ODg4MjYzLCJ1c2VySWQiOiJkZjE1MTAxZi0zOTZmLTQ4MTItYmIwNC02M2RmZWJkMWZjZDUiLCJqdGkiOiI5NDAzMTMxNi1iMjEwLTRiOGMtOTgyNi02M2MwMGZjOGJlYTMifQ.IutxlQCShXN4K7MAZ6-DPqKT5PDWcCT0hTVWEEYfSrPNis5UQGhyjr0fpfc0ihG3cORUPshXD-iJ8YN8gZoCKEcwp9QeOXFd9Uvtcje2C52A2llw2jGtPWLSP_sOkrpLDzfemWiPwqUMj8GyZMX1I05mSSs49deyjTDmmLfuME474SebY0RzazLrURq8J8EW5H2S-k-ALz5kYzNDj9JIhYjS8z4VuONQtjFgdX2ldN13L_JJpgsZWTj0q7bs_sBiNlJ_2wpNJrUuyyewIaXpdQ2mO32PIKqNBTgC6gNT_T-CUVz8yWG1PoRam6sl5OFHuU42ofdEGcvClFZA9myYEw; refresh_token=mKBcx4el95KiLM2hWue4vBCokJ_sdPtnsCBygeNbrJPqaLHJK4b7s3OynabtmDQBctARVCYgVUiwjjWqZIFRP9DwrxKEe0-tTwGrmkE8PsRbdX3LqzC5ZFoh3YO6zcrP; of_oauth_0-Ib8VNzhGlHsqbCqyWNyA=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;email&quot;: &quot;lou.schmeler@yahoo.com&quot;
+}&#39;
+</div>
