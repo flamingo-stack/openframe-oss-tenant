@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/696f84d0507f964dff76e58f</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Connie Lind&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(907) 207-7551 x2557&quot;,
+                &quot;email&quot;: &quot;jonie.kohler@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;64777 Brandon Gardens&quot;,
+            &quot;street2&quot;: &quot;Suite 883&quot;,
+            &quot;city&quot;: &quot;Manualside&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;19062&quot;,
+            &quot;country&quot;: &quot;Cuba&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;02414 Kautzer Isle&quot;,
+            &quot;street2&quot;: &quot;Suite 422&quot;,
+            &quot;city&quot;: &quot;Malkaton&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;23372&quot;,
+            &quot;country&quot;: &quot;Spain&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        20
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        20
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtNGYzMWI3ZjUtM2YyNy00OTcyLWFlMWUtMjA1NDk4NGNjYjRiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4Y2FkOWQwMy04MjhhLTQ0NDctYWI1NS1kYzY2YjdmZjJmZjIiLCJzdWIiOiJvdGVsaWEuaHVlbHNAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg5MTYxNzUsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhjYWQ5ZDAzLTgyOGEtNDQ0Ny1hYjU1LWRjNjZiN2ZmMmZmMiIsImV4cCI6MTc2ODkxNzA3NSwiaWF0IjoxNzY4OTE2MTc1LCJ1c2VySWQiOiJjZmVmNTc5OC02Y2NkLTQ4YTAtYTUwYi1kZDYzYTE1NGMxNzUiLCJqdGkiOiI1ZmZlMTllNy1jNjc5LTQwNTctYTc0Yi1mYTM5MzBkNzZlNzEifQ.cetnFR_QMSLkHApigDGaDKwpLqk_87RfrY_Ly_53J2OCqUnmWABbGGltiztYkIHic_FtxuaMYcA1hXI1hV_Cmk9g0hNnbhVQhcjwtWibWANqpQXtVW07hOkzGaqzhhvOBVuDnZvljnTUNTMukl99kVAaLwkLduz2lsL7wpnHRF6ermqIGmjw8oSZmaxZYWOZbiZvxZzsmsF9El6ONfoaUwE-b9Qcyi1MtDfLVt7JhWjEUCTrL8JPulBS8ITvPElaDsGOTKVl3uRy8Ua3YYDzPYTDjoBQ4e-7YhhjeiJaXCvOIekLqn7ZcblTYmdWepskb8SsXFIpz2_fvgZ0nyFIcA; refresh_token=1Q3J_qtKJMEXwSTeIfeB1_ULUppU7uzi593QAv9Gvgr1M076wkd391gGtufMFkbVHk312R48-SCBracTi0lFKlMvOzdxLi4B4JZ8prmE7yH59nelqIPI_gPoptdSuqHZ; of_oauth_U5FqzTQ_dzBdpQbd04IXRQ=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/696f84d0507f964dff76e58f&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtNGYzMWI3ZjUtM2YyNy00OTcyLWFlMWUtMjA1NDk4NGNjYjRiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4Y2FkOWQwMy04MjhhLTQ0NDctYWI1NS1kYzY2YjdmZjJmZjIiLCJzdWIiOiJvdGVsaWEuaHVlbHNAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njg5MTYxNzUsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhjYWQ5ZDAzLTgyOGEtNDQ0Ny1hYjU1LWRjNjZiN2ZmMmZmMiIsImV4cCI6MTc2ODkxNzA3NSwiaWF0IjoxNzY4OTE2MTc1LCJ1c2VySWQiOiJjZmVmNTc5OC02Y2NkLTQ4YTAtYTUwYi1kZDYzYTE1NGMxNzUiLCJqdGkiOiI1ZmZlMTllNy1jNjc5LTQwNTctYTc0Yi1mYTM5MzBkNzZlNzEifQ.cetnFR_QMSLkHApigDGaDKwpLqk_87RfrY_Ly_53J2OCqUnmWABbGGltiztYkIHic_FtxuaMYcA1hXI1hV_Cmk9g0hNnbhVQhcjwtWibWANqpQXtVW07hOkzGaqzhhvOBVuDnZvljnTUNTMukl99kVAaLwkLduz2lsL7wpnHRF6ermqIGmjw8oSZmaxZYWOZbiZvxZzsmsF9El6ONfoaUwE-b9Qcyi1MtDfLVt7JhWjEUCTrL8JPulBS8ITvPElaDsGOTKVl3uRy8Ua3YYDzPYTDjoBQ4e-7YhhjeiJaXCvOIekLqn7ZcblTYmdWepskb8SsXFIpz2_fvgZ0nyFIcA; refresh_token=1Q3J_qtKJMEXwSTeIfeB1_ULUppU7uzi593QAv9Gvgr1M076wkd391gGtufMFkbVHk312R48-SCBracTi0lFKlMvOzdxLi4B4JZ8prmE7yH59nelqIPI_gPoptdSuqHZ; of_oauth_U5FqzTQ_dzBdpQbd04IXRQ=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Connie Lind&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(907) 207-7551 x2557&quot;,
+                &quot;email&quot;: &quot;jonie.kohler@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;64777 Brandon Gardens&quot;,
+            &quot;street2&quot;: &quot;Suite 883&quot;,
+            &quot;city&quot;: &quot;Manualside&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;19062&quot;,
+            &quot;country&quot;: &quot;Cuba&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;02414 Kautzer Isle&quot;,
+            &quot;street2&quot;: &quot;Suite 422&quot;,
+            &quot;city&quot;: &quot;Malkaton&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;23372&quot;,
+            &quot;country&quot;: &quot;Spain&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        20
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        20
+    ]
+}&#39;
+</div>
