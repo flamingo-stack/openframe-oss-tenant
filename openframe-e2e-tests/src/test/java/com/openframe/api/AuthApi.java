@@ -44,6 +44,7 @@ public class AuthApi {
                 "username", authParts.getEmail(),
                 "password", authParts.getPassword());
         return given()
+                .baseUri(DEFAULT_BASE_URL)
                 .cookies(authParts.getCookies())
                 .formParams(formParams)
                 .redirects().follow(false)
