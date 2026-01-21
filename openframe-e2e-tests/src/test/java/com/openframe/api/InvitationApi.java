@@ -2,8 +2,8 @@ package com.openframe.api;
 
 import com.openframe.data.dto.invitation.*;
 
-import static com.openframe.support.helpers.RequestSpecHelper.getAuthorizedSpec;
-import static com.openframe.support.helpers.RequestSpecHelper.getUnAuthorizedSpec;
+import static com.openframe.helpers.RequestSpecHelper.getAuthorizedSpec;
+import static com.openframe.helpers.RequestSpecHelper.getUnAuthorizedSpec;
 import static io.restassured.RestAssured.given;
 
 public class InvitationApi {

@@ -1,14 +1,14 @@
 package com.openframe.api;
 
+import com.openframe.data.dto.organization.CreateOrganizationRequest;
 import com.openframe.data.dto.organization.Organization;
-import com.openframe.data.dto.request.CreateOrganizationRequest;
-import com.openframe.support.constants.GraphQLQueries;
-import com.openframe.support.helpers.RequestSpecHelper;
+import com.openframe.helpers.RequestSpecHelper;
 import io.restassured.http.ContentType;
 
 import java.util.List;
 import java.util.Map;
 
+import static com.openframe.api.graphql.OrganizationQueries.*;
 import static io.restassured.RestAssured.given;
 
 public class OrganizationApi {
@@ -17,14 +17,14 @@ public class OrganizationApi {
     private static final String ORGANIZATIONS = "api/organizations";
 
     public static List<String> getOrganizationNames() {
-        Map<String, String> body = Map.ofEntries(Map.entry("query", GraphQLQueries.ORGANIZATION_NAMES));
+        Map<String, String> body = Map.ofEntries(Map.entry("query", ORGANIZATION_NAMES));
         return given(RequestSpecHelper.getAuthorizedSpec())
                 .body(body).post(GRAPHQL)
                 .then().extract().jsonPath().getList("data.organizations.edges.node.name", String.class);
     }
 
     public static List<String> getOrganizationIds() {
-        Map<String, String> body = Map.of("query", GraphQLQueries.ORGANIZATION_IDS);
+        Map<String, String> body = Map.of("query", ORGANIZATION_IDS);
         return given(RequestSpecHelper.getAuthorizedSpec())
                 .body(body).post(GRAPHQL)
                 .then().extract().jsonPath().getList("data.organizations.edges.node.id", String.class);
@@ -32,7 +32,7 @@ public class OrganizationApi {
 
     public static Organization retrieveOrganization(String id) {
         Map<String, Object> body = Map.of(
-                "query", GraphQLQueries.FULL_ORGANIZATION,
+                "query", FULL_ORGANIZATION,
                 "variables", Map.of("id", id)
         );
         return given(RequestSpecHelper.getAuthorizedSpec())
@@ -58,7 +58,7 @@ public class OrganizationApi {
     public static void deleteOrganization(Organization organization) {
         final String DELETE_ORGANIZATION = ORGANIZATIONS.concat("/").concat(organization.getId());
         given(RequestSpecHelper.getAuthorizedSpec()).contentType(ContentType.JSON)
-            .delete(DELETE_ORGANIZATION)
-            .then().statusCode(204);
+                .delete(DELETE_ORGANIZATION)
+                .then().statusCode(204);
     }
 }
