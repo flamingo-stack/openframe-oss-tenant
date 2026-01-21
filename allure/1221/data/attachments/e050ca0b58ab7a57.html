@@ -1,0 +1,109 @@
+<div>PUT to http://localhost:8100/api/organizations/6970ce84aa15134defca735e</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Weston Mohr&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(520) 414-2255 x4659&quot;,
+                &quot;email&quot;: &quot;terrell.bradtke@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;9895 Novella Hollow&quot;,
+            &quot;street2&quot;: &quot;Suite 367&quot;,
+            &quot;city&quot;: &quot;Kutchborough&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;21084&quot;,
+            &quot;country&quot;: &quot;Nauru&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;0746 Long Radial&quot;,
+            &quot;street2&quot;: &quot;Apt. 920&quot;,
+            &quot;city&quot;: &quot;Mayershire&quot;,
+            &quot;state&quot;: &quot;Texas&quot;,
+            &quot;postalCode&quot;: &quot;48498&quot;,
+            &quot;country&quot;: &quot;Mongolia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        21
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        21
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Cookie: access_token=eyJraWQiOiJraWQtNTgzN2Q5ZjYtOTU0Zi00N2FkLWE0YzQtZmVlN2VhMTE3N2QwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxMjAxODM1ZC03ZjJiLTQxMDQtYmNiYy04YmM3MDMyODFiYjgiLCJzdWIiOiJsaW5kc2F5LnN0ZWhyQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5MDAwNTc5LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8xMjAxODM1ZC03ZjJiLTQxMDQtYmNiYy04YmM3MDMyODFiYjgiLCJleHAiOjE3NjkwMDE0NzksImlhdCI6MTc2OTAwMDU3OSwidXNlcklkIjoiODMxOTc1YjctZjlmMS00MDg3LWI4ZDYtOWYwODA4ODQwY2I4IiwianRpIjoiZGJkNjFkYzYtNjE1NS00NjEwLTgyMjktMDg5OTFiMjk1MmE2In0.dmSJLUoe50JvJwa_vlSSGU6zvIuTelEANe13jXwnUEwke5oNFD96LjlMb3W9sdYDXKVLz_zu4NvyiTU_NXlWgyklM764QfJjeiT7-izcsmsqfLGyAdf79-Nask1p_C3kxusvtAidhxmP0tYbp4ZFRkP1GnkTEF-eafGjIrrgH0dHSsgfcifRvDQQuI2cK98UL2KgEgflFNRqQeVbCCnR7ElRHfEQweB1A7__qEvP8ccA_pxvtGqZwkqso704Iyd2WRiaP0HTiItvdgT59G_VNxB3cnxKAUjI5mqsj2-sm_XQ1FRoR3mc9_02B0Hg3evl_PYyJDqnH4LIDxlbZaCQiw; refresh_token=U97fzZWBc9LSu8gS9AV-1GmIbZayUGMlqLpRBttRT3LDNq-l3mN_ZHoZCmSYrKew7GWzzFKy0-3XL4Vtm7j7ouiJl0GzGSJw-1pRILPenUwmS1Y6hhI9M3s4WsGTFQAI; of_oauth_4_bvGU6mZdg44yqfVEX0tg=</div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6970ce84aa15134defca735e&#39; -H &#39;Cookie: access_token=eyJraWQiOiJraWQtNTgzN2Q5ZjYtOTU0Zi00N2FkLWE0YzQtZmVlN2VhMTE3N2QwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxMjAxODM1ZC03ZjJiLTQxMDQtYmNiYy04YmM3MDMyODFiYjgiLCJzdWIiOiJsaW5kc2F5LnN0ZWhyQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5MDAwNTc5LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8xMjAxODM1ZC03ZjJiLTQxMDQtYmNiYy04YmM3MDMyODFiYjgiLCJleHAiOjE3NjkwMDE0NzksImlhdCI6MTc2OTAwMDU3OSwidXNlcklkIjoiODMxOTc1YjctZjlmMS00MDg3LWI4ZDYtOWYwODA4ODQwY2I4IiwianRpIjoiZGJkNjFkYzYtNjE1NS00NjEwLTgyMjktMDg5OTFiMjk1MmE2In0.dmSJLUoe50JvJwa_vlSSGU6zvIuTelEANe13jXwnUEwke5oNFD96LjlMb3W9sdYDXKVLz_zu4NvyiTU_NXlWgyklM764QfJjeiT7-izcsmsqfLGyAdf79-Nask1p_C3kxusvtAidhxmP0tYbp4ZFRkP1GnkTEF-eafGjIrrgH0dHSsgfcifRvDQQuI2cK98UL2KgEgflFNRqQeVbCCnR7ElRHfEQweB1A7__qEvP8ccA_pxvtGqZwkqso704Iyd2WRiaP0HTiItvdgT59G_VNxB3cnxKAUjI5mqsj2-sm_XQ1FRoR3mc9_02B0Hg3evl_PYyJDqnH4LIDxlbZaCQiw; refresh_token=U97fzZWBc9LSu8gS9AV-1GmIbZayUGMlqLpRBttRT3LDNq-l3mN_ZHoZCmSYrKew7GWzzFKy0-3XL4Vtm7j7ouiJl0GzGSJw-1pRILPenUwmS1Y6hhI9M3s4WsGTFQAI; of_oauth_4_bvGU6mZdg44yqfVEX0tg=&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Weston Mohr&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(520) 414-2255 x4659&quot;,
+                &quot;email&quot;: &quot;terrell.bradtke@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;9895 Novella Hollow&quot;,
+            &quot;street2&quot;: &quot;Suite 367&quot;,
+            &quot;city&quot;: &quot;Kutchborough&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;21084&quot;,
+            &quot;country&quot;: &quot;Nauru&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;0746 Long Radial&quot;,
+            &quot;street2&quot;: &quot;Apt. 920&quot;,
+            &quot;city&quot;: &quot;Mayershire&quot;,
+            &quot;state&quot;: &quot;Texas&quot;,
+            &quot;postalCode&quot;: &quot;48498&quot;,
+            &quot;country&quot;: &quot;Mongolia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        21
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        21
+    ]
+}&#39;
+</div>
