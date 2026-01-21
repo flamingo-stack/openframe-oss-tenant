@@ -28,9 +28,9 @@ public class EnvironmentConfig {
             String cmdVar = System.getProperty("api.base.url");
             String envVar = System.getenv("API_BASE_URL");
             if (cmdVar != null && !cmdVar.trim().isEmpty()) {
-                baseUrl = cmdVar;
+                baseUrl = cmdVar.endsWith("/") ? cmdVar : cmdVar.concat("/");
             } else if (envVar != null && !envVar.trim().isEmpty()) {
-                baseUrl = envVar;
+                baseUrl = envVar.endsWith("/") ? envVar : envVar.concat("/");
             } else {
                 baseUrl = DEFAULT_BASE_URL;
             }
