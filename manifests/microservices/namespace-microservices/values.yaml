@@ -1,8 +1,1 @@
-<<<<<<< HEAD
-=======
 
-deployment:
-  saas:
-    repository:
-      profile: "dev"
->>>>>>> 3a4f19a4e (Resources for microservices)
