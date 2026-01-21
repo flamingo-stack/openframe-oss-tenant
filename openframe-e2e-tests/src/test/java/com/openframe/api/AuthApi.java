@@ -6,7 +6,7 @@ import io.restassured.response.Response;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.openframe.config.EnvironmentConfig.getBaseUrl;
+import static com.openframe.config.EnvironmentConfig.DEFAULT_BASE_URL;
 import static io.restassured.RestAssured.given;
 
 public class AuthApi {
@@ -32,7 +32,7 @@ public class AuthApi {
     public static Response initiateAuthorization(AuthParts authParts) {
         Map<String, Object> queryParams = getAuthQueryParams(authParts);
         return given()
-                .header("Cookie", authParts.getCookies())
+                .cookies(authParts.getCookies())
                 .queryParams(queryParams)
                 .redirects().follow(false)
                 .when()
@@ -44,7 +44,7 @@ public class AuthApi {
                 "username", authParts.getEmail(),
                 "password", authParts.getPassword());
         return given()
-                .header("Cookie", authParts.getCookies())
+                .cookies(authParts.getCookies())
                 .formParams(formParams)
                 .redirects().follow(false)
                 .when()
@@ -55,7 +55,7 @@ public class AuthApi {
         Map<String, Object> queryParams = getAuthQueryParams(authParts);
         queryParams.put("continue", "");
         return given()
-                .header("Cookie", authParts.getCookies())
+                .cookies(authParts.getCookies())
                 .queryParams(queryParams)
                 .redirects().follow(false)
                 .when()
@@ -67,7 +67,7 @@ public class AuthApi {
                 "code", authParts.getAuthorizationCode(),
                 "state", authParts.getState());
         return given()
-                .header("Cookie", authParts.getCookies())
+                .cookies(authParts.getCookies())
                 .queryParams(queryParams)
                 .redirects().follow(false)
                 .when()
@@ -80,7 +80,7 @@ public class AuthApi {
         queryParams.put("client_id", CLIENT_ID);
         queryParams.put("code_challenge", authParts.getCodeChallenge());
         queryParams.put("code_challenge_method", "S256");
-        queryParams.put("redirect_uri", getBaseUrl().concat(OAUTH_CALLBACK));
+        queryParams.put("redirect_uri", DEFAULT_BASE_URL.concat(OAUTH_CALLBACK));
         queryParams.put("scope", "openid profile email offline_access");
         queryParams.put("state", authParts.getState());
         return queryParams;

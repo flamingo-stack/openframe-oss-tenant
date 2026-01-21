@@ -1,22 +1,17 @@
 package com.openframe.helpers;
 
-import com.openframe.data.dto.auth.AuthTokens;
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 
+import static com.openframe.helpers.AuthHelper.getCookies;
+
 public class RequestSpecHelper {
-
-    private static final ThreadLocal<AuthTokens> tokens = new ThreadLocal<>();
-
-    public static void setTokens(AuthTokens authTokens) {
-        tokens.set(authTokens);
-    }
 
     public static RequestSpecification getAuthorizedSpec() {
         return new RequestSpecBuilder()
-                .addHeader("Cookie", tokens.get().cookies())
+                .addCookies(getCookies())
                 .setContentType(ContentType.JSON)
                 .addFilter(new AllureRestAssured())
                 .build();
