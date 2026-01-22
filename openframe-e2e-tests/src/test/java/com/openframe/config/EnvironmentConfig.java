@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EnvironmentConfig {
 
-    private static final String DEFAULT_BASE_URL = "https://localhost/";
+    public static final String DEFAULT_BASE_URL = "https://localhost/";
     private static final String DEFAULT_MONGODB_URI = "mongodb://mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe";
 
     private static final String DEFAULT_DATABASE_NAME = "openframe";
@@ -28,9 +28,9 @@ public class EnvironmentConfig {
             String cmdVar = System.getProperty("api.base.url");
             String envVar = System.getenv("API_BASE_URL");
             if (cmdVar != null && !cmdVar.trim().isEmpty()) {
-                baseUrl = cmdVar;
+                baseUrl = cmdVar.endsWith("/") ? cmdVar : cmdVar.concat("/");
             } else if (envVar != null && !envVar.trim().isEmpty()) {
-                baseUrl = envVar;
+                baseUrl = envVar.endsWith("/") ? envVar : envVar.concat("/");
             } else {
                 baseUrl = DEFAULT_BASE_URL;
             }

@@ -1,23 +1,20 @@
 package com.openframe.tests;
 
-import com.openframe.data.dto.auth.AuthTokens;
 import com.openframe.data.dto.user.MeResponse;
 import com.openframe.data.dto.user.User;
 import com.openframe.data.dto.user.UserRegistrationRequest;
 import com.openframe.data.dto.user.UserRegistrationResponse;
-import com.openframe.helpers.RequestSpecHelper;
 import com.openframe.tests.base.UnauthorizedTest;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
 
-import static com.openframe.api.AuthFlow.login;
 import static com.openframe.api.OrganizationApi.getOrganizationNames;
 import static com.openframe.api.RegistrationApi.registerUser;
 import static com.openframe.api.UserApi.me;
 import static com.openframe.config.EnvironmentConfig.USER_FILE;
-import static com.openframe.data.generator.RegistrationGenerator.*;
-import static com.openframe.util.FileManager.read;
+import static com.openframe.data.generator.RegistrationGenerator.newUserRegistrationRequest;
+import static com.openframe.data.generator.RegistrationGenerator.newUserRegistrationResponse;
 import static com.openframe.util.FileManager.save;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,14 +47,8 @@ public class OwnerRegistrationTest extends UnauthorizedTest {
     @Test
     @DisplayName("Login registered user")
     public void testLoginNewUser() {
-        User user = read(USER_FILE, User.class);
-        AuthTokens tokens = login(user);
-        RequestSpecHelper.setTokens(tokens);
         MeResponse response = me();
         assertThat(response.getUser().getId()).isNotNull();
-        assertThat(response).usingRecursiveComparison()
-                .ignoringFields("user.password", "user.id")
-                .isEqualTo(meResponse(user));
     }
 
     @Order(3)

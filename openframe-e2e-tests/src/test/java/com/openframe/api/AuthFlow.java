@@ -1,12 +1,13 @@
 package com.openframe.api;
 
 import com.openframe.data.dto.auth.AuthParts;
-import com.openframe.data.dto.auth.AuthTokens;
 import com.openframe.data.dto.user.User;
-import com.openframe.util.CookieManager;
 import com.openframe.util.StringUtils;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.openframe.api.AuthApi.*;
 import static com.openframe.data.generator.AuthGenerator.generateAuthParts;
@@ -20,7 +21,7 @@ public class AuthFlow {
         authParts = generateAuthParts(user);
     }
 
-    public static AuthTokens login(User user) {
+    public static Map<String, String> login(User user) {
         return new AuthFlow(user)
                 .startFlow()
                 .initAuth()
@@ -31,10 +32,11 @@ public class AuthFlow {
 
     private AuthFlow startFlow() {
         Response response = startOAuthFlow(authParts);
+        response.then().statusCode(302);
         String location = response.getHeader("Location");
         String serverState = StringUtils.extractQueryParam(location, "state");
         String serverCodeChallenge = StringUtils.extractQueryParam(location, "code_challenge");
-        String cookies = CookieManager.extractCookiesAsString(response);
+        Map<String, String> cookies = new HashMap<>(response.getCookies());
         authParts.setState(serverState);
         authParts.setCodeChallenge(serverCodeChallenge);
         authParts.setCookies(cookies);
@@ -43,31 +45,32 @@ public class AuthFlow {
 
     private AuthFlow initAuth() {
         Response response = initiateAuthorization(authParts);
-        String cookies = CookieManager.mergeCookieStrings(authParts.getCookies(), CookieManager.extractCookiesAsString(response));
-        authParts.setCookies(cookies);
+        response.then().statusCode(302);
+        Map<String, String> newCookies = response.getCookies();
+        authParts.getCookies().putAll(newCookies);
         return this;
     }
 
     private AuthFlow postCredentials() {
         Response response = submitCredentials(authParts);
-        String cookies = CookieManager.mergeCookieStrings(authParts.getCookies(), CookieManager.extractCookiesAsString(response));
-        authParts.setCookies(cookies);
+        response.then().statusCode(302);
+        Map<String, String> newCookies = response.getCookies();
+        authParts.getCookies().putAll(newCookies);
         return this;
     }
 
     private AuthFlow getAuthCode() {
         Response response = getAuthorizationCode(authParts);
+        response.then().statusCode(302);
         String location = response.getHeader("Location");
         String authorizationCode = StringUtils.extractQueryParam(location, "code");
         authParts.setAuthorizationCode(authorizationCode);
         return this;
     }
 
-    private AuthTokens extractTokens() {
+    private Map<String, String> extractTokens() {
         Response response = exchangeCodeForTokens(authParts);
-        String finalCookies = CookieManager.extractCookiesAsString(response);
-        String accessToken = CookieManager.extractCookieValue(finalCookies, "access_token");
-        String refreshToken = CookieManager.extractCookieValue(finalCookies, "refresh_token");
-        return new AuthTokens(accessToken, refreshToken, finalCookies);
+        response.then().statusCode(302);
+        return response.getCookies();
     }
 }
