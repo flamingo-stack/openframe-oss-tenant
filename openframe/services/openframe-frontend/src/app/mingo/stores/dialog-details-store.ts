@@ -3,10 +3,8 @@ import { Dialog, Message, MessageConnection } from '../types/dialog.types'
 import { GET_DIALOG_QUERY, GET_DIALOG_MESSAGES_QUERY } from '../queries/dialogs-queries'
 import { apiClient } from '@lib/api-client'
 import {
-  CHAT_TYPE,
   MESSAGE_TYPE,
-  OWNER_TYPE,
-  type NatsMessageType
+  OWNER_TYPE
 } from '../constants'
 
 interface DialogResponse {
@@ -57,7 +55,8 @@ interface DialogDetailsStore {
   loadMore: () => Promise<void>
   clearCurrent: () => void
   updateDialogStatus: (status: string) => void
-  ingestRealtimeEvent: (payload: unknown, messageType: 'message' | 'admin-message') => void
+  addRealtimeMessage: (message: Message, isAdmin: boolean) => void
+  setTypingIndicator: (isAdmin: boolean, typing: boolean) => void
 }
 
 export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
@@ -316,230 +315,55 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     }
   },
 
-  ingestRealtimeEvent: (payload: unknown, messageType: NatsMessageType) => {
+  addRealtimeMessage: (message: Message, isAdmin: boolean) => {
     const state = get()
-    if (!state.currentDialogId) return
+    if (!state.currentDialogId || message.dialogId !== state.currentDialogId) return
 
-    const asAny = payload as any
-    const nowIso = new Date().toISOString()
-    
     const TEXT_TYPE = MESSAGE_TYPE.TEXT
     const ASSISTANT_TYPE = OWNER_TYPE.ASSISTANT
-    const ADMIN_CHAT_TYPE = CHAT_TYPE.ADMIN
-    
-    if (asAny?.type === MESSAGE_TYPE.MESSAGE_START) {
-      const isAdmin = messageType === 'admin-message'
-      set(isAdmin ? { isAdminChatTyping: true } : { isClientChatTyping: true })
-      return
-    }
-    
-    if (asAny?.type === MESSAGE_TYPE.MESSAGE_END) {
-      const isAdmin = messageType === 'admin-message'
-      set(isAdmin ? { isAdminChatTyping: false } : { isClientChatTyping: false })
-      return
-    }
-    
-    if (asAny?.type === MESSAGE_TYPE.ERROR) {
-      const isAdmin = messageType === 'admin-message'
-      
-      set(isAdmin ? { isAdminChatTyping: false } : { isClientChatTyping: false })
-      
-      const id = `error-${Date.now()}-${Math.random().toString(16).slice(2)}`
-      const chatType = messageType === 'admin-message' ? 'ADMIN_AI_CHAT' : 'CLIENT_CHAT'
-      
-      const errorMessage: Message = {
-        id,
-        dialogId: state.currentDialogId,
-        chatType: chatType as any,
-        dialogMode: 'DEFAULT',
-        createdAt: nowIso,
-        owner: { type: 'ASSISTANT', model: '' } as any,
-        messageData: { 
-          type: 'ERROR', 
-          error: String(asAny.error ?? 'An error occurred'),
-          details: typeof asAny.details === 'string' ? asAny.details : undefined 
-        } as any,
-      }
-      
-      if (isAdmin) {
-        set((s) => ({ adminMessages: [...s.adminMessages, errorMessage] }))
-      } else {
-        set((s) => ({ currentMessages: [...s.currentMessages, errorMessage] }))
-      }
-      
-      return
-    }
-    const isMessageObject =
-      asAny &&
-      typeof asAny === 'object' &&
-      typeof asAny.id === 'string' &&
-      typeof asAny.dialogId === 'string' &&
-      asAny.messageData != null &&
-      asAny.owner != null
 
-    const message: Message | null = isMessageObject
-      ? (asAny as Message)
-      : (() => {
-          const type = typeof asAny?.type === 'string' ? asAny.type : null
-          if (!type) return null
-
-          const id = `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`
-          const chatType = messageType === 'admin-message' ? 'ADMIN_AI_CHAT' : 'CLIENT_CHAT'
-          
-          const isUserMessage = type === 'MESSAGE_REQUEST'
-          let owner: any
-          
-          if (isUserMessage) {
-            if (messageType === 'admin-message') {
-              owner = { type: 'ADMIN' as const, userId: '' } as any
-            } else {
-              owner = { type: 'CLIENT' as const, machineId: '' } as any
-            }
-          } else {
-            owner = { type: 'ASSISTANT' as const, model: '' } as any
-          }
-          
-          const base: Message = {
-            id,
-            dialogId: state.currentDialogId,
-            chatType: chatType as any,
-            dialogMode: 'DEFAULT',
-            createdAt: nowIso,
-            owner,
-            messageData: { type: 'TEXT', text: '' } as any,
-          }
-
-          if (type === 'MESSAGE_REQUEST') {
-            return { ...base, messageData: { type: 'TEXT', text: String(asAny.text ?? '') } as any }
-          }
-          if (type === 'TEXT') {
-            return { ...base, messageData: { type: 'TEXT', text: String(asAny.text ?? '') } as any }
-          }
-          if (type === 'EXECUTING_TOOL') {
-            return {
-              ...base,
-              messageData: {
-                type: 'EXECUTING_TOOL',
-                integratedToolType: String(asAny.integratedToolType ?? ''),
-                toolFunction: String(asAny.toolFunction ?? ''),
-                parameters: asAny.parameters,
-              } as any,
-            }
-          }
-          if (type === 'EXECUTED_TOOL') {
-            return {
-              ...base,
-              messageData: {
-                type: 'EXECUTED_TOOL',
-                integratedToolType: String(asAny.integratedToolType ?? ''),
-                toolFunction: String(asAny.toolFunction ?? ''),
-                result: asAny.result,
-                success: asAny.success,
-              } as any,
-            }
-          }
-          if (type === 'ERROR') {
-            return {
-              ...base,
-              messageData: {
-                type: 'ERROR',
-                error: String(asAny.error ?? 'Error'),
-                details: typeof asAny.details === 'string' ? asAny.details : undefined,
-              } as any,
-            }
-          }
-          if (type === 'APPROVAL_REQUEST') {
-            return {
-              ...base,
-              messageData: {
-                type: 'APPROVAL_REQUEST',
-                approvalType: String(asAny.approvalType ?? 'USER'),
-                command: String(asAny.command ?? ''),
-                approvalRequestId: String(asAny.approvalRequestId ?? ''),
-                explanation: asAny.explanation,
-              } as any,
-            }
-          }
-          if (type === 'APPROVAL_RESULT') {
-            return {
-              ...base,
-              messageData: {
-                type: 'APPROVAL_RESULT',
-                approvalRequestId: String(asAny.approvalRequestId ?? ''),
-                approved: Boolean(asAny.approved),
-                approvalType: String(asAny.approvalType ?? 'USER'),
-              } as any,
-            }
-          }
-
-          return null
-        })()
-
-    if (!message) return
-    if (message.dialogId !== state.currentDialogId) return
-
-    const isAdminMessage = message.chatType === ADMIN_CHAT_TYPE
     const isTextMessage = message.messageData?.type === TEXT_TYPE
     const isAssistantOwner = message.owner?.type === ASSISTANT_TYPE
-    
-    if (isAdminMessage) {
-      set((s) => {
-        const existingIds = new Set(s.adminMessages.map((m) => m.id))
-        if (existingIds.has(message.id)) return s
+
+    const updateMessages = (
+      messages: Message[],
+      isTextMsg: boolean,
+      isAssistant: boolean
+    ): Message[] => {
+      const existingIds = new Set(messages.map((m) => m.id))
+      if (existingIds.has(message.id)) return messages
+      
+      if (isTextMsg && messages.length > 0 && isAssistant) {
+        const lastMessage = messages[messages.length - 1]
+        const lastIsText = lastMessage.messageData?.type === TEXT_TYPE
+        const lastIsAssistant = lastMessage.owner?.type === ASSISTANT_TYPE
         
-        if (isTextMessage && 
-            s.adminMessages.length > 0 &&
-            isAssistantOwner) {
-          const lastMessage = s.adminMessages[s.adminMessages.length - 1]
-          const lastIsText = lastMessage.messageData?.type === TEXT_TYPE
-          const lastIsAssistant = lastMessage.owner?.type === ASSISTANT_TYPE
-          
-          if (lastIsText && lastIsAssistant) {
-            const updatedMessages = [...s.adminMessages]
-            const lastMessageData = lastMessage.messageData as any
-            const messageData = message.messageData as any
-            updatedMessages[updatedMessages.length - 1] = {
-              ...lastMessage,
-              messageData: {
-                ...lastMessage.messageData,
-                text: (lastMessageData.text || '') + (messageData.text || '')
-              }
+        if (lastIsText && lastIsAssistant) {
+          const updatedMessages = [...messages]
+          const lastMessageData = lastMessage.messageData as any
+          const messageData = message.messageData as any
+          updatedMessages[updatedMessages.length - 1] = {
+            ...lastMessage,
+            messageData: {
+              ...lastMessage.messageData,
+              text: (lastMessageData.text || '') + (messageData.text || '')
             }
-            return { adminMessages: updatedMessages }
           }
+          return updatedMessages
         }
-        
-        return { adminMessages: [...s.adminMessages, message] }
-      })
-    } else {
-      set((s) => {
-        const existingIds = new Set(s.currentMessages.map((m) => m.id))
-        if (existingIds.has(message.id)) return s
-        
-        if (isTextMessage && 
-            s.currentMessages.length > 0 &&
-            isAssistantOwner) {
-          const lastMessage = s.currentMessages[s.currentMessages.length - 1]
-          const lastIsText = lastMessage.messageData?.type === TEXT_TYPE
-          const lastIsAssistant = lastMessage.owner?.type === ASSISTANT_TYPE
-          
-          if (lastIsText && lastIsAssistant) {
-            const updatedMessages = [...s.currentMessages]
-            const lastMessageData = lastMessage.messageData as any
-            const messageData = message.messageData as any
-            updatedMessages[updatedMessages.length - 1] = {
-              ...lastMessage,
-              messageData: {
-                ...lastMessage.messageData,
-                text: (lastMessageData.text || '') + (messageData.text || '')
-              }
-            }
-            return { currentMessages: updatedMessages }
-          }
-        }
-        
-        return { currentMessages: [...s.currentMessages, message] }
-      })
+      }
+      
+      return [...messages, message]
     }
+    
+    if (isAdmin) {
+      set((s) => ({ adminMessages: updateMessages(s.adminMessages, isTextMessage, isAssistantOwner) }))
+    } else {
+      set((s) => ({ currentMessages: updateMessages(s.currentMessages, isTextMessage, isAssistantOwner) }))
+    }
+  },
+
+  setTypingIndicator: (isAdmin: boolean, typing: boolean) => {
+    set(isAdmin ? { isAdminChatTyping: typing } : { isClientChatTyping: typing })
   },
 }))

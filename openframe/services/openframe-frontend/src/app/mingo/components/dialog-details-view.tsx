@@ -11,7 +11,9 @@ import {
   ChatMessageList,
   ChatInput,
   DetailPageContainer,
-  type MessageSegment 
+  type MessageSegment,
+  processHistoricalMessagesWithErrors,
+  type HistoricalMessage
 } from '@flamingo-stack/openframe-frontend-core'
 import { Button } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
@@ -20,6 +22,8 @@ import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription'
 import { useChunkCatchup } from '../hooks/use-chunk-catchup'
+import { useApprovalRequests } from '../hooks/use-approval-requests'
+import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor'
 import { apiClient } from '@lib/api-client'
 import { DeviceInfoSection } from '../../components/shared'
 import type { Message, ClientDialogOwner, DialogOwner } from '../types/dialog.types'
@@ -27,13 +31,13 @@ import {
   DIALOG_STATUS,
   CHAT_TYPE,
   MESSAGE_TYPE,
-  OWNER_TYPE,
   APPROVAL_STATUS,
   ASSISTANT_CONFIG,
   API_ENDPOINTS,
   type ApprovalStatus,
   type NatsMessageType
 } from '../constants'
+import { ChatApprovalStatus } from '@flamingo-stack/openframe-frontend-core'
 
 interface DialogDetailsViewProps {
   dialogId: string
@@ -61,14 +65,46 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     loadMore,
     clearCurrent,
     updateDialogStatus,
-    ingestRealtimeEvent
+    addRealtimeMessage,
+    setTypingIndicator
   } = useDialogDetailsStore()
   const { putOnHold, resolve, isUpdating } = useDialogStatus()
+  const { handleApproveRequest, handleRejectRequest } = useApprovalRequests()
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({})
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false)
   const prevMessageLength = useRef<number>(0)
   const hasCaughtUp = useRef(false)
 
+  const { processChunk: processRealtimeChunk } = useDialogRealtimeProcessor({
+    dialogId,
+    onStreamStart: (isAdmin) => {
+      setTypingIndicator(isAdmin, true)
+    },
+    onStreamEnd: (isAdmin) => {
+      setTypingIndicator(isAdmin, false)
+    },
+    onMessageAdd: (message, isAdmin) => {
+      addRealtimeMessage(message, isAdmin)
+    },
+    onError: (error, isAdmin) => {
+      setTypingIndicator(isAdmin, false)
+      const errorMessage: Message = {
+        id: `error-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        dialogId: dialogId,
+        chatType: isAdmin ? 'ADMIN_AI_CHAT' : 'CLIENT_CHAT',
+        dialogMode: 'DEFAULT',
+        createdAt: new Date().toISOString(),
+        owner: { type: 'ASSISTANT', model: '' } as any,
+        messageData: { 
+          type: 'ERROR', 
+          error: error,
+          details: undefined
+        } as any,
+      }
+      addRealtimeMessage(errorMessage, isAdmin)
+    }
+  })
+  
   const { 
     catchUpChunks, 
     processChunk, 
@@ -76,7 +112,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     startInitialBuffering
   } = useChunkCatchup({
     dialogId,
-    onChunkReceived: ingestRealtimeEvent
+    onChunkReceived: processRealtimeChunk
   })
   
   useEffect(() => {
@@ -162,49 +198,47 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialog, isUpdating, resolve, dialogId, updateDialogStatus])
 
-  const handleApproveRequest = useCallback(async (requestId?: string) => {
+  const handleApprove = useCallback((requestId?: string) => {
     if (!requestId) return
     
-    try {
-      await apiClient.post(`${API_ENDPOINTS.APPROVAL_REQUEST}/${requestId}/approve`, {
-        approve: true
-      })
-      
-      setApprovalStatuses(prev => ({
-        ...prev,
-        [requestId]: APPROVAL_STATUS.APPROVED
-      }))
-    } catch (error) {
-      toast({
-        title: "Approval Failed",
-        description: error instanceof Error ? error.message : "Unable to approve request",
-        variant: "destructive",
-        duration: 5000
-      })
-    }
-  }, [toast])
+    handleApproveRequest(requestId, {
+      onSuccess: (status) => {
+        setApprovalStatuses(prev => ({
+          ...prev,
+          [requestId]: status
+        }))
+      },
+      onError: (error) => {
+        toast({
+          title: "Approval Failed",
+          description: error.message || "Unable to approve request",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
+    })
+  }, [handleApproveRequest, toast])
 
-  const handleRejectRequest = useCallback(async (requestId?: string) => {
+  const handleReject = useCallback((requestId?: string) => {
     if (!requestId) return
     
-    try {
-      await apiClient.post(`${API_ENDPOINTS.APPROVAL_REQUEST}/${requestId}/approve`, {
-        approve: false
-      })
-      
-      setApprovalStatuses(prev => ({
-        ...prev,
-        [requestId]: APPROVAL_STATUS.REJECTED
-      }))
-    } catch (error) {
-      toast({
-        title: "Rejection Failed",
-        description: error instanceof Error ? error.message : "Unable to reject request",
-        variant: "destructive",
-        duration: 5000
-      })
-    }
-  }, [toast])
+    handleRejectRequest(requestId, {
+      onSuccess: (status) => {
+        setApprovalStatuses(prev => ({
+          ...prev,
+          [requestId]: status
+        }))
+      },
+      onError: (error) => {
+        toast({
+          title: "Rejection Failed",
+          description: error.message || "Unable to reject request",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
+    })
+  }, [handleRejectRequest, toast])
 
   const handleSendAdminMessage = useCallback(async (message: string) => {
     const trimmedMessage = message.trim()
@@ -233,260 +267,47 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     const assistantConfig = expectedChatType === CHAT_TYPE.ADMIN ? ASSISTANT_CONFIG.MINGO : ASSISTANT_CONFIG.FAE
     const { type: assistantType, name: assistantName } = assistantConfig
 
-    const processedMessages: Array<{
-      id: string
-      content: string | MessageSegment[]
-      role: 'user' | 'assistant' | 'error'
-      name?: string
-      assistantType?: 'fae' | 'mingo'
-      timestamp: Date
-    }> = []
-    
+    const historicalMessages: HistoricalMessage[] = messages.map(msg => ({
+      id: msg.id,
+      dialogId: msg.dialogId,
+      chatType: msg.chatType,
+      createdAt: msg.createdAt,
+      owner: msg.owner,
+      messageData: msg.messageData,
+    }))
+
+    const processed = processHistoricalMessagesWithErrors(historicalMessages, {
+      assistantName,
+      assistantType,
+      chatTypeFilter: expectedChatType,
+      onApprove: handleApprove,
+      onReject: handleReject,
+      approvalStatuses: Object.fromEntries(
+        Object.entries(approvalStatuses).map(([k, v]) => [k, v as ChatApprovalStatus])
+      ),
+    })
+
     const pendingApprovalSegments: MessageSegment[] = []
-
-    const executingTools = new Map<string, {
-      integratedToolType: string
-      toolFunction: string
-      parameters?: Record<string, any>
-    }>()
-
-    const pendingApprovals = new Map<string, {
-      command: string
-      approvalType: string
-      description?: string
-      risk?: string
-      details?: any
-      explanation?: string
-    }>()
-
-    let currentAssistantMessage: {
-      id: string
-      segments: MessageSegment[]
-      name?: string
-      assistantType?: 'fae' | 'mingo'
-      timestamp: Date
-    } | null = null
-
-    messages.forEach((msg: Message, index: number) => {
-      // Skip messages that don't match the expected chat type
-      if (expectedChatType && msg.chatType !== expectedChatType) return
-      
-      const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData]
-      const isUserMessage = msg.owner?.type === OWNER_TYPE.CLIENT || msg.owner?.type === OWNER_TYPE.ADMIN
-      const role: 'user' | 'assistant' = isUserMessage ? 'user' : 'assistant'
-      
-      messageDataArray.forEach((data: any) => {
-        if (role === 'user' && data.type === MESSAGE_TYPE.TEXT) {
-          if (currentAssistantMessage && currentAssistantMessage.segments.length > 0) {
-            processedMessages.push({
-              id: currentAssistantMessage.id,
-              content: currentAssistantMessage.segments,
-              role: 'assistant',
-              name: currentAssistantMessage.name,
-              assistantType: currentAssistantMessage.assistantType,
-              timestamp: currentAssistantMessage.timestamp
-            })
-            currentAssistantMessage = null
+    const filteredMessages = processed.filter(msg => {
+      if (msg.id.startsWith('pending-approvals-') && Array.isArray(msg.content)) {
+        msg.content.forEach(segment => {
+          if (segment.type === 'approval_request' && segment.status === 'pending') {
+            pendingApprovalSegments.push(segment as MessageSegment)
           }
-          
-          processedMessages.push({
-            id: msg.id,
-            content: [{
-              type: 'text',
-              text: data.text || ''
-            } as MessageSegment],
-            role: 'user',
-            timestamp: new Date(msg.createdAt)
-          })
-        } else if (role === 'assistant') {
-          if (data.type === MESSAGE_TYPE.EXECUTING_TOOL) {
-            if (!currentAssistantMessage) {
-              currentAssistantMessage = {
-                id: msg.id,
-                segments: [],
-                name: assistantName,
-                assistantType: assistantType,
-                timestamp: new Date(msg.createdAt)
-              }
-            }
-            
-            currentAssistantMessage.segments.push({
-              type: 'tool_execution',
-              data: {
-                type: MESSAGE_TYPE.EXECUTING_TOOL,
-                integratedToolType: data.integratedToolType,
-                toolFunction: data.toolFunction,
-                parameters: data.parameters
-              }
-            })
-            
-            const toolKey = `${data.integratedToolType}-${data.toolFunction}`
-            executingTools.set(toolKey, {
-              integratedToolType: data.integratedToolType,
-              toolFunction: data.toolFunction,
-              parameters: data.parameters
-            })
-         } else if (data.type === MESSAGE_TYPE.EXECUTED_TOOL) {
-            const toolKey = `${data.integratedToolType}-${data.toolFunction}`
-            const executingTool = executingTools.get(toolKey)
-            
-            if (!currentAssistantMessage) {
-              currentAssistantMessage = {
-                id: msg.id,
-                segments: [],
-                name: assistantName,
-                assistantType: assistantType,
-                timestamp: new Date(msg.createdAt)
-              }
-            }
-            
-            const existingToolIndex = currentAssistantMessage.segments.findIndex(
-              (s) => s.type === 'tool_execution' &&
-                     s.data?.type === MESSAGE_TYPE.EXECUTING_TOOL &&
-                     s.data?.integratedToolType === data.integratedToolType &&
-                     s.data?.toolFunction === data.toolFunction
-            )
-            
-            const executedSegment = {
-              type: 'tool_execution' as const,
-              data: {
-                type: MESSAGE_TYPE.EXECUTED_TOOL,
-                integratedToolType: data.integratedToolType,
-                toolFunction: data.toolFunction,
-                parameters: executingTool?.parameters || data.parameters,
-                result: data.result,
-                success: data.success
-              }
-            }
-            
-            if (existingToolIndex !== -1) {
-              currentAssistantMessage.segments[existingToolIndex] = executedSegment
-            } else {
-              currentAssistantMessage.segments.push(executedSegment)
-            }
-            
-            executingTools.delete(toolKey)
-          } else if (data.type === MESSAGE_TYPE.TEXT) {
-            if (!currentAssistantMessage) {
-              currentAssistantMessage = {
-                id: msg.id,
-                segments: [],
-                name: assistantName,
-                assistantType: assistantType,
-                timestamp: new Date(msg.createdAt)
-              }
-            }
-            
-            currentAssistantMessage.segments.push({
-              type: 'text',
-              text: data.text || ''
-            })
-          } else if (data.type === MESSAGE_TYPE.APPROVAL_REQUEST) {
-            const requestId = data.approvalRequestId
-            if (requestId) {
-              pendingApprovals.set(requestId, {
-                command: data.command,
-                approvalType: data.approvalType,
-                explanation: data.explanation
-              })
-            }
-          } else if (data.type === MESSAGE_TYPE.APPROVAL_RESULT) {
-            const requestId = data.approvalRequestId
-            const pendingApproval = pendingApprovals.get(requestId)
-            
-            if (!currentAssistantMessage) {
-              currentAssistantMessage = {
-                id: msg.id,
-                segments: [],
-                name: assistantName,
-                assistantType: assistantType,
-                timestamp: new Date(msg.createdAt)
-              }
-            }
-            
-            const status: ApprovalStatus = data.approved ? APPROVAL_STATUS.APPROVED : APPROVAL_STATUS.REJECTED
-            
-            const approvalSegment = {
-              type: 'approval_request' as const,
-              data: {
-                command: pendingApproval?.command || data.command || '',
-                explanation: pendingApproval?.explanation || data.explanation || '',
-                requestId: requestId,
-                approvalType: pendingApproval?.approvalType || data.approvalType
-              },
-              status: status,
-              onApprove: handleApproveRequest,
-              onReject: handleRejectRequest
-            }
-            
-            currentAssistantMessage.segments.push(approvalSegment as MessageSegment)
-            
-            if (pendingApproval) {
-              pendingApprovals.delete(requestId)
-            }
-          } else if (data.type === MESSAGE_TYPE.ERROR) {
-            if (currentAssistantMessage && currentAssistantMessage.segments.length > 0) {
-              processedMessages.push({
-                id: currentAssistantMessage.id,
-                content: currentAssistantMessage.segments,
-                role: 'assistant',
-                name: currentAssistantMessage.name,
-                assistantType: currentAssistantMessage.assistantType,
-                timestamp: currentAssistantMessage.timestamp
-              })
-            }
-            currentAssistantMessage = null
-            
-            processedMessages.push({
-              id: `${msg.id}-error`,
-              content: data.error || 'An error occurred',
-              role: 'error' as const,
-              name: assistantName,
-              assistantType: assistantType,
-              timestamp: new Date(msg.createdAt)
-            })
-          }
-        }
-      })
-
-      const nextMsg = messages[index + 1]
-      const isLastMessage = index === messages.length - 1
-      const nextIsFromDifferentOwner = nextMsg && nextMsg.owner?.type !== msg.owner?.type
-      
-      if (currentAssistantMessage && role === 'assistant' && (isLastMessage || nextIsFromDifferentOwner)) {
-        if (currentAssistantMessage.segments.length > 0) {
-          processedMessages.push({
-            id: currentAssistantMessage.id,
-            content: currentAssistantMessage.segments,
-            role: 'assistant',
-            name: currentAssistantMessage.name,
-            assistantType: currentAssistantMessage.assistantType,
-            timestamp: currentAssistantMessage.timestamp
-          })
-        }
-        currentAssistantMessage = null
+        })
+        return false
       }
+      return true
     })
 
-    // Collect pending approvals
-    pendingApprovals.forEach((approval, requestId) => {
-      const status = approvalStatuses[requestId] || APPROVAL_STATUS.PENDING
-      
-      if (status === APPROVAL_STATUS.PENDING) {
-        pendingApprovalSegments.push({
-          type: 'approval_request' as const,
-          data: {
-            command: approval.command || '',
-            explanation: approval.explanation || '',
-            requestId: requestId,
-            approvalType: approval.approvalType
-          },
-          status: APPROVAL_STATUS.PENDING,
-          onApprove: handleApproveRequest,
-          onReject: handleRejectRequest
-        } as MessageSegment)
-      }
-    })
+    const processedMessages = filteredMessages.map(msg => ({
+      id: msg.id,
+      content: msg.content as string | MessageSegment[],
+      role: msg.role as 'user' | 'assistant' | 'error',
+      name: msg.name,
+      assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
+      timestamp: msg.timestamp
+    }))
 
     return { 
       messages: processedMessages, 
@@ -494,7 +315,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       assistantType,
       assistantName
     }
-  }, [approvalStatuses, handleApproveRequest, handleRejectRequest])
+  }, [approvalStatuses, handleApprove, handleReject])
 
   const chatData = useMemo(() => processMessages(messages, CHAT_TYPE.CLIENT), [messages, processMessages])
   const adminChatData = useMemo(() => processMessages(adminMessages, CHAT_TYPE.ADMIN), [adminMessages, processMessages])

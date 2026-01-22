@@ -5,11 +5,11 @@ import {
   type NatsMessageType,
   type UseChunkCatchupOptions as CoreChunkCatchupOptions,
   type UseChunkCatchupReturn,
+  type ChatType,
   CHAT_TYPE,
 } from '@flamingo-stack/openframe-frontend-core'
 import { tokenService } from '../services/tokenService'
 
-// Re-export types for backward compatibility
 export type { ChunkData, NatsMessageType, UseChunkCatchupReturn }
 
 interface UseChunkCatchupOptions {
@@ -17,17 +17,10 @@ interface UseChunkCatchupOptions {
   onChunkReceived: (chunk: ChunkData, messageType: NatsMessageType) => void
 }
 
-/**
- * Application-specific wrapper around the core useChunkCatchup hook.
- * Provides the fetch function configured for the client application.
- */
 export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOptions): UseChunkCatchupReturn {
-  /**
-   * Fetch chunks from the API using tokenService for authentication
-   */
   const fetchChunks = useCallback(async (
     dialogId: string,
-    chatType: typeof CHAT_TYPE[keyof typeof CHAT_TYPE],
+    chatType: ChatType,
     fromSequenceId?: number | null
   ): Promise<ChunkData[]> => {
     await tokenService.ensureTokenReady()
@@ -61,7 +54,7 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
   const options = useMemo<CoreChunkCatchupOptions>(() => ({
     dialogId,
     onChunkReceived,
-    chatTypes: [CHAT_TYPE.CLIENT], // Client only fetches CLIENT_CHAT
+    chatTypes: [CHAT_TYPE.CLIENT],
     fetchChunks,
   }), [dialogId, onChunkReceived, fetchChunks])
 

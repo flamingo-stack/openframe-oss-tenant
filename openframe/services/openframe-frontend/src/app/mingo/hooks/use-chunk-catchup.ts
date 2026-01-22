@@ -12,7 +12,6 @@ import {
 import { apiClient } from '@lib/api-client'
 import { API_ENDPOINTS } from '../constants'
 
-// Re-export types for backward compatibility
 export type { ChunkData, NatsMessageType, UseChunkCatchupReturn }
 
 interface UseChunkCatchupOptions {
@@ -20,15 +19,7 @@ interface UseChunkCatchupOptions {
   onChunkReceived: (chunk: ChunkData, messageType: NatsMessageType) => void
 }
 
-/**
- * Application-specific wrapper around the core useChunkCatchup hook.
- * Provides the fetch function configured for the admin application.
- * Fetches both CLIENT_CHAT and ADMIN_AI_CHAT types.
- */
 export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOptions): UseChunkCatchupReturn {
-  /**
-   * Fetch chunks from the API using apiClient
-   */
   const fetchChunks = useCallback(async (
     dialogId: string,
     chatType: typeof CHAT_TYPE[keyof typeof CHAT_TYPE],
@@ -52,7 +43,7 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
   const options = useMemo<CoreChunkCatchupOptions>(() => ({
     dialogId,
     onChunkReceived,
-    chatTypes: [CHAT_TYPE.CLIENT, CHAT_TYPE.ADMIN], // Admin fetches both chat types
+    chatTypes: [CHAT_TYPE.CLIENT, CHAT_TYPE.ADMIN],
     fetchChunks,
   }), [dialogId, onChunkReceived, fetchChunks])
 

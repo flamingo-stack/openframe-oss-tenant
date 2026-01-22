@@ -1,5 +1,10 @@
 import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request'
 import { tokenService } from './tokenService'
+import type { 
+  MessageOwner,
+  MessageData as CoreMessageData,
+  HistoricalMessage
+} from '@flamingo-stack/openframe-frontend-core'
 
 export interface ResumableDialog {
   id: string
@@ -16,38 +21,12 @@ export interface ResumableDialog {
   } | null
 }
 
-export interface DialogOwner {
-  type: string
-}
+export type DialogOwner = MessageOwner
 
-export interface MessageData {
-  type: string
-  text?: string
-  integratedToolType?: string
-  toolFunction?: string
-  parameters?: any
-  result?: any
-  success?: boolean
-  requiresApproval?: boolean
-  requiredApproval?: boolean
-  approvalStatus?: string
-  approvalRequestId?: string
-  approvalType?: string
-  command?: string
-  explanation?: string
-  approved?: boolean
-  error?: string
-  details?: any
-}
+export type MessageData = CoreMessageData
 
-export interface Message {
-  id: string
-  dialogId: string
-  chatType: string
+export interface Message extends HistoricalMessage {
   dialogMode: string
-  createdAt: string
-  owner: DialogOwner
-  messageData: MessageData | MessageData[]
 }
 
 export interface MessageEdge {
@@ -87,9 +66,10 @@ const GET_RESUMABLE_DIALOG_QUERY = gql`
 `
 
 const GET_DIALOG_MESSAGES_QUERY = gql`
-  query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int) {
+  query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int) {
     messages(
       dialogId: $dialogId
+      chatType: $chatType
       pagination: { cursor: $cursor, limit: $limit }
     ) {
       edges {
@@ -165,11 +145,9 @@ export class DialogGraphQLService {
   private currentEndpoint: string | null = null
 
   private async initializeClient(): Promise<GraphQLClient> {
-    // If client already exists with same endpoint, just update token
     if (this.graphQLClient && this.currentEndpoint) {
       const token = tokenService.getCurrentToken()
       if (token) {
-        // Use setHeaders to replace all headers, not append
         this.graphQLClient.setHeaders({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -178,7 +156,6 @@ export class DialogGraphQLService {
       return this.graphQLClient
     }
 
-    // Initialize new client
     const baseUrl = tokenService.getCurrentApiBaseUrl()
     const token = tokenService.getCurrentToken()
     
@@ -230,7 +207,7 @@ export class DialogGraphQLService {
       await tokenService.ensureTokenReady()
       const data = await this.request<{ messages: MessagesConnection }>(
         GET_DIALOG_MESSAGES_QUERY,
-        { dialogId, cursor, limit }
+        { dialogId, chatType: 'CLIENT_CHAT', cursor, limit }
       )
       return data.messages
     } catch (error) {
@@ -239,7 +216,6 @@ export class DialogGraphQLService {
     }
   }
 
-  // Clean up method for when service is no longer needed
   dispose(): void {
     this.graphQLClient = null
     this.currentEndpoint = null

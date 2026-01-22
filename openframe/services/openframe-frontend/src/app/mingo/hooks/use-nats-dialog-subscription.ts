@@ -10,10 +10,8 @@ import {
 import { runtimeEnv } from '@/src/lib/runtime-config'
 import { STORAGE_KEYS } from '../constants'
 
-// Stable topics arrays to prevent re-subscriptions
 const ADMIN_TOPICS: NatsMessageType[] = ['message', 'admin-message'] as const
 
-// Re-export types for backward compatibility
 export type { NatsMessageType, UseNatsDialogSubscriptionReturn }
 
 function getApiBaseUrl(): string | null {
@@ -41,10 +39,6 @@ interface UseNatsDialogSubscriptionArgs {
   onSubscribed?: () => void
 }
 
-/**
- * Application-specific wrapper around the core useNatsDialogSubscription hook.
- * Subscribes to both 'message' and 'admin-message' topics for admin functionality.
- */
 export function useNatsDialogSubscription({
   enabled,
   dialogId,
@@ -59,7 +53,6 @@ export function useNatsDialogSubscription({
     isDevTicketEnabled ? getAccessToken() : null
   )
 
-  // Listen for token changes in localStorage
   useEffect(() => {
     if (!isDevTicketEnabled) return
     
@@ -72,14 +65,10 @@ export function useNatsDialogSubscription({
     return () => window.removeEventListener('storage', handler)
   }, [isDevTicketEnabled])
 
-  // Set API base URL on mount
   useEffect(() => {
     setApiBaseUrl(getApiBaseUrl())
   }, [])
 
-  /**
-   * Get the NATS WebSocket URL - memoized to prevent unnecessary re-renders
-   */
   const getNatsWsUrl = useMemo(() => {
     return (): string | null => {
       if (!apiBaseUrl) return null
@@ -93,7 +82,6 @@ export function useNatsDialogSubscription({
     }
   }, [apiBaseUrl, token, isDevTicketEnabled])
 
-  // Client configuration
   const clientConfig = useMemo(() => ({
     name: 'openframe-frontend-mingo',
     user: 'machine',
@@ -103,7 +91,7 @@ export function useNatsDialogSubscription({
   return useNatsDialogSubscriptionCore({
     enabled,
     dialogId,
-    topics: ADMIN_TOPICS, // Use stable array reference
+    topics: ADMIN_TOPICS,
     onEvent,
     onConnect,
     onDisconnect,
