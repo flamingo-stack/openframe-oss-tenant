@@ -1,0 +1,30 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;austin.brown@gmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZDNmNzFjN2QtYjJkMi00YTFmLWFkNDQtODM1YmFlOTM4OTA3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5MzBhNTQwYi0yYTQ5LTQyOTgtOWM4MS05YjYyMDhmMTEyMTAiLCJzdWIiOiJ3aWx0b24uZ2lzbGFzb25AZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NjkwODg0MTIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzkzMGE1NDBiLTJhNDktNDI5OC05YzgxLTliNjIwOGYxMTIxMCIsImV4cCI6MTc2OTA4OTMxMiwiaWF0IjoxNzY5MDg4NDEyLCJ1c2VySWQiOiI1ODVkNGNhMi1lNTNkLTRiMGQtYjIxMC01OTIwN2QzZTY2N2MiLCJqdGkiOiJiNjA1ODkwMC04MmZmLTQyMmEtYTE5ZC0wOWI2YTRlYWY0NDgifQ.b6Mv9RT6DyEFbaNgEyh8AR2fGy3NFNHRh2JBUTWB5IaBNYy9qr6IpUwAAlGhfjRlZSm_MFMk9JHogKCYOHMiaC8ZxZTNePhJW18JGaj9bFyoeOYSXAsKWDYzEBaXB-EVaAlpIEiuxdbGxCSotfg32-56eN_047nuu7cUF5lVz7lgAy1CQy6p0qDRh2xAvnxdFbz833d04bZnDcmLjc8D2koDwq3DhyZ-wskxF2J2iK2nbUGJ5E62PXjjejjYqcwqvY7Z_rUBJgpsm34pm-VMJbGHHZ6Uk90yhVo88_-eNYugBJLewD_L_7-uodOd4yUCbshJCy7nY9GXO2NXgMVjdQ</div>
+        <div>refresh_token: uJUtn-AhqpfJ0NyMyNb_Ee26ThyNve9HhOJkF98x_WhdU2WgHitGtQb9jPDjeiJDd_QzdtVixgC6qQqiDB29RbyLf-NMHrLnhl3m_VMqjw3bbAm6INak4biA2Jz-8Q_S</div>
+        <div>of_oauth_9Y6-bKo8jls1HoDWH6qlCA: </div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZDNmNzFjN2QtYjJkMi00YTFmLWFkNDQtODM1YmFlOTM4OTA3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5MzBhNTQwYi0yYTQ5LTQyOTgtOWM4MS05YjYyMDhmMTEyMTAiLCJzdWIiOiJ3aWx0b24uZ2lzbGFzb25AZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NjkwODg0MTIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzkzMGE1NDBiLTJhNDktNDI5OC05YzgxLTliNjIwOGYxMTIxMCIsImV4cCI6MTc2OTA4OTMxMiwiaWF0IjoxNzY5MDg4NDEyLCJ1c2VySWQiOiI1ODVkNGNhMi1lNTNkLTRiMGQtYjIxMC01OTIwN2QzZTY2N2MiLCJqdGkiOiJiNjA1ODkwMC04MmZmLTQyMmEtYTE5ZC0wOWI2YTRlYWY0NDgifQ.b6Mv9RT6DyEFbaNgEyh8AR2fGy3NFNHRh2JBUTWB5IaBNYy9qr6IpUwAAlGhfjRlZSm_MFMk9JHogKCYOHMiaC8ZxZTNePhJW18JGaj9bFyoeOYSXAsKWDYzEBaXB-EVaAlpIEiuxdbGxCSotfg32-56eN_047nuu7cUF5lVz7lgAy1CQy6p0qDRh2xAvnxdFbz833d04bZnDcmLjc8D2koDwq3DhyZ-wskxF2J2iK2nbUGJ5E62PXjjejjYqcwqvY7Z_rUBJgpsm34pm-VMJbGHHZ6Uk90yhVo88_-eNYugBJLewD_L_7-uodOd4yUCbshJCy7nY9GXO2NXgMVjdQ&#39; -b &#39;refresh_token=uJUtn-AhqpfJ0NyMyNb_Ee26ThyNve9HhOJkF98x_WhdU2WgHitGtQb9jPDjeiJDd_QzdtVixgC6qQqiDB29RbyLf-NMHrLnhl3m_VMqjw3bbAm6INak4biA2Jz-8Q_S&#39; -b &#39;of_oauth_9Y6-bKo8jls1HoDWH6qlCA=&#39; -d &#39;{
+    &quot;email&quot;: &quot;austin.brown@gmail.com&quot;
+}&#39;
+</div>
