@@ -82,7 +82,7 @@ public class AuthApi {
         queryParams.put("client_id", CLIENT_ID);
         queryParams.put("code_challenge", authParts.getCodeChallenge());
         queryParams.put("code_challenge_method", "S256");
-        queryParams.put("redirect_uri", getBaseUrl().concat(OAUTH_CALLBACK));
+        queryParams.put("redirect_uri", DEFAULT_BASE_URL.concat(OAUTH_CALLBACK));
         queryParams.put("scope", "openid profile email offline_access");
         queryParams.put("state", authParts.getState());
         return queryParams;
