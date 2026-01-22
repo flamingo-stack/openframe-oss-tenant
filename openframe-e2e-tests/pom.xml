@@ -21,16 +21,12 @@
 
         <!-- Core Test Framework -->
         <junit.version>5.10.1</junit.version>
-        <rest-assured.version>5.4.0</rest-assured.version>
+        <rest-assured.version>5.5.7</rest-assured.version>
         <assertj.version>3.24.2</assertj.version>
-        <awaitility.version>4.2.0</awaitility.version>
-        <kafka-clients.version>3.6.0</kafka-clients.version>
         <lombok.version>1.18.38</lombok.version>
         <jackson.version>2.16.1</jackson.version>
         <slf4j.version>2.0.9</slf4j.version>
-        <logback.version>1.5.13</logback.version>
-        <selenide.version>7.2.1</selenide.version>
-        <webdrivermanager.version>5.7.0</webdrivermanager.version>
+        <logback.version>1.5.25</logback.version>
         <datafaker.version>2.1.0</datafaker.version>
         <allure.version>2.25.0</allure.version>
         <allure-maven.version>2.12.0</allure-maven.version>
@@ -49,6 +45,7 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
             <version>${mongodb.version}</version>
+            <scope>test</scope>
         </dependency>
         
         <!-- JUnit 5 -->
@@ -75,23 +72,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Awaitility for async testing -->
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>${awaitility.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- ========== Kafka (Required for Pipeline Tests) ========== -->
-        
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-            <version>${kafka-clients.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <!-- ========== JSON Processing ========== -->
         
         <dependency>
@@ -108,24 +88,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ========== Selenide Dependencies ========== -->
-        
-        <!-- Selenide for UI testing -->
-        <dependency>
-            <groupId>com.codeborne</groupId>
-            <artifactId>selenide</artifactId>
-            <version>${selenide.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        
-        <!-- WebDriver Manager for automatic driver management -->
-        <dependency>
-            <groupId>io.github.bonigarcia</groupId>
-            <artifactId>webdrivermanager</artifactId>
-            <version>${webdrivermanager.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        
         <!-- ========== Test Data Generation ========== -->
         
         <!-- Faker for generating test data -->
@@ -133,7 +95,7 @@
             <groupId>net.datafaker</groupId>
             <artifactId>datafaker</artifactId>
             <version>${datafaker.version}</version>
-            <scope>compile</scope>
+            <scope>test</scope>
         </dependency>
         
         <!-- ========== Utilities ========== -->
@@ -152,6 +114,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -177,13 +140,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- JUnit Pioneer for @RetryingTest -->
-        <dependency>
-            <groupId>org.junit-pioneer</groupId>
-            <artifactId>junit-pioneer</artifactId>
-            <version>2.2.0</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -218,8 +174,8 @@
                 <version>${maven-surefire.version}</version>
                 <configuration>
                     <!-- Parallel execution settings -->
-                    <parallel>methods</parallel>
-                    <threadCount>4</threadCount>
+                    <parallel>classes</parallel>
+                    <threadCount>2</threadCount>
                     <forkCount>2</forkCount>
                     <reuseForks>true</reuseForks>
                     <perCoreThreadCount>true</perCoreThreadCount>
@@ -233,7 +189,7 @@
                         <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
                     </systemPropertyVariables>
                     
-                    <!-- Test selection - тільки unit тести -->
+                    <!-- Test selection -->
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>

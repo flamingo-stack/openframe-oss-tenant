@@ -1,8 +1,8 @@
 package com.openframe.api;
 
-import com.openframe.data.dto.response.MeResponse;
+import com.openframe.data.dto.user.MeResponse;
 
-import static com.openframe.support.helpers.RequestSpecHelper.getAuthorizedSpec;
+import static com.openframe.helpers.RequestSpecHelper.getAuthorizedSpec;
 import static io.restassured.RestAssured.given;
 
 public class UserApi {
