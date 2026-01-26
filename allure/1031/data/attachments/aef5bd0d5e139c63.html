@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6977b95207d4dd1ae986c870</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Ms. Jerrell Lueilwitz&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(920) 772-0714&quot;,
+                &quot;email&quot;: &quot;sari.schmitt@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;117 Sidney Islands&quot;,
+            &quot;street2&quot;: &quot;Apt. 212&quot;,
+            &quot;city&quot;: &quot;Port Olinda&quot;,
+            &quot;state&quot;: &quot;Arizona&quot;,
+            &quot;postalCode&quot;: &quot;53769&quot;,
+            &quot;country&quot;: &quot;Argentina&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5647 Zemlak Unions&quot;,
+            &quot;street2&quot;: &quot;Suite 725&quot;,
+            &quot;city&quot;: &quot;Hagenestown&quot;,
+            &quot;state&quot;: &quot;Arkansas&quot;,
+            &quot;postalCode&quot;: &quot;03318&quot;,
+            &quot;country&quot;: &quot;Norway&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        26
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        26
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOTRlYzQ5OTctZjcyYy00NjE3LTg0NDktYTRjMDU2YWZlNzg5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkZTFlN2JkYS1iMDJlLTQwNzItOTlhYi0zYzFmZDVhNDM2ODYiLCJzdWIiOiJkaWVnby5zY2h1bW1AZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk0NTM5MDUsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2RlMWU3YmRhLWIwMmUtNDA3Mi05OWFiLTNjMWZkNWE0MzY4NiIsImV4cCI6MTc2OTQ1NDgwNSwiaWF0IjoxNzY5NDUzOTA1LCJ1c2VySWQiOiJlMTkwMTRhZC00OTM5LTQyYmQtOTZjZC02Mjc5MjBlNzZmOWMiLCJqdGkiOiI1Njc2MzdjNC0zNmQwLTRhYWUtOGQ0Mi00MzMzOGZjMDc2NjYifQ.XIuQxdRoEOf7oprNTb3NSMeRDb6aQA-f0DKCeXrcZ0UODaRMuY_ufjbzdEfM0mSN1x0FMeS53_9TnzhehJ5vUSQbuXI9oIEtJ5THE-rKJihaO_FT_b5W6Y6Sdntt14qycXe4QsU996FWlz7_1WwfzuJ8TjUYlSDE2Btvq4mnrzRyh43Q1x-qeolsqAgCTPlsOdxSiTMLwOzfsuZSiqV0_IGmn3nqE6Bf_bKstHhpaWgu9RXKO4jqkR6rW4o4wQHyJuvLarNC07ATYlmLu8SitUfKSZL8VcWAtEu9Zu1kM2abK1hwUQOAjmtZP-9xsi9vOH9C56TmN6716QLDqCjXtw</div>
+        <div>refresh_token: f8rN44XFif6qmGhKt85fA-DHgp6RBHvi9v7xKM-X4mNbDUkIH7Ut87EoY5WtqThnfp67JCswkAMobT5plVaKFtH0_GZDhdM34BysYuycIbLFzqgpotc36vml9dwLCGTS</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6977b95207d4dd1ae986c870&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOTRlYzQ5OTctZjcyYy00NjE3LTg0NDktYTRjMDU2YWZlNzg5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkZTFlN2JkYS1iMDJlLTQwNzItOTlhYi0zYzFmZDVhNDM2ODYiLCJzdWIiOiJkaWVnby5zY2h1bW1AZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk0NTM5MDUsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2RlMWU3YmRhLWIwMmUtNDA3Mi05OWFiLTNjMWZkNWE0MzY4NiIsImV4cCI6MTc2OTQ1NDgwNSwiaWF0IjoxNzY5NDUzOTA1LCJ1c2VySWQiOiJlMTkwMTRhZC00OTM5LTQyYmQtOTZjZC02Mjc5MjBlNzZmOWMiLCJqdGkiOiI1Njc2MzdjNC0zNmQwLTRhYWUtOGQ0Mi00MzMzOGZjMDc2NjYifQ.XIuQxdRoEOf7oprNTb3NSMeRDb6aQA-f0DKCeXrcZ0UODaRMuY_ufjbzdEfM0mSN1x0FMeS53_9TnzhehJ5vUSQbuXI9oIEtJ5THE-rKJihaO_FT_b5W6Y6Sdntt14qycXe4QsU996FWlz7_1WwfzuJ8TjUYlSDE2Btvq4mnrzRyh43Q1x-qeolsqAgCTPlsOdxSiTMLwOzfsuZSiqV0_IGmn3nqE6Bf_bKstHhpaWgu9RXKO4jqkR6rW4o4wQHyJuvLarNC07ATYlmLu8SitUfKSZL8VcWAtEu9Zu1kM2abK1hwUQOAjmtZP-9xsi9vOH9C56TmN6716QLDqCjXtw&#39; -b &#39;refresh_token=f8rN44XFif6qmGhKt85fA-DHgp6RBHvi9v7xKM-X4mNbDUkIH7Ut87EoY5WtqThnfp67JCswkAMobT5plVaKFtH0_GZDhdM34BysYuycIbLFzqgpotc36vml9dwLCGTS&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Ms. Jerrell Lueilwitz&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(920) 772-0714&quot;,
+                &quot;email&quot;: &quot;sari.schmitt@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;117 Sidney Islands&quot;,
+            &quot;street2&quot;: &quot;Apt. 212&quot;,
+            &quot;city&quot;: &quot;Port Olinda&quot;,
+            &quot;state&quot;: &quot;Arizona&quot;,
+            &quot;postalCode&quot;: &quot;53769&quot;,
+            &quot;country&quot;: &quot;Argentina&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5647 Zemlak Unions&quot;,
+            &quot;street2&quot;: &quot;Suite 725&quot;,
+            &quot;city&quot;: &quot;Hagenestown&quot;,
+            &quot;state&quot;: &quot;Arkansas&quot;,
+            &quot;postalCode&quot;: &quot;03318&quot;,
+            &quot;country&quot;: &quot;Norway&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        26
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        26
+    ]
+}&#39;
+</div>
