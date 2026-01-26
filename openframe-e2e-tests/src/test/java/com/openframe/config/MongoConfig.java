@@ -2,42 +2,20 @@ package com.openframe.config;
 
 import lombok.extern.slf4j.Slf4j;
 
-
 @Slf4j
-public class EnvironmentConfig {
+public class MongoConfig {
 
-    public static final String DEFAULT_BASE_URL = "https://localhost/";
     private static final String DEFAULT_MONGODB_URI = "mongodb://mongodb-0.mongodb.datasources.svc.cluster.local:27017/openframe";
-
     private static final String DEFAULT_DATABASE_NAME = "openframe";
     private static final String DEFAULT_MONGO_USER = "openframe";
     private static final String DEFAULT_MONGO_PASSWORD = "password123456789";
     private static final String DEFAULT_AUTH_DATABASE = "admin";
 
-    public static final String USER_FILE = "user.json";
-
-    private static String baseUrl;
     private static String mongoUri;
     private static String dbName;
     private static String mongoUser;
     private static String mongoPassword;
     private static String authDatabase;
-
-    public static String getBaseUrl() {
-        if (baseUrl == null) {
-            String cmdVar = System.getProperty("api.base.url");
-            String envVar = System.getenv("API_BASE_URL");
-            if (cmdVar != null && !cmdVar.trim().isEmpty()) {
-                baseUrl = cmdVar.endsWith("/") ? cmdVar : cmdVar.concat("/");
-            } else if (envVar != null && !envVar.trim().isEmpty()) {
-                baseUrl = envVar.endsWith("/") ? envVar : envVar.concat("/");
-            } else {
-                baseUrl = DEFAULT_BASE_URL;
-            }
-            log.info("BASE_URL: {}", baseUrl);
-        }
-        return baseUrl;
-    }
 
     public static String getMongoDbUri() {
         if (mongoUri == null) {
@@ -50,7 +28,7 @@ public class EnvironmentConfig {
             } else {
                 mongoUri = DEFAULT_MONGODB_URI;
             }
-            log.info("MONGODB_URI: {}", mongoUri);
+            log.debug("MONGODB_URI: {}", mongoUri);
         }
         return mongoUri;
     }
@@ -66,7 +44,7 @@ public class EnvironmentConfig {
             } else {
                 dbName = DEFAULT_DATABASE_NAME;
             }
-            log.info("MONGODB_DATABASE: {}", dbName);
+            log.debug("MONGODB_DATABASE: {}", dbName);
         }
         return dbName;
     }
@@ -82,7 +60,7 @@ public class EnvironmentConfig {
             } else {
                 mongoUser = DEFAULT_MONGO_USER;
             }
-            log.info("MONGODB_USER: {}", mongoUser);
+            log.debug("MONGODB_USER: {}", mongoUser);
         }
         return mongoUser;
     }
@@ -113,7 +91,7 @@ public class EnvironmentConfig {
             } else {
                 authDatabase = DEFAULT_AUTH_DATABASE;
             }
-            log.info("MONGODB_AUTH_DATABASE: {}", authDatabase);
+            log.debug("MONGODB_AUTH_DATABASE: {}", authDatabase);
         }
         return authDatabase;
     }

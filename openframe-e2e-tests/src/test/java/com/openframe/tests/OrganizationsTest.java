@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("authorized")
 @DisplayName("Organizations")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class OrganizationCRUDTest extends AuthorizedTest {
+public class OrganizationsTest extends AuthorizedTest {
 
     @Order(1)
     @Test

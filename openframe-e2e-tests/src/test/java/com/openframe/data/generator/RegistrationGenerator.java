@@ -5,11 +5,13 @@ import com.openframe.data.dto.user.*;
 import net.datafaker.Faker;
 
 import java.time.LocalTime;
+import java.util.List;
 
-import static com.openframe.data.generator.DataDefaults.CORRECT_PASSWORD;
-import static com.openframe.data.generator.DataDefaults.TENANT_DOMAIN_NAME;
+import static com.openframe.config.UserConfig.CORRECT_PASSWORD;
 
 public class RegistrationGenerator {
+
+    private static final String TENANT_DOMAIN_NAME = "localhost";
 
     private static final Faker faker = new Faker();
     private static final String regexTemplate = "[^a-zA-Z0-9]";
@@ -58,5 +60,16 @@ public class RegistrationGenerator {
 
     public static ErrorResponse existingUserResponse() {
         return ErrorResponse.builder().code("BAD_REQUEST").message("Registration is closed for this organization").build();
+    }
+
+    public static User registeredOwner(UserRegistrationRequest request, UserRegistrationResponse response) {
+        String[] parts = request.getEmail().split("@");
+        return User.builder()
+                .email(request.getEmail())
+                .password(request.getPassword())
+                .tenantId(response.getId())
+                .displayName(parts[0])
+                .roles(List.of("OWNER", "ADMIN"))
+                .build();
     }
 }

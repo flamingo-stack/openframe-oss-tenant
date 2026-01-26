@@ -7,7 +7,7 @@ import io.restassured.config.SSLConfig;
 
 import java.time.Duration;
 
-import static com.openframe.config.EnvironmentConfig.getBaseUrl;
+import static com.openframe.config.ApiConfig.getBaseUrl;
 
 /**
  * REST Assured configuration

@@ -7,7 +7,7 @@ import com.openframe.data.dto.invitation.InvitationRequest;
 import com.openframe.data.dto.user.AuthUser;
 import net.datafaker.Faker;
 
-import static com.openframe.data.generator.DataDefaults.CORRECT_PASSWORD;
+import static com.openframe.config.UserConfig.CORRECT_PASSWORD;
 
 public class InvitationGenerator {
 

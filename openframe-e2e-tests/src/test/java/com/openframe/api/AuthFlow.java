@@ -71,6 +71,14 @@ public class AuthFlow {
     private Map<String, String> extractTokens() {
         Response response = exchangeCodeForTokens(authParts);
         response.then().statusCode(302);
-        return response.getCookies();
+        Map<String, String> responseCookies = response.getCookies();
+        Map<String, String> cookies = new HashMap<>();
+        if (responseCookies.containsKey("access_token")) {
+            cookies.put("access_token", responseCookies.get("access_token"));
+        }
+        if (responseCookies.containsKey("refresh_token")) {
+            cookies.put("refresh_token", responseCookies.get("refresh_token"));
+        }
+        return cookies;
     }
 }
