@@ -4,6 +4,7 @@ use tracing::{info, debug, warn};
 use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
+use crate::models::download_configuration::DownloadConfiguration;
 use crate::services::InstalledToolsService;
 use crate::services::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;
@@ -26,6 +27,27 @@ use tokio::process::Command;
 use std::path::{Path, PathBuf};
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
+
+// TODO: Remove hardcoded config after backend supports executable_path
+#[cfg(target_os = "macos")]
+fn get_meshcentral_config_override() -> Option<DownloadConfiguration> {
+    Some(DownloadConfiguration {
+        os: "macos".to_string(),
+        file_name: "meshagent-macos-arm64.tar.gz".to_string(),
+        agent_file_name: "MeshAgent.app".to_string(),
+        link: "https://github.com/flamingo-stack/MeshAgent/releases/download/9.9.9/meshagent-macos-arm64.tar.gz".to_string(),
+        executable_path: Some("MeshAgent.app/Contents/MacOS/meshagent".to_string()),
+    })
+}
+
+#[cfg(not(target_os = "macos"))]
+fn get_meshcentral_config_override() -> Option<DownloadConfiguration> {
+    None
+}
+
+fn should_use_config_override(tool_agent_id: &str) -> bool {
+    cfg!(target_os = "macos") && tool_agent_id.to_lowercase().contains("meshcentral")
+}
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
@@ -142,41 +164,86 @@ impl ToolInstallationService {
             .await
             .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
 
-        let file_path = self.directory_manager.get_agent_path(tool_agent_id);
-        
+        // Check for hardcoded config override (for testing)
+        let config_override = if should_use_config_override(tool_agent_id) {
+            info!("Using config override for {}", tool_agent_id);
+            get_meshcentral_config_override()
+        } else {
+            None
+        };
+
+        // Determine executable path based on download configuration or override
+        let (file_path, executable_path, effective_download_config) = if let Some(ref override_config) = config_override {
+            let exec_path = override_config.executable_path.as_ref().unwrap();
+            let full_exec_path = tool_folder_path.join(exec_path);
+            (full_exec_path, Some(exec_path.clone()), Some(override_config.clone()))
+        } else if let Some(ref download_configs) = tool_installation_message.download_configurations {
+            let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
+                .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
+
+            if let Some(ref exec_path) = download_config.executable_path {
+                let full_exec_path = tool_folder_path.join(exec_path);
+                (full_exec_path, Some(exec_path.clone()), Some(download_config.clone()))
+            } else {
+                (self.directory_manager.get_agent_path(tool_agent_id), None, Some(download_config.clone()))
+            }
+        } else {
+            (self.directory_manager.get_agent_path(tool_agent_id), None, None)
+        };
+
         // Check if agent file already exists
         if file_path.exists() {
-            info!("Agent file for tool {} already exists at {}, skipping download", 
-                  tool_agent_id, file_path.display());
+            info!("Agent file already exists at {}, skipping download", file_path.display());
         } else {
             // Download main tool agent file
-            let tool_agent_file_bytes = if let Some(ref download_configs) = tool_installation_message.download_configurations {
-                // Use GithubDownloadService with download configurations
-                info!("Using download configurations to download tool agent");
-                let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
-                    .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
-                
-                self.github_download_service
-                    .download_and_extract(download_config)
-                    .await
-                    .with_context(|| format!("Failed to download and extract tool agent for: {}", tool_agent_id))?
+            if let Some(ref download_config) = effective_download_config {
+                if download_config.executable_path.is_some() {
+                    // Folder mode: extract entire directory (e.g., MeshAgent.app)
+                    info!("Downloading and extracting folder {} from {}", download_config.agent_file_name, download_config.link);
+                    self.github_download_service
+                        .download_and_extract_folder(download_config, &tool_folder_path)
+                        .await
+                        .with_context(|| format!("Failed to download and extract folder for: {}", tool_agent_id))?;
+
+                    self.set_executable_permissions(&file_path).await
+                        .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
+
+                    if !file_path.exists() {
+                        warn!("Executable not found at {} after extraction", file_path.display());
+                    }
+                } else {
+                    // Single binary mode
+                    let tool_agent_file_bytes = self.github_download_service
+                        .download_and_extract(download_config)
+                        .await
+                        .with_context(|| format!("Failed to download and extract tool agent for: {}", tool_agent_id))?;
+
+                    // Save directly and set permissions (always executable)
+                    File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
+
+                    // Set file permissions to executable
+                    self.set_executable_permissions(&file_path).await
+                        .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
+
+                    info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
+                }
             } else {
                 // Fall back to legacy method (Artifactory)
                 info!("Using legacy method to download tool agent");
-                self.tool_agent_file_client
+                let tool_agent_file_bytes = self.tool_agent_file_client
                     .get_tool_agent_file(tool_agent_id.clone())
                     .await
-                    .with_context(|| format!("Failed to download tool agent file for: {}", tool_agent_id))?
-            };
+                    .with_context(|| format!("Failed to download tool agent file for: {}", tool_agent_id))?;
 
-            // Save directly and set permissions (always executable)
-            File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
+                // Save directly and set permissions (always executable)
+                File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
 
-            // Set file permissions to executable
-            self.set_executable_permissions(&file_path).await
-                .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
-            
-            info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
+                // Set file permissions to executable
+                self.set_executable_permissions(&file_path).await
+                    .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
+
+                info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
+            }
         }
 
         // Download and save assets
@@ -220,14 +287,22 @@ impl ToolInstallationService {
                 };
                 
                 File::create(&asset_path).await?.write_all(&asset_bytes).await?;
-                
+
                 // Set file permissions to executable only for executable assets
                 if is_executable {
                     self.set_executable_permissions(&asset_path).await
                         .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
                 }
-                
+
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
+
+                // Rename agent.msh to meshagent.msh for meshcentral compatibility
+                if tool_agent_id.to_lowercase().contains("meshcentral") && asset.local_filename == "agent.msh" {
+                    let new_path = asset_path.parent().unwrap().join("meshagent.msh");
+                    fs::rename(&asset_path, &new_path).await
+                        .with_context(|| format!("Failed to rename {} to meshagent.msh", asset_path.display()))?;
+                    info!("Renamed {} to meshagent.msh", asset.local_filename);
+                }
             }
         } else {
             info!("No assets to download for tool: {}", tool_agent_id);
@@ -282,6 +357,7 @@ impl ToolInstallationService {
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             status: ToolStatus::Installed,
+            executable_path,
         };
 
         self.installed_tools_service.save(installed_tool.clone()).await

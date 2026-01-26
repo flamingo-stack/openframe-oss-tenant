@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use tracing::{info, error};
+use tracing::{info, error, warn};
 use tokio::process::Command;
 use tokio::time::{sleep, timeout};
 use std::time::Duration;
@@ -158,13 +158,20 @@ impl ToolConnectionProcessingManager {
                         processed_args
                     );
 
-                    // Build executable path using directory manager
-                    let command_path = params_processor.directory_manager
-                        .get_agent_path(&tool.tool_agent_id)
-                        .to_string_lossy()
-                        .to_string();
+                    // Build executable path
+                    let command_path = if let Some(ref exec_path) = tool.executable_path {
+                        params_processor.directory_manager
+                            .app_support_dir()
+                            .join(&tool.tool_agent_id)
+                            .join(exec_path)
+                    } else {
+                        params_processor.directory_manager
+                            .get_agent_path(&tool.tool_agent_id)
+                    }.to_string_lossy().to_string();
 
-                    info!("Running...");
+                    if !std::path::Path::new(&command_path).exists() {
+                        warn!("Executable not found at: {}", command_path);
+                    }
                     // Execute command with a 15-second timeout and capture output
                     let command_future = Command::new(&command_path).args(&processed_args).output();
                     let output = match timeout(Duration::from_secs(15), command_future).await {

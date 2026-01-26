@@ -491,13 +491,22 @@ impl ToolRunManager {
                     }
                 };
 
-                debug!("Run tool {} with args: {:?}", tool.tool_agent_id, processed_args);
+                debug!("Running tool {} with args: {:?}", tool.tool_agent_id, processed_args);
 
-                // Build executable path (always uses app support directory)
-                let command_path = params_processor.directory_manager
-                    .get_agent_path(&tool.tool_agent_id)
-                    .to_string_lossy()
-                    .to_string();
+                // Build executable path
+                let command_path = if let Some(ref exec_path) = tool.executable_path {
+                    params_processor.directory_manager
+                        .app_support_dir()
+                        .join(&tool.tool_agent_id)
+                        .join(exec_path)
+                } else {
+                    params_processor.directory_manager
+                        .get_agent_path(&tool.tool_agent_id)
+                }.to_string_lossy().to_string();
+
+                if !std::path::Path::new(&command_path).exists() {
+                    warn!("Executable not found at: {}", command_path);
+                }
 
                 // On Windows, check session type to determine launch method
                 #[cfg(windows)]
