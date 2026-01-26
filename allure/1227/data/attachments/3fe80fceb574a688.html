@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6977698b2015d1184951a6bb</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Ms. Demetrius Schiller&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(650) 321-3693 x3085&quot;,
+                &quot;email&quot;: &quot;anne.feil@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;436 Fleta Wells&quot;,
+            &quot;street2&quot;: &quot;Apt. 716&quot;,
+            &quot;city&quot;: &quot;Lindstad&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;20391&quot;,
+            &quot;country&quot;: &quot;Guatemala&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;1762 Gleason Locks&quot;,
+            &quot;street2&quot;: &quot;Suite 466&quot;,
+            &quot;city&quot;: &quot;Dickenstown&quot;,
+            &quot;state&quot;: &quot;West Virginia&quot;,
+            &quot;postalCode&quot;: &quot;23496&quot;,
+            &quot;country&quot;: &quot;Nepal&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        26
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        26
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYzAxMTEzYWUtZWIyYy00OTg3LWFhY2MtYmRhODI5Nzc4NDUzIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3MjZiZmVhMy05Y2Y0LTRiYTMtODJlYi05ZjVlNmFhNTY0NGIiLCJzdWIiOiJhdWd1c3RpbmUuamFrdWJvd3NraUB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTQzMzQ4Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNzI2YmZlYTMtOWNmNC00YmEzLTgyZWItOWY1ZTZhYTU2NDRiIiwiZXhwIjoxNzY5NDM0MzgzLCJpYXQiOjE3Njk0MzM0ODMsInVzZXJJZCI6IjE2ZDAyMTg1LTY3YTUtNDhkNS1iNzMwLTM2MmFjMTVlMjhlMCIsImp0aSI6IjlmYjMzMWIwLTFhY2UtNGYzNC04YTI3LTA2NTNkYTk4YWMxOSJ9.PG4Uoake8QDqyxBzIqBf7Q8puDjYAkujk_U9Ngy8QuP8U3GCZ1BuJAgStEcPNfV0WOpe1zi9LXysu5ZMx04KHoyBia7xHFfeJYqxSrQEyhYaklUsuE6VFogQw9wzHFc5etUL243VdPrOsiHkjk4MgucwPtnbB3kGJilAE_OxDG0haoL7khW7W1isPo8_PvfWx1ivcdSIeJjVbgU_LCO945rcwpSGJvhea-SWBKrNyz0cMVYJRsf5dvGUTjktGy7r-y4LPfnjb7POf79KHhcKuGqWN5fN1mjn9YhKE-SRRF3wD3XQySvKTlMuSzHzxM4MEkhbDOtdTUtZ0JrkhIx_Sg</div>
+        <div>refresh_token: eFx5udXYkyH8Rm79y5-csOyIczHjhBkZvwmLEYqel9W4435fl8h9zkfNjw7cqa9vRVoYrOt5twIzWQxG9SQppC73RmG02q5rDAMLt7fqFnWY-a8fkzlW07ICVjQSGfyJ</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6977698b2015d1184951a6bb&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYzAxMTEzYWUtZWIyYy00OTg3LWFhY2MtYmRhODI5Nzc4NDUzIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3MjZiZmVhMy05Y2Y0LTRiYTMtODJlYi05ZjVlNmFhNTY0NGIiLCJzdWIiOiJhdWd1c3RpbmUuamFrdWJvd3NraUB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTQzMzQ4Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNzI2YmZlYTMtOWNmNC00YmEzLTgyZWItOWY1ZTZhYTU2NDRiIiwiZXhwIjoxNzY5NDM0MzgzLCJpYXQiOjE3Njk0MzM0ODMsInVzZXJJZCI6IjE2ZDAyMTg1LTY3YTUtNDhkNS1iNzMwLTM2MmFjMTVlMjhlMCIsImp0aSI6IjlmYjMzMWIwLTFhY2UtNGYzNC04YTI3LTA2NTNkYTk4YWMxOSJ9.PG4Uoake8QDqyxBzIqBf7Q8puDjYAkujk_U9Ngy8QuP8U3GCZ1BuJAgStEcPNfV0WOpe1zi9LXysu5ZMx04KHoyBia7xHFfeJYqxSrQEyhYaklUsuE6VFogQw9wzHFc5etUL243VdPrOsiHkjk4MgucwPtnbB3kGJilAE_OxDG0haoL7khW7W1isPo8_PvfWx1ivcdSIeJjVbgU_LCO945rcwpSGJvhea-SWBKrNyz0cMVYJRsf5dvGUTjktGy7r-y4LPfnjb7POf79KHhcKuGqWN5fN1mjn9YhKE-SRRF3wD3XQySvKTlMuSzHzxM4MEkhbDOtdTUtZ0JrkhIx_Sg&#39; -b &#39;refresh_token=eFx5udXYkyH8Rm79y5-csOyIczHjhBkZvwmLEYqel9W4435fl8h9zkfNjw7cqa9vRVoYrOt5twIzWQxG9SQppC73RmG02q5rDAMLt7fqFnWY-a8fkzlW07ICVjQSGfyJ&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Ms. Demetrius Schiller&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(650) 321-3693 x3085&quot;,
+                &quot;email&quot;: &quot;anne.feil@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;436 Fleta Wells&quot;,
+            &quot;street2&quot;: &quot;Apt. 716&quot;,
+            &quot;city&quot;: &quot;Lindstad&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;20391&quot;,
+            &quot;country&quot;: &quot;Guatemala&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;1762 Gleason Locks&quot;,
+            &quot;street2&quot;: &quot;Suite 466&quot;,
+            &quot;city&quot;: &quot;Dickenstown&quot;,
+            &quot;state&quot;: &quot;West Virginia&quot;,
+            &quot;postalCode&quot;: &quot;23496&quot;,
+            &quot;country&quot;: &quot;Nepal&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        26
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        26
+    ]
+}&#39;
+</div>
