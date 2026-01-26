@@ -28,15 +28,14 @@ use std::path::{Path, PathBuf};
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 
-// TODO: Remove hardcoded config after backend supports executable_path
+// TODO: Remove hardcoded config after backend supports folder extraction
 #[cfg(target_os = "macos")]
 fn get_meshcentral_config_override() -> Option<DownloadConfiguration> {
     Some(DownloadConfiguration {
         os: "macos".to_string(),
         file_name: "meshagent-macos-arm64.tar.gz".to_string(),
-        agent_file_name: "MeshAgent.app".to_string(),
+        agent_file_name: "MeshAgent.app/Contents/MacOS/meshagent".to_string(),
         link: "https://github.com/flamingo-stack/MeshAgent/releases/download/9.9.9/meshagent-macos-arm64.tar.gz".to_string(),
-        executable_path: Some("MeshAgent.app/Contents/MacOS/meshagent".to_string()),
     })
 }
 
@@ -172,23 +171,28 @@ impl ToolInstallationService {
             None
         };
 
-        // Determine executable path based on download configuration or override
-        let (file_path, executable_path, effective_download_config) = if let Some(ref override_config) = config_override {
-            let exec_path = override_config.executable_path.as_ref().unwrap();
-            let full_exec_path = tool_folder_path.join(exec_path);
-            (full_exec_path, Some(exec_path.clone()), Some(override_config.clone()))
+        // Determine download config and executable path
+        let effective_download_config = if let Some(ref override_config) = config_override {
+            Some(override_config.clone())
         } else if let Some(ref download_configs) = tool_installation_message.download_configurations {
             let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
                 .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
+            Some(download_config.clone())
+        } else {
+            None
+        };
 
-            if let Some(ref exec_path) = download_config.executable_path {
-                let full_exec_path = tool_folder_path.join(exec_path);
-                (full_exec_path, Some(exec_path.clone()), Some(download_config.clone()))
+        // Determine file path - if agent_file_name contains '/' it's a path inside extracted folder
+        let (file_path, executable_path) = if let Some(ref config) = effective_download_config {
+            if config.agent_file_name.contains('/') {
+                // Folder mode: agent_file_name is path to executable (e.g., "MeshAgent.app/Contents/MacOS/meshagent")
+                (tool_folder_path.join(&config.agent_file_name), Some(config.agent_file_name.clone()))
             } else {
-                (self.directory_manager.get_agent_path(tool_agent_id), None, Some(download_config.clone()))
+                // Single binary mode
+                (self.directory_manager.get_agent_path(tool_agent_id), None)
             }
         } else {
-            (self.directory_manager.get_agent_path(tool_agent_id), None, None)
+            (self.directory_manager.get_agent_path(tool_agent_id), None)
         };
 
         // Check if agent file already exists
@@ -197,13 +201,13 @@ impl ToolInstallationService {
         } else {
             // Download main tool agent file
             if let Some(ref download_config) = effective_download_config {
-                if download_config.executable_path.is_some() {
-                    // Folder mode: extract entire directory (e.g., MeshAgent.app)
-                    info!("Downloading and extracting folder {} from {}", download_config.agent_file_name, download_config.link);
+                if download_config.agent_file_name.contains('/') {
+                    // Folder mode: extract entire archive
+                    info!("Downloading and extracting archive from {}", download_config.link);
                     self.github_download_service
-                        .download_and_extract_folder(download_config, &tool_folder_path)
+                        .download_and_extract_all(download_config, &tool_folder_path)
                         .await
-                        .with_context(|| format!("Failed to download and extract folder for: {}", tool_agent_id))?;
+                        .with_context(|| format!("Failed to download and extract archive for: {}", tool_agent_id))?;
 
                     self.set_executable_permissions(&file_path).await
                         .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;

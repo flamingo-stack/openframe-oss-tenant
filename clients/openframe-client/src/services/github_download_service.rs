@@ -265,10 +265,9 @@ impl GithubDownloadService {
             .ok_or_else(|| anyhow!("No download configuration found for current OS"))
     }
 
-    /// Downloads archive and extracts a folder to the target path (macOS only).
-    /// Used for extracting app folders like MeshAgent.app.
+    /// Downloads archive and extracts all contents to target path (macOS only).
     #[cfg(target_os = "macos")]
-    pub async fn download_and_extract_folder(&self, config: &DownloadConfiguration, target_dir: &Path) -> Result<()> {
+    pub async fn download_and_extract_all(&self, config: &DownloadConfiguration, target_dir: &Path) -> Result<()> {
         info!("Downloading archive from: {}", config.link);
 
         let archive_bytes = self.download_with_retry(&config.link).await
@@ -285,75 +284,67 @@ impl GithubDownloadService {
         }
 
         if config.file_name.ends_with(".tar.gz") || config.file_name.ends_with(".tgz") {
-            self.extract_folder_from_tar_gz(archive_bytes, &config.agent_file_name, target_dir)
-                .with_context(|| format!("Failed to extract folder {} from tar.gz", config.agent_file_name))?;
+            self.extract_all_from_tar_gz(archive_bytes, target_dir)
+                .with_context(|| "Failed to extract tar.gz archive")?;
         } else {
             return Err(anyhow!("Unsupported archive format for macOS: {}. Expected .tar.gz", config.file_name));
         }
 
-        info!("Folder {} extracted to {}", config.agent_file_name, target_dir.display());
+        info!("Archive extracted to {}", target_dir.display());
         Ok(())
     }
 
     #[cfg(not(target_os = "macos"))]
-    pub async fn download_and_extract_folder(&self, config: &DownloadConfiguration, _target_dir: &Path) -> Result<()> {
-        Err(anyhow!("Folder extraction is only supported on macOS. Config: {}", config.file_name))
+    pub async fn download_and_extract_all(&self, config: &DownloadConfiguration, _target_dir: &Path) -> Result<()> {
+        Err(anyhow!("Archive extraction is only supported on macOS. Config: {}", config.file_name))
     }
 
-    /// Extracts a folder from tar.gz archive to target path (macOS only)
+    /// Extracts all contents from tar.gz archive to target path (macOS only)
     #[cfg(target_os = "macos")]
-    fn extract_folder_from_tar_gz(&self, archive_bytes: Bytes, folder_name: &str, target_dir: &Path) -> Result<()> {
+    fn extract_all_from_tar_gz(&self, archive_bytes: Bytes, target_dir: &Path) -> Result<()> {
         use flate2::read::GzDecoder;
         use tar::Archive;
         use std::fs;
         use std::os::unix::fs::PermissionsExt;
 
-        debug!("Extracting folder {} from tar.gz to {}", folder_name, target_dir.display());
-
         let cursor = Cursor::new(archive_bytes);
         let decoder = GzDecoder::new(cursor);
         let mut archive = Archive::new(decoder);
 
-        let folder_prefix = format!("{}/", folder_name);
         let mut extracted_count = 0;
 
         for entry_result in archive.entries().context("Failed to read tar entries")? {
             let mut entry = entry_result.context("Failed to read tar entry")?;
             let path = entry.path().context("Failed to get entry path")?;
-            let path_str = path.to_string_lossy().to_string();
+            let dest_path = target_dir.join(&path);
 
-            // Extract entries that belong to the target folder
-            if path_str.starts_with(&folder_prefix) || path_str == folder_name {
-                let dest_path = target_dir.join(&path_str);
-
-                if entry.header().entry_type().is_dir() {
-                    fs::create_dir_all(&dest_path)
-                        .with_context(|| format!("Failed to create directory: {}", dest_path.display()))?;
-                } else {
-                    if let Some(parent) = dest_path.parent() {
-                        fs::create_dir_all(parent)
-                            .with_context(|| format!("Failed to create parent directory: {}", parent.display()))?;
-                    }
-
-                    let mut file = std::fs::File::create(&dest_path)
-                        .with_context(|| format!("Failed to create file: {}", dest_path.display()))?;
-                    std::io::copy(&mut entry, &mut file)
-                        .with_context(|| format!("Failed to write file: {}", dest_path.display()))?;
-
-                    if let Ok(mode) = entry.header().mode() {
-                        fs::set_permissions(&dest_path, fs::Permissions::from_mode(mode)).ok();
-                    }
+            if entry.header().entry_type().is_dir() {
+                fs::create_dir_all(&dest_path)
+                    .with_context(|| format!("Failed to create directory: {}", dest_path.display()))?;
+            } else {
+                if let Some(parent) = dest_path.parent() {
+                    fs::create_dir_all(parent)
+                        .with_context(|| format!("Failed to create parent directory: {}", parent.display()))?;
                 }
 
-                extracted_count += 1;
+                let mut file = std::fs::File::create(&dest_path)
+                    .with_context(|| format!("Failed to create file: {}", dest_path.display()))?;
+                std::io::copy(&mut entry, &mut file)
+                    .with_context(|| format!("Failed to write file: {}", dest_path.display()))?;
+
+                if let Ok(mode) = entry.header().mode() {
+                    fs::set_permissions(&dest_path, fs::Permissions::from_mode(mode)).ok();
+                }
             }
+
+            extracted_count += 1;
         }
 
         if extracted_count == 0 {
-            return Err(anyhow!("Folder '{}' not found in archive", folder_name));
+            return Err(anyhow!("Archive is empty"));
         }
 
-        info!("Extracted {} entries for folder {}", extracted_count, folder_name);
+        info!("Extracted {} entries", extracted_count);
         Ok(())
     }
 }

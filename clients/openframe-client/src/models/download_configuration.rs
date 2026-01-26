@@ -5,12 +5,9 @@ use serde::{Deserialize, Serialize};
 pub struct DownloadConfiguration {
     pub os: String,
     pub file_name: String,
+    /// Path to executable. If contains '/' - folder mode (extract entire archive).
     pub agent_file_name: String,
     pub link: String,
-    /// If None, agent_file_name is the executable itself.
-    /// If Some, agent_file_name is a directory and this is the path to executable inside.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub executable_path: Option<String>,
 }
 
 impl DownloadConfiguration {
