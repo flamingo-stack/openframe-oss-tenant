@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jeni Abshire&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(319) 805-8981&quot;,
+                &quot;email&quot;: &quot;jamie.murphy@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;91332 Shields Stream&quot;,
+            &quot;street2&quot;: &quot;Suite 119&quot;,
+            &quot;city&quot;: &quot;New Marlonberg&quot;,
+            &quot;state&quot;: &quot;Missouri&quot;,
+            &quot;postalCode&quot;: &quot;42563&quot;,
+            &quot;country&quot;: &quot;Guinea&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        26
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        26
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtODQ0NzFkNjYtMGFkMy00ZTVkLTkxOWUtMTQzZjg5ZGNjMjFkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxMmU4NzA4Mi05NTRiLTQ4M2ItOGVmYS0wYWJmM2VjODkwY2EiLCJzdWIiOiJ3YXJuZXIubHVldHRnZW5AZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk0NjA5ODIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzEyZTg3MDgyLTk1NGItNDgzYi04ZWZhLTBhYmYzZWM4OTBjYSIsImV4cCI6MTc2OTQ2MTg4MiwiaWF0IjoxNzY5NDYwOTgyLCJ1c2VySWQiOiJlNGUzYjQwNi1hMmFlLTQwMGItYTgzOC0yZTUxMzI0MTg0OTAiLCJqdGkiOiIxM2NlMDk0YS1mMzhlLTQ4OWUtODM4Yi1lOWQ3MmE4MDkxNDYifQ.QyvPIv3dLspTHh0REiBytc_cof_1gaFO2pHvUSchUc7m_5Yd_b9l8z7X-SHK5xZD2trLm7ZI4MvlUTD-e43WG-FXoEYopJqQKe5EQ4XyphoZaR8YMzMfM5HRdq1EdO3q5rb3Xfomm0zyW1mMUnSwn2A6CSHCPnFb2RF6UFC0Tm_ok3w6j9Br1yJpUp6aXG85QKk7Wc7hJ7tNelXREh51jTsskcGsa9AM4hiR-MM1exUZkUPyZSjkGjYdWmr94jLNjkjdzBOox8AKxs7mW-emaWYmsjidlAfcmBXt2My2X-6AVz1RLwypMbmh1baRu6dnG3lnqDv9sl295HLUdzF36A</div>
+        <div>refresh_token: kMMUB3ilDwL_cnJ_AWpczKOxzNn2uyqKumdWYVEDxZ_Fc0DKS0ZWaKi_5imByVaGvFxOkQKuN7XpjEQABseR8Xn8o4emPIxA33zONKMJjGT-L4yEi_LG6imGqZYd4kfF</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtODQ0NzFkNjYtMGFkMy00ZTVkLTkxOWUtMTQzZjg5ZGNjMjFkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxMmU4NzA4Mi05NTRiLTQ4M2ItOGVmYS0wYWJmM2VjODkwY2EiLCJzdWIiOiJ3YXJuZXIubHVldHRnZW5AZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk0NjA5ODIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzEyZTg3MDgyLTk1NGItNDgzYi04ZWZhLTBhYmYzZWM4OTBjYSIsImV4cCI6MTc2OTQ2MTg4MiwiaWF0IjoxNzY5NDYwOTgyLCJ1c2VySWQiOiJlNGUzYjQwNi1hMmFlLTQwMGItYTgzOC0yZTUxMzI0MTg0OTAiLCJqdGkiOiIxM2NlMDk0YS1mMzhlLTQ4OWUtODM4Yi1lOWQ3MmE4MDkxNDYifQ.QyvPIv3dLspTHh0REiBytc_cof_1gaFO2pHvUSchUc7m_5Yd_b9l8z7X-SHK5xZD2trLm7ZI4MvlUTD-e43WG-FXoEYopJqQKe5EQ4XyphoZaR8YMzMfM5HRdq1EdO3q5rb3Xfomm0zyW1mMUnSwn2A6CSHCPnFb2RF6UFC0Tm_ok3w6j9Br1yJpUp6aXG85QKk7Wc7hJ7tNelXREh51jTsskcGsa9AM4hiR-MM1exUZkUPyZSjkGjYdWmr94jLNjkjdzBOox8AKxs7mW-emaWYmsjidlAfcmBXt2My2X-6AVz1RLwypMbmh1baRu6dnG3lnqDv9sl295HLUdzF36A&#39; -b &#39;refresh_token=kMMUB3ilDwL_cnJ_AWpczKOxzNn2uyqKumdWYVEDxZ_Fc0DKS0ZWaKi_5imByVaGvFxOkQKuN7XpjEQABseR8Xn8o4emPIxA33zONKMJjGT-L4yEi_LG6imGqZYd4kfF&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jeni Abshire&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(319) 805-8981&quot;,
+                &quot;email&quot;: &quot;jamie.murphy@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;91332 Shields Stream&quot;,
+            &quot;street2&quot;: &quot;Suite 119&quot;,
+            &quot;city&quot;: &quot;New Marlonberg&quot;,
+            &quot;state&quot;: &quot;Missouri&quot;,
+            &quot;postalCode&quot;: &quot;42563&quot;,
+            &quot;country&quot;: &quot;Guinea&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        26
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        26
+    ]
+}&#39;
+</div>
