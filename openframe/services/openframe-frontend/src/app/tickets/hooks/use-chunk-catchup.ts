@@ -10,7 +10,7 @@ import {
   CHAT_TYPE,
 } from '@flamingo-stack/openframe-frontend-core'
 import { apiClient } from '@lib/api-client'
-import { API_ENDPOINTS } from '../../tickets/constants'
+import { API_ENDPOINTS } from '../constants'
 
 export type { ChunkData, NatsMessageType, UseChunkCatchupReturn }
 
@@ -43,7 +43,7 @@ export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOp
   const options = useMemo<CoreChunkCatchupOptions>(() => ({
     dialogId,
     onChunkReceived,
-    chatTypes: [CHAT_TYPE.ADMIN],
+    chatTypes: [CHAT_TYPE.CLIENT, CHAT_TYPE.ADMIN],
     fetchChunks,
   }), [dialogId, onChunkReceived, fetchChunks])
 

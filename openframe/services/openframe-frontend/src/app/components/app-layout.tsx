@@ -18,7 +18,7 @@ function ContentLoading() {
   return <CompactPageLoader />
 }
 
-function AppShell({ children }: { children: React.ReactNode }) {
+function AppShell({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const { logout } = useAuth()
@@ -34,8 +34,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   }, [logout, router])
 
   const navigationItems = useMemo(
-    () => getNavigationItems(pathname, handleLogout),
-    [pathname, handleLogout]
+    () => getNavigationItems(pathname),
+    [pathname]
   )
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
@@ -50,6 +50,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
 
   return <CoreAppLayout 
+    mainClassName={mainClassName}
     sidebarConfig={sidebarConfig}
     loadingFallback={<ContentLoading />}
     mobileBurgerMenuProps={{
@@ -71,7 +72,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     }}>{children}</CoreAppLayout>
 }
 
-function AppLayoutInner({ children }: { children: React.ReactNode }) {
+function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   const { isAuthenticated } = useAuthStore()
   const { handleAuthenticationSuccess } = useAuth()
   const handleAuthSuccessRef = useRef(handleAuthenticationSuccess)
@@ -165,13 +166,13 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     return <AppShellSkeleton />
   }
 
-  return <AppShell>{children}</AppShell>
+  return <AppShell mainClassName={mainClassName}>{children}</AppShell>
 }
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayout({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   return (
     <Suspense fallback={<AppShellSkeleton />}>
-      <AppLayoutInner>{children}</AppLayoutInner>
+      <AppLayoutInner mainClassName={mainClassName}>{children}</AppLayoutInner>
     </Suspense>
   )
 }

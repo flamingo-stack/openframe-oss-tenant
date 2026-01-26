@@ -5,12 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { TabNavigation, TabItem, MessageCircleIcon, ArchiveIcon } from '@flamingo-stack/openframe-frontend-core'
 import { CurrentChats, ArchivedChats } from './chats-table'
 
-interface MingoTabNavigationProps {
-  activeTab: string
-  onTabChange: (tabId: string) => void
-}
-
-export const MINGO_TABS: TabItem[] = [
+export const TICKETS_TABS: TabItem[] = [
   {
     id: 'current',
     label: 'Current Chats',
@@ -25,15 +20,15 @@ export const MINGO_TABS: TabItem[] = [
   }
 ]
 
-export const getMingoTab = (tabId: string): TabItem | undefined =>
-  MINGO_TABS.find(tab => tab.id === tabId)
+export const getTicketsTab = (tabId: string): TabItem | undefined =>
+  TICKETS_TABS.find(tab => tab.id === tabId)
 
 export const getTabComponent = (tabId: string): React.ComponentType | null => {
-  const tab = getMingoTab(tabId)
+  const tab = getTicketsTab(tabId)
   return tab?.component || null
 }
 
-export function MingoTabNavigation() {
+export function TicketsTabNavigation() {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -47,7 +42,7 @@ export function MingoTabNavigation() {
     <TabNavigation
       urlSync={true}
       defaultTab="current"
-      tabs={MINGO_TABS}
+      tabs={TICKETS_TABS}
       onTabChange={handleTabChange}
     />
   )

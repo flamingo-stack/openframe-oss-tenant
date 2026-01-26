@@ -95,7 +95,7 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
   const columns = useMemo(() => getDialogTableColumns({ organizationLookup, isArchived }), [organizationLookup, isArchived])
 
   const handleRowClick = useCallback((dialog: Dialog) => {
-    router.push(`/mingo/dialog?id=${dialog.id}`)
+    router.push(`/tickets/dialog?id=${dialog.id}`)
   }, [router])
 
   const handleArchiveResolved = useCallback(async () => {

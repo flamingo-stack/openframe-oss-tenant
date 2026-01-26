@@ -5,14 +5,14 @@ import {
   ClipboardListIcon,
   IdCardIcon,
   MonitorIcon,
-  Settings02Icon
+  Settings02Icon,
+  TagIcon
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation'
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode'
 
 export const getNavigationItems = (
-  pathname: string,
-  onLogout: () => void
+  pathname: string
 ): NavigationSidebarItem[] => {
   if (isAuthOnlyMode()) {
     return []
@@ -65,8 +65,14 @@ export const getNavigationItems = (
 
   if (isSaasTenantMode()) {
     baseItems.push({
+      id: 'tickets',
+      label: 'Tickets',
+      icon: <TagIcon size={24} />,
+      path: '/tickets',
+      isActive: pathname === '/tickets/'
+    }, {
       id: 'mingo',
-      label: 'Mingo AI',
+      label: 'Mingo',
       icon: <MingoIcon className="w-6 h-6" />,
       path: '/mingo',
       isActive: pathname === '/mingo/'
