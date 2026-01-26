@@ -51,7 +51,7 @@ COPY entrypoint.sh /entrypoint.sh
 COPY fleetmdm.yml /etc/fleet/fleet.yml
 
 RUN apk add --no-cache bind-tools curl iputils netcat-openbsd nodejs npm && rm -rf /var/cache/apk/* && \
-    npm install -g fleetctl@4.60.1 && \
+    npm install -g fleetctl@4.78.0 && \
     chmod 777 /usr/share/init-fleet.sh && \
     chmod +x /usr/share/init-fleet.sh /entrypoint.sh
 
