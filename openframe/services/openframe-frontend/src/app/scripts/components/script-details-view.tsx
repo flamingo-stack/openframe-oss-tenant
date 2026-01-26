@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { Button, CardLoader, DetailPageContainer, InfoCard, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
 import { Edit2, Play } from 'lucide-react'
-import { InfoCard, Button, CardLoader, DetailPageContainer, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
+import { useRouter } from 'next/navigation'
+import React, { useCallback, useRef } from 'react'
 import { useScriptDetails } from '../hooks/use-script-details'
 import { ScriptInfoSection } from './script-info-section'
 
@@ -66,6 +66,21 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     </>
   )
 
+  const actions = [
+    {
+      label: 'Edit Script',
+      icon: <Edit2 size={20} />,
+      onClick: handleEditScript,
+      variant: 'outline' as const,
+    },
+    {
+      label: 'Run Script',
+      icon: <Play size={20} />,
+      onClick: handleRunScript,
+      variant: 'primary' as const,
+    }
+  ]
+
   return (
     <DetailPageContainer
       title={scriptDetails.name}
@@ -73,7 +88,8 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         label: 'Back to Scripts',
         onClick: handleBack
       }}
-      headerActions={headerActions}
+      actions={actions}
+      actionsVariant="primary-buttons"
     >
 
       {/* Main Content */}

@@ -1,14 +1,14 @@
 'use client'
 
-import React, { useState, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
 import {
-  Table,
   Button,
-  ListPageLayout
+  ListPageLayout,
+  Table
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
-import { PlusCircleIcon, RefreshIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
 import { useDebounce } from "@flamingo-stack/openframe-frontend-core/hooks"
+import { useRouter } from "next/navigation"
+import React, { useCallback, useMemo, useState } from "react"
 import { usePolicies } from '../../hooks/use-policies'
 import { Policy } from '../../types/policies.types'
 import { getPolicyTableColumns, getPolicyTableRowActions } from '../policies-table-columns'
@@ -87,7 +87,6 @@ export function Policies() {
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}
-        mobileColumns={['name', 'status', 'critical']}
         rowClassName="mb-1"
       />
     </ListPageLayout>

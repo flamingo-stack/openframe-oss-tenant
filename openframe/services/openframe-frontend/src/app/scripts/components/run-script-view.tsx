@@ -1,11 +1,12 @@
 'use client'
 
 import { DetailPageContainer, DeviceType, LoadError, NotFoundError, SelectCard } from '@flamingo-stack/openframe-frontend-core'
+import { PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { Button, ListLoader, SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getDeviceOperatingSystem } from '../../devices/utils/device-status'
 import { useRunScriptData } from '../hooks/use-run-script-data'
 import { ScriptInfoSection } from './script-info-section'
@@ -62,80 +63,80 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
 
   const selectedCount = selectedIds.size
 
-  const headerActions = (
-    <>
-      <Button
-        onClick={async () => {
-          if (selectedCount === 0) return
-          try {
-            const selectedDevices = devices.filter(d => selectedIds.has((d.machineId || d.agent_id || d.id) || ''))
-            const selectedAgentIds = selectedDevices
-              .map(d => d.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId)
-              .filter((id): id is string => !!id)
+  const handleRunScript = useCallback(async () => {
+    if (selectedCount === 0) return
+    try {
+      const selectedDevices = devices.filter(d => selectedIds.has((d.machineId || d.agent_id || d.id) || ''))
+      const selectedAgentIds = selectedDevices
+        .map(d => d.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId)
+        .filter((id): id is string => !!id)
 
-            if (selectedAgentIds.length === 0) {
-              toast({ title: 'No compatible agents', description: 'Selected devices have no Tactical agent IDs.', variant: 'destructive' })
-              return
-            }
+      if (selectedAgentIds.length === 0) {
+        toast({ title: 'No compatible agents', description: 'Selected devices have no Tactical agent IDs.', variant: 'destructive' })
+        return
+      }
 
-            const normalizeOs = (os?: string) => {
-              const o = (os || '').toLowerCase()
-              if (o.includes('win')) return 'windows'
-              if (o.includes('mac') || o.includes('darwin') || o.includes('osx')) return 'darwin'
-              if (o.includes('linux') || o.includes('ubuntu') || o.includes('debian') || o.includes('centos') || o.includes('redhat')) return 'linux'
-              return null
-            }
-            const osTypesSet = new Set(
-              selectedDevices
-                .map(d => normalizeOs(d.osType || d.operating_system))
-                .filter((v): v is 'windows' | 'linux' | 'darwin' => v !== null)
-            )
-            const osType = osTypesSet.size === 1 ? Array.from(osTypesSet)[0] : 'all'
+      const normalizeOs = (os?: string) => {
+        const o = (os || '').toLowerCase()
+        if (o.includes('win')) return 'windows'
+        if (o.includes('mac') || o.includes('darwin') || o.includes('osx')) return 'darwin'
+        if (o.includes('linux') || o.includes('ubuntu') || o.includes('debian') || o.includes('centos') || o.includes('redhat')) return 'linux'
+        return null
+      }
+      const osTypesSet = new Set(
+        selectedDevices
+          .map(d => normalizeOs(d.osType || d.operating_system))
+          .filter((v): v is 'windows' | 'linux' | 'darwin' => v !== null)
+      )
+      const osType = osTypesSet.size === 1 ? Array.from(osTypesSet)[0] : 'all'
 
-            const shell = osType === 'windows'
-              ? (scriptDetails?.shell === 'powershell' ? 'powershell' : 'cmd')
-              : '/bin/bash'
-            const payload = {
-              mode: 'script',
-              target: 'agents',
-              monType: 'all',
-              osType,
-              cmd: '',
-              shell,
-              custom_shell: null,
-              custom_field: null,
-              collector_all_output: false,
-              save_to_agent_note: false,
-              patchMode: 'scan',
-              offlineAgents: false,
-              client: null,
-              site: null,
-              agents: selectedAgentIds,
-              script: Number(scriptDetails?.id),
-              timeout: Number(scriptDetails?.default_timeout || 90),
-              args: scriptDetails?.args || [],
-              env_vars: scriptDetails?.env_vars || [],
-              run_as_user: Boolean(scriptDetails?.run_as_user) || false,
-            }
+      const shell = osType === 'windows'
+        ? (scriptDetails?.shell === 'powershell' ? 'powershell' : 'cmd')
+        : '/bin/bash'
+      const payload = {
+        mode: 'script',
+        target: 'agents',
+        monType: 'all',
+        osType,
+        cmd: '',
+        shell,
+        custom_shell: null,
+        custom_field: null,
+        collector_all_output: false,
+        save_to_agent_note: false,
+        patchMode: 'scan',
+        offlineAgents: false,
+        client: null,
+        site: null,
+        agents: selectedAgentIds,
+        script: Number(scriptDetails?.id),
+        timeout: Number(scriptDetails?.default_timeout || 90),
+        args: scriptDetails?.args || [],
+        env_vars: scriptDetails?.env_vars || [],
+        run_as_user: Boolean(scriptDetails?.run_as_user) || false,
+      }
 
-            const res = await tacticalApiClient.runBulkAction(payload)
-            if (!res.ok) {
-              throw new Error(res.error || `Bulk action failed with status ${res.status}`)
-            }
+      const res = await tacticalApiClient.runBulkAction(payload)
+      if (!res.ok) {
+        throw new Error(res.error || `Bulk action failed with status ${res.status}`)
+      }
 
-            toast({ title: 'Scripts submitted', description: `${selectedAgentIds.length} agent(s) received the script.`, variant: 'success' })
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : 'Failed to submit script'
-            toast({ title: 'Submission failed', description: msg, variant: 'destructive' })
-          }
-        }}
-        disabled={selectedCount === 0}
-        className="bg-ods-accent hover:bg-ods-accent-hover text-ods-text-on-accent px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px]"
-      >
-        Run Script
-      </Button>
-    </>
-  )
+      toast({ title: 'Scripts submitted', description: `${selectedAgentIds.length} agent(s) received the script.`, variant: 'success' })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to submit script'
+      toast({ title: 'Submission failed', description: msg, variant: 'destructive' })
+    }
+  }, [selectedCount, devices, selectedIds, scriptDetails, toast])
+
+  const actions = useMemo(() => [
+    {
+      label: 'Run Script',
+      icon: <PlayIcon size={20} />,
+      onClick: handleRunScript,
+      variant: 'primary' as const,
+      disabled: selectedCount === 0,
+    }
+  ], [handleRunScript, selectedCount])
 
   if (isLoadingScript) {
     return <ListLoader />
@@ -153,7 +154,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     <DetailPageContainer
       title="Run Script"
       backButton={{ label: 'Back to Script Details', onClick: handleBack }}
-      headerActions={headerActions}
+      actions={actions}
     >
       {/* Script summary */}
       <div className="flex-1 overflow-auto">

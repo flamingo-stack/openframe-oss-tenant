@@ -1,16 +1,15 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { Plus, ArrowLeft } from 'lucide-react'
-import { tacticalApiClient } from '@lib/tactical-api-client'
-import { useScriptDetails } from '../hooks/use-script-details'
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, FormLoader, FormPageContainer, Label, Textarea } from '@flamingo-stack/openframe-frontend-core'
+import { Button, FormLoader, FormPageContainer, Label, OS_TYPES, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea, type OSType } from '@flamingo-stack/openframe-frontend-core'
 import { PushButtonSelector } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { OS_TYPES, type OSType } from '@flamingo-stack/openframe-frontend-core'
 import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types'
+import { tacticalApiClient } from '@lib/tactical-api-client'
+import { ArrowLeft, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useScriptDetails } from '../hooks/use-script-details'
 
 interface ScriptData {
   name: string
@@ -131,7 +130,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   }
 
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     try {
       setIsLoading(true)
 
@@ -189,7 +188,25 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [scriptData, isEditMode, scriptId, toast])
+
+  const handleTestScript = useCallback(() => {
+    toast({ title: 'Test Script', description: 'Feature coming soon', variant: 'default' })
+  }, [toast])
+
+  const actions = useMemo(() => [
+    {
+      label: 'Test Script',
+      onClick: handleTestScript,
+      variant: 'outline' as const,
+    },
+    {
+      label: 'Save Script',
+      onClick: handleSave,
+      variant: 'primary' as const,
+      disabled: isLoading || !scriptData.name.trim(),
+    }
+  ], [handleSave, isLoading, scriptData.name, handleTestScript])
 
   if (isLoadingScript) {
     return (
@@ -222,23 +239,6 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
     )
   }
 
-  const headerActions = (
-    <>
-      <Button
-        onClick={() => toast({ title: 'Test Script', description: 'Feature coming soon', variant: 'default' })}
-        variant="outline"
-      >
-        Test Script
-      </Button>
-      <Button
-        onClick={handleSave}
-        disabled={isLoading || !scriptData.name.trim()}
-      >
-        {isLoading ? 'Saving...' : 'Save Script'}
-      </Button>
-    </>
-  )
-
   return (
     <FormPageContainer
       title={isEditMode && scriptDetails ? scriptDetails.name : 'New Script'}
@@ -246,7 +246,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         label: 'Back to Scripts',
         onClick: handleBack
       }}
-      headerActions={headerActions}
+      actions={actions}
       padding='none'
     >
       <div className="space-y-10">

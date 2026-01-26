@@ -1,8 +1,7 @@
 'use client'
 
-import { ArchiveIcon } from '@flamingo-stack/openframe-frontend-core'
+import { BoxArchiveIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import {
-  Button,
   ListPageLayout,
   Table
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
@@ -37,10 +36,14 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
     isLoadingArchived,
     currentError,
     archivedError,
+    currentStatusFilters,
+    archivedStatusFilters,
     fetchDialogs,
     goToNextPage,
     goToFirstPage
   } = useDialogsStore()
+
+  const currentFilters = isArchived ? archivedStatusFilters : currentStatusFilters
 
   // Select the right data based on mode
   const dialogs = isArchived ? archivedDialogs : currentDialogs
@@ -139,13 +142,25 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
     } : null
   )
 
-  // Table filters (empty for now, but ready for future use)
-  const tableFilters = useMemo(() => ({}), [])
-
   const title = isArchived ? "Archived Chats" : "Current Chats"
   const emptyMessage = isArchived
     ? "No archived chats found. Try adjusting your search or filters."
     : "No current chats found. Try adjusting your search or filters."
+
+  const actions = useMemo(() => [
+    {
+      label: 'Archive Resolved',
+      icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
+      onClick: handleArchiveResolved,
+      disabled: isArchiving || isLoading
+    }
+  ], [handleArchiveResolved, isArchiving, isLoading])
+
+  const filterGroups = columns.filter(column => column.filterable).map(column => ({
+    id: column.key,
+    title: column.label,
+    options: column.filterOptions || []
+  }))
 
   return (
     <ListPageLayout
@@ -156,18 +171,11 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
       error={error}
       padding="none"
       className="pt-6"
-      headerActions={
-        hasResolvedDialogs && (
-          <Button
-            onClick={handleArchiveResolved}
-            leftIcon={<ArchiveIcon className="w-5 h-5" />}
-            className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
-            disabled={isArchiving || isLoading}
-          >
-            {isArchiving ? 'Archiving...' : 'Archive Resolved'}
-          </Button>
-        )
-      }
+      actions={hasResolvedDialogs ? actions : undefined}
+      onMobileFilterChange={handleFilterChange}
+      mobileFilterGroups={filterGroups}
+      // TODO: This is a hack to get the filters to work, replace in future
+      currentMobileFilters={{ status: currentFilters || [] }}
     >
       <Table
         data={dialogs}
@@ -177,10 +185,10 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
         skeletonRows={10}
         emptyMessage={emptyMessage}
         onRowClick={handleRowClick}
-        filters={tableFilters}
+        // TODO: This is a hack to get the filters to work, replace in future
+        filters={{ status: currentFilters || [] }}
         onFilterChange={handleFilterChange}
         showFilters={!isArchived}
-        mobileColumns={['title', 'status', 'createdAt']}
         rowClassName="mb-1"
         cursorPagination={cursorPagination}
       />

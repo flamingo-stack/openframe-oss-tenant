@@ -1,13 +1,13 @@
 'use client'
 
 import { apiClient } from '@/src/lib/api-client'
-import { AppHeader, NavigationSidebar } from '@flamingo-stack/openframe-frontend-core/components/navigation'
+import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation'
 import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation'
 import { runtimeEnv } from '@lib/runtime-config'
 import { usePathname, useRouter } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode, shouldShowNavigationSidebar } from '../../lib/app-mode'
+import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode'
 import { getNavigationItems } from '../../lib/navigation-config'
 import { useAuth } from '../auth/hooks/use-auth'
 import { useAuthStore } from '../auth/stores/auth-store'
@@ -28,8 +28,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
     router.push(path)
   }, [router])
 
-  const handleLogout = useCallback(async () => {
-    await logout()
+  const handleLogout = useCallback(() => {
+    logout()
     router.push(getDefaultRedirectPath(false))
   }, [logout, router])
 
@@ -49,33 +49,26 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
 
-  return (
-    <div className="flex h-screen bg-ods-bg">
-      {/* Navigation Sidebar - Only show if navigation should be visible */}
-      {shouldShowNavigationSidebar() && (
-        <NavigationSidebar config={sidebarConfig} />
-      )}
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* App Header */}
-        <AppHeader
-          showNotifications
-          showUser
-          userName={displayName}
-          userEmail={user?.email}
-          onProfile={() => router.push('/settings/?tab=profile')}
-          onLogout={logout}
-        />
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6 pt-0">
-          <Suspense fallback={<ContentLoading />}>
-            {children}
-          </Suspense>
-        </main>
-      </div>
-    </div>
-  )
+  return <CoreAppLayout 
+    sidebarConfig={sidebarConfig}
+    loadingFallback={<ContentLoading />}
+    mobileBurgerMenuProps={{
+      user: {
+        userName: displayName,
+        userEmail: user?.email,
+        userAvatarUrl: user?.image?.imageUrl || null,
+        userRole: user?.role,
+      },
+      onLogout: handleLogout,
+    }}
+    headerProps={{
+      showNotifications: false,
+      showUser: true,
+      userName: displayName,
+      userEmail: user?.email,
+      onProfile: () => router.push('/settings/?tab=profile'),
+      onLogout: handleLogout
+    }}>{children}</CoreAppLayout>
 }
 
 function AppLayoutInner({ children }: { children: React.ReactNode }) {

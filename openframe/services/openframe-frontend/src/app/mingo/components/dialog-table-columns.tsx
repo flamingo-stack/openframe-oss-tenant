@@ -1,5 +1,5 @@
-import { type TableColumn, StatusTag, TableTimestampCell, DeviceCardCompact } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { Dialog, ClientDialogOwner } from '../types/dialog.types'
+import { type TableColumn, DeviceCardCompact, StatusTag, TableTimestampCell } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { ClientDialogOwner, Dialog } from '../types/dialog.types'
 
 interface DialogTableColumnsOptions {
   organizationLookup?: Record<string, string>
@@ -12,7 +12,7 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
     {
       key: 'title',
       label: 'TITLE',
-      width: 'flex-1 min-w-0',
+      width: 'w-[70%] sm:flex-1 min-w-0',
       renderCell: (dialog) => (
         <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate block">
           {dialog.title}
@@ -22,7 +22,7 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
     {
       key: 'source',
       label: 'SOURCE',
-      width: 'w-1/5',
+      hideAt: 'sm',
       renderCell: (dialog) => {
         const isClientOwner = 'machine' in (dialog.owner || {})
         const clientOwner = isClientOwner ? (dialog.owner as ClientDialogOwner) : null
@@ -41,7 +41,7 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
     {
       key: 'createdAt',
       label: 'CREATED',
-      width: 'w-1/5',
+      hideAt: 'lg',
       renderCell: (dialog) => (
         <TableTimestampCell
           timestamp={dialog.createdAt}
@@ -52,7 +52,6 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
     {
       key: 'status',
       label: 'STATUS',
-      width: 'w-1/6',
       filterable: !isArchived,
       filterOptions: !isArchived ? [
         { id: 'ACTIVE', value: 'ACTIVE', label: 'Active' },
