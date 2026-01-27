@@ -1,7 +1,7 @@
 'use client'
 
 import { Button, CardLoader, DetailPageContainer, InfoCard, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
-import { Edit2, Play } from 'lucide-react'
+import { Calendar, Edit2, Play } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useRef } from 'react'
 import { useScriptDetails } from '../hooks/use-script-details'
@@ -32,6 +32,12 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const handleRunScript = () => {
     if (scriptDetails?.id) {
       router.push(`/scripts/details/${scriptDetails.id}/run`)
+    }
+  }
+
+  const handleScheduleScript = () => {
+    if (scriptDetails?.id) {
+      router.push(`/scripts/details/${scriptDetails.id}/schedule`)
     }
   }
 
@@ -71,6 +77,12 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
       label: 'Edit Script',
       icon: <Edit2 size={20} />,
       onClick: handleEditScript,
+      variant: 'outline' as const,
+    },
+    {
+      label: 'Schedule Script',
+      icon: <Calendar size={20} />,
+      onClick: handleScheduleScript,
       variant: 'outline' as const,
     },
     {
