@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697945a49d84dd48780b36a9</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Kathryn Steuber II&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(973) 847-2134&quot;,
+                &quot;email&quot;: &quot;rosanne.pfeffer@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;6902 McClure Dam&quot;,
+            &quot;street2&quot;: &quot;Apt. 925&quot;,
+            &quot;city&quot;: &quot;New Tisa&quot;,
+            &quot;state&quot;: &quot;Indiana&quot;,
+            &quot;postalCode&quot;: &quot;99881&quot;,
+            &quot;country&quot;: &quot;Saint Martin&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5724 Guy Shoal&quot;,
+            &quot;street2&quot;: &quot;Suite 138&quot;,
+            &quot;city&quot;: &quot;South Terisamouth&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;76633&quot;,
+            &quot;country&quot;: &quot;Canada&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        27
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYjllZmYyYjktNjVlMi00YzJmLWEyMDUtNDU2NDgwOTU3ZmZjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3OTUxNmI3Yy02NTcxLTQ4ZGMtYTJkNS1lNzRkNTJhMzA1Y2UiLCJzdWIiOiJrYXkuaHVlbHNAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk1NTUzNjMsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzc5NTE2YjdjLTY1NzEtNDhkYy1hMmQ1LWU3NGQ1MmEzMDVjZSIsImV4cCI6MTc2OTU1NjI2MywiaWF0IjoxNzY5NTU1MzYzLCJ1c2VySWQiOiIwZmNjNWIzZC1iYjliLTQwOTItOTg5NC02ZGU5Y2FkZTFjZDMiLCJqdGkiOiI2N2IxNjQxZC0zMmYwLTQyYmQtYWU0MS0wNjNiMjEyYTEyZjgifQ.AqwiLwSzu6jTi0JReCkU_r4vT1KxEk72c9izUHxnCtce1yCpm4gBMgYfPApON7osUQkB_mK_s4mGhgEnu4c1VrY-hU3u-5oMz5nGE1BZsuDatIfidVsnmSzTG4pB9pWviaYbHvzP0CEkfZiIBgxPZo2-RDw0Tg_e6CSBzMYCYBOAyoDW4Fu49cS-I5NoYwMjKdJz8JqjYA0jFEmXdedoFRKqGQEUJOldBsGmFe_ZnWfhmVRgh10QJlb-hLKDMpyIfIcLoyiTbRuXxAVNaSuI5g6lMxs3o93F-QL1O7DnqcAs1ZquO3M8wVEqBdpPS7jnWE-27_XmfcnJlIXYVafQFA</div>
+        <div>refresh_token: iRBpaQvthYPzJi7UbCuQ1lsv34-uMsqfERp8U_Dwq58cBNL-BPzn06SBsV8a2DOjWr-WU0CLwT8eJqC9aNl7Iwo3qZ9DLkVRDrZmH_6_w3DVCh_LLTJtPPgU1-NBgIqU</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697945a49d84dd48780b36a9&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYjllZmYyYjktNjVlMi00YzJmLWEyMDUtNDU2NDgwOTU3ZmZjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI3OTUxNmI3Yy02NTcxLTQ4ZGMtYTJkNS1lNzRkNTJhMzA1Y2UiLCJzdWIiOiJrYXkuaHVlbHNAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk1NTUzNjMsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzc5NTE2YjdjLTY1NzEtNDhkYy1hMmQ1LWU3NGQ1MmEzMDVjZSIsImV4cCI6MTc2OTU1NjI2MywiaWF0IjoxNzY5NTU1MzYzLCJ1c2VySWQiOiIwZmNjNWIzZC1iYjliLTQwOTItOTg5NC02ZGU5Y2FkZTFjZDMiLCJqdGkiOiI2N2IxNjQxZC0zMmYwLTQyYmQtYWU0MS0wNjNiMjEyYTEyZjgifQ.AqwiLwSzu6jTi0JReCkU_r4vT1KxEk72c9izUHxnCtce1yCpm4gBMgYfPApON7osUQkB_mK_s4mGhgEnu4c1VrY-hU3u-5oMz5nGE1BZsuDatIfidVsnmSzTG4pB9pWviaYbHvzP0CEkfZiIBgxPZo2-RDw0Tg_e6CSBzMYCYBOAyoDW4Fu49cS-I5NoYwMjKdJz8JqjYA0jFEmXdedoFRKqGQEUJOldBsGmFe_ZnWfhmVRgh10QJlb-hLKDMpyIfIcLoyiTbRuXxAVNaSuI5g6lMxs3o93F-QL1O7DnqcAs1ZquO3M8wVEqBdpPS7jnWE-27_XmfcnJlIXYVafQFA&#39; -b &#39;refresh_token=iRBpaQvthYPzJi7UbCuQ1lsv34-uMsqfERp8U_Dwq58cBNL-BPzn06SBsV8a2DOjWr-WU0CLwT8eJqC9aNl7Iwo3qZ9DLkVRDrZmH_6_w3DVCh_LLTJtPPgU1-NBgIqU&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Kathryn Steuber II&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(973) 847-2134&quot;,
+                &quot;email&quot;: &quot;rosanne.pfeffer@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;6902 McClure Dam&quot;,
+            &quot;street2&quot;: &quot;Apt. 925&quot;,
+            &quot;city&quot;: &quot;New Tisa&quot;,
+            &quot;state&quot;: &quot;Indiana&quot;,
+            &quot;postalCode&quot;: &quot;99881&quot;,
+            &quot;country&quot;: &quot;Saint Martin&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5724 Guy Shoal&quot;,
+            &quot;street2&quot;: &quot;Suite 138&quot;,
+            &quot;city&quot;: &quot;South Terisamouth&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;76633&quot;,
+            &quot;country&quot;: &quot;Canada&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        27
+    ]
+}&#39;
+</div>
