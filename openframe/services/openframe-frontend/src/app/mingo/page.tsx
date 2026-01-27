@@ -8,6 +8,7 @@ import { AppLayout } from '../components/app-layout'
 import { 
   ChatMessageList, 
   ContentPageContainer,
+  MingoIcon,
   type ChunkData,
   type NatsMessageType,
 } from '@flamingo-stack/openframe-frontend-core'
@@ -76,7 +77,7 @@ export default function Mingo() {
   const {
     messages: processedMessages,
     pendingApprovals,
-    assistantType: mingoAssistantType
+    assistantType
   } = useProcessedMessages()
 
   const { processChunk } = useMingoRealtimeProcessor({
@@ -106,21 +107,25 @@ export default function Mingo() {
     processChunk(chunk, messageType, dialogId)
   }, [processChunk])
 
-  const createWelcomeMessage = useCallback((): Message => ({
-    id: `welcome-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    dialogId: currentDialogId || '',
-    chatType: 'ADMIN_AI_CHAT',
-    dialogMode: 'DEFAULT',
-    createdAt: new Date().toISOString(),
-    owner: {
-      type: 'ASSISTANT',
-      model: 'mingo'
-    },
-    messageData: {
-      type: 'TEXT',
-      text: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?"
+  const createWelcomeMessage = useCallback((): Message => {
+    if (!currentDialogId) throw new Error('No dialog ID')
+    
+    return {
+      id: `welcome-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      dialogId: currentDialogId,
+      chatType: 'ADMIN_AI_CHAT',
+      dialogMode: 'DEFAULT',
+      createdAt: new Date().toISOString(),
+      owner: {
+        type: 'ASSISTANT',
+        model: 'mingo'
+      },
+      messageData: {
+        type: 'TEXT',
+        text: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?"
+      }
     }
-  }), [currentDialogId])
+  }, [currentDialogId])
 
   const addWelcomeMessageIfNeeded = useCallback(() => {
     if (currentDialogId && adminMessages.length === 0) {
@@ -152,24 +157,25 @@ export default function Mingo() {
   const selectDialogInternal = useCallback((dialogId: string) => {
     initializeDialog(dialogId)
     resetUnreadCount(dialogId)
-    clearCurrent()
     setActiveDialogId(dialogId)
+    
     setSubscribedDialogIds(prev => {
       if (prev.includes(dialogId)) {
         return prev
       }
       return [...prev, dialogId]
     })
-    selectDialog(dialogId)
     
     const backgroundMessages = moveBackgroundToActive(dialogId)
+    
+    selectDialog(dialogId)
+    
     if (backgroundMessages.length > 0) {
       addAdminMessages(backgroundMessages)
     }
   }, [
     initializeDialog,
     resetUnreadCount,
-    clearCurrent,
     setActiveDialogId,
     selectDialog,
     moveBackgroundToActive,
@@ -198,14 +204,11 @@ export default function Mingo() {
       clearCurrent()
       setActiveDialogId(null)
     }
-  }, [searchParams.get('dialogId'), currentDialogId, selectDialogInternal, clearCurrent, setActiveDialogId])
+  }, [searchParams, currentDialogId, selectDialogInternal, clearCurrent, setActiveDialogId])
 
   useEffect(() => {
     if (currentDialogId && !isLoadingMessages && adminMessages.length === 0) {
-      const timeout = setTimeout(() => {
-        addWelcomeMessageIfNeeded()
-      }, 100)
-      return () => clearTimeout(timeout)
+      addWelcomeMessageIfNeeded()
     }
   }, [currentDialogId, isLoadingMessages, adminMessages.length, addWelcomeMessageIfNeeded])
 
@@ -280,6 +283,7 @@ export default function Mingo() {
           {/* Sidebar with dialog list */}
           <ChatSidebar
             onNewChat={handleNewChat}
+            isCreatingDialog={isCreatingDialog}
             onDialogSelect={handleDialogSelect}
             dialogs={dialogs}
             activeDialogId={currentDialogId || undefined}
@@ -293,30 +297,51 @@ export default function Mingo() {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
-              <ChatMessageList
-                messages={processedMessages}
-                dialogId={currentDialogId || undefined}
-                isTyping={isAdminChatTyping}
-                isLoading={isLoadingDialog || isLoadingMessages}
-                assistantType={mingoAssistantType}
-                pendingApprovals={pendingApprovals}
-                showAvatars={false}
-                autoScroll={true}
-              />
+              {currentDialogId ? (
+                <ChatMessageList
+                  messages={processedMessages}
+                  dialogId={currentDialogId}
+                  isTyping={isAdminChatTyping}
+                  isLoading={isLoadingDialog || isLoadingMessages}
+                  assistantType={assistantType}
+                  pendingApprovals={pendingApprovals}
+                  showAvatars={false}
+                  autoScroll={true}
+                />
+              ) : (
+                /* Welcome message when no dialog is selected */
+                <div className="flex-1 flex flex-col items-center justify-center p-8">
+                  <div className="text-center space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-center">
+                        <MingoIcon className="w-10 h-10" eyesColor='var(--ods-flamingo-cyan-base)' cornerColor='var(--ods-flamingo-cyan-base)'/>
+                      </div>
+                      <h1 className="font-['DM_Sans'] font-bold text-2xl text-ods-text-primary">
+                        Hi! I'm Mingo AI
+                      </h1>
+                      <p className="font-['DM_Sans'] font-medium text-base text-ods-text-secondary leading-relaxed">
+                        Ready to help with your technical tasks. Start a new conversation to get started.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Message Input */}
-            <div className="flex-shrink-0 px-6 pb-4">
-              {currentDialogId ? (<ChatInput
-                reserveAvatarOffset={false}
-                placeholder="Enter your Request..."
-                onSend={handleSendMessage}
-                sending={isSendingMessage || isAdminChatTyping}
-                disabled={isCreatingDialog}
-                autoFocus={false}
-                className="bg-ods-card rounded-lg"
-              />) : <></>}
-            </div>
+            {/* Message Input - Only show when dialog is selected */}
+            {currentDialogId && (
+              <div className="flex-shrink-0 px-6 pb-4">
+                <ChatInput
+                  reserveAvatarOffset={false}
+                  placeholder="Enter your Request..."
+                  onSend={handleSendMessage}
+                  sending={isSendingMessage || isAdminChatTyping}
+                  disabled={isCreatingDialog}
+                  autoFocus={false}
+                  className="bg-ods-card rounded-lg"
+                />
+              </div>
+            )}
           </div>
         </div>
       </ContentPageContainer>

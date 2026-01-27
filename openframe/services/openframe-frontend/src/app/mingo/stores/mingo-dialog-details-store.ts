@@ -39,7 +39,7 @@ interface MingoDialogDetailsStore {
   setPagination: (hasMore: boolean, cursor: string | null, newestCursor: string | null) => void
 }
 
-export const useMingoDialogDetailsStore = create<MingoDialogDetailsStore>((set, get) => ({
+export const useMingoDialogDetailsStore = create<MingoDialogDetailsStore>((set) => ({
   currentDialogId: null,
   currentDialog: null,
   adminMessages: [],
