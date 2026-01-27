@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/69794a689735ad556030f151</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Tommie Leannon&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(303) 224-7557&quot;,
+                &quot;email&quot;: &quot;katharine.corkery@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;4732 Colleen Union&quot;,
+            &quot;street2&quot;: &quot;Suite 180&quot;,
+            &quot;city&quot;: &quot;North Jim&quot;,
+            &quot;state&quot;: &quot;Utah&quot;,
+            &quot;postalCode&quot;: &quot;44790&quot;,
+            &quot;country&quot;: &quot;Ecuador&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;7708 Ignacio Row&quot;,
+            &quot;street2&quot;: &quot;Suite 510&quot;,
+            &quot;city&quot;: &quot;Lake Cassidybury&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;32106&quot;,
+            &quot;country&quot;: &quot;Guinea-Bissau&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        27
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNjI2MTI4M2UtNjIyZS00Y2MxLTgwZGUtNDE1MjcxNzY5YmE3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxMWFiMDk3ZS0yYTdkLTQ3YTctYmU5Ny1iYzZhY2U2NzRhMDciLCJzdWIiOiJqaW1teS5mZWVzdEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTU1NjU4Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMTFhYjA5N2UtMmE3ZC00N2E3LWJlOTctYmM2YWNlNjc0YTA3IiwiZXhwIjoxNzY5NTU3NDgzLCJpYXQiOjE3Njk1NTY1ODMsInVzZXJJZCI6Ijk3YzA1NGYzLThiNDItNDQzOS05M2NiLWUyYWQ1MzU2MmM4OSIsImp0aSI6IjcwZGQwYjUzLTAxNDYtNDEzMC05ZmRkLWZhNDQxYzllODU3YSJ9.XLxDv7JN-csULolmRuN1ZpoYilAaN6dX4rpFu7HkcLxqOp1AvOrDW7xmw77_NtU85M9Qk7OXaM4Q0EWrILdAi8lH4GcfXbwQMeHPPW0UuJ-KMQjgJJXcbNLp4DIKizTgRqzqp4RNyFElGb59s_Nezc02DRgjJmoeqLKcLJrzmfgmQJEYN88OGhRFfcHi55rYWGkvjzmfQd6Uh3iIsvIdQXRtYhmGMZjbmTiKBBs8ZoBtnYtdxUm0_3bU0h90CNwzpb8fB8OdBpouXC45aGzfr67Lc9p120HgJb5dlo3syGD8x0-4p4VhSB41_osdJtunWXBS_xoWcmaF4q1SsaufCg</div>
+        <div>refresh_token: QstNM37rIothnG9eIEmhVTU8PrQ-bJ6KEhkfY9WhM1maKADqH5yXOFi48kiCM1155QFw9IK6zcxo1YEQrVZqjqtClzTmarpm0ms2wp4hicDZ69S4Nc3jEX1QA_vKE1bN</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/69794a689735ad556030f151&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNjI2MTI4M2UtNjIyZS00Y2MxLTgwZGUtNDE1MjcxNzY5YmE3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIxMWFiMDk3ZS0yYTdkLTQ3YTctYmU5Ny1iYzZhY2U2NzRhMDciLCJzdWIiOiJqaW1teS5mZWVzdEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTU1NjU4Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMTFhYjA5N2UtMmE3ZC00N2E3LWJlOTctYmM2YWNlNjc0YTA3IiwiZXhwIjoxNzY5NTU3NDgzLCJpYXQiOjE3Njk1NTY1ODMsInVzZXJJZCI6Ijk3YzA1NGYzLThiNDItNDQzOS05M2NiLWUyYWQ1MzU2MmM4OSIsImp0aSI6IjcwZGQwYjUzLTAxNDYtNDEzMC05ZmRkLWZhNDQxYzllODU3YSJ9.XLxDv7JN-csULolmRuN1ZpoYilAaN6dX4rpFu7HkcLxqOp1AvOrDW7xmw77_NtU85M9Qk7OXaM4Q0EWrILdAi8lH4GcfXbwQMeHPPW0UuJ-KMQjgJJXcbNLp4DIKizTgRqzqp4RNyFElGb59s_Nezc02DRgjJmoeqLKcLJrzmfgmQJEYN88OGhRFfcHi55rYWGkvjzmfQd6Uh3iIsvIdQXRtYhmGMZjbmTiKBBs8ZoBtnYtdxUm0_3bU0h90CNwzpb8fB8OdBpouXC45aGzfr67Lc9p120HgJb5dlo3syGD8x0-4p4VhSB41_osdJtunWXBS_xoWcmaF4q1SsaufCg&#39; -b &#39;refresh_token=QstNM37rIothnG9eIEmhVTU8PrQ-bJ6KEhkfY9WhM1maKADqH5yXOFi48kiCM1155QFw9IK6zcxo1YEQrVZqjqtClzTmarpm0ms2wp4hicDZ69S4Nc3jEX1QA_vKE1bN&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Tommie Leannon&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(303) 224-7557&quot;,
+                &quot;email&quot;: &quot;katharine.corkery@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;4732 Colleen Union&quot;,
+            &quot;street2&quot;: &quot;Suite 180&quot;,
+            &quot;city&quot;: &quot;North Jim&quot;,
+            &quot;state&quot;: &quot;Utah&quot;,
+            &quot;postalCode&quot;: &quot;44790&quot;,
+            &quot;country&quot;: &quot;Ecuador&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;7708 Ignacio Row&quot;,
+            &quot;street2&quot;: &quot;Suite 510&quot;,
+            &quot;city&quot;: &quot;Lake Cassidybury&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;32106&quot;,
+            &quot;country&quot;: &quot;Guinea-Bissau&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        27
+    ]
+}&#39;
+</div>
