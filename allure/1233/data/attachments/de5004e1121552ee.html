@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6979456c7bab2b1493dc7999</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Maggie Lakin&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(757) 857-2696&quot;,
+                &quot;email&quot;: &quot;loise.tromp@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8419 Monte Walks&quot;,
+            &quot;street2&quot;: &quot;Suite 231&quot;,
+            &quot;city&quot;: &quot;Grantshire&quot;,
+            &quot;state&quot;: &quot;Pennsylvania&quot;,
+            &quot;postalCode&quot;: &quot;75526&quot;,
+            &quot;country&quot;: &quot;Vietnam&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;542 Jacquline Islands&quot;,
+            &quot;street2&quot;: &quot;Apt. 865&quot;,
+            &quot;city&quot;: &quot;Pansyside&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;67605&quot;,
+            &quot;country&quot;: &quot;Martinique&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        27
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZjVhNDc1NjktYWZlZC00MTk0LWJjOWMtYTBlMTJkMTA1NmQxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwY2U1M2IwOS1hNzIyLTQ0MmUtOGJkOC0zMzQxZWFhYTZmMTEiLCJzdWIiOiJydWRvbHBoLnJheW5vckBob3RtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NTU1MzA3LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8wY2U1M2IwOS1hNzIyLTQ0MmUtOGJkOC0zMzQxZWFhYTZmMTEiLCJleHAiOjE3Njk1NTYyMDcsImlhdCI6MTc2OTU1NTMwNywidXNlcklkIjoiMTM4MWY4NTgtZmMxNS00ZDU0LTlhNmQtYWMzN2RmNmY2ZTBkIiwianRpIjoiOTQ0MjgwZmQtNjUxOC00N2JmLWJhMTAtMmQ0OTU0ZTU1OWM3In0.khjzRS0GeAcfgX1bLOfUWjJQGczB-8sDpsZOiqs4v3UmNmTb_bdqi0_eg6e5h7G-3iX1OJmzQDK65eskbwdx6QsXfq32-HnYEbL_d-k14BWwkq34D6MH3TRX4Qt_BQroSXSCAcnou3bL9OB7Sjn5GI1MOfj3WVr2JUHlzx1u4HqTs_22cGEDQ2tiI7wRZddQ0cyQ56ViJ1mheKn3IGKsP9Ym5rZw4L6IVAWllOR_BRPFKRHLQ4LamEH6hzOwCYuyReZTnLK9ayumkrV7pgPre-wfbOXynS8RuHqLMZJLLY7oWGhlBPD_1Jj0m-fKM-TS5vk3uIfCt1b3_YH6d6Vcvg</div>
+        <div>refresh_token: uIi13vy1Td_f8Qt25iNaP5gq28HmlN1wS7aaLQeOezd1awqP02b7YZc3DyqbMJTOvp-A3QwGhJ-5Xpet92tB2tG-I9HFoER8TmnuAsJuCoadl_P-E1C_Am8MrMse9dYc</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6979456c7bab2b1493dc7999&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZjVhNDc1NjktYWZlZC00MTk0LWJjOWMtYTBlMTJkMTA1NmQxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwY2U1M2IwOS1hNzIyLTQ0MmUtOGJkOC0zMzQxZWFhYTZmMTEiLCJzdWIiOiJydWRvbHBoLnJheW5vckBob3RtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NTU1MzA3LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8wY2U1M2IwOS1hNzIyLTQ0MmUtOGJkOC0zMzQxZWFhYTZmMTEiLCJleHAiOjE3Njk1NTYyMDcsImlhdCI6MTc2OTU1NTMwNywidXNlcklkIjoiMTM4MWY4NTgtZmMxNS00ZDU0LTlhNmQtYWMzN2RmNmY2ZTBkIiwianRpIjoiOTQ0MjgwZmQtNjUxOC00N2JmLWJhMTAtMmQ0OTU0ZTU1OWM3In0.khjzRS0GeAcfgX1bLOfUWjJQGczB-8sDpsZOiqs4v3UmNmTb_bdqi0_eg6e5h7G-3iX1OJmzQDK65eskbwdx6QsXfq32-HnYEbL_d-k14BWwkq34D6MH3TRX4Qt_BQroSXSCAcnou3bL9OB7Sjn5GI1MOfj3WVr2JUHlzx1u4HqTs_22cGEDQ2tiI7wRZddQ0cyQ56ViJ1mheKn3IGKsP9Ym5rZw4L6IVAWllOR_BRPFKRHLQ4LamEH6hzOwCYuyReZTnLK9ayumkrV7pgPre-wfbOXynS8RuHqLMZJLLY7oWGhlBPD_1Jj0m-fKM-TS5vk3uIfCt1b3_YH6d6Vcvg&#39; -b &#39;refresh_token=uIi13vy1Td_f8Qt25iNaP5gq28HmlN1wS7aaLQeOezd1awqP02b7YZc3DyqbMJTOvp-A3QwGhJ-5Xpet92tB2tG-I9HFoER8TmnuAsJuCoadl_P-E1C_Am8MrMse9dYc&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Maggie Lakin&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(757) 857-2696&quot;,
+                &quot;email&quot;: &quot;loise.tromp@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8419 Monte Walks&quot;,
+            &quot;street2&quot;: &quot;Suite 231&quot;,
+            &quot;city&quot;: &quot;Grantshire&quot;,
+            &quot;state&quot;: &quot;Pennsylvania&quot;,
+            &quot;postalCode&quot;: &quot;75526&quot;,
+            &quot;country&quot;: &quot;Vietnam&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;542 Jacquline Islands&quot;,
+            &quot;street2&quot;: &quot;Apt. 865&quot;,
+            &quot;city&quot;: &quot;Pansyside&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;67605&quot;,
+            &quot;country&quot;: &quot;Martinique&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        27
+    ]
+}&#39;
+</div>
