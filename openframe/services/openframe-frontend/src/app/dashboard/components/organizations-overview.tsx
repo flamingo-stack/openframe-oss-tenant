@@ -1,11 +1,11 @@
 'use client'
 
-import { DashboardInfoCard, Skeleton, OrganizationCard } from '@flamingo-stack/openframe-frontend-core'
+import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core'
 import { useBatchImages } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { useOrganizationsOverview } from '../hooks/use-organizations-overview'
+import { featureFlags } from '@lib/feature-flags'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
-import { featureFlags } from '@lib/feature-flags'
+import { useOrganizationsOverview } from '../hooks/use-organizations-overview'
 
 const OrganizationsSkeleton = () => (
   <div className="flex flex-col gap-3">
@@ -41,7 +41,7 @@ const OrganizationsSkeleton = () => (
 )
 
 export function OrganizationsOverviewSection() {
-  const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(10)
+  const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(100)
   const router = useRouter()
 
   const imageUrls = useMemo(() => 
