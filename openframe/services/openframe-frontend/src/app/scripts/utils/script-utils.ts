@@ -13,3 +13,15 @@ export function mapPlatformsToOsTypes(platforms: string[]): string[] {
     .map(p => mapping[p.toLowerCase()])
     .filter((v): v is string => !!v)
 }
+
+export function mapPlatformsForDisplay(platforms: string[]): string[] {
+  const mapping: Record<string, string> = {
+    windows: 'Windows',
+    darwin: 'macOS',
+    linux: 'Linux'
+  }
+
+  return platforms
+    .map(p => mapping[p.toLowerCase()])
+    .filter((v): v is string => !!v)
+}

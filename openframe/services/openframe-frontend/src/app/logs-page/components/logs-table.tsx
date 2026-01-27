@@ -1,7 +1,7 @@
 'use client'
 
 import { Input, ToolBadge } from "@flamingo-stack/openframe-frontend-core"
-import { RefreshIcon } from "@flamingo-stack/openframe-frontend-core/components/icons"
+import { Refresh02HrIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
 import {
   Button,
   DeviceCardCompact,
@@ -191,7 +191,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       {
         key: 'tool',
         label: 'Tool',
-        width: 'w-[160px]',
+        width: 'w-[120px]',
+        hideAt: 'sm',
         filterable: true,
         filterOptions: logFilters?.toolTypes?.map((toolType: string) => ({
           id: toolType,
@@ -205,7 +206,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       {
         key: 'source',
         label: 'SOURCE',
-        width: 'w-[240px]',
+        width: 'w-[120px]',
+        hideAt: 'md',
         filterable: true,
         filterOptions: transformOrganizationFilters(logFilters?.organizations),
         renderCell: (log) => (
@@ -219,6 +221,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         key: 'description',
         label: 'Log Details',
         width: 'flex-1',
+        hideAt: 'xl',
         renderCell: (log) => (
           <TableDescriptionCell text={log.description.title} />
         )
@@ -334,17 +337,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     source: filterParams.organizationIds
   }), [filterParams.severities, filterParams.toolTypes, filterParams.organizationIds])
 
-  const headerActions = (
-    <Button
-      variant="outline"
-      onClick={handleRefresh}
-      leftIcon={<RefreshIcon size={20} />}
-      className="h-12 whitespace-nowrap"
-    >
-      Refresh
-    </Button>
-  )
-
   const tableContent = (
     <>
       <Table
@@ -359,7 +351,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}
-        mobileColumns={embedded ? ['logId', 'status'] : ['logId', 'status', 'device']}
         rowClassName="mb-1"
         cursorPagination={!embedded ? cursorPagination : undefined}
       />
@@ -400,7 +391,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
             <Button
               variant="outline"
               onClick={handleRefresh}
-              leftIcon={<RefreshIcon size={20} />}
+              leftIcon={<Refresh02HrIcon size={20} />}
               className="h-[48px] min-h-[48px] whitespace-nowrap py-0 flex items-center"
               style={{ height: 48 }}
             >
@@ -420,12 +411,25 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       </div>
     )
   }
+  const actions = useMemo(() => [
+    {
+      label: 'Refresh',
+      icon: <Refresh02HrIcon size={24} className="text-ods-text-secondary" />,
+      onClick: handleRefresh
+    }
+  ], [handleRefresh])
+
+  const filterGroups = columns.filter(column => column.filterable).map(column => ({
+    id: column.key,
+    title: column.label,
+    options: column.filterOptions || []
+  }))
 
   // Full page mode: return with ListPageLayout
   return (
     <ListPageLayout
       title="Logs"
-      headerActions={headerActions}
+      actions={actions}
       searchPlaceholder="Search for Logs"
       searchValue={searchInput}
       onSearch={setSearchInput}
@@ -433,6 +437,9 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       background="default"
       padding="none"
       className="pt-6"
+      onMobileFilterChange={handleFilterChange}
+      mobileFilterGroups={filterGroups}
+      currentMobileFilters={tableFilters}
     >
       {tableContent}
     </ListPageLayout>

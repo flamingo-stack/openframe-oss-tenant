@@ -16,7 +16,7 @@ export default async function DialogDetailsPage({ searchParams }: DialogDetailsP
   const { id } = params
   
   if (!id) {
-    redirect('/mingo')
+    redirect('/tickets')
   }
 
   return (

@@ -1,13 +1,13 @@
-import React from 'react'
-import { StatusTag, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core'
 import { OSTypeBadge, OrganizationIcon } from "@flamingo-stack/openframe-frontend-core/components/features"
+import { StatusTag, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui"
+import { featureFlags } from '@lib/feature-flags'
+import { deduplicateFilterOptions } from '@lib/filter-utils'
+import React from 'react'
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
 import { type Device } from '../types/device.types'
 import { getDeviceStatusConfig } from '../utils/device-status'
-import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
-import { DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core'
 import { DeviceActionsDropdown } from './device-actions-dropdown'
-import { deduplicateFilterOptions } from '@lib/filter-utils'
-import { featureFlags } from '@lib/feature-flags'
 
 // Returns render function for custom actions area (three dots menu only)
 export function getDeviceTableRowActions(onRefresh?: () => void): ((device: Device) => React.ReactNode) {
@@ -52,7 +52,7 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
     {
       key: 'device',
       label: 'DEVICE',
-      width: 'w-1/3',
+      width: 'flex-1 md:w-1/3',
       renderCell: (device) => (
         <div className="box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
           <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
@@ -69,7 +69,7 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
     {
       key: 'status',
       label: 'STATUS',
-      width: 'w-1/6',
+      width: 'w-[100px] md:w-1/6',
       filterable: true,
       filterOptions: (() => {
         const statuses = deviceFilters?.statuses || []
@@ -124,8 +124,9 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
     {
       key: 'os',
       label: 'OS',
-      width: 'w-1/6',
+      width: 'w-[120px] md:w-1/6',
       filterable: true,
+      hideAt: 'sm',
       filterOptions: deviceFilters?.osTypes?.map((os: any) => ({
         id: os.value,
         label: os.value,
@@ -143,6 +144,7 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
       key: 'organization',
       label: 'ORGANIZATION',
       width: 'w-1/6',
+      hideAt: 'lg',
       filterable: true,
       filterOptions: deduplicateFilterOptions(
         deviceFilters?.organizationIds?.map((org: any) => ({

@@ -1,4 +1,4 @@
-export const GET_MINGO_DIALOGS_QUERY = `
+export const GET_DIALOGS_QUERY = `
   query GetDialogs($filter: DialogFilterInput, $pagination: CursorPaginationInput, $search: String) {
   dialogs(filter: $filter, pagination: $pagination, search: $search) {
    edges {
@@ -7,8 +7,26 @@ export const GET_MINGO_DIALOGS_QUERY = `
      id
      title
      status
+     owner {
+      ... on ClientDialogOwner {
+       machineId
+       machine {
+        id
+        machineId
+        hostname
+        organizationId
+       }
+      }
+     }
      createdAt
      statusUpdatedAt
+     resolvedAt
+     aiResolutionSuggestedAt
+     rating {
+      id
+      dialogId
+      createdAt
+     }
     }
    }
    pageInfo {
@@ -21,7 +39,7 @@ export const GET_MINGO_DIALOGS_QUERY = `
  }
 `
 
-export const GET_MINGO_DIALOG_QUERY = `
+export const GET_DIALOG_QUERY = `
   query GetDialog($id: ID!) {
     dialog(id: $id) {
     id
@@ -46,6 +64,20 @@ export const GET_MINGO_DIALOG_QUERY = `
       dialogId
       createdAt
     }
+    }
+  }
+`
+
+export const GET_DIALOG_STATISTICS_QUERY = `
+  query GetDialogStatistics {
+    dialogStatistics {
+      totalCount
+      statusCounts {
+        status
+        count
+      }
+      averageResolutionTimeFormatted
+      averageRating
     }
   }
 `

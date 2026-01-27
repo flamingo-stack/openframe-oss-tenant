@@ -374,7 +374,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       title={dialog.title}
       backButton={{
         label: 'Back to Chats',
-        onClick: () => router.push('/mingo')
+        onClick: () => router.push('/tickets')
       }}
       padding="none"
       className="h-full pt-6 gap-2"

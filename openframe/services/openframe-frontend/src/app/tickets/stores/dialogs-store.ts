@@ -140,7 +140,7 @@ export const useDialogsStore = create<DialogsStore>((set, get) => ({
       const response = await apiClient.post<GraphQLResponse<DialogsResponse>>('/chat/graphql', {
         query: GET_DIALOGS_QUERY,
         variables: {
-          filter: { statuses },
+          filter: { statuses, agentTypes: ['CLIENT'] },
           pagination: paginationVars,
           search: effectiveSearchParam || undefined,
           slaSort: 'ASC'

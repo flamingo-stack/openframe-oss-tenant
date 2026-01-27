@@ -1,15 +1,14 @@
 'use client'
 
-import React from 'react'
 import { getTabComponent } from '@flamingo-stack/openframe-frontend-core'
-import { MINGO_TABS } from './mingo-tabs'
+import { TICKETS_TABS } from './tickets-tabs'
 
-interface MingoTabContentProps {
+interface TicketsTabContentProps {
   activeTab: string
 }
 
-export function MingoTabContent({ activeTab }: MingoTabContentProps) {
-  const TabComponent = getTabComponent(MINGO_TABS, activeTab)
+export function TicketsTabContent({ activeTab }: TicketsTabContentProps) {
+  const TabComponent = getTabComponent(TICKETS_TABS, activeTab)
 
   if (!TabComponent) {
     return (
