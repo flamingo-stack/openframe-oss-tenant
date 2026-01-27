@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mr. Rona Stanton&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(704) 270-8134 x1658&quot;,
+                &quot;email&quot;: &quot;joshua.fay@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;55559 Sherrill Extensions&quot;,
+            &quot;street2&quot;: &quot;Apt. 560&quot;,
+            &quot;city&quot;: &quot;Abdulmouth&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;28524&quot;,
+            &quot;country&quot;: &quot;Kyrgyz Republic&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        27
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNmFkYjk1ZWEtNTZkMi00Y2UyLWEwYjUtMjEzZDVmMmU5Zjg2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjNzgxZjM2Ny1lNTBhLTRjMGItODYzMy05ZDI2NTRkNDk2ZjYiLCJzdWIiOiJkb2xvcmVzLnVwdG9uQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NTE4NDc2LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9jNzgxZjM2Ny1lNTBhLTRjMGItODYzMy05ZDI2NTRkNDk2ZjYiLCJleHAiOjE3Njk1MTkzNzYsImlhdCI6MTc2OTUxODQ3NiwidXNlcklkIjoiNmVkYjZhZTQtMzQzYi00MmIwLTlhY2ItNjUwNDBiMTc1ZGQ0IiwianRpIjoiNWVjOTc0MmUtYzAzMi00YTEwLWJlNzUtYzEyZjY2ZWQ1NGQ3In0.NebY_oo2N0NTgMuPmXi4nj-LenDoxVtmF2GniCVX8UJvP0iSPoVTmJ8KqSAHlk2kVDeQPybNpupg05wK9NzwvAK743pFcY0wImxjvcHRXBJYWA4_ATWUAngVX3N2qrQhBmZr0IakfgeSGcpbUUdTmmP0X8rI08VqRJi-kNUj20w7edd4Ok2NK-EZ_9_V7Fm9ykx77K5IFXn0A3QYnJNzwDC8-EVJ_5xhwJTWPK5mx-o5-dK0cckmvYRQsGm3BtUC2gnDOsEtr1D17CwoJYWd7S4yrOHU-vyRix4t78OSyASDI1TuEMNYOP-PaLXEt3VNGy-myF8tPQX1sVAjjGpJ4A</div>
+        <div>refresh_token: HlCAXRu64tnlTkffxNbXQzNlOAmOoJU1MPs0zuL9AJ2y4Wu3z1MJ45ROpU37_ElDK-InklMiItjjK4E3ev9-zRX9vXke47-lv3av_qgBG4qrCdxc0dGpR58sVMmmNp3R</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNmFkYjk1ZWEtNTZkMi00Y2UyLWEwYjUtMjEzZDVmMmU5Zjg2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjNzgxZjM2Ny1lNTBhLTRjMGItODYzMy05ZDI2NTRkNDk2ZjYiLCJzdWIiOiJkb2xvcmVzLnVwdG9uQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NTE4NDc2LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9jNzgxZjM2Ny1lNTBhLTRjMGItODYzMy05ZDI2NTRkNDk2ZjYiLCJleHAiOjE3Njk1MTkzNzYsImlhdCI6MTc2OTUxODQ3NiwidXNlcklkIjoiNmVkYjZhZTQtMzQzYi00MmIwLTlhY2ItNjUwNDBiMTc1ZGQ0IiwianRpIjoiNWVjOTc0MmUtYzAzMi00YTEwLWJlNzUtYzEyZjY2ZWQ1NGQ3In0.NebY_oo2N0NTgMuPmXi4nj-LenDoxVtmF2GniCVX8UJvP0iSPoVTmJ8KqSAHlk2kVDeQPybNpupg05wK9NzwvAK743pFcY0wImxjvcHRXBJYWA4_ATWUAngVX3N2qrQhBmZr0IakfgeSGcpbUUdTmmP0X8rI08VqRJi-kNUj20w7edd4Ok2NK-EZ_9_V7Fm9ykx77K5IFXn0A3QYnJNzwDC8-EVJ_5xhwJTWPK5mx-o5-dK0cckmvYRQsGm3BtUC2gnDOsEtr1D17CwoJYWd7S4yrOHU-vyRix4t78OSyASDI1TuEMNYOP-PaLXEt3VNGy-myF8tPQX1sVAjjGpJ4A&#39; -b &#39;refresh_token=HlCAXRu64tnlTkffxNbXQzNlOAmOoJU1MPs0zuL9AJ2y4Wu3z1MJ45ROpU37_ElDK-InklMiItjjK4E3ev9-zRX9vXke47-lv3av_qgBG4qrCdxc0dGpR58sVMmmNp3R&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mr. Rona Stanton&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(704) 270-8134 x1658&quot;,
+                &quot;email&quot;: &quot;joshua.fay@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;55559 Sherrill Extensions&quot;,
+            &quot;street2&quot;: &quot;Apt. 560&quot;,
+            &quot;city&quot;: &quot;Abdulmouth&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;28524&quot;,
+            &quot;country&quot;: &quot;Kyrgyz Republic&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        27
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        27
+    ]
+}&#39;
+</div>
