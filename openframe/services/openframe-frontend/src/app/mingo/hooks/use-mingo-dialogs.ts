@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { apiClient } from '@lib/api-client'
 import { GET_MINGO_DIALOGS_QUERY } from '../queries/dialogs-queries'
@@ -18,18 +18,19 @@ function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): Dia
 }
 
 export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
-  const { enabled = true, search, limit = 50 } = options
+  const { enabled = true, search, limit = 20 } = options
   const { unreadCounts, getUnreadCount } = useMingoBackgroundMessagesStore()
 
-  const query = useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['mingo-dialogs', { search, limit }],
-    queryFn: async (): Promise<DialogNode[]> => {
+    queryFn: async ({ pageParam }): Promise<{ dialogs: DialogNode[], pageInfo: { hasNextPage: boolean, endCursor?: string } }> => {
       const variables = {
         filter: {
           agentTypes: ["ADMIN"]
         },
         pagination: {
-          limit
+          limit,
+          cursor: pageParam
         },
         search
       }
@@ -43,20 +44,29 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
         throw new Error(response.error || 'Failed to fetch dialogs')
       }
 
-      return response.data.data.dialogs.edges.map(edge => edge.node)
+      const { edges, pageInfo } = response.data.data.dialogs
+      return {
+        dialogs: edges.map(edge => edge.node),
+        pageInfo
+      }
     },
+    getNextPageParam: (lastPage) => {
+      return lastPage.pageInfo.hasNextPage ? lastPage.pageInfo.endCursor : undefined
+    },
+    initialPageParam: undefined as string | undefined,
     enabled,
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
   })
 
   const dialogsWithUnread = useMemo(() => {
-    if (!query.data) return []
+    if (!query.data?.pages) return []
     
-    return query.data.map(dialog => 
+    const allDialogs = query.data.pages.flatMap(page => page.dialogs)
+    return allDialogs.map(dialog => 
       transformToDialogItem(dialog, getUnreadCount(dialog.id))
     )
-  }, [query.data, unreadCounts, getUnreadCount])
+  }, [query.data?.pages, unreadCounts, getUnreadCount])
 
   return {
     dialogs: dialogsWithUnread,
@@ -64,7 +74,8 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
     isError: query.isError,
     error: query.error?.message,
     refetch: query.refetch,
-    hasNextPage: false,
-    fetchNextPage: () => {},
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
   }
 }

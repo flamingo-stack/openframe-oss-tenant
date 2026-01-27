@@ -2,8 +2,8 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useCallback, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useCallback, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AppLayout } from '../components/app-layout'
 import { 
   ChatMessageList, 
@@ -28,6 +28,7 @@ import type { Message } from './types'
 
 export default function Mingo() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [subscribedDialogIds, setSubscribedDialogIds] = useState<string[]>([])
   
   const {
@@ -40,7 +41,10 @@ export default function Mingo() {
 
   const {
     dialogs,
-    isLoading: isLoadingDialogs
+    isLoading: isLoadingDialogs,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage
   } = useMingoDialogs()
 
   const {
@@ -103,14 +107,15 @@ export default function Mingo() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && currentDialogId) {
-        clearCurrent()
-        setActiveDialogId(null)
+        const currentUrl = new URL(window.location.href)
+        currentUrl.searchParams.delete('dialogId')
+        router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentDialogId, clearCurrent, setActiveDialogId])
+  }, [currentDialogId, router])
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
@@ -119,9 +124,7 @@ export default function Mingo() {
     }
   }, [router])
 
-  const handleDialogSelect = useCallback(async (dialogId: string) => {
-    if (dialogId === currentDialogId) return
-
+  const selectDialogInternal = useCallback((dialogId: string) => {
     initializeDialog(dialogId)
     resetUnreadCount(dialogId)
     clearCurrent()
@@ -139,7 +142,6 @@ export default function Mingo() {
       addAdminMessages(backgroundMessages)
     }
   }, [
-    currentDialogId,
     initializeDialog,
     resetUnreadCount,
     clearCurrent,
@@ -148,6 +150,30 @@ export default function Mingo() {
     moveBackgroundToActive,
     addAdminMessages
   ])
+
+  const handleDialogSelect = useCallback(async (dialogId: string) => {
+    if (dialogId === currentDialogId) return
+
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.set('dialogId', dialogId)
+    router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+
+    selectDialogInternal(dialogId)
+  }, [
+    currentDialogId,
+    router,
+    selectDialogInternal
+  ])
+
+  useEffect(() => {
+    const urlDialogId = searchParams.get('dialogId')
+    if (urlDialogId && urlDialogId !== currentDialogId) {
+      selectDialogInternal(urlDialogId)
+    } else if (!urlDialogId && currentDialogId) {
+      clearCurrent()
+      setActiveDialogId(null)
+    }
+  }, [searchParams.get('dialogId'), currentDialogId, selectDialogInternal, clearCurrent, setActiveDialogId])
 
   const handleNewChat = useCallback(async () => {
     resetDialog()
@@ -222,6 +248,9 @@ export default function Mingo() {
             dialogs={dialogs}
             activeDialogId={currentDialogId || undefined}
             isLoading={isLoadingDialogs}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
             className="flex-shrink-0"
           />
 
