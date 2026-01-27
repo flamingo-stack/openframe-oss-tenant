@@ -11,6 +11,10 @@ use bytes::Bytes;
 use std::io::Cursor;
 use std::path::Path;
 use tokio::time::Duration;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+#[cfg(target_family = "unix")]
+use std::os::unix::fs::PermissionsExt;
 
 #[derive(Clone)]
 pub struct GithubDownloadService {
@@ -263,6 +267,40 @@ impl GithubDownloadService {
         configs.iter()
             .find(|c| c.matches_current_os())
             .ok_or_else(|| anyhow!("No download configuration found for current OS"))
+    }
+
+    /// Downloads and saves tool agent. Returns executable path for folder extraction, None for single binary.
+    pub async fn download_and_save(
+        &self,
+        config: &DownloadConfiguration,
+        tool_folder_path: &Path,
+        default_agent_path: &Path,
+    ) -> Result<Option<String>> {
+        if config.is_folder_extraction() {
+            let file_path = tool_folder_path.join(&config.agent_file_name);
+            self.download_and_extract_all(config, tool_folder_path).await?;
+            Self::set_executable_permissions(&file_path).await?;
+            if !file_path.exists() {
+                warn!("Executable not found at {} after extraction", file_path.display());
+            }
+            Ok(Some(config.agent_file_name.clone()))
+        } else {
+            let bytes = self.download_and_extract(config).await?;
+            File::create(default_agent_path).await?.write_all(&bytes).await?;
+            Self::set_executable_permissions(default_agent_path).await?;
+            info!("Saved to {}", default_agent_path.display());
+            Ok(None)
+        }
+    }
+
+    async fn set_executable_permissions(path: &Path) -> Result<()> {
+        #[cfg(target_family = "unix")]
+        {
+            let mut perms = tokio::fs::metadata(path).await?.permissions();
+            perms.set_mode(0o755);
+            tokio::fs::set_permissions(path, perms).await?;
+        }
+        Ok(())
     }
 
     /// Downloads archive and extracts all contents to target path (macOS only).

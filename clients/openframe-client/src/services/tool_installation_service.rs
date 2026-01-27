@@ -142,78 +142,22 @@ impl ToolInstallationService {
             .await
             .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
 
-        // Get download config for current OS
-        let effective_download_config = if let Some(ref download_configs) = tool_installation_message.download_configurations {
-            let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
-                .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
-            Some(download_config.clone())
-        } else {
-            None
-        };
-
-        let (file_path, executable_path) = if let Some(ref config) = effective_download_config {
-            if config.is_folder_extraction() {
-                (tool_folder_path.join(&config.agent_file_name), Some(config.agent_file_name.clone()))
-            } else {
-                (self.directory_manager.get_agent_path(tool_agent_id), None)
-            }
-        } else {
-            (self.directory_manager.get_agent_path(tool_agent_id), None)
-        };
-
-        // Check if agent file already exists
-        if file_path.exists() {
-            info!("Agent file already exists at {}, skipping download", file_path.display());
-        } else {
-            // Download main tool agent file
-            if let Some(ref download_config) = effective_download_config {
-                if download_config.is_folder_extraction() {
-                    info!("Downloading and extracting archive from {}", download_config.link);
-                    self.github_download_service
-                        .download_and_extract_all(download_config, &tool_folder_path)
-                        .await
-                        .with_context(|| format!("Failed to download and extract archive for: {}", tool_agent_id))?;
-
-                    self.set_executable_permissions(&file_path).await
-                        .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
-
-                    if !file_path.exists() {
-                        warn!("Executable not found at {} after extraction", file_path.display());
-                    }
-                } else {
-                    // Single binary mode
-                    let tool_agent_file_bytes = self.github_download_service
-                        .download_and_extract(download_config)
-                        .await
-                        .with_context(|| format!("Failed to download and extract tool agent for: {}", tool_agent_id))?;
-
-                    // Save directly and set permissions (always executable)
-                    File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
-
-                    // Set file permissions to executable
-                    self.set_executable_permissions(&file_path).await
-                        .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
-
-                    info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
-                }
-            } else {
-                // Fall back to legacy method (Artifactory)
-                info!("Using legacy method to download tool agent");
-                let tool_agent_file_bytes = self.tool_agent_file_client
-                    .get_tool_agent_file(tool_agent_id.clone())
+        let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
+        let executable_path = match &tool_installation_message.download_configurations {
+            Some(configs) => {
+                let config = GithubDownloadService::find_config_for_current_os(configs)
+                    .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
+                self.github_download_service
+                    .download_and_save(config, &tool_folder_path, &default_agent_path)
                     .await
-                    .with_context(|| format!("Failed to download tool agent file for: {}", tool_agent_id))?;
-
-                // Save directly and set permissions (always executable)
-                File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
-
-                // Set file permissions to executable
-                self.set_executable_permissions(&file_path).await
-                    .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
-
-                info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
+                    .with_context(|| format!("Failed to download tool agent: {}", tool_agent_id))?
             }
-        }
+            None => {
+                self.download_from_artifactory(tool_agent_id, &default_agent_path).await?;
+                None
+            }
+        };
+        let file_path = self.directory_manager.get_tool_executable_path(tool_agent_id, executable_path.as_deref());
 
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
@@ -356,15 +300,29 @@ impl ToolInstallationService {
         Ok(())
     }
 
-    /// Sets executable permissions for a file on both Unix and Windows platforms
-    async fn set_executable_permissions(&self, file_path: &Path) -> Result<()> {
+    async fn download_from_artifactory(&self, tool_agent_id: &str, path: &Path) -> Result<()> {
+        if path.exists() {
+            info!("Agent already exists at {}, skipping", path.display());
+            return Ok(());
+        }
+        info!("Downloading from Artifactory: {}", tool_agent_id);
+        let bytes = self.tool_agent_file_client
+            .get_tool_agent_file(tool_agent_id.to_string())
+            .await
+            .with_context(|| format!("Failed to download: {}", tool_agent_id))?;
+        File::create(path).await?.write_all(&bytes).await?;
+        self.set_executable_permissions(path).await?;
+        info!("Saved to {}", path.display());
+        Ok(())
+    }
+
+    async fn set_executable_permissions(&self, path: &Path) -> Result<()> {
         #[cfg(target_family = "unix")]
         {
-            let mut perms = fs::metadata(file_path).await?.permissions();
+            let mut perms = fs::metadata(path).await?.permissions();
             perms.set_mode(0o755);
-            fs::set_permissions(file_path, perms).await?;
+            fs::set_permissions(path, perms).await?;
         }
-
         Ok(())
     }
 }
