@@ -1,21 +1,19 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
-import { useRouter } from "next/navigation"
+import { PlayIcon, PlusCircleIcon, TacticalRmmLogoIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
 import {
-  Table,
   Button,
   ListPageLayout,
-  TableDescriptionCell,
-  type TableColumn
+  MoreActionsMenu,
+  Table,
+  type TableColumn,
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
-import { CirclePlusIcon } from "lucide-react"
-import { useDebounce, useTablePagination, useApiParams } from "@flamingo-stack/openframe-frontend-core/hooks"
+import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
+import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { useRouter } from "next/navigation"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useScripts } from "../hooks/use-scripts"
-import { ToolBadge, ShellTypeBadge } from "@flamingo-stack/openframe-frontend-core/components"
-import { OSTypeBadgeGroup } from "@flamingo-stack/openframe-frontend-core/components/features"
-import type { ShellType } from "@flamingo-stack/openframe-frontend-core"
+import { mapPlatformsForDisplay } from "../utils/script-utils"
 
 interface UIScriptEntry {
   id: number
@@ -24,6 +22,8 @@ interface UIScriptEntry {
   shellType: string
   addedBy: string
   supportedPlatforms: string[]
+  category: string
+  timeout: number
 }
 
 /**
@@ -37,6 +37,7 @@ export function ScriptsTable() {
     search: { type: 'string', default: '' },
     shellType: { type: 'array', default: [] },
     addedBy: { type: 'array', default: [] },
+    category: { type: 'array', default: [] },
     page: { type: 'number', default: 1 }
   })
   const pageSize = 10
@@ -61,8 +62,9 @@ export function ScriptsTable() {
   // Backend filters from URL params (for useScripts hook)
   const filters = useMemo(() => ({
     shellType: params.shellType,
-    addedBy: params.addedBy
-  }), [params.shellType, params.addedBy])
+    addedBy: params.addedBy,
+    category: params.category
+  }), [params.shellType, params.addedBy, params.category])
 
   const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
 
@@ -73,7 +75,9 @@ export function ScriptsTable() {
       description: script.description,
       shellType: script.shell,
       addedBy: toUiKitToolType('tactical'),
-      supportedPlatforms: script.supported_platforms || []
+      supportedPlatforms: script.supported_platforms || [],
+      category: script.category || 'General',
+      timeout: script.default_timeout || 300
     }))
   }, [scripts])
 
@@ -92,6 +96,15 @@ export function ScriptsTable() {
       id: toolType,
       label: toStandardToolLabel(toolType.toUpperCase()),
       value: toolType
+    }))
+  }, [transformedScripts])
+
+  const uniqueCategories = useMemo(() => {
+    const categoriesSet = new Set(transformedScripts.map(script => script.category))
+    return Array.from(categoriesSet).sort().map(category => ({
+      id: category,
+      label: category,
+      value: category
     }))
   }, [transformedScripts])
 
@@ -118,8 +131,14 @@ export function ScriptsTable() {
       )
     }
 
+    if (params.category && params.category.length > 0) {
+      filtered = filtered.filter(script =>
+        params.category.includes(script.category)
+      )
+    }
+
     return filtered
-  }, [transformedScripts, params.search, params.shellType, params.addedBy])
+  }, [transformedScripts, params.search, params.shellType, params.addedBy, params.category])
 
   const paginatedScripts = useMemo(() => {
     const startIndex = (params.page - 1) * pageSize
@@ -135,11 +154,13 @@ export function ScriptsTable() {
     {
       key: 'name',
       label: 'Name',
-      width: 'w-[25%]',
       renderCell: (script) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary line-clamp-2 break-words">
+        <div className="flex flex-col">
+          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
             {script.name}
+          </span>
+          <span className="text-[14px] leading-[20px] text-ods-text-tertiary line-clamp-2 overflow-x-hidden whitespace-nowrap text-ellipsis">
+            {script.description || 'No description'}
           </span>
         </div>
       )
@@ -147,44 +168,80 @@ export function ScriptsTable() {
     {
       key: 'shellType',
       label: 'Shell Type',
-      width: 'w-[12%]',
       filterable: true,
       filterOptions: uniqueShellTypes,
       renderCell: (script) => (
-        <ShellTypeBadge shellType={script.shellType as ShellType} />
-      )
-    },
-    {
-      key: 'supportedPlatforms',
-      label: 'OS',
-      width: 'w-[12%]',
-      renderCell: (script) => (
-        <OSTypeBadgeGroup
-          osTypes={script.supportedPlatforms}
-        />
+        <div className="flex items-start justify-center flex-col">
+          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">{script.shellType}</span>
+          <span className="text-[14px] leading-[20px] text-ods-text-secondary">{mapPlatformsForDisplay(script.supportedPlatforms).join(', ')}</span>
+        </div>
       )
     },
     {
       key: 'addedBy',
       label: 'Added By',
-      width: 'w-[12%]',
       filterable: true,
       filterOptions: uniqueAddedBy,
+      hideAt: 'xl',
       renderCell: (script) => (
-        <ToolBadge toolType={script.addedBy as any} />
+        <div className="flex items-center gap-1">
+          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">TacticalRMM</span>
+          <TacticalRmmLogoIcon size={16} />
+        </div>
       )
     },
     {
-      key: 'description',
-      label: 'Description',
-      width: 'w-[39%]',
+      key: 'category',
+      label: 'Category',
+      filterable: true,
+      filterOptions: uniqueCategories,
+      hideAt: 'lg',
       renderCell: (script) => (
-        <span className="w-full pr-4 font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 break-words">
-          {script.description || 'No description provided.'}
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
+          {script.category}
+        </span>
+      )
+    },
+    {
+      key: 'timeout',
+      label: 'Timeout',
+      hideAt: 'md',
+      renderCell: (script) => (
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
+          {script.timeout}
         </span>
       )
     }
-  ], [uniqueShellTypes, uniqueAddedBy])
+  ], [uniqueShellTypes, uniqueAddedBy, uniqueCategories])
+
+  const rowActions = useCallback((script: UIScriptEntry) => [
+    {
+      label: 'Edit Script',
+      onClick: () => router.push(`/scripts/edit/${script.id}`)
+    },
+    {
+      label: 'Script Details',
+      onClick: () => router.push(`/scripts/details/${script.id}`)
+    }
+  ], [router])
+
+  const renderRowActions = useMemo(() => {
+    return (script: UIScriptEntry) => (
+      <div className="flex items-center gap-1">
+        <MoreActionsMenu
+          items={rowActions(script)}
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => router.push(`/scripts/details/${script.id}/run`)}
+          className="bg-ods-card"
+        >
+          <PlayIcon size={20} className="text-ods-text-primary" />
+        </Button>
+      </div>
+    )
+  }, [])
 
   useEffect(() => {
     if (!isInitialized) {
@@ -205,6 +262,7 @@ export function ScriptsTable() {
       const filterKey = JSON.stringify({
         shellType: params.shellType?.sort() || [],
         addedBy: params.addedBy?.sort() || [],
+        category: params.category?.sort() || [],
       })
 
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
@@ -213,21 +271,22 @@ export function ScriptsTable() {
       }
       prevFilterKeyRef.current = filterKey
     }
-  }, [params.shellType, params.addedBy, refreshScripts, isInitialized])
+  }, [params.shellType, params.addedBy, params.category, refreshScripts, isInitialized, setParam])
 
   const handleRowClick = (script: UIScriptEntry) => {
     router.push(`/scripts/details/${script.id}`)
   }
 
-  const handleNewScript = () => {
+  const handleNewScript = useCallback(() => {
     router.push('/scripts/edit/new')
-  }
+  }, [router])
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setParams({
       page: 1,
       shellType: columnFilters.shellType || [],
-      addedBy: columnFilters.addedBy || []
+      addedBy: columnFilters.addedBy || [],
+      category: columnFilters.category || []
     })
   }, [setParams])
 
@@ -247,26 +306,28 @@ export function ScriptsTable() {
   // Convert URL params to table filters format
   const tableFilters = useMemo(() => ({
     shellType: params.shellType,
-    addedBy: params.addedBy
-  }), [params.shellType, params.addedBy])
+    addedBy: params.addedBy,
+    category: params.category
+  }), [params.shellType, params.addedBy, params.category])
 
-  const headerActions = (
-    <>
-      <Button
-        onClick={handleNewScript}
-        variant="primary"
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
-        leftIcon={<CirclePlusIcon size={20} />}
-      >
-        Add Script
-      </Button>
-    </>
-  )
+  const actions = useMemo(() => [
+    {
+      label: 'Add Script',
+      icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+      onClick: handleNewScript
+    }
+  ], [handleNewScript])
+
+  const filterGroups = columns.filter(column => column.filterable).map(column => ({
+    id: column.key,
+    title: column.label,
+    options: column.filterOptions || []
+  }))
 
   return (
     <ListPageLayout
       title="Scripts"
-      headerActions={headerActions}
+      actions={actions}
       searchPlaceholder="Search for Scripts"
       searchValue={searchInput}
       onSearch={setSearchInput}
@@ -274,6 +335,9 @@ export function ScriptsTable() {
       background="default"
       padding="none"
       className="pt-6"
+      onMobileFilterChange={handleFilterChange}
+      mobileFilterGroups={filterGroups}
+      currentMobileFilters={tableFilters}
     >
       {/* Table */}
       <Table
@@ -290,20 +354,11 @@ export function ScriptsTable() {
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}
-        mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
         onRowClick={handleRowClick}
         cursorPagination={cursorPagination}
+        renderRowActions={renderRowActions}
       />
-
-      {/* New Script Modal - Now handled by routing */}
-      {/* <EditScriptModal
-        isOpen={isNewScriptModalOpen}
-        onClose={() => setIsNewScriptModalOpen(false)}
-        onSave={handleSaveScript}
-        scriptData={null}
-        isEditMode={false}
-      /> */}
     </ListPageLayout>
   )
 }

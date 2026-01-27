@@ -1,26 +1,40 @@
 package com.openframe.helpers;
 
-import com.openframe.data.dto.auth.AuthTokens;
 import com.openframe.data.dto.user.User;
 
+import java.util.Map;
+
 import static com.openframe.api.AuthFlow.login;
-import static com.openframe.config.EnvironmentConfig.USER_FILE;
+import static com.openframe.config.UserConfig.USER_FILE;
 import static com.openframe.util.FileManager.read;
+import static com.openframe.util.FileManager.save;
 
 public class AuthHelper {
 
-    private static ThreadLocal<User> user;
-    private static ThreadLocal<AuthTokens> tokens;
+    private static User user;
+    private static Map<String, String> cookies;
 
-    public static AuthTokens authorize() {
-        if (user == null) {
-            user = new ThreadLocal<>();
-            user.set(read(USER_FILE, User.class));
-        }
-        if (tokens == null) {
-            tokens = new ThreadLocal<>();
-            tokens.set(login(user.get()));
-        }
-        return tokens.get();
+    public static void saveUser(User registeredUser) {
+        save(USER_FILE, registeredUser);
     }
+
+    public static User getUser() {
+        if (user == null) {
+            user = read(USER_FILE, User.class);
+        }
+        return user;
+    }
+
+    public static Map<String, String> getCookies() {
+        if (cookies == null) {
+            user = getUser();
+            cookies = login(user);
+        }
+        return cookies;
+    }
+
+    public static void setCookies(Map<String, String> newCookies) {
+        cookies = newCookies;
+    }
+
 }

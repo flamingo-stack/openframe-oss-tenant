@@ -1,28 +1,25 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { featureFlags } from '@/src/lib/feature-flags'
+import { EditProfileIcon, GoogleLogo, MicrosoftIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import {
-  Table,
-  SearchBar,
-  Button,
+  Card,
+  CheckboxWithDescription,
   ListPageContainer,
   PageError,
-  StatusTag,
+  SearchBar,
   Skeleton,
-  Card,
-  CardHeader,
-  CardContent,
-  CheckboxWithDescription,
-  type TableColumn,
-  type RowAction
+  StatusTag,
+  Table,
+  type RowAction,
+  type TableColumn
 } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { EditProfileIcon, RefreshIcon, GoogleLogo, MicrosoftIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { SsoConfigModal } from '../edit-sso-config-modal'
-import { useSsoConfig, type ProviderConfig, type AvailableProvider } from '../../hooks/use-sso-config'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSsoConfig, type AvailableProvider, type ProviderConfig } from '../../hooks/use-sso-config'
 import { useTenantDomain, type TenantDomainInfo } from '../../hooks/use-tenant-domain'
 import { getProviderIcon } from '../../utils/get-provider-icon'
-import { featureFlags } from '@/src/lib/feature-flags'
+import { SsoConfigModal } from '../edit-sso-config-modal'
 
 // Feature flag: enabled by default, can disable with env var
 const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();

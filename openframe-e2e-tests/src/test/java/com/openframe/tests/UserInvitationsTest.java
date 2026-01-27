@@ -86,6 +86,7 @@ public class UserInvitationsTest extends AuthorizedTest {
     @DisplayName("Check that Existing User cannot be invited")
     public void testInviteActiveUser() {
         AuthUser activeUser = findUser(UserStatus.ACTIVE);
+        assertThat(activeUser).as("User is not found in DB").isNotNull();
         InvitationRequest invitationRequest = existingUserInvitationRequest(activeUser);
         InvitationConflictResponse expectedResponse = userAlreadyExistsResponse(activeUser);
         InvitationConflictResponse response = attemptInviteUser(invitationRequest);
@@ -97,6 +98,7 @@ public class UserInvitationsTest extends AuthorizedTest {
     @DisplayName("Delete Admin User")
     public void testDeleteUser() {
         AuthUser user = findUser(UserStatus.ACTIVE);
+        assertThat(user).as("User is not found in DB").isNotNull();
         int statusCode = deleteUser(user.getId());
         user = findUser(user.getId());
         assertThat(statusCode).isEqualTo(204);
@@ -109,6 +111,7 @@ public class UserInvitationsTest extends AuthorizedTest {
     @DisplayName("Check that Owner User cannot be deleted")
     public void testDeleteOwner() {
         AuthUser user = findUser(UserRole.OWNER);
+        assertThat(user).as("User is not found in DB").isNotNull();
         int statusCode = deleteUser(user.getId());
         user = findUser(user.getId());
         assertThat(statusCode).isEqualTo(409);
@@ -121,6 +124,7 @@ public class UserInvitationsTest extends AuthorizedTest {
     @DisplayName("Check that Deleted User can be invited")
     public void testInviteDeletedUser() {
         AuthUser deletedUser = findUser(UserStatus.DELETED);
+        assertThat(deletedUser).as("User is not found in DB").isNotNull();
         InvitationRequest invitationRequest = existingUserInvitationRequest(deletedUser);
         Invitation apiInvitation = inviteUser(invitationRequest);
         assertThat(apiInvitation.getStatus()).isEqualTo(InvitationStatus.PENDING);

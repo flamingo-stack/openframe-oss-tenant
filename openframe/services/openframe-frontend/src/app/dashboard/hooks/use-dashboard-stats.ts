@@ -6,7 +6,7 @@ import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
 import { DEFAULT_VISIBLE_STATUSES } from '../../devices/constants/device-statuses'
 import type { GraphQLResponse } from '../../devices/types/device.types'
 import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries'
-import { GET_DIALOG_STATISTICS_QUERY } from '../../mingo/queries/dialogs-queries'
+import { GET_DIALOG_STATISTICS_QUERY } from '../../tickets/queries/dialogs-queries'
 
 export function useDevicesOverview() {
   const [stats, setStats] = useState(() => ({

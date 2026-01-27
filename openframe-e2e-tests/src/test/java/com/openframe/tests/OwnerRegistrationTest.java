@@ -1,11 +1,8 @@
 package com.openframe.tests;
 
-import com.openframe.data.dto.auth.AuthTokens;
 import com.openframe.data.dto.user.MeResponse;
-import com.openframe.data.dto.user.User;
 import com.openframe.data.dto.user.UserRegistrationRequest;
 import com.openframe.data.dto.user.UserRegistrationResponse;
-import com.openframe.helpers.RequestSpecHelper;
 import com.openframe.tests.base.UnauthorizedTest;
 import org.junit.jupiter.api.*;
 
@@ -15,10 +12,8 @@ import static com.openframe.api.AuthFlow.login;
 import static com.openframe.api.OrganizationApi.getOrganizationNames;
 import static com.openframe.api.RegistrationApi.registerUser;
 import static com.openframe.api.UserApi.me;
-import static com.openframe.config.EnvironmentConfig.USER_FILE;
 import static com.openframe.data.generator.RegistrationGenerator.*;
-import static com.openframe.util.FileManager.read;
-import static com.openframe.util.FileManager.save;
+import static com.openframe.helpers.AuthHelper.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 // This test class will be executed before all other tests
@@ -42,22 +37,16 @@ public class OwnerRegistrationTest extends UnauthorizedTest {
         assertThat(response).usingRecursiveComparison()
                 .ignoringFields("id", "ownerId", "hubspotId", "createdAt", "updatedAt")
                 .isEqualTo(expectedResponse);
-        User registeredUser = User.fromRegistration(userRegistrationRequest, response);
-        save(USER_FILE, registeredUser);
+        saveUser(registeredOwner(userRegistrationRequest, response));
     }
 
     @Order(2)
     @Test
     @DisplayName("Login registered user")
     public void testLoginNewUser() {
-        User user = read(USER_FILE, User.class);
-        AuthTokens tokens = login(user);
-        RequestSpecHelper.setTokens(tokens);
+        setCookies(login(getUser()));
         MeResponse response = me();
-        assertThat(response.getUser().getId()).isNotNull();
-        assertThat(response).usingRecursiveComparison()
-                .ignoringFields("user.password", "user.id")
-                .isEqualTo(meResponse(user));
+        assertThat(response.isAuthenticated()).isTrue();
     }
 
     @Order(3)

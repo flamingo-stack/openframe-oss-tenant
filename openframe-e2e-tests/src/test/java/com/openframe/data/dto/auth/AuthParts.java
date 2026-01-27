@@ -3,6 +3,8 @@ package com.openframe.data.dto.auth;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 @Builder
 public class AuthParts {
@@ -12,6 +14,6 @@ public class AuthParts {
     private String state;
     private String codeChallenge;
     private String codeVerifier;
-    private String cookies;
+    private Map<String, String> cookies;
     private String authorizationCode;
 }
