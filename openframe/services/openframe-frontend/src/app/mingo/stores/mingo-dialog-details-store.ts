@@ -29,9 +29,8 @@ interface MingoDialogDetailsStore {
   setAdminMessages: (messages: Message[]) => void
   addAdminMessages: (messages: Message[]) => void
   clearCurrent: () => void
-  updateDialogStatus: (status: string) => void
   addRealtimeMessage: (message: Message) => void
-  updateRealtimeMessage: (messageId: string, message: Message) => void
+  removeWelcomeMessages: () => void
   setTypingIndicator: (typing: boolean) => void
   setLoadingDialog: (loading: boolean) => void
   setLoadingMessages: (loading: boolean) => void
@@ -40,7 +39,7 @@ interface MingoDialogDetailsStore {
   setPagination: (hasMore: boolean, cursor: string | null, newestCursor: string | null) => void
 }
 
-export const useMingoDialogDetailsStore = create<MingoDialogDetailsStore>((set, get) => ({
+export const useMingoDialogDetailsStore = create<MingoDialogDetailsStore>((set) => ({
   currentDialogId: null,
   currentDialog: null,
   adminMessages: [],
@@ -96,15 +95,6 @@ export const useMingoDialogDetailsStore = create<MingoDialogDetailsStore>((set, 
     })
   },
 
-  updateDialogStatus: (status: string) => {
-    set(state => ({
-      currentDialog: state.currentDialog ? {
-        ...state.currentDialog,
-        status
-      } : null
-    }))
-  },
-
   addRealtimeMessage: (message: Message) => {
     set(state => {
       const exists = state.adminMessages.some(msg => msg.id === message.id)
@@ -116,21 +106,10 @@ export const useMingoDialogDetailsStore = create<MingoDialogDetailsStore>((set, 
     })
   },
 
-  updateRealtimeMessage: (messageId: string, message: Message) => {
-    set(state => {
-      const messageIndex = state.adminMessages.findIndex(msg => msg.id === messageId)
-      if (messageIndex === -1) {
-        return {
-          adminMessages: [...state.adminMessages, message]
-        }
-      }
-
-      const updatedMessages = [...state.adminMessages]
-      updatedMessages[messageIndex] = message
-      return {
-        adminMessages: updatedMessages
-      }
-    })
+  removeWelcomeMessages: () => {
+    set(state => ({
+      adminMessages: state.adminMessages.filter(msg => !msg.id.startsWith('welcome-'))
+    }))
   },
 
   setTypingIndicator: (typing: boolean) => {

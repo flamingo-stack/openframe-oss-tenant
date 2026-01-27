@@ -339,7 +339,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       approvals.clearApprovals()
       setIsResumedDialog(true)
       
-      const messagesConnection = await dialogGraphQLService.getDialogMessages(dialogId, null, 100)
+      const messagesConnection = await dialogGraphQLService.getDialogMessages(dialogId, null)
       
       if (!messagesConnection || !messagesConnection.edges) {
         throw new Error('Failed to load dialog history')
