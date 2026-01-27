@@ -740,17 +740,23 @@ impl DirectoryManager {
         }
     }
 
-    /// Returns the path to the agent executable for a specific tool
+    /// Returns the path to the agent executable for a specific tool.
+    /// If executable_path is provided, uses it relative to tool folder.
+    /// Otherwise uses default agent name.
+    pub fn get_tool_executable_path(&self, tool_agent_id: &str, executable_path: Option<&str>) -> PathBuf {
+        let base = self.app_support_dir().join(tool_agent_id);
+        match executable_path {
+            Some(path) => base.join(path),
+            None => {
+                let agent_name = if cfg!(target_os = "windows") { "agent.exe" } else { "agent" };
+                base.join(agent_name)
+            }
+        }
+    }
+
+    /// Returns the path to the default agent executable for a specific tool
     pub fn get_agent_path(&self, tool_agent_id: &str) -> PathBuf {
-        let agent_name = if cfg!(target_os = "windows") {
-            "agent.exe"
-        } else {
-            "agent"
-        };
-        
-        self.app_support_dir()
-            .join(tool_agent_id)
-            .join(agent_name)
+        self.get_tool_executable_path(tool_agent_id, None)
     }
 
     /// Returns the path to an asset file for a specific tool, adding .exe extension on Windows if executable

@@ -4,7 +4,6 @@ use tracing::{info, debug, warn};
 use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
-use crate::models::download_configuration::DownloadConfiguration;
 use crate::services::InstalledToolsService;
 use crate::services::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;
@@ -27,26 +26,6 @@ use tokio::process::Command;
 use std::path::{Path, PathBuf};
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
-
-// TODO: Remove hardcoded config after backend supports folder extraction
-#[cfg(target_os = "macos")]
-fn get_meshcentral_config_override() -> Option<DownloadConfiguration> {
-    Some(DownloadConfiguration {
-        os: "macos".to_string(),
-        file_name: "meshagent-macos-arm64.tar.gz".to_string(),
-        agent_file_name: "MeshAgent.app/Contents/MacOS/meshagent".to_string(),
-        link: "https://github.com/flamingo-stack/MeshAgent/releases/download/9.9.9/meshagent-macos-arm64.tar.gz".to_string(),
-    })
-}
-
-#[cfg(not(target_os = "macos"))]
-fn get_meshcentral_config_override() -> Option<DownloadConfiguration> {
-    None
-}
-
-fn should_use_config_override(tool_agent_id: &str) -> bool {
-    cfg!(target_os = "macos") && tool_agent_id.to_lowercase().contains("meshcentral")
-}
 
 #[derive(Clone)]
 pub struct ToolInstallationService {
@@ -163,18 +142,8 @@ impl ToolInstallationService {
             .await
             .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
 
-        // Check for hardcoded config override (for testing)
-        let config_override = if should_use_config_override(tool_agent_id) {
-            info!("Using config override for {}", tool_agent_id);
-            get_meshcentral_config_override()
-        } else {
-            None
-        };
-
-        // Determine download config and executable path
-        let effective_download_config = if let Some(ref override_config) = config_override {
-            Some(override_config.clone())
-        } else if let Some(ref download_configs) = tool_installation_message.download_configurations {
+        // Get download config for current OS
+        let effective_download_config = if let Some(ref download_configs) = tool_installation_message.download_configurations {
             let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
                 .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
             Some(download_config.clone())
@@ -182,13 +151,10 @@ impl ToolInstallationService {
             None
         };
 
-        // Determine file path - if agent_file_name contains '/' it's a path inside extracted folder
         let (file_path, executable_path) = if let Some(ref config) = effective_download_config {
-            if config.agent_file_name.contains('/') {
-                // Folder mode: agent_file_name is path to executable (e.g., "MeshAgent.app/Contents/MacOS/meshagent")
+            if config.is_folder_extraction() {
                 (tool_folder_path.join(&config.agent_file_name), Some(config.agent_file_name.clone()))
             } else {
-                // Single binary mode
                 (self.directory_manager.get_agent_path(tool_agent_id), None)
             }
         } else {
@@ -201,8 +167,7 @@ impl ToolInstallationService {
         } else {
             // Download main tool agent file
             if let Some(ref download_config) = effective_download_config {
-                if download_config.agent_file_name.contains('/') {
-                    // Folder mode: extract entire archive
+                if download_config.is_folder_extraction() {
                     info!("Downloading and extracting archive from {}", download_config.link);
                     self.github_download_service
                         .download_and_extract_all(download_config, &tool_folder_path)
@@ -299,14 +264,6 @@ impl ToolInstallationService {
                 }
 
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
-
-                // Rename agent.msh to meshagent.msh for meshcentral compatibility
-                if tool_agent_id.to_lowercase().contains("meshcentral") && asset.local_filename == "agent.msh" {
-                    let new_path = asset_path.parent().unwrap().join("meshagent.msh");
-                    fs::rename(&asset_path, &new_path).await
-                        .with_context(|| format!("Failed to rename {} to meshagent.msh", asset_path.display()))?;
-                    info!("Renamed {} to meshagent.msh", asset.local_filename);
-                }
             }
         } else {
             info!("No assets to download for tool: {}", tool_agent_id);
