@@ -22,9 +22,7 @@ interface UseMingoRealtimeProcessorOptions {
 }
 
 interface DialogState {
-  currentMessageId: string | null
   isStreaming: boolean
-  accumulatedText: string
 }
 
 export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOptions) {
@@ -38,8 +36,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     onBackgroundUnreadIncrement,
   } = options
 
-  const { updateRealtimeMessage, addRealtimeMessage } = useMingoDialogDetailsStore()
-  const { updateBackgroundMessage, addBackgroundMessage } = useMingoBackgroundMessagesStore()
+  const { addRealtimeMessage } = useMingoDialogDetailsStore()
+  const { addBackgroundMessage } = useMingoBackgroundMessagesStore()
 
   const dialogStatesRef = useRef<Map<string, DialogState>>(new Map())
 
@@ -47,9 +45,7 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     let state = dialogStatesRef.current.get(dialogId)
     if (!state) {
       state = {
-        currentMessageId: null,
         isStreaming: false,
-        accumulatedText: '',
       }
       dialogStatesRef.current.set(dialogId, state)
     }
@@ -79,32 +75,24 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     const action = parseChunkToAction(chunk)
     if (!action) return
 
+    const createBaseMessage = (messageType: string = 'TEXT'): Message => ({
+      id: `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      dialogId,
+      chatType: CHAT_TYPE.ADMIN as any,
+      dialogMode: 'DEFAULT',
+      createdAt: new Date().toISOString(),
+      owner: { type: 'ASSISTANT', model: '' } as any,
+      messageData: { type: messageType, text: '' } as any,
+    })
+
     switch (action.action) {
       case 'message_start':
         dialogState.isStreaming = true
-        dialogState.currentMessageId = `stream-${Date.now()}-${Math.random().toString(16).slice(2)}`
-        dialogState.accumulatedText = ''
         
         if (isActiveDialog) {
           onActiveStreamStart()
         } else {
           onBackgroundStreamStart(dialogId)
-        }
-
-        const initialMessage: Message = {
-          id: dialogState.currentMessageId,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
-          messageData: { type: 'TEXT', text: '' } as any,
-        }
-
-        if (isActiveDialog) {
-          addRealtimeMessage(initialMessage)
-        } else {
-          addBackgroundMessage(dialogId, initialMessage)
         }
         break
 
@@ -117,8 +105,6 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
           onBackgroundStreamEnd(dialogId)
           onBackgroundUnreadIncrement(dialogId)
         }
-        
-        dialogState.currentMessageId = null
         break
 
       case 'error':
@@ -129,41 +115,25 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
         } else {
           onBackgroundStreamEnd(dialogId)
         }
-        
-        dialogState.currentMessageId = null
         break
 
       case 'text':
-        if (dialogState.currentMessageId && dialogState.isStreaming) {
-          dialogState.accumulatedText += action.text
-          
-          const updatedMessage: Message = {
-            id: dialogState.currentMessageId,
-            dialogId,
-            chatType: CHAT_TYPE.ADMIN as any,
-            dialogMode: 'DEFAULT',
-            createdAt: new Date().toISOString(),
-            owner: { type: 'ASSISTANT', model: '' } as any,
-            messageData: { type: 'TEXT', text: dialogState.accumulatedText } as any,
-          }
+        const textMessage = {
+          ...createBaseMessage('TEXT'),
+          messageData: { type: 'TEXT', text: action.text } as any,
+        }
 
-          if (isActiveDialog) {
-            updateRealtimeMessage(dialogState.currentMessageId, updatedMessage)
-          } else {
-            updateBackgroundMessage(dialogId, dialogState.currentMessageId, updatedMessage)
-          }
+        if (isActiveDialog) {
+          addRealtimeMessage(textMessage)
+        } else {
+          addBackgroundMessage(dialogId, textMessage)
         }
         break
 
       case 'tool_execution': {
         const toolData = action.segment.data
-        const toolMessage: Message = {
-          id: `tool-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
+        const toolMessage = {
+          ...createBaseMessage(toolData.type),
           messageData: {
             type: toolData.type,
             integratedToolType: toolData.integratedToolType,
@@ -183,13 +153,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
       }
 
       case 'approval_request': {
-        const approvalMessage: Message = {
-          id: `approval-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
+        const approvalMessage = {
+          ...createBaseMessage('APPROVAL_REQUEST'),
           messageData: {
             type: 'APPROVAL_REQUEST',
             approvalType: action.approvalType,
@@ -208,13 +173,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
       }
 
       case 'approval_result': {
-        const resultMessage: Message = {
-          id: `approval-result-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
+        const resultMessage = {
+          ...createBaseMessage('APPROVAL_RESULT'),
           messageData: {
             type: 'APPROVAL_RESULT',
             approvalRequestId: action.requestId,
@@ -234,9 +194,7 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
   }, [
     activeDialogId,
     getDialogState,
-    updateRealtimeMessage,
     addRealtimeMessage,
-    updateBackgroundMessage,
     addBackgroundMessage,
     onActiveStreamStart,
     onActiveStreamEnd,

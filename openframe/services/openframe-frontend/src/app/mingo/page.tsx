@@ -56,10 +56,12 @@ export default function Mingo() {
   const {
     currentDialogId,
     isAdminChatTyping,
+    adminMessages,
     addRealtimeMessage,
     setTypingIndicator,
     clearCurrent,
-    addAdminMessages
+    addAdminMessages,
+    removeWelcomeMessages
   } = useMingoDialogDetailsStore()
 
   const {
@@ -103,6 +105,29 @@ export default function Mingo() {
   const handleChunkReceived = useCallback((dialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
     processChunk(chunk, messageType, dialogId)
   }, [processChunk])
+
+  const createWelcomeMessage = useCallback((): Message => ({
+    id: `welcome-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    dialogId: currentDialogId || '',
+    chatType: 'ADMIN_AI_CHAT',
+    dialogMode: 'DEFAULT',
+    createdAt: new Date().toISOString(),
+    owner: {
+      type: 'ASSISTANT',
+      model: 'mingo'
+    },
+    messageData: {
+      type: 'TEXT',
+      text: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?"
+    }
+  }), [currentDialogId])
+
+  const addWelcomeMessageIfNeeded = useCallback(() => {
+    if (currentDialogId && adminMessages.length === 0) {
+      const welcomeMessage = createWelcomeMessage()
+      addRealtimeMessage(welcomeMessage)
+    }
+  }, [currentDialogId, adminMessages.length, createWelcomeMessage, addRealtimeMessage])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -175,6 +200,15 @@ export default function Mingo() {
     }
   }, [searchParams.get('dialogId'), currentDialogId, selectDialogInternal, clearCurrent, setActiveDialogId])
 
+  useEffect(() => {
+    if (currentDialogId && !isLoadingMessages && adminMessages.length === 0) {
+      const timeout = setTimeout(() => {
+        addWelcomeMessageIfNeeded()
+      }, 100)
+      return () => clearTimeout(timeout)
+    }
+  }, [currentDialogId, isLoadingMessages, adminMessages.length, addWelcomeMessageIfNeeded])
+
   const handleNewChat = useCallback(async () => {
     resetDialog()
     const newDialogId = await createDialog()
@@ -185,6 +219,8 @@ export default function Mingo() {
 
   const handleSendMessage = useCallback(async (message: string) => {
     if (!currentDialogId || !message.trim()) return
+
+    removeWelcomeMessages()
 
     const optimisticMessage: Message = {
       id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -207,7 +243,7 @@ export default function Mingo() {
     if (!success) {
       console.warn('[Mingo] Failed to send message')
     }
-  }, [sendMessage, currentDialogId, addRealtimeMessage])
+  }, [sendMessage, currentDialogId, addRealtimeMessage, removeWelcomeMessages])
 
   if (!isSaasTenantMode()) {
     return null

@@ -18,7 +18,6 @@ interface BackgroundMessagesStore {
   // Actions
   setActiveDialogId: (dialogId: string | null) => void
   addBackgroundMessage: (dialogId: string, message: Message) => void
-  updateBackgroundMessage: (dialogId: string, messageId: string, message: Message) => void
   setDialogMessages: (dialogId: string, messages: Message[]) => void
   incrementUnreadCount: (dialogId: string) => void
   resetUnreadCount: (dialogId: string) => void
@@ -61,24 +60,6 @@ export const useMingoBackgroundMessagesStore = create<BackgroundMessagesStore>()
         state.dialogMessages[dialogId].push(message)
         if (state.dialogMessages[dialogId].length > MAX_BACKGROUND_MESSAGES_PER_DIALOG) {
           state.dialogMessages[dialogId] = state.dialogMessages[dialogId].slice(-MAX_BACKGROUND_MESSAGES_PER_DIALOG)
-        }
-      })
-    },
-
-    updateBackgroundMessage: (dialogId: string, messageId: string, message: Message) => {
-      set(state => {
-        if (!state.dialogMessages[dialogId]) {
-          state.dialogMessages[dialogId] = []
-        }
-
-        const messageIndex = state.dialogMessages[dialogId].findIndex(msg => msg.id === messageId)
-        if (messageIndex === -1) {
-          state.dialogMessages[dialogId].push(message)
-          if (state.dialogMessages[dialogId].length > MAX_BACKGROUND_MESSAGES_PER_DIALOG) {
-            state.dialogMessages[dialogId] = state.dialogMessages[dialogId].slice(-MAX_BACKGROUND_MESSAGES_PER_DIALOG)
-          }
-        } else {
-          state.dialogMessages[dialogId][messageIndex] = message
         }
       })
     },
