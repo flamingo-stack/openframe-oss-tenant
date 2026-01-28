@@ -4,6 +4,7 @@ pub mod permissions;
 pub mod uninstall;
 pub mod update_scripts;
 pub mod updater_launcher;
+pub mod user_session;
 
 #[cfg(target_os = "windows")]
 pub mod windows_cleanup;
