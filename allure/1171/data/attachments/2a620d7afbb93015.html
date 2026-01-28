@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Elliott Wisoky&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(928) 503-1988 x7665&quot;,
+                &quot;email&quot;: &quot;brenton.crooks@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;451 Eugena Forks&quot;,
+            &quot;street2&quot;: &quot;Apt. 540&quot;,
+            &quot;city&quot;: &quot;East Isabella&quot;,
+            &quot;state&quot;: &quot;Wisconsin&quot;,
+            &quot;postalCode&quot;: &quot;79761&quot;,
+            &quot;country&quot;: &quot;Swaziland&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        28
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMDE4M2ZkMzItY2M3OC00ODZhLWI0OTgtYWE4ZGE0ZWJjODQ2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0ZTZmYmU2Ny0wMTNjLTRlMmMtOTVkMC02MTJhMWNkZjQzYmIiLCJzdWIiOiJmZXJuYW5kby5mZWVuZXlAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk2Mzc2NjcsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzRlNmZiZTY3LTAxM2MtNGUyYy05NWQwLTYxMmExY2RmNDNiYiIsImV4cCI6MTc2OTYzODU2NywiaWF0IjoxNzY5NjM3NjY3LCJ1c2VySWQiOiIzMDA0ODBiNi05YjA5LTRmNDItYmNiOC04ZThiNWNmZTZlZjQiLCJqdGkiOiI4MjE3YmU0ZC05MTM2LTRjZTgtOTI0OC0yNTJmODlkNDg5NGIifQ.JdB9JOIlDadM5i4Cf2bd8Spep2u8A7AQINzjhiyEAAez1Q38CEVw9d5FmEht9Ww6T839_cnoiPzV9wCskLEBiSiyXSCr6pnVDrYqe7oWP09jVWbhCOA63FAHmMgyDnNRpbEInj7Gx5XaIPcXPeVsbjGZtGJiAFKgryTqds6gVDVH0soQm68sq04bB3qf-vfkl4SUkgB96cC-Alf-myGlr1VuPdcmo91fEfGaOfWjlr8tzlGqGNhM4qClgNDo5iHlvdwQrPzMrzx-IZNQLdfmPoaGmIr0Wbth-rZMrur1ymZvHUWJ47aaNihbwKFtI6iXdyOtfSHFbwJDbFtZzAR3pQ</div>
+        <div>refresh_token: PE5592yKALMs7QiYMggVI_TqT0macAIwJbRnQSy0KXRYibEXS9wx6-hv1fKOfEs0k_x_zrCjGOJjIhwlnFjzZRoThbRBTcc2yWG1C65qXkmWqaXTXfuaGUdL_NTN2HRF</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMDE4M2ZkMzItY2M3OC00ODZhLWI0OTgtYWE4ZGE0ZWJjODQ2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0ZTZmYmU2Ny0wMTNjLTRlMmMtOTVkMC02MTJhMWNkZjQzYmIiLCJzdWIiOiJmZXJuYW5kby5mZWVuZXlAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk2Mzc2NjcsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzRlNmZiZTY3LTAxM2MtNGUyYy05NWQwLTYxMmExY2RmNDNiYiIsImV4cCI6MTc2OTYzODU2NywiaWF0IjoxNzY5NjM3NjY3LCJ1c2VySWQiOiIzMDA0ODBiNi05YjA5LTRmNDItYmNiOC04ZThiNWNmZTZlZjQiLCJqdGkiOiI4MjE3YmU0ZC05MTM2LTRjZTgtOTI0OC0yNTJmODlkNDg5NGIifQ.JdB9JOIlDadM5i4Cf2bd8Spep2u8A7AQINzjhiyEAAez1Q38CEVw9d5FmEht9Ww6T839_cnoiPzV9wCskLEBiSiyXSCr6pnVDrYqe7oWP09jVWbhCOA63FAHmMgyDnNRpbEInj7Gx5XaIPcXPeVsbjGZtGJiAFKgryTqds6gVDVH0soQm68sq04bB3qf-vfkl4SUkgB96cC-Alf-myGlr1VuPdcmo91fEfGaOfWjlr8tzlGqGNhM4qClgNDo5iHlvdwQrPzMrzx-IZNQLdfmPoaGmIr0Wbth-rZMrur1ymZvHUWJ47aaNihbwKFtI6iXdyOtfSHFbwJDbFtZzAR3pQ&#39; -b &#39;refresh_token=PE5592yKALMs7QiYMggVI_TqT0macAIwJbRnQSy0KXRYibEXS9wx6-hv1fKOfEs0k_x_zrCjGOJjIhwlnFjzZRoThbRBTcc2yWG1C65qXkmWqaXTXfuaGUdL_NTN2HRF&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Elliott Wisoky&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(928) 503-1988 x7665&quot;,
+                &quot;email&quot;: &quot;brenton.crooks@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;451 Eugena Forks&quot;,
+            &quot;street2&quot;: &quot;Apt. 540&quot;,
+            &quot;city&quot;: &quot;East Isabella&quot;,
+            &quot;state&quot;: &quot;Wisconsin&quot;,
+            &quot;postalCode&quot;: &quot;79761&quot;,
+            &quot;country&quot;: &quot;Swaziland&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        28
+    ]
+}&#39;
+</div>
