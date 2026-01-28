@@ -4,9 +4,10 @@ import React from 'react'
 import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query'
 import { apiClient } from '@lib/api-client'
 import { useMingoDialogDetailsStore } from '../stores/mingo-dialog-details-store'
+import { useMingoBackgroundMessagesStore } from '../stores/mingo-background-messages-store'
 import { GET_MINGO_DIALOG_QUERY, GET_DIALOG_MESSAGES_QUERY } from '../queries/dialogs-queries'
 import { CHAT_TYPE } from '../../tickets/constants'
-import type { DialogResponse, MessagesResponse, MessagePage } from '../types'
+import type { DialogResponse, MessagesResponse, MessagePage, Message } from '../types'
 
 export function useMingoDialogSelection() {
   const {
@@ -18,6 +19,8 @@ export function useMingoDialogSelection() {
     setLoadingDialog,
     setLoadingMessages
   } = useMingoDialogDetailsStore()
+
+  const { moveBackgroundToActive } = useMingoBackgroundMessagesStore()
 
   const dialogQuery = useQuery({
     queryKey: ['mingo-dialog', currentDialogId],
@@ -99,9 +102,41 @@ export function useMingoDialogSelection() {
   }, [messagesQuery.hasNextPage, messagesQuery.isFetchingNextPage, messagesQuery.isLoading, messagesQuery.fetchNextPage])
 
   React.useEffect(() => {
-    if (messagesQuery.data?.pages) {
+    if (messagesQuery.data?.pages && currentDialogId) {
       const allAdminMessages = messagesQuery.data.pages.flatMap(page => page.messages)
-      setAdminMessages(allAdminMessages)
+      const backgroundMessages = moveBackgroundToActive(currentDialogId)
+      const messageMap = new Map<string, Message>()
+
+      allAdminMessages.forEach(msg => messageMap.set(msg.id, msg))
+      
+      backgroundMessages.forEach(msg => {
+        const existing = messageMap.get(msg.id)
+        
+        if (msg.owner?.type === 'ASSISTANT' && 
+            (!msg.messageData?.text || msg.messageData.text === '') &&
+            msg.id.startsWith('typing-')) {
+          messageMap.set(msg.id, msg)
+          return
+        }
+        
+        if (msg.id.startsWith('nats-') && existing) {
+          const backgroundText = msg.messageData?.text || ''
+          const existingText = existing.messageData?.text || ''
+          if (backgroundText.length > existingText.length) {
+            messageMap.set(msg.id, msg)
+          }
+          return
+        }
+        
+        if (!existing) {
+          messageMap.set(msg.id, msg)
+        }
+      })
+      
+      const combinedMessages = Array.from(messageMap.values())
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      
+      setAdminMessages(combinedMessages)
 
       const lastPage = messagesQuery.data.pages[messagesQuery.data.pages.length - 1]
       if (lastPage) {
@@ -112,13 +147,14 @@ export function useMingoDialogSelection() {
         )
       }
     }
-  }, [messagesQuery.data?.pages, setAdminMessages, setPagination])
+  }, [messagesQuery.data?.pages, currentDialogId, setAdminMessages, setPagination, moveBackgroundToActive])
 
   return {
     selectDialog: selectDialogMutation.mutate,
     isSelectingDialog: selectDialogMutation.isPending,
     isLoadingDialog: dialogQuery.isLoading,
     isLoadingMessages: messagesQuery.isLoading,
+    rawMessagesCount: messagesQuery.data?.pages.reduce((total, page) => total + page.messages.length, 0) || 0,
     dialogError: dialogQuery.error?.message || null,
     messagesError: messagesQuery.error?.message || null,
     refetchDialog: dialogQuery.refetch,

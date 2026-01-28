@@ -1,6 +1,7 @@
 'use client'
 
-import { PlayIcon, PlusCircleIcon, TacticalRmmLogoIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
+import { ToolBadge } from "@flamingo-stack/openframe-frontend-core/components"
+import { PlayIcon, PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
 import {
   Button,
   ListPageLayout,
@@ -9,7 +10,7 @@ import {
   type TableColumn,
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
 import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils'
 import { useRouter } from "next/navigation"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useScripts } from "../hooks/use-scripts"
@@ -74,7 +75,7 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: toUiKitToolType('tactical'),
+      addedBy: normalizeToolTypeWithFallback('tactical'),
       supportedPlatforms: script.supported_platforms || [],
       category: script.category || 'General',
       timeout: script.default_timeout || 300
@@ -94,7 +95,7 @@ export function ScriptsTable() {
     const addedBySet = new Set(transformedScripts.map(script => script.addedBy))
     return Array.from(addedBySet).sort().map(toolType => ({
       id: toolType,
-      label: toStandardToolLabel(toolType.toUpperCase()),
+      label: toToolLabel(toolType.toUpperCase()),
       value: toolType
     }))
   }, [transformedScripts])
@@ -159,7 +160,7 @@ export function ScriptsTable() {
           <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
             {script.name}
           </span>
-          <span className="text-[14px] leading-[20px] text-ods-text-tertiary line-clamp-2 overflow-x-hidden whitespace-nowrap text-ellipsis">
+          <span className="text-[14px] leading-[20px] text-ods-text-tertiary overflow-x-hidden whitespace-nowrap text-ellipsis">
             {script.description || 'No description'}
           </span>
         </div>
@@ -171,9 +172,9 @@ export function ScriptsTable() {
       filterable: true,
       filterOptions: uniqueShellTypes,
       renderCell: (script) => (
-        <div className="flex items-start justify-center flex-col">
+        <div className="flex flex-col">
           <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">{script.shellType}</span>
-          <span className="text-[14px] leading-[20px] text-ods-text-secondary">{mapPlatformsForDisplay(script.supportedPlatforms).join(', ')}</span>
+          <span className="text-[14px] leading-[20px] text-ods-text-secondary overflow-x-hidden whitespace-nowrap text-ellipsis">{mapPlatformsForDisplay(script.supportedPlatforms).join(', ')}</span>
         </div>
       )
     },
@@ -184,10 +185,7 @@ export function ScriptsTable() {
       filterOptions: uniqueAddedBy,
       hideAt: 'xl',
       renderCell: (script) => (
-        <div className="flex items-center gap-1">
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">TacticalRMM</span>
-          <TacticalRmmLogoIcon size={16} />
-        </div>
+        <ToolBadge toolType={normalizeToolTypeWithFallback(script.addedBy)} />
       )
     },
     {
@@ -197,7 +195,7 @@ export function ScriptsTable() {
       filterOptions: uniqueCategories,
       hideAt: 'lg',
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary line-clamp-2">
           {script.category}
         </span>
       )

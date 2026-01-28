@@ -17,7 +17,7 @@ import { useApprovalRequests } from '../../tickets/hooks/use-approval-requests'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 
 export function useProcessedMessages() {
-  const { adminMessages } = useMingoDialogDetailsStore()
+  const { adminMessages, currentDialogId } = useMingoDialogDetailsStore()
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({})
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests()
   const { toast } = useToast()
@@ -68,7 +68,30 @@ export function useProcessedMessages() {
     const assistantConfig = ASSISTANT_CONFIG.MINGO
     const { type: assistantType, name: assistantName } = assistantConfig
 
-    const historicalMessages: HistoricalMessage[] = adminMessages.map(msg => ({
+    if (!currentDialogId) {
+      return { 
+        messages: [], 
+        pendingApprovals: [],
+        assistantType,
+        assistantName
+      }
+    }
+
+    const currentDialogMessages = adminMessages.filter(msg => msg.dialogId === currentDialogId)
+
+    const emptyAssistantMessages = currentDialogMessages.filter(msg => 
+      msg.owner?.type === 'ASSISTANT' && 
+      msg.messageData?.type === 'TEXT' && 
+      msg.messageData?.text === ''
+    )
+    
+    const completedMessages = currentDialogMessages.filter(msg => !(
+      msg.owner?.type === 'ASSISTANT' && 
+      msg.messageData?.type === 'TEXT' && 
+      msg.messageData?.text === ''
+    ))
+
+    const historicalMessages: HistoricalMessage[] = completedMessages.map(msg => ({
       id: msg.id,
       dialogId: msg.dialogId,
       chatType: msg.chatType,
@@ -110,13 +133,25 @@ export function useProcessedMessages() {
       timestamp: msg.timestamp
     }))
 
+    const emptyAssistantMessagesFormatted = emptyAssistantMessages.map(msg => ({
+      id: msg.id,
+      content: [],
+      role: 'assistant' as const,
+      name: assistantName,
+      assistantType: assistantType as 'fae' | 'mingo' | undefined,
+      timestamp: new Date(msg.createdAt)
+    }))
+
+    const allMessages = [...processedMessages, ...emptyAssistantMessagesFormatted]
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+    
     return { 
-      messages: processedMessages, 
+      messages: allMessages, 
       pendingApprovals: pendingApprovalSegments,
       assistantType,
       assistantName
     }
-  }, [adminMessages, approvalStatuses, handleApprove, handleReject])
+  }, [adminMessages, currentDialogId, approvalStatuses, handleApprove, handleReject])
 
   return {
     ...processedData,
