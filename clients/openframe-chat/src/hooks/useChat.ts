@@ -106,7 +106,6 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     onSegmentsUpdate: (segments: MessageSegment[]) => {
       messagesRef.current.ensureAssistantMessage()
       setNatsStreaming(true)
-      setIsTyping(false)
       messagesRef.current.updateSegments(segments)
     },
     onError: (errorText: string) => {
