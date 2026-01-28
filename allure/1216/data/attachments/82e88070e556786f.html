@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697a284bb643911471537d48</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Dr. Nancey Stroman&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(808) 804-4051&quot;,
+                &quot;email&quot;: &quot;kaycee.satterfield@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;4936 Carlo Green&quot;,
+            &quot;street2&quot;: &quot;Suite 284&quot;,
+            &quot;city&quot;: &quot;Mantebury&quot;,
+            &quot;state&quot;: &quot;Mississippi&quot;,
+            &quot;postalCode&quot;: &quot;32597&quot;,
+            &quot;country&quot;: &quot;Congo&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;685 Muller Plaza&quot;,
+            &quot;street2&quot;: &quot;Suite 324&quot;,
+            &quot;city&quot;: &quot;Erdmanfort&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;26685&quot;,
+            &quot;country&quot;: &quot;Haiti&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        28
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZmQxYTE2MzktNTY2OC00MzE1LTg4ZjUtZWEwNjAwYTQ0M2Y1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMTc4MWM0OS1hNmJlLTRjY2QtYTY2My01NzZmZWI1YTBkNDciLCJzdWIiOiJnZXJhbGRpbmUuYmFycm93c0B5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTYxMzM4Niwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYjE3ODFjNDktYTZiZS00Y2NkLWE2NjMtNTc2ZmViNWEwZDQ3IiwiZXhwIjoxNzY5NjE0Mjg2LCJpYXQiOjE3Njk2MTMzODYsInVzZXJJZCI6ImMyMzBjNTE0LWYxYzgtNDRiNC05ZWZhLTM3YzE3ZDJmNTllNCIsImp0aSI6IjYwZWQ1YjhmLTM4ZDUtNDc1NS05NTBhLWZiMjFhYmU0Y2IzOSJ9.hzY_Og4rLimRTCA1dbCZ3l52EPfp6Ljr4L8W652q7Q3FYea3meTSam3ywgB_eTtweAp2jIAAxoS1FgFnHhsgtUrM3erQjcBGu4eGPh5FdhBH2so0Q-kIdvWNecQMn4wiRTfvuuUlhCV3X8aZjC0NxQvfZfbbaI9kEi9zgQaai7QApwhuPXCQKAIh3RNuEf_FkbMYJmKgFKNtjgaN2QPNBp_qyrAox8vTolhrKfCtAE103mSKwwajn9lIgwhoKrtpNcTeDgReSAvI7TOOu4BhP-jHfW147uE3hBemU2uDcz_2o9aXbZJVqqAnbRqZ_nJq6Lrdwvpv14bx2NyFxoqJbw</div>
+        <div>refresh_token: ScvWeWJaO6oR2hWR44DeLsAacqBnCLGXo3MqtEWpnjElq2sP9ivAbM78iu1APPAwY0mOSxkm3RI1goBDdgxtQ5zSQCdXoluTAJ5Es17Nbdl3WxNaDqaFjFvimI7zJ4bf</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697a284bb643911471537d48&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZmQxYTE2MzktNTY2OC00MzE1LTg4ZjUtZWEwNjAwYTQ0M2Y1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMTc4MWM0OS1hNmJlLTRjY2QtYTY2My01NzZmZWI1YTBkNDciLCJzdWIiOiJnZXJhbGRpbmUuYmFycm93c0B5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTYxMzM4Niwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYjE3ODFjNDktYTZiZS00Y2NkLWE2NjMtNTc2ZmViNWEwZDQ3IiwiZXhwIjoxNzY5NjE0Mjg2LCJpYXQiOjE3Njk2MTMzODYsInVzZXJJZCI6ImMyMzBjNTE0LWYxYzgtNDRiNC05ZWZhLTM3YzE3ZDJmNTllNCIsImp0aSI6IjYwZWQ1YjhmLTM4ZDUtNDc1NS05NTBhLWZiMjFhYmU0Y2IzOSJ9.hzY_Og4rLimRTCA1dbCZ3l52EPfp6Ljr4L8W652q7Q3FYea3meTSam3ywgB_eTtweAp2jIAAxoS1FgFnHhsgtUrM3erQjcBGu4eGPh5FdhBH2so0Q-kIdvWNecQMn4wiRTfvuuUlhCV3X8aZjC0NxQvfZfbbaI9kEi9zgQaai7QApwhuPXCQKAIh3RNuEf_FkbMYJmKgFKNtjgaN2QPNBp_qyrAox8vTolhrKfCtAE103mSKwwajn9lIgwhoKrtpNcTeDgReSAvI7TOOu4BhP-jHfW147uE3hBemU2uDcz_2o9aXbZJVqqAnbRqZ_nJq6Lrdwvpv14bx2NyFxoqJbw&#39; -b &#39;refresh_token=ScvWeWJaO6oR2hWR44DeLsAacqBnCLGXo3MqtEWpnjElq2sP9ivAbM78iu1APPAwY0mOSxkm3RI1goBDdgxtQ5zSQCdXoluTAJ5Es17Nbdl3WxNaDqaFjFvimI7zJ4bf&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Dr. Nancey Stroman&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(808) 804-4051&quot;,
+                &quot;email&quot;: &quot;kaycee.satterfield@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;4936 Carlo Green&quot;,
+            &quot;street2&quot;: &quot;Suite 284&quot;,
+            &quot;city&quot;: &quot;Mantebury&quot;,
+            &quot;state&quot;: &quot;Mississippi&quot;,
+            &quot;postalCode&quot;: &quot;32597&quot;,
+            &quot;country&quot;: &quot;Congo&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;685 Muller Plaza&quot;,
+            &quot;street2&quot;: &quot;Suite 324&quot;,
+            &quot;city&quot;: &quot;Erdmanfort&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;26685&quot;,
+            &quot;country&quot;: &quot;Haiti&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        28
+    ]
+}&#39;
+</div>
