@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;abram.wisozk@gmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNjFhNTg3OWEtYTJmYy00N2JmLTkwYjYtNTdhNDdjMmNlZTA2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkZWRmMTRkOC0yNzAxLTQ3YzQtOWNjZC04NGJmMGZhOTUzM2IiLCJzdWIiOiJtYXJuaWUuY2hyaXN0aWFuc2VuQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NjEyNjMxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9kZWRmMTRkOC0yNzAxLTQ3YzQtOWNjZC04NGJmMGZhOTUzM2IiLCJleHAiOjE3Njk2MTM1MzEsImlhdCI6MTc2OTYxMjYzMSwidXNlcklkIjoiYzIwZGM4ZGQtY2NiMS00MTFiLTgxYWQtZTBkZWM0MGY1ZjFiIiwianRpIjoiNGRkYjFlNzItZGE5Yi00ZjFlLTlhYjctMWQyZmNmOWMxNDc0In0.bdraGxhfEisWbaxZxwpG9e0zAT9hSYkioWJlTPMP12s2T8HHs0Ee9Z4VZ_mhVZSy3a-5J0Nv8qIM20EM2J-4lSr8dRF7c4wYvMjK3qoEakumjHbsyzdfjI-6c8_ft6XtbbKgWoIz_vgUwdkCwXAJv8oJJZFe9pbcfxx1zKNKH1_wBf5bTBImIhZNU1H8STjowmVuJ0qWTlT8GEh1wHGY3SymlfcAd-hFrhoaV0VvIxDnjxKMbAwDKP0e3oFAd85ipwqXz1sPHZzCcTPG-4mQq-EaWEs3gDbq4R5XJwD9KyWUPYcYDrn3QgIbw8G0WkneIYTFAHl9qr30jge5hepEEQ</div>
+        <div>refresh_token: 7Ymqmw8Qcg69TqFRA07YGPLGiprZUa-kFl9DTMu-hCjIiUqiyt-nPMxGQF8fKfJSVS6XQpYdgGIV5oPjVNlcBFef3EIHTpbKoB4a-VPdqe-ofayeuMj3joziQkTY4yIB</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNjFhNTg3OWEtYTJmYy00N2JmLTkwYjYtNTdhNDdjMmNlZTA2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkZWRmMTRkOC0yNzAxLTQ3YzQtOWNjZC04NGJmMGZhOTUzM2IiLCJzdWIiOiJtYXJuaWUuY2hyaXN0aWFuc2VuQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NjEyNjMxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9kZWRmMTRkOC0yNzAxLTQ3YzQtOWNjZC04NGJmMGZhOTUzM2IiLCJleHAiOjE3Njk2MTM1MzEsImlhdCI6MTc2OTYxMjYzMSwidXNlcklkIjoiYzIwZGM4ZGQtY2NiMS00MTFiLTgxYWQtZTBkZWM0MGY1ZjFiIiwianRpIjoiNGRkYjFlNzItZGE5Yi00ZjFlLTlhYjctMWQyZmNmOWMxNDc0In0.bdraGxhfEisWbaxZxwpG9e0zAT9hSYkioWJlTPMP12s2T8HHs0Ee9Z4VZ_mhVZSy3a-5J0Nv8qIM20EM2J-4lSr8dRF7c4wYvMjK3qoEakumjHbsyzdfjI-6c8_ft6XtbbKgWoIz_vgUwdkCwXAJv8oJJZFe9pbcfxx1zKNKH1_wBf5bTBImIhZNU1H8STjowmVuJ0qWTlT8GEh1wHGY3SymlfcAd-hFrhoaV0VvIxDnjxKMbAwDKP0e3oFAd85ipwqXz1sPHZzCcTPG-4mQq-EaWEs3gDbq4R5XJwD9KyWUPYcYDrn3QgIbw8G0WkneIYTFAHl9qr30jge5hepEEQ&#39; -b &#39;refresh_token=7Ymqmw8Qcg69TqFRA07YGPLGiprZUa-kFl9DTMu-hCjIiUqiyt-nPMxGQF8fKfJSVS6XQpYdgGIV5oPjVNlcBFef3EIHTpbKoB4a-VPdqe-ofayeuMj3joziQkTY4yIB&#39; -d &#39;{
+    &quot;email&quot;: &quot;abram.wisozk@gmail.com&quot;
+}&#39;
+</div>
