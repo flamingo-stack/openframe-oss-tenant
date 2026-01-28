@@ -13,8 +13,8 @@ import {
   type TableColumn
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
 import { useApiParams, useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
+import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils'
 import { transformOrganizationFilters } from '@lib/filter-utils'
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
 import { ExternalLink } from "lucide-react"
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { useLogFilters, useLogs } from '../hooks/use-logs'
@@ -137,8 +137,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
                   log.severity === 'CRITICAL' ? 'critical' as const : 'success' as const
         },
         source: {
-          name: toStandardToolLabel(log.toolType),
-          toolType: toUiKitToolType(log.toolType)
+          name: toToolLabel(log.toolType),
+          toolType: normalizeToolTypeWithFallback(log.toolType)
         },
         device: {
           // Use device.hostname if available, fallback to deviceId
@@ -191,16 +191,16 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       {
         key: 'tool',
         label: 'Tool',
-        width: 'w-[120px]',
+        width: 'w-[150px]',
         hideAt: 'sm',
         filterable: true,
         filterOptions: logFilters?.toolTypes?.map((toolType: string) => ({
           id: toolType,
-          label: toStandardToolLabel(toolType),
+          label: toToolLabel(toolType),
           value: toolType
         })) || [],
         renderCell: (log) => (
-          <ToolBadge toolType={log.source.toolType as any} />
+          <ToolBadge toolType={normalizeToolTypeWithFallback(log.source.toolType)} />
         )
       },
       {

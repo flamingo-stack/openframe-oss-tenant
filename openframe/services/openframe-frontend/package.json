@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",
-    "@flamingo-stack/openframe-frontend-core": "0.0.18",
+    "@flamingo-stack/openframe-frontend-core": "0.0.19",
     "@tanstack/react-query": "^5.90.16",
     "graphql": "^16.8.0",
     "graphql-tag": "^2.12.6",

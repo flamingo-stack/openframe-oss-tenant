@@ -1,14 +1,13 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
-import { DeviceCard, Button, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
-import { cn } from '@flamingo-stack/openframe-frontend-core/utils'
-import { toUiKitToolType } from '@lib/tool-labels'
-import { useDeviceDetails } from '../../devices/hooks/use-device-details'
-import { getDeviceStatusConfig, getDeviceOperatingSystem } from '../../devices/utils/device-status'
+import { Button, DeviceCard, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { cn, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
+import { X } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
 import { DeviceDetailsButton } from '../../devices/components/device-details-button'
+import { useDeviceDetails } from '../../devices/hooks/use-device-details'
+import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status'
 
 interface LogInfoModalProps {
   isOpen: boolean
@@ -252,7 +251,7 @@ export function LogInfoModal({ isOpen, onClose, log, fetchLogDetails }: LogInfoM
                 <InfoField label="Log ID" value={displayData.toolEventId || log.logId} />
                 <InfoField label="User" value={displayData.userId || log.user} />
                 <InfoField label="Source" value={
-                  <ToolBadge toolType={toUiKitToolType(displayData.toolType) as any} />
+                  <ToolBadge toolType={normalizeToolTypeWithFallback(displayData.toolType)} />
                 } />
                 <InfoField label="Device" value={displayData.deviceId || log.device.name} />
                 {detailedLogData?.eventType && (
