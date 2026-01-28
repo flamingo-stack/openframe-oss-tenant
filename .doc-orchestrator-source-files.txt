@@ -1,0 +1,10 @@
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/CountedGenericQueryResult.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/GenericQueryResult.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/audit/LogDetails.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/audit/LogEvent.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/audit/LogFilterOptions.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/audit/LogFilters.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/audit/OrganizationFilterOption.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/device/DeviceFilterOption.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/device/DeviceFilterOptions.java
+../deps/openframe-oss-lib/openframe-api-lib/src/main/java/com/openframe/api/dto/device/DeviceFilters.java

@@ -1,6 +1,0 @@
-apiVersion: v2
-name: apps
-description: Helm Chart for ArgoCD Openframe OSS Applications launched by argocd-apps
-type: application
-version: 0.0.1
-appVersion: "0.0.1"

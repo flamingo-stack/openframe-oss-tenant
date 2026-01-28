@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: openframe-stream
-  config:
-    import: "optional:configserver:${SPRING_CONFIG_URL:http://openframe-config.microservices.svc.cluster.local:8888}"
