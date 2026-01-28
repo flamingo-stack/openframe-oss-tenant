@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697a4cc4c7e297379aeef767</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Dr. Dane Bednar&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(631) 228-0585 x4130&quot;,
+                &quot;email&quot;: &quot;justa.rogahn@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;38076 Marks Track&quot;,
+            &quot;street2&quot;: &quot;Suite 590&quot;,
+            &quot;city&quot;: &quot;Mitchmouth&quot;,
+            &quot;state&quot;: &quot;Louisiana&quot;,
+            &quot;postalCode&quot;: &quot;78549&quot;,
+            &quot;country&quot;: &quot;Kazakhstan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;488 Kieth Fork&quot;,
+            &quot;street2&quot;: &quot;Suite 196&quot;,
+            &quot;city&quot;: &quot;Port Concepcionstad&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;51026&quot;,
+            &quot;country&quot;: &quot;Sri Lanka&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        28
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZjBlYzY4MTgtMGRmMC00MTIxLWFmMTQtNDUwYjE3NGY5ZjVjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0YjU4MDYwNi1mNGJlLTRlMzgtOGQ3Zi05NjcxMjdkZGMwMmIiLCJzdWIiOiJhZGVsYWlkYS5oYWNrZXR0QGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NjIyNzIzLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy80YjU4MDYwNi1mNGJlLTRlMzgtOGQ3Zi05NjcxMjdkZGMwMmIiLCJleHAiOjE3Njk2MjM2MjMsImlhdCI6MTc2OTYyMjcyMywidXNlcklkIjoiMDIxZDBmNmEtOGMzYS00ZDVhLTlkNjMtOWE0MDJjOTQ3MDRmIiwianRpIjoiNGE4Y2RkZmItYzYyMy00NWUwLTkzZTQtMjU2MGM2YTI3YzUwIn0.UIYU1Z-M-_xgTiFNnWXdBI3sYtYmSl3SkemUba2FLQqlBADR8KvqV9qgcd4nJDr08Rs-KjBt-YndiHaSzZ3ldxxPf84NU_spBtPF00KqMFO6wHHfyqIUFtwyJ4cAToaP5XnHMeKeSitayiecSGMIACrA6Pq1pIQM62LXrOpC3e3kJ6oDFdwH5dAWoXd-RIK-5w_wec_MyKZnRBawqqL-lGlpv4tIhwwTM2OgHSl1Ty4Lca_EyReEd-wvLGjUMO3DDVnTfLuz9JtZthTPVDcTXWtKws8hui2waPmNMO57_n7cFBqeds7nNSKqeSwS7yZSaKD3p4rqxjn1T6HqT2bf1A</div>
+        <div>refresh_token: nXKbJbxhc5bT1--BdKbI2BAkWbKSoE4NX8y-Gq2wuC2dVFtmJq0uJTn298XWh2z0NaAy4mZdCCSdIEvg6waW0wSaqtYzggTdt1h4ViwweRqSmmZD1dP-QM028V_ojYgp</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697a4cc4c7e297379aeef767&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZjBlYzY4MTgtMGRmMC00MTIxLWFmMTQtNDUwYjE3NGY5ZjVjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0YjU4MDYwNi1mNGJlLTRlMzgtOGQ3Zi05NjcxMjdkZGMwMmIiLCJzdWIiOiJhZGVsYWlkYS5oYWNrZXR0QGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NjIyNzIzLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy80YjU4MDYwNi1mNGJlLTRlMzgtOGQ3Zi05NjcxMjdkZGMwMmIiLCJleHAiOjE3Njk2MjM2MjMsImlhdCI6MTc2OTYyMjcyMywidXNlcklkIjoiMDIxZDBmNmEtOGMzYS00ZDVhLTlkNjMtOWE0MDJjOTQ3MDRmIiwianRpIjoiNGE4Y2RkZmItYzYyMy00NWUwLTkzZTQtMjU2MGM2YTI3YzUwIn0.UIYU1Z-M-_xgTiFNnWXdBI3sYtYmSl3SkemUba2FLQqlBADR8KvqV9qgcd4nJDr08Rs-KjBt-YndiHaSzZ3ldxxPf84NU_spBtPF00KqMFO6wHHfyqIUFtwyJ4cAToaP5XnHMeKeSitayiecSGMIACrA6Pq1pIQM62LXrOpC3e3kJ6oDFdwH5dAWoXd-RIK-5w_wec_MyKZnRBawqqL-lGlpv4tIhwwTM2OgHSl1Ty4Lca_EyReEd-wvLGjUMO3DDVnTfLuz9JtZthTPVDcTXWtKws8hui2waPmNMO57_n7cFBqeds7nNSKqeSwS7yZSaKD3p4rqxjn1T6HqT2bf1A&#39; -b &#39;refresh_token=nXKbJbxhc5bT1--BdKbI2BAkWbKSoE4NX8y-Gq2wuC2dVFtmJq0uJTn298XWh2z0NaAy4mZdCCSdIEvg6waW0wSaqtYzggTdt1h4ViwweRqSmmZD1dP-QM028V_ojYgp&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Dr. Dane Bednar&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(631) 228-0585 x4130&quot;,
+                &quot;email&quot;: &quot;justa.rogahn@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;38076 Marks Track&quot;,
+            &quot;street2&quot;: &quot;Suite 590&quot;,
+            &quot;city&quot;: &quot;Mitchmouth&quot;,
+            &quot;state&quot;: &quot;Louisiana&quot;,
+            &quot;postalCode&quot;: &quot;78549&quot;,
+            &quot;country&quot;: &quot;Kazakhstan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;488 Kieth Fork&quot;,
+            &quot;street2&quot;: &quot;Suite 196&quot;,
+            &quot;city&quot;: &quot;Port Concepcionstad&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;51026&quot;,
+            &quot;country&quot;: &quot;Sri Lanka&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        28
+    ]
+}&#39;
+</div>
