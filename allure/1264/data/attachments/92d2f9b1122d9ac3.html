@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697baf2a5923b656516c4562</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Angie Daniel&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(832) 208-4550 x9724&quot;,
+                &quot;email&quot;: &quot;erwin.larkin@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;7827 Barton Stream&quot;,
+            &quot;street2&quot;: &quot;Apt. 341&quot;,
+            &quot;city&quot;: &quot;Lake Marcusburgh&quot;,
+            &quot;state&quot;: &quot;Michigan&quot;,
+            &quot;postalCode&quot;: &quot;81549&quot;,
+            &quot;country&quot;: &quot;Kuwait&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;203 Schmitt Harbor&quot;,
+            &quot;street2&quot;: &quot;Suite 519&quot;,
+            &quot;city&quot;: &quot;North Rebekahville&quot;,
+            &quot;state&quot;: &quot;Rhode Island&quot;,
+            &quot;postalCode&quot;: &quot;67850&quot;,
+            &quot;country&quot;: &quot;Netherlands&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtN2I1MDk1M2QtZmY2My00ZmVlLTkxZDEtZWUyZjc1YmE5YmM3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhZDZkYWUyMy01M2M5LTQwNTQtYTk0ZC1iMTQ2ZDA1MTRkZTgiLCJzdWIiOiJlbWVyYWxkLnNjaHVwcGVAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3MTM0NDksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2FkNmRhZTIzLTUzYzktNDA1NC1hOTRkLWIxNDZkMDUxNGRlOCIsImV4cCI6MTc2OTcxNDM0OSwiaWF0IjoxNzY5NzEzNDQ5LCJ1c2VySWQiOiJhNWI1MzU3YS0xZThkLTQ5MmMtOGYzMS1lOTMwMmZhZTIwNTgiLCJqdGkiOiJkODhhMTg3Yy1kNTQ3LTRiYTUtYWViZi0yOTAxY2YzYjgxNjEifQ.UQrgcnz-sSUTqUw0KbpiAytfp9yMAMF_MelyoIwwfHvaTKVbptnof6hr6QJk95xkBi9pAuXal1RexPxSA3Xf3sS47nH9V056VYsqvEqgxDtNLDS4l65P0KT0UWtmj-wfqVERY9Xh3n_LaO8rO-AlRDETXV6AXrkf-ZxZeJGu-9V-7mZYLK2e8_CxQPUJ_3EXe01sX7i2gvBGr276upMqC1mSLK6DUGEKTgqESDVpF0cVrVcuTcTbE-BYUg356IwRd7sbw6Fokztwa-fGF5l5QpEfYLgSWL_iqdGNf5bHI33yJAXmbPtOKyJAty_UVOHjiU4tiUNQG-nMWTNAxb5N0w</div>
+        <div>refresh_token: mgYS7mn1uHaCpyLTaG-liGJlUfLzPBehHBj3hWis37thBz7gzG9cox6jxCYqTqfKIgODtPyYV3m9hBh4mGClUlE99jAurqMBxqQ7rWGS3F5DborA00QwKIkKxNKUXaWm</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697baf2a5923b656516c4562&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtN2I1MDk1M2QtZmY2My00ZmVlLTkxZDEtZWUyZjc1YmE5YmM3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhZDZkYWUyMy01M2M5LTQwNTQtYTk0ZC1iMTQ2ZDA1MTRkZTgiLCJzdWIiOiJlbWVyYWxkLnNjaHVwcGVAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3MTM0NDksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2FkNmRhZTIzLTUzYzktNDA1NC1hOTRkLWIxNDZkMDUxNGRlOCIsImV4cCI6MTc2OTcxNDM0OSwiaWF0IjoxNzY5NzEzNDQ5LCJ1c2VySWQiOiJhNWI1MzU3YS0xZThkLTQ5MmMtOGYzMS1lOTMwMmZhZTIwNTgiLCJqdGkiOiJkODhhMTg3Yy1kNTQ3LTRiYTUtYWViZi0yOTAxY2YzYjgxNjEifQ.UQrgcnz-sSUTqUw0KbpiAytfp9yMAMF_MelyoIwwfHvaTKVbptnof6hr6QJk95xkBi9pAuXal1RexPxSA3Xf3sS47nH9V056VYsqvEqgxDtNLDS4l65P0KT0UWtmj-wfqVERY9Xh3n_LaO8rO-AlRDETXV6AXrkf-ZxZeJGu-9V-7mZYLK2e8_CxQPUJ_3EXe01sX7i2gvBGr276upMqC1mSLK6DUGEKTgqESDVpF0cVrVcuTcTbE-BYUg356IwRd7sbw6Fokztwa-fGF5l5QpEfYLgSWL_iqdGNf5bHI33yJAXmbPtOKyJAty_UVOHjiU4tiUNQG-nMWTNAxb5N0w&#39; -b &#39;refresh_token=mgYS7mn1uHaCpyLTaG-liGJlUfLzPBehHBj3hWis37thBz7gzG9cox6jxCYqTqfKIgODtPyYV3m9hBh4mGClUlE99jAurqMBxqQ7rWGS3F5DborA00QwKIkKxNKUXaWm&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Angie Daniel&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(832) 208-4550 x9724&quot;,
+                &quot;email&quot;: &quot;erwin.larkin@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;7827 Barton Stream&quot;,
+            &quot;street2&quot;: &quot;Apt. 341&quot;,
+            &quot;city&quot;: &quot;Lake Marcusburgh&quot;,
+            &quot;state&quot;: &quot;Michigan&quot;,
+            &quot;postalCode&quot;: &quot;81549&quot;,
+            &quot;country&quot;: &quot;Kuwait&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;203 Schmitt Harbor&quot;,
+            &quot;street2&quot;: &quot;Suite 519&quot;,
+            &quot;city&quot;: &quot;North Rebekahville&quot;,
+            &quot;state&quot;: &quot;Rhode Island&quot;,
+            &quot;postalCode&quot;: &quot;67850&quot;,
+            &quot;country&quot;: &quot;Netherlands&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}&#39;
+</div>
