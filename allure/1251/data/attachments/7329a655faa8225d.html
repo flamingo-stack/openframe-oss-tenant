@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697adbd286c5c67730ca68db</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Hunter Thompson I&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(830) 612-4118 x1363&quot;,
+                &quot;email&quot;: &quot;vernon.kovacek@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;7485 Ritchie Plaza&quot;,
+            &quot;street2&quot;: &quot;Suite 485&quot;,
+            &quot;city&quot;: &quot;East Amos&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;97047&quot;,
+            &quot;country&quot;: &quot;Myanmar&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;616 Nolan Station&quot;,
+            &quot;street2&quot;: &quot;Suite 503&quot;,
+            &quot;city&quot;: &quot;Lake Mohammadfort&quot;,
+            &quot;state&quot;: &quot;Wisconsin&quot;,
+            &quot;postalCode&quot;: &quot;84999&quot;,
+            &quot;country&quot;: &quot;Czech Republic&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNTZjYzhmNDgtOGY2Yy00MjY2LWIwYTUtOGRkNTNhZTI5NTczIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5MThiOTY5ZS02OTkzLTRlMWYtYmYzYS1lMTY1N2YxNjAxODIiLCJzdWIiOiJxdWludG9uLndlc3RAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk2NTkzNDUsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzkxOGI5NjllLTY5OTMtNGUxZi1iZjNhLWUxNjU3ZjE2MDE4MiIsImV4cCI6MTc2OTY2MDI0NSwiaWF0IjoxNzY5NjU5MzQ1LCJ1c2VySWQiOiJkYzA0NGUxMy0xMTA5LTRlYTAtYjE1Ni05ODhhMWQ5OTMzNjUiLCJqdGkiOiIzZGRlNThlOC04NDZmLTQ4YTUtOGU2OC00ZGZkNWI0MGEzZjUifQ.MEMI9VnCzUFp3XI_rlaOokph0LCzshn5ZNNmXK1Ah-dNkPDbMrfVkwd5-D9z4eFMvpuLDCdHIeNEj8997uEATywxLnb1ZkvIZqFP9oCeuIQTnc_1HfeC53dFhZXFeyv1hH2RMpnGCGG5bd55dYVk5OZWhq476vp9beBW7oPeADaIOdNSBdB_A2iaQwrQemmv8XaWoI3FuW0QaWvjzGEjHipxNkGOEnXi6nOQ9uZ9i9oLhwPs73fDZGtnQ9RCIHpRTnobMe3THwp0Fd99ScQiyQ_9qy1GtkGnak2OYOTer-O7IE-FdFPYFr2XAm_20jGXzhiltkH4aDMKWtXJkJFUQw</div>
+        <div>refresh_token: 0BNaa3y1FBUnpiCYkDM8biigVdop4BZoEGdh2szsEhXsbVMEiL-jO5PN9C9NedluwbPP3MK-9084VCtDwcVFv6Zfog1RO5va2rUnpmv1b8cEBGVHE76jmURsG4WRiMDg</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697adbd286c5c67730ca68db&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNTZjYzhmNDgtOGY2Yy00MjY2LWIwYTUtOGRkNTNhZTI5NTczIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5MThiOTY5ZS02OTkzLTRlMWYtYmYzYS1lMTY1N2YxNjAxODIiLCJzdWIiOiJxdWludG9uLndlc3RAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk2NTkzNDUsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzkxOGI5NjllLTY5OTMtNGUxZi1iZjNhLWUxNjU3ZjE2MDE4MiIsImV4cCI6MTc2OTY2MDI0NSwiaWF0IjoxNzY5NjU5MzQ1LCJ1c2VySWQiOiJkYzA0NGUxMy0xMTA5LTRlYTAtYjE1Ni05ODhhMWQ5OTMzNjUiLCJqdGkiOiIzZGRlNThlOC04NDZmLTQ4YTUtOGU2OC00ZGZkNWI0MGEzZjUifQ.MEMI9VnCzUFp3XI_rlaOokph0LCzshn5ZNNmXK1Ah-dNkPDbMrfVkwd5-D9z4eFMvpuLDCdHIeNEj8997uEATywxLnb1ZkvIZqFP9oCeuIQTnc_1HfeC53dFhZXFeyv1hH2RMpnGCGG5bd55dYVk5OZWhq476vp9beBW7oPeADaIOdNSBdB_A2iaQwrQemmv8XaWoI3FuW0QaWvjzGEjHipxNkGOEnXi6nOQ9uZ9i9oLhwPs73fDZGtnQ9RCIHpRTnobMe3THwp0Fd99ScQiyQ_9qy1GtkGnak2OYOTer-O7IE-FdFPYFr2XAm_20jGXzhiltkH4aDMKWtXJkJFUQw&#39; -b &#39;refresh_token=0BNaa3y1FBUnpiCYkDM8biigVdop4BZoEGdh2szsEhXsbVMEiL-jO5PN9C9NedluwbPP3MK-9084VCtDwcVFv6Zfog1RO5va2rUnpmv1b8cEBGVHE76jmURsG4WRiMDg&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Hunter Thompson I&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(830) 612-4118 x1363&quot;,
+                &quot;email&quot;: &quot;vernon.kovacek@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;7485 Ritchie Plaza&quot;,
+            &quot;street2&quot;: &quot;Suite 485&quot;,
+            &quot;city&quot;: &quot;East Amos&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;97047&quot;,
+            &quot;country&quot;: &quot;Myanmar&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;616 Nolan Station&quot;,
+            &quot;street2&quot;: &quot;Suite 503&quot;,
+            &quot;city&quot;: &quot;Lake Mohammadfort&quot;,
+            &quot;state&quot;: &quot;Wisconsin&quot;,
+            &quot;postalCode&quot;: &quot;84999&quot;,
+            &quot;country&quot;: &quot;Czech Republic&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}&#39;
+</div>
