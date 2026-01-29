@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697bd23f973bee531065c289</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lauren Barrows&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(931) 425-6537&quot;,
+                &quot;email&quot;: &quot;annie.brakus@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8499 Pacocha Cliff&quot;,
+            &quot;street2&quot;: &quot;Apt. 990&quot;,
+            &quot;city&quot;: &quot;Lake Mercedesmouth&quot;,
+            &quot;state&quot;: &quot;Nevada&quot;,
+            &quot;postalCode&quot;: &quot;42100&quot;,
+            &quot;country&quot;: &quot;Sri Lanka&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;3614 Carl Stream&quot;,
+            &quot;street2&quot;: &quot;Suite 786&quot;,
+            &quot;city&quot;: &quot;Schadenside&quot;,
+            &quot;state&quot;: &quot;New York&quot;,
+            &quot;postalCode&quot;: &quot;31160&quot;,
+            &quot;country&quot;: &quot;Wallis and Futuna&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMDNjNGRkZmUtY2M4NS00OGQ3LWE0YWMtZTZhODlhYTc5NGJkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4NzUzM2NjZS02MmI1LTQ0NTUtOGZkMS01NDM2NDgzZmNhYWIiLCJzdWIiOiJtZXJsZW5lLmdpc2xhc29uQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3MjI0MzAsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzg3NTMzY2NlLTYyYjUtNDQ1NS04ZmQxLTU0MzY0ODNmY2FhYiIsImV4cCI6MTc2OTcyMzMzMCwiaWF0IjoxNzY5NzIyNDMwLCJ1c2VySWQiOiI4NjVmODQ5NS02MTFiLTRmNWItODU4MS05ZGY2NzA2NjZlMmQiLCJqdGkiOiJlYTA0OTJmNS00ZjcyLTQ3MzktYTM5Mi04YzUwYzY3NWE2OWIifQ.ufKJxKcSHByzGruOnK2HeXmQ3twf6h0On9Q4t33hbqaWrAe2jeovbMKKnlEVoQ3H1qGf2xeRgcblTN5zVRoiuaIMaTA6TKw6LpeOFUTuTJyREdhjwOq2PjtH7E_XADeSWode2h-I1WexleYbEhKyY-HhQIs1F_TVJIIEByPGFy2r6xLPEFJjEuUBvLMOtX8OJQo-BKGRWlkVZuua0q44O93mQqIL9MgW4865wGQVW3C3ynXomX_mSoSzzXOW-5NkG5vOxzxoOqYaMzd-AcQ6cROe_0QS136cPnEo4ombpFu0XxSCOzRELuDWcNkAe-lbQPOaQAP6qqwIk6R5Coe0hw</div>
+        <div>refresh_token: XgG_lxPUvUMPKMadM-PUbBIhXFj2t-eouLnsnxKYye4WILhLIxaQt5xURSESnK95a7QZHSvZ68qK_nb8Fq3yBPMa8Xn7nB4Fp2O94PDqYOTf0whs8s3fs3h_FrCDpGG0</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697bd23f973bee531065c289&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMDNjNGRkZmUtY2M4NS00OGQ3LWE0YWMtZTZhODlhYTc5NGJkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4NzUzM2NjZS02MmI1LTQ0NTUtOGZkMS01NDM2NDgzZmNhYWIiLCJzdWIiOiJtZXJsZW5lLmdpc2xhc29uQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3MjI0MzAsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzg3NTMzY2NlLTYyYjUtNDQ1NS04ZmQxLTU0MzY0ODNmY2FhYiIsImV4cCI6MTc2OTcyMzMzMCwiaWF0IjoxNzY5NzIyNDMwLCJ1c2VySWQiOiI4NjVmODQ5NS02MTFiLTRmNWItODU4MS05ZGY2NzA2NjZlMmQiLCJqdGkiOiJlYTA0OTJmNS00ZjcyLTQ3MzktYTM5Mi04YzUwYzY3NWE2OWIifQ.ufKJxKcSHByzGruOnK2HeXmQ3twf6h0On9Q4t33hbqaWrAe2jeovbMKKnlEVoQ3H1qGf2xeRgcblTN5zVRoiuaIMaTA6TKw6LpeOFUTuTJyREdhjwOq2PjtH7E_XADeSWode2h-I1WexleYbEhKyY-HhQIs1F_TVJIIEByPGFy2r6xLPEFJjEuUBvLMOtX8OJQo-BKGRWlkVZuua0q44O93mQqIL9MgW4865wGQVW3C3ynXomX_mSoSzzXOW-5NkG5vOxzxoOqYaMzd-AcQ6cROe_0QS136cPnEo4ombpFu0XxSCOzRELuDWcNkAe-lbQPOaQAP6qqwIk6R5Coe0hw&#39; -b &#39;refresh_token=XgG_lxPUvUMPKMadM-PUbBIhXFj2t-eouLnsnxKYye4WILhLIxaQt5xURSESnK95a7QZHSvZ68qK_nb8Fq3yBPMa8Xn7nB4Fp2O94PDqYOTf0whs8s3fs3h_FrCDpGG0&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lauren Barrows&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(931) 425-6537&quot;,
+                &quot;email&quot;: &quot;annie.brakus@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8499 Pacocha Cliff&quot;,
+            &quot;street2&quot;: &quot;Apt. 990&quot;,
+            &quot;city&quot;: &quot;Lake Mercedesmouth&quot;,
+            &quot;state&quot;: &quot;Nevada&quot;,
+            &quot;postalCode&quot;: &quot;42100&quot;,
+            &quot;country&quot;: &quot;Sri Lanka&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;3614 Carl Stream&quot;,
+            &quot;street2&quot;: &quot;Suite 786&quot;,
+            &quot;city&quot;: &quot;Schadenside&quot;,
+            &quot;state&quot;: &quot;New York&quot;,
+            &quot;postalCode&quot;: &quot;31160&quot;,
+            &quot;country&quot;: &quot;Wallis and Futuna&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}&#39;
+</div>
