@@ -71,7 +71,7 @@ public class DevicesTest extends AuthorizedTest {
     @Test
     @DisplayName("Archive device")
     public void testArchiveDevice() {
-        List<Machine> devices = getDevices(filterDevicesByStatus(DeviceStatus.OFFLINE));
+        List<Machine> devices = getDevices(offlineDevicesFilter());
         assertThat(devices).as("Expected at least one OFFLINE device to archive").isNotEmpty();
         archiveDevice(devices.getFirst());
         List<String> ids = getDeviceIds(listedDevicesFilter());
@@ -81,7 +81,7 @@ public class DevicesTest extends AuthorizedTest {
     @Test
     @DisplayName("Delete device")
     public void testDeleteDevice() {
-        List<Machine> devices = getDevices(filterDevicesByStatus(DeviceStatus.OFFLINE));
+        List<Machine> devices = getDevices(offlineDevicesFilter());
         assertThat(devices).as("Expected at least one OFFLINE device to delete").isNotEmpty();
         deleteDevice(devices.getFirst());
         List<String> ids = getDeviceIds(listedDevicesFilter());
