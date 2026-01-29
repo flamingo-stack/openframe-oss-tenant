@@ -1,0 +1,13 @@
+flowchart TD
+    A[OpenFrameAuthorizationServerApplication] -->|initializes| B[AuthorizationServerConfig]
+    B -->|configures| C[SecurityFilterChain]
+    B -->|provides| D[JwtDecoder]
+    B -->|provides| E[JwtEncoder]
+    B -->|uses| F[UserDetailsService]
+    B -->|uses| G[OAuth2TokenCustomizer]
+    B -->|uses| H[InvitationRegistrationController]
+    B -->|uses| I[LoginController]
+    H -->|handles| J[InvitationRegistrationRequest]
+    H -->|handles| K[SsoInvitationAcceptRequest]
+    I -->|renders| L[Login Page]
+    I -->|renders| M[Index Page]

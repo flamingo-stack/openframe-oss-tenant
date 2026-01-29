@@ -1,0 +1,6 @@
+flowchart TD
+    A[Client Services] -->|interacts with| B[API Services]
+    A -->|authenticates via| C[Authorization Services]
+    B -->|manages| D[Data Models]
+    E[Kafka Stream Services] -->|processes| F[Notification Services]
+    G[Frontend Components] -->|communicates with| A

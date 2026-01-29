@@ -1,0 +1,6 @@
+flowchart TD
+    A[Kafka Stream Services] --> B[KafkaConfig]
+    A --> C[GenericMessageHandler]
+    B -->|configures| D[Kafka Producer]
+    C -->|handles messages| E[DeserializedDebeziumMessage]
+    C -->|transforms data| F[IntegratedToolEnrichedData]

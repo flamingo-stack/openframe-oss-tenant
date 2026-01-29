@@ -1,0 +1,9 @@
+flowchart TD
+    A[Frontend Components] -->|uses| B[Auth Hooks]
+    A -->|manages| C[Device Types]
+    A -->|handles| D[Dialogs]
+    A -->|stores| E[Dialog Details Store]
+    B -->|interacts with| F[Auth API]
+    C -->|defines| G[Device]
+    D -->|defines| H[DialogsResponse]
+    E -->|manages| I[Dialog]

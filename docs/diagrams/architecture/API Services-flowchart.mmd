@@ -1,0 +1,5 @@
+flowchart TD
+    A[ApiApplication] -->|initializes| B[InstalledAgentService]
+    A -->|initializes| C[ToolConnectionService]
+    B -->|uses| D[InstalledAgentRepository]
+    C -->|uses| E[ToolConnectionRepository]

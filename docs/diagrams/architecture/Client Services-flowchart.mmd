@@ -1,0 +1,7 @@
+flowchart TD
+    A[ClientApplication] -->|initializes| B[DefaultAgentRegistrationProcessor]
+    B -->|processes| C[AgentRegistrationRequest]
+    C -->|interacts with| D[Machine]
+    A -->|communicates with| E[API Services]
+    A -->|authenticates via| F[Authorization Services]
+    E -->|fetches data from| G[Data Models]

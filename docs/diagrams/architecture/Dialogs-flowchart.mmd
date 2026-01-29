@@ -1,0 +1,6 @@
+flowchart TD
+    A[Dialogs Module] -->|uses| B[GraphQL API]
+    A -->|interacts with| C[Client Services]
+    A -->|depends on| D[Data Models]
+    B -->|fetches data from| E[Database]
+    C -->|handles| F[User Interactions]

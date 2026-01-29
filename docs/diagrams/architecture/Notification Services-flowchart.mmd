@@ -1,0 +1,5 @@
+flowchart TD
+    A[Notification Services] -->|uses| B[HubspotApiEmailService]
+    A -->|uses| C[SmtpEmailService]
+    B -->|sends emails via| D[HubSpot API]
+    C -->|sends emails via| E[SMTP Server]
