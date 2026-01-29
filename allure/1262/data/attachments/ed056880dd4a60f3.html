@@ -1,0 +1,35 @@
+<div>POST to http://localhost:8100/api/graphql</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;variables&quot;: {
+        &quot;id&quot;: &quot;697b9e41f2f28e6c73f1b665&quot;
+    },
+    &quot;query&quot;: &quot;query($id: String!) {\n    organization(id: $id) {\n        id\n        name\n        organizationId\n        category\n        numberOfEmployees\n        websiteUrl\n        notes\n        contactInformation {\n            contacts {\n                contactName\n                title\n                phone\n                email\n            }\n            physicalAddress {\n                street1\n                street2\n                city\n                state\n                postalCode\n                country\n            }\n            mailingAddress {\n                street1\n                street2\n                city\n                state\n                postalCode\n                country\n            }\n            mailingAddressSameAsPhysical\n        }\n        monthlyRevenue\n        contractStartDate\n        contractEndDate\n        createdAt\n        updatedAt\n        isDefault\n        deleted\n        deletedAt\n    }\n}\n&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOTliNGFlMTctYjdjZi00YmM3LThmY2EtYTNlYjhlMjViNTM0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2MjA1MTM2Yi1lN2ZmLTQyMWEtYmZmNy1hOGUzOWIyNWM1OWIiLCJzdWIiOiJhbHBob25zby5tYWNlamtvdmljQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzA5MTIwLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy82MjA1MTM2Yi1lN2ZmLTQyMWEtYmZmNy1hOGUzOWIyNWM1OWIiLCJleHAiOjE3Njk3MTAwMjAsImlhdCI6MTc2OTcwOTEyMCwidXNlcklkIjoiYmE0ZGNkZGEtMjk4Mi00ZjJlLWJlY2ItMGE3YTU5MGEyOTQwIiwianRpIjoiN2IxNTJlYzktNDg5Mi00ZGQyLWE2NjgtNGEyNTQ3MDZkYjk0In0.HAprnd_oUbj3UqbtC10rdldC-1sDQRvS0I2zGwxzyHNDL3KFs5h5rAZKnDHG3iQbesSXdU3siGQwsh8cCAB8BDFRA6eAqmni_br0FV0HAcPwT2AljWbwodVA2F3pA8XkZ_7nZDwV3oQzukej3m_1j_WNUG-0SgGAH4lodLtX9sF6fthOs2QmGukS3aztp0jxBcs_b_Uwn8YT9-JXZqxZmNb7xWHJSCU_wNc9B0psEc6jy4IDvmUmPu8HWa348a3l_IqGM0uKz0g7BTnJJyIhP-rtChj5qXehlgRyUl1SJ5zHHImhIrOADNK_lEKf91J9dzXHroC12rXNb104lI9T7g</div>
+        <div>refresh_token: V9tqpgJPcrdT6bcuOtds2G7_s3zCPnbXEUGIOsVr8-n8Uh_VEoLA5yeZFlEj6mZ1WxNyvm6HH8bw8Lo57nBYmXVMUeoqt9O7lN27utk5cP9lRz-b0oXFKThp_zroVByO</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/graphql&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOTliNGFlMTctYjdjZi00YmM3LThmY2EtYTNlYjhlMjViNTM0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2MjA1MTM2Yi1lN2ZmLTQyMWEtYmZmNy1hOGUzOWIyNWM1OWIiLCJzdWIiOiJhbHBob25zby5tYWNlamtvdmljQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzA5MTIwLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy82MjA1MTM2Yi1lN2ZmLTQyMWEtYmZmNy1hOGUzOWIyNWM1OWIiLCJleHAiOjE3Njk3MTAwMjAsImlhdCI6MTc2OTcwOTEyMCwidXNlcklkIjoiYmE0ZGNkZGEtMjk4Mi00ZjJlLWJlY2ItMGE3YTU5MGEyOTQwIiwianRpIjoiN2IxNTJlYzktNDg5Mi00ZGQyLWE2NjgtNGEyNTQ3MDZkYjk0In0.HAprnd_oUbj3UqbtC10rdldC-1sDQRvS0I2zGwxzyHNDL3KFs5h5rAZKnDHG3iQbesSXdU3siGQwsh8cCAB8BDFRA6eAqmni_br0FV0HAcPwT2AljWbwodVA2F3pA8XkZ_7nZDwV3oQzukej3m_1j_WNUG-0SgGAH4lodLtX9sF6fthOs2QmGukS3aztp0jxBcs_b_Uwn8YT9-JXZqxZmNb7xWHJSCU_wNc9B0psEc6jy4IDvmUmPu8HWa348a3l_IqGM0uKz0g7BTnJJyIhP-rtChj5qXehlgRyUl1SJ5zHHImhIrOADNK_lEKf91J9dzXHroC12rXNb104lI9T7g&#39; -b &#39;refresh_token=V9tqpgJPcrdT6bcuOtds2G7_s3zCPnbXEUGIOsVr8-n8Uh_VEoLA5yeZFlEj6mZ1WxNyvm6HH8bw8Lo57nBYmXVMUeoqt9O7lN27utk5cP9lRz-b0oXFKThp_zroVByO&#39; -d &#39;{
+    &quot;variables&quot;: {
+        &quot;id&quot;: &quot;697b9e41f2f28e6c73f1b665&quot;
+    },
+    &quot;query&quot;: &quot;query($id: String!) {\n    organization(id: $id) {\n        id\n        name\n        organizationId\n        category\n        numberOfEmployees\n        websiteUrl\n        notes\n        contactInformation {\n            contacts {\n                contactName\n                title\n                phone\n                email\n            }\n            physicalAddress {\n                street1\n                street2\n                city\n                state\n                postalCode\n                country\n            }\n            mailingAddress {\n                street1\n                street2\n                city\n                state\n                postalCode\n                country\n            }\n            mailingAddressSameAsPhysical\n        }\n        monthlyRevenue\n        contractStartDate\n        contractEndDate\n        createdAt\n        updatedAt\n        isDefault\n        deleted\n        deletedAt\n    }\n}\n&quot;
+}&#39;
+</div>
