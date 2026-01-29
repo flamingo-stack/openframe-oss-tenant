@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;lee.herman@gmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNThkZTI2ZDEtZDIzOC00OTBmLTgxMTUtNDI2ZGY2NTk1MzUzIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjMGYyYjVkZi0yMTEwLTRmYjctYTQ1Mi02N2E4MThlMWZmMTQiLCJzdWIiOiJjYXNleS5rbGVpbkBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY2MjUyMCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYzBmMmI1ZGYtMjExMC00ZmI3LWE0NTItNjdhODE4ZTFmZjE0IiwiZXhwIjoxNzY5NjYzNDIwLCJpYXQiOjE3Njk2NjI1MjAsInVzZXJJZCI6ImZkY2VmYzUxLTExZmMtNDVhNS05MmNiLWU1ZmYxOGJjZDU5NyIsImp0aSI6ImJlNTgwYjgxLWFkNGEtNDRiMi1hNzZmLTM3ZTQxOTViODdjMiJ9.kwukYLxOg2IJrzySQEUxX9lxM3ljHkXmXojSVUqWMnGwuZnC4o0VTJQvOSP4q59e1dCdisPBC882ctHKhPUQdBKNNFd611g4VHSMq5DD7jH9_v3HbsgCGPf6vdQbwDvSLQImbw5h1UBn9SIexTutyHNjOQjUfvbNKoS9rMS0P8TDCLkdtbelzc7g0-bzFf8IMqLw04qoPhsbFCcHzQTOp_q3qL1oYzV_js9h2QqFK1U44sa9CkXwhoQCYLeby5N4U9KcFm4e6mQY-A3oPHqVMpUNwFU1xGFKdboFWVU-AJUPHnMIuznzhlYEyG2T0Gk1xUW9yvJlvEbm1HzWDEgvAg</div>
+        <div>refresh_token: TpmcBBvryPO4lBSPOwpB7am9vD-_gzuAznbehzZwp3loJrJD260GBpx7jEJirzzK7EkkasS-N49bN6r9jguOLWPFT7XmHhjNBldPx-KPliwPVbsZNAH3n0cOoV3sq4gn</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNThkZTI2ZDEtZDIzOC00OTBmLTgxMTUtNDI2ZGY2NTk1MzUzIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjMGYyYjVkZi0yMTEwLTRmYjctYTQ1Mi02N2E4MThlMWZmMTQiLCJzdWIiOiJjYXNleS5rbGVpbkBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY2MjUyMCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYzBmMmI1ZGYtMjExMC00ZmI3LWE0NTItNjdhODE4ZTFmZjE0IiwiZXhwIjoxNzY5NjYzNDIwLCJpYXQiOjE3Njk2NjI1MjAsInVzZXJJZCI6ImZkY2VmYzUxLTExZmMtNDVhNS05MmNiLWU1ZmYxOGJjZDU5NyIsImp0aSI6ImJlNTgwYjgxLWFkNGEtNDRiMi1hNzZmLTM3ZTQxOTViODdjMiJ9.kwukYLxOg2IJrzySQEUxX9lxM3ljHkXmXojSVUqWMnGwuZnC4o0VTJQvOSP4q59e1dCdisPBC882ctHKhPUQdBKNNFd611g4VHSMq5DD7jH9_v3HbsgCGPf6vdQbwDvSLQImbw5h1UBn9SIexTutyHNjOQjUfvbNKoS9rMS0P8TDCLkdtbelzc7g0-bzFf8IMqLw04qoPhsbFCcHzQTOp_q3qL1oYzV_js9h2QqFK1U44sa9CkXwhoQCYLeby5N4U9KcFm4e6mQY-A3oPHqVMpUNwFU1xGFKdboFWVU-AJUPHnMIuznzhlYEyG2T0Gk1xUW9yvJlvEbm1HzWDEgvAg&#39; -b &#39;refresh_token=TpmcBBvryPO4lBSPOwpB7am9vD-_gzuAznbehzZwp3loJrJD260GBpx7jEJirzzK7EkkasS-N49bN6r9jguOLWPFT7XmHhjNBldPx-KPliwPVbsZNAH3n0cOoV3sq4gn&#39; -d &#39;{
+    &quot;email&quot;: &quot;lee.herman@gmail.com&quot;
+}&#39;
+</div>
