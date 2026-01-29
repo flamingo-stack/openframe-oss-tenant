@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697bcb923b6ecd0bcd616b28</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Bryon Powlowski&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(619) 731-8968 x6841&quot;,
+                &quot;email&quot;: &quot;mack.hilpert@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;607 Abe Glens&quot;,
+            &quot;street2&quot;: &quot;Apt. 500&quot;,
+            &quot;city&quot;: &quot;New Dariusberg&quot;,
+            &quot;state&quot;: &quot;Pennsylvania&quot;,
+            &quot;postalCode&quot;: &quot;73772&quot;,
+            &quot;country&quot;: &quot;Vanuatu&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;402 Boehm Run&quot;,
+            &quot;street2&quot;: &quot;Suite 363&quot;,
+            &quot;city&quot;: &quot;West Isaacburgh&quot;,
+            &quot;state&quot;: &quot;Idaho&quot;,
+            &quot;postalCode&quot;: &quot;74291&quot;,
+            &quot;country&quot;: &quot;Bangladesh&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZWZlODhmOWYtOWQ0OS00MjQxLTg1MDEtZGQ5MGRiNTNjYmMxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1MmI0OGM1Ni1jYmY0LTQ3MzMtOTg3Ni01MjE1NGQyN2FlZGYiLCJzdWIiOiJlbGVvbm9yLndvbGZmQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzIwNzIxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy81MmI0OGM1Ni1jYmY0LTQ3MzMtOTg3Ni01MjE1NGQyN2FlZGYiLCJleHAiOjE3Njk3MjE2MjEsImlhdCI6MTc2OTcyMDcyMSwidXNlcklkIjoiNDY2ZWYzYjktOTlmYy00YjEyLTlmZmMtNzFmNTAxMTg4NDI3IiwianRpIjoiYWE4OTVmOTAtMjMyNi00M2UwLThjNjAtNmE5NjQ3YzIzZTE2In0.Xw6nMi-ftvW67_tavQTX_uBkeM-kV-TPKhoclBGBs1Hs1CnGO9t09E4Ngrl-jPPPFyy3tUaLkXV1jINfwDUPD9GD7m7GLmCXLi_syxYcnJ3ZY0-gS1TF1C_F8td-YOwDxXQKNT2AhFHVdGKAGmOdcWlXXO6dovjZ2DDRLSC1fH1Af2k6Kik3aYHhGRZ_ZLSA_ylUixa30f-sQRpwFMxWXJ6WPU5qW3xFEZLqnEnCEF2yfQq5Vb2AGuumpA1zKNGmUybyI_qO_YiZheLopNiFtrZGIjqc3L4k6xBMWeJNcWdCwg8bXzNdjSm7I3OgePmrgHH5k-2QIQi2ADzDqn4IbQ</div>
+        <div>refresh_token: WpeBKS4Q9bjWgogS5blxaz9xArm7e244VK6XP-FD6NkYwCOEMFra-nZoG0thKyGnVU0-LtXI_uSVFJA2nHyX0mw4HOfeXICjoqXaRd5VoyougT3m9_VJoh96D3c2aXT3</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697bcb923b6ecd0bcd616b28&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZWZlODhmOWYtOWQ0OS00MjQxLTg1MDEtZGQ5MGRiNTNjYmMxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1MmI0OGM1Ni1jYmY0LTQ3MzMtOTg3Ni01MjE1NGQyN2FlZGYiLCJzdWIiOiJlbGVvbm9yLndvbGZmQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzIwNzIxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy81MmI0OGM1Ni1jYmY0LTQ3MzMtOTg3Ni01MjE1NGQyN2FlZGYiLCJleHAiOjE3Njk3MjE2MjEsImlhdCI6MTc2OTcyMDcyMSwidXNlcklkIjoiNDY2ZWYzYjktOTlmYy00YjEyLTlmZmMtNzFmNTAxMTg4NDI3IiwianRpIjoiYWE4OTVmOTAtMjMyNi00M2UwLThjNjAtNmE5NjQ3YzIzZTE2In0.Xw6nMi-ftvW67_tavQTX_uBkeM-kV-TPKhoclBGBs1Hs1CnGO9t09E4Ngrl-jPPPFyy3tUaLkXV1jINfwDUPD9GD7m7GLmCXLi_syxYcnJ3ZY0-gS1TF1C_F8td-YOwDxXQKNT2AhFHVdGKAGmOdcWlXXO6dovjZ2DDRLSC1fH1Af2k6Kik3aYHhGRZ_ZLSA_ylUixa30f-sQRpwFMxWXJ6WPU5qW3xFEZLqnEnCEF2yfQq5Vb2AGuumpA1zKNGmUybyI_qO_YiZheLopNiFtrZGIjqc3L4k6xBMWeJNcWdCwg8bXzNdjSm7I3OgePmrgHH5k-2QIQi2ADzDqn4IbQ&#39; -b &#39;refresh_token=WpeBKS4Q9bjWgogS5blxaz9xArm7e244VK6XP-FD6NkYwCOEMFra-nZoG0thKyGnVU0-LtXI_uSVFJA2nHyX0mw4HOfeXICjoqXaRd5VoyougT3m9_VJoh96D3c2aXT3&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Bryon Powlowski&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(619) 731-8968 x6841&quot;,
+                &quot;email&quot;: &quot;mack.hilpert@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;607 Abe Glens&quot;,
+            &quot;street2&quot;: &quot;Apt. 500&quot;,
+            &quot;city&quot;: &quot;New Dariusberg&quot;,
+            &quot;state&quot;: &quot;Pennsylvania&quot;,
+            &quot;postalCode&quot;: &quot;73772&quot;,
+            &quot;country&quot;: &quot;Vanuatu&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;402 Boehm Run&quot;,
+            &quot;street2&quot;: &quot;Suite 363&quot;,
+            &quot;city&quot;: &quot;West Isaacburgh&quot;,
+            &quot;state&quot;: &quot;Idaho&quot;,
+            &quot;postalCode&quot;: &quot;74291&quot;,
+            &quot;country&quot;: &quot;Bangladesh&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}&#39;
+</div>
