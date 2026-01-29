@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697ae34e6769670ea7314028</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Randolph Williamson&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(443) 770-7437&quot;,
+                &quot;email&quot;: &quot;lauren.gutmann@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;03449 Felisa Via&quot;,
+            &quot;street2&quot;: &quot;Apt. 765&quot;,
+            &quot;city&quot;: &quot;Port Akilah&quot;,
+            &quot;state&quot;: &quot;Florida&quot;,
+            &quot;postalCode&quot;: &quot;57231&quot;,
+            &quot;country&quot;: &quot;Central African Republic&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;4521 Ledner Neck&quot;,
+            &quot;street2&quot;: &quot;Suite 509&quot;,
+            &quot;city&quot;: &quot;Staceyville&quot;,
+            &quot;state&quot;: &quot;Massachusetts&quot;,
+            &quot;postalCode&quot;: &quot;74341&quot;,
+            &quot;country&quot;: &quot;Cape Verde&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMjE1Y2NiZmUtNGEzZS00YWQ3LTk3NWEtNDlkOTExMWMyZGYwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMmVkYjQ2ZS1mMWMwLTRlZWEtODlkMi0zMzA0ZWMzMzRiMDEiLCJzdWIiOiJqZW4ua2lobkB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY2MTI2MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYjJlZGI0NmUtZjFjMC00ZWVhLTg5ZDItMzMwNGVjMzM0YjAxIiwiZXhwIjoxNzY5NjYyMTYxLCJpYXQiOjE3Njk2NjEyNjEsInVzZXJJZCI6IjNlMWRiM2E0LTA3YjktNDNmYy04MGE0LTJjN2JiODc3ZmFkNSIsImp0aSI6IjlmZWFlMWU0LTk2ZTUtNDM0YS1iZjAxLTZlNTU5ZDJkZTQ0MSJ9.HZWdd0G07S2s0DODxWcTRhmiu_JOtseNyDjRKBIybZvsNosLzBAxyw3iTLu9ArcTnRZ10gBzHD2IJ1HBGKbf4ah8vKrbDCe-wTVlvhEAQDBjNXYGNf46X64WAXR3LZqf809vpGfUnesTJM3jJptUY6DCK7mWnTAH-rDiOozHMrG2c5qFsOd28Uq14QPhcbRB_KFqzNtP2vo2N9NvFa24LkreAg0DOnjj961kaKl0HW00KXZ1QpEpLY-TIiZU1wZLXRnojKNYnkRRYFgtSR002fYql3VIxJt8Oj0qkUQNUSbhDyjeDz8tWb8fbQRK4WcLr5aY2hiC195zMZ6CWk8hwA</div>
+        <div>refresh_token: trHc9WIsxw6Rk-sNDK-NdA7w6v3hN5QFEK4GNKM_gI9-eKq8IKiCMg4L94Z5AkTXLdNmR8MblS0bjHHcbAWJYgxpvwZtQArfdoMOywNNhQmpWkscBCBkWSpaqE08XonL</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697ae34e6769670ea7314028&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMjE1Y2NiZmUtNGEzZS00YWQ3LTk3NWEtNDlkOTExMWMyZGYwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMmVkYjQ2ZS1mMWMwLTRlZWEtODlkMi0zMzA0ZWMzMzRiMDEiLCJzdWIiOiJqZW4ua2lobkB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY2MTI2MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYjJlZGI0NmUtZjFjMC00ZWVhLTg5ZDItMzMwNGVjMzM0YjAxIiwiZXhwIjoxNzY5NjYyMTYxLCJpYXQiOjE3Njk2NjEyNjEsInVzZXJJZCI6IjNlMWRiM2E0LTA3YjktNDNmYy04MGE0LTJjN2JiODc3ZmFkNSIsImp0aSI6IjlmZWFlMWU0LTk2ZTUtNDM0YS1iZjAxLTZlNTU5ZDJkZTQ0MSJ9.HZWdd0G07S2s0DODxWcTRhmiu_JOtseNyDjRKBIybZvsNosLzBAxyw3iTLu9ArcTnRZ10gBzHD2IJ1HBGKbf4ah8vKrbDCe-wTVlvhEAQDBjNXYGNf46X64WAXR3LZqf809vpGfUnesTJM3jJptUY6DCK7mWnTAH-rDiOozHMrG2c5qFsOd28Uq14QPhcbRB_KFqzNtP2vo2N9NvFa24LkreAg0DOnjj961kaKl0HW00KXZ1QpEpLY-TIiZU1wZLXRnojKNYnkRRYFgtSR002fYql3VIxJt8Oj0qkUQNUSbhDyjeDz8tWb8fbQRK4WcLr5aY2hiC195zMZ6CWk8hwA&#39; -b &#39;refresh_token=trHc9WIsxw6Rk-sNDK-NdA7w6v3hN5QFEK4GNKM_gI9-eKq8IKiCMg4L94Z5AkTXLdNmR8MblS0bjHHcbAWJYgxpvwZtQArfdoMOywNNhQmpWkscBCBkWSpaqE08XonL&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Randolph Williamson&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(443) 770-7437&quot;,
+                &quot;email&quot;: &quot;lauren.gutmann@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;03449 Felisa Via&quot;,
+            &quot;street2&quot;: &quot;Apt. 765&quot;,
+            &quot;city&quot;: &quot;Port Akilah&quot;,
+            &quot;state&quot;: &quot;Florida&quot;,
+            &quot;postalCode&quot;: &quot;57231&quot;,
+            &quot;country&quot;: &quot;Central African Republic&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;4521 Ledner Neck&quot;,
+            &quot;street2&quot;: &quot;Suite 509&quot;,
+            &quot;city&quot;: &quot;Staceyville&quot;,
+            &quot;state&quot;: &quot;Massachusetts&quot;,
+            &quot;postalCode&quot;: &quot;74341&quot;,
+            &quot;country&quot;: &quot;Cape Verde&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}&#39;
+</div>
