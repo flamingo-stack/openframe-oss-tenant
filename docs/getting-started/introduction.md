@@ -1,133 +1,141 @@
 # Introduction to OpenFrame
 
-OpenFrame is a distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. Built with Java Spring Boot and Vue.js, it simplifies IT and security operations through a single, cohesive platform.
+OpenFrame is the unified platform that integrates multiple MSP tools into a single AI-driven interface, automating IT support operations across your entire technology stack. Built by Flamingo (https://flamingo.run), OpenFrame replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation.
+
+[![OpenFrame Product Walkthrough (Beta Access)](https://img.youtube.com/vi/awc-yAnkhIo/maxresdefault.jpg)](https://www.youtube.com/watch?v=awc-yAnkhIo)
 
 ## What is OpenFrame?
 
-OpenFrame is an enterprise-grade platform that combines powerful microservices architecture with modern web technologies to provide:
+OpenFrame is an AI-powered MSP (Managed Service Provider) platform that consolidates your IT management tools into one intelligent dashboard. Instead of juggling multiple expensive proprietary tools, OpenFrame gives you:
 
-- Real-time data processing and analytics
-- Unified API access through GraphQL
-- Automated deployment and monitoring
-- AI-powered insights and anomaly detection
-- Enterprise-grade security controls
-- High-performance event streaming
+- **Unified Management**: Single interface for all your IT infrastructure
+- **AI Automation**: Mingo AI for technicians, Fae for clients
+- **Open Source Foundation**: Built on proven open-source technologies
+- **Cost Reduction**: Replace expensive vendor licenses with one platform
 
 ## Key Features
 
-### 1. Unified Dashboard
-- Modern Vue.js-based interface
-- Real-time data visualization
-- Customizable dashboards
-- Role-based access control
+| Feature | Description | Benefits |
+|---------|-------------|----------|
+| **Device Management** | Monitor and manage all devices across your network | Centralized visibility and control |
+| **AI Chat Interface** | Mingo AI assistant for technical support | Faster problem resolution |
+| **Multi-Tool Integration** | Connect existing tools like TacticalRMM, FleetMDM | Preserve existing investments |
+| **Real-time Monitoring** | Live dashboards and alerts | Proactive issue detection |
+| **Organization Management** | Multi-tenant architecture | Serve multiple clients efficiently |
+| **Security & Compliance** | Built-in security scanning and compliance tracking | Meet regulatory requirements |
 
-### 2. Smart Automation
-- Automated deployment pipelines
-- Self-healing capabilities
-- Predictive maintenance
-- Workflow automation
+## Architecture Overview
 
-### 3. AI-Powered Insights
-- Real-time anomaly detection
-- Predictive analytics
-- AI assistants ("copilots")
-- Automated decision making
+```mermaid
+graph TD
+    A[OpenFrame Frontend] --> B[API Gateway]
+    B --> C[API Service]
+    B --> D[Management Service]
+    B --> E[Stream Service]
+    C --> F[MongoDB]
+    C --> G[GraphQL]
+    E --> H[Kafka Streams]
+    E --> I[Cassandra]
+    D --> J[Scheduled Tasks]
+    K[OpenFrame Client] --> B
+    L[External Tools] --> E
+    
+    subgraph "External Integrations"
+        L1[TacticalRMM]
+        L2[FleetMDM]
+        L3[MeshCentral]
+        L4[Authentik]
+    end
+    
+    L1 --> E
+    L2 --> E
+    L3 --> E
+    L4 --> E
+```
 
-### 4. Enterprise Security
-- OAuth 2.0 authentication
-- Role-based access control
-- End-to-end encryption
-- Audit logging
+## Target Audience
 
-### 5. High Performance
-- Handles 100,000 events/second
-- Sub-500ms latency
-- Scalable microservices
-- Distributed architecture
+### MSP Owners & Managers
+- Reduce operational costs by 50-70%
+- Standardize client management processes
+- Scale operations without linear cost increases
+
+### IT Technicians
+- Access AI-powered troubleshooting assistance
+- Manage multiple client environments from one interface
+- Automate routine maintenance tasks
+
+### System Administrators
+- Deploy and maintain open-source infrastructure
+- Integrate with existing tools and workflows
+- Customize platform to organizational needs
 
 ## Technology Stack
 
-### Backend
-- **Core Runtime**: Spring Boot 3.3.0, OpenJDK 21, Spring Cloud 2023.0.3
-- **API Layer**: Netflix DGS Framework 7.0.0 (GraphQL)
-- **Gateway**: Spring Cloud Gateway with WebFlux
-- **Security**: Spring Security with OAuth 2.0/OpenID Connect
-- **Data Storage**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0
-- **Event Streaming**: Apache Kafka 3.6.0
-- **Stream Processing**: OpenFrame Stream Service with Kafka integration
-- **Caching**: Redis
-- **System Agent**: Rust-based cross-platform agent with Tokio runtime
-
 ### Frontend
-- **Framework**: Vue 3 with Composition API and TypeScript
-- **State Management**: Pinia
-- **Routing**: Vue Router 4
-- **UI Framework**: PrimeVue 3.45.0
-- **GraphQL Client**: Apollo Client
-- **Build Tool**: Vite 5.0.10
+- **Vue 3** with TypeScript and Composition API
+- **PrimeVue** component library for consistent UI
+- **Pinia** for state management
+- **Apollo Client** for GraphQL integration
+
+### Backend Services
+- **Java 21** with Spring Boot 3.3.0
+- **GraphQL** API using Netflix DGS
+- **MongoDB** for primary data storage
+- **Cassandra** for time-series data
+- **Apache Kafka** for event streaming
+- **Redis** for caching and sessions
 
 ### Infrastructure
-- **Container Orchestration**: Kubernetes
-- **Service Mesh**: Istio
-- **Monitoring**: Prometheus, Grafana
-- **Logging**: Loki
-- **CI/CD**: GitHub Actions
+- **Docker** containers with Kubernetes orchestration
+- **Prometheus** and Grafana for monitoring
+- **Istio** service mesh for traffic management
+- **Helm** charts for deployment
 
-## System Architecture
+## Benefits Over Traditional MSP Tools
 
-```mermaid
-graph TB
-    subgraph Frontend
-        UI[Vue.js UI]
-        Store[Vuex Store]
-        Router[Vue Router]
-    end
+### Cost Reduction
+- Eliminate per-seat licensing fees
+- Reduce vendor lock-in
+- Lower total cost of ownership
 
-    subgraph Backend
-        Gateway[Spring Cloud Gateway]
-        Auth[Spring Security]
-        API[Spring Boot API]
-        Stream[Spring Kafka]
-        Data[Spring Data]
-    end
+### Operational Efficiency  
+- Single pane of glass management
+- AI-powered automation
+- Reduced context switching
 
-    subgraph Data Layer
-        MongoDB[(MongoDB)]
-        Cassandra[(Cassandra)]
-        Pinot[(Apache Pinot)]
-        Redis[(Redis)]
-    end
+### Scalability
+- Cloud-native architecture
+- Horizontal scaling capabilities
+- Multi-tenant design
 
-    UI --> Gateway
-    Gateway --> Auth
-    Auth --> API
-    API --> Stream
-    API --> Data
-    Data --> MongoDB
-    Data --> Cassandra
-    Data --> Pinot
-    Stream --> Redis
-```
+### Flexibility
+- Open-source foundation
+- Customizable workflows
+- API-first design
 
-## Getting Started
+## Getting Started Path
 
-To get started with OpenFrame:
+Ready to transform your MSP operations? Follow this learning path:
 
-1. Review the [Development Setup Guide](../development/setup.md)
-2. Follow the [Architecture Overview](../development/architecture.md)
-3. Explore the [API Documentation](../api/overview.md)
+1. **[Prerequisites](./prerequisites.md)** - Ensure you have the required setup
+2. **[Quick Start](./quick-start.md)** - Get OpenFrame running in 5 minutes
+3. **[First Steps](./first-steps.md)** - Essential configuration and setup
+4. **[Development Setup](../development/setup/environment.md)** - For developers and integrators
 
-## Support
+## Community and Support
 
-For additional support and resources:
+OpenFrame is built with the community in mind:
 
-- Visit our [GitHub repository](https://github.com/flamingo-stack/openframe-oss-tenant)
-- Join our community discussions
-- Contact our support team
+- **OpenMSP Community**: Join our Slack at https://www.openmsp.ai/
+- **GitHub**: Contribute and report issues (when available)
+- **Documentation**: Comprehensive guides and API references
+- **Training**: Webinars and certification programs
 
-## Next Steps
+> **Note**: We don't use GitHub Issues or Discussions. All support and development discussions happen in our OpenMSP Slack community at https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
 
-- [Development Setup](../development/setup.md)
-- [Architecture Overview](../development/architecture.md)
-- [API Documentation](../api/overview.md)
-- [Contributing Guidelines](../development/contributing.md) 
+## What's Next?
+
+Start your OpenFrame journey by checking the [Prerequisites](./prerequisites.md) to ensure your environment is ready, then proceed to our [Quick Start Guide](./quick-start.md) to get your first instance running.
+
+For a comprehensive overview of the platform capabilities, watch our product walkthrough video above or explore our [Architecture Overview](../development/architecture/overview.md) for technical details.
