@@ -1,256 +1,345 @@
-# First Steps with OpenFrame
+# First Steps Guide
 
-Congratulations on successfully setting up OpenFrame! This guide will walk you through your first hour with the platform, helping you understand its key features and capabilities.
+Now that OpenFrame is installed and running, let's explore the platform and configure your initial setup. This guide covers the first 5 essential tasks to get your MSP environment operational.
 
-## Initial Access
+## Overview of Your OpenFrame Dashboard
 
-### Accessing the Dashboard
+After logging in to http://localhost:8080, you'll see the main dashboard with these key areas:
 
-1. **Open your browser** and navigate to: http://localhost:8080
-2. **Login** using the default credentials (if authentication is enabled)
-3. **Explore the main dashboard** - your central hub for all operations
-
-### Key Interface Elements
-
-- **Navigation Bar**: Quick access to major sections
-- **Dashboard Widgets**: Real-time metrics and status indicators  
-- **Service Status Panel**: Monitor all integrated services
-- **Quick Actions**: Common tasks and shortcuts
-
-## Understanding the Architecture
-
-### Core Components Overview
-
-OpenFrame consists of several interconnected services:
-
-1. **Gateway Service** (Port 8080) - Your main entry point
-2. **API Service** - GraphQL and REST endpoints
-3. **Client Service** - Agent management
-4. **Management Service** - Administrative functions
-5. **Stream Service** - Real-time data processing
-6. **Config Service** (Port 8888) - Configuration management
-7. **UI Service** - Vue.js frontend application
-
-### Data Flow
-```
-User Request → Gateway → Service → Database → Response
+```mermaid
+graph TD
+    A[Dashboard Home] --> B[Organizations]
+    A --> C[Devices & Assets]
+    A --> D[Tickets & Support]
+    A --> E[Logs & Monitoring]
+    A --> F[Settings & Configuration]
+    
+    B --> B1[Client Management]
+    C --> C1[Device Monitoring]
+    C --> C2[Remote Access]
+    D --> D1[AI-Powered Ticketing]
+    D --> D2[Mingo AI Assistant]
+    E --> E1[System Logs]
+    E --> E2[Performance Metrics]
+    F --> F1[User Management]
+    F --> F2[Tool Integrations]
 ```
 
-## Exploring Key Features
+## Step 1: Update Your Admin Profile
 
-### 1. Service Management
+### Change Default Credentials
 
-**View Service Status**:
-- Navigate to the Services section
-- Check health status of all components
-- Review performance metrics
+1. **Click** your profile icon (top-right corner)
+2. **Select** "Settings" from the dropdown
+3. **Navigate** to the "Profile" tab
+4. **Update your information**:
+   ```
+   First Name: [Your First Name]
+   Last Name: [Your Last Name]
+   Email: [your-email@company.com]
+   ```
+5. **Change Password**:
+   - Current password: `admin123!`
+   - New password: [Use a strong password]
+   - Confirm new password
+6. **Save Changes**
 
-**Service Controls**:
-- Start/stop individual services
-- View service logs
-- Monitor resource usage
+### Configure Organization Details
 
-### 2. API Exploration
+1. **Go to** Settings → Company & Users
+2. **Edit** your organization details:
+   ```
+   Company Name: [Your MSP Name]
+   Domain: [yourcompany.com]
+   Contact Email: [admin@yourcompany.com]
+   Phone: [Your business phone]
+   Address: [Complete business address]
+   ```
+3. **Upload** your company logo (recommended size: 200x60px)
+4. **Save** organization settings
 
-**GraphQL Playground**:
-1. Visit: http://localhost:8080/graphql
-2. Explore available queries and mutations
-3. Try sample queries:
+## Step 2: Set Up Your First Client Organization
 
-```graphql
-query {
-  systemInfo {
-    version
-    status
-    services {
-      name
-      status
-      port
-    }
-  }
-}
-```
+### Create a Client Organization
 
-**REST Endpoints**:
-- Authentication: `/oauth/token`
-- Health checks: `/actuator/health`
-- Service discovery: `/api/services`
+1. **Navigate** to Organizations → New Organization
+2. **Fill in client details**:
+   ```
+   Organization Name: Acme Corporation
+   Domain: acme.com
+   Industry: Manufacturing
+   
+   Contact Information:
+   Primary Contact: John Smith
+   Email: john.smith@acme.com
+   Phone: +1-555-0123
+   
+   Address:
+   Street: 123 Business Ave
+   City: Business City
+   State: NY
+   ZIP: 12345
+   Country: United States
+   ```
+3. **Set up billing information** (if applicable)
+4. **Create Organization**
 
-### 3. Integrated Tools
+### Assign Contact Users
 
-OpenFrame includes several integrated tools:
+1. **Within** the new organization
+2. **Go to** Users & Permissions tab
+3. **Invite users**:
+   ```
+   Primary Admin:
+   Email: john.smith@acme.com
+   Role: Organization Admin
+   
+   IT Contact:
+   Email: it@acme.com
+   Role: IT User
+   ```
+4. **Send invitations** (users will receive email invites)
 
-**Currently Available**:
-- **MeshCentral** - Remote management platform
-- **Tactical RMM** - IT management suite  
-- **Fleet MDM** - Mobile device management
-- **Authentik** - Identity provider
+## Step 3: Configure Integrated Tools
 
-**Accessing Tools**:
-1. From the main dashboard, click on "Integrated Tools"
-2. Select the tool you want to use
-3. Tools open in embedded views or new tabs
+OpenFrame's power comes from integrating your existing tools. Let's set up the core integrations:
 
-### 4. Agent Management
+### TacticalRMM Integration
 
-**Understanding Agents**:
-- Cross-platform Rust agents for system monitoring
-- Automatic registration and management
-- Real-time metrics collection
+1. **Go to** Settings → Tool Integrations
+2. **Select** TacticalRMM
+3. **Configure connection**:
+   ```
+   Server URL: https://rmm.yourcompany.com
+   API Key: [Your TacticalRMM API key]
+   Username: [RMM service account]
+   ```
+4. **Test Connection** and **Save**
 
-**Agent Operations**:
-1. View registered agents in the Client section
-2. Monitor agent health and connectivity
-3. Deploy configuration updates
-4. Review collected metrics
+### MeshCentral Remote Access
 
-## Common First Tasks
+1. **Select** MeshCentral integration
+2. **Configure settings**:
+   ```
+   Server URL: https://mesh.yourcompany.com
+   Username: [MeshCentral admin user]
+   Password: [Secure password]
+   ```
+3. **Enable** remote desktop features
+4. **Test Connection** and **Save**
 
-### 1. Configure Your Environment
+### Optional: Additional Tools
 
-**Update Configuration**:
-1. Access the Config Service at http://localhost:8888
-2. Review default settings
-3. Customize for your environment
+Configure other tools as needed:
+- **Fleet MDM**: For mobile device management
+- **Authentik**: For SSO and identity management
+- **Custom APIs**: For proprietary tools
 
-**Environment Variables**:
+## Step 4: Add and Monitor Your First Devices
+
+### Register a Test Device
+
+1. **Navigate** to Devices → New Device
+2. **Choose registration method**:
+
+#### Option A: Agent Installation
 ```bash
-# Key environment variables to consider
-SPRING_PROFILES_ACTIVE=dev
-SERVER_PORT=8080
-DATABASE_URL=mongodb://localhost:27017/openframe
+# Download the OpenFrame agent
+curl -L https://releases.openframe.ai/latest/openframe-agent-installer.sh | bash
+
+# Or for Windows PowerShell:
+Invoke-WebRequest -Uri https://releases.openframe.ai/latest/install.ps1 | Invoke-Expression
 ```
 
-### 2. Set Up Monitoring
+#### Option B: Manual Registration
+```
+Device Name: DEV-WORKSTATION-01
+Device Type: Desktop
+Operating System: Windows 11 Pro
+IP Address: 192.168.1.100
+Organization: Acme Corporation
+Tags: development, testing
+```
 
-**Dashboard Setup**:
-1. Navigate to Monitoring section
-2. Configure alert thresholds
-3. Set up notification channels
+### Verify Device Connectivity
 
-**Grafana Access** (if enabled):
-- URL: http://localhost:3000
-- Default credentials: admin/admin
-- Pre-configured OpenFrame dashboards
+1. **Check device status** in the Devices dashboard
+2. **Verify** the following indicators:
+   - ✅ **Online Status**: Green indicator
+   - ✅ **Agent Version**: Latest version number
+   - ✅ **Last Seen**: Recent timestamp
+   - ✅ **Tool Connections**: Connected integrations
 
-### 3. Test API Integration
+### Explore Device Capabilities
 
-**Using curl**:
+1. **Click** on your device to open details
+2. **Try these features**:
+   - **Hardware Tab**: View system specifications
+   - **Software Tab**: See installed applications
+   - **Remote Access**: Test remote desktop connection
+   - **Logs Tab**: Review device activity
+   - **Security Tab**: Check compliance status
+
+## Step 5: Test AI-Powered Ticketing with Mingo
+
+### Create a Test Ticket
+
+1. **Go to** Tickets → New Ticket
+2. **Create** a sample support request:
+   ```
+   Title: Email not working on laptop
+   Organization: Acme Corporation
+   Assigned Device: DEV-WORKSTATION-01
+   Priority: Medium
+   
+   Description:
+   "User reports that Outlook keeps asking for password 
+   and emails are not syncing properly. Started this morning 
+   after a Windows update."
+   ```
+3. **Submit** the ticket
+
+### Interact with Mingo AI
+
+1. **Open** the ticket you just created
+2. **Click** "Ask Mingo AI" button
+3. **Try these AI interactions**:
+   ```
+   "What are common causes of Outlook authentication issues?"
+   
+   "Generate troubleshooting steps for this problem"
+   
+   "Check device logs for related errors"
+   ```
+
+### Review AI Suggestions
+
+Mingo will provide:
+- **Automated diagnosis** based on symptoms
+- **Step-by-step troubleshooting** procedures
+- **Related knowledge base** articles
+- **Similar ticket patterns** from history
+- **Recommended tools** and scripts
+
+### Test Automated Resolution
+
+1. **Follow** Mingo's suggested resolution steps
+2. **Use** suggested PowerShell scripts (if applicable)
+3. **Update** ticket status based on results
+4. **Mark** ticket as resolved when complete
+
+## Next Actions and Best Practices
+
+### Immediate Setup Tasks
+
+- [ ] **Configure backup settings** for your data
+- [ ] **Set up monitoring alerts** for critical systems
+- [ ] **Create standard device policies** for new machines
+- [ ] **Configure automated patch management** workflows
+- [ ] **Set up client notification preferences**
+
+### Explore Advanced Features
+
+1. **Custom Dashboards**: Create widgets for your KPIs
+2. **Automated Workflows**: Set up trigger-based actions
+3. **Reporting**: Generate monthly service reports
+4. **API Integrations**: Connect additional tools
+5. **User Training**: Familiarize your team with the interface
+
+### Security Configuration
+
+1. **Enable Two-Factor Authentication**:
+   - Go to Settings → Security
+   - Configure 2FA for admin accounts
+   - Enforce 2FA for all users
+
+2. **Review Access Policies**:
+   - Set password complexity requirements
+   - Configure session timeout policies
+   - Review role-based permissions
+
+3. **Audit Settings**:
+   - Enable detailed logging
+   - Set up log retention policies
+   - Configure security alerts
+
+## Understanding OpenFrame's Core Concepts
+
+### Organizations
+- **Multi-tenant architecture** isolates client data
+- **Role-based access** controls user permissions
+- **Billing integration** tracks service usage
+- **Custom branding** for client-facing interfaces
+
+### Devices
+- **Unified inventory** across all client environments
+- **Real-time monitoring** with automated alerts
+- **Remote management** capabilities
+- **Compliance tracking** and reporting
+
+### AI Integration
+- **Mingo AI** for technician assistance
+- **Fae AI** for client-facing support
+- **Automated ticket routing** and classification
+- **Predictive analytics** for proactive maintenance
+
+### Tool Ecosystem
+- **Native integrations** with popular MSP tools
+- **API-driven connections** for custom tools
+- **Unified workflows** across multiple platforms
+- **Centralized management** from single interface
+
+## Troubleshooting Common First-Time Issues
+
+### Login Problems
 ```bash
-# Get system status
-curl -X GET http://localhost:8080/api/system/status
-
-# Test authentication
-curl -X POST http://localhost:8080/oauth/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=your_client_id&client_secret=your_secret"
+# Reset admin password via CLI
+docker exec -it openframe-api java -jar reset-password.jar admin@openframe.local
 ```
 
-**Using GraphQL**:
-```bash
-# Test GraphQL endpoint
-curl -X POST http://localhost:8080/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ systemInfo { version status } }"}'
-```
+### Device Not Appearing
+1. **Check network connectivity** between device and OpenFrame
+2. **Verify agent installation** and service status
+3. **Review firewall settings** for required ports
+4. **Check organization assignment** for the device
 
-## Development Workflow
+### Integration Failures
+1. **Verify API credentials** for external tools
+2. **Test network connectivity** to tool servers
+3. **Check API rate limits** and quotas
+4. **Review tool-specific documentation** for requirements
 
-### 1. Making Your First Change
+### Performance Issues
+1. **Monitor resource usage** in Settings → System Health
+2. **Check database connectivity** status
+3. **Review error logs** for specific issues
+4. **Verify adequate system resources**
 
-**Frontend Changes**:
-1. Navigate to `openframe/services/openframe-frontend`
-2. Run `npm run dev` for development mode
-3. Make changes and see live updates
+## Product Demonstration
 
-**Backend Changes**:
-1. Open your preferred Java IDE
-2. Import the Maven project
-3. Make changes and use Spring Boot DevTools for hot reload
+For a comprehensive overview of OpenFrame's capabilities, watch our detailed walkthrough:
 
-### 2. Testing Changes
+[![OpenFrame Preview Webinar](https://img.youtube.com/vi/bINdW0CQbvY/maxresdefault.jpg)](https://www.youtube.com/watch?v=bINdW0CQbvY)
 
-**Run Tests**:
-```bash
-# Backend tests
-mvn test
-
-# Frontend tests  
-cd openframe/services/openframe-frontend
-npm run test
-
-# Rust agent tests
-cd client
-cargo test
-```
-
-## Next Steps
-
-### Immediate Actions (Next 30 minutes)
-1. **Explore the API documentation**: [API Overview](../api/overview.md)
-2. **Review architecture details**: [Architecture Overview](../development/architecture/overview.md)
-3. **Set up your development environment**: [Development Setup](../development/setup/environment.md)
-
-### Short-term Goals (Next few hours)
-1. **Deploy additional integrated tools**
-2. **Configure monitoring and alerting**
-3. **Set up your first custom integration**
-4. **Explore the client agent capabilities**
-
-### Learning Resources
-- **[Development Guide](../development/README.md)** - Comprehensive development documentation
-- **[API Reference](../api/README.md)** - Complete API documentation
-- **[Deployment Guide](../deployment/README.md)** - Production deployment information
-- **[Operations Manual](../operations/README.md)** - Operational procedures
+This webinar covers advanced features, integration patterns, and real-world usage scenarios.
 
 ## Getting Help
 
-### Documentation
-- **Search this documentation** using your browser's search function
-- **Check the troubleshooting guides** for common issues
-- **Review the FAQ** for frequently asked questions
+### Documentation Resources
+- **[Architecture Overview](../development/architecture/overview.md)** - Understanding the platform structure
+- **[API Reference](../development/testing/overview.md)** - GraphQL and REST API documentation  
+- **[Troubleshooting Guide](../development/testing/overview.md)** - Common issues and solutions
 
-### Community
-- **GitHub Issues**: Report bugs and request features
-- **Discussion Forums**: Ask questions and share knowledge
-- **Community Chat**: Real-time help and discussion
+### Community Support
+- **OpenMSP Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **Platform Updates**: https://www.flamingo.run/openframe
+- **Community Hub**: https://www.openmsp.ai/
 
-### Troubleshooting
+### Professional Services
+For enterprise deployments, custom integrations, or training:
+- Contact the Flamingo team through the OpenMSP Slack community
+- Enterprise support packages available for production deployments
 
-**Common First-Time Issues**:
-1. **Port conflicts**: Ensure required ports are available
-2. **Permission issues**: Check file and directory permissions
-3. **Service startup failures**: Review logs for specific error messages
-4. **Authentication problems**: Verify credentials and token configuration
+---
 
-**Getting Logs**:
-```bash
-# Service logs
-docker-compose logs -f [service-name]
-
-# Application logs
-tail -f logs/openframe.log
-
-# System logs
-journalctl -f -u openframe
-```
-
-**Quick Health Check**:
-```bash
-# Check all services
-curl http://localhost:8080/actuator/health
-
-# Check specific service
-curl http://localhost:8080/api/services/health
-```
-
-## Congratulations!
-
-You've completed your first steps with OpenFrame. You should now have:
-- ✅ A running OpenFrame installation
-- ✅ Understanding of core components
-- ✅ Experience with the main interface
-- ✅ Knowledge of key features and capabilities
-- ✅ Direction for next steps
-
-Ready to dive deeper? Continue with the [Development Guide](../development/README.md) or explore specific areas that interest you most.
+🎉 **Congratulations!** You've successfully completed the initial setup of OpenFrame. Your MSP platform is now ready to streamline operations, reduce costs, and provide superior service to your clients through AI-enhanced automation.
