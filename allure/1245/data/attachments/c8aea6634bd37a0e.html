@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;elvera.blanda@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYmVlYmVhZGUtZDUzNC00ZGIwLTg3NTAtZGY0NjRhMmYzZWZjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmNzkwMDc0YS0yZGM3LTRlZGEtYjgxNi01NjI0NDYwMDM1MzAiLCJzdWIiOiJzaGF5bGEua2xvY2tvQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NjUzOTgyLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9mNzkwMDc0YS0yZGM3LTRlZGEtYjgxNi01NjI0NDYwMDM1MzAiLCJleHAiOjE3Njk2NTQ4ODIsImlhdCI6MTc2OTY1Mzk4MiwidXNlcklkIjoiZmJlN2RkYzUtN2QyMi00N2ZiLThiMWUtMmU0MWMwNzQ2N2Y2IiwianRpIjoiOWIyOTViZTMtM2I0ZC00YTRiLTkzMDYtOTQxNDA3MjFkYjBkIn0.Ihd-vr3tLBhJcXMXKH9g1lWvOrKU7lWZ971QZ7GtsCPTb7xhBgemf6gXZph38GpMmIYZdRT0MmX28FYmlZdDGV8_iHuheUY6wtupAf8x-_qFrJ68D2roPp17ZvIQAQS-JsMrFZzk_qgiJMvQXjwOg0oDhIc82ICWrmh7badON6Et29sYb48jt040URUyc6znJ5X0rSx1r04gXv5kwZKHFosu2VL3FpSRouDkps3AZ4UoaIFb22BNe4eCZnJMREKZO9Nf_WKZDy5i05QJzgHRF3WI7zGVBwu9qlX_TEHAuaQn88gscROTMDdT7C_9ONMzFP6K7UccjK1-ztPP63hvCA</div>
+        <div>refresh_token: 53CSNfqhZpXRPwjLL4PuCxOUwQIb2lAZvio9lf8de-X6J0CTL6WsrJwBD_2Ngrxg1lOakgFfnFtUd5q5BN1yc6oyvDNYMmI3MYSpgfPaXIYIlr-fLn-Ws-6uUQD20aT6</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYmVlYmVhZGUtZDUzNC00ZGIwLTg3NTAtZGY0NjRhMmYzZWZjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmNzkwMDc0YS0yZGM3LTRlZGEtYjgxNi01NjI0NDYwMDM1MzAiLCJzdWIiOiJzaGF5bGEua2xvY2tvQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NjUzOTgyLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9mNzkwMDc0YS0yZGM3LTRlZGEtYjgxNi01NjI0NDYwMDM1MzAiLCJleHAiOjE3Njk2NTQ4ODIsImlhdCI6MTc2OTY1Mzk4MiwidXNlcklkIjoiZmJlN2RkYzUtN2QyMi00N2ZiLThiMWUtMmU0MWMwNzQ2N2Y2IiwianRpIjoiOWIyOTViZTMtM2I0ZC00YTRiLTkzMDYtOTQxNDA3MjFkYjBkIn0.Ihd-vr3tLBhJcXMXKH9g1lWvOrKU7lWZ971QZ7GtsCPTb7xhBgemf6gXZph38GpMmIYZdRT0MmX28FYmlZdDGV8_iHuheUY6wtupAf8x-_qFrJ68D2roPp17ZvIQAQS-JsMrFZzk_qgiJMvQXjwOg0oDhIc82ICWrmh7badON6Et29sYb48jt040URUyc6znJ5X0rSx1r04gXv5kwZKHFosu2VL3FpSRouDkps3AZ4UoaIFb22BNe4eCZnJMREKZO9Nf_WKZDy5i05QJzgHRF3WI7zGVBwu9qlX_TEHAuaQn88gscROTMDdT7C_9ONMzFP6K7UccjK1-ztPP63hvCA&#39; -b &#39;refresh_token=53CSNfqhZpXRPwjLL4PuCxOUwQIb2lAZvio9lf8de-X6J0CTL6WsrJwBD_2Ngrxg1lOakgFfnFtUd5q5BN1yc6oyvDNYMmI3MYSpgfPaXIYIlr-fLn-Ws-6uUQD20aT6&#39; -d &#39;{
+    &quot;email&quot;: &quot;elvera.blanda@hotmail.com&quot;
+}&#39;
+</div>
