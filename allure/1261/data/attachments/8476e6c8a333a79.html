@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697b92136dc99b4d62e59a7d</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Luther Bartoletti MD&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(805) 206-6138 x6396&quot;,
+                &quot;email&quot;: &quot;brent.heaney@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;279 Kertzmann Route&quot;,
+            &quot;street2&quot;: &quot;Suite 718&quot;,
+            &quot;city&quot;: &quot;Naderland&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;73362&quot;,
+            &quot;country&quot;: &quot;Algeria&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;4928 Bruen Valley&quot;,
+            &quot;street2&quot;: &quot;Suite 348&quot;,
+            &quot;city&quot;: &quot;South Quintonfurt&quot;,
+            &quot;state&quot;: &quot;Idaho&quot;,
+            &quot;postalCode&quot;: &quot;42125&quot;,
+            &quot;country&quot;: &quot;Venezuela&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMmY5ZTg5MDYtNGEzZC00ODM0LWFmNWUtZjMzMTk5NmE0N2VhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyMGYyYzVkYS1mNzNhLTQ3NTAtYmNhOS1lOWQwMzUzMTA1NWMiLCJzdWIiOiJsdWRpZS5xdWlnbGV5QGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzA2MDAyLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8yMGYyYzVkYS1mNzNhLTQ3NTAtYmNhOS1lOWQwMzUzMTA1NWMiLCJleHAiOjE3Njk3MDY5MDIsImlhdCI6MTc2OTcwNjAwMiwidXNlcklkIjoiNGU4MGYzYjQtODc2Mi00MTA2LTk4OTUtZDQ1M2RlODFhNzRhIiwianRpIjoiOTYyYWNkYmMtYzdjMC00ODg5LWI5NDEtNTVmMjgyYzI4MmU3In0.VSR7HEmjHzpPq9QxZMiBg5ngYXG1NLuiGS-HrSVRi_KBZI3siknV8SrSuShQarufiNk_KUJYQJAe-7iTzCOdc3XG2qk0Ltp9IV_fmOlOSQllLKtkGRc_2EmF_AX9oVqawIaL4x4lfPsejtPrlHZR7cM1XxgTFcJQyVi0K5VG0GQZnrJ3bs-GcL-Ij15yPj8HQ5BM3fKPrydPaaP7I2irME-8gW_yWY4yOFXZfVGa8ehiQvzHkZQH9mcAOkHEp1XPcfnUY2D8qyrH748C2L9oKI5QiivZBb0drav2RY5FcBY-evDIXjOrnjf_Yti8oMbDIBTg9LE28qrXfJrHh9CbnQ</div>
+        <div>refresh_token: T9xl1AT4ovXrM5-quBoxs3p0O9w4OeOYfggu8kKGZQFqDKnt1caecuoy2CuAXvNkcEKBtR6zI7L08zAxqfV5v-SQBus_4s4yqq9sXzQSCltiQou-J-h5vYYyMiMjTYIh</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697b92136dc99b4d62e59a7d&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMmY5ZTg5MDYtNGEzZC00ODM0LWFmNWUtZjMzMTk5NmE0N2VhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyMGYyYzVkYS1mNzNhLTQ3NTAtYmNhOS1lOWQwMzUzMTA1NWMiLCJzdWIiOiJsdWRpZS5xdWlnbGV5QGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzA2MDAyLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8yMGYyYzVkYS1mNzNhLTQ3NTAtYmNhOS1lOWQwMzUzMTA1NWMiLCJleHAiOjE3Njk3MDY5MDIsImlhdCI6MTc2OTcwNjAwMiwidXNlcklkIjoiNGU4MGYzYjQtODc2Mi00MTA2LTk4OTUtZDQ1M2RlODFhNzRhIiwianRpIjoiOTYyYWNkYmMtYzdjMC00ODg5LWI5NDEtNTVmMjgyYzI4MmU3In0.VSR7HEmjHzpPq9QxZMiBg5ngYXG1NLuiGS-HrSVRi_KBZI3siknV8SrSuShQarufiNk_KUJYQJAe-7iTzCOdc3XG2qk0Ltp9IV_fmOlOSQllLKtkGRc_2EmF_AX9oVqawIaL4x4lfPsejtPrlHZR7cM1XxgTFcJQyVi0K5VG0GQZnrJ3bs-GcL-Ij15yPj8HQ5BM3fKPrydPaaP7I2irME-8gW_yWY4yOFXZfVGa8ehiQvzHkZQH9mcAOkHEp1XPcfnUY2D8qyrH748C2L9oKI5QiivZBb0drav2RY5FcBY-evDIXjOrnjf_Yti8oMbDIBTg9LE28qrXfJrHh9CbnQ&#39; -b &#39;refresh_token=T9xl1AT4ovXrM5-quBoxs3p0O9w4OeOYfggu8kKGZQFqDKnt1caecuoy2CuAXvNkcEKBtR6zI7L08zAxqfV5v-SQBus_4s4yqq9sXzQSCltiQou-J-h5vYYyMiMjTYIh&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Luther Bartoletti MD&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(805) 206-6138 x6396&quot;,
+                &quot;email&quot;: &quot;brent.heaney@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;279 Kertzmann Route&quot;,
+            &quot;street2&quot;: &quot;Suite 718&quot;,
+            &quot;city&quot;: &quot;Naderland&quot;,
+            &quot;state&quot;: &quot;New Hampshire&quot;,
+            &quot;postalCode&quot;: &quot;73362&quot;,
+            &quot;country&quot;: &quot;Algeria&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;4928 Bruen Valley&quot;,
+            &quot;street2&quot;: &quot;Suite 348&quot;,
+            &quot;city&quot;: &quot;South Quintonfurt&quot;,
+            &quot;state&quot;: &quot;Idaho&quot;,
+            &quot;postalCode&quot;: &quot;42125&quot;,
+            &quot;country&quot;: &quot;Venezuela&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}&#39;
+</div>
