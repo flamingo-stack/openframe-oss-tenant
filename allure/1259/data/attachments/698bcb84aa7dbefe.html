@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Nicolas Hayes&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(828) 843-8643 x9757&quot;,
+                &quot;email&quot;: &quot;talisha.greenfelder@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;82346 Howell Ports&quot;,
+            &quot;street2&quot;: &quot;Suite 705&quot;,
+            &quot;city&quot;: &quot;Stammstad&quot;,
+            &quot;state&quot;: &quot;Texas&quot;,
+            &quot;postalCode&quot;: &quot;41806&quot;,
+            &quot;country&quot;: &quot;Burkina Faso&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        29
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNTlhZmYxMzMtYWQyMC00NDcyLWI1MjQtMjFiZjI0Nzk1YjBkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiOGUyZjQ2ZS1jZDcyLTRhNjYtOTNkNC1lZTBiZGFlN2IzNGQiLCJzdWIiOiJmZXJtaW4uamFjb2Jzb25AaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTcwMDE5OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYjhlMmY0NmUtY2Q3Mi00YTY2LTkzZDQtZWUwYmRhZTdiMzRkIiwiZXhwIjoxNzY5NzAxMDk5LCJpYXQiOjE3Njk3MDAxOTksInVzZXJJZCI6IjcwZmY4NGVmLTU3YjEtNDEwMi05ZDRmLTBiZWViZjZjMTFjNSIsImp0aSI6IjAwMGI3YzBlLTVlODctNDg3Yy1iNzM4LWUwOWRhNTc4YzNkMyJ9.PJ5TWmWN2rjxIxY_giJGoEnvDjlpO2TSURx1H9C8KkiXBs6bd3FwPUHBQ_ahwqPqP1jTp4iozWqIfC5_53wDIiJ1SR-vaiVisqKPAsXHlwS3td6swvMYzz89t7ZciwaBzuK1i6rZAZQXm8VCBmm6z6ImsPabSdnCsSymDD45fGIafj_XGO1pgP1GUBON-doVaPS7c__UDD2feRFNOUb-UmEddFNY6P3wuV6wkkLmUKBqdktQ4xJt8nfNwSqo0_EZAMVxxkt6edPsNqiJrzXSm57ADYuFt0Nq6NC6QtAs3chRcAsWoPdHfhSWYP0H223v5dmZyreM4JavGcZm1plYjQ</div>
+        <div>refresh_token: tjFcw2q1vrD_7c5NVnvOpkY_21vyN3J5oZ1lK43ZmKYPdnIbR-5FLClAHaNa9zyK_lkjcjaEhzoLkIw84xAaCYDzpxbfozExN0zoAr_I_YK5l8PyXCsWCSIy7w-9R0YP</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNTlhZmYxMzMtYWQyMC00NDcyLWI1MjQtMjFiZjI0Nzk1YjBkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiOGUyZjQ2ZS1jZDcyLTRhNjYtOTNkNC1lZTBiZGFlN2IzNGQiLCJzdWIiOiJmZXJtaW4uamFjb2Jzb25AaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTcwMDE5OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYjhlMmY0NmUtY2Q3Mi00YTY2LTkzZDQtZWUwYmRhZTdiMzRkIiwiZXhwIjoxNzY5NzAxMDk5LCJpYXQiOjE3Njk3MDAxOTksInVzZXJJZCI6IjcwZmY4NGVmLTU3YjEtNDEwMi05ZDRmLTBiZWViZjZjMTFjNSIsImp0aSI6IjAwMGI3YzBlLTVlODctNDg3Yy1iNzM4LWUwOWRhNTc4YzNkMyJ9.PJ5TWmWN2rjxIxY_giJGoEnvDjlpO2TSURx1H9C8KkiXBs6bd3FwPUHBQ_ahwqPqP1jTp4iozWqIfC5_53wDIiJ1SR-vaiVisqKPAsXHlwS3td6swvMYzz89t7ZciwaBzuK1i6rZAZQXm8VCBmm6z6ImsPabSdnCsSymDD45fGIafj_XGO1pgP1GUBON-doVaPS7c__UDD2feRFNOUb-UmEddFNY6P3wuV6wkkLmUKBqdktQ4xJt8nfNwSqo0_EZAMVxxkt6edPsNqiJrzXSm57ADYuFt0Nq6NC6QtAs3chRcAsWoPdHfhSWYP0H223v5dmZyreM4JavGcZm1plYjQ&#39; -b &#39;refresh_token=tjFcw2q1vrD_7c5NVnvOpkY_21vyN3J5oZ1lK43ZmKYPdnIbR-5FLClAHaNa9zyK_lkjcjaEhzoLkIw84xAaCYDzpxbfozExN0zoAr_I_YK5l8PyXCsWCSIy7w-9R0YP&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Nicolas Hayes&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(828) 843-8643 x9757&quot;,
+                &quot;email&quot;: &quot;talisha.greenfelder@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;82346 Howell Ports&quot;,
+            &quot;street2&quot;: &quot;Suite 705&quot;,
+            &quot;city&quot;: &quot;Stammstad&quot;,
+            &quot;state&quot;: &quot;Texas&quot;,
+            &quot;postalCode&quot;: &quot;41806&quot;,
+            &quot;country&quot;: &quot;Burkina Faso&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        29
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        29
+    ]
+}&#39;
+</div>
