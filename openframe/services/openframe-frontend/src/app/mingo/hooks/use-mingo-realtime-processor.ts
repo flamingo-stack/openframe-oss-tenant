@@ -22,9 +22,9 @@ interface UseMingoRealtimeProcessorOptions {
 }
 
 interface DialogState {
-  currentMessageId: string | null
   isStreaming: boolean
-  accumulatedText: string
+  currentStreamingMessage?: Message
+  hasReceivedFirstTextChunk: boolean
 }
 
 export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOptions) {
@@ -38,8 +38,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     onBackgroundUnreadIncrement,
   } = options
 
-  const { updateRealtimeMessage, addRealtimeMessage } = useMingoDialogDetailsStore()
-  const { updateBackgroundMessage, addBackgroundMessage } = useMingoBackgroundMessagesStore()
+  const { addRealtimeMessage, getLastEmptyAssistantMessage } = useMingoDialogDetailsStore()
+  const { addBackgroundMessage } = useMingoBackgroundMessagesStore()
 
   const dialogStatesRef = useRef<Map<string, DialogState>>(new Map())
 
@@ -47,9 +47,9 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     let state = dialogStatesRef.current.get(dialogId)
     if (!state) {
       state = {
-        currentMessageId: null,
         isStreaming: false,
-        accumulatedText: '',
+        currentStreamingMessage: undefined,
+        hasReceivedFirstTextChunk: false,
       }
       dialogStatesRef.current.set(dialogId, state)
     }
@@ -79,37 +79,35 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     const action = parseChunkToAction(chunk)
     if (!action) return
 
+    const createBaseMessage = (messageType: string = 'TEXT'): Message => ({
+      id: `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      dialogId,
+      chatType: CHAT_TYPE.ADMIN as any,
+      dialogMode: 'DEFAULT',
+      createdAt: new Date().toISOString(),
+      owner: { type: 'ASSISTANT', model: '' } as any,
+      messageData: { type: messageType, text: '' } as any,
+    })
+
     switch (action.action) {
       case 'message_start':
         dialogState.isStreaming = true
-        dialogState.currentMessageId = `stream-${Date.now()}-${Math.random().toString(16).slice(2)}`
-        dialogState.accumulatedText = ''
+        dialogState.hasReceivedFirstTextChunk = false
         
         if (isActiveDialog) {
           onActiveStreamStart()
         } else {
+          const streamingMessage = createBaseMessage('TEXT')
+          dialogState.currentStreamingMessage = streamingMessage
+          addBackgroundMessage(dialogId, streamingMessage)
           onBackgroundStreamStart(dialogId)
-        }
-
-        const initialMessage: Message = {
-          id: dialogState.currentMessageId,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
-          messageData: { type: 'TEXT', text: '' } as any,
-        }
-
-        if (isActiveDialog) {
-          addRealtimeMessage(initialMessage)
-        } else {
-          addBackgroundMessage(dialogId, initialMessage)
         }
         break
 
       case 'message_end':
         dialogState.isStreaming = false
+        dialogState.currentStreamingMessage = undefined
+        dialogState.hasReceivedFirstTextChunk = false
         
         if (isActiveDialog) {
           onActiveStreamEnd()
@@ -117,53 +115,84 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
           onBackgroundStreamEnd(dialogId)
           onBackgroundUnreadIncrement(dialogId)
         }
-        
-        dialogState.currentMessageId = null
         break
 
       case 'error':
         dialogState.isStreaming = false
+        dialogState.currentStreamingMessage = undefined
+        dialogState.hasReceivedFirstTextChunk = false
         
         if (isActiveDialog) {
           onActiveError(action.error)
         } else {
           onBackgroundStreamEnd(dialogId)
         }
-        
-        dialogState.currentMessageId = null
         break
 
       case 'text':
-        if (dialogState.currentMessageId && dialogState.isStreaming) {
-          dialogState.accumulatedText += action.text
-          
-          const updatedMessage: Message = {
-            id: dialogState.currentMessageId,
-            dialogId,
-            chatType: CHAT_TYPE.ADMIN as any,
-            dialogMode: 'DEFAULT',
-            createdAt: new Date().toISOString(),
-            owner: { type: 'ASSISTANT', model: '' } as any,
-            messageData: { type: 'TEXT', text: dialogState.accumulatedText } as any,
-          }
-
-          if (isActiveDialog) {
-            updateRealtimeMessage(dialogState.currentMessageId, updatedMessage)
+        if (isActiveDialog) {
+          if (!dialogState.currentStreamingMessage) {
+            const emptyMessage = getLastEmptyAssistantMessage(dialogId)
+            if (emptyMessage) {
+              const updatedMessage = {
+                ...emptyMessage,
+                messageData: {
+                  ...emptyMessage.messageData,
+                  text: action.text
+                }
+              }
+              dialogState.currentStreamingMessage = updatedMessage
+              addRealtimeMessage(updatedMessage)
+            } else {
+              const streamingMessage = {
+                id: `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                dialogId,
+                chatType: CHAT_TYPE.ADMIN as any,
+                dialogMode: 'DEFAULT',
+                createdAt: new Date().toISOString(),
+                owner: { type: 'ASSISTANT', model: 'mingo' } as any,
+                messageData: { type: 'TEXT', text: action.text } as any,
+              }
+              dialogState.currentStreamingMessage = streamingMessage
+              addRealtimeMessage(streamingMessage)
+            }
           } else {
-            updateBackgroundMessage(dialogId, dialogState.currentMessageId, updatedMessage)
+            const updatedMessage = {
+              ...dialogState.currentStreamingMessage,
+              messageData: {
+                ...dialogState.currentStreamingMessage.messageData,
+                text: (dialogState.currentStreamingMessage.messageData?.text || '') + action.text
+              }
+            }
+            dialogState.currentStreamingMessage = updatedMessage
+            addRealtimeMessage(updatedMessage)
+          }
+        } else {
+          if (dialogState.currentStreamingMessage) {
+            const updatedMessage = {
+              ...dialogState.currentStreamingMessage,
+              messageData: {
+                ...dialogState.currentStreamingMessage.messageData,
+                text: (dialogState.currentStreamingMessage.messageData?.text || '') + action.text
+              }
+            }
+            dialogState.currentStreamingMessage = updatedMessage
+            addBackgroundMessage(dialogId, updatedMessage)
+          } else {
+            const textMessage = {
+              ...createBaseMessage('TEXT'),
+              messageData: { type: 'TEXT', text: action.text } as any,
+            }
+            dialogState.currentStreamingMessage = textMessage
+            addBackgroundMessage(dialogId, textMessage)
           }
         }
         break
 
       case 'tool_execution': {
         const toolData = action.segment.data
-        const toolMessage: Message = {
-          id: `tool-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
+        const toolMessage = {
+          ...createBaseMessage(toolData.type),
           messageData: {
             type: toolData.type,
             integratedToolType: toolData.integratedToolType,
@@ -183,13 +212,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
       }
 
       case 'approval_request': {
-        const approvalMessage: Message = {
-          id: `approval-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
+        const approvalMessage = {
+          ...createBaseMessage('APPROVAL_REQUEST'),
           messageData: {
             type: 'APPROVAL_REQUEST',
             approvalType: action.approvalType,
@@ -208,13 +232,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
       }
 
       case 'approval_result': {
-        const resultMessage: Message = {
-          id: `approval-result-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          dialogId,
-          chatType: CHAT_TYPE.ADMIN as any,
-          dialogMode: 'DEFAULT',
-          createdAt: new Date().toISOString(),
-          owner: { type: 'ASSISTANT', model: '' } as any,
+        const resultMessage = {
+          ...createBaseMessage('APPROVAL_RESULT'),
           messageData: {
             type: 'APPROVAL_RESULT',
             approvalRequestId: action.requestId,
@@ -234,9 +253,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
   }, [
     activeDialogId,
     getDialogState,
-    updateRealtimeMessage,
     addRealtimeMessage,
-    updateBackgroundMessage,
+    getLastEmptyAssistantMessage,
     addBackgroundMessage,
     onActiveStreamStart,
     onActiveStreamEnd,
@@ -269,6 +287,11 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     dialogStatesRef.current.delete(dialogId)
   }, [])
 
+  const getDialogStreamingMessage = useCallback((dialogId: string): Message | undefined => {
+    const state = getDialogState(dialogId)
+    return state.currentStreamingMessage
+  }, [getDialogState])
+
   const cleanup = useCallback(() => {
     dialogStatesRef.current.clear()
   }, [])
@@ -277,5 +300,6 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     processChunk,
     resetDialog,
     cleanup,
+    getDialogStreamingMessage,
   }
 }

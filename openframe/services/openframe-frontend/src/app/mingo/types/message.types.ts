@@ -31,3 +31,13 @@ export interface MessagesResponse {
     messages: MessageConnection
   }
 }
+
+export interface MessagePage {
+  messages: Message[]
+  pageInfo: {
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    startCursor?: string
+    endCursor?: string
+  }
+}

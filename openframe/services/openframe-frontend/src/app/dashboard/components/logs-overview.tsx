@@ -1,13 +1,13 @@
 'use client'
 
-import { DashboardInfoCard, LogsList } from '@flamingo-stack/openframe-frontend-core'
 import type { LogEntry, LogSeverity } from '@flamingo-stack/openframe-frontend-core'
-import { toUiKitToolType } from '@lib/tool-labels'
+import { DashboardInfoCard, LogsList } from '@flamingo-stack/openframe-frontend-core'
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
 import { navigateToLogDetails } from '@lib/log-navigation'
-import { useLogsOverview } from '../hooks/use-dashboard-stats'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import { useLogs } from '../../logs-page/hooks/use-logs'
+import { useLogsOverview } from '../hooks/use-dashboard-stats'
 
 // Extend LogEntry to include originalLogEntry for navigation
 type ExtendedLogEntry = LogEntry & { originalLogEntry?: any }
@@ -34,7 +34,7 @@ export function LogsOverviewSection() {
         severity: (log.severity || 'INFO') as LogSeverity,
         title: log.summary || log.eventType || 'Log Entry',
         timestamp: log.timestamp,
-        toolType: toUiKitToolType(log.toolType || ''),
+        toolType: normalizeToolTypeWithFallback(log.toolType),
         message: log.message,
         ingestDay: log.ingestDay,
         eventType: log.eventType,

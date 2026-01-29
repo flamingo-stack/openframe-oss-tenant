@@ -201,15 +201,41 @@ export class DialogGraphQLService {
   async getDialogMessages(
     dialogId: string,
     cursor?: string | null,
-    limit: number = 50
+    limit: number = 5
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady()
-      const data = await this.request<{ messages: MessagesConnection }>(
-        GET_DIALOG_MESSAGES_QUERY,
-        { dialogId, chatType: 'CLIENT_CHAT', cursor, limit }
-      )
-      return data.messages
+      
+      const allEdges: MessageEdge[] = []
+      let currentCursor = cursor
+      let hasNextPage = true
+      let pageInfo: PageInfo | null = null
+      
+      while (hasNextPage) {
+        const data = await this.request<{ messages: MessagesConnection }>(
+          GET_DIALOG_MESSAGES_QUERY,
+          { dialogId, chatType: 'CLIENT_CHAT', cursor: currentCursor, limit }
+        )
+        
+        if (!data.messages) {
+          break
+        }
+        
+        allEdges.push(...data.messages.edges)
+        pageInfo = data.messages.pageInfo
+        hasNextPage = data.messages.pageInfo.hasNextPage
+        currentCursor = data.messages.pageInfo.endCursor
+      }
+      
+      return {
+        edges: allEdges,
+        pageInfo: pageInfo || {
+          hasNextPage: false,
+          hasPreviousPage: false,
+          startCursor: null,
+          endCursor: null
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch dialog messages:', error)
       return null

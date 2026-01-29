@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
 import { apiClient } from '@lib/api-client'
+import { useCallback, useState } from 'react'
 import { GET_ORGANIZATIONS_MIN_QUERY } from '../queries/organizations-queries'
 
 export interface OrganizationMin {
@@ -12,7 +12,7 @@ export interface OrganizationMin {
   imageUrl?: string
 }
 
-export function useOrganizationsMin() {
+export function useOrganizationsMin(limit: number = 10) {
   const [items, setItems] = useState<OrganizationMin[]>([])
   const [isLoading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +23,7 @@ export function useOrganizationsMin() {
     try {
       const response = await apiClient.post<any>('/api/graphql', {
         query: GET_ORGANIZATIONS_MIN_QUERY,
-        variables: { search }
+        variables: { search, pagination: { limit, cursor: null } }
       })
 
       if (!response.ok) {

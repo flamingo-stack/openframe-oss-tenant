@@ -1,6 +1,7 @@
 'use client'
 
-import { PlayIcon, PlusCircleIcon, TacticalRmmLogoIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
+import { OSTypeBadgeGroup, ShellTypeBadge, ToolBadge, type ShellType } from "@flamingo-stack/openframe-frontend-core/components"
+import { PlayIcon, PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
 import {
   Button,
   ListPageLayout,
@@ -9,11 +10,10 @@ import {
   type TableColumn,
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
 import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
+import { getOSLabel, normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils'
 import { useRouter } from "next/navigation"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useScripts } from "../hooks/use-scripts"
-import { mapPlatformsForDisplay } from "../utils/script-utils"
 
 interface UIScriptEntry {
   id: number
@@ -38,6 +38,7 @@ export function ScriptsTable() {
     shellType: { type: 'array', default: [] },
     addedBy: { type: 'array', default: [] },
     category: { type: 'array', default: [] },
+    supportedPlatforms: { type: 'array', default: [] },
     page: { type: 'number', default: 1 }
   })
   const pageSize = 10
@@ -74,7 +75,7 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: toUiKitToolType('tactical'),
+      addedBy: normalizeToolTypeWithFallback('tactical'),
       supportedPlatforms: script.supported_platforms || [],
       category: script.category || 'General',
       timeout: script.default_timeout || 300
@@ -94,7 +95,7 @@ export function ScriptsTable() {
     const addedBySet = new Set(transformedScripts.map(script => script.addedBy))
     return Array.from(addedBySet).sort().map(toolType => ({
       id: toolType,
-      label: toStandardToolLabel(toolType.toUpperCase()),
+      label: toToolLabel(toolType.toUpperCase()),
       value: toolType
     }))
   }, [transformedScripts])
@@ -105,6 +106,15 @@ export function ScriptsTable() {
       id: category,
       label: category,
       value: category
+    }))
+  }, [transformedScripts])
+
+  const uniquePlatforms = useMemo(() => {
+    const platformsSet = new Set(transformedScripts.flatMap(script => script.supportedPlatforms))
+    return Array.from(platformsSet).sort().map(platform => ({
+      id: platform,
+      label: getOSLabel(platform),
+      value: platform
     }))
   }, [transformedScripts])
 
@@ -137,8 +147,14 @@ export function ScriptsTable() {
       )
     }
 
+    if (params.supportedPlatforms && params.supportedPlatforms.length > 0) {
+      filtered = filtered.filter(script =>
+        script.supportedPlatforms.some(platform => params.supportedPlatforms.includes(platform))
+      )
+    }
+
     return filtered
-  }, [transformedScripts, params.search, params.shellType, params.addedBy, params.category])
+  }, [transformedScripts, params.search, params.shellType, params.addedBy, params.category, params.supportedPlatforms])
 
   const paginatedScripts = useMemo(() => {
     const startIndex = (params.page - 1) * pageSize
@@ -155,64 +171,71 @@ export function ScriptsTable() {
       key: 'name',
       label: 'Name',
       renderCell: (script) => (
-        <div className="flex flex-col">
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
-            {script.name}
-          </span>
-          <span className="text-[14px] leading-[20px] text-ods-text-tertiary line-clamp-2 overflow-x-hidden whitespace-nowrap text-ellipsis">
-            {script.description || 'No description'}
-          </span>
-        </div>
+        <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
+          {script.name}
+        </span>
       )
     },
     {
       key: 'shellType',
       label: 'Shell Type',
+      width: 'w-[160px]',
+      hideAt: 'sm',
       filterable: true,
       filterOptions: uniqueShellTypes,
       renderCell: (script) => (
-        <div className="flex items-start justify-center flex-col">
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">{script.shellType}</span>
-          <span className="text-[14px] leading-[20px] text-ods-text-secondary">{mapPlatformsForDisplay(script.supportedPlatforms).join(', ')}</span>
-        </div>
+        <ShellTypeBadge shellType={script.shellType as ShellType} />
+      )
+    },
+    {
+      key: 'supportedPlatforms',
+      label: 'OS',
+      width: 'w-[80px]',
+      hideAt: 'xl',
+      filterable: true,
+      filterOptions: uniquePlatforms,
+      renderCell: (script) => (
+        <OSTypeBadgeGroup
+          osTypes={script.supportedPlatforms}
+          iconSize="w-4 h-4"
+        />
       )
     },
     {
       key: 'addedBy',
       label: 'Added By',
+      width: 'w-[120px]',
       filterable: true,
       filterOptions: uniqueAddedBy,
       hideAt: 'xl',
       renderCell: (script) => (
-        <div className="flex items-center gap-1">
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">TacticalRMM</span>
-          <TacticalRmmLogoIcon size={16} />
-        </div>
+        <ToolBadge toolType={normalizeToolTypeWithFallback(script.addedBy)} />
       )
     },
     {
       key: 'category',
       label: 'Category',
+      width: 'w-[160px]',
       filterable: true,
       filterOptions: uniqueCategories,
       hideAt: 'lg',
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary line-clamp-2">
           {script.category}
         </span>
       )
     },
     {
-      key: 'timeout',
-      label: 'Timeout',
+      key: 'description',
+      label: 'Description',
       hideAt: 'md',
       renderCell: (script) => (
-        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary">
-          {script.timeout}
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary line-clamp-2">
+          {script.description || 'No description'}
         </span>
       )
     }
-  ], [uniqueShellTypes, uniqueAddedBy, uniqueCategories])
+  ], [uniqueShellTypes, uniqueAddedBy, uniqueCategories, uniquePlatforms])
 
   const rowActions = useCallback((script: UIScriptEntry) => [
     {
@@ -263,6 +286,7 @@ export function ScriptsTable() {
         shellType: params.shellType?.sort() || [],
         addedBy: params.addedBy?.sort() || [],
         category: params.category?.sort() || [],
+        supportedPlatforms: params.supportedPlatforms?.sort() || [],
       })
 
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
@@ -271,7 +295,7 @@ export function ScriptsTable() {
       }
       prevFilterKeyRef.current = filterKey
     }
-  }, [params.shellType, params.addedBy, params.category, refreshScripts, isInitialized, setParam])
+  }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms, refreshScripts, isInitialized, setParam])
 
   const handleRowClick = (script: UIScriptEntry) => {
     router.push(`/scripts/details/${script.id}`)
@@ -286,7 +310,8 @@ export function ScriptsTable() {
       page: 1,
       shellType: columnFilters.shellType || [],
       addedBy: columnFilters.addedBy || [],
-      category: columnFilters.category || []
+      category: columnFilters.category || [],
+      supportedPlatforms: columnFilters.supportedPlatforms || []
     })
   }, [setParams])
 
@@ -307,8 +332,9 @@ export function ScriptsTable() {
   const tableFilters = useMemo(() => ({
     shellType: params.shellType,
     addedBy: params.addedBy,
-    category: params.category
-  }), [params.shellType, params.addedBy, params.category])
+    category: params.category,
+    supportedPlatforms: params.supportedPlatforms
+  }), [params.shellType, params.addedBy, params.category, params.supportedPlatforms])
 
   const actions = useMemo(() => [
     {

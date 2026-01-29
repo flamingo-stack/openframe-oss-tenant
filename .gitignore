@@ -71,3 +71,7 @@ tsconfig.tsbuildinfo
 /artifacts/
 openframe/services/openframe-frontend/package-lock.json
 openframe/services/openframe-frontend/next-env.d.ts
+
+# Yalc
+.yalc
+yalc.lock

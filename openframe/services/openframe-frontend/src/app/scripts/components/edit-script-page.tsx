@@ -312,7 +312,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
                 {SHELL_TYPES.map(s => (
                   <SelectItem key={s.value} value={s.value}>
                     <div className="flex items-center gap-2">
-                      {s.icon}
+                      <s.icon className="w-5 h-5" />
                       <span>{s.label}</span>
                     </div>
                   </SelectItem>
