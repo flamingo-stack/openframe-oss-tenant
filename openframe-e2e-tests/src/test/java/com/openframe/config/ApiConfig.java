@@ -6,7 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ApiConfig {
 
-    public static final String DEFAULT_BASE_URL = "https://localhost/";
+    //    public static final String DEFAULT_BASE_URL = "https://localhost/";
+    public static final String DEFAULT_BASE_URL = "https://dmytro.openframe.build/";
 
     private static String baseUrl;
 
