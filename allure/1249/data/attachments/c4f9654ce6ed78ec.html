@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Siobhan White&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(972) 424-1495 x2907&quot;,
+                &quot;email&quot;: &quot;shamika.lang@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8960 Darrin Mountain&quot;,
+            &quot;street2&quot;: &quot;Apt. 129&quot;,
+            &quot;city&quot;: &quot;Forrestmouth&quot;,
+            &quot;state&quot;: &quot;Nevada&quot;,
+            &quot;postalCode&quot;: &quot;70959&quot;,
+            &quot;country&quot;: &quot;Guernsey&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        29
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZGNkMzM2YjAtNTJkMS00NDE5LWIyMmYtNTBlMGNjZGQyZTk1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyZTJlYjUyYy0wMWFjLTQwNDgtOGE2NC1iOWFhOTIzMzgxNTIiLCJzdWIiOiJ0cmV2b3Iuc2FuZm9yZEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY1NjExMCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMmUyZWI1MmMtMDFhYy00MDQ4LThhNjQtYjlhYTkyMzM4MTUyIiwiZXhwIjoxNzY5NjU3MDEwLCJpYXQiOjE3Njk2NTYxMTAsInVzZXJJZCI6ImRhNDIzNmYzLTkzYTMtNDZkMS1iYjEyLWIyZDRlZTU0OTYxMSIsImp0aSI6IjZhZDkzMmMxLTdiZTktNDIzZC1hMzk4LTMwODYwMzRjMjZkZiJ9.sxlZOpbrZfoQqzHLcBGIcjbRWJYOcI94Fm807JH6YUNGScBSzI3xQ04YJNJuL05tlHo1LYYVJ8imA60JshnY9Hq3vAwP60TCfeBILaaMKQdPTW2DboQKSAfJxiK6kmNXmbgUL_cDl5VRHFvKUO0UwmaPdNA0HXaQtCr4bxvX_O0sFHEb1JhzJyi4OIuAVzx18Hlx7TxZLatBvr5rDEVnUM5gPx4EhusodoS5GzUaFUyvAXHYurw5JuSSa17yqzr59KAl61SVKPICh0IDwzy9-dlTEA-fl9IBdVoWFXCl1i1kQQr2cC-TYsqL4ptaAizKnGSKn7CvFdiHG6XX6kykWA</div>
+        <div>refresh_token: 5K08FmETsKw_nDxULUFcrYNQ6b_d10XkKmW7IRb4FuC1LyM-uGUu6g_mC0ZjFvLjzYU3YrXpWq74A5RMX0IvchRjA9gR1FPeK3xxE9bL4oMBcWVzfRuHg1AJt-Fcy6Ze</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZGNkMzM2YjAtNTJkMS00NDE5LWIyMmYtNTBlMGNjZGQyZTk1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyZTJlYjUyYy0wMWFjLTQwNDgtOGE2NC1iOWFhOTIzMzgxNTIiLCJzdWIiOiJ0cmV2b3Iuc2FuZm9yZEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY1NjExMCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMmUyZWI1MmMtMDFhYy00MDQ4LThhNjQtYjlhYTkyMzM4MTUyIiwiZXhwIjoxNzY5NjU3MDEwLCJpYXQiOjE3Njk2NTYxMTAsInVzZXJJZCI6ImRhNDIzNmYzLTkzYTMtNDZkMS1iYjEyLWIyZDRlZTU0OTYxMSIsImp0aSI6IjZhZDkzMmMxLTdiZTktNDIzZC1hMzk4LTMwODYwMzRjMjZkZiJ9.sxlZOpbrZfoQqzHLcBGIcjbRWJYOcI94Fm807JH6YUNGScBSzI3xQ04YJNJuL05tlHo1LYYVJ8imA60JshnY9Hq3vAwP60TCfeBILaaMKQdPTW2DboQKSAfJxiK6kmNXmbgUL_cDl5VRHFvKUO0UwmaPdNA0HXaQtCr4bxvX_O0sFHEb1JhzJyi4OIuAVzx18Hlx7TxZLatBvr5rDEVnUM5gPx4EhusodoS5GzUaFUyvAXHYurw5JuSSa17yqzr59KAl61SVKPICh0IDwzy9-dlTEA-fl9IBdVoWFXCl1i1kQQr2cC-TYsqL4ptaAizKnGSKn7CvFdiHG6XX6kykWA&#39; -b &#39;refresh_token=5K08FmETsKw_nDxULUFcrYNQ6b_d10XkKmW7IRb4FuC1LyM-uGUu6g_mC0ZjFvLjzYU3YrXpWq74A5RMX0IvchRjA9gR1FPeK3xxE9bL4oMBcWVzfRuHg1AJt-Fcy6Ze&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Siobhan White&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(972) 424-1495 x2907&quot;,
+                &quot;email&quot;: &quot;shamika.lang@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8960 Darrin Mountain&quot;,
+            &quot;street2&quot;: &quot;Apt. 129&quot;,
+            &quot;city&quot;: &quot;Forrestmouth&quot;,
+            &quot;state&quot;: &quot;Nevada&quot;,
+            &quot;postalCode&quot;: &quot;70959&quot;,
+            &quot;country&quot;: &quot;Guernsey&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        29
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        29
+    ]
+}&#39;
+</div>

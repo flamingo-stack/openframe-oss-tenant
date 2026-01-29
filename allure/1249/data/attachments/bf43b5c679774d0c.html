@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697acf2ff8c313202bedd76a</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Tawanda Frami&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(808) 510-0198&quot;,
+                &quot;email&quot;: &quot;lawrence.dare@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;5585 Walsh Station&quot;,
+            &quot;street2&quot;: &quot;Suite 703&quot;,
+            &quot;city&quot;: &quot;South Burl&quot;,
+            &quot;state&quot;: &quot;Oregon&quot;,
+            &quot;postalCode&quot;: &quot;64406&quot;,
+            &quot;country&quot;: &quot;Ghana&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;29101 Xavier Shore&quot;,
+            &quot;street2&quot;: &quot;Suite 956&quot;,
+            &quot;city&quot;: &quot;East Zackary&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;18990&quot;,
+            &quot;country&quot;: &quot;Bouvet Island (Bouvetoya)&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZGNkMzM2YjAtNTJkMS00NDE5LWIyMmYtNTBlMGNjZGQyZTk1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyZTJlYjUyYy0wMWFjLTQwNDgtOGE2NC1iOWFhOTIzMzgxNTIiLCJzdWIiOiJ0cmV2b3Iuc2FuZm9yZEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY1NjExMCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMmUyZWI1MmMtMDFhYy00MDQ4LThhNjQtYjlhYTkyMzM4MTUyIiwiZXhwIjoxNzY5NjU3MDEwLCJpYXQiOjE3Njk2NTYxMTAsInVzZXJJZCI6ImRhNDIzNmYzLTkzYTMtNDZkMS1iYjEyLWIyZDRlZTU0OTYxMSIsImp0aSI6IjZhZDkzMmMxLTdiZTktNDIzZC1hMzk4LTMwODYwMzRjMjZkZiJ9.sxlZOpbrZfoQqzHLcBGIcjbRWJYOcI94Fm807JH6YUNGScBSzI3xQ04YJNJuL05tlHo1LYYVJ8imA60JshnY9Hq3vAwP60TCfeBILaaMKQdPTW2DboQKSAfJxiK6kmNXmbgUL_cDl5VRHFvKUO0UwmaPdNA0HXaQtCr4bxvX_O0sFHEb1JhzJyi4OIuAVzx18Hlx7TxZLatBvr5rDEVnUM5gPx4EhusodoS5GzUaFUyvAXHYurw5JuSSa17yqzr59KAl61SVKPICh0IDwzy9-dlTEA-fl9IBdVoWFXCl1i1kQQr2cC-TYsqL4ptaAizKnGSKn7CvFdiHG6XX6kykWA</div>
+        <div>refresh_token: 5K08FmETsKw_nDxULUFcrYNQ6b_d10XkKmW7IRb4FuC1LyM-uGUu6g_mC0ZjFvLjzYU3YrXpWq74A5RMX0IvchRjA9gR1FPeK3xxE9bL4oMBcWVzfRuHg1AJt-Fcy6Ze</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697acf2ff8c313202bedd76a&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZGNkMzM2YjAtNTJkMS00NDE5LWIyMmYtNTBlMGNjZGQyZTk1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyZTJlYjUyYy0wMWFjLTQwNDgtOGE2NC1iOWFhOTIzMzgxNTIiLCJzdWIiOiJ0cmV2b3Iuc2FuZm9yZEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTY1NjExMCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMmUyZWI1MmMtMDFhYy00MDQ4LThhNjQtYjlhYTkyMzM4MTUyIiwiZXhwIjoxNzY5NjU3MDEwLCJpYXQiOjE3Njk2NTYxMTAsInVzZXJJZCI6ImRhNDIzNmYzLTkzYTMtNDZkMS1iYjEyLWIyZDRlZTU0OTYxMSIsImp0aSI6IjZhZDkzMmMxLTdiZTktNDIzZC1hMzk4LTMwODYwMzRjMjZkZiJ9.sxlZOpbrZfoQqzHLcBGIcjbRWJYOcI94Fm807JH6YUNGScBSzI3xQ04YJNJuL05tlHo1LYYVJ8imA60JshnY9Hq3vAwP60TCfeBILaaMKQdPTW2DboQKSAfJxiK6kmNXmbgUL_cDl5VRHFvKUO0UwmaPdNA0HXaQtCr4bxvX_O0sFHEb1JhzJyi4OIuAVzx18Hlx7TxZLatBvr5rDEVnUM5gPx4EhusodoS5GzUaFUyvAXHYurw5JuSSa17yqzr59KAl61SVKPICh0IDwzy9-dlTEA-fl9IBdVoWFXCl1i1kQQr2cC-TYsqL4ptaAizKnGSKn7CvFdiHG6XX6kykWA&#39; -b &#39;refresh_token=5K08FmETsKw_nDxULUFcrYNQ6b_d10XkKmW7IRb4FuC1LyM-uGUu6g_mC0ZjFvLjzYU3YrXpWq74A5RMX0IvchRjA9gR1FPeK3xxE9bL4oMBcWVzfRuHg1AJt-Fcy6Ze&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Tawanda Frami&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(808) 510-0198&quot;,
+                &quot;email&quot;: &quot;lawrence.dare@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;5585 Walsh Station&quot;,
+            &quot;street2&quot;: &quot;Suite 703&quot;,
+            &quot;city&quot;: &quot;South Burl&quot;,
+            &quot;state&quot;: &quot;Oregon&quot;,
+            &quot;postalCode&quot;: &quot;64406&quot;,
+            &quot;country&quot;: &quot;Ghana&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;29101 Xavier Shore&quot;,
+            &quot;street2&quot;: &quot;Suite 956&quot;,
+            &quot;city&quot;: &quot;East Zackary&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;18990&quot;,
+            &quot;country&quot;: &quot;Bouvet Island (Bouvetoya)&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        29
+    ]
+}&#39;
+</div>
