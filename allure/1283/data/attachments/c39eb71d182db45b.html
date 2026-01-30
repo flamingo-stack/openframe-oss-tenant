@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Olin Rau&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(712) 445-0164 x9122&quot;,
+                &quot;email&quot;: &quot;leia.hand@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;148 Wm Underpass&quot;,
+            &quot;street2&quot;: &quot;Suite 533&quot;,
+            &quot;city&quot;: &quot;Kubstad&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;74710&quot;,
+            &quot;country&quot;: &quot;Bahrain&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        30
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        30
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtODU1YTg2MjYtZmMxMi00NjVlLWEzYjYtYzI2MzliMjZmZjA1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0MGE3MWFkNy03NjY2LTRlZGQtODg4MC05MGM0ZWU4ZTllZTkiLCJzdWIiOiJob2xsaXMubWVydHpAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTc3Njk5OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNDBhNzFhZDctNzY2Ni00ZWRkLTg4ODAtOTBjNGVlOGU5ZWU5IiwiZXhwIjoxNzY5Nzc3ODk5LCJpYXQiOjE3Njk3NzY5OTksInVzZXJJZCI6ImQ2NmU5MGI5LWUxODQtNDI5Yy1hMDNiLTUxMmYzYzdkNjNlZiIsImp0aSI6ImQ4MzBmZWU0LTQzYWMtNDZmMy05ZTYxLTE0ZmQyNzAzMDNiYiJ9.gQTFdBJCVVmrlPStH0T88J_C2QOwcewSAga_0yHkh_gyQxvs1yny4Wy3J_-q6G2ohmyW5FQidKohHtovQkZW5pFIjeJ2dxXoz39r_xZyKT8GSLWiWcqqiDwHUBm19vezp7C2RFsxqIORDWsEOEPb2BxE0j5bhDnhLE3U7CojID3BICWqzJmg9mWhgT9Lxygq0SnoZi1MLtPwN9X41mJ2ROD0zleRnIxcRTAQRRid8smrKjUVk35RqMmlT_ocpBh8bKwMoNSdXnsZRNhw-x5zYFk3qTggBpjFiYyi6zAAI4PzeIWb1JYOM_CfcmeY0CfIu2nu9OSKZt1kZ8ey9fwrBw</div>
+        <div>refresh_token: Q9DlSJV3EQtNEwRVUbs-u_OT691KFlionuEhz6VrbpnVecMikjSjdw3-HEfa7AlgohEdzH1vdKaLCl0prV83-9A9as_P-mO08mw9BEPWW7nNjJXh62dguavi0QxYhZir</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtODU1YTg2MjYtZmMxMi00NjVlLWEzYjYtYzI2MzliMjZmZjA1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0MGE3MWFkNy03NjY2LTRlZGQtODg4MC05MGM0ZWU4ZTllZTkiLCJzdWIiOiJob2xsaXMubWVydHpAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTc3Njk5OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNDBhNzFhZDctNzY2Ni00ZWRkLTg4ODAtOTBjNGVlOGU5ZWU5IiwiZXhwIjoxNzY5Nzc3ODk5LCJpYXQiOjE3Njk3NzY5OTksInVzZXJJZCI6ImQ2NmU5MGI5LWUxODQtNDI5Yy1hMDNiLTUxMmYzYzdkNjNlZiIsImp0aSI6ImQ4MzBmZWU0LTQzYWMtNDZmMy05ZTYxLTE0ZmQyNzAzMDNiYiJ9.gQTFdBJCVVmrlPStH0T88J_C2QOwcewSAga_0yHkh_gyQxvs1yny4Wy3J_-q6G2ohmyW5FQidKohHtovQkZW5pFIjeJ2dxXoz39r_xZyKT8GSLWiWcqqiDwHUBm19vezp7C2RFsxqIORDWsEOEPb2BxE0j5bhDnhLE3U7CojID3BICWqzJmg9mWhgT9Lxygq0SnoZi1MLtPwN9X41mJ2ROD0zleRnIxcRTAQRRid8smrKjUVk35RqMmlT_ocpBh8bKwMoNSdXnsZRNhw-x5zYFk3qTggBpjFiYyi6zAAI4PzeIWb1JYOM_CfcmeY0CfIu2nu9OSKZt1kZ8ey9fwrBw&#39; -b &#39;refresh_token=Q9DlSJV3EQtNEwRVUbs-u_OT691KFlionuEhz6VrbpnVecMikjSjdw3-HEfa7AlgohEdzH1vdKaLCl0prV83-9A9as_P-mO08mw9BEPWW7nNjJXh62dguavi0QxYhZir&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Olin Rau&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(712) 445-0164 x9122&quot;,
+                &quot;email&quot;: &quot;leia.hand@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;148 Wm Underpass&quot;,
+            &quot;street2&quot;: &quot;Suite 533&quot;,
+            &quot;city&quot;: &quot;Kubstad&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;74710&quot;,
+            &quot;country&quot;: &quot;Bahrain&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        30
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        30
+    ]
+}&#39;
+</div>
