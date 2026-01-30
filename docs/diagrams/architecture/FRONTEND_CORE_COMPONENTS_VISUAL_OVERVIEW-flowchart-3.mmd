@@ -1,0 +1,20 @@
+flowchart TD
+    Message["Message"]
+    
+    Message --> Role["role: 'user' | 'assistant' | 'error'"]
+    Message --> Content["content: string | MessageSegment[]"]
+    Message --> Metadata["metadata: timestamp, name, avatar"]
+    
+    Content --> TextSegment["TextSegment<br/>{type: 'text', text: string}"]
+    Content --> ToolSegment["ToolExecutionSegment<br/>{type: 'tool_execution', data: {...}}"]
+    Content --> ApprovalSegment["ApprovalRequestSegment<br/>{type: 'approval_request', data: {...}}"]
+    
+    ToolSegment --> ToolData["ToolExecutionData<br/>• integratedToolType<br/>• toolFunction<br/>• parameters<br/>• result"]
+    
+    ApprovalSegment --> ApprovalData["ApprovalRequestData<br/>• command<br/>• explanation<br/>• requestId<br/>• status"]
+    
+    style Message fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Content fill:#50C878,stroke:#2E7D4E,color:#fff
+    style TextSegment fill:#9B59B6,stroke:#6C3483,color:#fff
+    style ToolSegment fill:#E67E22,stroke:#A04000,color:#fff
+    style ApprovalSegment fill:#E74C3C,stroke:#922B21,color:#fff

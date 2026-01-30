@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant JVM
+    participant SpringBoot
+    participant ManagementApp
+    participant ManagementConfig
+    participant AgentConfigProps
+    participant MongoConfig
+    participant AgentInitializer
+    participant MongoDB
+    
+    JVM->>SpringBoot: java -jar management-service.jar
+    SpringBoot->>ManagementApp: main()
+    ManagementApp->>SpringBoot: SpringApplication.run()
+    
+    SpringBoot->>SpringBoot: Load application.yml
+    SpringBoot->>AgentConfigProps: Bind properties
+    
+    SpringBoot->>ManagementConfig: Initialize @Configuration
+    ManagementConfig->>ManagementConfig: Create PasswordEncoder bean
+    
+    SpringBoot->>ManagementConfig: Component scanning
+    ManagementConfig->>SpringBoot: Discover components
+    
+    SpringBoot->>MongoConfig: Initialize MongoDB
+    MongoConfig->>MongoDB: Establish connection
+    MongoDB-->>MongoConfig: Connection established
+    
+    SpringBoot->>AgentInitializer: @PostConstruct trigger
+    AgentInitializer->>AgentConfigProps: Get agentConfigurations
+    
+    loop For each agent config
+        AgentInitializer->>AgentInitializer: Load JSON from classpath
+        AgentInitializer->>MongoDB: Save/Update agent
+    end
+    
+    AgentInitializer-->>SpringBoot: Initialization complete
+    SpringBoot-->>ManagementApp: Application ready
+    ManagementApp-->>JVM: Service running on port 8085

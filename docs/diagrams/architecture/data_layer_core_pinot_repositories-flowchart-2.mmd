@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph Interface["Repository Interface"]
+        IRepo["PinotDeviceRepository<br/>PinotLogRepository"]
+    end
+    
+    subgraph Implementation["Repository Implementation"]
+        Impl["PinotClientDeviceRepository<br/>PinotClientLogRepository"]
+    end
+    
+    subgraph QueryLayer["Query Construction"]
+        Builder["PinotQueryBuilder"]
+        Validator["Query Validation"]
+    end
+    
+    subgraph Execution["Query Execution"]
+        Connection["Pinot Connection"]
+        ResultMapper["Result Mapping"]
+    end
+    
+    IRepo -.->|"contract"| Impl
+    Impl -->|"builds"| Builder
+    Builder -->|"validates"| Validator
+    Impl -->|"executes"| Connection
+    Connection -->|"maps"| ResultMapper
+    
+    style IRepo fill:#E8F4F8
+    style Impl fill:#4A90E2
+    style Builder fill:#50C878
+    style Connection fill:#F39C12

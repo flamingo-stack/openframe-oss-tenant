@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant UI as Model Selector UI
+    participant ModelsSvc as SupportedModelsService
+    participant TokenSvc as TokenService
+    participant API as AI Configuration API
+    
+    Note over UI,API: Component Mount
+    
+    UI->>ModelsSvc: loadSupportedModels()
+    
+    alt Already loaded
+        ModelsSvc-->>UI: Return immediately
+    else First load
+        ModelsSvc->>TokenSvc: getCurrentApiBaseUrl()
+        TokenSvc-->>ModelsSvc: API URL
+        ModelsSvc->>TokenSvc: getCurrentToken()
+        TokenSvc-->>ModelsSvc: Token
+        
+        ModelsSvc->>API: GET /supported-models
+        API-->>ModelsSvc: {anthropic: [...], openai: [...], google-gemini: [...]}
+        
+        ModelsSvc->>ModelsSvc: Populate model map
+        ModelsSvc->>ModelsSvc: Mark as loaded
+        ModelsSvc-->>UI: Complete
+    end
+    
+    Note over UI,API: User Interaction
+    
+    UI->>ModelsSvc: getAllModels()
+    ModelsSvc-->>UI: SupportedModel[]
+    
+    UI->>UI: Render model dropdown
+    
+    UI->>ModelsSvc: getModelDisplayName("claude-3-5-sonnet-20241022")
+    ModelsSvc-->>UI: "Claude 3.5 Sonnet"
+    
+    UI->>UI: Display friendly name

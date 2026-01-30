@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph Metrics["Processing Metrics"]
+        MessagesProcessed["messages_processed_total"]
+        ProcessingDuration["processing_duration_seconds"]
+        DeserializationErrors["deserialization_errors_total"]
+        EnrichmentErrors["enrichment_errors_total"]
+        HandlerErrors["handler_errors_total"]
+    end
+    
+    subgraph Tags["Metric Tags"]
+        MessageType["message_type"]
+        Destination["destination"]
+        Status["status (success/failure)"]
+    end
+    
+    MessagesProcessed --> Tags
+    ProcessingDuration --> Tags
+    DeserializationErrors --> Tags
+    EnrichmentErrors --> Tags
+    HandlerErrors --> Tags
+    
+    style Metrics fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Tags fill:#50C878,stroke:#2E7D4E,color:#fff

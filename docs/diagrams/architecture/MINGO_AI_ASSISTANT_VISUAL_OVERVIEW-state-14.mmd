@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> Composing: User types
+    
+    Composing --> Validating: User clicks send
+    Validating --> Invalid: Empty/Invalid
+    Invalid --> Composing: User continues typing
+    
+    Validating --> Sending: Valid message
+    Sending --> Sent: API success
+    Sending --> Failed: API error
+    
+    Sent --> Streaming: AI starts response
+    Streaming --> Accumulating: Receiving chunks
+    Accumulating --> Accumulating: More chunks
+    Accumulating --> Complete: Stream ends
+    
+    Failed --> Composing: User retries
+    Complete --> [*]: Message complete

@@ -1,0 +1,19 @@
+flowchart TD
+    Start["GraphQL Mutation Request"] --> Gateway["API Gateway"]
+    Gateway --> Auth["Authentication Check"]
+    Auth --> DGS["DGS Framework"]
+    DGS --> Mutation["@DgsMutation Method"]
+    
+    Mutation --> ValidateInput["Validate CreateEventInput"]
+    ValidateInput --> BuildEntity["Build Event Entity"]
+    BuildEntity --> SetTimestamp["Set Timestamp"]
+    SetTimestamp --> Service["EventService.createEvent()"]
+    
+    Service --> Validate["Business Logic Validation"]
+    Validate --> Save["Repository.save()"]
+    Save --> MongoDB["MongoDB"]
+    
+    MongoDB --> Saved["Saved Event"]
+    Saved --> PublishEvent["Publish Event to Kafka<br/>(Optional)"]
+    PublishEvent --> Response["Return Event"]
+    Response --> Client["Client Application"]

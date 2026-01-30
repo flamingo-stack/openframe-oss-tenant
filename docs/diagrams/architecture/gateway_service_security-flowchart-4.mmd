@@ -1,0 +1,30 @@
+flowchart TD
+    Request["Incoming Request"] --> CheckPath{"Path Type?"}
+    
+    CheckPath -->|"Swagger Docs"| AllowSwagger["Allow Access"]
+    CheckPath -->|"Not /external-api/**"| SkipAuth["Skip Authentication"]
+    CheckPath -->|"/external-api/**"| CheckHeader{"X-API-Key Header?"}
+    
+    CheckHeader -->|"Missing"| Return401["401 Unauthorized<br/>API key required"]
+    CheckHeader -->|"Present"| ValidateKey["Validate API Key"]
+    
+    ValidateKey -->|"Invalid"| Return401Invalid["401 Unauthorized<br/>Invalid API key"]
+    ValidateKey -->|"Valid"| IncrementTotal["Increment Total Requests"]
+    
+    IncrementTotal --> CheckRateLimit["Check Rate Limits"]
+    
+    CheckRateLimit -->|"Exceeded"| RecordFailed1["Record Failed Request"]
+    RecordFailed1 --> Return429["429 Too Many Requests<br/>+ Rate Limit Headers"]
+    
+    CheckRateLimit -->|"Allowed"| GetStatus["Get Rate Limit Status"]
+    GetStatus --> AddHeaders["Add Rate Limit Headers"]
+    AddHeaders --> AddContext["Add User Context Headers"]
+    
+    AddContext --> RemoveApiKey["Remove X-API-Key Header"]
+    RemoveApiKey --> RouteDownstream["Route to External API"]
+    
+    RouteDownstream -->|"Success"| RecordSuccess["Record Successful Request"]
+    RouteDownstream -->|"Error"| RecordFailed2["Record Failed Request"]
+    
+    RecordSuccess --> Complete["Complete"]
+    RecordFailed2 --> Complete

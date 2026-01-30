@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph FleetClient["FleetApiClient"]
+        BaseURL["Base URL:<br/>/tools/fleetmdm-server"]
+        
+        subgraph Policies["Policy Operations"]
+            GetPolicies["getPolicies()"]
+            GetPolicy["getPolicy(id)"]
+            CreatePolicy["createPolicy(data)"]
+            UpdatePolicy["updatePolicy(id, data)"]
+            DeletePolicy["deletePolicy(id)"]
+            RunPolicy["runPolicyOnHost(policyId, hostId)"]
+        end
+        
+        subgraph Queries["Query Operations"]
+            GetQueries["getQueries()"]
+            GetQuery["getQuery(id)"]
+            CreateQuery["createQuery(data)"]
+            UpdateQuery["updateQuery(id, data)"]
+            DeleteQuery["deleteQuery(id)"]
+            RunQuery["runQuery(id, params)"]
+            RunLiveQuery["runLiveQuery(params)"]
+        end
+        
+        subgraph Hosts["Host Operations"]
+            GetHosts["getHosts()"]
+            GetHost["getHost(id)"]
+            GetHostPolicies["getHostPolicies(id)"]
+            GetHostQueries["getHostQueries(id)"]
+        end
+        
+        subgraph Teams["Team Operations"]
+            GetTeams["getTeams()"]
+            GetTeam["getTeam(id)"]
+        end
+    end
+    
+    BaseURL --> Policies
+    BaseURL --> Queries
+    BaseURL --> Hosts
+    BaseURL --> Teams
+    
+    style BaseURL fill:#3498DB,stroke:#2874A6,color:#fff
+    style Policies fill:#E74C3C,stroke:#C0392B,color:#fff
+    style Queries fill:#F39C12,stroke:#D68910,color:#fff
+    style Hosts fill:#2ECC71,stroke:#27AE60,color:#fff
+    style Teams fill:#9B59B6,stroke:#6C3483,color:#fff

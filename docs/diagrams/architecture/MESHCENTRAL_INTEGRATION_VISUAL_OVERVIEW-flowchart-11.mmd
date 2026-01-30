@@ -1,0 +1,40 @@
+flowchart LR
+    subgraph MouseMove["Mouse Move (10 bytes)"]
+        MM1["0x00"]
+        MM2["0x02"]
+        MM3["0x00"]
+        MM4["0x0A"]
+        MM5["0x00"]
+        MM6["buttons"]
+        MM7["x_hi"]
+        MM8["x_lo"]
+        MM9["y_hi"]
+        MM10["y_lo"]
+    end
+    
+    subgraph KeyEvent["Key Event (6 bytes)"]
+        KE1["0x00"]
+        KE2["0x01"]
+        KE3["0x00"]
+        KE4["0x06"]
+        KE5["action"]
+        KE6["vkCode"]
+    end
+    
+    subgraph CtrlAltDel["Ctrl+Alt+Del (4 bytes)"]
+        CAD1["0x00"]
+        CAD2["0x0A"]
+        CAD3["0x00"]
+        CAD4["0x04"]
+    end
+    
+    subgraph ScreenSize["Screen Size (8 bytes)"]
+        SS1["0x00"]
+        SS2["0x07"]
+        SS3["0x00"]
+        SS4["0x08"]
+        SS5["width_hi"]
+        SS6["width_lo"]
+        SS7["height_hi"]
+        SS8["height_lo"]
+    end

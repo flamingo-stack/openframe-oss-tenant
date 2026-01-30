@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Agent as OpenFrame Agent
+    participant GW as Gateway
+    participant AC as AgentController
+    participant ARS as AgentRegistrationService
+    participant Proc as RegistrationProcessor
+    participant DB as MongoDB
+    participant Kafka as Kafka
+
+    Agent->>GW: POST /api/agents/register
+    Note over Agent,GW: Headers: X-Initial-Key
+    GW->>AC: Forward request
+    AC->>ARS: register(initialKey, request)
+    ARS->>ARS: Validate initial key
+    ARS->>DB: Find/Create Machine
+    ARS->>DB: Generate OAuth2 credentials
+    ARS->>Proc: postProcessAgentRegistration()
+    Proc-->>ARS: Processing complete
+    ARS->>DB: Save machine with credentials
+    ARS-.->Kafka: Publish registration event
+    ARS-->>AC: AgentRegistrationResponse
+    AC-->>GW: 200 OK + response
+    GW-->>Agent: Registration successful
+    Note over Agent: Store client_id & client_secret

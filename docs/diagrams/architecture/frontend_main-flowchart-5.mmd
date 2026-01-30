@@ -1,0 +1,27 @@
+flowchart TD
+    DeviceView["Device View Loads"] --> FetchDevices["Fetch Devices via GraphQL"]
+    FetchDevices --> APIGateway["API Gateway"]
+    
+    APIGateway --> DeviceService["Device Service"]
+    DeviceService --> MongoDB["MongoDB (Core Data)"]
+    DeviceService --> FleetAPI["Fleet MDM API"]
+    DeviceService --> TacticalAPI["Tactical RMM API"]
+    
+    MongoDB -->|"base device data"| Aggregate["Aggregate Device Data"]
+    FleetAPI -->|"Fleet-specific data"| Aggregate
+    TacticalAPI -->|"Tactical-specific data"| Aggregate
+    
+    Aggregate --> Transform["Transform to Unified Device Model"]
+    Transform --> Response["GraphQL Response"]
+    Response --> Frontend["Frontend Store"]
+    
+    Frontend --> RenderList["Render Device List"]
+    
+    UserClick["User Clicks Device"] --> FetchDetails["Fetch Device Details"]
+    FetchDetails --> EnrichData["Enrich with Tool Data"]
+    EnrichData --> RenderDetails["Render Device Details"]
+    
+    RenderDetails --> ToolActions["Tool-Specific Actions"]
+    ToolActions --> FleetClient["Fleet API Client"]
+    ToolActions --> TacticalClient["Tactical API Client"]
+    ToolActions --> MeshClient["MeshCentral Client"]

@@ -1,0 +1,36 @@
+flowchart LR
+    subgraph SpringBoot["Spring Boot"]
+        AutoConfig["Auto-Configuration"]
+        Properties["application.yml"]
+    end
+    
+    subgraph SpringData["Spring Data MongoDB"]
+        Factory["MongoDatabaseFactory"]
+        Context["MongoMappingContext"]
+        Conversions["MongoCustomConversions"]
+    end
+    
+    subgraph MongoConfig["MongoConfig"]
+        Converter["MappingMongoConverter"]
+        DbRefResolver["DefaultDbRefResolver"]
+    end
+    
+    subgraph Application["Application Layer"]
+        Repositories["Repositories"]
+        Documents["Document Models"]
+    end
+    
+    Properties -->|"Configures"| AutoConfig
+    AutoConfig -->|"Creates"| Factory
+    AutoConfig -->|"Creates"| Context
+    AutoConfig -->|"Creates"| Conversions
+    
+    Factory -->|"Injected into"| Converter
+    Context -->|"Injected into"| Converter
+    Conversions -->|"Injected into"| Converter
+    
+    Factory -->|"Creates"| DbRefResolver
+    DbRefResolver -->|"Used by"| Converter
+    
+    Converter -->|"Enables"| Repositories
+    Repositories -->|"Access"| Documents

@@ -1,0 +1,48 @@
+flowchart LR
+    subgraph frontend["Frontend"]
+        DeviceList["Device List View"]
+        DeviceDetail["Device Detail View"]
+    end
+    
+    subgraph api_layer["API Layer"]
+        GraphQL["GraphQL Query"]
+        APIClient["API Client"]
+    end
+    
+    subgraph backend["Backend Services"]
+        Gateway["API Gateway"]
+        APIService["API Service"]
+    end
+    
+    subgraph data_sources["Data Sources"]
+        MongoDB["MongoDB<br/>(Core Data)"]
+        FleetMDM["Fleet MDM<br/>(Policies, Queries)"]
+        TacticalRMM["Tactical RMM<br/>(Scripts, Checks)"]
+        Pinot["Apache Pinot<br/>(Time-Series)"]
+    end
+    
+    DeviceList -->|"fetch devices"| GraphQL
+    DeviceDetail -->|"fetch device details"| GraphQL
+    
+    GraphQL --> APIClient
+    APIClient --> Gateway
+    Gateway --> APIService
+    
+    APIService --> MongoDB
+    APIService --> FleetMDM
+    APIService --> TacticalRMM
+    APIService --> Pinot
+    
+    MongoDB -->|"base device data"| APIService
+    FleetMDM -->|"Fleet-specific data"| APIService
+    TacticalRMM -->|"Tactical-specific data"| APIService
+    Pinot -->|"analytics data"| APIService
+    
+    APIService -->|"unified device model"| Gateway
+    Gateway --> APIClient
+    APIClient --> DeviceList
+    APIClient --> DeviceDetail
+    
+    style DeviceList fill:#4CAF50
+    style APIService fill:#2196F3
+    style MongoDB fill:#FF9800

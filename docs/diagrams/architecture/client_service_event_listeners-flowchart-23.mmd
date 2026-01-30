@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph Current["Current (Synchronous)"]
+        C1["Receive"] --> C2["Parse"]
+        C2 --> C3["Extract"]
+        C3 --> C4["DB Query"]
+        C4 --> C5["DB Update"]
+        C5 --> C6["Ack"]
+    end
+    
+    subgraph Optimized["Optimized (Async)"]
+        O1["Receive"] --> O2["Parse<br/>(Async)"]
+        O2 --> O3["Extract<br/>(Cached)"]
+        O3 --> O4["DB Update<br/>(Batched)"]
+        O4 --> O5["Ack<br/>(Async)"]
+    end

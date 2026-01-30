@@ -1,0 +1,20 @@
+flowchart TD
+    Tests["Controller Tests"]
+    
+    Tests -->|"Unit Tests"| UnitTests["@WebMvcTest<br/>Mock Services"]
+    Tests -->|"Integration Tests"| IntegrationTests["@SpringBootTest<br/>Real Services"]
+    Tests -->|"API Tests"| APITests["REST Assured<br/>End-to-End"]
+    
+    UnitTests -->|"Test"| Validation["Request Validation"]
+    UnitTests -->|"Test"| Mapping["DTO Mapping"]
+    UnitTests -->|"Test"| ErrorHandling["Error Handling"]
+    
+    IntegrationTests -->|"Test"| ServiceIntegration["Service Integration"]
+    IntegrationTests -->|"Test"| DataAccess["Data Access"]
+    
+    APITests -->|"Test"| Authentication["API Key Auth"]
+    APITests -->|"Test"| EndToEnd["End-to-End Flows"]
+    
+    style UnitTests fill:#e1f5ff
+    style IntegrationTests fill:#e8f5e9
+    style APITests fill:#fff4e1

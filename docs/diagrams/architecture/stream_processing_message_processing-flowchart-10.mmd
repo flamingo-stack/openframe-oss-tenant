@@ -1,0 +1,34 @@
+flowchart TD
+    subgraph MessageTypes["MessageType Enum"]
+        FleetHost["FLEET_HOST"]
+        FleetQuery["FLEET_QUERY"]
+        TacticalAgent["TACTICAL_AGENT"]
+        TacticalCheck["TACTICAL_CHECK"]
+        CustomEvent["CUSTOM_EVENT"]
+    end
+    
+    subgraph EventHandlerTypes["EventHandlerType"]
+        Debezium["DEBEZIUM"]
+        Generic["GENERIC"]
+    end
+    
+    subgraph Destinations["Destination"]
+        Mongo["MONGO"]
+        Cassandra["CASSANDRA"]
+        Pinot["PINOT"]
+    end
+    
+    FleetHost -->|"type"| Debezium
+    FleetQuery -->|"type"| Debezium
+    TacticalAgent -->|"type"| Debezium
+    TacticalCheck -->|"type"| Debezium
+    CustomEvent -->|"type"| Generic
+    
+    FleetHost -->|"destinations"| Mongo
+    FleetHost -->|"destinations"| Pinot
+    TacticalAgent -->|"destinations"| Mongo
+    TacticalAgent -->|"destinations"| Cassandra
+    
+    style MessageTypes fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style EventHandlerTypes fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Destinations fill:#FFB347,stroke:#CC8A38,color:#fff

@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph Gateway["Gateway Service"]
+        JwtFilter["JWT Authentication Filter"]
+        JwtDecoder["JWT Decoder"]
+    end
+    
+    subgraph SecurityCore["Security Core Authentication"]
+        AuthPrincipal["AuthPrincipal"]
+        ActorType["ActorType Enum"]
+        Resolver["AuthPrincipalArgumentResolver"]
+    end
+    
+    subgraph Services["Backend Services"]
+        Controller["@RestController"]
+        Method["Controller Method"]
+    end
+    
+    subgraph AuthzServer["Authorization Server"]
+        TokenIssuer["Token Issuer"]
+        Claims["JWT Claims Builder"]
+    end
+    
+    TokenIssuer -->|"Issues JWT"| Claims
+    Claims -->|"Token with claims"| JwtFilter
+    JwtFilter -->|"Validates"| JwtDecoder
+    JwtDecoder -->|"JwtAuthenticationToken"| Resolver
+    Resolver -->|"Converts to"| AuthPrincipal
+    AuthPrincipal -->|"Injected via @AuthenticationPrincipal"| Method
+    Controller -->|"Contains"| Method
+    ActorType -->|"Used by"| AuthPrincipal

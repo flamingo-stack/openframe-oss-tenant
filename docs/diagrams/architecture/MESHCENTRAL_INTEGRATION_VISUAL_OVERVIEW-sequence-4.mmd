@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant MeshDesktop
+    participant Encoder
+    participant WebSocket
+    participant MeshServer
+    participant RemoteOS
+    
+    Note over User,RemoteOS: Mouse Input Flow
+    User->>Browser: Move Mouse
+    Browser->>MeshDesktop: mousemove event
+    MeshDesktop->>MeshDesktop: getRemoteXY()
+    MeshDesktop->>Encoder: encodeMouseMove(x, y)
+    Encoder->>WebSocket: Binary [0x00, 0x02, ...]
+    WebSocket->>MeshServer: Forward packet
+    MeshServer->>RemoteOS: Inject mouse move
+    
+    Note over User,RemoteOS: Keyboard Input Flow
+    User->>Browser: Press Key
+    Browser->>MeshDesktop: keydown event
+    MeshDesktop->>MeshDesktop: convertKeyCode()
+    MeshDesktop->>MeshDesktop: isExtendedKey()
+    MeshDesktop->>Encoder: encodeKeyEvent(1, vk, ext)
+    Encoder->>WebSocket: Binary [0x00, 0x01, ...]
+    WebSocket->>MeshServer: Forward packet
+    MeshServer->>RemoteOS: Inject key down
+    
+    User->>Browser: Release Key
+    Browser->>MeshDesktop: keyup event
+    MeshDesktop->>Encoder: encodeKeyEvent(2, vk, ext)
+    Encoder->>WebSocket: Binary [0x00, 0x01, ...]
+    WebSocket->>MeshServer: Forward packet
+    MeshServer->>RemoteOS: Inject key up
+    
+    Note over User,RemoteOS: Special Command Flow
+    User->>MeshDesktop: sendCtrlAltDel()
+    MeshDesktop->>Encoder: Encode cmd 0x0A
+    Encoder->>WebSocket: Binary [0x00, 0x0A, ...]
+    WebSocket->>MeshServer: Forward command
+    MeshServer->>RemoteOS: Secure Attention Sequence

@@ -1,0 +1,16 @@
+flowchart LR
+    Start["New PinotQueryBuilder"] --> Select["select()"]
+    Select --> Where["where*() methods"]
+    Where --> OrderBy["orderBy*() methods"]
+    OrderBy --> Limit["limit()"]
+    Limit --> Build["build()"]
+    Build --> Validate["Validate Query State"]
+    Validate --> Generate["Generate SQL"]
+    Generate --> Return["Return SQL String"]
+    
+    Where -->|"Optional"| GroupBy["groupBy()"]
+    GroupBy --> OrderBy
+    
+    style Start fill:#4CAF50
+    style Build fill:#2196F3
+    style Return fill:#FF9800

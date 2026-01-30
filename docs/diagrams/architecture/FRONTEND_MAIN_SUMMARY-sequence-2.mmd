@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Gateway
+    participant AuthServer
+    
+    User->>Frontend: Access Application
+    Frontend->>Gateway: GET /api/me
+    
+    alt Authenticated
+        Gateway-->>Frontend: User Data
+        Frontend->>User: Dashboard
+    else Not Authenticated
+        Gateway-->>Frontend: 401
+        Frontend->>User: Login Page
+        User->>Frontend: Credentials
+        Frontend->>Gateway: POST /oauth/login
+        Gateway->>AuthServer: Validate
+        AuthServer-->>Gateway: Session Cookie
+        Gateway-->>Frontend: Success
+        Frontend->>User: Dashboard
+    end

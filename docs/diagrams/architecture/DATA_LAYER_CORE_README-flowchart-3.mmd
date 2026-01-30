@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph scaling["Horizontal Scaling"]
+        direction TB
+        
+        Small["Small Deployment<br/>1 Broker, 2 Servers<br/>< 10M records"]
+        Medium["Medium Deployment<br/>2 Brokers, 4 Servers<br/>10M - 100M records"]
+        Large["Large Deployment<br/>3+ Brokers, 8+ Servers<br/>100M+ records"]
+    end
+    
+    Small -->|"grows to"| Medium
+    Medium -->|"grows to"| Large

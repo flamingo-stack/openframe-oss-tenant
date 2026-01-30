@@ -1,0 +1,9 @@
+flowchart TD
+    Start["User selects:<br/>deviceType=LAPTOP<br/>osType=WINDOWS"] --> Request["Request status options"]
+    Request --> Build["Build WHERE clause<br/>EXCLUDING status filter"]
+    Build --> Query["SELECT status, COUNT(*)<br/>FROM devices<br/>WHERE deviceType='LAPTOP'<br/>AND osType='WINDOWS'<br/>GROUP BY status"]
+    Query --> Result["Returns:<br/>ACTIVE: 150<br/>OFFLINE: 45<br/>MAINTENANCE: 12"]
+    
+    style Start fill:#E8F4F8
+    style Query fill:#F39C12
+    style Result fill:#50C878

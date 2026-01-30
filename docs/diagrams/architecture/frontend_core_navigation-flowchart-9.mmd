@@ -1,0 +1,27 @@
+flowchart TD
+    ScrollEvent["Scroll Event Fired"]
+    
+    ScrollEvent --> GetPosition["Get currentScrollY"]
+    GetPosition --> Compare["Compare with lastScrollY"]
+    
+    Compare -->|"scrolling down"| CheckThreshold1["currentScrollY > 50?"]
+    Compare -->|"scrolling up"| ShowHeader["Show Header"]
+    Compare -->|"at top"| CheckTop["currentScrollY ≤ 10?"]
+    
+    CheckThreshold1 -->|"yes"| HideHeader["Hide Header<br/>(translateY -100%)"]
+    CheckThreshold1 -->|"no"| NoChange1["No Change"]
+    
+    CheckTop -->|"yes"| ShowHeader
+    CheckTop -->|"no"| NoChange2["No Change"]
+    
+    ShowHeader --> UpdateState["Update State<br/>show = true"]
+    HideHeader --> UpdateState2["Update State<br/>show = false"]
+    
+    UpdateState --> SavePosition["Save lastScrollY"]
+    UpdateState2 --> SavePosition
+    NoChange1 --> SavePosition
+    NoChange2 --> SavePosition
+    
+    style ScrollEvent fill:#3498DB,stroke:#2471A3,color:#fff
+    style HideHeader fill:#E74C3C,stroke:#A93226,color:#fff
+    style ShowHeader fill:#27AE60,stroke:#1E8449,color:#fff

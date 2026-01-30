@@ -1,0 +1,11 @@
+flowchart TD
+    AppStart["Application Start"] -->|"Initialize"| TokenService["Token Service"]
+    TokenService -->|"Request Token"| TauriBackend["Tauri Backend"]
+    TauriBackend -->|"Return Token"| TokenService
+    TokenService -->|"Token Ready"| DialogService["Dialog GraphQL Service"]
+    DialogService -->|"Query resumableDialog"| GraphQLAPI["GraphQL API"]
+    GraphQLAPI -->|"Return Dialog"| DialogService
+    DialogService -->|"Query messages"| GraphQLAPI
+    GraphQLAPI -->|"Return Messages (Paginated)"| DialogService
+    DialogService -->|"Fetch All Pages"| GraphQLAPI
+    DialogService -->|"Complete History"| ChatUI["Chat UI"]

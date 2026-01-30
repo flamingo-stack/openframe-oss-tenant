@@ -1,0 +1,16 @@
+flowchart TD
+    ExternalApiApp["ExternalApiApplication<br/>(Spring Boot Entry Point)"]
+    OpenApiConfig["OpenApiConfig<br/>(OpenAPI 3.0 Configuration)"]
+    SwaggerUI["Swagger UI<br/>(Interactive Documentation)"]
+    
+    Controllers["REST Controllers<br/>(Device, Event, Log, etc.)"]
+    Gateway["API Gateway<br/>(API Key Validation)"]
+    
+    ExternalApiApp -->|"configures"| OpenApiConfig
+    OpenApiConfig -->|"generates"| SwaggerUI
+    OpenApiConfig -->|"documents"| Controllers
+    Gateway -->|"authenticates"| Controllers
+    
+    style ExternalApiApp fill:#e1f5ff
+    style OpenApiConfig fill:#fff4e1
+    style SwaggerUI fill:#e8f5e9

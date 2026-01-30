@@ -1,0 +1,58 @@
+sequenceDiagram
+    participant Client
+    participant Controller as IntegratedToolController
+    participant Service as IntegratedToolService
+    participant MongoDB
+    participant Debezium as DebeziumService
+    participant Connect as Debezium Connect
+    participant Hooks as Post-Save Hooks
+    
+    Client->>Controller: POST /v1/tools/{id}
+    activate Controller
+    
+    Controller->>Controller: Validate Request
+    Controller->>Controller: Set tool.id = {id}
+    Controller->>Controller: Set tool.enabled = true
+    
+    Controller->>Service: saveTool(tool)
+    activate Service
+    Service->>MongoDB: save(tool)
+    MongoDB-->>Service: savedTool
+    Service-->>Controller: savedTool
+    deactivate Service
+    
+    Controller->>Controller: Log success
+    
+    Controller->>Debezium: createOrUpdateDebeziumConnector(connectors)
+    activate Debezium
+    
+    loop For Each Connector
+        Debezium->>Connect: GET /connectors/{name}
+        alt Connector Exists
+            Connect-->>Debezium: 200 OK
+            Debezium->>Connect: PUT /connectors/{name}/config
+            Connect-->>Debezium: Updated
+        else Connector Missing
+            Connect-->>Debezium: 404 Not Found
+            Debezium->>Connect: POST /connectors
+            Connect-->>Debezium: Created
+        end
+    end
+    
+    Debezium-->>Controller: Complete
+    deactivate Debezium
+    
+    loop For Each Hook
+        Controller->>Hooks: onToolSaved(id, savedTool)
+        activate Hooks
+        alt Hook Success
+            Hooks-->>Controller: Success
+        else Hook Failure
+            Hooks-->>Controller: Exception
+            Controller->>Controller: Log warning (continue)
+        end
+        deactivate Hooks
+    end
+    
+    Controller-->>Client: 200 OK {"status": "success", "tool": {...}}
+    deactivate Controller

@@ -1,0 +1,32 @@
+flowchart TD
+    subgraph MemoryManagement["Memory Management"]
+        TileQueueMem["Tile Queue<br/>(~30MB max)"]
+        AccumulatorMem["Accumulator Buffer<br/>(16MB max)"]
+        DrawQueueMem["Draw Queue<br/>(~10MB)"]
+        BitmapCache["Bitmap Cache<br/>(Transient)"]
+    end
+    
+    subgraph CPUUsage["CPU Usage"]
+        JPEGDecode["JPEG Decoding<br/>(3 threads)"]
+        CanvasRender["Canvas Rendering<br/>(RAF)"]
+        InputProcessing["Input Processing<br/>(Event handlers)"]
+        ProtocolParsing["Protocol Parsing"]
+    end
+    
+    subgraph NetworkUsage["Network Usage"]
+        Upstream["Upstream<br/>(Input: ~1-5 KB/s)"]
+        Downstream["Downstream<br/>(Video: 100KB-2MB/s)"]
+        Latency["Latency<br/>(Target: <100ms)"]
+    end
+    
+    subgraph Monitoring["Performance Monitoring"]
+        FPSCounter["FPS Counter"]
+        LatencyMeter["Latency Meter"]
+        BandwidthMeter["Bandwidth Meter"]
+        QueueDepth["Queue Depth Monitor"]
+    end
+    
+    TileQueueMem --> QueueDepth
+    JPEGDecode --> FPSCounter
+    Downstream --> BandwidthMeter
+    ProtocolParsing --> LatencyMeter

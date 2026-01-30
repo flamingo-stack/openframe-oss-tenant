@@ -1,0 +1,31 @@
+flowchart TD
+    Client["External Client<br/>(API Consumer)"] -->|"HTTP + API Key"| Gateway["API Gateway"]
+    Gateway -->|"Routes Request"| Controllers["REST Controllers"]
+    
+    subgraph external_api_controllers["External API REST Controllers"]
+        Controllers -->|"Delegates"| Services["Business Services"]
+        Controllers -->|"Uses"| Mappers["DTO Mappers"]
+        Controllers -->|"Validates"| Validation["Request Validation"]
+        
+        subgraph controller_components["Controller Components"]
+            DeviceCtrl["DeviceController<br/>Device Management"]
+            EventCtrl["EventController<br/>Event Operations"]
+            LogCtrl["LogController<br/>Log Queries"]
+            OrgCtrl["OrganizationController<br/>Organization CRUD"]
+            ToolCtrl["ToolController<br/>Tool Management"]
+        end
+        
+        Controllers -.->|"Implements"| controller_components
+    end
+    
+    Services -->|"Queries"| DataLayer["Data Layer<br/>(MongoDB, Pinot)"]
+    Mappers -->|"Transforms"| DTOs["Response DTOs"]
+    
+    ExceptionHandler["GlobalExceptionHandler"] -.->|"Handles Errors"| Controllers
+    OpenAPIConfig["OpenAPI Config"] -.->|"Documents"| Controllers
+    
+    style DeviceCtrl fill:#e1f5ff
+    style EventCtrl fill:#e1f5ff
+    style LogCtrl fill:#e1f5ff
+    style OrgCtrl fill:#e1f5ff
+    style ToolCtrl fill:#e1f5ff

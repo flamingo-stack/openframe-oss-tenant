@@ -1,0 +1,13 @@
+flowchart TD
+    Request["HTTP Request"] --> Matcher["Security Matcher<br/>(OAuth2 Endpoints)"]
+    Matcher -->|"Matches"| AuthCheck["Authorize Requests<br/>(anyRequest().authenticated())"]
+    Matcher -->|"No Match"| NextChain["Next Filter Chain"]
+    
+    AuthCheck --> CSRF["CSRF Protection<br/>(Ignore OAuth2 endpoints)"]
+    CSRF --> CORS["CORS<br/>(Disabled)"]
+    CORS --> ExceptionHandler["Exception Handling<br/>(ProviderAwareAuthenticationEntryPoint)"]
+    ExceptionHandler --> OAuth2Resource["OAuth2 Resource Server<br/>(JWT validation)"]
+    OAuth2Resource --> Response["Response"]
+    
+    style Matcher fill:#4A90E2
+    style AuthCheck fill:#50C878

@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant OrgController
+    participant Security
+    participant OrgCommandService
+    participant OrgMapper
+    participant OrgRepository
+    participant MongoDB
+
+    Client->>Gateway: POST /organizations + JWT
+    Gateway->>OrgController: Forward Request
+    
+    OrgController->>Security: Validate JWT
+    Security-->>OrgController: AuthPrincipal
+    
+    OrgController->>OrgController: Validate Request Body
+    OrgController->>OrgCommandService: createOrganization(request)
+    
+    OrgCommandService->>OrgCommandService: Apply Business Rules
+    OrgCommandService->>OrgRepository: save(organization)
+    OrgRepository->>MongoDB: INSERT document
+    MongoDB-->>OrgRepository: Created document
+    
+    OrgRepository-->>OrgCommandService: Organization entity
+    OrgCommandService-->>OrgController: Organization entity
+    
+    OrgController->>OrgMapper: toResponse(entity)
+    OrgMapper-->>OrgController: OrganizationResponse
+    
+    OrgController-->>Gateway: 201 Created + Response
+    Gateway-->>Client: OrganizationResponse

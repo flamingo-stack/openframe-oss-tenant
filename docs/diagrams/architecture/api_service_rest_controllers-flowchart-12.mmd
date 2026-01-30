@@ -1,0 +1,16 @@
+flowchart TD
+    subgraph Internal["Internal APIs"]
+        RestControllers["REST Controllers<br/>(Mutations)"]
+        GraphQL["GraphQL DataFetchers<br/>(Queries)"]
+    end
+    
+    subgraph External["External APIs"]
+        ExternalAPI["External API<br/>(Public Read-Only)"]
+    end
+    
+    RestControllers -.->|"Write Operations"| DataLayer["Data Layer"]
+    GraphQL -.->|"Read Operations"| DataLayer
+    ExternalAPI -.->|"Public Queries"| DataLayer
+    
+    Gateway["Gateway Service"] -->|"Internal Traffic"| Internal
+    Gateway -->|"Public Traffic"| External

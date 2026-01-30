@@ -1,0 +1,24 @@
+flowchart TD
+    subgraph StateStores["State Stores (RocksDB)"]
+        AS_STORE["Activity Stream Store<br/>(5s retention)"]
+        HA_STORE["Host Activity Stream Store<br/>(5s retention)"]
+    end
+    
+    subgraph JoinProcessor["Join Processor"]
+        JOIN["Left Join Logic"]
+    end
+    
+    subgraph Streams["Input Streams"]
+        AS["Activity Stream"]
+        HA["Host Activity Stream"]
+    end
+    
+    AS -->|"Buffer"| AS_STORE
+    HA -->|"Buffer"| HA_STORE
+    
+    AS_STORE --> JOIN
+    HA_STORE --> JOIN
+    
+    JOIN -->|"Enriched Output"| OUT["Output Stream"]
+    
+    style StateStores fill:#1a1a2e,stroke:#16213e,stroke-width:2px

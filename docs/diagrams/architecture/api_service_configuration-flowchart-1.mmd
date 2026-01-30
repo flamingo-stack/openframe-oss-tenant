@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph ApiServiceConfig["API Service Configuration"]
+        ApiAppConfig["ApiApplicationConfig"]
+        AuthConfig["AuthenticationConfig"]
+        SecConfig["SecurityConfig"]
+    end
+    
+    subgraph SpringSecurity["Spring Security"]
+        FilterChain["SecurityFilterChain"]
+        OAuth2["OAuth2 Resource Server"]
+        JwtResolver["JwtIssuerAuthenticationManagerResolver"]
+    end
+    
+    subgraph Caching["JWT Provider Cache"]
+        CaffeineCache["Caffeine LoadingCache"]
+        JwtProviders["JwtAuthenticationProvider Pool"]
+    end
+    
+    subgraph Controllers["REST Controllers"]
+        DeviceCtrl["DeviceController"]
+        UserCtrl["UserController"]
+        OrgCtrl["OrganizationController"]
+    end
+    
+    subgraph Security["Security Components"]
+        ArgResolver["AuthPrincipalArgumentResolver"]
+        PasswordEnc["BCryptPasswordEncoder"]
+    end
+    
+    Gateway["Gateway Service"] -->|"Pre-validated JWT"| FilterChain
+    ApiAppConfig -->|"Provides"| PasswordEnc
+    AuthConfig -->|"Registers"| ArgResolver
+    SecConfig -->|"Configures"| FilterChain
+    SecConfig -->|"Creates"| CaffeineCache
+    FilterChain -->|"Uses"| OAuth2
+    OAuth2 -->|"Resolves via"| JwtResolver
+    JwtResolver -->|"Queries"| CaffeineCache
+    CaffeineCache -->|"Loads"| JwtProviders
+    JwtProviders -->|"Validates JWT"| OAuth2
+    ArgResolver -->|"Injects @AuthenticationPrincipal"| Controllers
+    PasswordEnc -->|"Used by"| Controllers

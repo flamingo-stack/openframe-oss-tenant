@@ -1,0 +1,23 @@
+flowchart LR
+    Table["Table Component"]
+    
+    Table --> DataFeatures["Data Features"]
+    Table --> UIFeatures["UI Features"]
+    Table --> InteractionFeatures["Interaction Features"]
+    
+    DataFeatures --> Sorting["✅ Sorting<br/>• Single column<br/>• Custom functions"]
+    DataFeatures --> Filtering["✅ Filtering<br/>• Column filters<br/>• Multiple values"]
+    DataFeatures --> Pagination["✅ Pagination<br/>• Cursor-based<br/>• Page-based"]
+    
+    UIFeatures --> Responsive["✅ Responsive<br/>• Desktop table<br/>• Mobile cards"]
+    UIFeatures --> Loading["✅ Loading States<br/>• Skeleton rows<br/>• Configurable count"]
+    UIFeatures --> Empty["✅ Empty States<br/>• Custom message<br/>• Action button"]
+    
+    InteractionFeatures --> Selection["✅ Selection<br/>• Single row<br/>• Multi-row"]
+    InteractionFeatures --> BulkActions["✅ Bulk Actions<br/>• Custom actions<br/>• Variants"]
+    InteractionFeatures --> RowActions["✅ Row Actions<br/>• Inline buttons<br/>• Custom renderer"]
+    
+    style Table fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style DataFeatures fill:#50C878,stroke:#2E7D4E,color:#fff
+    style UIFeatures fill:#9B59B6,stroke:#6C3483,color:#fff
+    style InteractionFeatures fill:#E67E22,stroke:#A04000,color:#fff

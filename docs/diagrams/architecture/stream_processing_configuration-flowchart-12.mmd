@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph StreamMetrics["Kafka Streams Metrics"]
+        ProcessRate["process-rate"]
+        ProcessLatency["process-latency-avg"]
+        CommitRate["commit-rate"]
+        PollRate["poll-rate"]
+    end
+    
+    subgraph StateMetrics["State Store Metrics"]
+        StateSize["state-store-size"]
+        RestoreTime["restore-time-ms"]
+        FlushRate["flush-rate"]
+    end
+    
+    subgraph ConsumerMetrics["Consumer Metrics"]
+        Lag["consumer-lag"]
+        FetchRate["fetch-rate"]
+        RecordsConsumed["records-consumed-rate"]
+    end
+    
+    subgraph ProducerMetrics["Producer Metrics"]
+        ProduceRate["record-send-rate"]
+        ProduceLatency["record-send-latency-avg"]
+        ErrorRate["record-error-rate"]
+    end
+    
+    subgraph Alerts["Alert Conditions"]
+        HighLag["Lag > 10000"]
+        HighLatency["Latency > 1000ms"]
+        HighErrors["Error Rate > 1%"]
+    end
+    
+    Lag -.->|"Triggers"| HighLag
+    ProcessLatency -.->|"Triggers"| HighLatency
+    ErrorRate -.->|"Triggers"| HighErrors
+    
+    classDef streamClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef stateClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef consumerClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef producerClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    classDef alertClass fill:#E74C3C,stroke:#C0392B,color:#fff
+    
+    class ProcessRate,ProcessLatency,CommitRate,PollRate streamClass
+    class StateSize,RestoreTime,FlushRate stateClass
+    class Lag,FetchRate,RecordsConsumed consumerClass
+    class ProduceRate,ProduceLatency,ErrorRate producerClass
+    class HighLag,HighLatency,HighErrors alertClass

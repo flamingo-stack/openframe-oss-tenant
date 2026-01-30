@@ -1,0 +1,51 @@
+flowchart TD
+    subgraph Development["Development Environment"]
+        DevMachine["Developer Machine"]
+        DevServer["Dev Server (Vite)"]
+        MockBackend["Mock Backend"]
+    end
+    
+    subgraph Build["Build Process"]
+        BuildCmd["npm run tauri build"]
+        TauriBuilder["Tauri Builder"]
+        
+        subgraph Artifacts["Build Artifacts"]
+            WindowsExe["Windows .exe"]
+            MacOSApp["macOS .app"]
+            LinuxBin["Linux Binary"]
+        end
+    end
+    
+    subgraph Production["Production Environment"]
+        UserMachine["User Machine"]
+        DesktopApp["Desktop Application"]
+        
+        subgraph ProdBackend["Production Backend"]
+            Gateway["Gateway Service"]
+            AuthService["Authorization Service"]
+            ChatService["Chat API Service"]
+        end
+    end
+    
+    DevMachine -->|"npm run tauri dev"| DevServer
+    DevServer -->|"Hot Reload"| DevMachine
+    DevServer -.->|"Optional"| MockBackend
+    
+    DevMachine -->|"Build"| BuildCmd
+    BuildCmd --> TauriBuilder
+    TauriBuilder --> WindowsExe
+    TauriBuilder --> MacOSApp
+    TauriBuilder --> LinuxBin
+    
+    WindowsExe -->|"Install"| UserMachine
+    MacOSApp -->|"Install"| UserMachine
+    LinuxBin -->|"Install"| UserMachine
+    
+    UserMachine -->|"Run"| DesktopApp
+    DesktopApp -->|"HTTPS"| Gateway
+    Gateway --> AuthService
+    Gateway --> ChatService
+    
+    style Development fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style Build fill:#ed8936,stroke:#c05621,color:#fff
+    style Production fill:#48bb78,stroke:#2f855a,color:#fff

@@ -1,0 +1,55 @@
+flowchart TD
+    User["User Login"]
+    AuthServer["OpenFrame Auth Server"]
+    
+    subgraph SessionEstablishment["Session Establishment"]
+        Login["Login Request"]
+        ValidateCreds["Validate Credentials"]
+        GenerateToken["Generate Session Token"]
+        StoreCookie["Store Auth Cookie"]
+    end
+    
+    subgraph DeviceAccess["Device Access"]
+        SelectDevice["Select Device"]
+        CheckPerms["Check Permissions"]
+        ValidateRights["Validate MeshRights"]
+    end
+    
+    subgraph MeshConnection["MeshCentral Connection"]
+        InitWS["Initialize WebSocket"]
+        SendCookie["Send Auth Cookie"]
+        ServerValidate["Server Validates Session"]
+        EstablishTunnel["Establish Encrypted Tunnel"]
+    end
+    
+    subgraph Operations["Secure Operations"]
+        DesktopControl["Desktop Control"]
+        FileAccess["File Access"]
+        PermissionCheck["Permission Check"]
+    end
+    
+    User --> Login
+    Login --> AuthServer
+    AuthServer --> ValidateCreds
+    ValidateCreds --> GenerateToken
+    GenerateToken --> StoreCookie
+    
+    StoreCookie --> SelectDevice
+    SelectDevice --> CheckPerms
+    CheckPerms --> ValidateRights
+    
+    ValidateRights -->|"Authorized"| InitWS
+    ValidateRights -->|"Denied"| AccessDenied["Access Denied"]
+    
+    InitWS --> SendCookie
+    SendCookie --> ServerValidate
+    ServerValidate --> EstablishTunnel
+    
+    EstablishTunnel --> DesktopControl
+    EstablishTunnel --> FileAccess
+    
+    DesktopControl --> PermissionCheck
+    FileAccess --> PermissionCheck
+    
+    PermissionCheck -->|"NOFILES"| BlockFileAccess["Block File Access"]
+    PermissionCheck -->|"SERVERFILES"| AllowFileAccess["Allow File Access"]

@@ -1,0 +1,20 @@
+flowchart TD
+    UI["Frontend UI"] -->|"requests filters"| API["API Service"]
+    
+    API -->|"getStatusFilterOptions()"| DeviceRepo["PinotClientDeviceRepository"]
+    API -->|"getDeviceTypeFilterOptions()"| DeviceRepo
+    API -->|"getOsTypeFilterOptions()"| DeviceRepo
+    API -->|"getOrganizationFilterOptions()"| DeviceRepo
+    API -->|"getTagFilterOptions()"| DeviceRepo
+    
+    DeviceRepo -->|"builds query"| QueryBuilder["PinotQueryBuilder"]
+    QueryBuilder -->|"executes"| Pinot[("Pinot Broker")]
+    
+    Pinot -->|"aggregates"| DevicesTable["devices table"]
+    DevicesTable -->|"returns counts"| Pinot
+    
+    Pinot -->|"Map<String, Integer>"| DeviceRepo
+    DeviceRepo -->|"filter options"| API
+    API -->|"JSON response"| UI
+    
+    UI -->|"displays"| FilterUI["Filter Dropdowns<br/>with counts"]

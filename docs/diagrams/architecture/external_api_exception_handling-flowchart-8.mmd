@@ -1,0 +1,16 @@
+flowchart LR
+    Exception["Exception Occurs"] --> Logger["SLF4J Logger"]
+    Logger --> LogLevel{"Log Level"}
+    
+    LogLevel -->|"WARN"| WarnDest["Application Logs"]
+    LogLevel -->|"ERROR"| ErrorDest["Error Logs + Stack Traces"]
+    
+    WarnDest --> Aggregator["Log Aggregation<br/>(ELK/Splunk)"]
+    ErrorDest --> Aggregator
+    
+    Aggregator --> Dashboard["Monitoring Dashboard"]
+    Aggregator --> Alerts["Alert System"]
+    
+    style Exception fill:#ff6b6b
+    style Dashboard fill:#4ecdc4
+    style Alerts fill:#ee5a6f

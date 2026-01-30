@@ -1,0 +1,24 @@
+flowchart TD
+    Client["External Client"] -->|"HTTP REST"| Controller["IntegratedToolController"]
+    
+    Controller -->|"CRUD Operations"| ToolService["IntegratedToolService"]
+    Controller -->|"CDC Management"| DebeziumService["DebeziumService"]
+    Controller -->|"Execute Hooks"| HookRegistry["Post-Save Hook Registry"]
+    
+    ToolService -->|"MongoDB Operations"| ToolRepo["IntegratedToolRepository"]
+    ToolRepo -->|"Persist"| MongoDB[("MongoDB<br/>integrated_tools")]
+    
+    DebeziumService -->|"HTTP API"| DebeziumConnect["Debezium Connect<br/>REST API"]
+    DebeziumConnect -->|"Manage"| Connectors["CDC Connectors"]
+    
+    HookRegistry -->|"Invoke"| Hook1["IntegratedToolPostSaveHook<br/>Implementation 1"]
+    HookRegistry -->|"Invoke"| Hook2["IntegratedToolPostSaveHook<br/>Implementation 2"]
+    HookRegistry -->|"Invoke"| HookN["IntegratedToolPostSaveHook<br/>Implementation N"]
+    
+    Hook1 -.->|"Side Effects"| ExternalSystem1["External System 1"]
+    Hook2 -.->|"Side Effects"| ExternalSystem2["External System 2"]
+    
+    style Controller fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ToolService fill:#50C878,stroke:#2E7D4E,color:#fff
+    style DebeziumService fill:#F39C12,stroke:#C87F0A,color:#fff
+    style HookRegistry fill:#9B59B6,stroke:#6C3483,color:#fff

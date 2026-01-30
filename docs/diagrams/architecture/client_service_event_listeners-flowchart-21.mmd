@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph NATS["NATS Cluster"]
+        Stream["JetStream Stream"]
+        Consumer["Durable Consumer"]
+    end
+    
+    subgraph Instance1["Client Service Instance 1"]
+        L1["InstalledAgentListener"]
+    end
+    
+    subgraph Instance2["Client Service Instance 2"]
+        L2["InstalledAgentListener"]
+    end
+    
+    subgraph Instance3["Client Service Instance 3"]
+        L3["InstalledAgentListener"]
+    end
+    
+    Stream --> Consumer
+    
+    Consumer -->|"Load Balanced"| L1
+    Consumer -->|"Load Balanced"| L2
+    Consumer -->|"Load Balanced"| L3
+    
+    Note1["Delivery Group:<br/>installed-agent"]
+    
+    Consumer -.-> Note1

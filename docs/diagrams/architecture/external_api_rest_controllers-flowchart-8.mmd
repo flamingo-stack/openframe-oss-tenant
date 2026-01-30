@@ -1,0 +1,19 @@
+flowchart TD
+    Controllers["REST Controllers"]
+    
+    Controllers -->|"Device Operations"| DeviceService["DeviceService<br/>(API Service)"]
+    Controllers -->|"Event Operations"| EventService["EventService<br/>(API Service)"]
+    Controllers -->|"Log Queries"| LogService["LogService<br/>(API Service)"]
+    Controllers -->|"Organization CRUD"| OrgService["OrganizationService<br/>(Data Layer)"]
+    Controllers -->|"Tool Queries"| ToolService["ToolService<br/>(API Service)"]
+    
+    Controllers -->|"DTO Mapping"| Mappers["DTO Mappers<br/>(External API)"]
+    
+    DeviceService -->|"Queries"| MongoDB[("MongoDB")]
+    EventService -->|"Reads/Writes"| MongoDB
+    OrgService -->|"Reads/Writes"| MongoDB
+    ToolService -->|"Reads"| MongoDB
+    LogService -->|"Queries"| Pinot[("Apache Pinot")]
+    
+    style Controllers fill:#e1f5ff
+    style Mappers fill:#fff4e1

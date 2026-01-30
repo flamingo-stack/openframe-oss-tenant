@@ -1,0 +1,26 @@
+flowchart TD
+    API["API Service"] -->|"Uses"| LogRepo["PinotClientLogRepository"]
+    API -->|"Uses"| DeviceRepo["PinotClientDeviceRepository"]
+    
+    LogRepo -->|"Builds queries with"| QB["PinotQueryBuilder"]
+    DeviceRepo -->|"Builds queries with"| QB
+    
+    QB -->|"Generates SQL"| Pinot["Apache Pinot"]
+    
+    Config["PinotConfig"] -->|"Provides connection"| LogRepo
+    Config -->|"Provides connection"| DeviceRepo
+    
+    subgraph DataLayer["Data Layer Core"]
+        QB
+        LogRepo
+        DeviceRepo
+        Config
+    end
+    
+    subgraph External["External Systems"]
+        Pinot
+    end
+    
+    style QB fill:#4CAF50
+    style DataLayer fill:#E8F5E9
+    style External fill:#FFF3E0

@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant UI as UI Component
+    participant DialogSvc as DialogGraphQLService
+    participant TokenSvc as TokenService
+    participant GraphQL as GraphQL Client
+    participant Backend as Chat API
+    
+    UI->>DialogSvc: getResumableDialog()
+    DialogSvc->>TokenSvc: ensureTokenReady()
+    TokenSvc-->>DialogSvc: Token ready
+    
+    DialogSvc->>DialogSvc: initializeClient()
+    DialogSvc->>TokenSvc: getCurrentApiBaseUrl()
+    TokenSvc-->>DialogSvc: API URL
+    DialogSvc->>TokenSvc: getCurrentToken()
+    TokenSvc-->>DialogSvc: Token
+    
+    DialogSvc->>GraphQL: new GraphQLClient(endpoint, headers)
+    GraphQL-->>DialogSvc: Client instance
+    
+    DialogSvc->>Backend: query GetDialog
+    Backend-->>DialogSvc: Dialog data
+    DialogSvc-->>UI: ResumableDialog
+    
+    Note over UI,Backend: Subsequent requests reuse client
+    
+    UI->>DialogSvc: getDialogMessages(dialogId)
+    DialogSvc->>TokenSvc: getCurrentToken()
+    TokenSvc-->>DialogSvc: Token
+    DialogSvc->>GraphQL: setHeaders(Authorization)
+    DialogSvc->>Backend: query GetAllMessages (page 1)
+    Backend-->>DialogSvc: Messages + hasNextPage=true
+    
+    loop While hasNextPage
+        DialogSvc->>Backend: query GetAllMessages (next page)
+        Backend-->>DialogSvc: Messages + hasNextPage
+    end
+    
+    DialogSvc-->>UI: All messages

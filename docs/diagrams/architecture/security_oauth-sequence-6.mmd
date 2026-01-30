@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway as Gateway<br/>(OAuthBffController)
+    participant BffService as OAuthBffService
+    participant CookieSvc as CookieService
+    participant AuthServer as Authorization Server
+    participant MongoDB
+    
+    Browser->>Gateway: POST /oauth/refresh<br/>Cookie: refresh_token=<jwt>
+    
+    Gateway->>Gateway: Extract refresh_token from cookie
+    
+    alt tenantId provided
+        Gateway->>BffService: refreshTokensPublic(tenantId, token)
+    else tenantId not provided
+        Gateway->>BffService: refreshTokensByLookup(token)
+        BffService->>MongoDB: findByRefreshTokenValue(token)
+        MongoDB-->>BffService: OAuth2Authorization
+        BffService->>BffService: Extract tenantId from authorizationUri
+    end
+    
+    BffService->>AuthServer: POST /acme/oauth2/token<br/>grant_type=refresh_token<br/>refresh_token=<token><br/>Authorization: Basic <client_creds>
+    
+    AuthServer->>MongoDB: Update OAuth2Authorization
+    AuthServer-->>BffService: TokenResponse {access_token, refresh_token}
+    
+    BffService-->>Gateway: TokenResponse
+    
+    Gateway->>CookieSvc: addAuthCookies(access_token, refresh_token)
+    CookieSvc-->>Gateway: Set-Cookie headers
+    
+    alt Dev Headers Enabled
+        Gateway->>Gateway: Add Access-Token header
+        Gateway->>Gateway: Add Refresh-Token header
+    end
+    
+    Gateway-->>Browser: 204 No Content<br/>Set-Cookie headers<br/>(Optional: Access-Token, Refresh-Token headers)

@@ -1,0 +1,52 @@
+flowchart LR
+    subgraph SourceSystems["Source Systems"]
+        MongoDB["MongoDB<br/>(Devices, Users, Orgs)"]
+        PostgreSQL["PostgreSQL<br/>(Relational Data)"]
+    end
+    
+    subgraph CDCLayer["CDC Layer"]
+        Connector1["MongoDB Connector"]
+        Connector2["PostgreSQL Connector"]
+        DebeziumConnect["Debezium Connect<br/>(Kafka Connect)"]
+    end
+    
+    subgraph KafkaLayer["Kafka Layer"]
+        Topic1["dbserver1.openframe.devices"]
+        Topic2["dbserver1.openframe.users"]
+        Topic3["postgres.public.events"]
+    end
+    
+    subgraph ProcessingLayer["Processing Layer"]
+        StreamService["Stream Processing Service"]
+        MessageHandler["DebeziumMessageHandler"]
+    end
+    
+    subgraph ManagementLayer["Management Layer"]
+        DebeziumService["DebeziumService"]
+        HealthScheduler["HealthCheckScheduler"]
+    end
+    
+    MongoDB -->|"Change Events"| Connector1
+    PostgreSQL -->|"Change Events"| Connector2
+    
+    Connector1 --> DebeziumConnect
+    Connector2 --> DebeziumConnect
+    
+    DebeziumConnect -->|"Publish"| Topic1
+    DebeziumConnect -->|"Publish"| Topic2
+    DebeziumConnect -->|"Publish"| Topic3
+    
+    Topic1 --> StreamService
+    Topic2 --> StreamService
+    Topic3 --> StreamService
+    
+    StreamService --> MessageHandler
+    
+    HealthScheduler -.->|"Monitor"| DebeziumConnect
+    DebeziumService -.->|"Manage"| DebeziumConnect
+    
+    style SourceSystems fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style CDCLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style KafkaLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style ProcessingLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style ManagementLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px

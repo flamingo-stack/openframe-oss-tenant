@@ -1,0 +1,36 @@
+flowchart TD
+    MingoAI["Frontend Mingo AI"]
+    
+    subgraph Frontend["Frontend Modules"]
+        ApiClients["Frontend API Clients"]
+        Auth["Frontend Authentication"]
+        CoreComponents["Frontend Core Components"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        ChatAPI["Chat API Service"]
+        DialogService["Dialog Management"]
+        MessageService["Message Processing"]
+    end
+    
+    subgraph External["External Dependencies"]
+        ReactQuery["@tanstack/react-query"]
+        Zustand["zustand"]
+        Toast["Toast Notifications"]
+    end
+    
+    MingoAI --> ApiClients
+    MingoAI --> Auth
+    MingoAI --> CoreComponents
+    
+    MingoAI --> ReactQuery
+    MingoAI --> Zustand
+    MingoAI --> Toast
+    
+    ApiClients --> ChatAPI
+    ChatAPI --> DialogService
+    ChatAPI --> MessageService
+    
+    style MingoAI fill:#FF9800
+    style ApiClients fill:#2196F3
+    style ChatAPI fill:#4CAF50

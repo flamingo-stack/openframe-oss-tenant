@@ -1,0 +1,8 @@
+flowchart TD
+    Request["HTTP Request"] --> Controller["Controller Method"]
+    Controller --> ArgResolver["AuthPrincipalArgumentResolver"]
+    ArgResolver --> SecurityContext["SecurityContextHolder"]
+    SecurityContext --> Authentication["Authentication Object"]
+    Authentication --> Principal["Extract Principal"]
+    Principal --> Inject["Inject into @AuthenticationPrincipal parameter"]
+    Inject --> Method["Execute Controller Method"]

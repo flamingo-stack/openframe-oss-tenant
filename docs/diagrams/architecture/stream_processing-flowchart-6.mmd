@@ -1,0 +1,55 @@
+flowchart TD
+    subgraph source["Source Systems"]
+        DB1["Fleet MDM DB"]
+        DB2["Tactical RMM DB"]
+        DB3["MeshCentral DB"]
+    end
+    
+    subgraph cdc["Change Data Capture"]
+        Debezium1["Debezium Connector 1"]
+        Debezium2["Debezium Connector 2"]
+        Debezium3["Debezium Connector 3"]
+    end
+    
+    subgraph kafka["Kafka Infrastructure"]
+        RawTopics["Raw CDC Topics"]
+        StreamTopics["Stream Processing Topics"]
+        EnrichedTopics["Enriched Event Topics"]
+    end
+    
+    subgraph stream_app["Stream Processing Service"]
+        Listener["JsonKafkaListener"]
+        Processor["Message Processor"]
+        Streams["Kafka Streams<br/>(Enrichment)"]
+        Handlers["Event Handlers"]
+    end
+    
+    subgraph output["Output Systems"]
+        EventDB["Event Store<br/>(MongoDB)"]
+        Analytics["Analytics DB<br/>(Pinot)"]
+        Cache["Redis Cache"]
+        Downstream["Downstream Services"]
+    end
+    
+    DB1 -->|"INSERT/UPDATE/DELETE"| Debezium1
+    DB2 -->|"INSERT/UPDATE/DELETE"| Debezium2
+    DB3 -->|"INSERT/UPDATE/DELETE"| Debezium3
+    
+    Debezium1 -->|"CDC Events"| RawTopics
+    Debezium2 -->|"CDC Events"| RawTopics
+    Debezium3 -->|"CDC Events"| RawTopics
+    
+    RawTopics -->|"Activity Events"| Streams
+    RawTopics -->|"HostActivity Events"| Streams
+    Streams -->|"Enriched Activities"| StreamTopics
+    
+    StreamTopics --> Listener
+    Listener --> Processor
+    Processor --> Handlers
+    
+    Handlers -->|"Transformed Events"| EnrichedTopics
+    
+    EnrichedTopics --> EventDB
+    EnrichedTopics --> Analytics
+    EnrichedTopics --> Cache
+    EnrichedTopics --> Downstream

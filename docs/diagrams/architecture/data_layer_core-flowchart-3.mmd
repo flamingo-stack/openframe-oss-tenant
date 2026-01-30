@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph cassandra_cluster["Cassandra Cluster"]
+        Node1["Node 1<br/>Datacenter: dc1"]
+        Node2["Node 2<br/>Datacenter: dc1"]
+        Node3["Node 3<br/>Datacenter: dc1"]
+        
+        Node1 -.->|"replicates"| Node2
+        Node2 -.->|"replicates"| Node3
+        Node3 -.->|"replicates"| Node1
+    end
+    
+    subgraph keyspaces["Keyspaces"]
+        TimeSeriesKS["Time-Series Keyspace"]
+        EventsKS["Events Keyspace"]
+    end
+    
+    CassandraConfig["CassandraConfig"] -->|"creates session"| Node1
+    CassandraConfig -->|"schema action"| TimeSeriesKS
+    
+    Node1 -->|"stores"| TimeSeriesKS
+    Node2 -->|"stores"| EventsKS

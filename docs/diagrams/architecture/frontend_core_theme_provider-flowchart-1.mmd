@@ -1,0 +1,24 @@
+flowchart TD
+    RootLayout["Root Layout<br/>(Next.js App)"]
+    DTP["DynamicThemeProvider<br/>(Context Provider)"]
+    Hook["useDynamicTheming Hook<br/>(State Management)"]
+    Context["DynamicThemeContext<br/>(React Context)"]
+    Consumer1["Component A<br/>(useDynamicTheme)"]
+    Consumer2["Component B<br/>(useDynamicTheme)"]
+    Consumer3["Component C<br/>(useDynamicTheme)"]
+    MediaQuery["Window.matchMedia<br/>(System Preference)"]
+    CSS["ODS Dynamic Theming CSS<br/>(Platform Styles)"]
+    
+    RootLayout -->|"wraps"| DTP
+    DTP -->|"uses"| Hook
+    Hook -->|"detects"| MediaQuery
+    DTP -->|"provides"| Context
+    Context -->|"consumed by"| Consumer1
+    Context -->|"consumed by"| Consumer2
+    Context -->|"consumed by"| Consumer3
+    DTP -->|"applies"| CSS
+    
+    style DTP fill:#00d4aa
+    style Hook fill:#ffc008
+    style Context fill:#ff6b9d
+    style CSS fill:#5ea62e

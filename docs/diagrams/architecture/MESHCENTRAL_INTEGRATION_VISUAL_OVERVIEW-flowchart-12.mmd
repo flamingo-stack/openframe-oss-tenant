@@ -1,0 +1,62 @@
+flowchart TD
+    IncomingTile["Incoming JPEG Tile<br/>(cmd=3, x, y, bytes)"]
+    
+    subgraph QueueManagement["Queue Management"]
+        CheckQueue{"Queue Size<br/>< 300?"}
+        DropOldest["Drop Oldest Tile"]
+        EnqueueTile["Enqueue Tile"]
+    end
+    
+    subgraph ConcurrentDecoding["Concurrent Decoding (max 3)"]
+        CheckDecoders{"Active Decoders<br/>< 3?"}
+        WaitForSlot["Wait for Decoder Slot"]
+        
+        subgraph DecodeProcess["Decode Process"]
+            CreateBlob["Create Blob<br/>(image/jpeg)"]
+            TryImageBitmap["Try createImageBitmap()"]
+            CheckSuccess{"Success?"}
+            FallbackImage["Fallback: new Image()"]
+            ImageReady["Image/Bitmap Ready"]
+        end
+    end
+    
+    subgraph DrawScheduling["Draw Scheduling"]
+        EnqueueDraw["Enqueue to Draw Queue"]
+        CheckScheduled{"Draw<br/>Scheduled?"}
+        ScheduleRAF["Schedule requestAnimationFrame"]
+        WaitForRAF["Wait for RAF"]
+    end
+    
+    subgraph Rendering["Rendering"]
+        BatchDraw["Batch Draw All Queued"]
+        DrawToCanvas["ctx.drawImage(bitmap, x, y)"]
+        CleanupBitmap["Cleanup: bitmap.close()"]
+        RevokeURL["Revoke Blob URL"]
+    end
+    
+    IncomingTile --> CheckQueue
+    CheckQueue -->|"No"| DropOldest
+    CheckQueue -->|"Yes"| EnqueueTile
+    DropOldest --> EnqueueTile
+    
+    EnqueueTile --> CheckDecoders
+    CheckDecoders -->|"No"| WaitForSlot
+    CheckDecoders -->|"Yes"| CreateBlob
+    WaitForSlot --> CheckDecoders
+    
+    CreateBlob --> TryImageBitmap
+    TryImageBitmap --> CheckSuccess
+    CheckSuccess -->|"Yes"| ImageReady
+    CheckSuccess -->|"No"| FallbackImage
+    FallbackImage --> ImageReady
+    
+    ImageReady --> EnqueueDraw
+    EnqueueDraw --> CheckScheduled
+    CheckScheduled -->|"No"| ScheduleRAF
+    CheckScheduled -->|"Yes"| WaitForRAF
+    ScheduleRAF --> WaitForRAF
+    
+    WaitForRAF --> BatchDraw
+    BatchDraw --> DrawToCanvas
+    DrawToCanvas --> CleanupBitmap
+    CleanupBitmap --> RevokeURL

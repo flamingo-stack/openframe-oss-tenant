@@ -1,0 +1,19 @@
+flowchart TD
+    GenericHandler["GenericMessageHandler<br/>(Abstract Base)"]
+    DebeziumHandler["DebeziumMessageHandler<br/>(CDC-specific)"]
+    
+    GenericHandler -->|"Extends"| DebeziumHandler
+    
+    DebeziumHandler -->|"Implements"| FleetHandler["Fleet Event Handler"]
+    DebeziumHandler -->|"Implements"| TacticalHandler["Tactical RMM Handler"]
+    DebeziumHandler -->|"Implements"| MeshHandler["MeshCentral Handler"]
+    
+    FleetHandler --> FleetCreate["handleCreate()"]
+    FleetHandler --> FleetUpdate["handleUpdate()"]
+    FleetHandler --> FleetDelete["handleDelete()"]
+    
+    TacticalHandler --> TacticalCreate["handleCreate()"]
+    TacticalHandler --> TacticalUpdate["handleUpdate()"]
+    
+    MeshHandler --> MeshCreate["handleCreate()"]
+    MeshHandler --> MeshRead["handleRead()"]

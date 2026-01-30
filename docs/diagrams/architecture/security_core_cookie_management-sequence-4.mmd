@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant AddAuthFilter
+    participant CookieService
+    participant ResourceServer
+    
+    Browser->>Gateway: GET /api/devices<br/>Cookie: access_token=eyJhbGc...
+    Gateway->>AddAuthFilter: Process request
+    AddAuthFilter->>CookieService: getAccessTokenFromCookies(exchange)
+    CookieService->>AddAuthFilter: Return JWT token
+    AddAuthFilter->>AddAuthFilter: Add Authorization: Bearer {token}
+    AddAuthFilter->>ResourceServer: Forward with Authorization header
+    ResourceServer->>Gateway: Response
+    Gateway->>Browser: Response

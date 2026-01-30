@@ -1,0 +1,32 @@
+flowchart TD
+    Start["Application Startup"]
+    Check["Check Consumer Exists"]
+    
+    Exists{"Consumer<br/>Exists?"}
+    
+    GetConfig["Get Existing Config"]
+    LogConfig["Log Current Config"]
+    BuildNew["Build New Config"]
+    Update["Update Consumer<br/>(addOrUpdateConsumer)"]
+    
+    Create["Create New Consumer<br/>(createConsumer)"]
+    
+    Subscribe["Subscribe with<br/>PushSubscribeOptions"]
+    
+    End["Listener Active"]
+    
+    Start --> Check
+    Check --> Exists
+    
+    Exists -->|"Yes (200)"| GetConfig
+    Exists -->|"No (404)"| BuildNew
+    
+    GetConfig --> LogConfig
+    LogConfig --> BuildNew
+    BuildNew --> Update
+    Update --> Subscribe
+    
+    BuildNew --> Create
+    Create --> Subscribe
+    
+    Subscribe --> End

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Agent as Client Agent
+    participant ClientSvc as Client Service
+    participant MongoDB as MongoDB
+    
+    Agent->>ClientSvc: Register Device
+    ClientSvc->>MongoDB: Create Machine Document
+    MongoDB-->>ClientSvc: Machine Created
+    ClientSvc->>MongoDB: Create Device Document
+    MongoDB-->>ClientSvc: Device Created
+    ClientSvc-->>Agent: Registration Complete

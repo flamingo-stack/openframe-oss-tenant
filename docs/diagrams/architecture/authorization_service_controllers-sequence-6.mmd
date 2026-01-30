@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant User
+    participant Email
+    participant Controller as InvitationRegistrationController
+    participant Service as InvitationRegistrationService
+    participant DB as MongoDB
+    
+    User->>Email: Receive invitation email
+    Note over Email: Contains invitation token
+    
+    User->>Controller: POST /invitations/accept
+    Note over User,Controller: {token, password, firstName, lastName}
+    
+    Controller->>Service: registerByInvitation(request)
+    Service->>DB: Find invitation by token
+    Service->>Service: Validate token expiry
+    Service->>Service: Validate tenant exists
+    Service->>Service: Create AuthUser
+    Service->>DB: Save AuthUser
+    Service->>DB: Mark invitation as used
+    
+    DB-->>Service: Confirmation
+    Service-->>Controller: AuthUser object
+    Controller-->>User: 200 OK + AuthUser JSON

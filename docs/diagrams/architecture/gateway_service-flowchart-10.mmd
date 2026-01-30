@@ -1,0 +1,13 @@
+flowchart TD
+    Gateway["Gateway Service"] -->|"routes to"| ApiService["API Service"]
+    Gateway -->|"routes to"| ClientService["Client Service"]
+    Gateway -->|"routes to"| AuthzService["Authorization Service"]
+    Gateway -->|"routes to"| ExternalApi["External API Service"]
+    Gateway -->|"routes to"| ManagementService["Management Service"]
+    
+    Gateway -.->|"uses"| SecurityCore["Security Core"]
+    Gateway -.->|"uses"| DataMongo["Data Layer (Mongo)"]
+    
+    SecurityCore -.->|"provides"| JwtValidation["JWT Validation"]
+    DataMongo -.->|"provides"| TenantRepo["Tenant Repository"]
+    DataMongo -.->|"provides"| ApiKeyRepo["API Key Repository"]

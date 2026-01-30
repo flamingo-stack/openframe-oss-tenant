@@ -1,0 +1,73 @@
+flowchart TD
+    subgraph Services["Service Layer"]
+        UserService["User Service"]
+        TenantService["Tenant Service"]
+        OrgService["Organization Service"]
+        DeviceService["Device Service"]
+    end
+    
+    subgraph BaseInterfaces["Base Repository Interfaces"]
+        BaseUserRepo["BaseUserRepository&lt;T,B,ID&gt;"]
+        BaseTenantRepo["BaseTenantRepository&lt;T,B,ID&gt;"]
+        BaseApiKeyRepo["BaseApiKeyRepository&lt;T,B,L,ID&gt;"]
+        BaseToolRepo["BaseIntegratedToolRepository&lt;T,B,ID&gt;"]
+    end
+    
+    subgraph BlockingRepos["Blocking Repositories (Servlet)"]
+        UserRepo["UserRepository"]
+        TenantRepo["TenantRepository"]
+        OrgRepo["OrganizationRepository"]
+        MachineRepo["MachineRepository"]
+        ToolRepo["IntegratedToolRepository"]
+    end
+    
+    subgraph ReactiveRepos["Reactive Repositories (WebFlux)"]
+        ReactiveUserRepo["ReactiveUserRepository"]
+        ReactiveTenantRepo["ReactiveTenantRepository"]
+        ReactiveToolRepo["ReactiveIntegratedToolRepository"]
+    end
+    
+    subgraph SpringData["Spring Data MongoDB"]
+        MongoRepo["MongoRepository&lt;T,ID&gt;"]
+        ReactiveMongoRepo["ReactiveMongoRepository&lt;T,ID&gt;"]
+    end
+    
+    subgraph MongoDB["MongoDB Database"]
+        UsersCollection[("users")]
+        TenantsCollection[("tenants")]
+        OrgsCollection[("organizations")]
+        MachinesCollection[("machines")]
+        ToolsCollection[("integrated_tools")]
+    end
+    
+    UserService --> BaseUserRepo
+    TenantService --> BaseTenantRepo
+    OrgService --> BaseUserRepo
+    DeviceService --> BaseUserRepo
+    
+    BaseUserRepo -.implements.-> UserRepo
+    BaseUserRepo -.implements.-> ReactiveUserRepo
+    BaseTenantRepo -.implements.-> TenantRepo
+    BaseTenantRepo -.implements.-> ReactiveTenantRepo
+    BaseToolRepo -.implements.-> ToolRepo
+    BaseToolRepo -.implements.-> ReactiveToolRepo
+    
+    UserRepo --> MongoRepo
+    TenantRepo --> MongoRepo
+    OrgRepo --> MongoRepo
+    MachineRepo --> MongoRepo
+    ToolRepo --> MongoRepo
+    
+    ReactiveUserRepo --> ReactiveMongoRepo
+    ReactiveTenantRepo --> ReactiveMongoRepo
+    ReactiveToolRepo --> ReactiveMongoRepo
+    
+    MongoRepo --> UsersCollection
+    MongoRepo --> TenantsCollection
+    MongoRepo --> OrgsCollection
+    MongoRepo --> MachinesCollection
+    MongoRepo --> ToolsCollection
+    
+    ReactiveMongoRepo --> UsersCollection
+    ReactiveMongoRepo --> TenantsCollection
+    ReactiveMongoRepo --> ToolsCollection

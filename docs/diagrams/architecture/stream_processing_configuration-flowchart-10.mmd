@@ -1,0 +1,42 @@
+flowchart TD
+    subgraph Configuration["Stream Processing Configuration"]
+        KafkaConfig["KafkaConfig"]
+        KafkaStreamsConfig["KafkaStreamsConfig"]
+        Serdes["Serde Beans"]
+    end
+    
+    subgraph Listeners["Stream Processing Listeners"]
+        JsonKafkaListener["JsonKafkaListener"]
+        MessageTypeHeader["@Header MessageType"]
+    end
+    
+    subgraph Streams["Stream Processing Streams"]
+        ActivityEnrichment["ActivityEnrichmentService"]
+        StreamBuilder["StreamsBuilder"]
+    end
+    
+    subgraph Handlers["Stream Processing Handlers"]
+        DebeziumHandler["DebeziumMessageHandler"]
+        GenericHandler["GenericMessageHandler"]
+    end
+    
+    KafkaConfig -->|"Provides Converter"| MessageTypeHeader
+    MessageTypeHeader -->|"Used by"| JsonKafkaListener
+    
+    KafkaStreamsConfig -->|"Provides Config"| StreamBuilder
+    Serdes -->|"Used by"| ActivityEnrichment
+    
+    JsonKafkaListener -->|"Delegates to"| DebeziumHandler
+    JsonKafkaListener -->|"Delegates to"| GenericHandler
+    
+    ActivityEnrichment -->|"Produces to Topics"| JsonKafkaListener
+    
+    classDef configClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef listenerClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef streamClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef handlerClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    
+    class KafkaConfig,KafkaStreamsConfig,Serdes configClass
+    class JsonKafkaListener,MessageTypeHeader listenerClass
+    class ActivityEnrichment,StreamBuilder streamClass
+    class DebeziumHandler,GenericHandler handlerClass

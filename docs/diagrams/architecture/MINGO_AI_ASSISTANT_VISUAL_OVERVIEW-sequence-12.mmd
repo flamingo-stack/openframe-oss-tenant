@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Backend as Message Service
+    participant Client as Client App
+    participant Router as Event Router
+    participant Active as ActiveStore
+    participant Bg as BackgroundStore
+    participant UI as Dialog List
+    
+    Backend->>Client: New message (Dialog C)
+    Client->>Router: Route message
+    
+    Router->>Router: Check if active dialog
+    
+    alt Is Active Dialog
+        Router->>Active: addRealtimeMessage(msg)
+        Active->>UI: Update chat UI
+    else Is Background Dialog
+        Router->>Bg: addBackgroundMessage(msg)
+        
+        alt Message is complete
+            Bg->>Bg: incrementUnreadCount()
+            Bg->>UI: Update unread badge
+        else Message is streaming
+            Bg->>Bg: setBackgroundTyping(true)
+            Bg->>UI: Show typing indicator
+        end
+        
+        Bg->>Bg: Check message limit
+        
+        alt Count > 50
+            Bg->>Bg: Trim to last 50 messages
+        end
+    end

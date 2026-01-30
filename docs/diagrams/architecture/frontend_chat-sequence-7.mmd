@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant User
+    participant UI as Chat UI
+    participant API as Chat API
+    participant Tool as Integrated Tool
+
+    User->>UI: Send message requiring tool
+    UI->>API: POST message
+    API->>API: Analyze message
+    API->>UI: Stream "EXECUTING_TOOL" segment
+    UI->>UI: Show tool execution indicator
+    
+    API->>Tool: Execute tool function
+    Note over API,Tool: e.g., Fleet MDM query
+    
+    Tool-->>API: Return result
+    API->>UI: Stream "EXECUTED_TOOL" segment
+    UI->>UI: Show tool result
+    
+    API->>UI: Stream follow-up text
+    UI->>UI: Render AI response
+    
+    UI->>User: Display complete message

@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Agent as RMM Agent
+    participant Gateway as API Gateway
+    participant Filter as WS Proxy Filter
+    participant Tool as TacticalRMM
+
+    Agent->>Gateway: WS Handshake<br/>/ws/tools/agent/tactical123/...
+    Gateway->>Gateway: Extract JWT from query/header
+    Gateway->>Gateway: Validate token (WebSocketServiceSecurityDecorator)
+    Gateway->>Filter: Route to ToolAgentWebSocketProxyUrlFilter
+    Filter->>Filter: Resolve tool backend URL from toolId
+    Filter->>Tool: Proxy WS connection
+    Tool-->>Filter: WS Upgrade response
+    Filter-->>Gateway: Forward response
+    Gateway-->>Agent: WS connection established
+    
+    loop Real-time Communication
+        Agent->>Gateway: WS Frame (command/data)
+        Gateway->>Tool: Proxy frame
+        Tool-->>Gateway: WS Frame (response)
+        Gateway-->>Agent: Proxy frame
+    end

@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Agent as OpenFrame Agent
+    participant NATS as NATS JetStream
+    participant IAL as InstalledAgentListener
+    participant IAS as InstalledAgentService
+    participant DB as MongoDB
+
+    Agent->>NATS: Publish to machine.{id}.installed-agent
+    Note over Agent,NATS: Message: {agentType, version}
+
+    NATS->>IAL: Deliver message (with retry)
+    IAL->>IAL: Extract machineId from subject
+    IAL->>IAL: Parse InstalledAgentMessage
+    IAL->>IAS: addInstalledAgent(machineId, agentType, version)
+    IAS->>DB: Update machine.installedAgents[]
+    IAS-->>IAL: Processing complete
+    IAL->>NATS: ACK message
+
+    alt Processing fails
+        IAL->>NATS: Leave unacked
+        Note over NATS,IAL: NATS will redeliver<br/>up to maxDeliver times
+    end

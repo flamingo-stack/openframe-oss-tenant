@@ -1,0 +1,30 @@
+flowchart TD
+    Request["API Request"] --> HasToken{"Has Access Token?"}
+    HasToken -->|"yes"| AddAuth["Add Authorization Header"]
+    HasToken -->|"no (cookie mode)"| SendRequest["Send Request with Cookies"]
+    
+    AddAuth --> SendRequest
+    SendRequest --> CheckResponse{"Response Status"}
+    
+    CheckResponse -->|"200-299"| Success["Return Data"]
+    CheckResponse -->|"401"| IsRetry{"Is Retry?"}
+    CheckResponse -->|"other error"| Error["Return Error"]
+    
+    IsRetry -->|"yes"| ForceLogout["Force Logout"]
+    IsRetry -->|"no"| IsRefreshing{"Already Refreshing?"}
+    
+    IsRefreshing -->|"yes"| QueueRequest["Queue Request"]
+    IsRefreshing -->|"no"| StartRefresh["Start Token Refresh"]
+    
+    StartRefresh --> RefreshCall["Call /oauth/refresh"]
+    RefreshCall --> RefreshSuccess{"Refresh Success?"}
+    
+    RefreshSuccess -->|"yes"| UpdateTokens["Update Tokens"]
+    RefreshSuccess -->|"no"| ForceLogout
+    
+    UpdateTokens --> RetryRequest["Retry Original Request"]
+    QueueRequest --> WaitRefresh["Wait for Refresh"]
+    WaitRefresh --> RetryRequest
+    
+    RetryRequest --> SendRequest
+    ForceLogout --> LoginPage["Redirect to Login"]

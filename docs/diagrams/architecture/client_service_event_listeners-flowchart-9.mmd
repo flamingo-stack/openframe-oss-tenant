@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph API["Public API"]
+        Online["updateToOnline()"]
+        Offline["updateToOffline()"]
+        Heartbeat["processHeartbeat()"]
+    end
+    
+    subgraph Internal["Internal Logic"]
+        Update["update()"]
+        IsNewer["isEventNewer()"]
+        Apply["applyStatusUpdate()"]
+        LogStale["logStaleEvent()"]
+    end
+    
+    subgraph Data["Data Access"]
+        Find["machineRepository<br/>.findByMachineId()"]
+        Save["machineRepository<br/>.save()"]
+    end
+    
+    Online --> Update
+    Offline --> Update
+    Heartbeat --> Update
+    
+    Update --> Find
+    Find -->|"Found"| IsNewer
+    
+    IsNewer -->|"Newer"| Apply
+    IsNewer -->|"Stale"| LogStale
+    
+    Apply --> Save

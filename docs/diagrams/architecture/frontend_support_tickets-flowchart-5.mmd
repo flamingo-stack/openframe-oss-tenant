@@ -1,0 +1,17 @@
+flowchart TD
+    A["User enters search term<br/>or changes filters"] --> B{"Search/filter changed?"}
+    B -->|Yes| C["Reset pagination state<br/>(cursor=null, hasLoadedBeyondFirst=false)"]
+    B -->|No| D["Use existing pagination"]
+    
+    C --> E["Store search term<br/>and status filters"]
+    D --> E
+    
+    E --> F["Build GraphQL variables<br/>(filter, search, pagination)"]
+    F --> G["Execute GET_DIALOGS_QUERY"]
+    G --> H["Receive DialogConnection"]
+    H --> I["Update dialogs array<br/>and pageInfo"]
+    I --> J["Render updated list"]
+    
+    J --> K{"User clicks Next Page"}
+    K -->|Yes| L["Use pageInfo.endCursor"]
+    L --> F

@@ -1,0 +1,57 @@
+sequenceDiagram
+    participant UI as UI Component
+    participant MD as MeshDesktop
+    participant WS as WebSocket
+    participant MC as MeshCentral Server
+    participant OS as Remote OS
+    
+    Note over UI,OS: Initialization Phase
+    UI->>MD: attach(canvas)
+    UI->>MD: setSender(websocket.send)
+    MD->>WS: KVM_INIT (cmd=0x000E)
+    MD->>WS: COMPRESSION (cmd=0x0005)
+    MD->>WS: UNPAUSE (cmd=0x0008)
+    MD->>WS: REFRESH (cmd=0x0006)
+    MD->>WS: DISPLAY_LIST (cmd=0x000B)
+    
+    Note over UI,OS: Screen Streaming Phase
+    MC->>WS: Screen Size (cmd=7)
+    WS->>MD: onBinaryFrame(data)
+    MD->>MD: Parse screen dimensions
+    MD->>UI: Resize canvas
+    
+    loop Continuous Streaming
+        OS->>MC: Capture screen tiles
+        MC->>WS: Tile Data (cmd=3, JPEG)
+        WS->>MD: onBinaryFrame(tile)
+        MD->>MD: Enqueue tile
+        MD->>MD: Decode JPEG
+        MD->>UI: Draw to canvas
+    end
+    
+    Note over UI,OS: Input Control Phase
+    UI->>MD: Mouse Move Event
+    MD->>MD: Map coordinates
+    MD->>MD: Encode mouse command
+    MD->>WS: Mouse Move (type=0x02)
+    WS->>MC: Forward input
+    MC->>OS: Inject mouse event
+    
+    UI->>MD: Keyboard Event
+    MD->>MD: Map virtual key
+    MD->>MD: Encode key command
+    MD->>WS: Key Event (type=0x01)
+    WS->>MC: Forward input
+    MC->>OS: Inject keyboard event
+    
+    Note over UI,OS: Special Commands
+    UI->>MD: sendCtrlAltDel()
+    MD->>WS: CTRLALTDEL (cmd=0x0A)
+    WS->>MC: Forward command
+    MC->>OS: Secure attention sequence
+    
+    UI->>MD: switchDisplay(1)
+    MD->>WS: PAUSE (cmd=0x0008)
+    MD->>WS: SWITCH_DISPLAY (cmd=0x000C)
+    MD->>WS: UNPAUSE (cmd=0x0008)
+    MC->>OS: Switch to display 1

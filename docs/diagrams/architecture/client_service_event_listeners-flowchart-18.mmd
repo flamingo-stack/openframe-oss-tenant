@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph CCL["ClientConnectionListener"]
+        CCL1["Parse Error"]
+        CCL2["Service Error"]
+        CCL3["Log + Throw NatsException"]
+        CCL4["Message Lost"]
+        
+        CCL1 --> CCL3
+        CCL2 --> CCL3
+        CCL3 --> CCL4
+    end
+    
+    subgraph MHL["MachineHeartbeatListener"]
+        MHL1["Extraction Error"]
+        MHL2["Service Error"]
+        MHL3["Log Error Only"]
+        MHL4["Wait for Next Heartbeat"]
+        
+        MHL1 --> MHL3
+        MHL2 --> MHL3
+        MHL3 --> MHL4
+    end
+    
+    subgraph IAL["InstalledAgentListener"]
+        IAL1["Parse Error"]
+        IAL2["Service Error"]
+        IAL3["Log + Leave Unacked"]
+        IAL4["JetStream Redelivery"]
+        IAL5["Retry up to 50 times"]
+        
+        IAL1 --> IAL3
+        IAL2 --> IAL3
+        IAL3 --> IAL4
+        IAL4 --> IAL5
+    end

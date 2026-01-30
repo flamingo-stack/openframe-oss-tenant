@@ -1,0 +1,31 @@
+flowchart TD
+    IncomingMsg["Incoming Message"] --> CheckStore{"Which<br/>Store?"}
+    
+    CheckStore -->|"Active"| ActiveStore["Active Store"]
+    CheckStore -->|"Background"| BgStore["Background Store"]
+    
+    ActiveStore --> NoLimit["No Message Limit"]
+    NoLimit --> Pagination["Use Pagination"]
+    Pagination --> LazyLoad["Lazy Load History"]
+    
+    BgStore --> CheckCount{"Message<br/>Count?"}
+    
+    CheckCount -->|"< 50"| AddMessage["Add Message"]
+    CheckCount -->|">= 50"| TrimOldest["Trim Oldest Messages"]
+    
+    TrimOldest --> AddMessage
+    AddMessage --> Deduplicate["Deduplicate by ID"]
+    Deduplicate --> Store["Store in Memory"]
+    
+    LazyLoad --> Store
+    
+    Store --> Monitor["Monitor Memory Usage"]
+    Monitor --> CheckThreshold{"Memory<br/>Threshold?"}
+    
+    CheckThreshold -->|"OK"| End["End"]
+    CheckThreshold -->|"High"| GarbageCollect["Trigger GC"]
+    GarbageCollect --> End
+    
+    style BgStore fill:#2196F3
+    style TrimOldest fill:#FF9800
+    style ActiveStore fill:#4CAF50

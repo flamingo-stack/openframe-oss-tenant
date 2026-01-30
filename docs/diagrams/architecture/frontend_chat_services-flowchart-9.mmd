@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph ResponseGeneration["Response Generation"]
+        AnalyzeInput["Analyze Input Message"]
+        SelectResponse["Select Response Type"]
+        SimpleText["Simple Text Response"]
+        WithTools["Response with Tools"]
+    end
+    
+    subgraph TextStreaming["Text Streaming"]
+        ChunkText["Chunk Text"]
+        StreamChunk["Stream Chunk"]
+        Delay["Add Delay"]
+        NextChunk["Next Chunk"]
+    end
+    
+    subgraph ToolSimulation["Tool Execution Simulation"]
+        EmitExecuting["Emit EXECUTING_TOOL"]
+        SimulateDelay["Simulate Execution Time"]
+        EmitExecuted["Emit EXECUTED_TOOL"]
+        EmitFollowup["Emit Follow-up Text"]
+    end
+    
+    AnalyzeInput --> SelectResponse
+    SelectResponse -->|"50% or keywords"| WithTools
+    SelectResponse -->|"50%"| SimpleText
+    
+    SimpleText --> ChunkText
+    ChunkText --> StreamChunk
+    StreamChunk --> Delay
+    Delay --> NextChunk
+    NextChunk -->|"More chunks"| StreamChunk
+    
+    WithTools --> EmitExecuting
+    EmitExecuting --> SimulateDelay
+    SimulateDelay --> EmitExecuted
+    EmitExecuted --> EmitFollowup

@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant User
+    participant UI as Dialog List
+    participant Active as ActiveStore
+    participant Bg as BackgroundStore
+    participant API as GraphQL API
+    
+    User->>UI: Click Dialog B
+    UI->>Bg: moveBackgroundToActive("dialog-b")
+    
+    Bg->>Bg: Get background messages
+    Bg->>Bg: Reset unread count
+    Bg-->>UI: Return messages
+    
+    UI->>Active: clearCurrent()
+    Active->>Active: Clear current state
+    
+    UI->>Active: setCurrentDialogId("dialog-b")
+    UI->>Active: setAdminMessages(bgMessages)
+    
+    Active-->>UI: Update display
+    
+    UI->>API: Query full message history
+    API-->>UI: Return paginated messages
+    
+    UI->>Active: addAdminMessages(messages)
+    Active-->>UI: Update with full history
+    
+    Note over Bg: Dialog A now in background
+    UI->>Bg: Store Dialog A messages
+    Bg->>Bg: Limit to 50 messages
+    
+    UI-->>User: Show Dialog B

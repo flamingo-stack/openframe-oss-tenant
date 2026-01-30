@@ -1,0 +1,14 @@
+flowchart TD
+    Client["External Client"]
+    
+    Client -->|"POST /api/logs/search<br/>LogFilterCriteria"| Controller["LogController"]
+    
+    Controller -->|"LogFilterCriteria"| Mapper1["LogMapper<br/>.toLogFilterOptions()"]
+    
+    Mapper1 -->|"LogFilterOptions"| Service["Log Service<br/>(Pinot Query)"]
+    
+    Service -->|"GenericQueryResult&lt;LogEvent&gt;"| Mapper2["LogMapper<br/>.toLogsResponse()"]
+    
+    Mapper2 -->|"LogsResponse"| Controller
+    
+    Controller -->|"JSON Response"| Client

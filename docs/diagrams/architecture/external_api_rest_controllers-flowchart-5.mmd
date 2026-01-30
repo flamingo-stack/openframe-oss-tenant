@@ -1,0 +1,11 @@
+flowchart LR
+    QueryParams["Query Parameters"] -->|"Extract"| FilterCriteria["FilterCriteria DTO"]
+    FilterCriteria -->|"Map"| FilterOptions["FilterOptions"]
+    FilterOptions -->|"Build"| Query["Database Query"]
+    
+    QueryParams -.->|"statuses"| FilterCriteria
+    QueryParams -.->|"deviceTypes"| FilterCriteria
+    QueryParams -.->|"osTypes"| FilterCriteria
+    QueryParams -.->|"organizationIds"| FilterCriteria
+    QueryParams -.->|"tagNames"| FilterCriteria
+    QueryParams -.->|"search"| FilterCriteria

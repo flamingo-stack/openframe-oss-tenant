@@ -1,0 +1,17 @@
+flowchart TD
+    Request["HTTP Request"] --> Validate{Validation}
+    
+    Validate -->|Invalid| Error400["400 Bad Request"]
+    Validate -->|Valid| Authorize{Authorization}
+    
+    Authorize -->|Unauthorized| Error401["401 Unauthorized"]
+    Authorize -->|Authorized| Process{Process}
+    
+    Process -->|Not Found| Error404["404 Not Found"]
+    Process -->|Conflict| Error409["409 Conflict"]
+    Process -->|Success| Success["2xx Success"]
+    
+    Error400 --> ErrorResponse["ErrorResponse JSON"]
+    Error401 --> ErrorResponse
+    Error404 --> ErrorResponse
+    Error409 --> ErrorResponse

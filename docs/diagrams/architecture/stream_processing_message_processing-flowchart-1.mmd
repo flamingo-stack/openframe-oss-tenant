@@ -1,0 +1,23 @@
+flowchart TD
+    KafkaListener["Kafka Listener"] -->|"Raw Message"| Processor["GenericJsonMessageProcessor"]
+    
+    Processor -->|"1. Deserialize"| DeserializerMap["Deserializer Registry"]
+    DeserializerMap -->|"Typed Message"| Processor
+    
+    Processor -->|"2. Enrich"| EnrichmentMap["Enrichment Service Registry"]
+    EnrichmentMap -->|"Enriched Data"| Processor
+    
+    Processor -->|"3. Route"| HandlerMap["Handler Registry"]
+    
+    HandlerMap -->|"Destination: MONGO"| MongoHandler["MongoDB Handler"]
+    HandlerMap -->|"Destination: CASSANDRA"| CassandraHandler["Cassandra Handler"]
+    HandlerMap -->|"Destination: PINOT"| PinotHandler["Pinot Handler"]
+    
+    MongoHandler --> MongoDB[("MongoDB")]
+    CassandraHandler --> Cassandra[("Cassandra")]
+    PinotHandler --> Pinot[("Apache Pinot")]
+    
+    style Processor fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style DeserializerMap fill:#50C878,stroke:#2E7D4E,color:#fff
+    style EnrichmentMap fill:#FFB347,stroke:#CC8A38,color:#fff
+    style HandlerMap fill:#9B59B6,stroke:#6C3483,color:#fff

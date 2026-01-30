@@ -1,0 +1,40 @@
+flowchart TD
+    Start["User Visits Application"] --> CheckMode{"Deployment Mode?"}
+    
+    CheckMode -->|"SaaS Shared"| SharedFlow["Shared Host Flow"]
+    CheckMode -->|"SaaS Tenant"| TenantFlow["Tenant Host Flow"]
+    CheckMode -->|"Self-Hosted"| SelfHostedFlow["Self-Hosted Flow"]
+    
+    SharedFlow --> DiscoverTenant["Discover Tenant by Email"]
+    TenantFlow --> CheckAuth["Check Authentication"]
+    SelfHostedFlow --> CheckAuth
+    
+    DiscoverTenant --> HasAccount{"Has Account?"}
+    HasAccount -->|"yes"| ShowProviders["Show Auth Providers"]
+    HasAccount -->|"no"| RegisterOrg["Register Organization"]
+    
+    ShowProviders --> ChooseProvider{"Choose Provider"}
+    ChooseProvider -->|"SSO"| SSOFlow["SSO OAuth Flow"]
+    ChooseProvider -->|"Password"| PasswordFlow["Password Login"]
+    
+    SSOFlow --> OAuthRedirect["Redirect to Provider"]
+    OAuthRedirect --> OAuthCallback["OAuth Callback"]
+    OAuthCallback --> SetSession["Set Session Cookie"]
+    
+    PasswordFlow --> ValidatePassword["Validate Credentials"]
+    ValidatePassword --> SetSession
+    
+    RegisterOrg --> RegistrationComplete["Registration Complete"]
+    RegistrationComplete --> ShowProviders
+    
+    CheckAuth --> IsAuthenticated{"Authenticated?"}
+    IsAuthenticated -->|"yes"| LoadProfile["Load User Profile"]
+    IsAuthenticated -->|"no"| ShowLogin["Show Login Page"]
+    
+    ShowLogin --> DiscoverTenant
+    SetSession --> LoadProfile
+    LoadProfile --> Dashboard["Redirect to Dashboard"]
+    
+    style Start fill:#4CAF50
+    style Dashboard fill:#2196F3
+    style SetSession fill:#FF9800

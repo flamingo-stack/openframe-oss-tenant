@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant User
+    participant UI
+    participant ActiveStore as MingoDialogDetailsStore
+    participant BgStore as BackgroundMessagesStore
+    participant API as GraphQL API
+    
+    User->>UI: Click different dialog
+    UI->>BgStore: moveBackgroundToActive(dialogId)
+    BgStore->>BgStore: Get background messages
+    BgStore->>BgStore: Reset unread count
+    BgStore-->>UI: Return messages
+    
+    UI->>ActiveStore: clearCurrent()
+    UI->>ActiveStore: setCurrentDialogId(dialogId)
+    UI->>ActiveStore: setAdminMessages(bgMessages)
+    
+    UI->>API: Query full message history
+    API-->>UI: Return paginated messages
+    UI->>ActiveStore: addAdminMessages(messages)
+    
+    ActiveStore->>UI: Update display
+    UI->>User: Show new dialog
+    
+    Note over BgStore: Previous dialog now in background
+    BgStore->>BgStore: Store previous dialog messages

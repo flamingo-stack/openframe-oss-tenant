@@ -1,0 +1,70 @@
+flowchart TD
+    subgraph UILayer["UI Layer"]
+        FileExplorer["File Explorer UI"]
+        ProgressBar["Progress Bar"]
+        FileList["File List Display"]
+    end
+    
+    subgraph FileManagerCore["File Manager Core"]
+        FileClient["File Manager Client"]
+        
+        subgraph Operations["File Operations"]
+            Browse["Browse/List"]
+            Upload["Upload"]
+            Download["Download"]
+            Delete["Delete/Rename"]
+        end
+        
+        subgraph Protocol["Protocol Handling"]
+            BinaryHeader["Binary Header Parser"]
+            BinaryAccumulator["Binary Accumulator"]
+            MessageBuilder["Message Builder"]
+        end
+        
+        subgraph Transfer["Transfer Management"]
+            HashCalc["Hash Calculator"]
+            ChunkManager["Chunk Manager"]
+            ProgressTracker["Progress Tracker"]
+        end
+    end
+    
+    subgraph Transport["Transport Layer"]
+        WSConnection["WebSocket Connection"]
+        BinaryEncoder["Binary Encoder"]
+        BinaryDecoder["Binary Decoder"]
+    end
+    
+    subgraph RemoteAgent["Remote Agent"]
+        FileSystem["File System Access"]
+        FileOps["File Operations Handler"]
+        TransferEngine["Transfer Engine"]
+    end
+    
+    FileExplorer -->|"User Action"| FileClient
+    FileClient --> Browse
+    FileClient --> Upload
+    FileClient --> Download
+    FileClient --> Delete
+    
+    Browse --> MessageBuilder
+    Upload --> HashCalc
+    HashCalc --> ChunkManager
+    ChunkManager --> MessageBuilder
+    Download --> MessageBuilder
+    Delete --> MessageBuilder
+    
+    MessageBuilder --> BinaryEncoder
+    BinaryEncoder --> WSConnection
+    
+    WSConnection -->|"Binary Messages"| FileOps
+    FileOps --> FileSystem
+    FileOps --> TransferEngine
+    
+    TransferEngine -->|"Response"| WSConnection
+    WSConnection --> BinaryDecoder
+    BinaryDecoder --> BinaryAccumulator
+    BinaryAccumulator --> BinaryHeader
+    
+    BinaryHeader -->|"Directory Listing"| FileList
+    BinaryHeader -->|"Transfer Progress"| ProgressTracker
+    ProgressTracker --> ProgressBar

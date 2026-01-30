@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client
+    participant AuthzService as Authorization Service
+    participant JwtService
+    participant JwtEncoder
+    participant JwtConfig
+    
+    Client->>AuthzService: POST /oauth2/token
+    AuthzService->>AuthzService: Validate credentials
+    AuthzService->>JwtService: generateToken(claims)
+    JwtService->>JwtEncoder: encode(claims)
+    JwtEncoder->>JwtConfig: loadPrivateKey()
+    JwtConfig-->>JwtEncoder: RSAPrivateKey
+    JwtEncoder->>JwtEncoder: Sign with private key
+    JwtEncoder-->>JwtService: Signed JWT
+    JwtService-->>AuthzService: Token string
+    AuthzService-->>Client: {"access_token": "eyJ..."}

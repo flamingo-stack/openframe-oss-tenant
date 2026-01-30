@@ -1,0 +1,22 @@
+flowchart TD
+    Client["Client Application"] -->|"1. Authorization Request"| AuthServer["AuthorizationServerConfig"]
+    AuthServer -->|"2. Authenticate"| SecurityConfig["SecurityConfig"]
+    SecurityConfig -->|"3. Load User"| UserService["UserService"]
+    UserService -->|"4. Query"| MongoDB["MongoDB<br/>(users collection)"]
+    
+    SecurityConfig -->|"5. SSO Login"| DynamicRepo["DynamicClientRegistrationRepository"]
+    DynamicRepo -->|"6. Load SSO Config"| SSOService["SSOConfigService"]
+    
+    AuthServer -->|"7. Generate Token"| JWKSource["JWKSource"]
+    JWKSource -->|"8. Get Signing Key"| TenantKeyService["TenantKeyService"]
+    TenantKeyService -->|"9. Retrieve/Create"| KeyRepo["TenantKeyRepository"]
+    
+    AuthServer -->|"10. Customize Claims"| TokenCustomizer["OAuth2TokenCustomizer"]
+    TokenCustomizer -->|"11. Add tenant_id, roles"| JWT["JWT Access Token"]
+    
+    JWT -->|"12. Return Token"| Client
+    
+    style AuthServer fill:#4A90E2
+    style SecurityConfig fill:#4A90E2
+    style DynamicRepo fill:#4A90E2
+    style JWT fill:#50C878

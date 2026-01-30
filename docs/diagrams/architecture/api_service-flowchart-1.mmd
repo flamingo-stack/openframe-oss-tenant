@@ -1,0 +1,43 @@
+flowchart TD
+    Client["Client Applications"] -->|"GraphQL/REST"| Gateway["API Gateway"]
+    Gateway -->|"Authenticated Requests"| API["API Service"]
+    
+    subgraph api_layer["API Service Layer"]
+        direction TB
+        Controllers["REST Controllers"]
+        DataFetchers["GraphQL DataFetchers"]
+        Services["Business Services"]
+        Mappers["DTO Mappers"]
+        
+        Controllers -->|"delegates to"| Services
+        DataFetchers -->|"delegates to"| Services
+        Services -->|"uses"| Mappers
+    end
+    
+    API --> api_layer
+    
+    subgraph config_layer["Configuration Layer"]
+        SecurityConfig["Security Config"]
+        AuthConfig["Authentication Config"]
+        AppConfig["Application Config"]
+    end
+    
+    api_layer --> config_layer
+    
+    subgraph data_layer["Data Access Layer"]
+        MongoDB[("MongoDB")]
+        Cassandra[("Cassandra")]
+        Pinot[("Apache Pinot")]
+    end
+    
+    Services -->|"queries/mutations"| data_layer
+    
+    subgraph external_services["External Services"]
+        AuthzService["Authorization Service"]
+        StreamService["Stream Processing"]
+        ManagementService["Management Service"]
+    end
+    
+    API -.->|"JWT validation"| AuthzService
+    Services -.->|"event publishing"| StreamService
+    Services -.->|"tool management"| ManagementService

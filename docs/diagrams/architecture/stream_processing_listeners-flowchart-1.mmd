@@ -1,0 +1,50 @@
+flowchart TD
+    subgraph KafkaCluster["Kafka Cluster"]
+        MeshTopic["meshcentral-events"]
+        TacticalTopic["tactical-rmm-events"]
+        FleetTopic["fleet-mdm-events"]
+        FleetQueryTopic["fleet-mdm-query-result-events"]
+    end
+    
+    subgraph StreamService["Stream Processing Service"]
+        JsonListener["JsonKafkaListener"]
+        MessageProcessor["GenericJsonMessageProcessor"]
+        
+        subgraph Deserializers["Message Deserializers"]
+            MeshDeserializer["MeshCentral Deserializer"]
+            TacticalDeserializer["Tactical RMM Deserializer"]
+            FleetDeserializer["Fleet MDM Deserializer"]
+        end
+        
+        subgraph Handlers["Message Handlers"]
+            DeviceHandler["Device Handler"]
+            EventHandler["Event Handler"]
+            LogHandler["Log Handler"]
+        end
+        
+        subgraph Enrichment["Data Enrichment"]
+            OrgEnrichment["Organization Enrichment"]
+            DeviceEnrichment["Device Enrichment"]
+        end
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        MongoDB["MongoDB"]
+        Cassandra["Cassandra"]
+        Pinot["Apache Pinot"]
+    end
+    
+    MeshTopic -->|"Debezium CDC"| JsonListener
+    TacticalTopic -->|"Debezium CDC"| JsonListener
+    FleetTopic -->|"Debezium CDC"| JsonListener
+    FleetQueryTopic -->|"Debezium CDC"| JsonListener
+    
+    JsonListener -->|"CommonDebeziumMessage + MessageType"| MessageProcessor
+    
+    MessageProcessor --> Deserializers
+    MessageProcessor --> Enrichment
+    MessageProcessor --> Handlers
+    
+    Handlers --> MongoDB
+    Handlers --> Cassandra
+    Handlers --> Pinot

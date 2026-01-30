@@ -1,0 +1,8 @@
+flowchart LR
+    KafkaLayer["Data Layer Kafka"]
+    ManagementService["Management Service"]
+    Debezium["Debezium Connectors"]
+    
+    ManagementService -->|"configures"| Debezium
+    Debezium -->|"publishes CDC events"| KafkaLayer
+    KafkaLayer -->|"provides DebeziumMessage"| ManagementService

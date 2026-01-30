@@ -1,0 +1,44 @@
+flowchart LR
+    subgraph Request["Request Processing"]
+        REQ["HTTP Request"]
+        JWT["JWT Token"]
+    end
+
+    subgraph Security["Security Layer"]
+        FILTER["Security Filter Chain"]
+        RESOLVER["JWT Issuer Resolver"]
+        CACHE["JWT Provider Cache"]
+        VALIDATOR["JWT Validator"]
+    end
+
+    subgraph Controller["Controller Layer"]
+        REST_CTRL["REST Controllers"]
+        GQL_CTRL["GraphQL DataFetchers"]
+    end
+
+    subgraph Service["Service Layer"]
+        BIZ["Business Services"]
+        MAPPER["Data Mappers"]
+    end
+
+    subgraph Data["Data Access"]
+        REPO["Repositories"]
+        DB["Databases"]
+    end
+
+    REQ --> FILTER
+    JWT --> FILTER
+    FILTER --> RESOLVER
+    RESOLVER --> CACHE
+    CACHE --> VALIDATOR
+    VALIDATOR --> Controller
+
+    Controller --> REST_CTRL
+    Controller --> GQL_CTRL
+
+    REST_CTRL --> BIZ
+    GQL_CTRL --> BIZ
+
+    BIZ --> MAPPER
+    MAPPER --> REPO
+    REPO --> DB

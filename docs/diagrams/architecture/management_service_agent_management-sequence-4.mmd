@@ -1,0 +1,60 @@
+sequenceDiagram
+    participant App as Spring Application
+    participant Init as IntegratedToolAgentInitializer
+    participant Props as AgentConfigurationProperties
+    participant Mapper as ObjectMapper
+    participant Service as IntegratedToolAgentService
+    participant Repo as IntegratedToolAgentRepository
+    participant Pub as ToolAgentUpdatePublisher
+    participant Kafka as Kafka Broker
+    participant Mongo as MongoDB
+    
+    App->>Init: @PostConstruct trigger
+    Init->>Props: getAgentConfigurations()
+    Props-->>Init: List<String> paths
+    
+    loop For each configuration path
+        Init->>Mapper: readValue(resource, IntegratedToolAgent.class)
+        Mapper-->>Init: IntegratedToolAgent agent
+        
+        Init->>Service: findById(agent.getId())
+        Service->>Repo: findById(id)
+        Repo->>Mongo: Query by ID
+        Mongo-->>Repo: Optional<IntegratedToolAgent>
+        Repo-->>Service: Optional<IntegratedToolAgent>
+        Service-->>Init: Optional<IntegratedToolAgent>
+        
+        alt Agent exists
+            Init->>Init: processExistingAgent()
+            
+            alt Is release version
+                Init->>Init: Preserve existing version
+                Note over Init: newAgent.setVersion(existingVersion)
+            else Development version
+                Init->>Init: Use new version from JSON
+            end
+            
+            Init->>Service: save(agent)
+            Service->>Repo: save(agent)
+            Repo->>Mongo: Update document
+            Mongo-->>Repo: Saved agent
+            Repo-->>Service: IntegratedToolAgent
+            Service-->>Init: IntegratedToolAgent
+            
+            alt Version changed AND not release
+                Init->>Pub: publish(newAgent)
+                Pub->>Kafka: Send update event
+                Kafka-->>Pub: Acknowledgment
+            end
+        else Agent does not exist
+            Init->>Init: processNewAgent()
+            Init->>Service: save(agent)
+            Service->>Repo: save(agent)
+            Repo->>Mongo: Insert document
+            Mongo-->>Repo: Saved agent
+            Repo-->>Service: IntegratedToolAgent
+            Service-->>Init: IntegratedToolAgent
+        end
+    end
+    
+    Init-->>App: Initialization complete

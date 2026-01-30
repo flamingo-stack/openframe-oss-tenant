@@ -1,0 +1,15 @@
+flowchart TD
+    Event["Incoming Event<br/>Timestamp: T1"]
+    Machine["Current Machine<br/>LastSeen: T2"]
+    
+    Compare{"T1 > T2?"}
+    
+    Update["Update Status<br/>Set LastSeen = T1<br/>Save to DB"]
+    
+    Ignore["Ignore Event<br/>Log Warning"]
+    
+    Event --> Compare
+    Machine --> Compare
+    
+    Compare -->|"Yes (Newer)"| Update
+    Compare -->|"No (Stale)"| Ignore

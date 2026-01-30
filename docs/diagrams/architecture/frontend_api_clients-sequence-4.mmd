@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant AuthClient as AuthApiClient
+    participant AuthService as Authorization Service
+    participant Provider as SSO Provider
+    
+    User->>Frontend: Click "Sign up with Google"
+    Frontend->>AuthClient: registerOrganizationSSO(payload)
+    AuthClient->>AuthClient: Build SSO URL with params
+    AuthClient->>User: Redirect to SSO URL
+    User->>AuthService: GET /sas/oauth/register/sso
+    AuthService->>Provider: Initiate OAuth flow
+    Provider->>User: Show consent screen
+    User->>Provider: Grant permissions
+    Provider->>AuthService: OAuth callback with code
+    AuthService->>AuthService: Create tenant & user
+    AuthService->>User: Redirect to app with session
+    User->>Frontend: Authenticated session

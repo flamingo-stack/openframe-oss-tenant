@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client as Frontend
+    participant AuthZ as Authorization Server
+    participant Provider as OAuth Provider
+    
+    Client->>Client: Generate code_verifier
+    Client->>Client: Create code_challenge = SHA256(verifier)
+    
+    Client->>AuthZ: Authorization request + challenge
+    AuthZ->>Provider: OAuth request + challenge
+    Provider-->>AuthZ: Authorization code
+    AuthZ-->>Client: Authorization code
+    
+    Client->>AuthZ: Token request + code + verifier
+    AuthZ->>AuthZ: Verify: SHA256(verifier) == challenge
+    AuthZ-->>Client: Access token

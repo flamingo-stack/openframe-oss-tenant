@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Client
+    participant Accumulator
+    participant Segments
+    
+    Client->>Accumulator: appendText("Hello")
+    Accumulator->>Segments: Add TextSegment
+    Accumulator-->>Client: [TextSegment]
+    
+    Client->>Accumulator: appendText(" World")
+    Accumulator->>Segments: Append to TextSegment
+    Accumulator-->>Client: [TextSegment("Hello World")]
+    
+    Client->>Accumulator: addExecutingTool("fleet", "query")
+    Accumulator->>Segments: Add ToolExecutionSegment
+    Accumulator-->>Client: [TextSegment, ToolSegment(executing)]
+    
+    Client->>Accumulator: completeToolExecution("fleet", "query", "result")
+    Accumulator->>Segments: Update ToolSegment
+    Accumulator-->>Client: [TextSegment, ToolSegment(completed)]
+    
+    Client->>Accumulator: addApprovalRequest("req-1", "reboot")
+    Accumulator->>Segments: Add ApprovalSegment
+    Accumulator-->>Client: [TextSegment, ToolSegment, ApprovalSegment(pending)]

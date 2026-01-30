@@ -1,0 +1,14 @@
+flowchart LR
+    Gateway["Gateway<br/>:8080"] --> Dashboard["/dashboard/**<br/>API Service<br/>:8081"]
+    Gateway --> Clients["/clients/**<br/>Client Service<br/>:8082"]
+    Gateway --> Tools["/tools/**<br/>Management Service<br/>:8083"]
+    Gateway --> ExternalApi["/external-api/**<br/>External API Service<br/>:8084"]
+    Gateway --> WsTools["/ws/tools/**<br/>Tool Services<br/>Dynamic"]
+    Gateway --> WsNats["/ws/nats<br/>NATS Server<br/>:4222"]
+    
+    Dashboard -.->|"requires"| JwtAdmin["JWT + ADMIN role"]
+    Clients -.->|"requires"| JwtAgent["JWT + AGENT role"]
+    Tools -.->|"requires"| JwtAdmin
+    ExternalApi -.->|"requires"| ApiKey["API Key"]
+    WsTools -.->|"requires"| JwtRoles["JWT + role-based"]
+    WsNats -.->|"requires"| JwtRoles

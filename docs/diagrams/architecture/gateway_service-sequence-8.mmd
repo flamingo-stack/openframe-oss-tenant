@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant AddAuthFilter
+    participant SecurityFilter
+    participant ApiKeyFilter
+    participant RateLimiter
+    participant Backend
+    
+    Client->>Gateway: HTTP Request
+    Gateway->>AddAuthFilter: Extract Token from Cookie/Header
+    AddAuthFilter->>SecurityFilter: Add Authorization Header
+    
+    alt JWT Authentication
+        SecurityFilter->>SecurityFilter: Validate JWT
+        SecurityFilter->>SecurityFilter: Extract Roles
+        SecurityFilter->>Gateway: Authenticated Request
+    else API Key Authentication
+        SecurityFilter->>ApiKeyFilter: Check API Key
+        ApiKeyFilter->>ApiKeyFilter: Validate API Key
+        ApiKeyFilter->>RateLimiter: Check Rate Limits
+        RateLimiter-->>ApiKeyFilter: Rate Limit Status
+        ApiKeyFilter->>Gateway: Add User Context Headers
+    end
+    
+    Gateway->>Backend: Route Request
+    Backend-->>Gateway: Response
+    Gateway-->>Client: Response + Rate Limit Headers

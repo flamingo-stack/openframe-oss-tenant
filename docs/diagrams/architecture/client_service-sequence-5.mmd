@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Agent as OpenFrame Agent
+    participant NATS as NATS Server
+    participant MHL as MachineHeartbeatListener
+    participant MSS as MachineStatusService
+    participant DB as MongoDB
+    participant Kafka as Kafka
+
+    loop Every N seconds
+        Agent->>NATS: Publish to machine.{id}.heartbeat
+    end
+
+    NATS->>MHL: Deliver message
+    MHL->>MHL: Extract machineId from subject
+    MHL->>MHL: Generate timestamp
+    MHL->>MSS: processHeartbeat(machineId, timestamp)
+    MSS->>DB: Update lastHeartbeat timestamp
+    MSS->>DB: Set status = ONLINE
+    MSS-.->Kafka: Publish status change event
+    MSS-->>MHL: Processing complete

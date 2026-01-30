@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph Tenants["Multiple Tenants"]
+        T1["Tenant A<br/>issuer: https://auth.tenant-a.com"]
+        T2["Tenant B<br/>issuer: https://auth.tenant-b.com"]
+        T3["Tenant C<br/>issuer: https://auth.tenant-c.com"]
+    end
+    
+    subgraph JwtCache["JWT Provider Cache"]
+        Cache["Caffeine Cache<br/>Max Size: Configurable<br/>Expire: Configurable<br/>Refresh: Configurable"]
+    end
+    
+    subgraph Providers["JWT Authentication Providers"]
+        P1["Provider A<br/>JwtDecoder for Tenant A"]
+        P2["Provider B<br/>JwtDecoder for Tenant B"]
+        P3["Provider C<br/>JwtDecoder for Tenant C"]
+    end
+    
+    T1 -->|"JWT with iss claim"| Cache
+    T2 -->|"JWT with iss claim"| Cache
+    T3 -->|"JWT with iss claim"| Cache
+    
+    Cache -->|"Loads on demand"| P1
+    Cache -->|"Loads on demand"| P2
+    Cache -->|"Loads on demand"| P3
+    
+    P1 -->|"Validates"| T1
+    P2 -->|"Validates"| T2
+    P3 -->|"Validates"| T3

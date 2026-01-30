@@ -1,0 +1,24 @@
+flowchart TD
+    Processor["GenericJsonMessageProcessor"] -->|"Enriched Message"| Handler["MessageHandler.handle()"]
+    
+    Handler --> Validate["isValidMessage()"]
+    Validate -->|"Valid"| Transform["transform()"]
+    Validate -->|"Invalid"| Skip["Skip Processing"]
+    
+    Transform --> GetOp["getOperationType()"]
+    GetOp --> PushData["pushData()"]
+    
+    PushData --> Switch{"Operation Type"}
+    Switch -->|"CREATE"| HandleCreate["handleCreate()"]
+    Switch -->|"READ"| HandleRead["handleRead()"]
+    Switch -->|"UPDATE"| HandleUpdate["handleUpdate()"]
+    Switch -->|"DELETE"| HandleDelete["handleDelete()"]
+    
+    HandleCreate --> Cassandra[("Cassandra")]
+    HandleCreate --> KafkaTopic[("Kafka Topic")]
+    
+    style Handler fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Transform fill:#FFB347,stroke:#CC8A38,color:#fff
+    style Switch fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Cassandra fill:#E74C3C,stroke:#A93226,color:#fff
+    style KafkaTopic fill:#3498DB,stroke:#21618C,color:#fff

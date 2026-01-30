@@ -1,0 +1,36 @@
+flowchart LR
+    subgraph StreamsModule["Stream Processing Streams"]
+        AES["ActivityEnrichmentService"]
+    end
+    
+    subgraph KafkaTopic["Kafka Topic"]
+        OUT["fleet-mdm-events"]
+    end
+    
+    subgraph Listeners["Stream Processing Listeners"]
+        JKL["JsonKafkaListener"]
+    end
+    
+    subgraph Processors["Message Processors"]
+        GMP["GenericJsonMessageProcessor"]
+    end
+    
+    subgraph Handlers["Message Handlers"]
+        GMH["GenericMessageHandler"]
+        DBH["DebeziumMessageHandler"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        MONGO["MongoDB<br/>(CoreEvent)"]
+        PINOT["Apache Pinot<br/>(Analytics)"]
+    end
+    
+    AES --> OUT
+    OUT --> JKL
+    JKL --> GMP
+    GMP --> GMH
+    GMP --> DBH
+    GMH --> MONGO
+    DBH --> PINOT
+    
+    style AES fill:#0f3460,stroke:#16213e,stroke-width:3px

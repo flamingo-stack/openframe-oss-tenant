@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph External["External Systems"]
+        Client["Client Applications"]
+        Browser["Web Browser"]
+        Agent["Agent Applications"]
+    end
+    
+    subgraph Gateway["API Gateway Security"]
+        GatewaySec["Gateway Security Module"]
+    end
+    
+    subgraph AuthProviders["Authentication Providers"]
+        AuthzService["Authorization Service"]
+        TenantIdP["Tenant Identity Providers"]
+    end
+    
+    Client -->|"API Key"| GatewaySec
+    Browser -->|"JWT Token"| GatewaySec
+    Agent -->|"JWT Token"| GatewaySec
+    
+    GatewaySec -->|"Validate JWT"| AuthzService
+    GatewaySec -->|"Validate JWT"| TenantIdP

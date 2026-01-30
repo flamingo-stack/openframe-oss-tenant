@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Client as External Client
+    participant Gateway as API Gateway
+    participant Auth as API Key Filter
+    participant Controller as REST Controller
+    participant Service as Business Service
+    participant Data as Data Layer
+    
+    Client->>Gateway: HTTP Request<br/>X-API-Key: ak_xxx.sk_yyy
+    Gateway->>Auth: Validate API Key
+    
+    alt Invalid API Key
+        Auth-->>Client: 401 Unauthorized
+    else Valid API Key
+        Auth->>Auth: Extract User Context
+        Auth->>Controller: Forward Request<br/>X-User-Id, X-API-Key-Id
+        Controller->>Controller: Validate Parameters
+        
+        alt Validation Failed
+            Controller-->>Client: 400 Bad Request
+        else Validation Passed
+            Controller->>Service: Business Logic
+            Service->>Data: Query/Update Data
+            Data-->>Service: Result
+            Service-->>Controller: Response DTO
+            Controller-->>Client: 200 OK + JSON Response
+        end
+    end

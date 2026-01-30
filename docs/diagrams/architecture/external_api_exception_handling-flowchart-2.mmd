@@ -1,0 +1,18 @@
+flowchart LR
+    GEH["GlobalExceptionHandler"]
+    
+    GEH -->|"handles"| DeviceNF["DeviceNotFoundException"]
+    GEH -->|"handles"| EventNF["EventNotFoundException"]
+    GEH -->|"handles"| LogNF["LogNotFoundException"]
+    GEH -->|"handles"| OrgNF["OrganizationNotFoundException"]
+    GEH -->|"handles"| Validation["MethodArgumentNotValidException"]
+    GEH -->|"handles"| TypeMismatch["MethodArgumentTypeMismatchException"]
+    GEH -->|"handles"| PinotEx["PinotQueryException"]
+    GEH -->|"handles"| DataAccess["DataAccessException"]
+    GEH -->|"handles"| Generic["Exception"]
+    
+    style GEH fill:#4ecdc4
+    style DeviceNF fill:#ffe66d
+    style EventNF fill:#ffe66d
+    style LogNF fill:#ffe66d
+    style OrgNF fill:#ffe66d

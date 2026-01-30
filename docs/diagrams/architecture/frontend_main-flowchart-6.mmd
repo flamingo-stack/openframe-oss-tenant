@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph global_stores["Global Stores"]
+        AuthStore["Auth Store<br/>(user, tokens, tenant)"]
+        RuntimeConfig["Runtime Config<br/>(env variables)"]
+    end
+    
+    subgraph feature_stores["Feature Stores"]
+        DeviceStore["Device Store"]
+        LogsStore["Logs Store"]
+        DialogsStore["Dialogs Store"]
+        DialogDetailsStore["Dialog Details Store"]
+        MingoStore["Mingo Stores"]
+    end
+    
+    subgraph persistence["Persistence Layer"]
+        LocalStorage["localStorage"]
+        SessionStorage["sessionStorage"]
+        Cookies["HTTP Cookies"]
+    end
+    
+    AuthStore <-->|"tokens, user"| LocalStorage
+    AuthStore <-->|"session"| Cookies
+    RuntimeConfig <-->|"config"| LocalStorage
+    
+    DeviceStore -->|"cache"| SessionStorage
+    LogsStore -->|"filters"| LocalStorage
+    DialogsStore -->|"cache"| SessionStorage

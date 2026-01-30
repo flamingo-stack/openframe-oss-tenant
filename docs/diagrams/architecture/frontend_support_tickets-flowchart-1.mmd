@@ -1,0 +1,54 @@
+flowchart TD
+    subgraph UI["UI Layer"]
+        TicketsView["Tickets View<br/>(List Interface)"]
+        DialogDetails["Dialog Details View<br/>(Conversation Interface)"]
+        Components["Reusable Components<br/>(Tables, Tabs, Columns)"]
+    end
+    
+    subgraph State["State Management Layer"]
+        DialogsStore["Dialogs Store<br/>(List State)"]
+        DetailsStore["Dialog Details Store<br/>(Conversation State)"]
+    end
+    
+    subgraph Hooks["Custom Hooks Layer"]
+        DialogsHook["useDialogs<br/>(List Logic)"]
+        DetailsHook["useDialogDetails<br/>(Details Logic)"]
+        RealtimeHook["useNatsDialogSubscription<br/>(Real-time Updates)"]
+        ProcessorHook["useDialogRealtimeProcessor<br/>(Message Processing)"]
+        StatusHook["useDialogStatus<br/>(Status Management)"]
+        ApprovalHook["useApprovalRequests<br/>(Approval Workflows)"]
+    end
+    
+    subgraph Data["Data Layer"]
+        GraphQL["GraphQL Queries<br/>(GET_DIALOGS, GET_MESSAGES)"]
+        ApiClient["API Client<br/>(HTTP Transport)"]
+        NatsClient["NATS WebSocket<br/>(Real-time Transport)"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        ChatAPI["Chat API Service<br/>(GraphQL Endpoint)"]
+        NatsServer["NATS Server<br/>(Message Broker)"]
+    end
+    
+    TicketsView --> DialogsHook
+    DialogDetails --> DetailsHook
+    DialogDetails --> RealtimeHook
+    DialogDetails --> ProcessorHook
+    
+    DialogsHook --> DialogsStore
+    DetailsHook --> DetailsStore
+    RealtimeHook --> ProcessorHook
+    ProcessorHook --> DetailsStore
+    StatusHook --> DetailsStore
+    ApprovalHook --> ApiClient
+    
+    DialogsStore --> GraphQL
+    DetailsStore --> GraphQL
+    GraphQL --> ApiClient
+    RealtimeHook --> NatsClient
+    
+    ApiClient --> ChatAPI
+    NatsClient --> NatsServer
+    
+    ChatAPI -.->|"Publishes Events"| NatsServer
+    NatsServer -.->|"Streams Messages"| NatsClient

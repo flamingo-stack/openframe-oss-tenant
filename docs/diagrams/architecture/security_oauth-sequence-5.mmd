@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway as Gateway<br/>(OAuthBffController)
+    participant BffService as OAuthBffService
+    participant CookieSvc as CookieService
+    participant JwtSvc as JwtService
+    participant AuthServer as Authorization Server
+    participant MongoDB
+    
+    Browser->>Gateway: GET /oauth/callback?code=<code>&state=<state><br/>Cookie: of_oauth_{state}=<jwt>
+    
+    Gateway->>BffService: handleCallback(code, state, request)
+    BffService->>BffService: Extract state cookie: of_oauth_{state}
+    BffService->>JwtSvc: decodeToken(jwt)
+    JwtSvc-->>BffService: JWT claims {s, cv, tid, rt}
+    
+    BffService->>BffService: Validate state matches
+    BffService->>BffService: Extract codeVerifier, tenantId
+    
+    BffService->>AuthServer: POST /acme/oauth2/token<br/>grant_type=authorization_code<br/>code=<code><br/>code_verifier=<verifier><br/>redirect_uri=<callback_uri><br/>Authorization: Basic <client_creds>
+    
+    AuthServer->>AuthServer: Validate code_verifier<br/>against stored code_challenge
+    AuthServer->>MongoDB: Store OAuth2Authorization
+    AuthServer-->>BffService: TokenResponse {access_token, refresh_token}
+    
+    BffService->>BffService: Resolve final redirect target
+    BffService-->>Gateway: OAuthCallbackResult(tenantId, redirectTo, tokens)
+    
+    alt Dev Ticket Enabled
+        Gateway->>Gateway: devTicketStore.createTicket(tokens)
+        Gateway->>Gateway: Append ?devTicket=<uuid> to redirect
+    end
+    
+    Gateway->>CookieSvc: addAuthCookies(access_token, refresh_token)
+    CookieSvc-->>Gateway: Set-Cookie: access_token=<jwt><br/>Set-Cookie: refresh_token=<jwt>
+    
+    Gateway->>CookieSvc: addClearOAuthStateCookie(state)
+    CookieSvc-->>Gateway: Clear of_oauth_{state} cookie
+    
+    Gateway-->>Browser: 302 Redirect to /dashboard<br/>Set-Cookie headers
+    
+    Browser->>Browser: Store cookies<br/>Navigate to application

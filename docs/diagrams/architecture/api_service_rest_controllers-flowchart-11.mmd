@@ -1,0 +1,7 @@
+flowchart LR
+    Controllers["REST Controllers"] -->|"Calls"| Services["Service Layer"]
+    Services -->|"Persists to"| DataMongo["data_layer_mongo"]
+    Services -->|"Publishes Events"| Kafka["data_layer_kafka"]
+    
+    DataMongo -->|"Stores in"| MongoDB["MongoDB"]
+    Kafka -->|"Streams to"| StreamProcessing["stream_processing"]

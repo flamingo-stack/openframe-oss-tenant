@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Filter Request"] --> BuildWhere["Build WHERE Clause<br/>(exclude target filter)"]
+    BuildWhere --> Execute["Execute GROUP BY Query"]
+    Execute --> Map["Map Results to<br/>Map&lt;String, Integer&gt;"]
+    Map --> Return["Return Filter Options<br/>with Counts"]
+    
+    style Start fill:#E8F4F8
+    style Execute fill:#F39C12
+    style Return fill:#50C878

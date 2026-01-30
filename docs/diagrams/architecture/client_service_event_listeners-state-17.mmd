@@ -1,0 +1,23 @@
+stateDiagram-v2
+    [*] --> OFFLINE: Machine Registered
+    
+    OFFLINE --> ONLINE: Connected Event
+    OFFLINE --> ONLINE: Heartbeat Received
+    
+    ONLINE --> ONLINE: Heartbeat Received
+    ONLINE --> OFFLINE: Disconnected Event
+    ONLINE --> OFFLINE: Heartbeat Timeout
+    
+    OFFLINE --> [*]: Machine Deleted
+    ONLINE --> [*]: Machine Deleted
+    
+    note right of ONLINE
+        lastSeen updated on:
+        - Connection
+        - Heartbeat
+    end note
+    
+    note right of OFFLINE
+        lastSeen preserved
+        from last event
+    end note

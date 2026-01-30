@@ -1,0 +1,33 @@
+stateDiagram-v2
+    [*] --> Idle
+    
+    Idle --> BrowsePending: Send ls command
+    BrowsePending --> Idle: Receive directory listing
+    
+    Idle --> UploadPending: Send upload/uploadhash
+    UploadPending --> HashChecking: Wait for hash response
+    
+    HashChecking --> Idle: File unchanged (skip)
+    HashChecking --> Uploading: File missing/changed
+    
+    Uploading --> Uploading: Send chunk
+    Uploading --> UploadComplete: All chunks sent
+    UploadComplete --> Idle: Receive ACK
+    
+    Idle --> DownloadPending: Send download start
+    DownloadPending --> Downloading: Receive startack
+    
+    Downloading --> Downloading: Receive chunk
+    Downloading --> DownloadComplete: Receive end marker
+    DownloadComplete --> Idle: Save file
+    
+    Uploading --> Cancelled: User cancel
+    Downloading --> Cancelled: User cancel
+    Cancelled --> Idle: Send cancel command
+    
+    BrowsePending --> Error: Timeout/Error
+    UploadPending --> Error: Permission denied
+    DownloadPending --> Error: File not found
+    Error --> Idle: Error handled
+    
+    Idle --> [*]

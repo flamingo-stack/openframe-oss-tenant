@@ -1,0 +1,14 @@
+flowchart LR
+    Data["State Data"] --> HMAC["HMAC-SHA256"]
+    Secret["Secret Key"] --> HMAC
+    HMAC --> Token["Signed Token"]
+    Token --> Cookie["HTTP Cookie"]
+    
+    Cookie --> Attributes["Cookie Attributes"]
+    
+    subgraph Attributes["Security Attributes"]
+        A1["HttpOnly: true"]
+        A2["Secure: true"]
+        A3["SameSite: Lax"]
+        A4["Max-Age: 300s"]
+    end

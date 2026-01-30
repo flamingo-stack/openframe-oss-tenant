@@ -1,0 +1,24 @@
+flowchart TD
+    SSOLogin["SSO Login<br/>(OIDC)"] --> LoadUser["OidcUserService.loadUser()"]
+    LoadUser --> ExtractEmail["Extract Email from Claims"]
+    ExtractEmail --> CheckConfig["Check SSO Config<br/>(SSOConfigService)"]
+    
+    CheckConfig -->|"Config Exists"| CheckEnabled["isEnabled?"]
+    CheckEnabled -->|"Yes"| CheckAutoProvision["isAutoProvisionUsers?"]
+    CheckAutoProvision -->|"Yes"| CheckDomain["Email domain in<br/>allowedDomains?"]
+    CheckDomain -->|"Yes"| CheckUserExists["User exists?"]
+    
+    CheckConfig -->|"No Config"| GlobalPolicy["Check Global Domain Policy"]
+    GlobalPolicy --> CheckUserExists
+    
+    CheckUserExists -->|"No"| CreateUser["Create User<br/>(ADMIN role)"]
+    CreateUser --> PostProcess["RegistrationProcessor<br/>.postProcessAutoProvision()"]
+    PostProcess --> ReturnUser["Return OidcUser"]
+    
+    CheckUserExists -->|"Yes"| ReturnUser
+    CheckEnabled -->|"No"| ReturnUser
+    CheckAutoProvision -->|"No"| ReturnUser
+    CheckDomain -->|"No"| ReturnUser
+    
+    style CreateUser fill:#50C878
+    style PostProcess fill:#50C878

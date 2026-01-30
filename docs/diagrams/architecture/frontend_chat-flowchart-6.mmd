@@ -1,0 +1,25 @@
+flowchart TD
+    UserInput["User Types Message"] --> ValidateInput{"Input Valid?"}
+    ValidateInput -->|"No"| ShowError["Show Validation Error"]
+    ValidateInput -->|"Yes"| CheckToken{"Token Available?"}
+    
+    CheckToken -->|"No"| RequestToken["Request Token"]
+    RequestToken --> CheckToken
+    CheckToken -->|"Yes"| SendMessage["Send Message to API"]
+    
+    SendMessage --> StreamResponse["Stream Response"]
+    StreamResponse --> ProcessSegment{"Segment Type?"}
+    
+    ProcessSegment -->|"Text"| RenderText["Render Text Segment"]
+    ProcessSegment -->|"Tool Execution"| RenderTool["Render Tool Execution"]
+    ProcessSegment -->|"Error"| RenderError["Render Error"]
+    
+    RenderText --> CheckMore{"More Segments?"}
+    RenderTool --> CheckMore
+    RenderError --> CheckMore
+    
+    CheckMore -->|"Yes"| StreamResponse
+    CheckMore -->|"No"| Complete["Message Complete"]
+    
+    Complete --> UpdateHistory["Update Dialog History"]
+    UpdateHistory --> Ready["Ready for Next Message"]

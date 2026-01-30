@@ -1,0 +1,50 @@
+flowchart LR
+    subgraph RemoteOS["Remote Operating System"]
+        Screen["Screen Buffer"]
+        Capture["Screen Capture<br/>(MeshAgent)"]
+        Compress["JPEG Compression"]
+    end
+    
+    subgraph Network["Network Layer"]
+        AgentWS["Agent WebSocket"]
+        ServerRelay["MeshCentral Server"]
+        ClientWS["Client WebSocket"]
+    end
+    
+    subgraph BrowserClient["Browser Client"]
+        Accumulator["Byte Accumulator<br/>(16MB max)"]
+        Parser["Frame Parser"]
+        Queue["Tile Queue<br/>(300 tiles)"]
+        
+        subgraph Decoders["Parallel Decoders"]
+            D1["Decoder 1"]
+            D2["Decoder 2"]
+            D3["Decoder 3"]
+        end
+        
+        DrawQ["Draw Queue"]
+        RAF["requestAnimationFrame"]
+        Canvas["Canvas Context"]
+    end
+    
+    Screen --> Capture
+    Capture -->|"Tile Regions"| Compress
+    Compress -->|"JPEG Bytes"| AgentWS
+    
+    AgentWS --> ServerRelay
+    ServerRelay --> ClientWS
+    
+    ClientWS -->|"Binary Frames"| Accumulator
+    Accumulator -->|"Complete Messages"| Parser
+    Parser -->|"cmd=3 Tiles"| Queue
+    
+    Queue --> D1
+    Queue --> D2
+    Queue --> D3
+    
+    D1 -->|"ImageBitmap"| DrawQ
+    D2 -->|"ImageBitmap"| DrawQ
+    D3 -->|"ImageBitmap"| DrawQ
+    
+    DrawQ --> RAF
+    RAF -->|"Batch Draw"| Canvas

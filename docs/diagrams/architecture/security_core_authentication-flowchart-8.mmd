@@ -1,0 +1,20 @@
+flowchart TD
+    subgraph AuthzService["Authorization Service"]
+        Login["Login Controller"]
+        TokenIssuer["Token Issuer"]
+        ClaimsBuilder["JWT Claims Builder"]
+    end
+    
+    subgraph SecurityCore["Security Core"]
+        AuthPrincipal["AuthPrincipal"]
+    end
+    
+    Login -->|"User credentials"| TokenIssuer
+    TokenIssuer -->|"Build claims"| ClaimsBuilder
+    ClaimsBuilder -->|"Issue JWT"| Client["Client Application"]
+    Client -->|"Bearer token"| Gateway["Gateway"]
+    Gateway -->|"Validated token"| Backend["Backend Service"]
+    Backend -->|"Extract claims"| AuthPrincipal
+    
+    style ClaimsBuilder fill:#FFE4B5
+    style AuthPrincipal fill:#90EE90

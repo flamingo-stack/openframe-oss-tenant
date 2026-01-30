@@ -1,0 +1,17 @@
+flowchart TD
+    Register["Agent Registration"] --> GetTokens["Obtain access + refresh tokens"]
+    GetTokens --> UseAccess["Use access token<br/>(valid 1 hour)"]
+    
+    UseAccess --> Expired{"Access token<br/>expired?"}
+    Expired -->|No| UseAccess
+    Expired -->|Yes| Refresh["Use refresh token<br/>to get new tokens"]
+    
+    Refresh --> CheckCount{"Refresh count<br/>< max?"}
+    CheckCount -->|Yes| GetTokens
+    CheckCount -->|No| ReAuth["Re-authenticate with<br/>client credentials"]
+    
+    ReAuth --> GetTokens
+    
+    style UseAccess fill:#e8f5e9
+    style Refresh fill:#fff4e1
+    style ReAuth fill:#ffebee

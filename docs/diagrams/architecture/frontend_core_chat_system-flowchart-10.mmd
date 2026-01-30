@@ -1,0 +1,17 @@
+flowchart TD
+    ChatSystem["Frontend Core<br/>Chat System"]
+    
+    subgraph Consumers["Frontend Consumers"]
+        MingoAI["Mingo AI Assistant<br/>(Technician Chat)"]
+        FaeClient["Fae Client<br/>(End-user Chat)"]
+        TicketSystem["Support Tickets<br/>(Ticket Chat)"]
+        ChatWidget["Chat Widget<br/>(Embedded Chat)"]
+    end
+    
+    MingoAI -->|"assistantType: 'mingo'"| ChatSystem
+    FaeClient -->|"assistantType: 'fae'"| ChatSystem
+    TicketSystem -->|"chatType: 'CLIENT_CHAT'"| ChatSystem
+    ChatWidget -->|"Embedded Mode"| ChatSystem
+    
+    style ChatSystem fill:#4a90e2
+    style Consumers fill:#e1f5ff

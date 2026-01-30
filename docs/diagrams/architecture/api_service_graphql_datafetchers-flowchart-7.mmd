@@ -1,0 +1,29 @@
+flowchart TD
+    subgraph DataFetchers["DataFetcher Layer"]
+        DF["GraphQL DataFetchers"]
+    end
+
+    subgraph Services["Service Layer"]
+        Service["Business Services"]
+    end
+
+    subgraph Repositories["Repository Layer"]
+        MongoRepo["MongoDB Repositories"]
+        PinotRepo["Pinot Repositories"]
+        CassandraRepo["Cassandra Repositories"]
+    end
+
+    subgraph DataStores["Data Stores"]
+        MongoDB["MongoDB<br/>(Devices, Events, Organizations, Tools)"]
+        Pinot["Apache Pinot<br/>(Audit Logs, Analytics)"]
+        Cassandra["Cassandra<br/>(Time-Series Data)"]
+    end
+
+    DF --> Service
+    Service --> MongoRepo
+    Service --> PinotRepo
+    Service --> CassandraRepo
+
+    MongoRepo --> MongoDB
+    PinotRepo --> Pinot
+    CassandraRepo --> Cassandra

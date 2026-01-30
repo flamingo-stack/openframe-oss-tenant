@@ -1,0 +1,39 @@
+flowchart TD
+    UserMsg["User Sends Message"] --> AIAnalyze["AI Analyzes Message"]
+    AIAnalyze --> NeedTool{"Tool<br/>Needed?"}
+    
+    NeedTool -->|"No"| TextResponse["Generate Text Response"]
+    TextResponse --> StreamText["Stream Text to UI"]
+    StreamText --> Complete["Message Complete"]
+    
+    NeedTool -->|"Yes"| StreamExecuting["Stream EXECUTING_TOOL"]
+    StreamExecuting --> ShowIndicator["UI Shows Tool Indicator"]
+    
+    ShowIndicator --> CheckApproval{"Requires<br/>Approval?"}
+    
+    CheckApproval -->|"Yes"| RequestApproval["Request User Approval"]
+    RequestApproval --> WaitApproval["Wait for Approval"]
+    WaitApproval --> CheckResponse{"Approved?"}
+    
+    CheckResponse -->|"No"| StreamDenied["Stream Approval Denied"]
+    StreamDenied --> TextResponse
+    
+    CheckResponse -->|"Yes"| ExecuteTool["Execute Tool Function"]
+    CheckApproval -->|"No"| ExecuteTool
+    
+    ExecuteTool --> ToolResult{"Tool<br/>Success?"}
+    
+    ToolResult -->|"Yes"| StreamExecuted["Stream EXECUTED_TOOL (Success)"]
+    ToolResult -->|"No"| StreamError["Stream EXECUTED_TOOL (Error)"]
+    
+    StreamExecuted --> ShowResult["UI Shows Tool Result"]
+    StreamError --> ShowError["UI Shows Error"]
+    
+    ShowResult --> ProcessResult["AI Processes Result"]
+    ShowError --> ProcessResult
+    
+    ProcessResult --> TextResponse
+    
+    style UserMsg fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style Complete fill:#48bb78,stroke:#2f855a,color:#fff
+    style StreamError fill:#f56565,stroke:#c53030,color:#fff

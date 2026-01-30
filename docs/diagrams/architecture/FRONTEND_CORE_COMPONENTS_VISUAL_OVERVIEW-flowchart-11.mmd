@@ -1,0 +1,23 @@
+flowchart LR
+    FrontendCore["Frontend Core<br/>Components"]
+    
+    APIService["API Service<br/>REST + GraphQL"]
+    Gateway["Gateway Service<br/>Routing"]
+    AuthService["Authorization Service<br/>OAuth2"]
+    NATS["NATS Server<br/>WebSocket"]
+    
+    FrontendCore -->|"HTTP requests"| Gateway
+    Gateway -->|"routes to"| APIService
+    Gateway -->|"routes to"| AuthService
+    
+    FrontendCore -->|"WebSocket"| NATS
+    NATS -->|"publishes"| APIService
+    
+    APIService -->|"queries"| MongoDB["MongoDB"]
+    APIService -->|"queries"| Pinot["Apache Pinot"]
+    
+    style FrontendCore fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Gateway fill:#50C878,stroke:#2E7D4E,color:#fff
+    style APIService fill:#9B59B6,stroke:#6C3483,color:#fff
+    style NATS fill:#E67E22,stroke:#A04000,color:#fff
+    style AuthService fill:#E74C3C,stroke:#922B21,color:#fff

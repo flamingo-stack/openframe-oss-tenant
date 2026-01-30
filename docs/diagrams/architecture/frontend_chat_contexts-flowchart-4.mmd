@@ -1,0 +1,15 @@
+flowchart LR
+    Component["Component"] -->|"setDebugMode(true)"| Provider["DebugModeProvider"]
+    Provider -->|"setState"| Context["DebugModeContext"]
+    Context -->|"re-render"| Consumers["All Consumers"]
+    
+    Consumers --> Hook1["useDebugMode() #1"]
+    Consumers --> Hook2["useDebugMode() #2"]
+    Consumers --> HookN["useDebugMode() #N"]
+    
+    Hook1 -->|"updated value"| UI1["Component UI #1"]
+    Hook2 -->|"updated value"| UI2["Component UI #2"]
+    HookN -->|"updated value"| UIN["Component UI #N"]
+    
+    style Provider fill:#4299e1,stroke:#3182ce,color:#fff
+    style Context fill:#667eea,stroke:#5a67d8,color:#fff

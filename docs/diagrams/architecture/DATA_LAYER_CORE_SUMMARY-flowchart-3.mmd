@@ -1,0 +1,25 @@
+flowchart TD
+    subgraph consumers["Service Consumers"]
+        API["API Service<br/>GraphQL + REST"]
+        External["External API Service<br/>Public REST API"]
+    end
+    
+    subgraph data_layer_core["Data Layer Core"]
+        DeviceRepo["Device Repository"]
+        LogRepo["Log Repository"]
+    end
+    
+    subgraph producers["Data Producers"]
+        Stream["Stream Processing<br/>Kafka → Pinot"]
+        CDC["Debezium CDC<br/>MongoDB → Kafka → Pinot"]
+    end
+    
+    API -->|"filter options"| DeviceRepo
+    API -->|"log queries"| LogRepo
+    External -->|"search logs"| LogRepo
+    
+    Stream -->|"ingests"| Pinot[("Pinot")]
+    CDC -->|"streams changes"| Pinot
+    
+    DeviceRepo --> Pinot
+    LogRepo --> Pinot

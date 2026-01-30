@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph KafkaMessage["Kafka Message"]
+        Headers["Headers<br/>(byte[])"]
+        Payload["Payload<br/>(JSON)"]
+    end
+    
+    subgraph Conversion["MessageType Conversion"]
+        ByteArray["byte[] header value"]
+        UTF8Decode["UTF-8 Decode"]
+        EnumParse["MessageType.valueOf()"]
+        ErrorHandle["Error Handling<br/>(return null)"]
+    end
+    
+    subgraph Listener["Kafka Listener"]
+        TypedHeader["@Header MessageType"]
+        ProcessMessage["Process Message"]
+    end
+    
+    Headers -->|"Extract"| ByteArray
+    ByteArray --> UTF8Decode
+    UTF8Decode --> EnumParse
+    EnumParse -.->|"IllegalArgumentException"| ErrorHandle
+    EnumParse -->|"Success"| TypedHeader
+    ErrorHandle -->|"null"| TypedHeader
+    
+    Payload --> ProcessMessage
+    TypedHeader --> ProcessMessage
+    
+    classDef kafkaClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef conversionClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef listenerClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef errorClass fill:#E74C3C,stroke:#C0392B,color:#fff
+    
+    class Headers,Payload kafkaClass
+    class ByteArray,UTF8Decode,EnumParse conversionClass
+    class TypedHeader,ProcessMessage listenerClass
+    class ErrorHandle errorClass

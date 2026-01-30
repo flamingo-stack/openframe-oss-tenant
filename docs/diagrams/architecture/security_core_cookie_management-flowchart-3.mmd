@@ -1,0 +1,20 @@
+flowchart TD
+    subgraph CookieAttributes["Cookie Security Attributes"]
+        HttpOnly["HttpOnly: true<br/>Prevents JavaScript access"]
+        Secure["Secure: configurable<br/>HTTPS-only in production"]
+        SameSite["SameSite: Lax/Strict<br/>CSRF protection"]
+        Domain["Domain: configurable<br/>Multi-subdomain support"]
+        Path["Path: scoped<br/>Minimize exposure"]
+    end
+    
+    subgraph Threats["Mitigated Threats"]
+        XSS["XSS Token Theft"]
+        CSRF["CSRF Attacks"]
+        MitM["Man-in-the-Middle"]
+        Subdomain["Subdomain Attacks"]
+    end
+    
+    HttpOnly -->|"Prevents"| XSS
+    SameSite -->|"Prevents"| CSRF
+    Secure -->|"Prevents"| MitM
+    Domain -->|"Controls"| Subdomain

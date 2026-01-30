@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph Configuration["Configuration Layer"]
+        KSC["KafkaStreamsConfig<br/>(Serdes & Streams Config)"]
+    end
+    
+    subgraph StreamService["Stream Service Layer"]
+        AES["ActivityEnrichmentService<br/>(Topology Builder)"]
+    end
+    
+    subgraph KafkaStreams["Kafka Streams Runtime"]
+        TOPO["Stream Topology"]
+        STATE["State Stores<br/>(Join Windows)"]
+    end
+    
+    subgraph Topics["Kafka Topics"]
+        IN1["Input: Activities"]
+        IN2["Input: Host Activities"]
+        OUT["Output: Enriched Events"]
+    end
+    
+    KSC -->|"Provides Serdes"| AES
+    AES -->|"Builds Topology"| TOPO
+    TOPO -->|"Maintains State"| STATE
+    
+    IN1 --> TOPO
+    IN2 --> TOPO
+    TOPO --> OUT
+    
+    style AES fill:#0f3460,stroke:#16213e,stroke-width:3px
+    style TOPO fill:#1a1a2e,stroke:#16213e,stroke-width:2px

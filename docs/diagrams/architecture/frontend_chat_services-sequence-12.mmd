@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant UI as Chat UI Component
+    participant DialogSvc as DialogGraphQLService
+    participant TokenSvc as TokenService
+    participant Tauri as Tauri Runtime
+    participant Backend as Chat GraphQL API
+    
+    Note over UI,Backend: Application Startup
+    
+    UI->>TokenSvc: Initialize
+    TokenSvc->>Tauri: listen('token-update')
+    TokenSvc->>Tauri: invoke('get_server_url')
+    Tauri-->>TokenSvc: Server URL
+    TokenSvc->>TokenSvc: setApiBaseUrl(url)
+    
+    Tauri->>TokenSvc: emit('token-update', {token})
+    TokenSvc->>TokenSvc: setToken(token)
+    
+    Note over UI,Backend: User Opens Chat
+    
+    UI->>DialogSvc: getResumableDialog()
+    DialogSvc->>TokenSvc: ensureTokenReady()
+    
+    alt Token not available
+        TokenSvc->>Tauri: invoke('get_token')
+        Tauri-->>TokenSvc: token
+    end
+    
+    TokenSvc-->>DialogSvc: Ready
+    
+    DialogSvc->>DialogSvc: initializeClient()
+    DialogSvc->>Backend: query GetDialog
+    Backend-->>DialogSvc: Dialog data
+    DialogSvc-->>UI: ResumableDialog
+    
+    Note over UI,Backend: Load Message History
+    
+    UI->>DialogSvc: getDialogMessages(dialogId)
+    DialogSvc->>TokenSvc: ensureTokenReady()
+    TokenSvc-->>DialogSvc: Ready
+    
+    loop Fetch all pages
+        DialogSvc->>Backend: query GetAllMessages(cursor)
+        Backend-->>DialogSvc: Messages page + pageInfo
+        DialogSvc->>DialogSvc: Accumulate edges
+    end
+    
+    DialogSvc-->>UI: All messages
+    UI->>UI: Render message history

@@ -1,0 +1,14 @@
+flowchart LR
+    Frontend["Frontend<br/>(React)"]
+    Gateway["Gateway Service<br/>(Port 8080)"]
+    AuthZ["Authorization Server<br/>(Port 9000)"]
+    API["API Service<br/>(Port 8081)"]
+    
+    Frontend -->|"1. /oauth/* requests"| Gateway
+    Gateway -->|"2. Proxy"| AuthZ
+    
+    Frontend -->|"3. /api/* requests<br/>(with token/cookie)"| Gateway
+    Gateway -->|"4. Validate JWT"| Gateway
+    Gateway -->|"5. Proxy"| API
+    
+    style Gateway fill:#FF9800

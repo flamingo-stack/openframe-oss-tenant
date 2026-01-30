@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Rust as Tauri Runtime (Rust)
+    participant TokenSvc as TokenService
+    participant Subscriber as Service Subscriber
+    
+    Note over Rust,TokenSvc: Initialization
+    TokenSvc->>Rust: listen('token-update')
+    TokenSvc->>Rust: invoke('get_server_url')
+    Rust-->>TokenSvc: Server URL
+    
+    Note over Rust,Subscriber: Token Update Flow
+    Rust->>TokenSvc: emit('token-update', {token})
+    TokenSvc->>TokenSvc: setToken(token)
+    TokenSvc->>Subscriber: callback(token)
+    
+    Note over TokenSvc,Subscriber: Manual Request
+    Subscriber->>TokenSvc: requestToken()
+    TokenSvc->>Rust: invoke('get_token')
+    Rust-->>TokenSvc: token
+    TokenSvc->>Subscriber: return token

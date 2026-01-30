@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant LoginController
+    participant SpringSecurity
+    participant Template
+    
+    User->>Browser: Navigate to /login
+    Browser->>LoginController: GET /login
+    LoginController->>LoginController: Check error/logout params
+    
+    alt Has error parameter
+        LoginController->>Template: Add errorMessage
+    end
+    
+    alt Has logout parameter
+        LoginController->>Template: Add logoutMessage
+    end
+    
+    LoginController->>Template: Render login.html
+    Template-->>Browser: HTML Response
+    Browser-->>User: Display Login Form
+    
+    User->>Browser: Submit Credentials
+    Browser->>SpringSecurity: POST /login
+    SpringSecurity->>SpringSecurity: Authenticate
+    
+    alt Authentication Failed
+        SpringSecurity-->>Browser: Redirect to /login?error
+    else Authentication Success
+        SpringSecurity-->>Browser: Redirect to Application
+    end

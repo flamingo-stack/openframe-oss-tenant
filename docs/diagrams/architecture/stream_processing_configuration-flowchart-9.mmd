@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph StreamConfig["Stream Processing Configuration"]
+        KafkaConfig["KafkaConfig"]
+        KafkaStreamsConfig["KafkaStreamsConfig"]
+    end
+    
+    subgraph DataKafka["Data Layer Kafka"]
+        OssKafkaConfig["OssKafkaConfig"]
+        DebeziumMessage["DebeziumMessage<T>"]
+        KafkaProducer["GenericKafkaProducer"]
+    end
+    
+    subgraph DomainModels["Domain Models"]
+        ActivityMessage["ActivityMessage<br/>(DebeziumMessage<Activity>)"]
+        HostActivityMessage["HostActivityMessage<br/>(DebeziumMessage<HostActivity>)"]
+    end
+    
+    OssKafkaConfig -.->|"Base Config"| KafkaConfig
+    DebeziumMessage -->|"Generic Type"| ActivityMessage
+    DebeziumMessage -->|"Generic Type"| HostActivityMessage
+    
+    ActivityMessage -->|"Serialized by"| KafkaStreamsConfig
+    HostActivityMessage -->|"Serialized by"| KafkaStreamsConfig
+    
+    classDef configClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef dataClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef modelClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    
+    class KafkaConfig,KafkaStreamsConfig configClass
+    class OssKafkaConfig,DebeziumMessage,KafkaProducer dataClass
+    class ActivityMessage,HostActivityMessage modelClass

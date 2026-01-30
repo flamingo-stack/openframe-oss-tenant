@@ -1,0 +1,32 @@
+flowchart TD
+    subgraph controller_layer["Controller Layer"]
+        OAuthController["OAuthBffController<br/>@RestController"]
+    end
+    
+    subgraph service_layer["Service Layer"]
+        BffService["OAuthBffService<br/>Core OAuth Logic"]
+        TicketStore["OAuthDevTicketStore<br/>Interface"]
+        RedirectResolver["RedirectTargetResolver<br/>Interface"]
+    end
+    
+    subgraph implementation_layer["Implementation Layer"]
+        InMemoryTicket["InMemoryOAuthDevTicketStore<br/>Default Implementation"]
+        DefaultRedirect["DefaultRedirectTargetResolver<br/>Default Implementation"]
+    end
+    
+    subgraph external_deps["External Dependencies"]
+        CookieService["CookieService<br/>(security_core)"]
+        JwtService["JwtService<br/>(security_core)"]
+        AuthRepo["MongoOAuth2AuthorizationRepository<br/>(authorization_service)"]
+    end
+    
+    OAuthController -->|"uses"| BffService
+    OAuthController -->|"uses"| TicketStore
+    OAuthController -->|"uses"| CookieService
+    
+    BffService -->|"uses"| RedirectResolver
+    BffService -->|"uses"| JwtService
+    BffService -->|"queries"| AuthRepo
+    
+    TicketStore -->|"implemented by"| InMemoryTicket
+    RedirectResolver -->|"implemented by"| DefaultRedirect

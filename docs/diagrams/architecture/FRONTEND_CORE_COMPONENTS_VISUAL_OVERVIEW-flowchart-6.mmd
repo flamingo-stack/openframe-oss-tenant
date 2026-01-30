@@ -1,0 +1,33 @@
+flowchart TD
+    TableProps["TableProps<T>"]
+    
+    TableProps --> DataProcessing["Data Processing"]
+    TableProps --> Rendering["Rendering"]
+    
+    DataProcessing --> Sorting["Apply Sorting"]
+    DataProcessing --> Filtering["Apply Filtering"]
+    DataProcessing --> Selection["Handle Selection"]
+    
+    Sorting --> SortedData["Sorted Data"]
+    Filtering --> FilteredData["Filtered Data"]
+    Selection --> SelectedRows["Selected Rows"]
+    
+    Rendering --> Desktop["Desktop View<br/>(≥768px)"]
+    Rendering --> Mobile["Mobile View<br/>(<768px)"]
+    
+    Desktop --> TableHeader["Table Header<br/>• Sort controls<br/>• Filter dropdowns<br/>• Select all"]
+    Desktop --> TableRows["Table Rows<br/>• Cells<br/>• Actions<br/>• Selection"]
+    
+    Mobile --> CardView["Card View<br/>• Stacked layout<br/>• Key info<br/>• Touch actions"]
+    
+    TableRows --> Pagination["Pagination"]
+    CardView --> Pagination
+    
+    Pagination --> CursorPagination["Cursor-Based<br/>• hasNextPage<br/>• onNext/onPrevious"]
+    Pagination --> PagePagination["Page-Based<br/>• currentPage<br/>• totalPages"]
+    
+    style TableProps fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style DataProcessing fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Rendering fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Desktop fill:#E67E22,stroke:#A04000,color:#fff
+    style Mobile fill:#E74C3C,stroke:#922B21,color:#fff

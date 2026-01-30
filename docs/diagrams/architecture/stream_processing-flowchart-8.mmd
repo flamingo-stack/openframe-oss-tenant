@@ -1,0 +1,18 @@
+flowchart LR
+    subgraph tenant1["Tenant A"]
+        Topics1["tenant-a-*"]
+        Stream1["Stream App<br/>(tenant-a)"]
+        State1["State Store<br/>(tenant-a)"]
+    end
+    
+    subgraph tenant2["Tenant B"]
+        Topics2["tenant-b-*"]
+        Stream2["Stream App<br/>(tenant-b)"]
+        State2["State Store<br/>(tenant-b)"]
+    end
+    
+    Topics1 --> Stream1
+    Stream1 --> State1
+    
+    Topics2 --> Stream2
+    Stream2 --> State2

@@ -1,0 +1,15 @@
+flowchart TD
+    BaseRestMapper["BaseRestMapper<br/>(Abstract Base)"]
+    
+    DeviceMapper["DeviceMapper<br/>@Component"]
+    EventMapper["EventMapper<br/>@Component"]
+    LogMapper["LogMapper<br/>@Component"]
+    ToolMapper["ToolMapper<br/>@Component"]
+    
+    BaseRestMapper -->|"extends"| DeviceMapper
+    BaseRestMapper -->|"extends"| EventMapper
+    BaseRestMapper -->|"extends"| LogMapper
+    
+    BaseRestMapper -.->|"provides<br/>pagination utils"| DeviceMapper
+    BaseRestMapper -.->|"provides<br/>pagination utils"| EventMapper
+    BaseRestMapper -.->|"provides<br/>pagination utils"| LogMapper

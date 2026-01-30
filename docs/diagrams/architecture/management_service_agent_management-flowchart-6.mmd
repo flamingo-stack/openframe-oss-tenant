@@ -1,0 +1,10 @@
+flowchart LR
+    Initializer["IntegratedToolAgentInitializer"] -->|"Version changed"| Publisher["ToolAgentUpdatePublisher"]
+    Publisher -->|"Publish event"| Kafka["Kafka Topic<br/>tool-agent-updates"]
+    Kafka -->|"Consume event"| ClientService["Client Service"]
+    ClientService -->|"Notify agents"| Devices["Connected Devices"]
+    Devices -->|"Download & install"| NewVersion["Updated Agent"]
+    
+    style Publisher fill:#F39C12,stroke:#C87F0A,color:#fff
+    style Kafka fill:#231F20,stroke:#000,color:#fff
+    style NewVersion fill:#27AE60,stroke:#1E8449,color:#fff

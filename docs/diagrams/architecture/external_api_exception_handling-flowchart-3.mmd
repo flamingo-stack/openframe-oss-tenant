@@ -1,0 +1,39 @@
+flowchart TD
+    Start["Exception Thrown"] --> Intercept["GlobalExceptionHandler Intercepts"]
+    Intercept --> Match{"Match Exception Type?"}
+    
+    Match -->|"DeviceNotFoundException"| Device["handleDeviceNotFound()"]
+    Match -->|"EventNotFoundException"| Event["handleEventNotFound()"]
+    Match -->|"LogNotFoundException"| Log["handleLogNotFound()"]
+    Match -->|"OrganizationNotFoundException"| Org["handleOrganizationNotFound()"]
+    Match -->|"MethodArgumentNotValidException"| Valid["handleValidationErrors()"]
+    Match -->|"MethodArgumentTypeMismatchException"| Type["handleTypeMismatch()"]
+    Match -->|"PinotQueryException"| Pinot["handlePinotQueryException()"]
+    Match -->|"DataAccessException"| Data["handleDataAccessException()"]
+    Match -->|"Other Exception"| Generic["handleGenericException()"]
+    
+    Device --> Log404["Log Warning"]
+    Event --> Log404
+    Log --> Log404
+    Org --> Log404
+    Log404 --> Create404["Create ErrorResponse<br/>HTTP 404"]
+    
+    Valid --> LogWarn["Log Warning"]
+    Type --> LogWarn
+    LogWarn --> Create400["Create ErrorResponse<br/>HTTP 400"]
+    
+    Pinot --> LogError["Log Error"]
+    Data --> LogError
+    LogError --> Create503["Create ErrorResponse<br/>HTTP 503"]
+    
+    Generic --> LogError2["Log Error with Stack Trace"]
+    LogError2 --> Create500["Create ErrorResponse<br/>HTTP 500"]
+    
+    Create404 --> Return["Return ErrorResponse to Client"]
+    Create400 --> Return
+    Create503 --> Return
+    Create500 --> Return
+    
+    style Start fill:#ff6b6b
+    style Return fill:#51cf66
+    style Match fill:#ffd93d

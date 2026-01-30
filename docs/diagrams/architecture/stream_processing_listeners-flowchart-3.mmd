@@ -1,0 +1,56 @@
+flowchart LR
+    subgraph Source["External Tools"]
+        Mesh["MeshCentral<br/>PostgreSQL"]
+        Tactical["Tactical RMM<br/>PostgreSQL"]
+        Fleet["Fleet MDM<br/>MySQL"]
+    end
+    
+    subgraph CDC["Change Data Capture"]
+        DebeziumMesh["Debezium<br/>Connector"]
+        DebeziumTactical["Debezium<br/>Connector"]
+        DebeziumFleet["Debezium<br/>Connector"]
+    end
+    
+    subgraph Kafka["Kafka Topics"]
+        TopicMesh["meshcentral-events"]
+        TopicTactical["tactical-rmm-events"]
+        TopicFleet["fleet-mdm-events"]
+    end
+    
+    subgraph Listener["Stream Listener"]
+        JsonListener["JsonKafkaListener"]
+    end
+    
+    subgraph Processing["Message Processing"]
+        Processor["GenericJsonMessageProcessor"]
+        Deserialize["Deserialize"]
+        Enrich["Enrich"]
+        Route["Route to Handlers"]
+    end
+    
+    subgraph Storage["Data Storage"]
+        Mongo["MongoDB<br/>(Devices, Orgs)"]
+        Cass["Cassandra<br/>(Events)"]
+        PinotDB["Pinot<br/>(Logs, Analytics)"]
+    end
+    
+    Mesh -->|"DB Changes"| DebeziumMesh
+    Tactical -->|"DB Changes"| DebeziumTactical
+    Fleet -->|"DB Changes"| DebeziumFleet
+    
+    DebeziumMesh -->|"CDC Events"| TopicMesh
+    DebeziumTactical -->|"CDC Events"| TopicTactical
+    DebeziumFleet -->|"CDC Events"| TopicFleet
+    
+    TopicMesh --> JsonListener
+    TopicTactical --> JsonListener
+    TopicFleet --> JsonListener
+    
+    JsonListener --> Processor
+    Processor --> Deserialize
+    Deserialize --> Enrich
+    Enrich --> Route
+    
+    Route --> Mongo
+    Route --> Cass
+    Route --> PinotDB

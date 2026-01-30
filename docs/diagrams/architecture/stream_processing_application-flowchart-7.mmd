@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph Input["Input Topics"]
+        Activities["fleet-mdm-activities<br/>(Activity records)"]
+        HostActivities["fleet-mdm-host-activities<br/>(Host-Activity mappings)"]
+    end
+    
+    subgraph Streams["Kafka Streams Topology"]
+        ActivityStream["Activity Stream<br/>(keyed by activity.id)"]
+        HostStream["Host Activity Stream<br/>(keyed by activityId)"]
+        Join["Left Join<br/>(5 second window)"]
+        Enrich["Enrich Activity<br/>(add hostId, agentId)"]
+        AddHeaders["Add Headers<br/>(MESSAGE_TYPE, __TypeId__)"]
+    end
+    
+    subgraph Output["Output Topic"]
+        Enriched["fleet-mdm-events<br/>(Enriched activities)"]
+    end
+    
+    Activities --> ActivityStream
+    HostActivities --> HostStream
+    
+    ActivityStream --> Join
+    HostStream --> Join
+    
+    Join --> Enrich
+    Enrich --> AddHeaders
+    AddHeaders --> Enriched
+    
+    style Join fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff
+    style Enrich fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff

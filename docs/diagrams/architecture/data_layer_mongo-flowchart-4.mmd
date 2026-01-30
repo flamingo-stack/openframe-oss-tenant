@@ -1,0 +1,7 @@
+flowchart TD
+    Service["Service Layer"] -->|"query"| Repo["Repository"]
+    Repo -->|"build query"| Query["MongoDB Query"]
+    Query -->|"execute"| MongoDB[("MongoDB")]
+    MongoDB -->|"BSON result"| Converter["MappingMongoConverter"]
+    Converter -->|"deserialize"| Entity["Java Entity"]
+    Entity -->|"return"| Service

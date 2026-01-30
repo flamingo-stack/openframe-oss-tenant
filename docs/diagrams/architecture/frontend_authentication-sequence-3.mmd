@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Client as Frontend
+    participant AuthAPI as AuthApiClient
+    participant Gateway as Gateway Service
+    participant AuthZ as Authorization Server
+    
+    Client->>AuthAPI: API Request
+    AuthAPI->>Gateway: HTTP Request + Token
+    Gateway-->>AuthAPI: 401 Unauthorized
+    
+    AuthAPI->>AuthAPI: Check if refreshing
+    
+    alt Not already refreshing
+        AuthAPI->>Gateway: POST /oauth/refresh
+        Gateway->>AuthZ: Refresh Token Request
+        AuthZ-->>Gateway: New Access Token
+        Gateway-->>AuthAPI: New Tokens (headers/cookies)
+        
+        AuthAPI->>AuthAPI: Store new tokens
+        AuthAPI->>Gateway: Retry Original Request
+        Gateway-->>AuthAPI: 200 OK
+        AuthAPI-->>Client: Success Response
+    else Already refreshing
+        AuthAPI->>AuthAPI: Wait for refresh promise
+        AuthAPI->>Gateway: Retry with new token
+        Gateway-->>AuthAPI: 200 OK
+        AuthAPI-->>Client: Success Response
+    end
+    
+    alt Refresh fails
+        AuthAPI->>AuthAPI: Clear tokens
+        AuthAPI->>Client: Force logout
+        Client->>Client: Redirect to login
+    end

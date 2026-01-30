@@ -1,0 +1,54 @@
+flowchart LR
+    subgraph UI["UI Layer"]
+        ChatContainer["Chat Container"]
+        MessageList["Message List"]
+        InputArea["Input Area"]
+        ToolDisplay["Tool Display"]
+    end
+    
+    subgraph Contexts["Context Layer"]
+        DebugContext["Debug Context"]
+    end
+    
+    subgraph Services["Service Layer"]
+        TokenService["Token Service"]
+        DialogService["Dialog Service"]
+        ModelsService["Models Service"]
+        MockService["Mock Service"]
+    end
+    
+    subgraph Tauri["Tauri Layer"]
+        RustBackend["Rust Backend"]
+    end
+    
+    subgraph Backend["Backend Layer"]
+        APIs["Backend APIs"]
+    end
+    
+    ChatContainer -->|"Uses"| MessageList
+    ChatContainer -->|"Uses"| InputArea
+    MessageList -->|"Uses"| ToolDisplay
+    
+    ChatContainer -->|"Consumes"| DebugContext
+    InputArea -->|"Consumes"| DebugContext
+    
+    ChatContainer -->|"Calls"| DialogService
+    InputArea -->|"Calls"| DialogService
+    MessageList -->|"Calls"| ModelsService
+    
+    DialogService -->|"Uses"| TokenService
+    ModelsService -->|"Uses"| TokenService
+    
+    TokenService -->|"Invokes"| RustBackend
+    DebugContext -->|"Invokes"| RustBackend
+    
+    DialogService -->|"Queries"| APIs
+    ModelsService -->|"Requests"| APIs
+    
+    MockService -.->|"Dev Mode"| DialogService
+    
+    style UI fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style Contexts fill:#9f7aea,stroke:#6b46c1,color:#fff
+    style Services fill:#48bb78,stroke:#2f855a,color:#fff
+    style Tauri fill:#c05621,stroke:#9c4221,color:#fff
+    style Backend fill:#38a169,stroke:#276749,color:#fff

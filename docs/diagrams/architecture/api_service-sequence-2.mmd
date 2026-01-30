@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant API as API Service
+    participant Cache as JWT Provider Cache
+    participant AuthZ as Authorization Server
+    
+    Client->>Gateway: Request with JWT
+    Gateway->>Gateway: Validate JWT
+    Gateway->>API: Forward with Authorization header
+    API->>Cache: Get JWT Provider for issuer
+    
+    alt Cache Hit
+        Cache-->>API: Return cached provider
+    else Cache Miss
+        Cache->>AuthZ: Fetch JWKS from issuer
+        AuthZ-->>Cache: Return public keys
+        Cache-->>API: Return new provider
+    end
+    
+    API->>API: Decode JWT and extract claims
+    API->>API: Create AuthPrincipal
+    API-->>Client: Return response

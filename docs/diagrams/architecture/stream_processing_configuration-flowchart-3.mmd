@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph Serdes["Serde Beans"]
+        ActivitySerde["activityMessageSerde()<br/>ActivityMessage"]
+        HostActivitySerde["hostActivityMessageSerde()<br/>HostActivityMessage"]
+        OutgoingSerde["outgoingActivityMessageSerde()<br/>No Type Info"]
+    end
+    
+    subgraph Components["Serde Components"]
+        JsonSerializer["JsonSerializer<br/>(ObjectMapper)"]
+        JsonDeserializer["JsonDeserializer<br/>(ObjectMapper)"]
+    end
+    
+    subgraph Usage["Stream Usage"]
+        InputStreams["Input Streams<br/>(Consumed.with)"]
+        JoinOperations["Join Operations<br/>(StreamJoined.with)"]
+        OutputStreams["Output Streams<br/>(Produced.with)"]
+    end
+    
+    ActivitySerde -->|"Uses"| JsonSerializer
+    ActivitySerde -->|"Uses"| JsonDeserializer
+    HostActivitySerde -->|"Uses"| JsonSerializer
+    HostActivitySerde -->|"Uses"| JsonDeserializer
+    OutgoingSerde -->|"Uses"| JsonSerializer
+    OutgoingSerde -->|"No Type Info"| JsonDeserializer
+    
+    ActivitySerde -->|"Input/Join"| InputStreams
+    HostActivitySerde -->|"Join"| JoinOperations
+    OutgoingSerde -->|"Output"| OutputStreams
+    
+    classDef serdeClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef componentClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef usageClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    
+    class ActivitySerde,HostActivitySerde,OutgoingSerde serdeClass
+    class JsonSerializer,JsonDeserializer componentClass
+    class InputStreams,JoinOperations,OutputStreams usageClass

@@ -1,0 +1,31 @@
+flowchart TD
+    Client["Client Applications<br/>(Web/Mobile/Desktop)"] -->|HTTP/WS| Gateway["API Gateway"]
+    
+    subgraph GatewayConfig["Gateway Configuration Module"]
+        WebClientCfg["WebClientConfig<br/>HTTP Client Setup"]
+        WSConfig["WebSocketGatewayConfig<br/>WS Route Definition"]
+        CORSCfg["CorsConfig<br/>CORS Policy"]
+    end
+    
+    Gateway --> GatewayConfig
+    
+    subgraph Routes["Gateway Routes"]
+        WSRoutes["WebSocket Routes"]
+        HTTPRoutes["HTTP Routes"]
+    end
+    
+    GatewayConfig --> Routes
+    
+    WSRoutes -->|"/ws/tools/agent/**"| ToolAgent["Tool Agent WS<br/>(RMM/MDM Agents)"]
+    WSRoutes -->|"/ws/tools/**"| ToolAPI["Tool API WS<br/>(Admin Interface)"]
+    WSRoutes -->|"/ws/nats"| NATS["NATS Messaging<br/>(Real-time Events)"]
+    
+    HTTPRoutes -->|Proxied Requests| Backend["Backend Services<br/>(API/Client/Management)"]
+    
+    WebClientCfg -.->|Configures| HTTPRoutes
+    WSConfig -.->|Defines| WSRoutes
+    CORSCfg -.->|Applies to| Gateway
+    
+    style GatewayConfig fill:#e1f5ff
+    style Gateway fill:#fff4e6
+    style Routes fill:#f3e5f5

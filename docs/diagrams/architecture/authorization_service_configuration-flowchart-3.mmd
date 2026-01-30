@@ -1,0 +1,9 @@
+flowchart LR
+    AuthServerConfig["AuthorizationServerConfig"] -->|"Configures"| OAuth2Endpoints["OAuth2 Endpoints<br/>/oauth2/authorize<br/>/oauth2/token<br/>/oauth2/jwks"]
+    AuthServerConfig -->|"Provides"| JWKSource["JWKSource<br/>(Tenant-specific keys)"]
+    AuthServerConfig -->|"Provides"| JwtEncoder["JwtEncoder<br/>(NimbusJwtEncoder)"]
+    AuthServerConfig -->|"Provides"| JwtDecoder["JwtDecoder<br/>(Validates tokens)"]
+    AuthServerConfig -->|"Provides"| TokenCustomizer["OAuth2TokenCustomizer<br/>(Custom claims)"]
+    AuthServerConfig -->|"Provides"| UserDetailsService["UserDetailsService<br/>(Load users)"]
+    
+    style AuthServerConfig fill:#4A90E2

@@ -1,0 +1,28 @@
+flowchart TD
+    Error["Error Occurs"] --> Layer{"Error Layer"}
+    
+    Layer -->|"Network"| NetworkHandler["Network Error Handler"]
+    Layer -->|"API"| APIHandler["API Error Handler"]
+    Layer -->|"Auth"| AuthHandler["Auth Error Handler"]
+    Layer -->|"UI"| UIHandler["UI Error Handler"]
+    
+    NetworkHandler --> Retry["Retry Logic"]
+    Retry -->|"max retries"| UserNotify["Notify User"]
+    
+    APIHandler --> StatusCheck{"Status Code"}
+    StatusCheck -->|"401"| TokenRefresh["Token Refresh"]
+    StatusCheck -->|"403"| PermissionError["Permission Error"]
+    StatusCheck -->|"500"| ServerError["Server Error"]
+    
+    TokenRefresh -->|"success"| RetryRequest["Retry Request"]
+    TokenRefresh -->|"failure"| ForceLogout["Force Logout"]
+    
+    AuthHandler --> ClearSession["Clear Session"]
+    ClearSession --> RedirectLogin["Redirect to Login"]
+    
+    UIHandler --> ErrorBoundary["Error Boundary"]
+    ErrorBoundary --> FallbackUI["Fallback UI"]
+    
+    UserNotify --> Toast["Toast Notification"]
+    PermissionError --> Toast
+    ServerError --> Toast

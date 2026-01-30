@@ -1,0 +1,16 @@
+flowchart LR
+    CursorPageInfo["CursorPageInfo<br/>(Internal)"]
+    
+    CursorPageInfo --> Map["BaseRestMapper<br/>.toRestPageInfo()"]
+    
+    Map --> PageInfo["PageInfo<br/>(REST)"]
+    
+    CursorPageInfo -.->|"startCursor"| PageInfo
+    CursorPageInfo -.->|"endCursor"| PageInfo
+    CursorPageInfo -.->|"hasNextPage"| PageInfo
+    CursorPageInfo -.->|"hasPreviousPage"| PageInfo
+    
+    PageInfo -.->|"previousCursor"| Output["REST Response"]
+    PageInfo -.->|"nextCursor"| Output
+    PageInfo -.->|"hasPrevious"| Output
+    PageInfo -.->|"hasNext"| Output

@@ -1,0 +1,40 @@
+classDiagram
+    class IntegratedTool {
+        +String id
+        +String name
+        +String description
+        +String icon
+        +List~ToolUrl~ toolUrls
+        +String type
+        +String toolType
+        +String category
+        +String platformCategory
+        +boolean enabled
+        +ToolCredentials credentials
+        +String layer
+        +Integer layerOrder
+        +String layerColor
+        +String metricsPath
+        +String healthCheckEndpoint
+        +Integer healthCheckInterval
+        +Integer connectionTimeout
+        +Integer readTimeout
+        +String[] allowedEndpoints
+        +Object[] debeziumConnectors
+    }
+    
+    class ToolCredentials {
+        +String username
+        +String password
+        +String apiKey
+        +String token
+    }
+    
+    class ToolUrl {
+        +String name
+        +String url
+        +String description
+    }
+    
+    IntegratedTool --> ToolCredentials
+    IntegratedTool --> ToolUrl

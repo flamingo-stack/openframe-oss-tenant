@@ -1,0 +1,31 @@
+flowchart TD
+    Component["React Component"] --> Hook["Custom Hook"]
+    
+    Hook --> ReactQuery["React Query"]
+    ReactQuery --> CheckCache{"Cache<br/>Hit?"}
+    
+    CheckCache -->|"Yes"| ReturnCache["Return Cached"]
+    CheckCache -->|"No"| APIClient["API Client"]
+    
+    APIClient --> CheckType{"Request<br/>Type?"}
+    
+    CheckType -->|"REST"| RestAPI["REST API"]
+    CheckType -->|"GraphQL"| GraphQLAPI["GraphQL API"]
+    
+    RestAPI --> Gateway["API Gateway"]
+    GraphQLAPI --> Gateway
+    
+    Gateway --> Auth["Authentication"]
+    Auth --> Backend["Backend Service"]
+    
+    Backend --> Response["Response"]
+    Response --> Transform["Transform Data"]
+    Transform --> UpdateCache["Update Cache"]
+    UpdateCache --> ReturnData["Return to Component"]
+    
+    ReturnCache --> ReturnData
+    ReturnData --> UpdateUI["Update UI"]
+    
+    style ReactQuery fill:#4CAF50
+    style APIClient fill:#2196F3
+    style Gateway fill:#FF9800

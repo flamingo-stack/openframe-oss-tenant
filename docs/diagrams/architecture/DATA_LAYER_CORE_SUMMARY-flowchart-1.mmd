@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph services["OpenFrame Services"]
+        API["API Service<br/>(REST/GraphQL)"]
+        External["External API<br/>(Public API)"]
+        Stream["Stream Processing<br/>(Data Ingestion)"]
+    end
+    
+    subgraph data_layer_core["Data Layer Core"]
+        Config["Configuration<br/>Cassandra + Pinot"]
+        DeviceRepo["Device Repository<br/>Filter Options"]
+        LogRepo["Log Repository<br/>Search & Analytics"]
+        QueryBuilder["Query Builder<br/>SQL Construction"]
+    end
+    
+    subgraph datastores["Analytical Data Stores"]
+        Pinot[("Apache Pinot<br/>Real-Time OLAP<br/>Sub-second queries")]
+        Cassandra[("Apache Cassandra<br/>Time-Series Storage<br/>High write throughput")]
+    end
+    
+    API -->|"device filters"| DeviceRepo
+    API -->|"log queries"| LogRepo
+    External -->|"search logs"| LogRepo
+    Stream -->|"ingests data"| Pinot
+    
+    DeviceRepo --> QueryBuilder
+    LogRepo --> QueryBuilder
+    
+    QueryBuilder --> Pinot
+    Config --> Cassandra
+    Config --> Pinot

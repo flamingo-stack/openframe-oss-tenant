@@ -1,0 +1,32 @@
+flowchart TD
+    subgraph JetStream["NATS JetStream"]
+        Stream["Stream: INSTALLED_AGENTS"]
+        Consumer["Consumer: installed-agent-processor-v1"]
+        Subject["Subject: machine.*.installed-agent"]
+    end
+    
+    subgraph Configuration["Consumer Configuration"]
+        Durable["Durable: Yes"]
+        AckPolicy["AckPolicy: Explicit"]
+        DeliverPolicy["DeliverPolicy: All"]
+        MaxDeliver["MaxDeliver: 50"]
+        AckWait["AckWait: 30s"]
+        DeliveryGroup["DeliveryGroup: installed-agent"]
+    end
+    
+    subgraph Listener["InstalledAgentListener"]
+        Subscribe["Subscribe on<br/>ApplicationReadyEvent"]
+        Handler["handleMessage()"]
+        Process["Process Agent Info"]
+        Ack["Acknowledge Message"]
+    end
+    
+    Stream --> Consumer
+    Consumer --> Subject
+    Configuration -.->|"Configures"| Consumer
+    
+    Subscribe --> Consumer
+    Consumer -->|"Deliver"| Handler
+    Handler --> Process
+    Process -->|"Success"| Ack
+    Process -->|"Failure"| Handler

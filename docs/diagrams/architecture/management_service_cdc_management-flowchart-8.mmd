@@ -1,0 +1,20 @@
+flowchart TD
+    CDCModule["CDC Management Module"]
+    DebeziumConnect["Debezium Connect"]
+    KafkaTopics["Kafka Topics"]
+    
+    subgraph Consumers["Event Consumers"]
+        StreamService["Stream Processing Service"]
+        ActivityEnrichment["Activity Enrichment"]
+        JsonListener["JsonKafkaListener"]
+    end
+    
+    CDCModule -->|"Manages"| DebeziumConnect
+    DebeziumConnect -->|"Publishes Events"| KafkaTopics
+    
+    KafkaTopics --> StreamService
+    StreamService --> ActivityEnrichment
+    StreamService --> JsonListener
+    
+    style CDCModule fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style Consumers fill:#f3e5f5,stroke:#4a148c,stroke-width:2px

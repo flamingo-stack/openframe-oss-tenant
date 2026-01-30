@@ -1,0 +1,61 @@
+flowchart TD
+    subgraph TauriBackend["Tauri Backend (Rust)"]
+        AuthStore["Authentication Store"]
+        ConfigStore["Configuration Store"]
+        EventSystem["Event System"]
+    end
+    
+    subgraph ServiceLayer["Service Layer (TypeScript)"]
+        subgraph TokenMgmt["Token Management"]
+            TokenSvc["TokenService"]
+            TokenCache["Token Cache"]
+            TokenListeners["Token Listeners"]
+        end
+        
+        subgraph GraphQLComm["GraphQL Communication"]
+            DialogSvc["DialogGraphQLService"]
+            GraphQLClient["GraphQL Client"]
+            QueryCache["Query Cache"]
+        end
+        
+        subgraph ModelMgmt["Model Management"]
+            ModelsSvc["SupportedModelsService"]
+            ModelsCache["Models Cache"]
+            ModelsAPI["Models API Client"]
+        end
+        
+        subgraph MockLayer["Mock Layer"]
+            MockSvc["MockChatService"]
+            MockData["Mock Data Generator"]
+        end
+    end
+    
+    subgraph BackendAPIs["Backend APIs"]
+        ChatGraphQL["Chat GraphQL API"]
+        ConfigREST["Configuration REST API"]
+    end
+    
+    AuthStore -->|"Events"| EventSystem
+    ConfigStore -->|"Commands"| EventSystem
+    EventSystem -->|"token-update"| TokenSvc
+    EventSystem -->|"get_server_url()"| TokenSvc
+    
+    TokenSvc --> TokenCache
+    TokenSvc --> TokenListeners
+    TokenListeners -->|"Notify"| DialogSvc
+    TokenListeners -->|"Notify"| ModelsSvc
+    
+    DialogSvc --> GraphQLClient
+    GraphQLClient --> QueryCache
+    GraphQLClient -->|"Queries"| ChatGraphQL
+    
+    ModelsSvc --> ModelsCache
+    ModelsSvc --> ModelsAPI
+    ModelsAPI -->|"REST"| ConfigREST
+    
+    MockSvc --> MockData
+    MockSvc -.->|"Development"| DialogSvc
+    
+    style TauriBackend fill:#c05621,stroke:#9c4221,color:#fff
+    style ServiceLayer fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style BackendAPIs fill:#48bb78,stroke:#2f855a,color:#fff

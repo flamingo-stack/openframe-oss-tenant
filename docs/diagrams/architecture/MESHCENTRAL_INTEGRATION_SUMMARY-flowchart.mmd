@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph OpenFrame["OpenFrame Platform"]
+        WebUI["Web UI"]
+        Integration["MeshCentral Integration"]
+    end
+    
+    subgraph Integration["MeshCentral Integration Module"]
+        Desktop["Desktop Control<br/>(MeshDesktop)"]
+        FileManager["File Manager<br/>(Types & Protocol)"]
+    end
+    
+    subgraph External["External Services"]
+        MeshServer["MeshCentral Server"]
+        Agents["Device Agents"]
+    end
+    
+    WebUI -->|"User Actions"| Desktop
+    WebUI -->|"File Operations"| FileManager
+    Desktop -->|"Binary Protocol"| MeshServer
+    FileManager -->|"Binary Protocol"| MeshServer
+    MeshServer -->|"Agent Protocol"| Agents
+    
+    style Integration fill:#e1f5ff

@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph OAuthPrimitives["OAuth Primitives Module"]
+        PKCEUtils["PKCEUtils"]
+        SecurityConstants["SecurityConstants"]
+    end
+    
+    subgraph AuthorizationServer["Authorization Service"]
+        AuthzController["Authorization Controller"]
+        TokenEndpoint["Token Endpoint"]
+    end
+    
+    subgraph GatewayService["Gateway Service"]
+        OAuthBffController["OAuth BFF Controller"]
+        OAuthBffService["OAuth BFF Service"]
+    end
+    
+    subgraph SecurityOAuth["Security OAuth Module"]
+        DevTicketStore["Dev Ticket Store"]
+        RedirectResolver["Redirect Resolver"]
+    end
+    
+    subgraph Client["Client Application"]
+        Browser["Browser/SPA"]
+        Mobile["Mobile App"]
+    end
+    
+    Browser -->|"1. Initiate OAuth"| OAuthBffController
+    Mobile -->|"1. Initiate OAuth"| OAuthBffController
+    
+    OAuthBffController -->|"2. Generate PKCE"| PKCEUtils
+    PKCEUtils -->|"code_verifier<br/>code_challenge<br/>state"| OAuthBffController
+    
+    OAuthBffController -->|"3. Redirect to /authorize"| AuthzController
+    AuthzController -->|"4. Store challenge"| TokenEndpoint
+    
+    Browser -->|"5. Authorization code"| OAuthBffController
+    OAuthBffController -->|"6. Exchange code + verifier"| TokenEndpoint
+    TokenEndpoint -->|"7. Validate PKCE"| PKCEUtils
+    
+    TokenEndpoint -->|"8. Issue tokens"| OAuthBffController
+    OAuthBffController -->|"9. Use constants"| SecurityConstants
+    OAuthBffController -->|"10. Set cookies/headers"| Browser
+    
+    style PKCEUtils fill:#ff9999
+    style SecurityConstants fill:#99ccff
+    style OAuthBffController fill:#ffcc99

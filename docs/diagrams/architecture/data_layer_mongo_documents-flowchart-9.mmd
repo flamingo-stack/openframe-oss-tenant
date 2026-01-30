@@ -1,0 +1,20 @@
+flowchart TD
+    Org["Organization"]
+    Machine["Machine"]
+    Device["Device"]
+    User["User"]
+    Tool["IntegratedTool"]
+    Event["CoreEvent"]
+    
+    Org -->|"1:N organizationId"| Machine
+    Machine -->|"1:1 machineId"| Device
+    User -.->|"implicit tenant"| Org
+    Event -.->|"userId"| User
+    Tool -.->|"monitors"| Machine
+    
+    style Org fill:#e1f5ff
+    style Machine fill:#fff4e1
+    style Device fill:#fff4e1
+    style User fill:#e8f5e9
+    style Tool fill:#f3e5f5
+    style Event fill:#fce4ec

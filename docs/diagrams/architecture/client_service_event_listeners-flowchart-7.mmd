@@ -1,0 +1,34 @@
+flowchart TD
+    Start["Receive JetStream Message"]
+    Parse["Parse InstalledAgentMessage"]
+    ExtractID["Extract Machine ID<br/>from Subject"]
+    ExtractData["Extract Agent Type<br/>& Version"]
+    CheckDelivery["Check Delivery Count"]
+    
+    LastAttempt{"Last Attempt?<br/>(count == 50)"}
+    
+    Process["Call installedAgentService<br/>.addInstalledAgent()"]
+    
+    Success{"Processing<br/>Success?"}
+    
+    Ack["Acknowledge Message<br/>message.ack()"]
+    NoAck["Leave Unacked<br/>(Redelivery)"]
+    
+    End["Complete"]
+    
+    Start --> Parse
+    Parse --> ExtractID
+    ExtractID --> ExtractData
+    ExtractData --> CheckDelivery
+    CheckDelivery --> LastAttempt
+    
+    LastAttempt -->|"Yes"| Process
+    LastAttempt -->|"No"| Process
+    
+    Process --> Success
+    
+    Success -->|"Yes"| Ack
+    Success -->|"No"| NoAck
+    
+    Ack --> End
+    NoAck --> End

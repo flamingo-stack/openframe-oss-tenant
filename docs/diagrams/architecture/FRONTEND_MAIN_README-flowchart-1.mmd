@@ -1,0 +1,60 @@
+flowchart TB
+    subgraph client["Client Browser"]
+        UI["React UI Components"]
+        Hooks["Custom Hooks"]
+        Store["Zustand State Stores"]
+    end
+    
+    subgraph frontend["Frontend Layer (Next.js)"]
+        Router["App Router"]
+        API["API Route Handlers"]
+        SSR["Server-Side Rendering"]
+    end
+    
+    subgraph api_clients["API Client Layer"]
+        BaseClient["Base API Client"]
+        AuthClient["Auth API Client"]
+        FleetClient["Fleet API Client"]
+        TacticalClient["Tactical API Client"]
+    end
+    
+    subgraph backend["Backend Services"]
+        Gateway["API Gateway<br/>(Port 8080)"]
+        AuthServer["Authorization Server<br/>(Port 9000)"]
+        APIService["API Service<br/>(Port 8081)"]
+        ChatService["Chat Service<br/>(Port 8082)"]
+    end
+    
+    subgraph external["External Tools"]
+        FleetMDM["Fleet MDM"]
+        TacticalRMM["Tactical RMM"]
+        MeshCentral["MeshCentral"]
+    end
+    
+    UI --> Hooks
+    Hooks --> Store
+    Hooks --> Router
+    
+    Router --> API
+    API --> BaseClient
+    
+    BaseClient --> AuthClient
+    BaseClient --> FleetClient
+    BaseClient --> TacticalClient
+    
+    AuthClient --> Gateway
+    FleetClient --> Gateway
+    TacticalClient --> Gateway
+    
+    Gateway --> AuthServer
+    Gateway --> APIService
+    Gateway --> ChatService
+    Gateway --> FleetMDM
+    Gateway --> TacticalRMM
+    
+    UI -.->|"WebSocket"| MeshCentral
+    
+    style UI fill:#4CAF50
+    style Store fill:#2196F3
+    style Gateway fill:#FF9800
+    style AuthServer fill:#9C27B0

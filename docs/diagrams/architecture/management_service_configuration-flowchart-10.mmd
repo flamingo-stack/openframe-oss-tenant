@@ -1,0 +1,14 @@
+flowchart TD
+    SpringBoot["Spring Boot Startup"] -->|"binds"| ConfigProps["AgentConfigurationProperties"]
+    
+    ConfigProps -->|"validates"| NotNull["@NotNull checks"]
+    ConfigProps -->|"validates"| NotEmpty["@NotEmpty checks"]
+    
+    NotNull -->|"passes"| InitContext["Initialize Context"]
+    NotEmpty -->|"passes"| InitContext
+    
+    NotNull -->|"fails"| FailStartup["Startup Failure<br/>BindException"]
+    NotEmpty -->|"fails"| FailStartup
+    
+    style FailStartup fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style InitContext fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff

@@ -1,0 +1,13 @@
+flowchart TD
+    Services["OpenFrame Services"] -->|"produces/consumes"| KafkaLayer["Data Layer Kafka"]
+    
+    subgraph KafkaLayer["Data Layer Kafka"]
+        Config["Configuration Layer"]
+        Producer["Producer Layer"]
+        Models["Model Layer"]
+        Recovery["Recovery Layer"]
+    end
+    
+    KafkaLayer -->|"connects to"| Kafka["Apache Kafka Cluster"]
+    
+    style KafkaLayer fill:#e1f5ff

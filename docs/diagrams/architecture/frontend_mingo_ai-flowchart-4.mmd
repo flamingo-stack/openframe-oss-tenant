@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph Active["Active Dialog State"]
+        ActiveStore["MingoDialogDetailsStore"]
+        ActiveMessages["adminMessages[]"]
+        ActiveTyping["dialogTypingStates{}"]
+    end
+    
+    subgraph Background["Background Dialogs State"]
+        BgStore["BackgroundMessagesStore"]
+        BgMessages["dialogMessages{}"]
+        BgUnread["unreadCounts{}"]
+        BgTyping["backgroundTypingIndicators{}"]
+    end
+    
+    subgraph Events["Event Sources"]
+        UserAction["User sends message"]
+        IncomingMsg["Incoming message"]
+        DialogSwitch["Dialog switch"]
+    end
+    
+    UserAction --> ActiveStore
+    ActiveStore --> ActiveMessages
+    ActiveStore --> ActiveTyping
+    
+    IncomingMsg --> CheckActive{"Is active dialog?"}
+    CheckActive -->|"Yes"| ActiveStore
+    CheckActive -->|"No"| BgStore
+    
+    BgStore --> BgMessages
+    BgStore --> BgUnread
+    BgStore --> BgTyping
+    
+    DialogSwitch --> MoveMessages["moveBackgroundToActive()"]
+    MoveMessages --> BgMessages
+    MoveMessages --> ActiveMessages
+    MoveMessages --> ResetUnread["resetUnreadCount()"]
+    ResetUnread --> BgUnread
+    
+    style ActiveStore fill:#4CAF50
+    style BgStore fill:#2196F3
+    style CheckActive fill:#FF9800

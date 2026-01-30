@@ -1,0 +1,53 @@
+flowchart TD
+    subgraph UserSessions["User Sessions"]
+        User1["User 1<br/>(Desktop + Files)"]
+        User2["User 2<br/>(Desktop + Files)"]
+        User3["User 3<br/>(Desktop + Files)"]
+        UserN["User N<br/>(Desktop + Files)"]
+    end
+    
+    subgraph BrowserInstances["Browser Instances"]
+        Browser1["Browser 1<br/>(Isolated Context)"]
+        Browser2["Browser 2<br/>(Isolated Context)"]
+        Browser3["Browser 3<br/>(Isolated Context)"]
+        BrowserN["Browser N<br/>(Isolated Context)"]
+    end
+    
+    subgraph MeshCentralServer["MeshCentral Server"]
+        SessionMgr["Session Manager"]
+        LoadBalancer["Load Balancer"]
+        
+        subgraph ServerInstances["Server Instances"]
+            Server1["Server 1"]
+            Server2["Server 2"]
+            ServerN["Server N"]
+        end
+    end
+    
+    subgraph RemoteDevices["Remote Devices"]
+        Device1["Device 1"]
+        Device2["Device 2"]
+        Device3["Device 3"]
+        DeviceN["Device N"]
+    end
+    
+    User1 --> Browser1
+    User2 --> Browser2
+    User3 --> Browser3
+    UserN --> BrowserN
+    
+    Browser1 --> SessionMgr
+    Browser2 --> SessionMgr
+    Browser3 --> SessionMgr
+    BrowserN --> SessionMgr
+    
+    SessionMgr --> LoadBalancer
+    
+    LoadBalancer --> Server1
+    LoadBalancer --> Server2
+    LoadBalancer --> ServerN
+    
+    Server1 --> Device1
+    Server1 --> Device2
+    Server2 --> Device3
+    ServerN --> DeviceN

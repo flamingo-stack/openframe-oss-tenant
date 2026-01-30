@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Client
+    participant Gateway as Gateway Service
+    participant JwtDecoder
+    participant JwtConfig
+    participant ApiService as API Service
+    
+    Client->>Gateway: GET /api/devices<br/>Authorization: Bearer eyJ...
+    Gateway->>JwtDecoder: decode(token)
+    JwtDecoder->>JwtConfig: loadPublicKey()
+    JwtConfig-->>JwtDecoder: RSAPublicKey
+    JwtDecoder->>JwtDecoder: Verify signature
+    JwtDecoder->>JwtDecoder: Validate claims (exp, iss, aud)
+    JwtDecoder-->>Gateway: Jwt object
+    Gateway->>Gateway: Extract AuthPrincipal
+    Gateway->>ApiService: Forward request with principal
+    ApiService-->>Gateway: Response
+    Gateway-->>Client: Response

@@ -1,0 +1,19 @@
+flowchart TD
+    Error["Error Occurs"] --> Category{Error Category}
+    
+    Category -->|"Validation Error"| Validation["Request Validation"]
+    Category -->|"Persistence Error"| Persistence["MongoDB Error"]
+    Category -->|"CDC Error"| CDC["Debezium Error"]
+    Category -->|"Hook Error"| Hook["Post-Save Hook Error"]
+    
+    Validation -->|"400 Bad Request"| ClientError["Return Error Response"]
+    Persistence -->|"500 Internal Error"| ServerError["Return Error Response"]
+    CDC -->|"500 Internal Error"| ServerError
+    Hook -->|"Log Warning"| Continue["Continue Processing"]
+    
+    Continue -->|"Return Success"| Success["200 OK with Tool"]
+    
+    style Error fill:#E74C3C,stroke:#C0392B,color:#fff
+    style Validation fill:#F39C12,stroke:#C87F0A,color:#fff
+    style Hook fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Success fill:#50C878,stroke:#2E7D4E,color:#fff

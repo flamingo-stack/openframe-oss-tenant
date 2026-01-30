@@ -1,0 +1,13 @@
+flowchart TD
+    ActivityStream["Activity Stream<br/>(fleet-mdm-activities)"]
+    HostActivityStream["HostActivity Stream<br/>(fleet-mdm-host-activities)"]
+    
+    ActivityStream -->|"Rekey by activity.id"| ActivityKeyed["Keyed Activity Stream"]
+    HostActivityStream -->|"Filter & Rekey by activityId"| HostKeyed["Keyed HostActivity Stream"]
+    
+    ActivityKeyed -->|"Left Join<br/>(5s window)"| JoinOp["Stream Join Operation"]
+    HostKeyed --> JoinOp
+    
+    JoinOp -->|"Enrich with hostId & agentId"| Enriched["Enriched Activity"]
+    Enriched -->|"Add Headers"| WithHeaders["Activity + Headers"]
+    WithHeaders --> Output["fleet-mdm-events Topic"]

@@ -1,0 +1,42 @@
+flowchart LR
+    subgraph Services["Service Modules"]
+        ApiService["API Service"]
+        AuthzService["Authorization Service"]
+        ClientService["Client Service"]
+        MgmtService["Management Service"]
+    end
+    
+    subgraph Repositories["Repository Module"]
+        UserRepo["User Repositories"]
+        TenantRepo["Tenant Repositories"]
+        OrgRepo["Organization Repositories"]
+        ToolRepo["Tool Repositories"]
+        DeviceRepo["Device Repositories"]
+    end
+    
+    subgraph Documents["Document Module"]
+        UserDoc["User Document"]
+        TenantDoc["Tenant Document"]
+        OrgDoc["Organization Document"]
+        ToolDoc["IntegratedTool Document"]
+        DeviceDoc["Machine Document"]
+    end
+    
+    ApiService --> UserRepo
+    ApiService --> OrgRepo
+    ApiService --> DeviceRepo
+    
+    AuthzService --> UserRepo
+    AuthzService --> TenantRepo
+    
+    ClientService --> DeviceRepo
+    ClientService --> ToolRepo
+    
+    MgmtService --> ToolRepo
+    MgmtService --> OrgRepo
+    
+    UserRepo -.operates on.-> UserDoc
+    TenantRepo -.operates on.-> TenantDoc
+    OrgRepo -.operates on.-> OrgDoc
+    ToolRepo -.operates on.-> ToolDoc
+    DeviceRepo -.operates on.-> DeviceDoc

@@ -1,0 +1,46 @@
+flowchart TD
+    Operation["Service Operation"] --> TryCatch["Try-Catch Block"]
+    
+    TryCatch -->|"Success"| ProcessData["Process Data"]
+    ProcessData --> ReturnSuccess["Return Success"]
+    
+    TryCatch -->|"Error"| IdentifyError["Identify Error Type"]
+    
+    IdentifyError --> CheckType{"Error<br/>Type?"}
+    
+    CheckType -->|"Token Error"| TokenError["Token Missing/Invalid"]
+    CheckType -->|"Network Error"| NetworkError["Connection Failed"]
+    CheckType -->|"GraphQL Error"| GraphQLError["Query Failed"]
+    CheckType -->|"Unknown Error"| UnknownError["Unexpected Error"]
+    
+    TokenError --> LogError["Log Error (Masked)"]
+    NetworkError --> LogError
+    GraphQLError --> LogError
+    UnknownError --> LogError
+    
+    LogError --> CheckDebug{"Debug<br/>Mode?"}
+    
+    CheckDebug -->|"Yes"| DetailedLog["Log Detailed Info"]
+    CheckDebug -->|"No"| BasicLog["Log Basic Info"]
+    
+    DetailedLog --> NotifyUI["Notify UI Layer"]
+    BasicLog --> NotifyUI
+    
+    NotifyUI --> ShowError["Show User-Friendly Error"]
+    ShowError --> OfferRetry{"Retryable?"}
+    
+    OfferRetry -->|"Yes"| ShowRetry["Show Retry Button"]
+    OfferRetry -->|"No"| ShowSupport["Show Support Link"]
+    
+    ShowRetry --> UserAction["Wait for User Action"]
+    ShowSupport --> UserAction
+    
+    UserAction -->|"Retry"| Operation
+    UserAction -->|"Cancel"| End["End Operation"]
+    
+    ReturnSuccess --> End
+    
+    style Operation fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style ReturnSuccess fill:#48bb78,stroke:#2f855a,color:#fff
+    style ShowError fill:#f56565,stroke:#c53030,color:#fff
+    style End fill:#a0aec0,stroke:#718096,color:#fff

@@ -1,0 +1,10 @@
+flowchart LR
+    Request1["Request Page 1<br/>limit=20"] -->|"No cursor"| Response1["Response<br/>Items 1-20<br/>nextCursor=ABC"]
+    Response1 -->|"Use nextCursor"| Request2["Request Page 2<br/>limit=20<br/>cursor=ABC"]
+    Request2 --> Response2["Response<br/>Items 21-40<br/>nextCursor=DEF"]
+    Response2 -->|"Use nextCursor"| Request3["Request Page 3<br/>limit=20<br/>cursor=DEF"]
+    Request3 --> Response3["Response<br/>Items 41-60<br/>nextCursor=null"]
+    
+    style Response1 fill:#e1f5ff
+    style Response2 fill:#e1f5ff
+    style Response3 fill:#e1f5ff

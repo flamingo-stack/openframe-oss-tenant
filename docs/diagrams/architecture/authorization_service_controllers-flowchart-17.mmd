@@ -1,0 +1,13 @@
+flowchart TD
+    Request["OAuth Request"] --> GenerateState["Generate State"]
+    GenerateState --> HMAC["HMAC Sign"]
+    HMAC --> Cookie["Store in Cookie"]
+    Cookie --> Redirect["Redirect to Provider"]
+    
+    Redirect --> Callback["OAuth Callback"]
+    Callback --> ReadCookie["Read Cookie"]
+    ReadCookie --> VerifyHMAC["Verify HMAC"]
+    
+    VerifyHMAC --> Match{State Matches?}
+    Match -->|Yes| Process["Process Callback"]
+    Match -->|No| Reject["Reject Request"]

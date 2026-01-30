@@ -1,0 +1,15 @@
+flowchart TD
+    Request["Incoming Request"] --> Gateway["Gateway Service"]
+    Gateway --> ValidateSig["Validate JWT Signature"]
+    ValidateSig --> CheckExp["Check Expiration"]
+    CheckExp --> CheckIssuer["Verify Issuer"]
+    CheckIssuer --> CheckAudience["Verify Audience"]
+    CheckAudience --> Success["Forward to Backend"]
+    
+    ValidateSig -->|"Invalid"| Reject["401 Unauthorized"]
+    CheckExp -->|"Expired"| Reject
+    CheckIssuer -->|"Unknown"| Reject
+    CheckAudience -->|"Wrong audience"| Reject
+    
+    style Success fill:#90EE90
+    style Reject fill:#FFB6C1

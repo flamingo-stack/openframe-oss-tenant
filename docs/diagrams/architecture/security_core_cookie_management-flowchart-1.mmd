@@ -1,0 +1,38 @@
+flowchart TD
+    subgraph GatewayService["Gateway Service"]
+        AddAuthFilter["AddAuthorizationHeaderFilter"]
+        SecurityConfig["GatewaySecurityConfig"]
+    end
+    
+    subgraph SecurityOAuth["Security OAuth Module"]
+        OAuthBFF["OAuthBffController"]
+        OAuthService["OAuthBffService"]
+    end
+    
+    subgraph CookieManagement["Cookie Management Module"]
+        CookieService["CookieService"]
+    end
+    
+    subgraph SecurityCore["Security Core"]
+        SecurityConstants["SecurityConstants"]
+        JwtService["JwtService"]
+    end
+    
+    subgraph Browser["Browser Client"]
+        Cookies["HTTP Cookies"]
+    end
+    
+    Browser -->|"HTTP Request with Cookies"| AddAuthFilter
+    AddAuthFilter -->|"Extract access_token"| CookieService
+    CookieService -->|"Return JWT"| AddAuthFilter
+    AddAuthFilter -->|"Add Authorization header"| SecurityConfig
+    
+    OAuthBFF -->|"Set auth cookies"| CookieService
+    OAuthBFF -->|"Clear cookies"| CookieService
+    OAuthBFF -->|"OAuth state cookies"| CookieService
+    
+    CookieService -->|"Use constants"| SecurityConstants
+    OAuthService -->|"Generate JWT state"| JwtService
+    OAuthBFF -->|"Store state JWT in cookie"| CookieService
+    
+    CookieService -->|"Set-Cookie headers"| Browser

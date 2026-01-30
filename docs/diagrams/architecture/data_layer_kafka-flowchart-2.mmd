@@ -1,0 +1,39 @@
+flowchart LR
+    subgraph configuration["Configuration Components"]
+        OssKafkaConfig["OssKafkaConfig<br/>@EnableKafka"]
+        AutoConfig["OssTenantKafkaAutoConfiguration<br/>@AutoConfiguration"]
+        TopicProps["KafkaTopicProperties<br/>@ConfigurationProperties"]
+        KafkaProps["OssTenantKafkaProperties<br/>@ConfigurationProperties"]
+    end
+    
+    subgraph beans["Spring Beans Created"]
+        ProducerFactory["ProducerFactory"]
+        ConsumerFactory["ConsumerFactory"]
+        KafkaTemplate["KafkaTemplate"]
+        ListenerFactory["KafkaListenerContainerFactory"]
+        KafkaAdmin["KafkaAdmin"]
+        MessageProducer["MessageProducer"]
+    end
+    
+    subgraph runtime["Runtime Components"]
+        OssProducer["OssTenantKafkaProducer"]
+        GenericProducer["GenericKafkaProducer"]
+        RecoveryHandler["KafkaRecoveryHandlerImpl"]
+    end
+    
+    AutoConfig -->|"reads"| KafkaProps
+    AutoConfig -->|"reads"| TopicProps
+    AutoConfig -->|"creates"| ProducerFactory
+    AutoConfig -->|"creates"| ConsumerFactory
+    AutoConfig -->|"creates"| KafkaTemplate
+    AutoConfig -->|"creates"| ListenerFactory
+    AutoConfig -->|"creates"| KafkaAdmin
+    AutoConfig -->|"creates"| MessageProducer
+    
+    ProducerFactory -->|"used by"| KafkaTemplate
+    KafkaTemplate -->|"injected into"| OssProducer
+    OssProducer -->|"extends"| GenericProducer
+    
+    style configuration fill:#fff4e6
+    style beans fill:#e8f5e9
+    style runtime fill:#e1f5ff

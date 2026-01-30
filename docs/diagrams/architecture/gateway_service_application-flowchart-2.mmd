@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph GatewayApp["Gateway Application"]
+        Main["GatewayApplication<br/>(Main Entry Point)"]
+        
+        subgraph Config["Configuration Layer"]
+            WebClientCfg["WebClientConfig<br/>(HTTP Client)"]
+            WSConfig["WebSocketGatewayConfig<br/>(WS Routes)"]
+            CorsConfig["CorsConfig<br/>(CORS Policy)"]
+        end
+        
+        subgraph Security["Security Layer"]
+            SecurityCfg["GatewaySecurityConfig<br/>(Security Rules)"]
+            JwtAuthCfg["JwtAuthConfig<br/>(JWT Validation)"]
+            ApiKeyFilter["ApiKeyAuthenticationFilter<br/>(API Key Auth)"]
+        end
+        
+        subgraph Filters["Filter Chain"]
+            AuthFilter["AddAuthorizationHeaderFilter"]
+            RateLimitFilter["Rate Limit Filter"]
+            WSProxyFilter["WebSocket Proxy Filters"]
+        end
+        
+        subgraph Services["Core Services"]
+            ApiKeyValidation["ApiKeyValidationService"]
+            RateLimitSvc["RateLimitService"]
+            IssuerProvider["IssuerUrlProvider"]
+        end
+    end
+    
+    Main -->|"Scans"| Config
+    Main -->|"Scans"| Security
+    Main -->|"Scans"| Filters
+    
+    SecurityCfg -->|"Configures"| AuthFilter
+    JwtAuthCfg -->|"Creates"| JWKSCache["JWKS Cache<br/>(Caffeine)"]
+    ApiKeyFilter -->|"Uses"| ApiKeyValidation
+    ApiKeyFilter -->|"Uses"| RateLimitSvc
+    
+    WSConfig -->|"Defines"| WSProxyFilter
+    
+    style Main fill:#FF6B6B,stroke:#C92A2A,stroke-width:3px,color:#fff
+    style Security fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style Config fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style Filters fill:#F39C12,stroke:#B8860B,stroke-width:2px,color:#fff
+    style Services fill:#1ABC9C,stroke:#117A65,stroke-width:2px,color:#fff

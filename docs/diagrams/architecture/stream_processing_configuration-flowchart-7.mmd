@@ -1,0 +1,50 @@
+flowchart TD
+    subgraph Input["Configuration Input"]
+        AppName["spring.application.name<br/>(openframe-stream)"]
+        ClusterId["openframe.cluster-id<br/>(tenant-y0-1)"]
+    end
+    
+    subgraph Logic["buildStreamsApplicationId()"]
+        CheckNull{"cluster-id<br/>null?"}
+        CheckEmpty{"cluster-id<br/>empty?"}
+        BuildId["applicationName + '-' + clusterId"]
+        ReturnBase["return applicationName"]
+    end
+    
+    subgraph Output["Application ID"]
+        SingleTenant["openframe-stream<br/>(single tenant)"]
+        MultiTenant["openframe-stream-tenant-y0-1<br/>(multi-tenant)"]
+    end
+    
+    subgraph KafkaResources["Kafka Resources"]
+        ConsumerGroup["Consumer Group ID"]
+        StateDir["State Store Directory<br/>(/tmp/kafka-streams/APP_ID)"]
+        InternalTopics["Internal Topics<br/>(APP_ID-*)"]
+    end
+    
+    AppName --> CheckNull
+    ClusterId --> CheckNull
+    
+    CheckNull -->|"Yes"| ReturnBase
+    CheckNull -->|"No"| CheckEmpty
+    CheckEmpty -->|"Yes"| ReturnBase
+    CheckEmpty -->|"No"| BuildId
+    
+    ReturnBase --> SingleTenant
+    BuildId --> MultiTenant
+    
+    SingleTenant --> ConsumerGroup
+    MultiTenant --> ConsumerGroup
+    
+    ConsumerGroup --> StateDir
+    ConsumerGroup --> InternalTopics
+    
+    classDef inputClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef logicClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef outputClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef resourceClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    
+    class AppName,ClusterId inputClass
+    class CheckNull,CheckEmpty,BuildId,ReturnBase logicClass
+    class SingleTenant,MultiTenant outputClass
+    class ConsumerGroup,StateDir,InternalTopics resourceClass

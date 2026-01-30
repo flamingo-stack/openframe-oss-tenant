@@ -1,0 +1,15 @@
+flowchart TD
+    Start["new PinotQueryBuilder(table)"] --> Select["select(...)<br/>distinct()<br/>selectCount()"]
+    Select --> Where["where(...)<br/>whereEquals()<br/>whereIn()<br/>whereDateRange()<br/>whereTextSearch()<br/>whereCursor()"]
+    Where --> Group["groupBy(...)"]
+    Group --> Order["orderBy(...)<br/>orderByTimestampDesc()"]
+    Order --> Limit["limit(...)"]
+    Limit --> Build["build()"]
+    Build --> Validate["Validate Query State"]
+    Validate --> Construct["Construct SQL String"]
+    Construct --> Return["Return SQL Query"]
+    
+    style Start fill:#E8F4F8
+    style Where fill:#50C878
+    style Build fill:#F39C12
+    style Return fill:#4A90E2

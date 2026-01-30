@@ -1,0 +1,53 @@
+flowchart TD
+    subgraph Frontend["Frontend Layer"]
+        LogsPage["Logs Page<br/>(page.tsx)"]
+        LogsTable["LogsTable Component<br/>(logs-table.tsx)"]
+        LogInfoModal["LogInfoModal<br/>(log-info-modal.tsx)"]
+        
+        subgraph Hooks["React Hooks"]
+            UseLogs["useLogs()<br/>Data Fetching"]
+            UseLogFilters["useLogFilters()<br/>Filter Options"]
+        end
+        
+        subgraph State["State Management"]
+            LogsStore["LogsStore<br/>(Zustand)"]
+        end
+        
+        subgraph Queries["GraphQL Queries"]
+            GetLogsQuery["GET_LOGS_QUERY"]
+            GetLogDetailsQuery["GET_LOG_DETAILS_QUERY"]
+            GetLogFiltersQuery["GET_LOG_FILTERS_QUERY"]
+        end
+    end
+    
+    subgraph Backend["Backend Layer"]
+        ApiClient["ApiClient<br/>(GraphQL Endpoint)"]
+        LogDataFetcher["LogDataFetcher<br/>(DGS Component)"]
+        LogService["LogService"]
+        PinotLogRepo["PinotClientLogRepository"]
+    end
+    
+    subgraph Storage["Data Storage"]
+        Pinot["Apache Pinot<br/>(OLAP Database)"]
+    end
+    
+    LogsPage --> LogsTable
+    LogsTable --> LogInfoModal
+    LogsTable --> UseLogs
+    LogsTable --> UseLogFilters
+    
+    UseLogs --> LogsStore
+    UseLogs --> GetLogsQuery
+    UseLogs --> GetLogDetailsQuery
+    UseLogFilters --> GetLogFiltersQuery
+    
+    GetLogsQuery --> ApiClient
+    GetLogDetailsQuery --> ApiClient
+    GetLogFiltersQuery --> ApiClient
+    
+    ApiClient --> LogDataFetcher
+    LogDataFetcher --> LogService
+    LogService --> PinotLogRepo
+    PinotLogRepo --> Pinot
+    
+    LogsStore -.->|"State Updates"| LogsTable

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant User
+    participant Component
+    participant useDynamicTheme
+    participant Context
+    participant useDynamicTheming
+    participant State
+    participant CSS
+    
+    User->>Component: Click theme toggle
+    Component->>useDynamicTheme: toggleDark()
+    useDynamicTheme->>Context: Access context
+    Context->>useDynamicTheming: Call toggleDark()
+    useDynamicTheming->>State: setIsDark(!isDark)
+    State->>Context: Update context value
+    Context->>Component: Re-render with new theme
+    Component->>CSS: Apply theme classes
+    CSS->>User: Visual update

@@ -1,0 +1,15 @@
+flowchart LR
+    HealthEndpoint["/actuator/health"] --> Aggregator["Health Aggregator"]
+    
+    Aggregator --> MongoHealth["MongoDB Health"]
+    Aggregator --> DebeziumHealth["Debezium Health"]
+    Aggregator --> KafkaHealth["Kafka Health"]
+    
+    MongoHealth -->|"UP/DOWN"| Status["Overall Status"]
+    DebeziumHealth -->|"UP/DOWN"| Status
+    KafkaHealth -->|"UP/DOWN"| Status
+    
+    Status --> Response["JSON Response"]
+    
+    style HealthEndpoint fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style Status fill:#2196F3,stroke:#0D47A1,color:#fff

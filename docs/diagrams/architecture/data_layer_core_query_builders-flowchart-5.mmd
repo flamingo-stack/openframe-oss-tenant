@@ -1,0 +1,28 @@
+flowchart TD
+    subgraph Repositories["Pinot Repositories"]
+        LogRepo["PinotClientLogRepository"]
+        DeviceRepo["PinotClientDeviceRepository"]
+    end
+    
+    subgraph QueryBuilder["Query Builder"]
+        QB["PinotQueryBuilder"]
+    end
+    
+    subgraph Pinot["Apache Pinot"]
+        Broker["Pinot Broker"]
+        Tables["Pinot Tables"]
+    end
+    
+    LogRepo -->|"Builds log queries"| QB
+    DeviceRepo -->|"Builds device queries"| QB
+    
+    QB -->|"Generates SQL"| Broker
+    Broker -->|"Queries"| Tables
+    
+    Tables -->|"ResultSet"| Broker
+    Broker -->|"ResultSetGroup"| LogRepo
+    Broker -->|"ResultSetGroup"| DeviceRepo
+    
+    style QB fill:#4CAF50
+    style Repositories fill:#E3F2FD
+    style Pinot fill:#FFF3E0

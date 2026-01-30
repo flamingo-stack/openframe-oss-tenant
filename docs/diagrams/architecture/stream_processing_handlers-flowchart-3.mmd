@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Registration["Handler Registration (Spring Boot)"]
+        CassandraBean["@Component<br/>DebeziumCassandraMessageHandler"]
+        KafkaBean["@Component<br/>DebeziumKafkaMessageHandler"]
+    end
+    
+    subgraph ProcessorRegistry["GenericJsonMessageProcessor Registry"]
+        HandlerMap["Map<EventHandlerType,<br/>Map<Destination, MessageHandler>>"]
+    end
+    
+    subgraph Routing["Message Routing"]
+        MessageType["MessageType.getDestinationList()"]
+        DestinationLoop["For each Destination"]
+    end
+    
+    CassandraBean -->|"Auto-wired"| HandlerMap
+    KafkaBean -->|"Auto-wired"| HandlerMap
+    
+    MessageType --> DestinationLoop
+    DestinationLoop -->|"Lookup"| HandlerMap
+    HandlerMap -->|"CASSANDRA"| CassandraBean
+    HandlerMap -->|"KAFKA"| KafkaBean
+    
+    style Registration fill:#50C878,stroke:#2E7D4E,color:#fff
+    style ProcessorRegistry fill:#FFB347,stroke:#CC8A38,color:#fff
+    style Routing fill:#9B59B6,stroke:#6C3483,color:#fff

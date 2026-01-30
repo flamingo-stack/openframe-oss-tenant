@@ -1,0 +1,21 @@
+flowchart TD
+    Token["JWT Token"] --> ExtractHeader["Extract Header<br/>(alg, kid)"]
+    ExtractHeader --> FetchKey["Fetch Public Key<br/>(from /.well-known/jwks.json)"]
+    FetchKey --> VerifySignature["Verify Signature<br/>(RSA-SHA256)"]
+    
+    VerifySignature -->|"Valid"| CheckClaims["Check Claims"]
+    VerifySignature -->|"Invalid"| Reject["Reject Token"]
+    
+    CheckClaims --> CheckExp["exp > now?"]
+    CheckExp -->|"Yes"| CheckIss["iss matches tenant?"]
+    CheckExp -->|"No"| Reject
+    
+    CheckIss -->|"Yes"| CheckAud["aud matches client?"]
+    CheckIss -->|"No"| Reject
+    
+    CheckAud -->|"Yes"| Accept["Accept Token"]
+    CheckAud -->|"No"| Reject
+    
+    style VerifySignature fill:#4A90E2
+    style Accept fill:#50C878
+    style Reject fill:#E74C3C

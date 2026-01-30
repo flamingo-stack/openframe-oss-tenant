@@ -1,0 +1,18 @@
+flowchart TD
+    ServiceCall["Service Method Called"]
+    EnsureToken["tokenService.ensureTokenReady()"]
+    CheckToken["Check Current Token"]
+    CheckURL["Check API URL"]
+    
+    ServiceCall --> EnsureToken
+    EnsureToken --> CheckToken
+    CheckToken -->|"Missing"| RequestToken["Request Token"]
+    CheckToken -->|"Available"| CheckURL
+    RequestToken --> CheckURL
+    
+    CheckURL -->|"Missing"| InitURL["Initialize API URL"]
+    CheckURL -->|"Available"| MakeRequest["Make API Request"]
+    InitURL --> MakeRequest
+    
+    MakeRequest --> Success["Return Data"]
+    MakeRequest --> Error["Handle Error"]

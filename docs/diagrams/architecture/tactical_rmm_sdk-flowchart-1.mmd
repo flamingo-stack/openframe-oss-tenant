@@ -1,0 +1,18 @@
+flowchart TD
+    Client["OpenFrame Services<br/>(Management, Client)"] -->|"uses"| SDK["Tactical RMM SDK"]
+    
+    subgraph SDK["Tactical RMM SDK"]
+        direction TB
+        Models["Data Models<br/>AgentInfo, AgentListItem"]
+        Parser["Registration Parser<br/>RegistrationSecretParser"]
+        
+        Models -.->|"serialized by"| Jackson["Jackson Annotations"]
+        Parser -.->|"uses"| Regex["Regex Pattern Matching"]
+    end
+    
+    SDK -->|"maps responses from"| TacticalAPI["Tactical RMM API<br/>(External)"]
+    SDK -->|"parses commands from"| InstallCmd["Installation Commands"]
+    
+    style SDK fill:#e1f5ff
+    style Models fill:#fff4e6
+    style Parser fill:#fff4e6

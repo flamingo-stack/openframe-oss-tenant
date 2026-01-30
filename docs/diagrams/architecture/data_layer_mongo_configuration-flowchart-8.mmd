@@ -1,0 +1,29 @@
+flowchart TD
+    Start["Application Startup"]
+    
+    Start --> CheckProperty{"spring.data.mongodb.enabled<br/>= true?"}
+    
+    CheckProperty -->|"No"| Skip["Skip MongoDB Configuration"]
+    CheckProperty -->|"Yes"| CheckWebType{"Application Type?"}
+    
+    CheckWebType -->|"Servlet"| BlockingConfig["Load MongoConfiguration"]
+    CheckWebType -->|"Reactive"| BothConfigs["Load Both Configurations"]
+    
+    BlockingConfig --> ScanRepos["Scan com.openframe.data.repository"]
+    BothConfigs --> ScanRepos
+    BothConfigs --> ScanReactive["Scan com.openframe.data.reactive.repository"]
+    
+    ScanRepos --> CreateConverter["Create MappingMongoConverter"]
+    ScanReactive --> CreateReactiveConverter["Create Reactive Converter"]
+    
+    CreateConverter --> EnableAudit["Enable Auditing"]
+    
+    EnableAudit --> RegisterRepos["Register Repository Beans"]
+    CreateReactiveConverter --> RegisterReactive["Register Reactive Repository Beans"]
+    
+    RegisterRepos --> Ready["MongoDB Ready"]
+    RegisterReactive --> Ready
+    Skip --> Ready
+    
+    style CheckProperty fill:#FFC107
+    style Ready fill:#4CAF50

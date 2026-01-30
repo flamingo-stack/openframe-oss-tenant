@@ -1,0 +1,31 @@
+flowchart TD
+    Request["Incoming Request"] --> ExtractJwt["Extract JWT Token"]
+    ExtractJwt --> ExtractIssuer["Extract Issuer Claim"]
+    
+    ExtractIssuer --> CheckCache{"Issuer in Cache?"}
+    
+    CheckCache -->|"Yes"| GetCached["Get Cached Manager"]
+    CheckCache -->|"No"| CheckInternal{"Internal Issuer?"}
+    
+    CheckInternal -->|"Yes"| LoadInternal["Load Internal Public Key"]
+    CheckInternal -->|"No"| LoadExternal["Load from Issuer URL"]
+    
+    LoadInternal --> CreateDecoder1["Create NimbusReactiveJwtDecoder"]
+    LoadExternal --> CreateDecoder2["Create NimbusReactiveJwtDecoder"]
+    
+    CreateDecoder1 --> AddValidator1["Add Default Validator"]
+    CreateDecoder2 --> AddValidator2["Add Default + Strict Issuer Validator"]
+    
+    AddValidator1 --> CreateManager1["Create JwtReactiveAuthenticationManager"]
+    AddValidator2 --> CreateManager2["Create JwtReactiveAuthenticationManager"]
+    
+    CreateManager1 --> CacheManager["Cache Manager"]
+    CreateManager2 --> CacheManager
+    
+    CacheManager --> GetCached
+    GetCached --> ValidateToken["Validate JWT Token"]
+    
+    ValidateToken -->|"Valid"| ExtractClaims["Extract Claims & Authorities"]
+    ValidateToken -->|"Invalid"| Reject["Reject Request"]
+    
+    ExtractClaims --> Authenticated["Authenticated"]

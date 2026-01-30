@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph Controllers["REST Controllers"]
+        DeviceCtrl["DeviceController"]
+        EventCtrl["EventController"]
+        LogCtrl["LogController"]
+        OrgCtrl["OrganizationController"]
+        ToolCtrl["ToolController"]
+    end
+    
+    subgraph ExceptionLayer["Exception Handling"]
+        GEH["GlobalExceptionHandler"]
+    end
+    
+    DeviceCtrl -.->|"throws exceptions"| GEH
+    EventCtrl -.->|"throws exceptions"| GEH
+    LogCtrl -.->|"throws exceptions"| GEH
+    OrgCtrl -.->|"throws exceptions"| GEH
+    ToolCtrl -.->|"throws exceptions"| GEH
+    
+    GEH -->|"ErrorResponse"| Client["API Client"]
+    
+    style GEH fill:#4ecdc4
+    style Client fill:#51cf66

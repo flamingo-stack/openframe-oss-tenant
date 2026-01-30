@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Admin as Admin User
+    participant Gateway
+    participant UserController
+    participant Security
+    participant UserService
+    participant UserRepository
+    participant MongoDB
+
+    Admin->>Gateway: DELETE /users/{id} + JWT
+    Gateway->>UserController: Forward Request
+    
+    UserController->>Security: Extract AuthPrincipal
+    Security-->>UserController: AuthPrincipal (admin ID)
+    
+    UserController->>UserService: softDeleteUser(id, adminId)
+    UserService->>UserRepository: findById(id)
+    UserRepository->>MongoDB: Query user
+    MongoDB-->>UserRepository: User document
+    
+    UserRepository-->>UserService: User entity
+    UserService->>UserService: Set deletedAt = now()
+    UserService->>UserService: Set deletedBy = adminId
+    UserService->>UserService: Set active = false
+    
+    UserService->>UserRepository: save(user)
+    UserRepository->>MongoDB: UPDATE document
+    MongoDB-->>UserRepository: Updated document
+    
+    UserRepository-->>UserService: Success
+    UserService-->>UserController: Success
+    UserController-->>Gateway: 204 No Content
+    Gateway-->>Admin: 204 No Content

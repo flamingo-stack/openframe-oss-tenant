@@ -1,0 +1,11 @@
+flowchart LR
+    Controller["IntegratedToolController"] -->|"saveTool()"| Service["IntegratedToolService"]
+    Service -->|"save()"| Repository["IntegratedToolRepository<br/>(MongoRepository)"]
+    Repository -->|"Insert/Update"| MongoDB["MongoDB<br/>integrated_tools"]
+    
+    Initializer["IntegratedToolAgentInitializer"] -->|"save()"| AgentService["IntegratedToolAgentService"]
+    AgentService -->|"save()"| AgentRepo["IntegratedToolAgentRepository"]
+    AgentRepo -->|"Insert/Update"| MongoDBAgent["MongoDB<br/>integrated_tool_agents"]
+    
+    style MongoDB fill:#4DB33D,stroke:#3D8B2F,color:#fff
+    style MongoDBAgent fill:#4DB33D,stroke:#3D8B2F,color:#fff

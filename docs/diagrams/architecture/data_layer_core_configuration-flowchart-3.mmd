@@ -1,0 +1,50 @@
+flowchart TD
+    subgraph properties["Application Properties"]
+        ContactPoints["spring.data.cassandra.contact-points<br/>e.g., localhost"]
+        Port["spring.data.cassandra.port<br/>default: 9042"]
+        Datacenter["spring.data.cassandra.local-datacenter<br/>e.g., datacenter1"]
+        Keyspace["spring.data.cassandra.keyspace-name<br/>e.g., openframe_timeseries"]
+    end
+    
+    subgraph config["CassandraConfig"]
+        direction TB
+        
+        GetKeyspace["getKeyspaceName()"]
+        GetDatacenter["getLocalDataCenter()"]
+        GetPort["getPort()"]
+        GetContactPoints["getContactPoints()"]
+        SchemaAction["getSchemaAction()<br/>CREATE_IF_NOT_EXISTS"]
+        
+        SessionFactory["cassandraSession()<br/>CqlSessionFactoryBean"]
+    end
+    
+    subgraph driver_config["Driver Configuration"]
+        direction TB
+        
+        DriverConfigLoader["DriverConfigLoader.programmaticBuilder()"]
+        
+        LoadBalancing["LOAD_BALANCING_LOCAL_DATACENTER<br/>= datacenter1"]
+        ContactPointsList["CONTACT_POINTS<br/>= [localhost:9042]"]
+        TimestampGen["TIMESTAMP_GENERATOR_CLASS<br/>= ServerSideTimestampGenerator"]
+        
+        DriverConfigLoader -->|"sets"| LoadBalancing
+        DriverConfigLoader -->|"sets"| ContactPointsList
+        DriverConfigLoader -->|"sets"| TimestampGen
+    end
+    
+    subgraph session_creation["Session Creation"]
+        CqlSession["CqlSession Bean"]
+        SessionLogger["CassandraSessionLogger<br/>(Monitoring)"]
+    end
+    
+    ContactPoints -->|"injects"| GetContactPoints
+    Port -->|"injects"| GetPort
+    Datacenter -->|"injects"| GetDatacenter
+    Keyspace -->|"injects"| GetKeyspace
+    
+    SessionFactory -->|"configures"| DriverConfigLoader
+    DriverConfigLoader -->|"builds"| CqlSession
+    
+    CqlSession -->|"monitored by"| SessionLogger
+    
+    CqlSession -->|"connects to"| CassandraCluster[("Cassandra Cluster<br/>datacenter1")]

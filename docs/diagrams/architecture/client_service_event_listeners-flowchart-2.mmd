@@ -1,0 +1,43 @@
+flowchart LR
+    subgraph AgentSide["Agent Side"]
+        A1["Agent Connects"]
+        A2["Agent Sends Heartbeat"]
+        A3["Agent Installs Software"]
+        A4["Agent Disconnects"]
+    end
+    
+    subgraph NATSBroker["NATS Broker"]
+        N1["Connection Stream"]
+        N2["Heartbeat Subject"]
+        N3["JetStream<br/>INSTALLED_AGENTS"]
+    end
+    
+    subgraph Listeners["Event Listeners"]
+        L1["ClientConnectionListener"]
+        L2["MachineHeartbeatListener"]
+        L3["InstalledAgentListener"]
+    end
+    
+    subgraph Processing["Event Processing"]
+        P1["Parse Event"]
+        P2["Extract Machine ID"]
+        P3["Validate & Update"]
+        P4["Persist to DB"]
+    end
+    
+    A1 -->|"Publish"| N1
+    A2 -->|"Publish"| N2
+    A3 -->|"Publish"| N3
+    A4 -->|"Publish"| N1
+    
+    N1 -->|"Subscribe"| L1
+    N2 -->|"Subscribe"| L2
+    N3 -->|"Subscribe"| L3
+    
+    L1 --> P1
+    L2 --> P1
+    L3 --> P1
+    
+    P1 --> P2
+    P2 --> P3
+    P3 --> P4

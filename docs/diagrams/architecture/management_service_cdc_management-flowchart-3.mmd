@@ -1,0 +1,25 @@
+flowchart TD
+    Start["createOrUpdateDebeziumConnector()"]
+    Loop["For Each Connector Config"]
+    CheckExists["GET /connectors/{name}"]
+    Exists{Connector<br/>Exists?}
+    Update["PUT /connectors/{name}/config"]
+    Create["POST /connectors"]
+    LogSuccess["Log Success"]
+    HandleError["Log Error"]
+    
+    Start --> Loop
+    Loop --> CheckExists
+    CheckExists --> Exists
+    Exists -->|"200 OK"| Update
+    Exists -->|"404 Not Found"| Create
+    Update --> LogSuccess
+    Create --> LogSuccess
+    CheckExists -->|"Error"| HandleError
+    Update -->|"Error"| HandleError
+    Create -->|"Error"| HandleError
+    
+    style Start fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style Exists fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style LogSuccess fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style HandleError fill:#ffcdd2,stroke:#c62828,stroke-width:2px

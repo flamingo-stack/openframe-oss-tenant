@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph config_layer["Configuration Layer (Current Module)"]
+        direction TB
+        
+        DataConfiguration["DataConfiguration"]
+        CassandraConfig["CassandraConfig"]
+        PinotConfig["PinotConfig"]
+    end
+    
+    subgraph repository_layer["Repository Layer"]
+        direction TB
+        
+        CassandraRepos["Cassandra Repositories<br/>(Time-Series)"]
+        PinotRepos["Pinot Repositories<br/>(Analytics)"]
+    end
+    
+    subgraph service_layer["Service Layer"]
+        direction TB
+        
+        APIService["API Service"]
+        ExternalAPI["External API Service"]
+        StreamService["Stream Processing"]
+    end
+    
+    subgraph datastores["Data Stores"]
+        direction LR
+        
+        MongoDB[("MongoDB<br/>Transactional")]
+        Cassandra[("Cassandra<br/>Time-Series")]
+        Pinot[("Pinot<br/>Analytics")]
+    end
+    
+    DataConfiguration -->|"enables"| CassandraRepos
+    CassandraConfig -->|"configures"| CassandraRepos
+    PinotConfig -->|"configures"| PinotRepos
+    
+    CassandraRepos -->|"queries"| Cassandra
+    PinotRepos -->|"queries"| Pinot
+    
+    APIService -->|"uses"| PinotRepos
+    ExternalAPI -->|"uses"| PinotRepos
+    StreamService -->|"ingests to"| Pinot
+    
+    MongoConfig["data_layer_mongo<br/>MongoConfig"] -->|"configures"| MongoDB
+    APIService -->|"uses"| MongoDB

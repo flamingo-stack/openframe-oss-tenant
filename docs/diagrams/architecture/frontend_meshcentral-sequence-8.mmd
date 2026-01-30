@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant UI as React Component
+    participant Desktop as MeshDesktop
+    participant WS as WebSocket
+    participant Server as MeshCentral
+    
+    UI->>Desktop: new MeshDesktop()
+    UI->>Desktop: setSender(ws.send)
+    
+    Note over Desktop: Auto-initialize on setSender
+    
+    Desktop->>Server: KVM_INIT (flags=0)
+    Desktop->>Server: COMPRESSION (JPEG, quality=50)
+    Desktop->>Server: PAUSE (unpause=0)
+    Desktop->>Server: REFRESH
+    Desktop->>Server: DISPLAY_LIST
+    
+    Server->>Desktop: SCREEN_SIZE (width, height)
+    Desktop->>UI: Canvas resized
+    
+    Server->>Desktop: DISPLAY_LIST (displays[])
+    Desktop->>UI: onDisplayListCallback
+    
+    Server->>Desktop: TILE (x, y, jpeg)
+    Server->>Desktop: TILE (x, y, jpeg)
+    Server->>Desktop: TILE (x, y, jpeg)
+    
+    Note over Desktop: Queue tiles for decode
+    
+    Desktop->>Desktop: Decode JPEG tiles
+    Desktop->>Desktop: Draw to canvas
+    
+    UI->>Desktop: attach(canvas)
+    Note over Desktop: Start capturing input

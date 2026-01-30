@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph RuntimeOps["Runtime Operations"]
+        direction TB
+        
+        API["REST API Requests<br/>(Tool CRUD)"]
+        Scheduler["Scheduled Health Checks<br/>(Every 5 min)"]
+        Events["Kafka Event Publishing<br/>(Agent Updates)"]
+    end
+    
+    API -->|"POST /v1/tools/{id}"| SaveTool["Save Tool Configuration"]
+    SaveTool --> UpdateDebezium["Create/Update CDC Connector"]
+    SaveTool --> TriggerHooks["Execute Post-Save Hooks"]
+    
+    Scheduler -->|"@Scheduled"| AcquireLock["Acquire Distributed Lock<br/>(ShedLock)"]
+    AcquireLock -->|"Lock Acquired"| CheckHealth["Check Connector Health"]
+    CheckHealth -->|"Failed Tasks Found"| RestartTasks["Restart Failed Tasks"]
+    AcquireLock -->|"Lock Not Acquired"| Skip["Skip (Another Instance Running)"]
+    
+    Events -->|"Version Changed"| PublishUpdate["Publish ToolAgentUpdate Event"]
+    PublishUpdate --> KafkaTopic["Kafka Topic:<br/>tool-agent-updates"]
+    
+    style SaveTool fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style CheckHealth fill:#FF6B6B,stroke:#C92A2A,color:#fff
+    style PublishUpdate fill:#9C27B0,stroke:#6A1B9A,color:#fff

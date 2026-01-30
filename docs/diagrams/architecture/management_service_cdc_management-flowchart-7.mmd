@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph ManagementService["Management Service"]
+        CDCModule["CDC Management Module"]
+        ToolManagement["Tool Management Module"]
+        Configuration["Management Configuration"]
+    end
+    
+    subgraph ExternalServices["External Services"]
+        DebeziumConnect["Debezium Connect<br/>(Port 8083)"]
+        MongoDB["MongoDB<br/>(Lock Storage)"]
+    end
+    
+    subgraph SpringFramework["Spring Framework"]
+        Scheduling["@Scheduled"]
+        RestTemplate["RestTemplate"]
+        ShedLock["ShedLock"]
+    end
+    
+    Configuration -->|"Provides Config"| CDCModule
+    ToolManagement -->|"Triggers Connector<br/>Creation"| CDCModule
+    
+    CDCModule -->|"HTTP REST API"| DebeziumConnect
+    CDCModule -->|"Uses"| RestTemplate
+    CDCModule -->|"Uses"| Scheduling
+    CDCModule -->|"Uses"| ShedLock
+    
+    ShedLock -->|"Stores Locks"| MongoDB
+    
+    style ManagementService fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style ExternalServices fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style SpringFramework fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px

@@ -1,0 +1,26 @@
+flowchart TD
+    JwtConfig["JwtConfig Bean"]
+    
+    subgraph JwtSecurityConfig["JwtSecurityConfig"]
+        EncoderBean["@Bean jwtEncoder()"]
+        DecoderBean["@Bean jwtDecoder()"]
+    end
+    
+    subgraph NimbusImpl["Nimbus Implementation"]
+        RSAKeyBuilder["RSAKey.Builder"]
+        JWKSet["JWKSet"]
+        ImmutableJWKSet["ImmutableJWKSet"]
+        NimbusEncoder["NimbusJwtEncoder"]
+        NimbusDecoder["NimbusJwtDecoder"]
+    end
+    
+    JwtConfig -->|"loadPublicKey()"| EncoderBean
+    JwtConfig -->|"loadPrivateKey()"| EncoderBean
+    JwtConfig -->|"loadPublicKey()"| DecoderBean
+    
+    EncoderBean --> RSAKeyBuilder
+    RSAKeyBuilder --> JWKSet
+    JWKSet --> ImmutableJWKSet
+    ImmutableJWKSet --> NimbusEncoder
+    
+    DecoderBean --> NimbusDecoder

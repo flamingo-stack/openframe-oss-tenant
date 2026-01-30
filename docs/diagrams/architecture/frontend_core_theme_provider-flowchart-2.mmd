@@ -1,0 +1,20 @@
+flowchart LR
+    SystemPref["System Preference<br/>(prefers-color-scheme)"]
+    MediaQuery["MediaQuery Listener"]
+    Hook["useDynamicTheming"]
+    State["Theme State<br/>(theme, isDark)"]
+    Context["React Context"]
+    Components["Consumer Components"]
+    CSS["CSS Variables"]
+    
+    SystemPref -->|"detected by"| MediaQuery
+    MediaQuery -->|"updates"| Hook
+    Hook -->|"manages"| State
+    State -->|"provided via"| Context
+    Context -->|"consumed by"| Components
+    State -->|"applies to"| CSS
+    Components -->|"can update"| Hook
+    
+    style Hook fill:#ffc008
+    style State fill:#00d4aa
+    style Context fill:#ff6b9d

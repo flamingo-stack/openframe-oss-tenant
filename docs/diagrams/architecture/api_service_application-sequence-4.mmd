@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant APIService
+    participant JWTResolver
+    participant JWTCache
+    participant JWTValidator
+    participant Controller
+
+    Client->>Gateway: Request + JWT Token
+    Gateway->>APIService: Forward Request + JWT
+    APIService->>JWTResolver: Extract Issuer from JWT
+    JWTResolver->>JWTCache: Get Provider for Issuer
+    
+    alt Cache Hit
+        JWTCache-->>JWTResolver: Return Cached Provider
+    else Cache Miss
+        JWTCache->>JWTValidator: Create New Provider
+        JWTValidator-->>JWTCache: Provider Created
+        JWTCache-->>JWTResolver: Return New Provider
+    end
+    
+    JWTResolver->>JWTValidator: Validate JWT
+    
+    alt Valid JWT
+        JWTValidator-->>APIService: Authentication Success
+        APIService->>Controller: Process Request
+        Controller-->>Client: Response
+    else Invalid JWT
+        JWTValidator-->>Client: 401 Unauthorized
+    end

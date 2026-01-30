@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph ui["UI Layer"]
+        Component["React Component"]
+    end
+    
+    subgraph logic["Business Logic"]
+        Hook["Custom Hook<br/>(useDevices)"]
+        Store["Zustand Store<br/>(DeviceStore)"]
+    end
+    
+    subgraph api["API Layer"]
+        APIClient["API Client"]
+        Backend["Backend Service"]
+    end
+    
+    Component -->|"1. call hook"| Hook
+    Hook -->|"2. read state"| Store
+    Store -->|"3. return data"| Hook
+    Hook -->|"4. render"| Component
+    
+    Component -->|"5. user action"| Hook
+    Hook -->|"6. API call"| APIClient
+    APIClient -->|"7. HTTP request"| Backend
+    Backend -->|"8. response"| APIClient
+    APIClient -->|"9. update state"| Store
+    Store -->|"10. reactive update"| Component
+    
+    style Component fill:#4CAF50
+    style Store fill:#2196F3
+    style APIClient fill:#FF9800

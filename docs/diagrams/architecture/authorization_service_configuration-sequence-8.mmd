@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Client as Client App
+    participant Browser
+    participant AuthServer as Authorization Server
+    participant TenantKey as TenantKeyService
+    participant UserSvc as UserService
+    participant Mongo as MongoDB
+
+    Client->>Browser: Redirect to /oauth2/authorize
+    Note over Client: code_challenge=SHA256(verifier)<br/>code_challenge_method=S256
+    
+    Browser->>AuthServer: GET /oauth2/authorize?client_id=...&code_challenge=...
+    AuthServer->>AuthServer: Store code_challenge in session
+    AuthServer->>Browser: Redirect to /login
+    
+    Browser->>AuthServer: POST /login (username, password)
+    AuthServer->>UserSvc: loadUserByUsername(email)
+    UserSvc->>Mongo: findByEmailAndTenant(email, tenantId)
+    Mongo-->>UserSvc: AuthUser
+    UserSvc-->>AuthServer: UserDetails
+    
+    AuthServer->>AuthServer: Authenticate User
+    AuthServer->>Mongo: Save OAuth2Authorization<br/>(with code_challenge)
+    AuthServer->>Browser: Redirect to redirect_uri?code=...
+    
+    Browser->>Client: Authorization code
+    Client->>AuthServer: POST /oauth2/token<br/>(code, code_verifier)
+    AuthServer->>Mongo: Load OAuth2Authorization by code
+    AuthServer->>AuthServer: Verify PKCE:<br/>SHA256(code_verifier) == code_challenge
+    
+    AuthServer->>TenantKey: getOrCreateActiveKey(tenantId)
+    TenantKey-->>AuthServer: RSAKey (kid, public, private)
+    
+    AuthServer->>AuthServer: Generate JWT<br/>(sign with tenant key)
+    AuthServer->>AuthServer: Add custom claims<br/>(tenant_id, userId, roles)
+    
+    AuthServer-->>Client: access_token, refresh_token

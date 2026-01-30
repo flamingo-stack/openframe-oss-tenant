@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph Desktop["Desktop Application (Tauri)"]
+        subgraph Rust["Rust Backend"]
+            TokenMgr["Token Manager"]
+            ConfigMgr["Config Manager"]
+        end
+        
+        subgraph React["React Frontend"]
+            Contexts["Context Providers"]
+            Services["Service Layer"]
+            UI["UI Components"]
+        end
+    end
+    
+    subgraph Backend["OpenFrame Backend"]
+        AuthService["Authorization Service"]
+        ChatAPI["Chat API (GraphQL)"]
+        ExternalAPI["External API (REST)"]
+    end
+    
+    TokenMgr -->|"Events & Commands"| Services
+    ConfigMgr -->|"Configuration"| Services
+    
+    Services -->|"GraphQL Queries"| ChatAPI
+    Services -->|"REST Requests"| ExternalAPI
+    
+    AuthService -->|"JWT Tokens"| TokenMgr
+    
+    Contexts -->|"State"| UI
+    Services -->|"Data"| UI

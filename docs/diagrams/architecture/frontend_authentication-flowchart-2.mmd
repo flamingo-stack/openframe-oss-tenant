@@ -1,0 +1,30 @@
+flowchart TD
+    Request["API Request"]
+    CheckToken["Check Access Token"]
+    AddAuth["Add Authorization Header"]
+    SendRequest["Send HTTP Request"]
+    CheckResponse["Check Response Status"]
+    
+    RefreshToken["Refresh Access Token"]
+    RetryRequest["Retry Original Request"]
+    ForceLogout["Force Logout"]
+    
+    Success["Return Response"]
+    
+    Request --> CheckToken
+    CheckToken -->|"DevTicket mode"| AddAuth
+    CheckToken -->|"Cookie mode"| SendRequest
+    AddAuth --> SendRequest
+    SendRequest --> CheckResponse
+    
+    CheckResponse -->|"200-299"| Success
+    CheckResponse -->|"401"| RefreshToken
+    CheckResponse -->|"Other error"| Success
+    
+    RefreshToken -->|"Success"| RetryRequest
+    RefreshToken -->|"Failure"| ForceLogout
+    RetryRequest --> CheckResponse
+    
+    style RefreshToken fill:#FF9800
+    style ForceLogout fill:#F44336
+    style Success fill:#4CAF50

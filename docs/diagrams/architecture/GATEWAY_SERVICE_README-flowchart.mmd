@@ -1,0 +1,11 @@
+flowchart LR
+    Clients["Clients<br/>(Web/Mobile/Agent)"] -->|"HTTP/WS"| Gateway["Gateway Service<br/>:8080"]
+    
+    Gateway -->|"JWT"| API["API Service"]
+    Gateway -->|"JWT"| Client["Client Service"]
+    Gateway -->|"Public"| Auth["Authorization Service"]
+    Gateway -->|"API Key"| External["External API"]
+    Gateway -->|"WS Proxy"| Tools["Tool Services"]
+    
+    Gateway -.->|"Cache"| Redis["Redis"]
+    Gateway -.->|"Data"| Mongo["MongoDB"]

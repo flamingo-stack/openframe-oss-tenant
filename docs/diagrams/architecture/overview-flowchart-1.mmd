@@ -1,0 +1,67 @@
+flowchart TD
+    subgraph external[External Clients]
+        WebUI[Web UI]
+        ChatClient[Chat Client]
+        Agents[Device Agents]
+        ExternalAPI[External API Clients]
+    end
+
+    subgraph gateway_layer[Gateway Layer]
+        Gateway[API Gateway Service]
+    end
+
+    subgraph service_layer[Service Layer]
+        API[API Service<br/>GraphQL + REST]
+        Auth[Authorization Service<br/>OAuth 2.0]
+        Client[Client Service<br/>Agent Management]
+        Management[Management Service<br/>Tool Integration]
+        External[External API Service<br/>Public API]
+        Stream[Stream Processing<br/>CDC Events]
+    end
+
+    subgraph data_layer[Data Layer]
+        MongoDB[(MongoDB<br/>Primary Data)]
+        Cassandra[(Cassandra<br/>Time-Series)]
+        Pinot[(Apache Pinot<br/>Analytics)]
+        Kafka[(Kafka<br/>Event Streaming)]
+    end
+
+    subgraph integration_layer[Integration Layer]
+        FleetSDK[Fleet MDM SDK]
+        TacticalSDK[Tactical RMM SDK]
+    end
+
+    subgraph security_layer[Security Layer]
+        SecurityCore[Security Core<br/>JWT/Auth]
+        SecurityOAuth[Security OAuth<br/>BFF Pattern]
+    end
+
+    WebUI --> Gateway
+    ChatClient --> Gateway
+    Agents --> Gateway
+    ExternalAPI --> Gateway
+
+    Gateway --> API
+    Gateway --> Auth
+    Gateway --> Client
+    Gateway --> Management
+    Gateway --> External
+
+    API --> MongoDB
+    API --> Pinot
+    Client --> MongoDB
+    Management --> MongoDB
+    Stream --> Kafka
+    Stream --> Pinot
+
+    API --> FleetSDK
+    API --> TacticalSDK
+    Management --> FleetSDK
+    Management --> TacticalSDK
+
+    Gateway --> SecurityCore
+    Auth --> SecurityCore
+    Auth --> SecurityOAuth
+
+    Kafka -.->|CDC Events| Stream
+    MongoDB -.->|Change Streams| Kafka

@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph external["External Systems"]
+        Agent["OpenFrame Agent"]
+        ThirdParty["Third-party Tools"]
+    end
+
+    subgraph services["OpenFrame Services"]
+        Client["Client Service"]
+        Mgmt["Management Service"]
+        API["API Service"]
+    end
+
+    subgraph data["Data Layer"]
+        Mongo["MongoDB<br/>(data_layer_mongo)"]
+        Kafka["Kafka<br/>(data_layer_kafka)"]
+    end
+
+    Agent -->|"register/heartbeat"| Client
+    Client -->|"save Machine"| Mongo
+    
+    ThirdParty -->|"configure"| Mgmt
+    Mgmt -->|"save IntegratedTool"| Mongo
+    
+    Mongo -->|"CDC events"| Kafka
+    Kafka -->|"stream changes"| API
+    
+    API -->|"query data"| Mongo

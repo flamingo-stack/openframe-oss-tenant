@@ -1,0 +1,49 @@
+flowchart TB
+    subgraph cdn["CDN Layer"]
+        CloudFlare["CloudFlare<br/>(Edge Caching)"]
+    end
+    
+    subgraph frontend["Frontend Layer"]
+        CodeSplitting["Code Splitting<br/>(Route-based)"]
+        LazyLoading["Lazy Loading<br/>(Components)"]
+        Memoization["Memoization<br/>(React.memo)"]
+    end
+    
+    subgraph state["State Layer"]
+        VirtualScrolling["Virtual Scrolling<br/>(Large Lists)"]
+        Debouncing["Debouncing<br/>(Search, Filters)"]
+        Caching["Client-side Caching<br/>(localStorage)"]
+    end
+    
+    subgraph api["API Layer"]
+        RequestBatching["Request Batching"]
+        ResponseCaching["Response Caching"]
+        Compression["Gzip Compression"]
+    end
+    
+    subgraph backend["Backend Layer"]
+        LoadBalancing["Load Balancing"]
+        DatabaseIndexing["Database Indexing"]
+        QueryOptimization["Query Optimization"]
+    end
+    
+    CloudFlare --> CodeSplitting
+    CodeSplitting --> LazyLoading
+    LazyLoading --> Memoization
+    
+    Memoization --> VirtualScrolling
+    VirtualScrolling --> Debouncing
+    Debouncing --> Caching
+    
+    Caching --> RequestBatching
+    RequestBatching --> ResponseCaching
+    ResponseCaching --> Compression
+    
+    Compression --> LoadBalancing
+    LoadBalancing --> DatabaseIndexing
+    DatabaseIndexing --> QueryOptimization
+    
+    style CloudFlare fill:#4CAF50
+    style frontend fill:#2196F3
+    style api fill:#FF9800
+    style backend fill:#9C27B0

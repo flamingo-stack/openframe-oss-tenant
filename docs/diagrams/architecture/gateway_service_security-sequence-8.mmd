@@ -1,0 +1,56 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant IssuerResolver
+    participant Cache
+    participant JwtDecoder
+    participant IssuerProvider
+    participant Downstream
+    
+    Client->>Gateway: Request with JWT in Authorization header
+    Gateway->>Gateway: Extract JWT token
+    Gateway->>IssuerResolver: Resolve authentication manager
+    
+    IssuerResolver->>IssuerResolver: Extract issuer from JWT
+    IssuerResolver->>Cache: Get manager for issuer
+    
+    alt Manager in cache
+        Cache-->>IssuerResolver: Return cached manager
+    else Manager not in cache
+        Cache->>IssuerProvider: Get allowed issuers
+        IssuerProvider-->>Cache: Return issuer list
+        
+        alt Internal issuer
+            Cache->>Cache: Load internal public key
+            Cache->>JwtDecoder: Create decoder with public key
+        else External issuer
+            Cache->>JwtDecoder: Create decoder from issuer URL
+            JwtDecoder->>JwtDecoder: Fetch JWKS from issuer
+        end
+        
+        Cache->>Cache: Create authentication manager
+        Cache->>Cache: Store in cache
+        Cache-->>IssuerResolver: Return new manager
+    end
+    
+    IssuerResolver->>JwtDecoder: Validate JWT
+    
+    alt Valid JWT
+        JwtDecoder-->>IssuerResolver: JWT valid
+        IssuerResolver->>IssuerResolver: Extract roles & scopes
+        IssuerResolver-->>Gateway: Authentication successful
+        
+        Gateway->>Gateway: Check authorization rules
+        
+        alt Authorized
+            Gateway->>Downstream: Route request
+            Downstream-->>Gateway: Response
+            Gateway-->>Client: 200 OK + Response
+        else Forbidden
+            Gateway-->>Client: 403 Forbidden
+        end
+    else Invalid JWT
+        JwtDecoder-->>IssuerResolver: JWT invalid
+        IssuerResolver-->>Gateway: Authentication failed
+        Gateway-->>Client: 401 Unauthorized
+    end

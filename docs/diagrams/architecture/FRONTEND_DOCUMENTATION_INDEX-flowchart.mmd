@@ -1,0 +1,25 @@
+flowchart TD
+    Index["📖 Documentation Index<br/>(This Page)"]
+    
+    Index --> Summary["📊 Executive Summary<br/>(FRONTEND_MAIN_SUMMARY.md)"]
+    Index --> README["🚀 Getting Started<br/>(FRONTEND_MAIN_README.md)"]
+    Index --> Main["🏗️ Main Architecture<br/>(frontend_main.md)"]
+    
+    Main --> Auth["🔐 Authentication<br/>(frontend_authentication.md)"]
+    Main --> API["🔌 API Clients<br/>(frontend_api_clients.md)"]
+    Main --> Device["💻 Device Management<br/>(frontend_device_management.md)"]
+    Main --> Logs["📝 Logs & Events<br/>(frontend_logs_events.md)"]
+    Main --> Tickets["🎫 Support Tickets<br/>(frontend_support_tickets.md)"]
+    Main --> Mingo["🤖 Mingo AI<br/>(frontend_mingo_ai.md)"]
+    Main --> Mesh["🖥️ MeshCentral<br/>(frontend_meshcentral.md)"]
+    
+    Auth --> Backend1["Authorization Service"]
+    API --> Backend2["API Gateway"]
+    Device --> Backend3["API Service"]
+    Logs --> Backend4["Stream Processing"]
+    Tickets --> Backend5["Chat Service"]
+    
+    style Index fill:#4CAF50
+    style Summary fill:#2196F3
+    style README fill:#FF9800
+    style Main fill:#9C27B0

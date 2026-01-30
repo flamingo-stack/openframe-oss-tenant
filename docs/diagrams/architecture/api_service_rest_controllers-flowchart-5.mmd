@@ -1,0 +1,22 @@
+flowchart TD
+    Client["Client/Service"] -->|"1. HTTP Request + JWT"| Gateway["Gateway Service"]
+    Gateway -->|"2. Route to API Service"| Controller["REST Controller"]
+    
+    Controller -->|"3. Validate JWT"| Security["Security Filter"]
+    Security -->|"4. Resolve Principal"| AuthResolver["AuthPrincipalArgumentResolver"]
+    
+    AuthResolver -->|"5. Inject Principal"| ControllerMethod["Controller Method"]
+    ControllerMethod -->|"6. Validate Request"| Validator["Jakarta Validator"]
+    
+    Validator -->|"7. Call Service"| ServiceLayer["Service Layer"]
+    ServiceLayer -->|"8. Business Logic"| ServiceImpl["Service Implementation"]
+    
+    ServiceImpl -->|"9. Persist/Query"| Repository["Repository"]
+    Repository -->|"10. MongoDB Operation"| MongoDB["MongoDB"]
+    
+    MongoDB -->|"11. Return Entity"| Repository
+    Repository -->|"12. Return to Service"| ServiceImpl
+    ServiceImpl -->|"13. Map to DTO"| Mapper["DTO Mapper"]
+    
+    Mapper -->|"14. Return Response"| ControllerMethod
+    ControllerMethod -->|"15. HTTP Response"| Client

@@ -1,0 +1,8 @@
+flowchart LR
+    Gateway["gateway_service"] -->|"Routes Requests"| Controllers["REST Controllers"]
+    AuthzService["authorization_service"] -->|"Issues JWT"| Gateway
+    
+    Controllers -->|"Uses"| Config["api_service_configuration"]
+    Controllers -->|"Validates with"| SecurityCore["security_core"]
+    
+    Config -->|"JWT Validation"| SecurityCore

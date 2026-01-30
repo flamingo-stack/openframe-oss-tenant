@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph Client["Client Browser"]
+        Cookie["HTTP Cookie"]
+    end
+    
+    subgraph Controller["Controller Layer"]
+        StartFlow["Start SSO Flow"]
+        SetCookie["Set HMAC Cookie"]
+    end
+    
+    subgraph OAuth["OAuth 2.0 Flow"]
+        Authorize["Authorization Request"]
+        Callback["Callback Handler"]
+    end
+    
+    subgraph Validation["State Validation"]
+        ReadCookie["Read Cookie"]
+        VerifyHMAC["Verify HMAC"]
+        ValidateExpiry["Check Expiry"]
+    end
+    
+    StartFlow --> SetCookie
+    SetCookie --> Cookie
+    Cookie --> Authorize
+    Authorize --> Provider["SSO Provider"]
+    Provider --> Callback
+    Callback --> ReadCookie
+    ReadCookie --> Cookie
+    Cookie --> VerifyHMAC
+    VerifyHMAC --> ValidateExpiry
+    ValidateExpiry --> Complete["Complete Registration"]

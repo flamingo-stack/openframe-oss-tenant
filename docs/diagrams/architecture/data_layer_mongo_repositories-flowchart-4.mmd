@@ -1,0 +1,12 @@
+flowchart TD
+    SpringDataRepo["OrganizationRepository<br/>(Spring Data Interface)"]
+    CustomInterface["CustomOrganizationRepository<br/>(Custom Interface)"]
+    CustomImpl["CustomOrganizationRepositoryImpl<br/>(Custom Implementation)"]
+    MongoTemplate["MongoTemplate"]
+    
+    SpringDataRepo -.extends.-> CustomInterface
+    CustomInterface -.implemented by.-> CustomImpl
+    CustomImpl -->|"uses"| MongoTemplate
+    
+    Service["OrganizationService"] --> SpringDataRepo
+    SpringDataRepo -->|"delegates custom methods"| CustomImpl

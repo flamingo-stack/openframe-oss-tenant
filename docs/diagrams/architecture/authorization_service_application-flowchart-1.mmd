@@ -1,0 +1,28 @@
+flowchart TD
+    Client["Client Applications<br/>(Frontend, Mobile)"] -->|"OAuth 2.0 Flow"| Gateway["API Gateway"]
+    Gateway -->|"Routes /oauth/**"| AuthApp["Authorization Service<br/>Application"]
+    
+    AuthApp -->|"Loads Config"| AuthConfig["Authorization Server<br/>Configuration"]
+    AuthApp -->|"Enforces Security"| SecConfig["Security Configuration"]
+    AuthApp -->|"Handles Requests"| Controllers["Controllers<br/>(Login, Registration, etc.)"]
+    
+    AuthConfig -->|"Issues JWT"| JWTEncoder["JWT Encoder"]
+    AuthConfig -->|"Validates JWT"| JWTDecoder["JWT Decoder"]
+    AuthConfig -->|"Retrieves Keys"| KeyService["Tenant Key Service"]
+    
+    SecConfig -->|"Form Login"| FormAuth["Form Authentication"]
+    SecConfig -->|"OAuth2 Login"| OAuth2Auth["OAuth2/OIDC<br/>Authentication"]
+    
+    Controllers -->|"User Management"| UserService["User Service"]
+    Controllers -->|"SSO Config"| SSOService["SSO Config Service"]
+    
+    KeyService -->|"Stores Keys"| MongoDB["MongoDB<br/>(Tenant Keys)"]
+    UserService -->|"Stores Users"| MongoDB
+    SSOService -->|"Stores SSO Config"| MongoDB
+    
+    AuthApp -->|"Registers Service"| Eureka["Eureka Discovery"]
+    
+    style AuthApp fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style AuthConfig fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style SecConfig fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style MongoDB fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff

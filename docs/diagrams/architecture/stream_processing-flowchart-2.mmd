@@ -1,0 +1,6 @@
+flowchart LR
+    Topics["Kafka Topics"] -->|"@KafkaListener"| JsonListener["JsonKafkaListener"]
+    JsonListener -->|"Payload + Headers"| Processor["GenericJsonMessageProcessor"]
+    Processor -->|"Deserialize"| Deserializer["Message Deserializer"]
+    Processor -->|"Enrich"| Enrichment["Data Enrichment Service"]
+    Processor -->|"Route"| Handlers["Message Handlers"]

@@ -1,0 +1,34 @@
+flowchart TD
+    subgraph horizontal["Horizontal Scaling"]
+        Broker1["Pinot Broker 1"]
+        Broker2["Pinot Broker 2"]
+        Broker3["Pinot Broker 3"]
+        
+        Server1["Pinot Server 1"]
+        Server2["Pinot Server 2"]
+        Server3["Pinot Server 3"]
+        Server4["Pinot Server 4"]
+    end
+    
+    LoadBalancer["Load Balancer"] -->|"distributes"| Broker1
+    LoadBalancer -->|"distributes"| Broker2
+    LoadBalancer -->|"distributes"| Broker3
+    
+    Broker1 -->|"queries"| Server1
+    Broker1 -->|"queries"| Server2
+    Broker2 -->|"queries"| Server3
+    Broker2 -->|"queries"| Server4
+    Broker3 -->|"queries"| Server1
+    Broker3 -->|"queries"| Server4
+    
+    subgraph data["Data Distribution"]
+        Segment1["Segment 1<br/>2024-01"]
+        Segment2["Segment 2<br/>2024-02"]
+        Segment3["Segment 3<br/>2024-03"]
+        Segment4["Segment 4<br/>2024-04"]
+    end
+    
+    Server1 -->|"stores"| Segment1
+    Server2 -->|"stores"| Segment2
+    Server3 -->|"stores"| Segment3
+    Server4 -->|"stores"| Segment4

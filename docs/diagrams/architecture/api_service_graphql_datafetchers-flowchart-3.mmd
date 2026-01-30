@@ -1,0 +1,21 @@
+flowchart TD
+    Start["GraphQL Query Request"] --> Gateway["API Gateway"]
+    Gateway --> Auth["Authentication & Authorization"]
+    Auth --> DGS["DGS Framework"]
+    DGS --> DataFetcher["DataFetcher Method"]
+    
+    DataFetcher --> Validate["Input Validation<br/>(Jakarta Bean Validation)"]
+    Validate --> MapInput["Map GraphQL Input<br/>to Service DTOs"]
+    MapInput --> Service["Service Layer"]
+    
+    Service --> BuildQuery["Build Database Query"]
+    BuildQuery --> Execute["Execute Query"]
+    Execute --> Repository["Repository Layer"]
+    
+    Repository --> Database["Database<br/>(MongoDB/Pinot/Cassandra)"]
+    Database --> Results["Query Results"]
+    
+    Results --> MapOutput["Map to GraphQL Types"]
+    MapOutput --> BuildConnection["Build Connection<br/>(Edges, PageInfo)"]
+    BuildConnection --> Response["GraphQL Response"]
+    Response --> Client["Client Application"]

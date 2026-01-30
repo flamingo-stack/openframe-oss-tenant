@@ -1,0 +1,19 @@
+flowchart TD
+    Start["Application Startup"] --> CheckWebType{"Web Application Type?"}
+    
+    CheckWebType -->|"SERVLET"| EnableBlocking["Enable Blocking Repositories"]
+    CheckWebType -->|"REACTIVE"| EnableReactive["Enable Reactive Repositories"]
+    CheckWebType -->|"NONE"| NoRepos["No Repositories Enabled"]
+    
+    EnableBlocking --> BlockingConfig["@ConditionalOnWebApplication<br/>(type = SERVLET)"]
+    EnableReactive --> ReactiveConfig["@ConditionalOnWebApplication<br/>(type = REACTIVE)"]
+    
+    BlockingConfig --> BlockingBeans["Create Blocking Repository Beans"]
+    ReactiveConfig --> ReactiveBeans["Create Reactive Repository Beans"]
+    
+    BlockingBeans --> BlockingReturn["Return Types:<br/>Optional&lt;T&gt;<br/>Boolean<br/>List&lt;T&gt;"]
+    ReactiveBeans --> ReactiveReturn["Return Types:<br/>Mono&lt;T&gt;<br/>Mono&lt;Boolean&gt;<br/>Flux&lt;T&gt;"]
+    
+    BlockingReturn --> Ready["Application Ready"]
+    ReactiveReturn --> Ready
+    NoRepos --> Ready

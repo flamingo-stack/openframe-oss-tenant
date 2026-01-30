@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Agent as Agent Client
+    participant Controller as AgentAuthController
+    participant AuthService as AgentAuthService
+    participant RefreshHandler as RefreshTokenHandler
+    participant JwtService as JwtService
+    participant OAuthRepo as OAuthClientRepository
+    participant AccessGen as AccessTokenGenerator
+    participant RefreshGen as RefreshTokenGenerator
+    
+    Agent->>Controller: POST /oauth/token<br/>grant_type=refresh_token<br/>refresh_token=xxx
+    
+    Controller->>AuthService: issueClientToken(grantType, refreshToken, ...)
+    
+    AuthService->>RefreshHandler: handle(refreshToken)
+    
+    RefreshHandler->>JwtService: decodeToken(refreshToken)
+    JwtService-->>RefreshHandler: Jwt (decoded)
+    
+    RefreshHandler->>RefreshHandler: validateExpiration()
+    RefreshHandler->>RefreshHandler: validateRefreshCount()
+    
+    RefreshHandler->>OAuthRepo: findByClientId(clientId)
+    OAuthRepo-->>RefreshHandler: OAuthClient
+    
+    RefreshHandler->>AccessGen: generate(client, grantType)
+    AccessGen-->>RefreshHandler: New access token
+    
+    RefreshHandler->>RefreshGen: generateNext(clientId, refreshCount)
+    RefreshGen-->>RefreshHandler: New refresh token (count+1)
+    
+    RefreshHandler-->>AuthService: AgentTokenResponse
+    AuthService-->>Controller: AgentTokenResponse
+    Controller-->>Agent: 200 OK<br/>{accessToken, refreshToken, tokenType, expiresIn}

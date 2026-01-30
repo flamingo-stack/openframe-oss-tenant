@@ -1,0 +1,22 @@
+flowchart TD
+    Listener["JsonKafkaListener"]
+    Processor["GenericJsonMessageProcessor"]
+    
+    subgraph Handlers["Message Handlers"]
+        FleetHandler["Fleet MDM Handler"]
+        TacticalHandler["Tactical RMM Handler"]
+        MeshHandler["MeshCentral Handler"]
+        QueryHandler["Query Result Handler"]
+    end
+    
+    Listener -->|"CommonDebeziumMessage<br/>+ MessageType"| Processor
+    
+    Processor -->|"FLEET_MDM_EVENT"| FleetHandler
+    Processor -->|"TACTICAL_RMM_EVENT"| TacticalHandler
+    Processor -->|"MESHCENTRAL_EVENT"| MeshHandler
+    Processor -->|"FLEET_MDM_QUERY_RESULT"| QueryHandler
+    
+    FleetHandler --> Output["Transformed Events"]
+    TacticalHandler --> Output
+    MeshHandler --> Output
+    QueryHandler --> Output

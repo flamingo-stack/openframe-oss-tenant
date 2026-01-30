@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph TauriBackend["Tauri Backend (Rust)"]
+        DebugConfig["Debug Configuration"]
+        TauriCommand["get_debug_mode Command"]
+    end
+    
+    subgraph ReactApp["React Application"]
+        Provider["DebugModeProvider"]
+        Context["DebugModeContext"]
+        Hook["useDebugMode Hook"]
+        
+        subgraph Components["Application Components"]
+            ChatUI["Chat UI"]
+            DevTools["Developer Tools"]
+            Logger["Logger Components"]
+        end
+    end
+    
+    TauriCommand -->|"invoke('get_debug_mode')"| DebugConfig
+    DebugConfig -->|"boolean"| Provider
+    Provider -->|"provides"| Context
+    Context -->|"consumed by"| Hook
+    Hook -->|"used by"| Components
+    
+    Components -->|"setDebugMode()"| Provider
+    Provider -->|"updates"| Context
+    
+    style TauriBackend fill:#2d3748,stroke:#4a5568,color:#fff
+    style ReactApp fill:#1a365d,stroke:#2c5282,color:#fff
+    style Provider fill:#2c5282,stroke:#3182ce,color:#fff
+    style Context fill:#2b6cb0,stroke:#3182ce,color:#fff

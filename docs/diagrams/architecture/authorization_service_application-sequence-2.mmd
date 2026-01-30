@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant Gateway
+    participant AuthApp as Authorization Service
+    participant MongoDB
+    participant Eureka
+    
+    Note over AuthApp: Application Startup
+    AuthApp->>Eureka: Register Service
+    AuthApp->>MongoDB: Initialize Connection
+    AuthApp->>AuthApp: Load Security Configs
+    
+    Note over User,MongoDB: OAuth 2.0 Authorization Code Flow
+    User->>Browser: Access Protected Resource
+    Browser->>Gateway: GET /api/devices
+    Gateway->>Browser: 401 Unauthorized
+    Browser->>AuthApp: GET /oauth2/authorize
+    
+    AuthApp->>Browser: Redirect to /login
+    User->>Browser: Enter Credentials
+    Browser->>AuthApp: POST /login
+    AuthApp->>MongoDB: Validate User
+    MongoDB-->>AuthApp: User Details
+    
+    AuthApp->>Browser: Redirect with Auth Code
+    Browser->>AuthApp: POST /oauth2/token
+    AuthApp->>MongoDB: Get Tenant Signing Key
+    MongoDB-->>AuthApp: RSA Key Pair
+    AuthApp->>AuthApp: Generate JWT
+    AuthApp->>Browser: Return Access Token
+    
+    Browser->>Gateway: GET /api/devices + Token
+    Gateway->>Gateway: Validate JWT
+    Gateway->>Browser: 200 OK + Data

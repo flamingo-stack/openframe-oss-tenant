@@ -1,0 +1,25 @@
+flowchart TD
+    DebeziumMessage["DeserializedDebeziumMessage"] --> Validate["isValidMessage()"]
+    Validate -->|"isVisible = true"| Transform["transform()"]
+    Validate -->|"isVisible = false"| Skip["Skip Publishing"]
+    
+    Transform --> IntegratedToolEvent["IntegratedToolEvent<br/>- toolEventId<br/>- userId<br/>- deviceId<br/>- hostname<br/>- organizationId<br/>- toolType<br/>- eventType<br/>- severity<br/>- summary<br/>- eventTimestamp"]
+    
+    IntegratedToolEvent --> HandleCreate["handleCreate()"]
+    HandleCreate --> BuildKey["buildMessageBrokerKey()"]
+    
+    BuildKey --> KeyStrategy{"Key Strategy"}
+    KeyStrategy -->|"deviceId exists"| DeviceKey["deviceId-toolType"]
+    KeyStrategy -->|"userId exists"| UserKey["userId-toolType"]
+    KeyStrategy -->|"neither"| ToolKey["toolType"]
+    
+    DeviceKey --> Publish["kafkaProducer.publish()"]
+    UserKey --> Publish
+    ToolKey --> Publish
+    
+    Publish --> KafkaTopic[("Kafka Topic<br/>integrated-tool-events")]
+    
+    style Validate fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Transform fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style IntegratedToolEvent fill:#50C878,stroke:#2E7D4E,color:#fff
+    style KafkaTopic fill:#3498DB,stroke:#21618C,color:#fff

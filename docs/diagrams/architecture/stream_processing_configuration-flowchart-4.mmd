@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph ProcessingGuarantee["Processing Guarantee: AT_LEAST_ONCE"]
+        Consume["Consume Message"]
+        Process["Process Message"]
+        Produce["Produce Result"]
+        Commit["Commit Offset"]
+    end
+    
+    subgraph FailureScenario["Failure Scenario"]
+        Failure["Processing Failure"]
+        Retry["Retry from Last Offset"]
+        Duplicate["Possible Duplicate"]
+    end
+    
+    Consume --> Process
+    Process --> Produce
+    Produce --> Commit
+    
+    Process -.->|"Failure"| Failure
+    Failure --> Retry
+    Retry --> Consume
+    Retry -.->|"May cause"| Duplicate
+    
+    classDef normalClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef failureClass fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef warningClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    
+    class Consume,Process,Produce,Commit normalClass
+    class Failure,Retry failureClass
+    class Duplicate warningClass

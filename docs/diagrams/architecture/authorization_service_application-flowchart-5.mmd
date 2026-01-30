@@ -1,0 +1,16 @@
+flowchart LR
+    TokenReq["Token Request"] -->|"Get Tenant ID"| TenantCtx["TenantContext"]
+    TenantCtx -->|"tenantId"| KeyService["TenantKeyService"]
+    
+    KeyService -->|"Query"| MongoDB["MongoDB<br/>(tenant_keys)"]
+    MongoDB -->|"Active Key"| KeyDoc["TenantKey Document"]
+    
+    KeyDoc -->|"Decrypt"| EncService["EncryptionService"]
+    EncService -->|"RSA Key Pair"| JWKSource["JWKSource"]
+    
+    JWKSource -->|"Sign Token"| JWTEncoder["JWT Encoder"]
+    JWTEncoder -->|"JWT"| TokenResp["Token Response"]
+    
+    style TenantCtx fill:#E74C3C,stroke:#922B21,stroke-width:2px,color:#fff
+    style KeyService fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style MongoDB fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff

@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph small["Small<br/>< 10M records"]
+        S1["1 Broker<br/>2 Servers"]
+    end
+    
+    subgraph medium["Medium<br/>10M - 100M records"]
+        M1["2 Brokers<br/>4 Servers"]
+    end
+    
+    subgraph large["Large<br/>100M+ records"]
+        L1["3+ Brokers<br/>8+ Servers"]
+    end
+    
+    small -->|"scale up"| medium
+    medium -->|"scale up"| large

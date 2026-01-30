@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Kafka as Kafka Topic
+    participant Listener as JsonKafkaListener
+    participant Processor as GenericJsonMessageProcessor
+    participant Deserializer as KafkaMessageDeserializer
+    participant Enrichment as DataEnrichmentService
+    participant Handler as MessageHandler
+    participant Storage as Data Store
+    
+    Kafka->>Listener: Debezium CDC Event
+    Listener->>Processor: process(message, FLEET_HOST)
+    
+    Note over Processor: Stage 1: Deserialization
+    Processor->>Deserializer: deserialize(message, FLEET_HOST)
+    Deserializer->>Deserializer: Parse JSON payload
+    Deserializer->>Deserializer: Extract "after" state
+    Deserializer-->>Processor: DeserializedDebeziumMessage<Host>
+    
+    Note over Processor: Stage 2: Enrichment
+    Processor->>Enrichment: getExtraParams(message)
+    Enrichment->>Enrichment: Lookup organization
+    Enrichment->>Enrichment: Fetch tool config
+    Enrichment-->>Processor: IntegratedToolEnrichedData
+    
+    Note over Processor: Stage 3: Handler Routing
+    Processor->>Processor: Get destinations [MONGO, PINOT]
+    
+    loop For each destination
+        Processor->>Handler: handle(message, enrichedData)
+        Handler->>Handler: transform(message, enrichedData)
+        Handler->>Handler: getOperationType() -> CREATE
+        Handler->>Storage: Save to data store
+        Storage-->>Handler: Success
+        Handler-->>Processor: Complete
+    end
+    
+    Processor-->>Listener: Processing complete

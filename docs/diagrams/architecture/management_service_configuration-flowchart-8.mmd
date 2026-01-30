@@ -1,0 +1,15 @@
+flowchart LR
+    ManagementConfig["ManagementConfiguration"] -->|"enables"| MongoConfig["MongoConfig<br/>@EnableMongoRepositories"]
+    
+    MongoConfig -->|"scans"| RepoPackage["com.openframe.data.repository"]
+    
+    RepoPackage -->|"discovers"| IntegratedToolRepo["IntegratedToolRepository"]
+    RepoPackage -->|"discovers"| AgentRepo["IntegratedToolAgentRepository"]
+    RepoPackage -->|"discovers"| TenantRepo["TenantRepository"]
+    
+    IntegratedToolRepo -->|"provides CRUD"| ToolService["IntegratedToolService"]
+    AgentRepo -->|"provides CRUD"| AgentService["IntegratedToolAgentService"]
+    TenantRepo -->|"provides CRUD"| TenantService["TenantService"]
+    
+    style MongoConfig fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style ManagementConfig fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff

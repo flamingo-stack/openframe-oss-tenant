@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant JWTValidator as JWT Validator
+    participant ProxyFilter as WS Proxy Filter
+    participant ToolService as Tool Service<br/>(Fleet/Tactical RMM)
+    
+    Client->>Gateway: WebSocket Upgrade Request<br/>/ws/tools/{toolId}/endpoint
+    Gateway->>JWTValidator: Validate JWT in request
+    JWTValidator-->>Gateway: JWT valid + roles
+    
+    Gateway->>Gateway: Check role authorization<br/>(ADMIN or AGENT)
+    
+    alt Authorized
+        Gateway->>ProxyFilter: Route to tool proxy filter
+        ProxyFilter->>ProxyFilter: Resolve tool URL from toolId
+        ProxyFilter->>ToolService: Establish WebSocket connection
+        ToolService-->>ProxyFilter: WebSocket established
+        ProxyFilter-->>Gateway: Proxy ready
+        Gateway-->>Client: WebSocket Upgrade Success
+        
+        loop Message Exchange
+            Client->>Gateway: WebSocket message
+            Gateway->>ToolService: Forward message
+            ToolService-->>Gateway: Response message
+            Gateway-->>Client: Forward response
+        end
+    else Unauthorized
+        Gateway-->>Client: 403 Forbidden
+    end

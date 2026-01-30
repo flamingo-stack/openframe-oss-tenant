@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Kafka as Kafka Topic
+    participant Listener as JsonKafkaListener
+    participant Processor as GenericJsonMessageProcessor
+    participant Deserializer as KafkaMessageDeserializer
+    participant Enrichment as DataEnrichmentService
+    participant Handler as MessageHandler
+    participant DataStore as Data Store
+    
+    Kafka->>Listener: Consume Message
+    Note over Kafka,Listener: @Payload: CommonDebeziumMessage<br/>@Header: MessageType
+    
+    Listener->>Processor: process(message, type)
+    
+    Processor->>Deserializer: deserialize(message, type)
+    Deserializer-->>Processor: DeserializedDebeziumMessage
+    
+    alt Skip Processing
+        Processor-->>Listener: Return (skip)
+    end
+    
+    Processor->>Enrichment: getExtraParams(message)
+    Enrichment-->>Processor: IntegratedToolEnrichedData
+    
+    loop For Each Destination
+        Processor->>Handler: handle(message, enrichedData)
+        Handler->>Handler: transform(message, enrichedData)
+        Handler->>Handler: getOperationType(message)
+        Handler->>DataStore: pushData(data, operationType)
+    end
+    
+    Handler-->>Processor: Complete
+    Processor-->>Listener: Complete

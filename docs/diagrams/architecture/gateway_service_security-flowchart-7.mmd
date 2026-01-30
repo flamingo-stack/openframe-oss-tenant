@@ -1,0 +1,29 @@
+flowchart TD
+    Request["Authenticated Request"] --> ExtractRoles["Extract Roles from JWT"]
+    
+    ExtractRoles --> CheckPath{"Request Path?"}
+    
+    CheckPath -->|"/dashboard/**"| RequireAdmin["Require ROLE_ADMIN"]
+    CheckPath -->|"/tools/agent/**"| RequireAgent["Require ROLE_AGENT"]
+    CheckPath -->|"/clients/**"| RequireAgent2["Require ROLE_AGENT"]
+    CheckPath -->|"/nats-ws"| RequireAny["Require ROLE_ADMIN or ROLE_AGENT"]
+    CheckPath -->|"Public"| Allow["Allow Access"]
+    
+    RequireAdmin --> HasAdmin{"Has ROLE_ADMIN?"}
+    RequireAgent --> HasAgent{"Has ROLE_AGENT?"}
+    RequireAgent2 --> HasAgent2{"Has ROLE_AGENT?"}
+    RequireAny --> HasAny{"Has ROLE_ADMIN or ROLE_AGENT?"}
+    
+    HasAdmin -->|"Yes"| Authorized["Authorized"]
+    HasAdmin -->|"No"| Forbidden["403 Forbidden"]
+    
+    HasAgent -->|"Yes"| Authorized
+    HasAgent -->|"No"| Forbidden
+    
+    HasAgent2 -->|"Yes"| Authorized
+    HasAgent2 -->|"No"| Forbidden
+    
+    HasAny -->|"Yes"| Authorized
+    HasAny -->|"No"| Forbidden
+    
+    Authorized --> RouteRequest["Route to Service"]

@@ -1,0 +1,18 @@
+flowchart LR
+    Hook["useNatsDialogSubscription"]
+    Connect["Connect to<br/>NATS WebSocket"]
+    Subscribe["Subscribe to<br/>dialog.{dialogId}.{topic}"]
+    Receive["Receive Messages"]
+    Process["onEvent Callback"]
+    Reconnect["Auto-Reconnect<br/>on Disconnect"]
+    
+    Hook --> Connect
+    Connect --> Subscribe
+    Subscribe --> Receive
+    Receive --> Process
+    Connect -.->|"Connection Lost"| Reconnect
+    Reconnect -.-> Connect
+    
+    style Hook fill:#4a90e2
+    style Subscribe fill:#f39c12
+    style Reconnect fill:#e74c3c

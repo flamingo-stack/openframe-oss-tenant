@@ -1,0 +1,51 @@
+sequenceDiagram
+    participant User
+    participant Client as Client App
+    participant Gateway
+    participant AuthApp as Authorization Service
+    participant MongoDB
+    participant KeyService as Tenant Key Service
+    
+    Note over User,KeyService: 1. Authorization Request
+    User->>Client: Click "Login"
+    Client->>Client: Generate PKCE code_verifier
+    Client->>Client: Hash to code_challenge
+    Client->>Gateway: GET /oauth2/authorize<br/>?client_id=...&redirect_uri=...&code_challenge=...
+    Gateway->>AuthApp: Forward Request
+    
+    Note over AuthApp: Extract tenant from URL
+    AuthApp->>AuthApp: Set TenantContext
+    AuthApp->>AuthApp: Check Authentication
+    AuthApp->>User: Redirect to /login
+    
+    Note over User,MongoDB: 2. User Authentication
+    User->>AuthApp: POST /login (email, password)
+    AuthApp->>MongoDB: findByEmailAndTenant(email, tenantId)
+    MongoDB-->>AuthApp: User Document
+    AuthApp->>AuthApp: Verify BCrypt Password
+    AuthApp->>MongoDB: Save OAuth2 Authorization
+    AuthApp->>User: Redirect to redirect_uri?code=AUTH_CODE
+    
+    Note over Client,KeyService: 3. Token Exchange
+    Client->>Gateway: POST /oauth2/token<br/>code=AUTH_CODE&code_verifier=...
+    Gateway->>AuthApp: Forward Request
+    AuthApp->>MongoDB: Validate Authorization Code
+    AuthApp->>AuthApp: Verify PKCE code_verifier
+    
+    AuthApp->>KeyService: getOrCreateActiveKey(tenantId)
+    KeyService->>MongoDB: findFirstByTenantIdAndActiveTrue(tenantId)
+    MongoDB-->>KeyService: TenantKey Document
+    KeyService->>KeyService: Decrypt Private Key
+    KeyService-->>AuthApp: RSA Key Pair
+    
+    AuthApp->>AuthApp: Generate JWT (access_token)
+    AuthApp->>AuthApp: Add Custom Claims (tenant_id, userId, roles)
+    AuthApp->>AuthApp: Sign with Tenant Key
+    AuthApp->>MongoDB: Save Token Metadata
+    AuthApp->>Client: Return Tokens<br/>{access_token, refresh_token, id_token}
+    
+    Note over Client,Gateway: 4. API Access
+    Client->>Gateway: GET /api/devices<br/>Authorization: Bearer ACCESS_TOKEN
+    Gateway->>Gateway: Validate JWT Signature
+    Gateway->>Gateway: Extract tenant_id from Claims
+    Gateway->>Gateway: Forward Request

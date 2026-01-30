@@ -1,0 +1,30 @@
+flowchart TD
+    Client["Client Request"] --> Gateway["API Gateway"]
+    Gateway --> AuthFilter["Authentication Filter"]
+    
+    AuthFilter --> PathCheck{"Path Type?"}
+    
+    PathCheck -->|"/external-api/**"| ApiKeyFilter["API Key Filter"]
+    PathCheck -->|"Other Paths"| JwtFilter["JWT Filter"]
+    PathCheck -->|"Public Paths"| Allow["Allow Access"]
+    
+    ApiKeyFilter --> ValidateKey["Validate API Key"]
+    ValidateKey --> CheckRate["Check Rate Limits"]
+    CheckRate -->|"Allowed"| AddHeaders["Add User Context"]
+    CheckRate -->|"Exceeded"| RateLimit["429 Too Many Requests"]
+    
+    JwtFilter --> ExtractIssuer["Extract Issuer from JWT"]
+    ExtractIssuer --> ResolveManager["Resolve Auth Manager"]
+    ResolveManager --> ValidateJwt["Validate JWT"]
+    ValidateJwt -->|"Valid"| ExtractRoles["Extract Roles & Scopes"]
+    ValidateJwt -->|"Invalid"| Unauthorized["401 Unauthorized"]
+    
+    ExtractRoles --> AuthzCheck["Authorization Check"]
+    AddHeaders --> AuthzCheck
+    
+    AuthzCheck -->|"Authorized"| Downstream["Route to Service"]
+    AuthzCheck -->|"Forbidden"| Forbidden["403 Forbidden"]
+    
+    Downstream --> ApiService["API Service"]
+    Downstream --> ClientService["Client Service"]
+    Downstream --> ExternalApi["External API Service"]

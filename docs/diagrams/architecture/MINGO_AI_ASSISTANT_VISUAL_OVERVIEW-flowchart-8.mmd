@@ -1,0 +1,25 @@
+flowchart TD
+    Start["User Clicks Dialog"] --> GetBgMessages["Get Background Messages"]
+    GetBgMessages --> BgStore["backgroundMessagesStore.moveBackgroundToActive()"]
+    
+    BgStore --> ResetUnread["Reset Unread Count"]
+    ResetUnread --> ClearActive["Clear Active Store"]
+    
+    ClearActive --> SetNewDialog["Set New Dialog ID"]
+    SetNewDialog --> LoadBgMessages["Load Background Messages"]
+    
+    LoadBgMessages --> CheckComplete{"Has Full<br/>History?"}
+    
+    CheckComplete -->|"No"| QueryAPI["Query GraphQL API"]
+    QueryAPI --> FetchMessages["Fetch Full Message History"]
+    FetchMessages --> MergeMessages["Merge with Background Messages"]
+    MergeMessages --> UpdateUI["Update UI"]
+    
+    CheckComplete -->|"Yes"| UpdateUI
+    
+    UpdateUI --> StorePrevious["Store Previous Dialog in Background"]
+    StorePrevious --> Complete["Complete"]
+    
+    style BgStore fill:#2196F3
+    style QueryAPI fill:#9C27B0
+    style UpdateUI fill:#4CAF50

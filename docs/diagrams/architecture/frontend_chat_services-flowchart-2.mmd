@@ -1,0 +1,21 @@
+flowchart LR
+    subgraph Initialization["Initialization Flow"]
+        Init["Constructor"] --> EnvCheck["Check Environment Variables"]
+        EnvCheck --> TauriListener["Setup Tauri Event Listener"]
+        TauriListener --> RequestAPI["Request API URL"]
+    end
+    
+    subgraph TokenFlow["Token Update Flow"]
+        TauriEvent["token-update Event"] --> Validate["Validate Token"]
+        Validate --> Store["Store Token"]
+        Store --> Notify["Notify Subscribers"]
+    end
+    
+    subgraph APIFlow["API URL Flow"]
+        InvokeCmd["invoke('get_server_url')"] --> Normalize["Normalize URL"]
+        Normalize --> StoreURL["Store API URL"]
+        StoreURL --> NotifyURL["Notify URL Subscribers"]
+    end
+    
+    Initialization --> TokenFlow
+    Initialization --> APIFlow

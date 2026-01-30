@@ -1,0 +1,20 @@
+flowchart TD
+    Client["Web Client<br/>(Frontend)"] -->|"HTTPS"| Gateway["Gateway Service<br/>(Port 8080)"]
+    Agent["Agent Client<br/>(RMM/MDM)"] -->|"HTTPS/WSS"| Gateway
+    ExternalApp["External Application"] -->|"API Key"| Gateway
+    
+    Gateway -->|"JWT Auth"| AuthService["Authorization Service"]
+    Gateway -->|"REST/GraphQL"| ApiService["API Service"]
+    Gateway -->|"Agent Registration"| ClientService["Client Service"]
+    Gateway -->|"API Key Auth"| ExternalApi["External API Service"]
+    Gateway -->|"WebSocket Proxy"| ToolIntegrations["Tool Integrations<br/>(Fleet, Tactical RMM)"]
+    Gateway -->|"WebSocket"| NATS["NATS Message Bus"]
+    
+    Gateway -.->|"JWT Validation"| JWKSCache["JWKS Cache<br/>(Caffeine)"]
+    Gateway -.->|"Rate Limiting"| Redis["Redis<br/>(Rate Limit Store)"]
+    
+    style Gateway fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style AuthService fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style ApiService fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style ClientService fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style ExternalApi fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff

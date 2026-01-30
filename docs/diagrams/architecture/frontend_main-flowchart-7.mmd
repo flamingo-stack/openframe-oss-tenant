@@ -1,0 +1,6 @@
+flowchart LR
+    Browser["Browser"] -->|"credentials"| AuthServer["Auth Server"]
+    AuthServer -->|"Set-Cookie: session"| Browser
+    Browser -->|"Cookie: session"| Gateway["API Gateway"]
+    Gateway -->|"validate session"| AuthServer
+    Gateway -->|"authorized request"| Services["Backend Services"]

@@ -1,0 +1,51 @@
+flowchart TD
+    subgraph OpenFramePlatform["OpenFrame Platform"]
+        subgraph Frontend["Frontend Layer"]
+            WebUI["Web UI<br/>(React)"]
+            DeviceMgmt["Device Management"]
+            RemoteAccess["Remote Access UI"]
+        end
+        
+        subgraph MeshIntegration["MeshCentral Integration"]
+            DesktopControl["Desktop Control<br/>(MeshDesktop)"]
+            FileManager["File Manager"]
+            BinaryProtocol["Binary Protocol Handler"]
+        end
+        
+        subgraph BackendServices["Backend Services"]
+            ClientService["Client Service"]
+            APIService["API Service"]
+            Gateway["Gateway Service"]
+        end
+    end
+    
+    subgraph ExternalServices["External Services"]
+        MeshServer["MeshCentral Server"]
+        
+        subgraph RemoteDevices["Remote Devices"]
+            WindowsAgent["Windows Agent"]
+            LinuxAgent["Linux Agent"]
+            MacAgent["macOS Agent"]
+        end
+    end
+    
+    WebUI --> DeviceMgmt
+    DeviceMgmt --> RemoteAccess
+    RemoteAccess --> DesktopControl
+    RemoteAccess --> FileManager
+    
+    DesktopControl --> BinaryProtocol
+    FileManager --> BinaryProtocol
+    
+    BinaryProtocol -->|"WSS Binary"| MeshServer
+    
+    ClientService --> Gateway
+    Gateway --> APIService
+    APIService --> DeviceMgmt
+    
+    MeshServer -->|"Agent Protocol"| WindowsAgent
+    MeshServer -->|"Agent Protocol"| LinuxAgent
+    MeshServer -->|"Agent Protocol"| MacAgent
+    
+    style MeshIntegration fill:#e1f5ff
+    style ExternalServices fill:#fff4e1

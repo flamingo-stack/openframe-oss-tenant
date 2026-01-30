@@ -1,0 +1,34 @@
+flowchart TD
+    Index["📑 data_layer_mongo_index.md<br/>(You are here)"]
+    
+    subgraph main["Main Documentation"]
+        README["📘 DATA_LAYER_MONGO_README.md<br/>Quick Start Guide"]
+        Guide["📗 data_layer_mongo.md<br/>Comprehensive Technical Guide"]
+        Summary["📙 DATA_LAYER_MONGO_SUMMARY.md<br/>Documentation Summary"]
+    end
+    
+    subgraph modules["Sub-Module Documentation"]
+        Config["⚙️ data_layer_mongo_configuration.md<br/>MongoDB Configuration"]
+        Docs["📄 data_layer_mongo_documents.md<br/>Document Models"]
+        Repos["🗄️ data_layer_mongo_repositories.md<br/>Repository Layer"]
+    end
+    
+    Index -->|"Quick Start"| README
+    Index -->|"Deep Dive"| Guide
+    Index -->|"Overview"| Summary
+    
+    README -->|"references"| Guide
+    Guide -->|"links to"| Config
+    Guide -->|"links to"| Docs
+    Guide -->|"links to"| Repos
+    
+    Summary -->|"indexes"| README
+    Summary -->|"indexes"| Guide
+    Summary -->|"indexes"| Config
+    Summary -->|"indexes"| Docs
+    Summary -->|"indexes"| Repos
+    
+    style Index fill:#2196F3,color:#fff
+    style README fill:#4CAF50,color:#fff
+    style Guide fill:#FF9800,color:#fff
+    style Summary fill:#9C27B0,color:#fff

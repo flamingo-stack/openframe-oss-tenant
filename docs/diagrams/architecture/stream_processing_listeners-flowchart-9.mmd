@@ -1,0 +1,9 @@
+flowchart LR
+    Listener["JsonKafkaListener"] --> Processor["GenericJsonMessageProcessor"]
+    Processor --> Deserializers["Message Deserializers"]
+    Processor --> Enrichment["Data Enrichment Services"]
+    Processor --> Handlers["Message Handlers"]
+    
+    Handlers --> MongoDB["MongoDB"]
+    Handlers --> Cassandra["Cassandra"]
+    Handlers --> Pinot["Apache Pinot"]

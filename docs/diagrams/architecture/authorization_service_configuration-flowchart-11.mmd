@@ -1,0 +1,12 @@
+flowchart LR
+    Tenant1["Tenant 1"] -->|"kid-abc123"| Key1["RSA Key Pair 1<br/>(2048-bit)"]
+    Tenant2["Tenant 2"] -->|"kid-def456"| Key2["RSA Key Pair 2<br/>(2048-bit)"]
+    Tenant3["Tenant 3"] -->|"kid-ghi789"| Key3["RSA Key Pair 3<br/>(2048-bit)"]
+    
+    Key1 --> JWT1["JWT for Tenant 1<br/>(signed with Key 1)"]
+    Key2 --> JWT2["JWT for Tenant 2<br/>(signed with Key 2)"]
+    Key3 --> JWT3["JWT for Tenant 3<br/>(signed with Key 3)"]
+    
+    style Key1 fill:#4A90E2
+    style Key2 fill:#4A90E2
+    style Key3 fill:#4A90E2

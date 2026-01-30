@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Agent as Client Agent
+    participant Gateway
+    participant DeviceController
+    participant DeviceService
+    participant DeviceRepository
+    participant MongoDB
+
+    Agent->>Gateway: PATCH /devices/{machineId}
+    Note over Agent,Gateway: JWT Token in Header
+    
+    Gateway->>DeviceController: Forward Request
+    DeviceController->>DeviceController: Log Update
+    
+    DeviceController->>DeviceService: updateStatusByMachineId(machineId, status)
+    DeviceService->>DeviceRepository: findByMachineId(machineId)
+    DeviceRepository->>MongoDB: Query by machineId
+    MongoDB-->>DeviceRepository: Device document
+    
+    DeviceRepository-->>DeviceService: Device entity
+    DeviceService->>DeviceService: Update status field
+    DeviceService->>DeviceRepository: save(device)
+    DeviceRepository->>MongoDB: UPDATE document
+    MongoDB-->>DeviceRepository: Updated document
+    
+    DeviceRepository-->>DeviceService: Success
+    DeviceService-->>DeviceController: Success
+    DeviceController-->>Gateway: 204 No Content
+    Gateway-->>Agent: 204 No Content

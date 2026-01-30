@@ -1,0 +1,14 @@
+flowchart TD
+    Request["HTTP Request"] -->|"Extract Tenant"| Filter["TenantForwardedPrefixFilter"]
+    Filter -->|"Set Context"| TenantCtx["TenantContext<br/>(ThreadLocal)"]
+    
+    TenantCtx -->|"Tenant ID"| UserService["UserDetailsService"]
+    TenantCtx -->|"Tenant ID"| KeyService["TenantKeyService"]
+    TenantCtx -->|"Tenant ID"| SSOService["SSOConfigService"]
+    
+    UserService -->|"Query Filter"| MongoDB["MongoDB<br/>(tenantId field)"]
+    KeyService -->|"Query Filter"| MongoDB
+    SSOService -->|"Query Filter"| MongoDB
+    
+    style TenantCtx fill:#E74C3C,stroke:#922B21,stroke-width:3px,color:#fff
+    style MongoDB fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff

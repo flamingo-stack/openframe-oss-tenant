@@ -1,0 +1,33 @@
+flowchart TD
+    subgraph External["External Configuration"]
+        Props["application.yml<br/>Environment Variables"]
+        NATSUrl["nats-ws-url Property<br/>NATS WebSocket URL"]
+        CORSProps["CORS Properties<br/>(origins, methods, headers)"]
+    end
+    
+    subgraph SecurityModule["gateway_service_security Module"]
+        JwtConfig["JwtAuthConfig<br/>JWT Validation"]
+        SecurityConfig["GatewaySecurityConfig<br/>Authorization Rules"]
+        JwtReader["RequestJwtClaimsReader<br/>Token Extraction"]
+    end
+    
+    subgraph ConfigModule["gateway_service_configuration Module"]
+        WebClientCfg["WebClientConfig"]
+        WSConfig["WebSocketGatewayConfig"]
+        CORSCfg["CorsConfig"]
+    end
+    
+    Props --> WebClientCfg
+    NATSUrl --> WSConfig
+    CORSProps --> CORSCfg
+    
+    JwtReader --> WSConfig
+    SecurityConfig -.->|Applies to| WSConfig
+    JwtConfig -.->|Validates tokens in| WSConfig
+    
+    ConfigModule --> Gateway["API Gateway Runtime"]
+    SecurityModule --> Gateway
+    
+    style ConfigModule fill:#e1f5ff
+    style SecurityModule fill:#ffebee
+    style External fill:#f3e5f5

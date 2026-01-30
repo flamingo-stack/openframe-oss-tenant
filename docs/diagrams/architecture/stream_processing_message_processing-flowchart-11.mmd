@@ -1,0 +1,28 @@
+flowchart TD
+    Start["process(message, type)"] --> Deserialize["deserialize()"]
+    Deserialize --> CheckDeserializer{"Deserializer exists?"}
+    CheckDeserializer -->|"No"| Error1["IllegalArgumentException:<br/>Unsupported message type"]
+    CheckDeserializer -->|"Yes"| Enrich["getExtraParams()"]
+    
+    Enrich --> Route["Route to handlers"]
+    Route --> CheckHandler{"Handler exists?"}
+    CheckHandler -->|"No"| Error2["IllegalArgumentException:<br/>No handler for destination"]
+    CheckHandler -->|"Yes"| Handle["handler.handle()"]
+    
+    Handle --> CheckValidation{"Message valid?"}
+    CheckValidation -->|"No"| Skip["Skip processing"]
+    CheckValidation -->|"Yes"| Transform["Transform data"]
+    
+    Transform --> CheckTransform{"Transform success?"}
+    CheckTransform -->|"No"| Error3["RuntimeException:<br/>Transformation failed"]
+    CheckTransform -->|"Yes"| Persist["Persist to storage"]
+    
+    Persist --> CheckPersist{"Persist success?"}
+    CheckPersist -->|"No"| Error4["DataAccessException:<br/>Storage failure"]
+    CheckPersist -->|"Yes"| Success["Success"]
+    
+    style Error1 fill:#E74C3C,stroke:#A93226,color:#fff
+    style Error2 fill:#E74C3C,stroke:#A93226,color:#fff
+    style Error3 fill:#E74C3C,stroke:#A93226,color:#fff
+    style Error4 fill:#E74C3C,stroke:#A93226,color:#fff
+    style Success fill:#50C878,stroke:#2E7D4E,color:#fff

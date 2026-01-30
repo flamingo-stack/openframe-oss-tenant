@@ -1,0 +1,10 @@
+flowchart TD
+    YamlFile["application.yml"] -->|"binds to"| ConfigProps["AgentConfigurationProperties"]
+    ConfigProps -->|"provides paths"| Initializer["IntegratedToolAgentInitializer"]
+    Initializer -->|"reads files"| ClasspathResource["ClassPathResource"]
+    ClasspathResource -->|"deserializes"| ObjectMapper["ObjectMapper"]
+    ObjectMapper -->|"creates"| AgentEntity["IntegratedToolAgent"]
+    AgentEntity -->|"persists to"| MongoDB["MongoDB Collection"]
+    
+    style ConfigProps fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Initializer fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff

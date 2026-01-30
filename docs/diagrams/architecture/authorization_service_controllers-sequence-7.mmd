@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant User
+    participant Controller as InvitationRegistrationController
+    participant SsoService as SsoInvitationService
+    participant AuthState as AuthStateUtils
+    participant OAuth as Spring OAuth2
+    participant Provider as SSO Provider
+    
+    User->>Controller: GET /invitations/accept/sso?token=xyz&provider=google
+    Controller->>AuthState: clearAuthState()
+    
+    Controller->>SsoService: startAccept(request)
+    SsoService->>SsoService: Validate invitation token
+    SsoService->>SsoService: Generate HMAC cookie value
+    SsoService->>SsoService: Build OAuth authorize URL
+    SsoService-->>Controller: SsoAuthorizeData
+    
+    Controller->>Controller: Create SSO_INVITE cookie
+    Note over Controller: HttpOnly, Secure, TTL=300s
+    
+    Controller->>User: 303 See Other + Set-Cookie
+    Note over Controller,User: Location: /oauth2/authorization/{provider}
+    
+    User->>OAuth: Follow redirect
+    OAuth->>Provider: OAuth authorize request
+    Provider-->>User: Login page
+    
+    User->>Provider: Authenticate with SSO
+    Provider->>OAuth: Authorization code
+    OAuth->>OAuth: Exchange code for token
+    OAuth->>OAuth: Validate SSO_INVITE cookie
+    OAuth->>SsoService: Complete invitation accept
+    SsoService->>SsoService: Create user in tenant

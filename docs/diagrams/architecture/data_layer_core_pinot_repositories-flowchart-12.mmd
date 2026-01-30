@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph Config["Configuration Module"]
+        PinotConfig["PinotConfig"]
+        DataConfig["DataConfiguration"]
+    end
+    
+    subgraph Repositories["Repository Beans"]
+        DeviceRepo["PinotClientDeviceRepository"]
+        LogRepo["PinotClientLogRepository"]
+    end
+    
+    subgraph Connection["Pinot Connection"]
+        BrokerConn["pinotBrokerConnection"]
+    end
+    
+    PinotConfig -->|"creates"| BrokerConn
+    DataConfig -->|"imports"| PinotConfig
+    
+    BrokerConn -->|"@Qualifier"| DeviceRepo
+    BrokerConn -->|"@Qualifier"| LogRepo
+    
+    style PinotConfig fill:#50C878
+    style BrokerConn fill:#F39C12

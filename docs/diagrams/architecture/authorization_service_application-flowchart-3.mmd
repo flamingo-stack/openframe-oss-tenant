@@ -1,0 +1,24 @@
+flowchart TD
+    App["OpenFrameAuthorizationServerApplication"] -->|"Scans"| AuthzPkg["com.openframe.authz"]
+    App -->|"Scans"| CorePkg["com.openframe.core"]
+    App -->|"Scans"| DataPkg["com.openframe.data"]
+    App -->|"Scans"| NotifyPkg["com.openframe.notification"]
+    
+    AuthzPkg -->|"Provides"| AuthConfig["AuthorizationServerConfig"]
+    AuthzPkg -->|"Provides"| SecConfig["SecurityConfig"]
+    AuthzPkg -->|"Provides"| Controllers["Controllers"]
+    AuthzPkg -->|"Provides"| Services["Services"]
+    
+    CorePkg -->|"Provides"| TenantContext["TenantContext"]
+    CorePkg -->|"Provides"| Encryption["EncryptionService"]
+    
+    DataPkg -->|"Provides"| Repositories["MongoDB Repositories"]
+    DataPkg -->|"Provides"| Documents["Document Models"]
+    
+    NotifyPkg -->|"Provides"| EmailService["EmailService"]
+    
+    style App fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style AuthzPkg fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style CorePkg fill:#E67E22,stroke:#A04000,stroke-width:2px,color:#fff
+    style DataPkg fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff
+    style NotifyPkg fill:#1ABC9C,stroke:#117A65,stroke-width:2px,color:#fff

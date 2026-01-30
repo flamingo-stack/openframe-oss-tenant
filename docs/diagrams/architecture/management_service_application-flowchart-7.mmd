@@ -1,0 +1,11 @@
+flowchart LR
+    AgentInit["Agent Initializer"] -->|"Version Changed"| Publisher["ToolAgentUpdatePublisher"]
+    Publisher -->|"publish()"| KafkaProducer["Kafka Producer"]
+    KafkaProducer -->|"Send Message"| Topic["Kafka Topic:<br/>tool-agent-updates"]
+    
+    Topic -->|"Consumed By"| Subscribers["Subscribing Services"]
+    Subscribers --> ClientService["Client Service<br/>(Agent Deployment)"]
+    Subscribers --> StreamService["Stream Service<br/>(Event Processing)"]
+    
+    style Publisher fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style Topic fill:#FBC02D,stroke:#F57F17,color:#000

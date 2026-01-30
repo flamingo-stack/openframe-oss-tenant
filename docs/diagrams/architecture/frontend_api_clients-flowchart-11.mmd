@@ -1,0 +1,8 @@
+flowchart LR
+    Frontend["Frontend<br/>API Clients"] -->|"HTTP + JWT"| Gateway["Gateway Service"]
+    Gateway -->|"Route"| APIService["API Service"]
+    Gateway -->|"Proxy"| FleetMDM["Fleet MDM"]
+    Gateway -->|"Proxy"| TacticalRMM["Tactical RMM"]
+    Gateway -->|"Route"| AuthService["Authorization Service"]
+    
+    style Gateway fill:#3498DB,stroke:#2874A6,color:#fff

@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph properties["Application Properties"]
+        BrokerURL["pinot.broker.url<br/>e.g., localhost:8099"]
+        ControllerURL["pinot.controller.url<br/>e.g., localhost:9000"]
+    end
+    
+    subgraph config["PinotConfig"]
+        direction TB
+        
+        BrokerBean["@Bean<br/>pinotBrokerConnection()"]
+        ControllerBean["@Bean<br/>pinotControllerConnection()"]
+    end
+    
+    subgraph connections["Pinot Connections"]
+        direction TB
+        
+        BrokerConnection["Connection (Broker)<br/>Query Execution"]
+        ControllerConnection["Connection (Controller)<br/>Admin Operations"]
+    end
+    
+    subgraph pinot_cluster["Apache Pinot Cluster"]
+        direction LR
+        
+        Broker["Pinot Broker<br/>:8099"]
+        Controller["Pinot Controller<br/>:9000"]
+        Server["Pinot Server"]
+        
+        Broker -->|"routes queries"| Server
+        Controller -->|"manages"| Server
+    end
+    
+    subgraph repositories["Repository Layer"]
+        PinotDeviceRepo["PinotClientDeviceRepository"]
+        PinotLogRepo["PinotClientLogRepository"]
+    end
+    
+    BrokerURL -->|"injects"| BrokerBean
+    ControllerURL -->|"injects"| ControllerBean
+    
+    BrokerBean -->|"creates"| BrokerConnection
+    ControllerBean -->|"creates"| ControllerConnection
+    
+    BrokerConnection -->|"connects to"| Broker
+    ControllerConnection -->|"connects to"| Controller
+    
+    PinotDeviceRepo -->|"uses"| BrokerConnection
+    PinotLogRepo -->|"uses"| BrokerConnection

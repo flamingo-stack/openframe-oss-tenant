@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph MingoModule["Mingo AI Assistant Module"]
+        direction TB
+        Hook["useMingoDialog Hook"]
+        ActiveStore["MingoDialogDetailsStore"]
+        BgStore["BackgroundMessagesStore"]
+        Types["Type Definitions"]
+    end
+    
+    subgraph FrontendCore["Frontend Core"]
+        ChatComponents["Chat Components"]
+        UIComponents["UI Components"]
+        ApiClient["API Client"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        ChatAPI["Chat API"]
+        GraphQLAPI["GraphQL API"]
+    end
+    
+    MingoModule --> FrontendCore
+    MingoModule --> Backend
+    
+    style MingoModule fill:#E3F2FD
+    style FrontendCore fill:#FFF3E0
+    style Backend fill:#F3E5F5

@@ -1,0 +1,34 @@
+flowchart TD
+    subgraph ManagementServiceCDC["Management Service CDC Module"]
+        DebeziumService["DebeziumService<br/>(Connector Management)"]
+        HealthScheduler["DebeziumHealthCheckScheduler<br/>(Monitoring)"]
+        ConnectorStatus["ConnectorStatus<br/>(Status DTO)"]
+    end
+    
+    subgraph ExternalSystems["External Systems"]
+        DebeziumAPI["Debezium REST API<br/>(Kafka Connect)"]
+        ShedLock["ShedLock<br/>(Distributed Lock)"]
+        MongoDB["MongoDB<br/>(Lock Storage)"]
+    end
+    
+    subgraph Configuration["Configuration"]
+        AppProperties["application.yml<br/>(CDC Config)"]
+    end
+    
+    HealthScheduler -->|"@Scheduled<br/>(5 min)"| DebeziumService
+    HealthScheduler -->|"@SchedulerLock"| ShedLock
+    ShedLock -->|"Lock Storage"| MongoDB
+    
+    DebeziumService -->|"POST /connectors"| DebeziumAPI
+    DebeziumService -->|"GET /connectors/{name}/status"| DebeziumAPI
+    DebeziumService -->|"POST /connectors/{name}/tasks/{id}/restart"| DebeziumAPI
+    DebeziumService -->|"PUT /connectors/{name}/config"| DebeziumAPI
+    
+    DebeziumAPI -->|"Returns"| ConnectorStatus
+    
+    AppProperties -.->|"Configures"| DebeziumService
+    AppProperties -.->|"Configures"| HealthScheduler
+    
+    style ManagementServiceCDC fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style ExternalSystems fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Configuration fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px

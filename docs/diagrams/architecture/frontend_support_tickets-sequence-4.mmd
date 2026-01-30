@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant UI as Dialog Details View
+    participant Hook as useDialogDetails
+    participant Store as DialogDetailsStore
+    participant API as API Client
+    participant NATS as NATS WebSocket
+    participant Processor as Realtime Processor
+    
+    UI->>Hook: Open dialog (dialogId)
+    Hook->>Store: fetchDialog(dialogId)
+    Hook->>Store: fetchMessages(dialogId)
+    
+    par Fetch Dialog
+        Store->>API: POST /chat/graphql (GET_DIALOG_QUERY)
+        API-->>Store: Dialog metadata
+    and Fetch Messages
+        Store->>API: POST /chat/graphql (GET_DIALOG_MESSAGES_QUERY)
+        API-->>Store: Message history (batch 1)
+        Store->>API: POST /chat/graphql (cursor=endCursor)
+        API-->>Store: Message history (batch 2)
+        Note over Store: Continue until hasNextPage=false
+    end
+    
+    Store-->>Hook: Initial data loaded
+    Hook->>NATS: Subscribe to dialog.{dialogId}
+    NATS-->>Hook: Connection established
+    
+    loop Real-time Updates
+        NATS->>Hook: New message event
+        Hook->>Processor: Process message
+        Processor->>Store: addRealtimeMessage(message, isAdmin)
+        Store->>Store: Deduplicate & append/concatenate
+        Store-->>UI: Re-render with new message
+    end

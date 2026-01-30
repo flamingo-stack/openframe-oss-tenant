@@ -1,0 +1,78 @@
+sequenceDiagram
+    participant Client as Client Application
+    participant AuthServer as Authorization Server
+    participant TenantKey as TenantKeyService
+    participant MongoAuthz as MongoAuthorizationService
+    participant Encryption as EncryptionService
+    participant KeyRepo as TenantKeyRepository
+    participant AuthzRepo as OAuth2AuthorizationRepository
+    participant Mongo as MongoDB
+
+    Client->>AuthServer: POST /oauth2/authorize
+    Note over Client,AuthServer: Authorization Code Flow with PKCE
+    
+    AuthServer->>TenantKey: getOrCreateActiveKey(tenantId)
+    TenantKey->>KeyRepo: countByTenantIdAndActiveTrue(tenantId)
+    KeyRepo->>Mongo: Query active keys
+    Mongo-->>KeyRepo: count = 0
+    KeyRepo-->>TenantKey: No active key found
+    
+    TenantKey->>TenantKey: Generate RSA 2048 Key Pair
+    Note over TenantKey: AuthenticationKeyPairGenerator
+    
+    TenantKey->>Encryption: encryptClientSecret(privatePem)
+    Encryption-->>TenantKey: Encrypted Private Key
+    
+    TenantKey->>KeyRepo: save(TenantKey)
+    KeyRepo->>Mongo: Insert tenant_keys document
+    Note over Mongo: {tenantId, keyId, publicPem,<br/>privateEncrypted, active: true}
+    
+    TenantKey-->>AuthServer: RSAKey (kid, public, private)
+    
+    AuthServer->>AuthServer: Generate Authorization Code
+    Note over AuthServer: Store PKCE code_challenge
+    
+    AuthServer->>MongoAuthz: save(OAuth2Authorization)
+    MongoAuthz->>MongoAuthz: Map to MongoOAuth2Authorization
+    Note over MongoAuthz: Preserve PKCE parameters in metadata
+    
+    MongoAuthz->>AuthzRepo: save(entity)
+    AuthzRepo->>Mongo: Insert oauth2_authorizations document
+    Note over Mongo: {id, clientId, authorizationCode,<br/>pkce metadata, state}
+    
+    MongoAuthz-->>AuthServer: Authorization saved
+    AuthServer-->>Client: 302 Redirect with code
+    
+    Client->>AuthServer: POST /oauth2/token<br/>(code + code_verifier)
+    AuthServer->>MongoAuthz: findByToken(code, "code")
+    MongoAuthz->>AuthzRepo: findByAuthorizationCodeValue(code)
+    AuthzRepo->>Mongo: Query by authorizationCodeValue
+    Mongo-->>AuthzRepo: MongoOAuth2Authorization entity
+    
+    MongoAuthz->>MongoAuthz: Map to OAuth2Authorization
+    Note over MongoAuthz: Restore PKCE metadata
+    MongoAuthz-->>AuthServer: OAuth2Authorization with PKCE
+    
+    AuthServer->>AuthServer: Verify PKCE code_verifier
+    Note over AuthServer: SHA256(code_verifier) == code_challenge
+    
+    AuthServer->>TenantKey: getOrCreateActiveKey(tenantId)
+    TenantKey->>KeyRepo: findFirstByTenantIdAndActiveTrue(tenantId)
+    KeyRepo->>Mongo: Query active key
+    Mongo-->>KeyRepo: TenantKey document
+    KeyRepo-->>TenantKey: Existing key
+    
+    TenantKey->>Encryption: decryptClientSecret(privateEncrypted)
+    Encryption-->>TenantKey: Private Key PEM
+    
+    TenantKey->>TenantKey: Parse PEM to RSAPrivateKey
+    TenantKey-->>AuthServer: RSAKey for signing
+    
+    AuthServer->>AuthServer: Sign JWT with tenant key
+    Note over AuthServer: kid header matches tenant keyId
+    
+    AuthServer->>MongoAuthz: save(OAuth2Authorization)<br/>(update with tokens)
+    MongoAuthz->>AuthzRepo: save(entity)
+    AuthzRepo->>Mongo: Update with access_token, refresh_token
+    
+    AuthServer-->>Client: JWT Access Token + Refresh Token

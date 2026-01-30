@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph Frontend["Frontend Application"]
+        Hook["useNatsDialogSubscription"]
+        Processor["useDialogRealtimeProcessor"]
+        Store["DialogDetailsStore"]
+    end
+    
+    subgraph Gateway["Gateway Service"]
+        WSHandler["WebSocket Handler"]
+        NatsProxy["NATS Proxy"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        ChatService["Chat Service"]
+        NatsServer["NATS Server"]
+    end
+    
+    Hook -->|"WebSocket Connection"| WSHandler
+    WSHandler <-->|"NATS Protocol"| NatsProxy
+    NatsProxy <-->|"Subscribe/Publish"| NatsServer
+    
+    ChatService -->|"Publish Events"| NatsServer
+    NatsServer -->|"Stream Messages"| NatsProxy
+    NatsProxy -->|"WebSocket Frames"| WSHandler
+    WSHandler -->|"Message Events"| Hook
+    
+    Hook -->|"Raw Events"| Processor
+    Processor -->|"Processed Messages"| Store

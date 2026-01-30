@@ -1,0 +1,40 @@
+sequenceDiagram
+    participant Frontend
+    participant WebSocket
+    participant ChatService
+    participant MingoAI
+    
+    Frontend->>WebSocket: Connect
+    WebSocket->>ChatService: Establish Connection
+    ChatService-->>WebSocket: Connection Confirmed
+    WebSocket-->>Frontend: Connected
+    
+    Frontend->>WebSocket: Subscribe to Dialog
+    WebSocket->>ChatService: Subscribe Request
+    ChatService-->>WebSocket: Subscription Confirmed
+    
+    loop Real-time Updates
+        ChatService->>WebSocket: New Message Event
+        WebSocket->>Frontend: Push Message
+        Frontend->>Frontend: Update UI
+        
+        Frontend->>WebSocket: Typing Indicator
+        WebSocket->>ChatService: Broadcast Typing
+        ChatService->>WebSocket: Typing Event
+        WebSocket->>Frontend: Show Typing
+    end
+    
+    Frontend->>WebSocket: Send Message
+    WebSocket->>ChatService: Message Data
+    ChatService->>MingoAI: Process Message
+    
+    loop Streaming Response
+        MingoAI-->>ChatService: Response Chunk
+        ChatService->>WebSocket: Stream Chunk
+        WebSocket->>Frontend: Update Message
+        Frontend->>Frontend: Render Chunk
+    end
+    
+    Frontend->>WebSocket: Disconnect
+    WebSocket->>ChatService: Close Connection
+    ChatService-->>WebSocket: Disconnected

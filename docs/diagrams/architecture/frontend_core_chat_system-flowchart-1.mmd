@@ -1,0 +1,59 @@
+flowchart TD
+    subgraph UserInterface["User Interface Layer"]
+        ChatContainer["ChatContainer"]
+        MessageList["ChatMessageList"]
+        MessageDisplay["ChatMessageEnhanced"]
+        InputComponent["ChatInput"]
+    end
+    
+    subgraph HooksLayer["React Hooks Layer"]
+        ChunkCatchup["useChunkCatchup"]
+        NatsSubscription["useNatsDialogSubscription"]
+        RealtimeProcessor["useRealtimeChunkProcessor"]
+    end
+    
+    subgraph ProcessingLayer["Processing Layer"]
+        ChunkParser["chunk-parser"]
+        SegmentAccumulator["MessageSegmentAccumulator"]
+        HistoricalProcessor["process-historical-messages"]
+    end
+    
+    subgraph TypesLayer["Type System"]
+        MessageTypes["message.types"]
+        APITypes["api.types"]
+        NetworkTypes["network.types"]
+        ChatTypes["chat.types"]
+    end
+    
+    subgraph ExternalSystems["External Systems"]
+        NatsServer["NATS Server"]
+        GraphQLAPI["GraphQL API"]
+        RestAPI["REST API"]
+    end
+    
+    ChatContainer --> MessageList
+    MessageList --> MessageDisplay
+    ChatContainer --> InputComponent
+    
+    ChatContainer --> ChunkCatchup
+    ChatContainer --> NatsSubscription
+    MessageDisplay --> RealtimeProcessor
+    
+    ChunkCatchup --> ChunkParser
+    RealtimeProcessor --> ChunkParser
+    RealtimeProcessor --> SegmentAccumulator
+    ChunkCatchup --> HistoricalProcessor
+    
+    ChunkParser --> TypesLayer
+    SegmentAccumulator --> TypesLayer
+    HistoricalProcessor --> TypesLayer
+    
+    NatsSubscription --> NatsServer
+    ChunkCatchup --> GraphQLAPI
+    InputComponent --> RestAPI
+    
+    style UserInterface fill:#e1f5ff
+    style HooksLayer fill:#fff4e1
+    style ProcessingLayer fill:#f0e1ff
+    style TypesLayer fill:#e1ffe1
+    style ExternalSystems fill:#ffe1e1

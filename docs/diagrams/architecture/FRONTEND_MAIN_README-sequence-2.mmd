@@ -1,0 +1,48 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant AuthClient
+    participant Gateway
+    participant AuthServer
+    participant SSO as SSO Provider
+    
+    User->>Frontend: Visit Application
+    Frontend->>AuthClient: Check Authentication
+    AuthClient->>Gateway: GET /api/me
+    
+    alt Authenticated
+        Gateway-->>Frontend: User Data
+        Frontend->>User: Show Dashboard
+    else Not Authenticated
+        Gateway-->>Frontend: 401 Unauthorized
+        Frontend->>User: Show Login Page
+        
+        User->>Frontend: Enter Email
+        Frontend->>AuthClient: Discover Tenant
+        AuthClient->>Gateway: GET /sas/tenant/discover
+        Gateway->>AuthServer: Tenant Discovery
+        AuthServer-->>Gateway: Tenant Info + Providers
+        Gateway-->>Frontend: Available Auth Methods
+        
+        alt SSO Login
+            User->>Frontend: Select SSO Provider
+            Frontend->>AuthClient: Initiate SSO
+            AuthClient->>Gateway: Redirect to OAuth
+            Gateway->>AuthServer: OAuth Authorization
+            AuthServer->>SSO: OAuth Request
+            SSO-->>AuthServer: Authorization Code
+            AuthServer->>SSO: Exchange for Tokens
+            SSO-->>AuthServer: Access Token
+            AuthServer-->>Gateway: Set Session Cookie
+            Gateway-->>Frontend: Redirect to Dashboard
+        else Password Login
+            User->>Frontend: Enter Password
+            Frontend->>AuthClient: Login Request
+            AuthClient->>Gateway: POST /oauth/login
+            Gateway->>AuthServer: Validate Credentials
+            AuthServer-->>Gateway: Set Session Cookie
+            Gateway-->>Frontend: Success
+        end
+        
+        Frontend->>User: Show Dashboard
+    end

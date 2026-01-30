@@ -1,0 +1,10 @@
+flowchart TD
+    RuntimeException["RuntimeException"] --> FleetMdmException["FleetMdmException"]
+    FleetMdmException --> FleetMdmApiException["FleetMdmApiException"]
+    
+    FleetMdmException -.->|"thrown for"| GenericErrors["Generic SDK Errors<br/>- Parsing failures<br/>- Invalid arguments<br/>- Unexpected conditions"]
+    
+    FleetMdmApiException -.->|"thrown for"| ApiErrors["API-Specific Errors<br/>- 401 Authentication<br/>- 404 Not Found<br/>- 500 Server Error"]
+    
+    FleetMdmApiException -->|"provides"| StatusCode["statusCode: int"]
+    FleetMdmApiException -->|"provides"| ResponseBody["responseBody: String"]

@@ -1,0 +1,29 @@
+flowchart TD
+    Start["User Login"] --> Authenticate["Authenticate User"]
+    
+    Authenticate --> GenerateTokens["Generate JWT Tokens<br/>(Access + Refresh)"]
+    
+    GenerateTokens --> CreateCookies["CookieService.addAuthCookies()"]
+    
+    CreateCookies --> AccessCookie["Create access_token Cookie<br/>(Path: /, HttpOnly, Secure)"]
+    CreateCookies --> RefreshCookie["Create refresh_token Cookie<br/>(Path: /oauth, HttpOnly, Secure)"]
+    
+    AccessCookie --> SetHeaders["Set-Cookie Headers"]
+    RefreshCookie --> SetHeaders
+    
+    SetHeaders --> BrowserStores["Browser Stores Cookies"]
+    
+    BrowserStores --> SubsequentRequest["Subsequent Request"]
+    
+    SubsequentRequest --> AutoSend["Browser Auto-Sends Cookies"]
+    
+    AutoSend --> ExtractCookie["CookieService.getAccessTokenFromCookies()"]
+    
+    ExtractCookie --> ValidateToken["Validate JWT Token"]
+    
+    ValidateToken --> Authorized["Request Authorized"]
+    
+    style Start fill:#e1f5ff
+    style Authorized fill:#e1ffe1
+    style CreateCookies fill:#fff4e1
+    style ValidateToken fill:#f0e1ff

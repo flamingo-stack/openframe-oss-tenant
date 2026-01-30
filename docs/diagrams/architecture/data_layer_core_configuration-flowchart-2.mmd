@@ -1,0 +1,15 @@
+flowchart TD
+    DataConfiguration["@Configuration<br/>DataConfiguration"]
+    
+    CassandraConfiguration["@Configuration<br/>@ConditionalOnProperty<br/>CassandraConfiguration"]
+    
+    EnableRepos["@EnableCassandraRepositories<br/>basePackages = 'com.openframe.data.repository.cassandra'"]
+    
+    PropertyCheck{{"spring.data.cassandra.enabled<br/>= true?"}}
+    
+    DataConfiguration -->|"contains"| CassandraConfiguration
+    CassandraConfiguration -->|"checks"| PropertyCheck
+    PropertyCheck -->|"Yes"| EnableRepos
+    PropertyCheck -->|"No"| Disabled["Cassandra Repositories<br/>NOT Loaded"]
+    
+    EnableRepos -->|"scans"| RepoPackage["com.openframe.data.repository.cassandra.*"]

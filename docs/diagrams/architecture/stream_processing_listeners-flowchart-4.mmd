@@ -1,0 +1,4 @@
+flowchart TD
+    Start["Kafka Message Arrives"] --> Extract["Extract Payload & Headers"]
+    Extract --> Validate["Validate Message Structure"]
+    Validate --> Pass["Pass to Processor"]

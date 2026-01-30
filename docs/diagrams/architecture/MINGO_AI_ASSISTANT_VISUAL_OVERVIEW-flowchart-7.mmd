@@ -1,0 +1,40 @@
+flowchart TD
+    Start["User Types Message"] --> Validate["Validate Content"]
+    
+    Validate -->|"Empty"| ErrorToast["Show Error Toast"]
+    ErrorToast --> End1["End"]
+    
+    Validate -->|"Valid"| CheckDialog{"Dialog<br/>Exists?"}
+    
+    CheckDialog -->|"No"| CreateDialog["Create Dialog"]
+    CreateDialog --> CreateAPI["POST /chat/api/v2/dialogs"]
+    CreateAPI --> SaveDialogId["Save Dialog ID"]
+    SaveDialogId --> AddTyping["Add Typing Message"]
+    
+    CheckDialog -->|"Yes"| AddTyping
+    
+    AddTyping --> UpdateStore1["ensureTypingMessage()"]
+    UpdateStore1 --> SendAPI["POST /chat/api/v2/messages"]
+    
+    SendAPI -->|"Success"| StreamStart["Backend Starts Streaming"]
+    SendAPI -->|"Error"| HandleError["Handle Error"]
+    
+    HandleError --> ErrorToast2["Show Error Toast"]
+    ErrorToast2 --> RemoveTyping1["removeTypingMessage()"]
+    RemoveTyping1 --> End2["End"]
+    
+    StreamStart --> ReceiveChunk["Receive Chunk"]
+    ReceiveChunk --> UpdateMessage["updateLastAssistantMessage()"]
+    UpdateMessage --> MoreChunks{"More<br/>Chunks?"}
+    
+    MoreChunks -->|"Yes"| ReceiveChunk
+    MoreChunks -->|"No"| StreamComplete["Stream Complete"]
+    
+    StreamComplete --> RemoveTyping2["removeTypingMessage()"]
+    RemoveTyping2 --> Invalidate["Invalidate Query Cache"]
+    Invalidate --> End3["End"]
+    
+    style CreateDialog fill:#FF9800
+    style SendAPI fill:#2196F3
+    style UpdateMessage fill:#4CAF50
+    style HandleError fill:#F44336

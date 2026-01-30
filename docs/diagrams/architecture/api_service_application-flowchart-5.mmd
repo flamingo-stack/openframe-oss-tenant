@@ -1,0 +1,15 @@
+flowchart TD
+    JWT["JWT Token"] --> EXTRACT["Extract 'iss' Claim"]
+    EXTRACT --> CHECK["Check Cache"]
+    
+    CHECK -->|"Cache Hit"| USE["Use Cached Provider"]
+    CHECK -->|"Cache Miss"| DISCOVER["OIDC Discovery"]
+    
+    DISCOVER --> FETCH["Fetch JWKS from /.well-known/jwks.json"]
+    FETCH --> CREATE["Create JwtDecoder"]
+    CREATE --> CACHE["Cache Provider"]
+    CACHE --> USE
+    
+    USE --> VALIDATE["Validate JWT Signature"]
+    VALIDATE -->|"Valid"| AUTH["Authenticate Request"]
+    VALIDATE -->|"Invalid"| REJECT["Reject Request"]

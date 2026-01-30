@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Admin as Admin
+    participant MgmtSvc as Management Service
+    participant MongoDB as MongoDB
+    participant Debezium as Debezium
+    
+    Admin->>MgmtSvc: Configure Tool
+    MgmtSvc->>MongoDB: Save IntegratedTool
+    MongoDB-->>MgmtSvc: Tool Saved
+    MgmtSvc->>Debezium: Register CDC Connector
+    Debezium-->>MgmtSvc: Connector Registered
+    MgmtSvc-->>Admin: Integration Complete

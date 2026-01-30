@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant User
+    participant ChatUI
+    participant Hook as useMingoDialog
+    participant ActiveStore as MingoDialogDetailsStore
+    participant BgStore as BackgroundMessagesStore
+    participant API as API Client
+    participant Backend as Chat Service
+    
+    User->>ChatUI: Type message
+    ChatUI->>Hook: sendMessage(content)
+    
+    alt No Active Dialog
+        Hook->>API: POST /chat/api/v2/dialogs
+        API->>Backend: Create dialog
+        Backend-->>API: Dialog created (ID)
+        API-->>Hook: Dialog ID
+        Hook->>ActiveStore: setCurrentDialogId(id)
+    end
+    
+    Hook->>ActiveStore: ensureTypingMessage()
+    ActiveStore->>ChatUI: Show typing indicator
+    
+    Hook->>API: POST /chat/api/v2/messages
+    API->>Backend: Send message
+    Backend-->>API: Message sent
+    
+    Backend->>Backend: AI Processing
+    Backend-->>API: Stream response chunks
+    API-->>Hook: Response chunks
+    
+    loop For each chunk
+        Hook->>ActiveStore: updateLastAssistantMessage(chunk)
+        ActiveStore->>ChatUI: Update message text
+    end
+    
+    Hook->>ActiveStore: removeTypingMessage()
+    ActiveStore->>ChatUI: Hide typing indicator
+    
+    Note over BgStore: Background dialogs receive<br/>messages via polling/WebSocket
+    BgStore->>BgStore: incrementUnreadCount()

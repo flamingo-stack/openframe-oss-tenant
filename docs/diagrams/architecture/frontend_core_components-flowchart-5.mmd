@@ -1,0 +1,13 @@
+flowchart TD
+    TableView["Table Component"]
+    
+    TableView -->|"Desktop (≥768px)"| DesktopView["Traditional Table View"]
+    TableView -->|"Mobile (<768px)"| MobileView["Card-Based View"]
+    
+    DesktopView --> DesktopFeatures["• Full column display<br/>• Sortable headers<br/>• Inline actions<br/>• Bulk selection"]
+    
+    MobileView --> MobileFeatures["• Stacked card layout<br/>• Key info visible<br/>• Expandable details<br/>• Touch-friendly actions"]
+    
+    style TableView fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style DesktopView fill:#50C878,stroke:#2E7D4E,color:#fff
+    style MobileView fill:#9B59B6,stroke:#6C3483,color:#fff

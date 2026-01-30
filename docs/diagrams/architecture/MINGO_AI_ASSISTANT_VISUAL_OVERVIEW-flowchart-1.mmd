@@ -1,0 +1,78 @@
+flowchart TD
+    subgraph Client["Client Browser"]
+        subgraph UI["UI Layer"]
+            ChatUI["Chat Interface"]
+            DialogList["Dialog List"]
+            MessageInput["Message Input"]
+            Notifications["Toast Notifications"]
+        end
+        
+        subgraph Hooks["React Hooks"]
+            UseMingoDialog["useMingoDialog"]
+            UseMessages["useMessages"]
+            UseDialogs["useDialogs"]
+        end
+        
+        subgraph State["State Management"]
+            ActiveStore["MingoDialogDetailsStore<br/>(Zustand)"]
+            BgStore["BackgroundMessagesStore<br/>(Zustand + Immer)"]
+        end
+        
+        subgraph API["API Layer"]
+            RestClient["REST API Client"]
+            GraphQLClient["GraphQL Client"]
+            QueryCache["React Query Cache"]
+        end
+    end
+    
+    subgraph Backend["Backend Services"]
+        Gateway["API Gateway"]
+        ChatService["Chat API Service"]
+        DialogService["Dialog Service"]
+        MessageService["Message Service"]
+        AIEngine["Mingo AI Engine"]
+    end
+    
+    subgraph Data["Data Layer"]
+        MongoDB["MongoDB"]
+        Kafka["Kafka Streams"]
+        Cache["Redis Cache"]
+    end
+    
+    ChatUI --> UseMingoDialog
+    DialogList --> UseDialogs
+    MessageInput --> UseMingoDialog
+    
+    UseMingoDialog --> ActiveStore
+    UseMingoDialog --> BgStore
+    UseMingoDialog --> RestClient
+    
+    UseMessages --> GraphQLClient
+    UseDialogs --> GraphQLClient
+    
+    RestClient --> QueryCache
+    GraphQLClient --> QueryCache
+    
+    RestClient --> Gateway
+    GraphQLClient --> Gateway
+    
+    Gateway --> ChatService
+    Gateway --> DialogService
+    Gateway --> MessageService
+    
+    ChatService --> AIEngine
+    MessageService --> AIEngine
+    
+    DialogService --> MongoDB
+    MessageService --> MongoDB
+    MessageService --> Kafka
+    
+    AIEngine --> Cache
+    
+    ActiveStore -.->|"State Sync"| BgStore
+    
+    style ActiveStore fill:#4CAF50
+    style BgStore fill:#2196F3
+    style UseMingoDialog fill:#FF9800
+    style AIEngine fill:#9C27B0
+    style Gateway fill:#607D8B

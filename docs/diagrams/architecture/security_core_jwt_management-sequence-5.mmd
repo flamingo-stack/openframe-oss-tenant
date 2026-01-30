@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant User
+    participant LoginController
+    participant MongoAuthorizationService
+    participant JwtService
+    participant UserRepository
+    
+    User->>LoginController: POST /login
+    LoginController->>MongoAuthorizationService: authenticate(credentials)
+    MongoAuthorizationService->>UserRepository: findByEmail()
+    UserRepository-->>MongoAuthorizationService: User
+    MongoAuthorizationService->>JwtService: generateToken(claims)
+    JwtService-->>MongoAuthorizationService: JWT String
+    MongoAuthorizationService-->>LoginController: Access Token
+    LoginController-->>User: Set-Cookie + Redirect

@@ -1,0 +1,14 @@
+flowchart LR
+    Request["HTTP Request"] -->|"1. Authenticate"| Auth["API Key Filter"]
+    Auth -->|"2. Route"| Controller["REST Controller"]
+    Controller -->|"3. Validate"| Validation["Request Validation"]
+    Validation -->|"4. Map DTO"| Mapper["DTO Mapper"]
+    Mapper -->|"5. Execute"| Service["Business Service"]
+    Service -->|"6. Query"| Repository["Data Repository"]
+    Repository -->|"7. Return Data"| Service
+    Service -->|"8. Transform"| Mapper
+    Mapper -->|"9. Build Response"| Controller
+    Controller -->|"10. HTTP Response"| Response["JSON Response"]
+    
+    Error["Error"] -.->|"Handle"| ExceptionHandler["Exception Handler"]
+    ExceptionHandler -.->|"Error Response"| Response

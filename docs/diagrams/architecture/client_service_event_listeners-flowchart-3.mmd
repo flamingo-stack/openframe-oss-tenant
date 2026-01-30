@@ -1,0 +1,26 @@
+flowchart TD
+    Start["Receive NATS Message"]
+    Parse["Parse JSON to<br/>ClientConnectionEvent"]
+    Extract["Extract Machine ID<br/>from event.client.name"]
+    Timestamp["Parse Event Timestamp"]
+    
+    Decision{"Event Type?"}
+    
+    Online["Call machineStatusService<br/>.updateToOnline()"]
+    Offline["Call machineStatusService<br/>.updateToOffline()"]
+    
+    Error["Log Error &<br/>Throw NatsException"]
+    End["Event Processed"]
+    
+    Start --> Parse
+    Parse -->|"Success"| Extract
+    Parse -->|"Failure"| Error
+    
+    Extract --> Timestamp
+    Timestamp --> Decision
+    
+    Decision -->|"Connected"| Online
+    Decision -->|"Disconnected"| Offline
+    
+    Online --> End
+    Offline --> End

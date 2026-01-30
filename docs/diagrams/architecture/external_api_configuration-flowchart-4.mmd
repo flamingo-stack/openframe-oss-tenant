@@ -1,0 +1,36 @@
+flowchart TD
+    OpenAPIBean["OpenAPI Bean"]
+    
+    subgraph Metadata["API Metadata"]
+        Info["Info<br/>(Title, Description, Version)"]
+        Contact["Contact<br/>(Team, Email, URL)"]
+        License["License<br/>(MIT)"]
+    end
+    
+    subgraph Security["Security Configuration"]
+        SecurityReq["Security Requirement<br/>(ApiKeyAuth)"]
+        SecurityScheme["Security Scheme<br/>(API Key in Header)"]
+    end
+    
+    subgraph Servers["Server Configuration"]
+        GatewayServer["Gateway Server<br/>(/external-api)"]
+    end
+    
+    subgraph Groups["API Groups"]
+        ExternalGroup["external-api group<br/>(/tools/**, /api/v1/**)"]
+    end
+    
+    OpenAPIBean -->|"includes"| Metadata
+    OpenAPIBean -->|"defines"| Security
+    OpenAPIBean -->|"configures"| Servers
+    OpenAPIBean -->|"organizes"| Groups
+    
+    Info --> Contact
+    Info --> License
+    SecurityReq --> SecurityScheme
+    
+    style OpenAPIBean fill:#e1f5ff
+    style Metadata fill:#fff4e1
+    style Security fill:#ffe1e1
+    style Servers fill:#e8f5e9
+    style Groups fill:#f3e5f5

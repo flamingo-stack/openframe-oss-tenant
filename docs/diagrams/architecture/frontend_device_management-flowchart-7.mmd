@@ -1,0 +1,10 @@
+flowchart LR
+    Frontend["Frontend Device<br/>Management"] --> Gateway["Gateway Service"]
+    Gateway --> APIService["API Service<br/>(GraphQL)"]
+    
+    APIService --> DeviceDataFetcher["DeviceDataFetcher"]
+    DeviceDataFetcher --> MongoDB["MongoDB<br/>(Device Collection)"]
+    
+    style Frontend fill:#e1f5ff
+    style APIService fill:#fff4e1
+    style MongoDB fill:#f0f0f0

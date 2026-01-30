@@ -1,0 +1,19 @@
+flowchart TD
+    ExternalAPI["External API Service"]
+    
+    ExternalAPI -->|"Device Queries"| DeviceService["Device Service"]
+    ExternalAPI -->|"Event Operations"| EventService["Event Service"]
+    ExternalAPI -->|"Log Queries"| LogService["Log Service"]
+    ExternalAPI -->|"Organization CRUD"| OrgService["Organization Service"]
+    ExternalAPI -->|"Tool Queries"| ToolService["Tool Service"]
+    
+    DeviceService -->|"Reads"| MongoDB[("MongoDB")]
+    EventService -->|"Reads/Writes"| MongoDB
+    OrgService -->|"Reads/Writes"| MongoDB
+    ToolService -->|"Reads"| MongoDB
+    
+    LogService -->|"Queries"| Pinot[("Apache Pinot")]
+    
+    ExternalAPI -.->|"References"| APIService["API Service"]
+    ExternalAPI -.->|"References"| DataLayer["Data Layer"]
+    ExternalAPI -.->|"References"| SecurityCore["Security Core"]

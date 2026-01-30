@@ -1,0 +1,15 @@
+flowchart LR
+    User["User"] --> Frontend["Frontend"]
+    Frontend --> AuthCheck["Auth Check<br/>(useAuth hook)"]
+    
+    AuthCheck --> HasToken{"Has Valid<br/>Token?"}
+    
+    HasToken -->|"Yes"| AllowAccess["Allow Device Access"]
+    HasToken -->|"No"| RedirectLogin["Redirect to Login"]
+    
+    AllowAccess --> CheckOrg["Check Organization<br/>Access"]
+    CheckOrg --> FilterDevices["Filter Devices by<br/>Organization"]
+    
+    style Frontend fill:#e1f5ff
+    style AuthCheck fill:#fff4e1
+    style AllowAccess fill:#d4edda

@@ -1,0 +1,39 @@
+flowchart TD
+    subgraph Frontend["Frontend Application"]
+        UseAuth["useAuth Hook"]
+        AuthStore["Auth Store<br/>(Zustand)"]
+        TokenStorage["Token Storage<br/>(localStorage)"]
+        AuthApiClient["AuthApiClient"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        Gateway["Gateway Service<br/>(Port 8080)"]
+        AuthzServer["Authorization Server<br/>(Port 9000)"]
+        ApiService["API Service<br/>(Port 8081)"]
+    end
+    
+    subgraph External["External Providers"]
+        Google["Google OAuth"]
+        Microsoft["Microsoft OAuth"]
+    end
+    
+    UseAuth -->|"manages state"| AuthStore
+    UseAuth -->|"stores tokens"| TokenStorage
+    UseAuth -->|"API calls"| AuthApiClient
+    
+    AuthApiClient -->|"HTTP + cookies"| Gateway
+    AuthApiClient -->|"Direct (dev mode)"| AuthzServer
+    
+    Gateway -->|"proxies /oauth/*"| AuthzServer
+    Gateway -->|"proxies /api/*"| ApiService
+    
+    AuthzServer -->|"SSO redirect"| Google
+    AuthzServer -->|"SSO redirect"| Microsoft
+    
+    Google -->|"callback"| AuthzServer
+    Microsoft -->|"callback"| AuthzServer
+    
+    style UseAuth fill:#4CAF50
+    style AuthApiClient fill:#2196F3
+    style Gateway fill:#FF9800
+    style AuthzServer fill:#9C27B0

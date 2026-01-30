@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph Query["GraphQL Query"]
+        Q["devices { organization { name } }"]
+    end
+
+    subgraph Execution["Execution"]
+        FETCH["Fetch Devices"]
+        BATCH["Batch Organization IDs"]
+        LOAD["DataLoader.loadMany()"]
+    end
+
+    subgraph DataLoader["Organization DataLoader"]
+        CACHE["Check Cache"]
+        DB["Batch Query MongoDB"]
+        MAP["Map Results"]
+    end
+
+    Q --> FETCH
+    FETCH --> BATCH
+    BATCH --> LOAD
+    LOAD --> CACHE
+    CACHE -->|"Cache Miss"| DB
+    DB --> MAP
+    MAP --> CACHE
+    CACHE --> Q

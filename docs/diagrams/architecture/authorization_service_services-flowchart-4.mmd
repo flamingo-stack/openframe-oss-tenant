@@ -1,0 +1,36 @@
+flowchart TD
+    Start["Client Application"] -->|"1. Generate code_verifier"| CodeVerifier["code_verifier<br/>(random 43-128 chars)"]
+    CodeVerifier -->|"2. SHA256 hash"| CodeChallenge["code_challenge<br/>(base64url encoded)"]
+    
+    CodeChallenge -->|"3. Authorization Request"| AuthEndpoint["GET /oauth2/authorize<br/>+ code_challenge"]
+    AuthEndpoint -->|"4. User Login"| UserAuth["User Authentication"]
+    
+    UserAuth -->|"5. Generate Authorization Code"| AuthCode["Authorization Code"]
+    AuthCode -->|"6. Save with PKCE"| MongoAuthz1["MongoAuthorizationService.save()"]
+    MongoAuthz1 -->|"7. Store in MongoDB"| MongoDB1[("MongoDB<br/>oauth2_authorizations")]
+    
+    MongoDB1 -->|"8. Return code"| Redirect["302 Redirect<br/>?code=...&state=..."]
+    Redirect -->|"9. Token Request"| TokenEndpoint["POST /oauth2/token<br/>+ code + code_verifier"]
+    
+    TokenEndpoint -->|"10. Load Authorization"| MongoAuthz2["MongoAuthorizationService.findByToken()"]
+    MongoAuthz2 -->|"11. Query by code"| MongoDB2[("MongoDB<br/>oauth2_authorizations")]
+    MongoDB2 -->|"12. Return with PKCE"| AuthzObj["OAuth2Authorization<br/>+ code_challenge"]
+    
+    AuthzObj -->|"13. Verify PKCE"| PKCEVerify{"Verify PKCE<br/>code_verifier"}
+    PKCEVerify -->|"No"| Error["400 Bad Request<br/>invalid_grant"]
+    PKCEVerify -->|"Yes"| TenantKey["TenantKeyService.getOrCreateActiveKey()"]
+    
+    TenantKey -->|"14. Load/Generate Key"| MongoDB3[("MongoDB<br/>tenant_keys")]
+    MongoDB3 -->|"15. Return RSA Key"| SignJWT["Sign JWT<br/>with tenant key"]
+    
+    SignJWT -->|"16. Generate Tokens"| Tokens["Access Token<br/>+ Refresh Token"]
+    Tokens -->|"17. Update Authorization"| MongoAuthz3["MongoAuthorizationService.save()"]
+    MongoAuthz3 -->|"18. Store tokens"| MongoDB4[("MongoDB<br/>oauth2_authorizations")]
+    
+    MongoDB4 -->|"19. Return tokens"| Response["200 OK<br/>{access_token, refresh_token}"]
+    Response -->|"20. Use access_token"| APICall["API Requests<br/>Authorization: Bearer ..."]
+    
+    style CodeChallenge fill:#50C878
+    style PKCEVerify fill:#F39C12
+    style Tokens fill:#50C878
+    style Error fill:#E74C3C

@@ -1,0 +1,21 @@
+flowchart TD
+    FrontendApps["Frontend Applications<br/>(Dashboard, Chat, Admin)"]
+    
+    FrontendApps -->|"uses"| HeaderComponent["Header Component"]
+    
+    HeaderComponent -->|"renders"| Logo["Logo Section"]
+    HeaderComponent -->|"renders"| Navigation["Navigation Items"]
+    HeaderComponent -->|"renders"| Actions["Action Buttons"]
+    HeaderComponent -->|"renders"| Mobile["Mobile Menu"]
+    
+    Navigation -->|"supports"| SimpleLinks["Simple Links"]
+    Navigation -->|"supports"| Dropdowns["Dropdown Menus"]
+    Navigation -->|"supports"| CustomElements["Custom Elements"]
+    
+    HeaderComponent -->|"integrates with"| ThemeProvider["Dynamic Theme Provider"]
+    HeaderComponent -->|"uses"| UIComponents["UI Components<br/>(Button, etc.)"]
+    HeaderComponent -->|"applies"| DesignTokens["ODS Design Tokens"]
+    
+    style HeaderComponent fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style FrontendApps fill:#50C878,stroke:#2E7D4E,color:#fff
+    style ThemeProvider fill:#9B59B6,stroke:#6C3483,color:#fff

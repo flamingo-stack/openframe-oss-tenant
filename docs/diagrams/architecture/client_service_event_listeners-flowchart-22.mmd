@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph Scenario1["Instance Failure"]
+        S1A["Instance Crashes"]
+        S1B["NATS Redelivers<br/>Unacked Messages"]
+        S1C["Other Instances<br/>Process Messages"]
+    end
+    
+    subgraph Scenario2["NATS Failure"]
+        S2A["NATS Connection Lost"]
+        S2B["Listeners Attempt<br/>Reconnection"]
+        S2C["Messages Buffered<br/>in JetStream"]
+        S2D["Resume on Reconnect"]
+    end
+    
+    subgraph Scenario3["Database Failure"]
+        S3A["MongoDB Unavailable"]
+        S3B["Connection Events Lost"]
+        S3C["Heartbeats Lost"]
+        S3D["Agent Installs Retried"]
+    end
+    
+    S1A --> S1B
+    S1B --> S1C
+    
+    S2A --> S2B
+    S2B --> S2C
+    S2C --> S2D
+    
+    S3A --> S3B
+    S3A --> S3C
+    S3A --> S3D

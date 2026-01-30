@@ -1,0 +1,27 @@
+flowchart TD
+    Request["Password Reset Request"] --> EmailCheck{User Exists?}
+    
+    EmailCheck -->|Yes| GenerateToken["Generate Reset Token"]
+    EmailCheck -->|No| SilentFail["Silent Failure"]
+    
+    GenerateToken --> SendEmail["Send Reset Email"]
+    SilentFail --> Return202["Return 202 ACCEPTED"]
+    SendEmail --> Return202
+    
+    Return202 --> UserAction["User Receives Email"]
+    
+    UserAction --> ConfirmRequest["POST /password-reset/confirm"]
+    ConfirmRequest --> ValidateToken{Token Valid?}
+    
+    ValidateToken -->|Yes| CheckExpiry{Token Expired?}
+    ValidateToken -->|No| Error401["401 Unauthorized"]
+    
+    CheckExpiry -->|No| UpdatePassword["Update Password"]
+    CheckExpiry -->|Yes| Error401
+    
+    UpdatePassword --> InvalidateToken["Invalidate Token"]
+    InvalidateToken --> Return204["204 NO_CONTENT"]
+    
+    style SilentFail fill:#ff9999
+    style Error401 fill:#ff9999
+    style Return204 fill:#99ff99

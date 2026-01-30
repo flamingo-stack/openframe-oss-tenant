@@ -1,0 +1,36 @@
+flowchart TD
+    Org["Organization Document"]
+    
+    subgraph Identity["Identity"]
+        OrgID["organizationId (unique)"]
+        IsDefault["isDefault flag"]
+        Name["name (indexed)"]
+    end
+    
+    subgraph Business["Business Info"]
+        Category["category"]
+        Employees["numberOfEmployees"]
+        Revenue["monthlyRevenue"]
+    end
+    
+    subgraph Contract["Contract Management"]
+        StartDate["contractStartDate"]
+        EndDate["contractEndDate"]
+        Active["isContractActive()"]
+    end
+    
+    subgraph Contact["Contact Info"]
+        ContactInfo["ContactInformation"]
+        Website["websiteUrl"]
+    end
+    
+    subgraph Lifecycle["Lifecycle"]
+        Deleted["deleted flag (indexed)"]
+        DeletedAt["deletedAt"]
+    end
+    
+    Org --> Identity
+    Org --> Business
+    Org --> Contract
+    Org --> Contact
+    Org --> Lifecycle

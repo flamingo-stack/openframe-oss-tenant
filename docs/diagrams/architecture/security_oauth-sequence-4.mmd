@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway as Gateway<br/>(OAuthBffController)
+    participant BffService as OAuthBffService
+    participant CookieSvc as CookieService
+    participant AuthServer as Authorization Server
+    
+    Browser->>Gateway: GET /oauth/login?tenantId=acme&redirectTo=/dashboard
+    Gateway->>BffService: buildAuthorizeRedirect(tenantId, redirectTo)
+    BffService->>BffService: Generate code_verifier (random)
+    BffService->>BffService: Generate code_challenge = SHA256(verifier)
+    BffService->>BffService: Generate state (random UUID)
+    BffService->>BffService: Resolve redirect target
+    BffService-->>Gateway: AuthorizeData(url, state, verifier, tenantId)
+    
+    Gateway->>BffService: buildStateJwt(data, ttl)
+    BffService-->>Gateway: Signed JWT with state data
+    
+    Gateway->>CookieSvc: addOAuthStateCookie(state, jwt, ttl)
+    CookieSvc-->>Gateway: Set-Cookie: of_oauth_{state}=<jwt>
+    
+    Gateway->>CookieSvc: addClearSasCookies()
+    CookieSvc-->>Gateway: Clear JSESSIONID, SSO cookies
+    
+    Gateway-->>Browser: 302 Redirect to authorize URL<br/>Set-Cookie headers
+    
+    Browser->>AuthServer: GET /acme/oauth2/authorize?<br/>response_type=code&<br/>client_id=gateway-client&<br/>code_challenge=<challenge>&<br/>code_challenge_method=S256&<br/>redirect_uri=https://gateway/oauth/callback&<br/>state=<state>
+    
+    Note over Browser,AuthServer: User authenticates<br/>(login form, SSO, etc.)
+    
+    AuthServer-->>Browser: 302 Redirect to callback<br/>Location: https://gateway/oauth/callback?code=<code>&state=<state>

@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph Agents["Multiple Agents"]
+        A1["Agent 1<br/>machine.abc123.heartbeat"]
+        A2["Agent 2<br/>machine.def456.heartbeat"]
+        A3["Agent N<br/>machine.xyz789.heartbeat"]
+    end
+    
+    subgraph NATS["NATS Core"]
+        Subject["Subject Pattern:<br/>machine.*.heartbeat"]
+    end
+    
+    subgraph Listener["MachineHeartbeatListener"]
+        Dispatcher["NATS Dispatcher"]
+        Handler["handleMessage()"]
+    end
+    
+    A1 -->|"Publish"| Subject
+    A2 -->|"Publish"| Subject
+    A3 -->|"Publish"| Subject
+    
+    Subject -->|"Subscribe"| Dispatcher
+    Dispatcher -->|"Callback"| Handler

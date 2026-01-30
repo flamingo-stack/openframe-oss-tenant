@@ -1,0 +1,32 @@
+flowchart TD
+    MouseEvent["Browser Mouse Event<br/>(clientX, clientY)"]
+    
+    subgraph CoordinateTransform["Coordinate Transformation"]
+        GetRect["Get Canvas BoundingRect"]
+        CalcRelative["Calculate Relative Position<br/>(0.0 - 1.0)"]
+        ScaleToRemote["Scale to Remote Resolution"]
+        ClampCoords["Clamp to Valid Range<br/>(0 - 65535)"]
+    end
+    
+    subgraph DisplayMapping["Display Mapping"]
+        CurrentDisplay["Current Display Info"]
+        DisplayOffset["Apply Display Offset<br/>(x, y)"]
+        VirtualDesktop["Virtual Desktop Coordinates"]
+    end
+    
+    RemoteCoords["Remote Coordinates<br/>(x, y)"]
+    EncodeCommand["Encode Mouse Command"]
+    SendToServer["Send to MeshCentral"]
+    
+    MouseEvent --> GetRect
+    GetRect --> CalcRelative
+    CalcRelative --> ScaleToRemote
+    ScaleToRemote --> ClampCoords
+    
+    ClampCoords --> CurrentDisplay
+    CurrentDisplay --> DisplayOffset
+    DisplayOffset --> VirtualDesktop
+    
+    VirtualDesktop --> RemoteCoords
+    RemoteCoords --> EncodeCommand
+    EncodeCommand --> SendToServer

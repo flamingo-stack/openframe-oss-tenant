@@ -1,0 +1,21 @@
+flowchart TD
+    RuntimeException["RuntimeException"] --> PinotQueryException["PinotQueryException"]
+    
+    PinotQueryException --> ValidationError["Validation Errors"]
+    PinotQueryException --> BuildError["Build Errors"]
+    PinotQueryException --> CursorError["Cursor Parsing Errors"]
+    
+    ValidationError --> TableNull["Table name null/empty"]
+    ValidationError --> FieldNull["Field name null/empty"]
+    ValidationError --> ColumnNull["Column null/empty"]
+    ValidationError --> LimitInvalid["Limit out of range"]
+    
+    BuildError --> NoColumns["No columns selected"]
+    
+    CursorError --> InvalidFormat["Invalid cursor format"]
+    CursorError --> InvalidTimestamp["Invalid timestamp in cursor"]
+    
+    style PinotQueryException fill:#F44336
+    style ValidationError fill:#FF9800
+    style BuildError fill:#FF9800
+    style CursorError fill:#FF9800

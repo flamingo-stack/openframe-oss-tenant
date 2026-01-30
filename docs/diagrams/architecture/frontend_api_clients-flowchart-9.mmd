@@ -1,0 +1,55 @@
+flowchart TD
+    Start["Component/Hook<br/>Initiates Request"] --> SelectClient{"Select<br/>Client"}
+    
+    SelectClient -->|"Auth Operations"| AuthClient["AuthApiClient"]
+    SelectClient -->|"Fleet Operations"| FleetClient["FleetApiClient"]
+    SelectClient -->|"Tactical Operations"| TacticalClient["TacticalApiClient"]
+    SelectClient -->|"General API"| BaseClient["ApiClient"]
+    
+    AuthClient --> BuildAuthURL["Build Auth URL<br/>(Shared Host)"]
+    FleetClient --> BuildFleetURL["Build Fleet URL<br/>(/tools/fleetmdm-server)"]
+    TacticalClient --> BuildTacticalURL["Build Tactical URL<br/>(/tools/tactical-rmm)"]
+    BaseClient --> BuildBaseURL["Build Base URL<br/>(Tenant Host)"]
+    
+    BuildAuthURL --> AddAuthHeaders["Add Auth Headers"]
+    BuildFleetURL --> AddAuthHeaders
+    BuildTacticalURL --> AddAuthHeaders
+    BuildBaseURL --> AddAuthHeaders
+    
+    AddAuthHeaders --> DevMode{"Dev Ticket<br/>Mode?"}
+    
+    DevMode -->|"Yes"| AddBearer["Add Bearer Token<br/>from localStorage"]
+    DevMode -->|"No"| AddCookies["Include Cookies<br/>(credentials: include)"]
+    
+    AddBearer --> MakeRequest["Fetch Request"]
+    AddCookies --> MakeRequest
+    
+    MakeRequest --> CheckResponse{"Response<br/>Status"}
+    
+    CheckResponse -->|"200-299"| ParseSuccess["Parse JSON Response"]
+    CheckResponse -->|"401"| HandleUnauth["Handle Unauthorized"]
+    CheckResponse -->|"Other Error"| ParseError["Parse Error Response"]
+    
+    HandleUnauth --> CheckAuthPage{"On Auth<br/>Page?"}
+    CheckAuthPage -->|"Yes"| ReturnUnauth["Return 401<br/>(No Refresh)"]
+    CheckAuthPage -->|"No"| AttemptRefresh["Attempt Token Refresh"]
+    
+    AttemptRefresh --> RefreshSuccess{"Refresh<br/>Success?"}
+    
+    RefreshSuccess -->|"Yes"| RetryRequest["Retry Original Request"]
+    RefreshSuccess -->|"No"| ForceLogout["Force Logout"]
+    
+    RetryRequest --> CheckResponse
+    
+    ParseSuccess --> ReturnSuccess["Return ApiResponse<br/>{ok: true, data, status}"]
+    ParseError --> ReturnError["Return ApiResponse<br/>{ok: false, error, status}"]
+    ReturnUnauth --> ReturnError
+    ForceLogout --> ReturnError
+    
+    ReturnSuccess --> EndNode["Component/Hook<br/>Processes Response"]
+    ReturnError --> EndNode
+    
+    style HandleUnauth fill:#F39C12,stroke:#D68910,color:#fff
+    style ForceLogout fill:#E74C3C,stroke:#C0392B,color:#fff
+    style ParseSuccess fill:#2ECC71,stroke:#27AE60,color:#fff
+    style ReturnSuccess fill:#2ECC71,stroke:#27AE60,color:#fff

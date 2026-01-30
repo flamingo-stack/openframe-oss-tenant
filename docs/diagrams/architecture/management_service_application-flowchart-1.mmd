@@ -1,0 +1,27 @@
+flowchart TD
+    Gateway["Gateway Service"] -->|"REST API Calls"| ManagementApp["Management Application"]
+    ManagementApp -->|"CRUD Operations"| MongoDB["MongoDB"]
+    ManagementApp -->|"Connector Management"| DebeziumAPI["Debezium Connect API"]
+    ManagementApp -->|"Publishes Updates"| Kafka["Kafka Topics"]
+    
+    DebeziumAPI -->|"CDC Events"| Kafka
+    Kafka -->|"Consumed By"| StreamService["Stream Processing Service"]
+    
+    ManagementApp -->|"Reads Agent Configs"| Classpath["Classpath Resources"]
+    
+    subgraph ManagementService["Management Service"]
+        ManagementApp
+        ToolController["Tool Controller"]
+        AgentInitializer["Agent Initializer"]
+        HealthScheduler["Health Check Scheduler"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        MongoDB
+        IntegratedToolDoc["IntegratedTool Collection"]
+        AgentDoc["IntegratedToolAgent Collection"]
+    end
+    
+    style ManagementApp fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ManagementService fill:#E8F4F8,stroke:#4A90E2
+    style DataLayer fill:#F0F0F0,stroke:#999

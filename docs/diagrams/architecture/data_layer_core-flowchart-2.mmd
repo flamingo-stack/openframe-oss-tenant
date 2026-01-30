@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph ingestion["Data Ingestion"]
+        Kafka["Kafka Topics"]
+        Debezium["Debezium CDC"]
+    end
+    
+    subgraph pinot["Apache Pinot"]
+        Broker["Pinot Broker"]
+        Server["Pinot Server"]
+        Controller["Pinot Controller"]
+        
+        Broker -->|"routes queries"| Server
+        Controller -->|"manages"| Server
+    end
+    
+    subgraph tables["Pinot Tables"]
+        DevicesTable["devices table"]
+        LogsTable["logs table"]
+    end
+    
+    Kafka -->|"streams"| Server
+    Debezium -->|"CDC events"| Kafka
+    
+    Server -->|"stores"| DevicesTable
+    Server -->|"stores"| LogsTable
+    
+    PinotRepo["Pinot Repositories"] -->|"queries"| Broker
+    Broker -->|"aggregates"| DevicesTable
+    Broker -->|"searches"| LogsTable

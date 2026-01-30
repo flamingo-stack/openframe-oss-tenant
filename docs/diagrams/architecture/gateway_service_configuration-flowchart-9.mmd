@@ -1,0 +1,20 @@
+flowchart TD
+    Request["Incoming Request"] --> CORSFilter["CorsWebFilter<br/>(CorsConfig)"]
+    
+    CORSFilter --> SecurityChain["SecurityWebFilterChain<br/>(GatewaySecurityConfig)"]
+    
+    SecurityChain --> AuthFilter["Authentication Filters"]
+    AuthFilter --> JwtAuth["JWT Authentication<br/>(JwtAuthConfig)"]
+    AuthFilter --> ApiKeyAuth["API Key Authentication<br/>(ApiKeyAuthenticationFilter)"]
+    
+    JwtAuth --> AuthzCheck["Authorization Check<br/>(Role/Scope validation)"]
+    ApiKeyAuth --> AuthzCheck
+    
+    AuthzCheck -->|Authorized| RouteHandler["Route Handler<br/>(WebClientConfig)"]
+    AuthzCheck -->|Unauthorized| Reject["403 Forbidden"]
+    
+    RouteHandler --> Backend["Backend Service"]
+    
+    style CORSFilter fill:#e1f5ff
+    style SecurityChain fill:#ffebee
+    style RouteHandler fill:#e8f5e9

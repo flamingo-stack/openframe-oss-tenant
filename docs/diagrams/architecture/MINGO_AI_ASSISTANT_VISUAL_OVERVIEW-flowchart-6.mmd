@@ -1,0 +1,40 @@
+flowchart LR
+    subgraph Events["Event Sources"]
+        UserSend["User Sends Message"]
+        IncomingMsg["Incoming Message"]
+        DialogSwitch["Dialog Switch"]
+        StreamChunk["Stream Chunk"]
+    end
+    
+    subgraph Router["Event Router"]
+        CheckActive{"Is Active<br/>Dialog?"}
+        CheckType{"Message<br/>Type?"}
+    end
+    
+    subgraph Stores["State Stores"]
+        Active["Active Store"]
+        Background["Background Store"]
+    end
+    
+    UserSend --> Active
+    
+    IncomingMsg --> CheckActive
+    CheckActive -->|"Yes"| Active
+    CheckActive -->|"No"| CheckType
+    
+    CheckType -->|"User/Complete"| Background
+    CheckType -->|"Streaming"| StreamHandler["Stream Handler"]
+    StreamHandler --> Background
+    
+    StreamChunk --> Active
+    
+    DialogSwitch --> Transfer["Transfer State"]
+    Transfer --> Active
+    Transfer --> Background
+    
+    Background -.->|"Increment Unread"| UnreadCounter["Unread Counter"]
+    Active -.->|"Reset Unread"| UnreadCounter
+    
+    style Active fill:#4CAF50
+    style Background fill:#2196F3
+    style Router fill:#FF9800

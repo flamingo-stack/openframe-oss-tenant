@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph External["External Events"]
+        DEVICE["Device Status Change"]
+        ORG["Organization Update"]
+        USER["User Action"]
+    end
+
+    subgraph Kafka["Apache Kafka"]
+        TOPIC["Event Topics"]
+    end
+
+    subgraph APIService["API Service"]
+        LISTENER["Kafka Listener"]
+        PROCESSOR["Event Processor"]
+        CACHE["Cache Invalidation"]
+        DB_UPDATE["Database Update"]
+    end
+
+    DEVICE --> TOPIC
+    ORG --> TOPIC
+    USER --> TOPIC
+
+    TOPIC --> LISTENER
+    LISTENER --> PROCESSOR
+    PROCESSOR --> CACHE
+    PROCESSOR --> DB_UPDATE

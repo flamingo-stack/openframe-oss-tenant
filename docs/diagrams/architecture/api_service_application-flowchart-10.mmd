@@ -1,0 +1,26 @@
+flowchart TD
+    subgraph APIService["API Service"]
+        API["API Application"]
+    end
+
+    subgraph Services["Dependent Services"]
+        AUTHZ["Authorization Service<br/>(JWT Issuer)"]
+        GATEWAY["Gateway Service<br/>(Request Router)"]
+        STREAM["Stream Processing<br/>(Event Publisher)"]
+    end
+
+    subgraph DataStores["Data Stores"]
+        MONGO["MongoDB<br/>(Primary Data)"]
+        CASS["Cassandra<br/>(Time-series)"]
+        PINOT["Apache Pinot<br/>(Analytics)"]
+        KAFKA["Apache Kafka<br/>(Events)"]
+    end
+
+    AUTHZ -->|"JWT Tokens"| API
+    GATEWAY -->|"HTTP Requests"| API
+    STREAM -->|"Events"| KAFKA
+
+    API --> MONGO
+    API --> CASS
+    API --> PINOT
+    API --> KAFKA

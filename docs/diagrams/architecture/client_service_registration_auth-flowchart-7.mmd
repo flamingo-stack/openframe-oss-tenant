@@ -1,0 +1,17 @@
+flowchart TD
+    Start["validate(initialKey)"] --> CheckBlank{"initialKey<br/>blank?"}
+    CheckBlank -->|Yes| ErrorBlank["Throw AgentRegistrationSecretValidationException<br/>initial_key_empty"]
+    CheckBlank -->|No| FindSecret["Find active secret from DB"]
+    
+    FindSecret --> SecretExists{"Active secret<br/>exists?"}
+    SecretExists -->|No| ErrorNoSecret["Throw AgentRegistrationSecretValidationErrorException<br/>No active agent secret found"]
+    SecretExists -->|Yes| Decrypt["Decrypt secret key"]
+    
+    Decrypt --> Compare{"Decrypted key<br/>== initialKey?"}
+    Compare -->|No| ErrorInvalid["Throw AgentRegistrationSecretValidationException<br/>initial_key_invalid"]
+    Compare -->|Yes| Success["✓ Validation passed"]
+    
+    style ErrorBlank fill:#ffebee
+    style ErrorNoSecret fill:#ffebee
+    style ErrorInvalid fill:#ffebee
+    style Success fill:#e8f5e9

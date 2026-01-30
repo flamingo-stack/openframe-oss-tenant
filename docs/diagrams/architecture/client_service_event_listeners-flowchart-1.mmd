@@ -1,0 +1,47 @@
+flowchart TD
+    NATS["NATS Message Broker"]
+    
+    subgraph ClientService["Client Service Event Listeners"]
+        CCL["ClientConnectionListener"]
+        MHL["MachineHeartbeatListener"]
+        IAL["InstalledAgentListener"]
+        
+        MSS["MachineStatusService"]
+        IAS["InstalledAgentService"]
+        NTME["NatsTopicMachineIdExtractor"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        MachineRepo["MachineRepository"]
+        AgentRepo["InstalledAgentRepository"]
+        MongoDB["MongoDB"]
+    end
+    
+    subgraph Agents["OpenFrame Agents"]
+        Agent1["Agent Instance 1"]
+        Agent2["Agent Instance 2"]
+        AgentN["Agent Instance N"]
+    end
+    
+    Agent1 -->|"Publish Events"| NATS
+    Agent2 -->|"Publish Events"| NATS
+    AgentN -->|"Publish Events"| NATS
+    
+    NATS -->|"machine.*.connected"| CCL
+    NATS -->|"machine.*.disconnected"| CCL
+    NATS -->|"machine.*.heartbeat"| MHL
+    NATS -->|"machine.*.installed-agent"| IAL
+    
+    CCL -->|"Update Status"| MSS
+    MHL -->|"Update Status"| MSS
+    IAL -->|"Track Agents"| IAS
+    
+    CCL -.->|"Extract ID"| NTME
+    MHL -.->|"Extract ID"| NTME
+    IAL -.->|"Extract ID"| NTME
+    
+    MSS -->|"Update Machine"| MachineRepo
+    IAS -->|"Update Agents"| AgentRepo
+    
+    MachineRepo --> MongoDB
+    AgentRepo --> MongoDB

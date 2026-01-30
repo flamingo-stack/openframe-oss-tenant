@@ -1,0 +1,16 @@
+flowchart TD
+    subgraph StandardFrame["Standard Frame (4 bytes header)"]
+        Cmd1["Bytes 0-1: Command (uint16 BE)"]
+        Size1["Bytes 2-3: Size (uint16 BE)"]
+        Payload1["Bytes 4+: Payload"]
+    end
+    
+    subgraph JumboFrame["Jumbo Frame (8 bytes shim)"]
+        Cmd2["Bytes 0-1: 0x001B (27)"]
+        Size2["Bytes 2-3: 0x0008"]
+        JumboSize["Bytes 5-7: Size (24-bit)"]
+        RealCmd["Bytes 8-9: Real Command"]
+        Payload2["Bytes 10+: Payload"]
+    end
+    
+    StandardFrame -.->|"Size > 65535"| JumboFrame

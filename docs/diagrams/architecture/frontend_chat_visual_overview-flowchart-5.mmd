@@ -1,0 +1,32 @@
+flowchart TD
+    Start["Application Start"] --> InitToken["Initialize Token Service"]
+    InitToken --> CheckToken{"Token<br/>Available?"}
+    
+    CheckToken -->|"No"| RequestToken["Request Token from Rust"]
+    RequestToken --> WaitToken["Wait for Token"]
+    WaitToken --> CheckToken
+    
+    CheckToken -->|"Yes"| InitDialog["Initialize Dialog Service"]
+    InitDialog --> QueryResumable["Query resumableDialog"]
+    
+    QueryResumable --> CheckDialog{"Dialog<br/>Exists?"}
+    
+    CheckDialog -->|"No"| ShowEmpty["Show Empty Chat State"]
+    ShowEmpty --> Ready["Application Ready"]
+    
+    CheckDialog -->|"Yes"| FetchMessages["Fetch Messages (Page 1)"]
+    FetchMessages --> ProcessPage["Process Message Page"]
+    ProcessPage --> CheckMore{"More<br/>Pages?"}
+    
+    CheckMore -->|"Yes"| FetchNext["Fetch Next Page"]
+    FetchNext --> ProcessPage
+    
+    CheckMore -->|"No"| SortMessages["Sort Messages by Time"]
+    SortMessages --> RenderHistory["Render Message History"]
+    RenderHistory --> Ready
+    
+    Ready --> ListenUpdates["Listen for New Messages"]
+    
+    style Start fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style Ready fill:#48bb78,stroke:#2f855a,color:#fff
+    style ShowEmpty fill:#ed8936,stroke:#c05621,color:#fff

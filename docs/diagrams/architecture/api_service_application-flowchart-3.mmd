@@ -1,0 +1,9 @@
+flowchart TD
+    START["Application Start"] --> SCAN["Component Scan"]
+    SCAN --> CONFIG["Load Configuration"]
+    CONFIG --> SECURITY["Initialize Security"]
+    SECURITY --> DATA["Initialize Data Sources"]
+    DATA --> KAFKA["Connect to Kafka"]
+    KAFKA --> GRAPHQL["Initialize GraphQL Schema"]
+    GRAPHQL --> REST["Register REST Endpoints"]
+    REST --> READY["Service Ready"]

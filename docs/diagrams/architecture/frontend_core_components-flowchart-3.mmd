@@ -1,0 +1,34 @@
+flowchart TD
+    ChatTypes["Chat Type System"]
+    
+    ChatTypes --> MessageTypes["Message Types"]
+    ChatTypes --> APITypes["API Types"]
+    ChatTypes --> ComponentTypes["Component Types"]
+    ChatTypes --> NetworkTypes["Network Types"]
+    ChatTypes --> ChatEnums["Chat Enums"]
+    
+    MessageTypes --> Message["Message"]
+    MessageTypes --> MessageSegment["MessageSegment"]
+    MessageTypes --> MessageData["MessageData"]
+    
+    APITypes --> ChatAPIRequest["ChatAPIRequest"]
+    APITypes --> ChatAPIResponse["ChatAPIResponse"]
+    APITypes --> HookTypes["Hook Types"]
+    
+    ComponentTypes --> ChatContainerProps["ChatContainerProps"]
+    ComponentTypes --> ChatHeaderProps["ChatHeaderProps"]
+    ComponentTypes --> ChatInputProps["ChatInputProps"]
+    
+    NetworkTypes --> ChunkData["ChunkData"]
+    NetworkTypes --> NatsTypes["NATS Types"]
+    
+    ChatEnums --> MessageType["MESSAGE_TYPE"]
+    ChatEnums --> AssistantType["ASSISTANT_TYPE"]
+    ChatEnums --> ChatType["CHAT_TYPE"]
+    
+    style ChatTypes fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style MessageTypes fill:#50C878,stroke:#2E7D4E,color:#fff
+    style APITypes fill:#9B59B6,stroke:#6C3483,color:#fff
+    style ComponentTypes fill:#E67E22,stroke:#A04000,color:#fff
+    style NetworkTypes fill:#E74C3C,stroke:#922B21,color:#fff
+    style ChatEnums fill:#F39C12,stroke:#B9770E,color:#fff

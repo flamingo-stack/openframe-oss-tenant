@@ -1,0 +1,38 @@
+flowchart TD
+    ManagementApp["ManagementApplication<br/>(Spring Boot Entry Point)"]
+    
+    ManagementApp -->|"Scans & Loads"| CoreComponents["Core Components"]
+    
+    subgraph CoreComponents["Core Components"]
+        Config["ManagementConfiguration<br/>(Bean Definitions)"]
+        ToolController["IntegratedToolController<br/>(REST API)"]
+        AgentInit["IntegratedToolAgentInitializer<br/>(@PostConstruct)"]
+        HealthScheduler["DebeziumHealthCheckScheduler<br/>(@Scheduled)"]
+    end
+    
+    subgraph DataLayer["Data Layer Components"]
+        MongoConfig["MongoConfig"]
+        ToolRepo["IntegratedToolRepository"]
+        AgentRepo["IntegratedToolAgentRepository"]
+    end
+    
+    subgraph ExternalSystems["External Systems"]
+        DebeziumAPI["Debezium Connect REST API"]
+        KafkaCluster["Kafka Cluster"]
+    end
+    
+    ToolController -->|"Saves Tools"| ToolRepo
+    ToolController -->|"Creates/Updates Connectors"| DebeziumAPI
+    
+    AgentInit -->|"Loads JSON Configs"| Classpath["Classpath Resources"]
+    AgentInit -->|"Persists Agents"| AgentRepo
+    AgentInit -->|"Publishes Updates"| KafkaCluster
+    
+    HealthScheduler -->|"Monitors & Restarts"| DebeziumAPI
+    
+    Config -->|"Provides"| PasswordEncoder["BCryptPasswordEncoder"]
+    
+    style ManagementApp fill:#FF6B6B,stroke:#C92A2A,color:#fff
+    style CoreComponents fill:#FFE8E8,stroke:#FF6B6B
+    style DataLayer fill:#E3F2FD,stroke:#2196F3
+    style ExternalSystems fill:#FFF9C4,stroke:#FBC02D

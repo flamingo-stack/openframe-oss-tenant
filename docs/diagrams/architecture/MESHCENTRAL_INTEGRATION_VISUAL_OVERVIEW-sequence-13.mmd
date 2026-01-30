@@ -1,0 +1,46 @@
+sequenceDiagram
+    participant UI as User Interface
+    participant MD as MeshDesktop
+    participant DM as Display Manager
+    participant WS as WebSocket
+    participant Server as MeshCentral
+    participant OS as Remote OS
+    
+    Note over UI,OS: Display Discovery
+    UI->>MD: requestDisplayList()
+    MD->>WS: DISPLAY_LIST (cmd=0x000B)
+    WS->>Server: Forward request
+    Server->>OS: Query displays
+    OS-->>Server: Display info
+    Server-->>WS: DISPLAY_LIST response
+    WS-->>MD: Parse display list
+    MD->>DM: Update display list
+    DM-->>UI: onDisplayListChange(displays)
+    UI->>UI: Show display selector
+    
+    Note over UI,OS: Display Switching
+    UI->>MD: switchDisplay(1)
+    MD->>WS: PAUSE (cmd=0x0008, state=1)
+    WS->>Server: Pause stream
+    Server-->>WS: Stream paused
+    
+    MD->>WS: SWITCH_DISPLAY (cmd=0x000C, id=1)
+    WS->>Server: Switch request
+    Server->>OS: Switch to display 1
+    OS-->>Server: Display switched
+    Server-->>WS: Switch complete
+    
+    MD->>WS: UNPAUSE (cmd=0x0008, state=0)
+    WS->>Server: Resume stream
+    Server->>OS: Capture display 1
+    OS-->>Server: Screen tiles
+    Server-->>WS: TILE frames
+    WS-->>MD: Render tiles
+    MD-->>UI: Display updated
+    
+    MD->>WS: REFRESH (cmd=0x0006)
+    WS->>Server: Request refresh
+    Server->>OS: Full screen capture
+    OS-->>Server: All tiles
+    Server-->>WS: Complete frame
+    WS-->>MD: Render complete frame

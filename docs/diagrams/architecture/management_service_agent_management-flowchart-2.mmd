@@ -1,0 +1,40 @@
+flowchart TD
+    Start["Application Startup"] --> PostConstruct["@PostConstruct<br/>initializeToolAgents()"]
+    PostConstruct --> LoadPaths["Load agent configuration paths<br/>from AgentConfigurationProperties"]
+    LoadPaths --> IteratePaths["Iterate through each<br/>configuration file path"]
+    
+    IteratePaths --> LoadJSON["Load JSON from<br/>ClassPathResource"]
+    LoadJSON --> CheckExists{"File exists?"}
+    CheckExists -->|No| LogWarn["Log warning<br/>Skip file"]
+    CheckExists -->|Yes| ParseJSON["Parse JSON to<br/>IntegratedToolAgent"]
+    
+    ParseJSON --> CheckDB{"Agent exists<br/>in database?"}
+    CheckDB -->|Yes| ProcessExisting["processExistingAgent()"]
+    CheckDB -->|No| ProcessNew["processNewAgent()"]
+    
+    ProcessExisting --> CheckRelease{"Is release<br/>version?"}
+    CheckRelease -->|Yes| PreserveVersion["Preserve existing version<br/>Do not override"]
+    CheckRelease -->|No| UpdateVersion["Update to new version"]
+    
+    PreserveVersion --> SaveAgent["Save agent to database"]
+    UpdateVersion --> SaveAgent
+    
+    SaveAgent --> CheckVersionChange{"Version<br/>changed?"}
+    CheckVersionChange -->|Yes| PublishUpdate["Publish update event<br/>to Kafka"]
+    CheckVersionChange -->|No| SkipPublish["Skip publish"]
+    
+    ProcessNew --> SaveNewAgent["Save new agent<br/>to database"]
+    SaveNewAgent --> NextFile["Process next file"]
+    
+    PublishUpdate --> NextFile
+    SkipPublish --> NextFile
+    LogWarn --> NextFile
+    
+    NextFile --> MoreFiles{"More files?"}
+    MoreFiles -->|Yes| IteratePaths
+    MoreFiles -->|No| Complete["Initialization complete"]
+    
+    style PostConstruct fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style CheckRelease fill:#F39C12,stroke:#C87F0A,color:#fff
+    style PublishUpdate fill:#E74C3C,stroke:#C0392B,color:#fff
+    style Complete fill:#27AE60,stroke:#1E8449,color:#fff

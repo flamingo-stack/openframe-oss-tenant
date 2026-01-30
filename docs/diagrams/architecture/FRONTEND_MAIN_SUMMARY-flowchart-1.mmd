@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph presentation["Presentation Layer"]
+        UI["React UI Components<br/>(Next.js App Router)"]
+    end
+    
+    subgraph business["Business Logic Layer"]
+        Hooks["Custom Hooks<br/>(useAuth, useLogs, etc.)"]
+        Store["State Management<br/>(Zustand Stores)"]
+    end
+    
+    subgraph integration["Integration Layer"]
+        APIClients["API Clients<br/>(Auth, Fleet, Tactical)"]
+    end
+    
+    subgraph backend["Backend Services"]
+        Gateway["API Gateway"]
+        Services["Microservices<br/>(API, Auth, Chat)"]
+        Tools["External Tools<br/>(Fleet, Tactical, Mesh)"]
+    end
+    
+    UI --> Hooks
+    Hooks --> Store
+    Hooks --> APIClients
+    APIClients --> Gateway
+    Gateway --> Services
+    Gateway --> Tools
+    
+    style UI fill:#4CAF50
+    style Store fill:#2196F3
+    style APIClients fill:#FF9800
+    style Gateway fill:#9C27B0

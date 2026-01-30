@@ -1,0 +1,14 @@
+flowchart LR
+    Config["PinotConfig"] -->|"Provides"| BrokerConn["pinotBrokerConnection"]
+    Config -->|"Provides"| ControllerConn["pinotControllerConnection"]
+    
+    BrokerConn -->|"Injected into"| LogRepo["PinotClientLogRepository"]
+    BrokerConn -->|"Injected into"| DeviceRepo["PinotClientDeviceRepository"]
+    
+    LogRepo -->|"Uses"| QB["PinotQueryBuilder"]
+    DeviceRepo -->|"Uses"| QB
+    
+    Props["application.yml"] -->|"Configures"| Config
+    
+    style Config fill:#4CAF50
+    style Props fill:#FFF9C4

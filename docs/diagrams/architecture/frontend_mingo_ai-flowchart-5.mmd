@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph ActiveStore["MingoDialogDetailsStore"]
+        ActiveState["Current Dialog State"]
+        ActiveMessages["Active Messages"]
+        ActiveTyping["Typing Indicators"]
+        ActivePagination["Pagination State"]
+    end
+    
+    subgraph BackgroundStore["BackgroundMessagesStore"]
+        BgMessages["Background Messages"]
+        BgUnread["Unread Counts"]
+        BgTyping["Background Typing"]
+    end
+    
+    subgraph Components["React Components"]
+        ChatUI["Chat UI"]
+        DialogList["Dialog List"]
+        MessageList["Message List"]
+    end
+    
+    ChatUI --> ActiveStore
+    MessageList --> ActiveStore
+    DialogList --> BackgroundStore
+    
+    ActiveStore -.->|"Dialog Switch"| BackgroundStore
+    BackgroundStore -.->|"Activate Dialog"| ActiveStore
+    
+    style ActiveStore fill:#4CAF50
+    style BackgroundStore fill:#2196F3

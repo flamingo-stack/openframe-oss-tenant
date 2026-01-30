@@ -1,0 +1,34 @@
+flowchart TD
+    Request["HTTP Request<br/>X-API-Key: ak_xxx.sk_yyy"]
+    Gateway["API Gateway"]
+    KeyFilter["ApiKeyAuthenticationFilter"]
+    
+    ValidateFormat{"Valid Format?<br/>ak_*.sk_*"}
+    ValidateKey{"Key Exists<br/>& Active?"}
+    CheckRateLimit{"Within Rate<br/>Limits?"}
+    
+    Controller["REST Controller"]
+    Unauthorized["401 Unauthorized"]
+    Forbidden["403 Forbidden"]
+    RateLimited["429 Too Many Requests"]
+    
+    Request --> Gateway
+    Gateway --> KeyFilter
+    KeyFilter --> ValidateFormat
+    
+    ValidateFormat -->|"No"| Unauthorized
+    ValidateFormat -->|"Yes"| ValidateKey
+    
+    ValidateKey -->|"No"| Unauthorized
+    ValidateKey -->|"Yes"| CheckRateLimit
+    
+    CheckRateLimit -->|"No"| RateLimited
+    CheckRateLimit -->|"Yes"| Controller
+    
+    style Request fill:#e3f2fd
+    style Gateway fill:#fff3e0
+    style KeyFilter fill:#ffe1e1
+    style Controller fill:#e8f5e9
+    style Unauthorized fill:#ffcdd2
+    style Forbidden fill:#ffcdd2
+    style RateLimited fill:#ffcdd2

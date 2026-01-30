@@ -1,0 +1,67 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant ApiKeyFilter
+    participant ApiKeyService
+    participant RateLimitService
+    participant Redis
+    participant ExternalApi
+    
+    Client->>Gateway: Request to /external-api/** with X-API-Key
+    Gateway->>ApiKeyFilter: Process request
+    
+    ApiKeyFilter->>ApiKeyFilter: Check if path is /external-api/**
+    
+    alt Not external API path
+        ApiKeyFilter->>Gateway: Skip authentication
+        Gateway->>ExternalApi: Route request
+    else External API path
+        ApiKeyFilter->>ApiKeyFilter: Extract X-API-Key header
+        
+        alt No API key
+            ApiKeyFilter-->>Client: 401 Unauthorized
+        else Has API key
+            ApiKeyFilter->>ApiKeyService: Validate API key
+            ApiKeyService->>ApiKeyService: Check database
+            
+            alt Invalid API key
+                ApiKeyService-->>ApiKeyFilter: Invalid
+                ApiKeyFilter-->>Client: 401 Unauthorized
+            else Valid API key
+                ApiKeyService->>ApiKeyService: Increment total requests
+                ApiKeyService-->>ApiKeyFilter: Valid + API key details
+                
+                ApiKeyFilter->>RateLimitService: Check rate limits
+                RateLimitService->>Redis: Get current counts
+                Redis-->>RateLimitService: minute/hour/day counts
+                
+                RateLimitService->>RateLimitService: Check limits
+                
+                alt Rate limit exceeded
+                    RateLimitService-->>ApiKeyFilter: Exceeded
+                    ApiKeyFilter->>ApiKeyService: Record failed request
+                    ApiKeyFilter->>ApiKeyFilter: Add rate limit headers
+                    ApiKeyFilter-->>Client: 429 Too Many Requests
+                else Within limits
+                    RateLimitService->>Redis: Increment counters
+                    RateLimitService-->>ApiKeyFilter: Allowed + status
+                    
+                    ApiKeyFilter->>ApiKeyFilter: Add rate limit headers
+                    ApiKeyFilter->>ApiKeyFilter: Add user context headers
+                    ApiKeyFilter->>ApiKeyFilter: Remove X-API-Key header
+                    
+                    ApiKeyFilter->>ExternalApi: Route request
+                    
+                    alt Request successful
+                        ExternalApi-->>ApiKeyFilter: 200 OK
+                        ApiKeyFilter->>ApiKeyService: Record successful request
+                        ApiKeyFilter-->>Client: 200 OK + Response
+                    else Request failed
+                        ExternalApi-->>ApiKeyFilter: Error
+                        ApiKeyFilter->>ApiKeyService: Record failed request
+                        ApiKeyFilter-->>Client: Error response
+                    end
+                end
+            end
+        end
+    end

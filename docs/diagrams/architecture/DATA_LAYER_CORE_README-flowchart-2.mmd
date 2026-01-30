@@ -1,0 +1,32 @@
+flowchart TD
+    subgraph services["Service Layer"]
+        API["API Service"]
+        External["External API"]
+        Stream["Stream Processing"]
+    end
+    
+    subgraph data_layers["Data Layer Modules"]
+        DataMongo["data_layer_mongo<br/>(Transactional)"]
+        DataCore["data_layer_core<br/>(Analytical)"]
+        DataKafka["data_layer_kafka<br/>(Event Streaming)"]
+    end
+    
+    subgraph datastores["Data Stores"]
+        MongoDB[("MongoDB")]
+        Cassandra[("Cassandra")]
+        Pinot[("Pinot")]
+        Kafka[("Kafka")]
+    end
+    
+    API -->|"CRUD"| DataMongo
+    API -->|"analytics"| DataCore
+    External -->|"queries"| DataCore
+    Stream -->|"events"| DataKafka
+    Stream -->|"ingests"| DataCore
+    
+    DataMongo --> MongoDB
+    DataCore --> Cassandra
+    DataCore --> Pinot
+    DataKafka --> Kafka
+    
+    Kafka -->|"CDC"| Pinot

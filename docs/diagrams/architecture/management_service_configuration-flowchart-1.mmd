@@ -1,0 +1,21 @@
+flowchart TD
+    ManagementApp["ManagementApplication<br/>@SpringBootApplication"] -->|"initializes"| ManagementConfig["ManagementConfiguration<br/>@Configuration"]
+    ManagementConfig -->|"scans packages"| ComponentScan["Component Scanning<br/>com.openframe.*"]
+    ManagementConfig -->|"provides"| PasswordEncoder["PasswordEncoder<br/>BCrypt"]
+    
+    ManagementConfig -->|"excludes"| CassandraHealth["CassandraHealthIndicator<br/>(excluded)"]
+    
+    AgentConfigProps["AgentConfigurationProperties<br/>@ConfigurationProperties"] -->|"loads from"| YamlConfig["application.yml<br/>openframe.management"]
+    AgentConfigProps -->|"provides paths to"| AgentInitializer["IntegratedToolAgentInitializer<br/>@PostConstruct"]
+    
+    ComponentScan -->|"discovers"| DataLayer["Data Layer<br/>MongoDB Config"]
+    ComponentScan -->|"discovers"| Services["Management Services<br/>DebeziumService, etc."]
+    ComponentScan -->|"discovers"| Controllers["REST Controllers<br/>IntegratedToolController"]
+    
+    AgentInitializer -->|"reads JSON from"| ClasspathResources["Classpath Resources<br/>agent-configs/*.json"]
+    AgentInitializer -->|"persists to"| MongoDB["MongoDB<br/>integrated_tool_agents"]
+    
+    style ManagementConfig fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style AgentConfigProps fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style PasswordEncoder fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff
+    style AgentInitializer fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff

@@ -1,0 +1,25 @@
+flowchart TD
+    Start["User Interaction"]
+    
+    Start -->|"scroll"| ScrollHandler["Scroll Handler"]
+    Start -->|"click item"| ItemClick["Item Click Handler"]
+    Start -->|"click dropdown"| DropdownClick["Dropdown Toggle"]
+    Start -->|"click outside"| OutsideClick["Outside Click Handler"]
+    
+    ScrollHandler -->|"scroll down"| HideHeader["Hide Header<br/>(translateY -100%)"]
+    ScrollHandler -->|"scroll up"| ShowHeader["Show Header<br/>(translateY 0)"]
+    
+    ItemClick -->|"has href"| Navigate["Navigate to URL"]
+    ItemClick -->|"has onClick"| ExecuteAction["Execute Custom Action"]
+    ItemClick -->|"has children"| ToggleDropdown["Toggle Dropdown"]
+    
+    DropdownClick -->|"open"| ShowDropdown["Show Dropdown Menu"]
+    DropdownClick -->|"close"| HideDropdown["Hide Dropdown Menu"]
+    
+    OutsideClick --> CloseAllDropdowns["Close All Dropdowns"]
+    
+    ShowDropdown -->|"click item"| CloseAndNavigate["Close Dropdown<br/>+ Navigate"]
+    
+    style Start fill:#3498DB,stroke:#2471A3,color:#fff
+    style Navigate fill:#27AE60,stroke:#1E8449,color:#fff
+    style ShowDropdown fill:#F39C12,stroke:#CA6F1E,color:#fff

@@ -1,0 +1,13 @@
+flowchart LR
+    Request["issueClientToken(grantType, ...)"] --> Switch{"Grant Type?"}
+    
+    Switch -->|"client_credentials"| ClientCreds["ClientCredentialsHandler"]
+    Switch -->|"refresh_token"| RefreshToken["RefreshTokenHandler"]
+    Switch -->|"other"| Error["IllegalArgumentException"]
+    
+    ClientCreds --> Response["AgentTokenResponse"]
+    RefreshToken --> Response
+    
+    style ClientCreds fill:#e1f5ff
+    style RefreshToken fill:#e1f5ff
+    style Error fill:#ffebee

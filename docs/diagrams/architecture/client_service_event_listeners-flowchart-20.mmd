@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph CurrentModule["client_service_event_listeners"]
+        Listeners["Event Listeners"]
+    end
+    
+    subgraph Database["MongoDB"]
+        Machines["machines collection"]
+        Agents["installed_agents collection"]
+    end
+    
+    subgraph Services["Other Services"]
+        API["api_service"]
+        External["external_api"]
+        Management["management_service"]
+    end
+    
+    Listeners -->|"Update"| Machines
+    Listeners -->|"Update"| Agents
+    
+    Machines -.->|"Query"| API
+    Machines -.->|"Query"| External
+    Agents -.->|"Query"| Management

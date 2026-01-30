@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant User
+    participant Controller
+    participant SpringOAuth as Spring Authorization Server
+    participant Provider as External SSO Provider
+    participant DB as MongoDB
+    
+    User->>Controller: GET /oauth/register/sso?provider=google
+    Controller->>Controller: Generate HMAC state
+    Controller->>User: Set-Cookie + Redirect
+    
+    User->>SpringOAuth: GET /oauth2/authorization/google
+    SpringOAuth->>Provider: Authorization Request
+    Provider-->>User: Login Page
+    
+    User->>Provider: Authenticate
+    Provider->>SpringOAuth: Authorization Code
+    
+    SpringOAuth->>Provider: Exchange code for token
+    Provider-->>SpringOAuth: Access Token + ID Token
+    
+    SpringOAuth->>Controller: Callback with user info
+    Controller->>Controller: Validate HMAC cookie
+    Controller->>DB: Create tenant + user
+    DB-->>Controller: Success
+    Controller-->>User: Redirect to application

@@ -1,0 +1,18 @@
+flowchart TD
+    IntegratedTools["Integrated Tools<br/>(Fleet MDM, Tactical RMM, MeshCentral)"]
+    Debezium["Debezium CDC Connectors"]
+    KafkaCluster["Kafka Cluster"]
+    StreamApp["Stream Processing Application"]
+    MongoDB["MongoDB"]
+    DownstreamServices["Downstream Services<br/>(API Service, Client Service)"]
+    
+    IntegratedTools -->|"Database Changes"| Debezium
+    Debezium -->|"CDC Events"| KafkaCluster
+    KafkaCluster -->|"Raw Events"| StreamApp
+    StreamApp -->|"Enriched Events"| KafkaCluster
+    StreamApp -->|"Query Metadata"| MongoDB
+    KafkaCluster -->|"Processed Events"| DownstreamServices
+    
+    style StreamApp fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style KafkaCluster fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff
+    style Debezium fill:#2196F3,stroke:#0D47A1,stroke-width:2px,color:#fff

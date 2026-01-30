@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph Gateway["Gateway Layer"]
+        GW1["JWT Validation"]
+        GW2["Authorization Checks"]
+        GW3["Path Filtering"]
+    end
+    
+    subgraph APIService["API Service Layer"]
+        API1["OAuth2 Resource Server"]
+        API2["Principal Extraction"]
+        API3["PermitAll Requests"]
+    end
+    
+    Client["Client Request"] --> Gateway
+    Gateway -->|"Pre-validated"| APIService
+    
+    GW1 -.->|"Primary validation"| API1
+    GW2 -.->|"Primary authz"| API3
+    GW3 -.->|"Primary filtering"| API3
+    
+    API1 -->|"Secondary validation<br/>for @AuthenticationPrincipal"| API2
+    API2 --> Controllers["Controllers"]

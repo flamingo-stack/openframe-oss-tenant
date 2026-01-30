@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Client
+    participant Server
+    participant Agent
+    participant FileSystem
+    
+    Client->>Server: DownloadRequest (sub=start)
+    Server->>Agent: Forward request
+    Agent->>FileSystem: Open file
+    FileSystem-->>Agent: File handle
+    Agent-->>Server: Ready (file size)
+    Server-->>Client: StartAck
+    
+    Client->>Server: DownloadRequest (sub=startack)
+    Server->>Agent: Begin transfer
+    
+    loop For each chunk
+        Agent->>FileSystem: Read chunk
+        FileSystem-->>Agent: Chunk data
+        Agent->>Server: Binary chunk
+        Server->>Client: Forward chunk
+        Client-->>Server: DownloadRequest (sub=ack)
+        Server-->>Agent: Continue
+    end
+    
+    Agent->>FileSystem: Close file
+    Agent-->>Server: Transfer complete
+    Server-->>Client: Complete

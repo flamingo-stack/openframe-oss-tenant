@@ -1,0 +1,23 @@
+flowchart TD
+    Header["Header Component"]
+    
+    Header -->|"imports"| NextLink["next/link<br/>(navigation)"]
+    Header -->|"imports"| React["react<br/>(hooks, state)"]
+    Header -->|"uses"| Button["Button Component<br/>(UI library)"]
+    Header -->|"uses"| CN["cn() utility<br/>(class merging)"]
+    Header -->|"applies"| DesignTokens["ODS Design Tokens<br/>(theming)"]
+    
+    subgraph ExternalDeps["External Dependencies"]
+        NextLink
+        React
+    end
+    
+    subgraph InternalDeps["Internal Dependencies"]
+        Button
+        CN
+        DesignTokens
+    end
+    
+    style Header fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ExternalDeps fill:#E67E22,stroke:#A04000,color:#fff
+    style InternalDeps fill:#1ABC9C,stroke:#117A65,color:#fff

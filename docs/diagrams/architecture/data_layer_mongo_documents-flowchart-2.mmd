@@ -1,0 +1,9 @@
+flowchart LR
+    Device["Device Document"]
+    Machine["Machine Document"]
+    DeviceConfig["DeviceConfiguration"]
+    DeviceHealth["DeviceHealth"]
+    
+    Device -->|"machineId"| Machine
+    Device -->|"contains"| DeviceConfig
+    Device -->|"contains"| DeviceHealth

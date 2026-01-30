@@ -1,0 +1,18 @@
+flowchart LR
+    AppName["Application Name<br/>(openframe-stream)"]
+    ClusterId["Cluster ID<br/>(tenant-y0-1)"]
+    FinalId["Final Application ID<br/>(openframe-stream-tenant-y0-1)"]
+    
+    AppName -->|"Base"| FinalId
+    ClusterId -->|"Suffix"| FinalId
+    
+    FinalId -->|"Isolates"| ConsumerGroup["Consumer Group"]
+    FinalId -->|"Isolates"| StateStore["State Store Directory"]
+    
+    classDef inputClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef outputClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef resourceClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    
+    class AppName,ClusterId inputClass
+    class FinalId outputClass
+    class ConsumerGroup,StateStore resourceClass

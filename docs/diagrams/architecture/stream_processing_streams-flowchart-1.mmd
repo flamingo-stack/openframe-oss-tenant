@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph InputTopics["Input Topics"]
+        AT["fleet-mdm-activities<br/>(Activity Events)"]
+        HAT["fleet-mdm-host-activities<br/>(Host-Activity Mappings)"]
+    end
+    
+    subgraph StreamsTopology["Kafka Streams Topology"]
+        AS["Activity Stream<br/>(KStream)"]
+        HAS["Host Activity Stream<br/>(KStream)"]
+        
+        RK["Re-key by Activity ID"]
+        FLT["Filter Valid Host Activities"]
+        
+        JOIN["Left Join<br/>(5s Window)"]
+        ENR["Enrichment Logic<br/>(Add Host ID & Agent ID)"]
+        HDR["Header Injection<br/>(MESSAGE_TYPE_HEADER)"]
+    end
+    
+    subgraph OutputTopic["Output Topic"]
+        ET["fleet-mdm-events<br/>(Enriched Activities)"]
+    end
+    
+    subgraph Downstream["Downstream Consumers"]
+        JKL["JsonKafkaListener"]
+        PROC["Message Processors"]
+    end
+    
+    AT --> AS
+    HAT --> HAS
+    
+    AS --> RK
+    HAS --> FLT
+    
+    RK --> JOIN
+    FLT --> JOIN
+    
+    JOIN --> ENR
+    ENR --> HDR
+    HDR --> ET
+    
+    ET --> JKL
+    JKL --> PROC
+    
+    style StreamsTopology fill:#1a1a2e,stroke:#16213e,stroke-width:2px
+    style JOIN fill:#0f3460,stroke:#16213e,stroke-width:2px
+    style ENR fill:#0f3460,stroke:#16213e,stroke-width:2px

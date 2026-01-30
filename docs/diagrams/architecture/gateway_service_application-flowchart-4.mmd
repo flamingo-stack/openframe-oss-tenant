@@ -1,0 +1,28 @@
+flowchart TD
+    Request["Incoming Request"] --> PathCheck{"Path Check"}
+    
+    PathCheck -->|"Swagger/API Docs"| Allow["Allow<br/>(No Auth)"]
+    PathCheck -->|"Not /external-api/**"| Allow
+    PathCheck -->|"/external-api/**"| ApiKeyCheck{"API Key<br/>Present?"}
+    
+    ApiKeyCheck -->|"No"| Unauthorized["401 Unauthorized<br/>'API key required'"]
+    ApiKeyCheck -->|"Yes"| ValidateKey["Validate API Key"]
+    
+    ValidateKey -->|"Invalid"| Unauthorized
+    ValidateKey -->|"Valid"| RateLimitCheck{"Rate Limit<br/>Exceeded?"}
+    
+    RateLimitCheck -->|"Yes"| TooManyRequests["429 Too Many Requests<br/>+ Retry-After header"]
+    RateLimitCheck -->|"No"| AddHeaders["Add Rate Limit Headers"]
+    
+    AddHeaders --> AddContext["Add User Context<br/>(X-User-Id, X-API-Key-Id)"]
+    AddContext --> RemoveKey["Remove X-API-Key Header"]
+    RemoveKey --> Forward["Forward to<br/>External API Service"]
+    
+    Forward -->|"Success"| RecordSuccess["Record Successful Request"]
+    Forward -->|"Error"| RecordFailure["Record Failed Request"]
+    
+    style Request fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style Allow fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Unauthorized fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style TooManyRequests fill:#F39C12,stroke:#B8860B,stroke-width:2px,color:#fff
+    style Forward fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff

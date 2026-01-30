@@ -1,0 +1,43 @@
+flowchart TD
+    subgraph SecureStorage["Secure Storage (Rust)"]
+        TokenStore["Token Store<br/>(Memory)"]
+        ConfigStore["Config Store<br/>(Encrypted)"]
+    end
+    
+    subgraph JSLayer["JavaScript Layer"]
+        TokenService["Token Service<br/>(No Storage)"]
+        APIClients["API Clients<br/>(Use Token Service)"]
+    end
+    
+    subgraph Communication["Secure Communication"]
+        HTTPS["HTTPS Only"]
+        BearerAuth["Bearer Token Auth"]
+        CORS["CORS Validation"]
+    end
+    
+    subgraph Backend["Backend Security"]
+        JWTValidation["JWT Validation"]
+        RateLimiting["Rate Limiting"]
+        InputValidation["Input Validation"]
+    end
+    
+    TokenStore -->|"Events Only"| TokenService
+    ConfigStore -->|"Commands Only"| TokenService
+    
+    TokenService -->|"Provides Token"| APIClients
+    APIClients -->|"Authorization Header"| HTTPS
+    
+    HTTPS --> BearerAuth
+    BearerAuth --> CORS
+    CORS --> JWTValidation
+    
+    JWTValidation --> RateLimiting
+    RateLimiting --> InputValidation
+    
+    InputValidation -->|"Valid"| ProcessRequest["Process Request"]
+    InputValidation -->|"Invalid"| RejectRequest["Reject Request"]
+    
+    style SecureStorage fill:#c05621,stroke:#9c4221,color:#fff
+    style JSLayer fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style Communication fill:#48bb78,stroke:#2f855a,color:#fff
+    style Backend fill:#38a169,stroke:#276749,color:#fff

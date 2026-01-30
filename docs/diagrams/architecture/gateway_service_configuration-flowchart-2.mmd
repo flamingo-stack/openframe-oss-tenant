@@ -1,0 +1,13 @@
+flowchart LR
+    WebClientBuilder["WebClient.Builder<br/>@Bean"] --> HttpClient["Netty HttpClient"]
+    
+    HttpClient --> ConnTimeout["Connection Timeout<br/>30 seconds"]
+    HttpClient --> RespTimeout["Response Timeout<br/>30 seconds"]
+    HttpClient --> ReadTimeout["Read Timeout<br/>30 seconds"]
+    HttpClient --> WriteTimeout["Write Timeout<br/>30 seconds"]
+    
+    HttpClient --> Connector["ReactorClientHttpConnector"]
+    Connector --> Gateway["Spring Cloud Gateway<br/>Route Handlers"]
+    
+    style WebClientBuilder fill:#e3f2fd
+    style HttpClient fill:#fff3e0

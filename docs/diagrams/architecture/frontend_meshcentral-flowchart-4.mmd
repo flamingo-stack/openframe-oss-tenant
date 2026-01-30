@@ -1,0 +1,27 @@
+flowchart TD
+    KeyEvent["KeyboardEvent"]
+    
+    KeyEvent --> CodeCheck{"e.code exists?"}
+    CodeCheck -->|Yes| CodeMap["convertKeyCode()"]
+    CodeCheck -->|No| FallbackMap["mapKeyToVirtualKey()"]
+    
+    CodeMap --> KeyType{"Key Type?"}
+    KeyType -->|"Key[A-Z]"| Letter["ASCII Code"]
+    KeyType -->|"Digit[0-9]"| Digit["ASCII Code"]
+    KeyType -->|"F[1-12]"| Function["0x70 + n"]
+    KeyType -->|"Numpad[0-9]"| Numpad["0x60 + n"]
+    KeyType -->|Other| LookupTable["Lookup Table"]
+    
+    FallbackMap --> KeyName["e.key lookup"]
+    
+    Letter --> VK["Virtual Key Code"]
+    Digit --> VK
+    Function --> VK
+    Numpad --> VK
+    LookupTable --> VK
+    KeyName --> VK
+    
+    VK --> Extended{"Extended Key?"}
+    Extended -->|Yes| ExtFlag["Set Extended Flag"]
+    Extended -->|No| Encode["Encode Message"]
+    ExtFlag --> Encode

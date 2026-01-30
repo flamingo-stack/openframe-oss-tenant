@@ -1,0 +1,26 @@
+flowchart TD
+    Start["Client Request"] -->|"1"| Gateway["API Gateway"]
+    Gateway -->|"2"| RateLimit["Rate Limit Check"]
+    RateLimit -->|"3"| Auth["API Key Authentication"]
+    Auth -->|"4"| Controller["REST Controller"]
+    Controller -->|"5"| Validate["Request Validation"]
+    Validate -->|"6"| Mapper["DTO Mapper"]
+    Mapper -->|"7"| Service["Business Service"]
+    Service -->|"8"| DataAccess["Data Access Layer"]
+    
+    DataAccess -->|"9a"| MongoDB[("MongoDB")]
+    DataAccess -->|"9b"| Pinot[("Apache Pinot")]
+    
+    MongoDB -->|"10a"| DataAccess
+    Pinot -->|"10b"| DataAccess
+    
+    DataAccess -->|"11"| Service
+    Service -->|"12"| Mapper
+    Mapper -->|"13"| Controller
+    Controller -->|"14"| Response["JSON Response"]
+    
+    RateLimit -.->|"Exceeded"| Error429["429 Too Many Requests"]
+    Auth -.->|"Invalid"| Error401["401 Unauthorized"]
+    Validate -.->|"Invalid"| Error400["400 Bad Request"]
+    Service -.->|"Not Found"| Error404["404 Not Found"]
+    DataAccess -.->|"Error"| Error500["500 Internal Error"]

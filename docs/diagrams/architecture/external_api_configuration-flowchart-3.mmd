@@ -1,0 +1,19 @@
+flowchart TD
+    App["ExternalApiApplication"]
+    
+    subgraph Packages["Scanned Packages"]
+        External["com.openframe.external<br/>(Controllers, Config, Mappers)"]
+        Data["com.openframe.data<br/>(Repositories, Documents)"]
+        Core["com.openframe.core<br/>(Common Utilities)"]
+        API["com.openframe.api<br/>(Shared API Components)"]
+        Kafka["com.openframe.kafka<br/>(Event Streaming)"]
+    end
+    
+    App -->|"scans"| External
+    App -->|"scans"| Data
+    App -->|"scans"| Core
+    App -->|"scans"| API
+    App -->|"scans"| Kafka
+    
+    style App fill:#e1f5ff
+    style Packages fill:#fff4e1

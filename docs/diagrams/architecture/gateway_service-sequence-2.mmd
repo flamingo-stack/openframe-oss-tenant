@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant SecurityFilter
+    participant JwtValidator
+    participant RateLimiter
+    participant BackendService
+    
+    Client->>Gateway: HTTP Request + JWT/API Key
+    Gateway->>SecurityFilter: Process Request
+    
+    alt JWT Authentication
+        SecurityFilter->>JwtValidator: Validate JWT Token
+        JwtValidator->>JwtValidator: Check Issuer & Claims
+        JwtValidator-->>SecurityFilter: Valid Token
+    else API Key Authentication
+        SecurityFilter->>RateLimiter: Check Rate Limits
+        RateLimiter-->>SecurityFilter: Allowed
+    end
+    
+    SecurityFilter->>Gateway: Authenticated Request
+    Gateway->>BackendService: Route to Service
+    BackendService-->>Gateway: Response
+    Gateway-->>Client: HTTP Response + Rate Limit Headers

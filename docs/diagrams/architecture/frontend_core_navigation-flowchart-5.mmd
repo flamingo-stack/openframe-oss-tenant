@@ -1,0 +1,20 @@
+flowchart TD
+    Closed["Dropdown Closed"]
+    
+    Closed -->|"click trigger"| Opening["Opening Dropdown"]
+    Opening --> Open["Dropdown Open"]
+    
+    Open -->|"click trigger again"| Closing1["Closing Dropdown"]
+    Open -->|"click outside"| Closing2["Closing Dropdown"]
+    Open -->|"press Escape"| Closing3["Closing Dropdown"]
+    Open -->|"click child item"| Closing4["Closing Dropdown"]
+    
+    Closing1 --> Closed
+    Closing2 --> Closed
+    Closing3 --> Closed
+    Closing4 --> Navigate["Navigate to URL"]
+    Navigate --> Closed
+    
+    style Open fill:#27AE60,stroke:#1E8449,color:#fff
+    style Closed fill:#95A5A6,stroke:#7F8C8D,color:#fff
+    style Navigate fill:#3498DB,stroke:#2471A3,color:#fff

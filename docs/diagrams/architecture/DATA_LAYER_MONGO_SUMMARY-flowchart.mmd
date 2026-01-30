@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph docs["Documentation Files"]
+        README["DATA_LAYER_MONGO_README.md<br/>(Quick Start)"]
+        Main["data_layer_mongo.md<br/>(Comprehensive Guide)"]
+        Config["data_layer_mongo_configuration.md<br/>(Configuration)"]
+        Docs["data_layer_mongo_documents.md<br/>(Document Models)"]
+        Repos["data_layer_mongo_repositories.md<br/>(Repository Layer)"]
+    end
+
+    subgraph module["data_layer_mongo Module"]
+        MongoConfig["MongoConfig"]
+        Documents["Document Models"]
+        Repositories["Repository Layer"]
+    end
+
+    README -->|"references"| Main
+    Main -->|"links to"| Config
+    Main -->|"links to"| Docs
+    Main -->|"links to"| Repos
+
+    Config -->|"documents"| MongoConfig
+    Docs -->|"documents"| Documents
+    Repos -->|"documents"| Repositories

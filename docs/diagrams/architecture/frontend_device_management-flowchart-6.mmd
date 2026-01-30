@@ -1,0 +1,29 @@
+flowchart TD
+    Device["Device Object"] --> CheckStatus["Check Device Status"]
+    Device --> CheckTools["Check Tool Connections"]
+    
+    CheckStatus --> IsOnline{"Status =<br/>ONLINE?"}
+    
+    CheckTools --> HasMesh{"Has MeshCentral<br/>Connection?"}
+    CheckTools --> HasTactical{"Has Tactical<br/>Connection?"}
+    
+    IsOnline -->|"Yes"| EnableOnlineActions["Enable Online Actions"]
+    IsOnline -->|"No"| DisableOnlineActions["Disable Online Actions"]
+    
+    HasMesh -->|"Yes"| EnableMeshActions["Enable:<br/>- Remote Shell<br/>- Remote Control<br/>- File Manager"]
+    HasMesh -->|"No"| DisableMeshActions["Disable Mesh Actions"]
+    
+    HasTactical -->|"Yes"| EnableTacticalActions["Enable:<br/>- Run Script"]
+    HasTactical -->|"No"| DisableTacticalActions["Disable Tactical Actions"]
+    
+    EnableOnlineActions --> FinalAvailability["DeviceActionAvailability"]
+    DisableOnlineActions --> FinalAvailability
+    EnableMeshActions --> FinalAvailability
+    DisableMeshActions --> FinalAvailability
+    EnableTacticalActions --> FinalAvailability
+    DisableTacticalActions --> FinalAvailability
+    
+    style IsOnline fill:#fff4e1
+    style HasMesh fill:#e1f5ff
+    style HasTactical fill:#e1f5ff
+    style FinalAvailability fill:#d4edda

@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph Config["Configuration Layer"]
+        JwtConfig["JwtConfig<br/>(Properties Binding)"]
+        KeyConfig["KeyConfig<br/>(Key Parsing)"]
+        JwtSecurityConfig["JwtSecurityConfig<br/>(Bean Factory)"]
+    end
+    
+    subgraph Service["Service Layer"]
+        JwtService["JwtService<br/>(Token Operations)"]
+    end
+    
+    subgraph Spring["Spring Security"]
+        JwtEncoder["JwtEncoder<br/>(Nimbus)"]
+        JwtDecoder["JwtDecoder<br/>(Nimbus)"]
+    end
+    
+    subgraph Consumers["Service Consumers"]
+        AuthzServer["Authorization Server"]
+        Gateway["Gateway Service"]
+        ApiService["API Service"]
+        ClientService["Client Service"]
+    end
+    
+    JwtConfig -->|"loads"| KeyConfig
+    JwtSecurityConfig -->|"creates"| JwtEncoder
+    JwtSecurityConfig -->|"creates"| JwtDecoder
+    JwtSecurityConfig -->|"uses"| JwtConfig
+    
+    JwtService -->|"uses"| JwtEncoder
+    JwtService -->|"uses"| JwtDecoder
+    
+    AuthzServer -->|"generates tokens"| JwtService
+    Gateway -->|"validates tokens"| JwtService
+    ApiService -->|"validates tokens"| JwtService
+    ClientService -->|"validates tokens"| JwtService

@@ -1,0 +1,25 @@
+flowchart TD
+    Start["register(initialKey, request)"] --> Validate["Validate initial key"]
+    Validate --> GenMachineId["Generate machineId"]
+    GenMachineId --> GenClientId["Generate clientId<br/>(agent_machineId)"]
+    GenClientId --> GenSecret["Generate clientSecret"]
+    GenSecret --> ResolveOrg["Resolve organizationId"]
+    
+    ResolveOrg --> CheckOrgId{"organizationId<br/>provided?"}
+    CheckOrgId -->|Yes| OrgExists{"Organization<br/>exists?"}
+    CheckOrgId -->|No| DefaultOrg["Use default organization"]
+    OrgExists -->|Yes| UseProvided["Use provided organizationId"]
+    OrgExists -->|No| DefaultOrg
+    
+    UseProvided --> SaveOAuth["Save OAuthClient"]
+    DefaultOrg --> SaveOAuth
+    
+    SaveOAuth --> SaveMachine["Save Machine"]
+    SaveMachine --> InstallTools["Install integrated tools"]
+    InstallTools --> PostProcess["Execute post-processing hooks"]
+    PostProcess --> Return["Return AgentRegistrationResponse"]
+    
+    style Validate fill:#fff4e1
+    style SaveOAuth fill:#e1f5ff
+    style SaveMachine fill:#e1f5ff
+    style PostProcess fill:#e8f5e9

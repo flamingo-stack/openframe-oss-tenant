@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph presentation["Presentation Layer"]
+        Controller["REST Controller"]
+        Mapper["DTO Mapper"]
+    end
+    
+    subgraph business["Business Layer"]
+        Service["Service"]
+        FilterService["Filter Service"]
+    end
+    
+    subgraph data["Data Layer"]
+        Repository["Repository"]
+        MongoDB[("MongoDB")]
+        Pinot[("Apache Pinot")]
+    end
+    
+    Controller -->|"Delegates"| Service
+    Controller -->|"Uses"| Mapper
+    Mapper -->|"Transforms"| Controller
+    
+    Service -->|"Queries"| Repository
+    Service -->|"Aggregates"| FilterService
+    
+    Repository -->|"Reads"| MongoDB
+    Repository -->|"Queries"| Pinot
+    
+    style Controller fill:#e1f5ff
+    style Mapper fill:#fff4e1
+    style Service fill:#e8f5e9
+    style Repository fill:#f3e5f5

@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph data_layers["Data Layers"]
+        Mongo["data_layer_mongo<br/>(Primary Storage)"]
+        Kafka["data_layer_kafka<br/>(Event Streaming)"]
+        Core["data_layer_core<br/>(Cassandra + Pinot)"]
+    end
+
+    subgraph services["Services"]
+        API["API Service"]
+        Auth["Authorization Service"]
+        Stream["Stream Processing"]
+    end
+
+    API -->|"CRUD"| Mongo
+    Auth -->|"User/Tenant"| Mongo
+    
+    Mongo -->|"CDC events"| Kafka
+    Kafka -->|"consume"| Stream
+    Stream -->|"analytics"| Core

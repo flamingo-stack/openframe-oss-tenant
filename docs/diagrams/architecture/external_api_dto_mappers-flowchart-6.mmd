@@ -1,0 +1,8 @@
+flowchart LR
+    LogEvent["LogEvent<br/>(Pinot)"]
+    
+    LogEvent --> Mapper["LogMapper"]
+    
+    Mapper --> LogResponse["LogResponse<br/>(REST DTO)"]
+    
+    LogResponse --> Fields["• toolEventId<br/>• eventType<br/>• ingestDay<br/>• toolType<br/>• severity<br/>• userId<br/>• deviceId<br/>• summary<br/>• timestamp"]

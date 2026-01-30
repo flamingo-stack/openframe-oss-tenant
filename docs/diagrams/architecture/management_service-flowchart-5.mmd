@@ -1,0 +1,14 @@
+flowchart LR
+    ManagementService["Management Service"]
+    
+    ManagementService -->|"persists tools"| DataMongo["data_layer_mongo"]
+    ManagementService -->|"publishes updates"| DataKafka["data_layer_kafka"]
+    ManagementService -->|"manages CDC"| Debezium["Debezium Connect"]
+    ManagementService -->|"schedules tasks"| ShedLock["ShedLock"]
+    
+    DataMongo -->|"stores"| MongoDB[("MongoDB")]
+    DataKafka -->|"publishes to"| Kafka[("Kafka")]
+    
+    style ManagementService fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style DataMongo fill:#50C878,stroke:#2E7D4E,color:#fff
+    style DataKafka fill:#FF6B6B,stroke:#C92A2A,color:#fff

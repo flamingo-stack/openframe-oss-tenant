@@ -1,0 +1,33 @@
+flowchart TD
+    Start["extract(subject)"]
+    
+    CheckEmpty{"Subject<br/>Empty?"}
+    
+    Split["Split by '.'<br/>into parts[]"]
+    
+    Validate{"parts.length >= 3<br/>AND<br/>parts[0] == 'machine'?"}
+    
+    ExtractID["machineId = parts[1]"]
+    
+    CheckID{"machineId<br/>Empty?"}
+    
+    Return["Return machineId"]
+    
+    Error1["Throw:<br/>Subject cannot be empty"]
+    Error2["Throw:<br/>Invalid subject format"]
+    Error3["Throw:<br/>Machine ID is empty"]
+    
+    Start --> CheckEmpty
+    
+    CheckEmpty -->|"Yes"| Error1
+    CheckEmpty -->|"No"| Split
+    
+    Split --> Validate
+    
+    Validate -->|"No"| Error2
+    Validate -->|"Yes"| ExtractID
+    
+    ExtractID --> CheckID
+    
+    CheckID -->|"Yes"| Error3
+    CheckID -->|"No"| Return

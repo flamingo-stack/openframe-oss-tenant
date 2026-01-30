@@ -1,0 +1,18 @@
+flowchart TD
+    StartupComplete["Startup Complete"] --> HealthCheck["Health Check Endpoint<br/>/actuator/health"]
+    
+    HealthCheck --> MongoHealth{"MongoDB<br/>Healthy?"}
+    HealthCheck --> DiskHealth{"Disk Space<br/>Healthy?"}
+    HealthCheck --> DebeziumHealth{"Debezium<br/>Reachable?"}
+    
+    MongoHealth -->|"Yes"| AllHealthy["Overall Status: UP"]
+    DiskHealth -->|"Yes"| AllHealthy
+    DebeziumHealth -->|"Yes"| AllHealthy
+    
+    MongoHealth -->|"No"| Degraded["Overall Status: DOWN"]
+    DiskHealth -->|"No"| Degraded
+    DebeziumHealth -->|"No"| Warning["Overall Status: UP<br/>(Debezium optional)"]
+    
+    style AllHealthy fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Degraded fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style Warning fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff

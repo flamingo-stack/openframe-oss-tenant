@@ -1,0 +1,43 @@
+flowchart TD
+    subgraph Application["Application Layer"]
+        App["App Root"]
+        Provider["DebugModeProvider"]
+    end
+    
+    subgraph Features["Feature Components"]
+        Chat["Chat Container"]
+        DevTools["Developer Tools"]
+        Logger["Logger Panel"]
+        Network["Network Monitor"]
+    end
+    
+    subgraph Services["Service Layer"]
+        TokenSvc["Token Service"]
+        GraphQLSvc["GraphQL Service"]
+        MockSvc["Mock Chat Service"]
+    end
+    
+    subgraph Backend["Tauri Backend"]
+        TauriCmd["Tauri Commands"]
+        Config["Configuration"]
+    end
+    
+    App -->|"wraps"| Provider
+    Provider -->|"provides context"| Features
+    
+    Chat -->|"useDebugMode()"| Provider
+    DevTools -->|"useDebugMode()"| Provider
+    Logger -->|"useDebugMode()"| Provider
+    Network -->|"useDebugMode()"| Provider
+    
+    Chat -->|"uses"| GraphQLSvc
+    Chat -->|"uses"| MockSvc
+    DevTools -->|"uses"| TokenSvc
+    
+    Provider -->|"invoke('get_debug_mode')"| TauriCmd
+    TauriCmd -->|"reads"| Config
+    
+    style Provider fill:#4299e1,stroke:#3182ce,color:#fff
+    style Features fill:#48bb78,stroke:#38a169,color:#fff
+    style Services fill:#ed8936,stroke:#dd6b20,color:#fff
+    style Backend fill:#9f7aea,stroke:#805ad5,color:#fff

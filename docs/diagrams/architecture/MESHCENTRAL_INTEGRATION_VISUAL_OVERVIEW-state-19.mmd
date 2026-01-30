@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> Connected
+    
+    Connected --> Disconnected: Connection lost
+    
+    Disconnected --> Reconnecting: Auto-reconnect
+    Reconnecting --> Connected: Success
+    Reconnecting --> Failed: Max retries
+    
+    Connected --> Error: Protocol error
+    Error --> Recovering: Clear buffers
+    Recovering --> Connected: Resume
+    Recovering --> Disconnected: Unrecoverable
+    
+    Failed --> [*]: Give up
+    Disconnected --> [*]: User closes

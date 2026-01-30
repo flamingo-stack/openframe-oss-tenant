@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph DataFetchers["DataFetcher Layer"]
+        DeviceDF["DeviceDataFetcher"]
+        EventDF["EventDataFetcher"]
+        LogDF["LogDataFetcher"]
+    end
+
+    subgraph Services["Service Layer"]
+        DeviceService["DeviceService"]
+        FilterService["DeviceFilterService"]
+        EventService["EventService"]
+        LogService["LogService"]
+    end
+
+    DeviceDF -->|"queryDevices()"| DeviceService
+    DeviceDF -->|"getDeviceFilters()"| FilterService
+    EventDF -->|"queryEvents()"| EventService
+    EventDF -->|"createEvent()"| EventService
+    LogDF -->|"queryLogs()"| LogService
+    LogDF -->|"findLogDetails()"| LogService

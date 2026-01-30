@@ -1,0 +1,21 @@
+stateDiagram-v2
+    [*] --> NoDialog: Initial State
+    
+    NoDialog --> Creating: User sends message
+    Creating --> Active: Dialog created
+    Creating --> Error: Creation failed
+    
+    Active --> Sending: User sends message
+    Sending --> Streaming: Message sent
+    Streaming --> Active: Response complete
+    Sending --> Error: Send failed
+    
+    Active --> Background: User switches dialog
+    Background --> Loading: User selects dialog
+    Loading --> Active: Messages loaded
+    
+    Active --> Resolved: Dialog resolved
+    Resolved --> [*]: Dialog closed
+    
+    Error --> NoDialog: Reset
+    Error --> Active: Retry successful

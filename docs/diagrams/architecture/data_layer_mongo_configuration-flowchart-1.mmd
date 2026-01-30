@@ -1,0 +1,20 @@
+flowchart TD
+    MongoConfig["MongoConfig"]
+    
+    MongoConfig -->|"Configures"| BlockingMode["Blocking MongoDB"]
+    MongoConfig -->|"Configures"| ReactiveMode["Reactive MongoDB"]
+    
+    BlockingMode -->|"Enables"| Repositories["Repository Scanning"]
+    BlockingMode -->|"Enables"| Auditing["Entity Auditing"]
+    BlockingMode -->|"Configures"| Converter["Custom Converters"]
+    
+    ReactiveMode -->|"Enables"| ReactiveRepos["Reactive Repositories"]
+    
+    Repositories -->|"Scans"| RepoPackage["com.openframe.data.repository"]
+    ReactiveRepos -->|"Scans"| ReactivePackage["com.openframe.data.reactive.repository"]
+    
+    Converter -->|"Handles"| DotReplacement["Dot Key Replacement"]
+    Converter -->|"Applies"| CustomConversions["Custom Type Conversions"]
+    
+    Auditing -->|"Tracks"| CreatedDate["@CreatedDate"]
+    Auditing -->|"Tracks"| ModifiedDate["@LastModifiedDate"]

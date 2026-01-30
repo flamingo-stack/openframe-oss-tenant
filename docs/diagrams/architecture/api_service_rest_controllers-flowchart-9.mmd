@@ -1,0 +1,14 @@
+flowchart TD
+    Exception["Exception Thrown"] --> CheckType{Exception Type?}
+    
+    CheckType -->|"IllegalArgumentException"| NotFound["404 Not Found"]
+    CheckType -->|"OrganizationHasMachinesException"| Conflict["409 Conflict"]
+    CheckType -->|"ValidationException"| BadRequest["400 Bad Request"]
+    CheckType -->|"AuthenticationException"| Unauthorized["401 Unauthorized"]
+    CheckType -->|"Other"| ServerError["500 Internal Server Error"]
+    
+    NotFound --> Response["HTTP Response"]
+    Conflict --> Response
+    BadRequest --> Response
+    Unauthorized --> Response
+    ServerError --> Response

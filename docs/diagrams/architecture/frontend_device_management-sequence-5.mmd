@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Hook as useDeviceDetails
+    participant GraphQL as GraphQL API
+    participant Tactical as Tactical API
+    participant Fleet as Fleet API
+    participant Merge as createDevice()
+    
+    Hook->>GraphQL: GET_DEVICE_QUERY(machineId)
+    GraphQL-->>Hook: DeviceGraphQLNode + toolConnections
+    
+    alt Has Tactical Connection
+        Hook->>Tactical: getAgent(agentToolId)
+        Tactical-->>Hook: Tactical Agent Data
+    end
+    
+    alt Has Fleet Connection
+        Hook->>Fleet: getHost(agentToolId)
+        Fleet-->>Hook: Fleet Host Data
+    end
+    
+    Hook->>Merge: createDevice(node, tactical, fleet)
+    Merge-->>Hook: Unified Device Object
+    
+    Hook->>Hook: setDeviceDetails(device)
+    Hook->>Hook: Start Adaptive Polling

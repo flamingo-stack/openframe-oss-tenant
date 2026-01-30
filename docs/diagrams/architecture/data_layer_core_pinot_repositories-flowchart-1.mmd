@@ -1,0 +1,56 @@
+flowchart TD
+    subgraph API["API Layer"]
+        DeviceDataFetcher["DeviceDataFetcher"]
+        LogDataFetcher["LogDataFetcher"]
+    end
+    
+    subgraph Repositories["Pinot Repository Layer"]
+        PinotDeviceRepo["PinotClientDeviceRepository"]
+        PinotLogRepo["PinotClientLogRepository"]
+        PinotDeviceInterface["PinotDeviceRepository"]
+        PinotLogInterface["PinotLogRepository"]
+    end
+    
+    subgraph QueryBuilder["Query Construction"]
+        QueryBuilder["PinotQueryBuilder"]
+    end
+    
+    subgraph Connection["Pinot Connection"]
+        PinotConnection["Pinot Broker Connection"]
+        PinotConfig["PinotConfig"]
+    end
+    
+    subgraph Models["Data Models"]
+        LogProjection["LogProjection"]
+        OrgOption["OrganizationOption"]
+    end
+    
+    subgraph Pinot["Apache Pinot"]
+        DevicesTable["devices Table"]
+        LogsTable["logs Table"]
+    end
+    
+    DeviceDataFetcher -->|"uses"| PinotDeviceInterface
+    LogDataFetcher -->|"uses"| PinotLogInterface
+    
+    PinotDeviceRepo -.->|"implements"| PinotDeviceInterface
+    PinotLogRepo -.->|"implements"| PinotLogInterface
+    
+    PinotDeviceRepo -->|"builds queries"| QueryBuilder
+    PinotLogRepo -->|"builds queries"| QueryBuilder
+    
+    PinotDeviceRepo -->|"executes"| PinotConnection
+    PinotLogRepo -->|"executes"| PinotConnection
+    
+    PinotConnection -->|"configured by"| PinotConfig
+    
+    PinotConnection -->|"queries"| DevicesTable
+    PinotConnection -->|"queries"| LogsTable
+    
+    PinotLogRepo -->|"returns"| LogProjection
+    PinotLogRepo -->|"returns"| OrgOption
+    
+    style PinotDeviceRepo fill:#4A90E2
+    style PinotLogRepo fill:#4A90E2
+    style QueryBuilder fill:#50C878
+    style PinotConnection fill:#F39C12

@@ -1,0 +1,22 @@
+flowchart TD
+    GenericMessageHandler["GenericMessageHandler<T, U, V>"]
+    DebeziumMessageHandler["DebeziumMessageHandler<T, U>"]
+    
+    GenericMessageHandler -->|"extends"| DebeziumMessageHandler
+    
+    subgraph DebeziumSpecific["Debezium-Specific Logic"]
+        GetOpType["getOperationType(message)"]
+        OpMapping["Debezium Op Code Mapping"]
+    end
+    
+    DebeziumMessageHandler --> GetOpType
+    GetOpType --> OpMapping
+    
+    OpMapping -->|"'c'"| CREATE["OperationType.CREATE"]
+    OpMapping -->|"'r'"| READ["OperationType.READ"]
+    OpMapping -->|"'u'"| UPDATE["OperationType.UPDATE"]
+    OpMapping -->|"'d'"| DELETE["OperationType.DELETE"]
+    
+    style GenericMessageHandler fill:#9B59B6,stroke:#6C3483,color:#fff
+    style DebeziumMessageHandler fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style DebeziumSpecific fill:#FFB347,stroke:#CC8A38,color:#fff

@@ -1,0 +1,25 @@
+flowchart TD
+    Client["Client Application"] -->|"uses"| FleetMdmClient["FleetMdmClient"]
+    
+    FleetMdmClient -->|"sends HTTP requests"| HttpClient["Java HttpClient"]
+    FleetMdmClient -->|"serializes/deserializes"| ObjectMapper["Jackson ObjectMapper"]
+    
+    HttpClient -->|"communicates with"| FleetAPI["Fleet MDM REST API"]
+    
+    FleetMdmClient -->|"returns"| Models["Data Models"]
+    FleetMdmClient -->|"throws"| Exceptions["Exception Hierarchy"]
+    
+    subgraph models_group["Data Models"]
+        Models --> Host["Host"]
+        Models --> Query["Query"]
+        Models --> QueryResult["QueryResult"]
+        Models --> HostSearchResponse["HostSearchResponse"]
+        Models --> HostSearchRequest["HostSearchRequest"]
+    end
+    
+    subgraph exceptions_group["Exception Handling"]
+        Exceptions --> FleetMdmException["FleetMdmException"]
+        FleetMdmException --> FleetMdmApiException["FleetMdmApiException"]
+    end
+    
+    FleetAPI -->|"returns JSON"| HttpClient

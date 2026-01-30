@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph Listeners["Stream Processing Listeners"]
+        JsonListener["JsonKafkaListener"]
+    end
+    
+    subgraph Processor["Message Processing (Current)"]
+        GenericProcessor["GenericJsonMessageProcessor"]
+    end
+    
+    subgraph Handlers["Stream Processing Handlers"]
+        DebeziumHandler["DebeziumMessageHandler"]
+        GenericHandler["GenericMessageHandler"]
+    end
+    
+    JsonListener -->|"Invokes"| GenericProcessor
+    GenericProcessor -->|"Routes to"| DebeziumHandler
+    DebeziumHandler -.->|"Extends"| GenericHandler
+    
+    style Processor fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Listeners fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Handlers fill:#FFB347,stroke:#CC8A38,color:#fff

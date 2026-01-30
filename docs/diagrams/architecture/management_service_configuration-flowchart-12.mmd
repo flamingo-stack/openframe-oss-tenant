@@ -1,0 +1,12 @@
+flowchart LR
+    LoginAttempt["Login Attempt<br/>Plain Password"] -->|"input"| BCrypt["BCryptPasswordEncoder"]
+    Database["MongoDB"] -->|"retrieves"| StoredHash["Stored Hash"]
+    
+    BCrypt -->|"matches()"| Comparison["Hash Comparison"]
+    StoredHash -->|"input"| Comparison
+    
+    Comparison -->|"match"| Success["Authentication Success"]
+    Comparison -->|"no match"| Failure["Authentication Failure"]
+    
+    style Success fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Failure fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff

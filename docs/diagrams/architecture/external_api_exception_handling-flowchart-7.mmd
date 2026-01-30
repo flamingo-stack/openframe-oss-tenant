@@ -1,0 +1,24 @@
+flowchart TD
+    Client["External Client"] -->|"HTTP Request"| Gateway["Gateway Service"]
+    Gateway -->|"Authenticated"| ExternalAPI["External API Service"]
+    
+    subgraph ExternalAPI["External API Service"]
+        Controllers["REST Controllers"]
+        ExHandler["GlobalExceptionHandler"]
+        Mappers["DTO Mappers"]
+        
+        Controllers -->|"uses"| Mappers
+        Controllers -.->|"throws"| ExHandler
+    end
+    
+    Controllers -->|"queries"| DataMongo["MongoDB<br/>(Data Layer)"]
+    Controllers -->|"queries"| DataPinot["Apache Pinot<br/>(Data Layer)"]
+    
+    DataMongo -.->|"DataAccessException"| ExHandler
+    DataPinot -.->|"PinotQueryException"| ExHandler
+    
+    ExHandler -->|"ErrorResponse"| Client
+    
+    style ExHandler fill:#ff6b6b
+    style Client fill:#51cf66
+    style Gateway fill:#4ecdc4

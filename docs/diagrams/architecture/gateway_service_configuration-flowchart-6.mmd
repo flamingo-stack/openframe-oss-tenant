@@ -1,0 +1,7 @@
+flowchart LR
+    Gateway["API Gateway"] -->|"/dashboard/**"| API["API Service<br/>(GraphQL/REST)"]
+    Gateway -->|"/clients/**"| Client["Client Service<br/>(Agent Management)"]
+    Gateway -->|"/tools/**"| Management["Management Service<br/>(Tool Integration)"]
+    Gateway -->|"/external/**"| External["External API Service<br/>(Public API)"]
+    
+    style Gateway fill:#fff4e6

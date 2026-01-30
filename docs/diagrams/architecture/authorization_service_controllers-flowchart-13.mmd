@@ -1,0 +1,23 @@
+flowchart TD
+    Request["HTTP Request"] --> SecurityFilter["Spring Security Filter Chain"]
+    
+    SecurityFilter --> AuthCheck{Requires Auth?}
+    
+    AuthCheck -->|No| PublicEndpoints["Public Endpoints"]
+    AuthCheck -->|Yes| AuthFilter["Authentication Filter"]
+    
+    PublicEndpoints --> Controllers["Controllers"]
+    
+    AuthFilter --> ValidateToken{Valid Token?}
+    ValidateToken -->|Yes| Controllers
+    ValidateToken -->|No| Unauthorized["401 Unauthorized"]
+    
+    Controllers --> AuthState["AuthStateUtils"]
+    Controllers --> Redirects["Redirect Utilities"]
+    
+    subgraph PublicEndpoints["Public Endpoints"]
+        PE1["/login"]
+        PE2["/oauth/register"]
+        PE3["/invitations/accept"]
+        PE4["/password-reset/*"]
+    end

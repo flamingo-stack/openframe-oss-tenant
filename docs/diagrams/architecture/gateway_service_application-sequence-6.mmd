@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant Client as External Client
+    participant Gateway
+    participant ApiKeyService as API Key Service
+    participant RateLimitService
+    participant Redis
+    participant ExternalAPI as External API Service
+    
+    Client->>Gateway: Request to /external-api/**<br/>(X-API-Key header)
+    Gateway->>Gateway: Check if Swagger path
+    
+    alt Swagger Path
+        Gateway-->>Client: Allow (no auth)
+    else External API Path
+        Gateway->>ApiKeyService: Validate API key
+        ApiKeyService-->>Gateway: Validation result
+        
+        alt Invalid Key
+            Gateway-->>Client: 401 Unauthorized
+        else Valid Key
+            Gateway->>RateLimitService: Check rate limit
+            RateLimitService->>Redis: Get request counts
+            Redis-->>RateLimitService: Counts (minute/hour/day)
+            RateLimitService-->>Gateway: Rate limit status
+            
+            alt Rate Limit Exceeded
+                Gateway-->>Client: 429 Too Many Requests<br/>+ Rate limit headers
+            else Within Limit
+                Gateway->>Gateway: Add user context headers<br/>(X-User-Id, X-API-Key-Id)
+                Gateway->>Gateway: Remove X-API-Key header
+                Gateway->>ExternalAPI: Forward request
+                ExternalAPI-->>Gateway: Response
+                Gateway->>Gateway: Add rate limit headers
+                Gateway->>ApiKeyService: Record successful request
+                Gateway-->>Client: Response + Rate limit headers
+            end
+        end
+    end

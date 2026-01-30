@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> CREATED: Event Created
+    CREATED --> PROCESSING: Processing Started
+    PROCESSING --> COMPLETED: Success
+    PROCESSING --> FAILED: Error
+    COMPLETED --> [*]
+    FAILED --> [*]

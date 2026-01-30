@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> Initializing
+    
+    Initializing --> Loading: Fetch data
+    Loading --> Rendering: Data received
+    
+    Rendering --> Idle: Display table
+    
+    Idle --> Sorting: User clicks sort
+    Sorting --> Rendering: Re-render sorted
+    
+    Idle --> Filtering: User applies filter
+    Filtering --> Rendering: Re-render filtered
+    
+    Idle --> Selecting: User selects rows
+    Selecting --> Idle: Update selection
+    
+    Idle --> Paginating: User changes page
+    Paginating --> Loading: Fetch next page
+    
+    Idle --> BulkAction: User clicks bulk action
+    BulkAction --> Processing: Execute action
+    Processing --> Loading: Refresh data
+    
+    Idle --> [*]: Component unmounts

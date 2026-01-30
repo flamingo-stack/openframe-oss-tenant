@@ -1,0 +1,13 @@
+flowchart LR
+    Frontend["Frontend App"] --> Gateway["API Gateway"]
+    
+    Gateway --> API["API Service<br/>(GraphQL/REST)"]
+    Gateway --> Auth["Authorization Service<br/>(OAuth 2.0)"]
+    Gateway --> Chat["Chat Service<br/>(Mingo AI)"]
+    Gateway --> Fleet["Fleet MDM"]
+    Gateway --> Tactical["Tactical RMM"]
+    
+    Frontend -.->|"Direct WebSocket"| Mesh["MeshCentral"]
+    
+    style Frontend fill:#4CAF50
+    style Gateway fill:#FF9800

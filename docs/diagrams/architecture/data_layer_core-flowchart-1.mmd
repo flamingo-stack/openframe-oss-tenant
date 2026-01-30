@@ -1,0 +1,53 @@
+flowchart TD
+    subgraph services["OpenFrame Services"]
+        API["API Service"]
+        External["External API Service"]
+        Stream["Stream Processing"]
+    end
+
+    subgraph data_layer_core["Data Layer Core"]
+        direction TB
+        
+        subgraph config["Configuration Layer"]
+            DataConfig["DataConfiguration"]
+            CassandraConf["CassandraConfig"]
+            PinotConf["PinotConfig"]
+        end
+        
+        subgraph repositories["Repository Layer"]
+            direction LR
+            PinotDeviceRepo["PinotClientDeviceRepository"]
+            PinotLogRepo["PinotClientLogRepository"]
+        end
+        
+        subgraph query_builders["Query Builders"]
+            PinotQueryBuilder["PinotQueryBuilder"]
+        end
+        
+        subgraph models["Data Models"]
+            LogProjection["LogProjection"]
+            OrgOption["OrganizationOption"]
+        end
+    end
+
+    subgraph datastores["Data Stores"]
+        Cassandra[("Apache Cassandra<br/>Time-Series Data")]
+        Pinot[("Apache Pinot<br/>Real-Time Analytics")]
+    end
+
+    API -->|"queries"| PinotDeviceRepo
+    API -->|"queries"| PinotLogRepo
+    External -->|"queries"| PinotLogRepo
+    Stream -->|"ingests"| Pinot
+    
+    PinotDeviceRepo -->|"uses"| PinotQueryBuilder
+    PinotLogRepo -->|"uses"| PinotQueryBuilder
+    
+    PinotDeviceRepo -->|"connects to"| Pinot
+    PinotLogRepo -->|"connects to"| Pinot
+    
+    CassandraConf -->|"configures"| Cassandra
+    PinotConf -->|"configures"| Pinot
+    
+    PinotLogRepo -->|"returns"| LogProjection
+    PinotLogRepo -->|"returns"| OrgOption

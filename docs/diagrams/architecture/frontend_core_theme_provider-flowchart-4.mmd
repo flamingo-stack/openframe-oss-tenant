@@ -1,0 +1,17 @@
+flowchart TD
+    ThemeProvider["DynamicThemeProvider"]
+    ThemingHook["useDynamicTheming"]
+    ThemeCSS["ods-dynamic-theming.css"]
+    CoreStyles["@flamingo-stack/openframe-frontend-core/styles"]
+    DesignTokens["ods-design-tokens.css"]
+    ColorTokens["ods-colors.css"]
+    
+    ThemeProvider -->|"uses"| ThemingHook
+    ThemeProvider -->|"applies"| ThemeCSS
+    ThemeCSS -->|"extends"| CoreStyles
+    CoreStyles -->|"includes"| DesignTokens
+    CoreStyles -->|"includes"| ColorTokens
+    
+    style ThemeProvider fill:#00d4aa
+    style ThemingHook fill:#ffc008
+    style ThemeCSS fill:#ff6b9d

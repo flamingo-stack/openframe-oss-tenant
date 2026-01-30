@@ -1,0 +1,42 @@
+flowchart TD
+    subgraph Frontend["Frontend Application"]
+        Components["React Components"]
+        Hooks["Custom Hooks"]
+        Stores["State Stores"]
+    end
+    
+    subgraph APIClients["API Clients Layer"]
+        ApiClient["ApiClient<br/>(Base Client)"]
+        AuthApiClient["AuthApiClient<br/>(Auth Service)"]
+        FleetApiClient["FleetApiClient<br/>(Fleet MDM)"]
+        TacticalApiClient["TacticalApiClient<br/>(Tactical RMM)"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        Gateway["Gateway Service"]
+        AuthService["Authorization Service"]
+        APIService["API Service"]
+        FleetMDM["Fleet MDM Tool"]
+        TacticalRMM["Tactical RMM Tool"]
+    end
+    
+    Components -->|"use"| Hooks
+    Hooks -->|"call"| ApiClient
+    Hooks -->|"call"| AuthApiClient
+    Hooks -->|"call"| FleetApiClient
+    Hooks -->|"call"| TacticalApiClient
+    Stores -->|"call"| ApiClient
+    
+    ApiClient -->|"HTTP + Auth"| Gateway
+    AuthApiClient -->|"OAuth/Auth"| AuthService
+    FleetApiClient -->|"Fleet API"| FleetMDM
+    TacticalApiClient -->|"Tactical API"| TacticalRMM
+    
+    Gateway -->|"route"| APIService
+    Gateway -->|"proxy"| FleetMDM
+    Gateway -->|"proxy"| TacticalRMM
+    
+    style ApiClient fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style AuthApiClient fill:#50C878,stroke:#2E7D4E,color:#fff
+    style FleetApiClient fill:#9B59B6,stroke:#6C3483,color:#fff
+    style TacticalApiClient fill:#E67E22,stroke:#A04000,color:#fff

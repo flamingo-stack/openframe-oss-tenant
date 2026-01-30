@@ -1,0 +1,12 @@
+flowchart LR
+    Client["Client App"] -->|"1. Request Token"| Gateway["API Gateway<br/>:8080"]
+    Gateway -->|"2. Route to Auth"| AuthService["Authorization Service<br/>:9000"]
+    AuthService -->|"3. Return JWT"| Gateway
+    Gateway -->|"4. Return JWT"| Client
+    
+    Client -->|"5. API Request + JWT"| Gateway
+    Gateway -->|"6. Validate JWT"| Gateway
+    Gateway -->|"7. Route to API"| APIService["API Service<br/>:8081"]
+    
+    style Gateway fill:#3498DB,stroke:#2471A3,stroke-width:2px,color:#fff
+    style AuthService fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff

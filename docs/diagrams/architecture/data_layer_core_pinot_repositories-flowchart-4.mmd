@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Query Request"] --> BuildQuery["Build Query with<br/>PinotQueryBuilder"]
+    BuildQuery --> Validate["Validate Query"]
+    Validate --> Execute["Execute via<br/>Pinot Connection"]
+    Execute --> ResultSet["Get ResultSet"]
+    ResultSet --> MapColumns["Build Column Index Map"]
+    MapColumns --> MapRows["Map Rows to<br/>LogProjection"]
+    MapRows --> Return["Return List&lt;LogProjection&gt;"]
+    
+    style Start fill:#E8F4F8
+    style BuildQuery fill:#50C878
+    style Execute fill:#F39C12
+    style Return fill:#4A90E2

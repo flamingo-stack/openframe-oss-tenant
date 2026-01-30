@@ -1,0 +1,24 @@
+flowchart TD
+    subgraph External["External Systems"]
+        Mesh["MeshCentral"]
+        Tactical["Tactical RMM"]
+        Fleet["Fleet MDM"]
+    end
+    
+    subgraph CDC["CDC Layer"]
+        Debezium["Debezium Connectors"]
+    end
+    
+    subgraph Messaging["Messaging Layer"]
+        Kafka["Kafka Cluster"]
+    end
+    
+    subgraph Listener["Stream Listener"]
+        JsonListener["JsonKafkaListener"]
+    end
+    
+    Mesh --> Debezium
+    Tactical --> Debezium
+    Fleet --> Debezium
+    Debezium --> Kafka
+    Kafka --> JsonListener

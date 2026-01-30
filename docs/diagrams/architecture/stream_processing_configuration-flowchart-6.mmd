@@ -1,0 +1,53 @@
+flowchart TD
+    subgraph Input["Input Topic"]
+        RawMessage["Raw Kafka Message<br/>(byte[])"]
+    end
+    
+    subgraph Deserialization["Deserialization"]
+        JsonDeser["JsonDeserializer"]
+        TypeInfo["Type Information<br/>(ActivityMessage.class)"]
+        ObjectMapper["Jackson ObjectMapper"]
+        DomainObject["Domain Object<br/>(ActivityMessage)"]
+    end
+    
+    subgraph Processing["Stream Processing"]
+        Transform["Transform/Enrich"]
+        Join["Join Operations"]
+        Filter["Filter/Map"]
+    end
+    
+    subgraph Serialization["Serialization"]
+        JsonSer["JsonSerializer"]
+        NoTypeInfo["setAddTypeInfo(false)"]
+        CleanJson["Clean JSON<br/>(no __TypeId__)"]
+    end
+    
+    subgraph Output["Output Topic"]
+        OutputMessage["Output Kafka Message<br/>(byte[])"]
+    end
+    
+    RawMessage --> JsonDeser
+    TypeInfo --> JsonDeser
+    ObjectMapper --> JsonDeser
+    JsonDeser --> DomainObject
+    
+    DomainObject --> Transform
+    Transform --> Join
+    Join --> Filter
+    
+    Filter --> JsonSer
+    NoTypeInfo --> JsonSer
+    JsonSer --> CleanJson
+    CleanJson --> OutputMessage
+    
+    classDef inputClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef deserClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef processClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef serClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    classDef outputClass fill:#E74C3C,stroke:#C0392B,color:#fff
+    
+    class RawMessage inputClass
+    class JsonDeser,TypeInfo,ObjectMapper,DomainObject deserClass
+    class Transform,Join,Filter processClass
+    class JsonSer,NoTypeInfo,CleanJson serClass
+    class OutputMessage outputClass

@@ -1,0 +1,31 @@
+flowchart TD
+    MessageData["MessageData (Union Type)"]
+    
+    MessageData --> TextData["TextData"]
+    MessageData --> ExecutingTool["ExecutingToolData"]
+    MessageData --> ExecutedTool["ExecutedToolData"]
+    MessageData --> ApprovalReq["ApprovalRequestData"]
+    MessageData --> ApprovalRes["ApprovalResultData"]
+    MessageData --> ErrorData["ErrorData"]
+    
+    TextData --> TextContent["text: string"]
+    
+    ExecutingTool --> ExecType["integratedToolType"]
+    ExecutingTool --> ExecFunc["toolFunction"]
+    ExecutingTool --> ExecParams["parameters"]
+    ExecutingTool --> ExecApproval["requiresApproval"]
+    
+    ExecutedTool --> ExecResult["result: string"]
+    ExecutedTool --> ExecSuccess["success: boolean"]
+    ExecutedTool --> ExecApprovalStatus["approvalStatus"]
+    
+    ApprovalReq --> ReqID["approvalRequestId"]
+    ApprovalReq --> ReqType["approvalType"]
+    ApprovalReq --> ReqCmd["command"]
+    ApprovalReq --> ReqExplain["explanation"]
+    
+    ApprovalRes --> ResID["approvalRequestId"]
+    ApprovalRes --> ResApproved["approved: boolean"]
+    
+    ErrorData --> ErrMsg["error: string"]
+    ErrorData --> ErrDetails["details: string"]

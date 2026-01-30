@@ -1,0 +1,19 @@
+flowchart TD
+    Start["Receive Heartbeat Message"]
+    Extract["Extract Machine ID<br/>from Subject Pattern"]
+    Generate["Generate Server-Side<br/>Timestamp"]
+    Process["Call machineStatusService<br/>.processHeartbeat()"]
+    Update["Update Machine Status<br/>to ONLINE"]
+    Log["Log Success"]
+    End["Complete"]
+    
+    Error["Log Error<br/>(No Retry)"]
+    
+    Start --> Extract
+    Extract -->|"Success"| Generate
+    Extract -->|"Failure"| Error
+    
+    Generate --> Process
+    Process --> Update
+    Update --> Log
+    Log --> End

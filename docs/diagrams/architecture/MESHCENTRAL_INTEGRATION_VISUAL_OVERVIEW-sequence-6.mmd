@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant UI as File Explorer UI
+    participant FM as File Manager
+    participant Hash as Hash Calculator
+    participant WS as WebSocket
+    participant Agent as Remote Agent
+    participant FS as File System
+    
+    Note over UI,FS: Upload Initiation
+    UI->>FM: Upload file request
+    FM->>Hash: Calculate file hash
+    Hash-->>FM: SHA256 hash
+    
+    Note over UI,FS: Hash Check Phase
+    FM->>WS: uploadhash command
+    WS->>Agent: Forward hash request
+    Agent->>FS: Check if file exists
+    FS-->>Agent: File info or not found
+    
+    alt File exists with same hash
+        Agent-->>WS: Skip upload (unchanged)
+        WS-->>FM: Upload complete
+        FM-->>UI: Success (skipped)
+    else File missing or different hash
+        Agent-->>WS: Proceed with upload
+        WS-->>FM: Ready to receive
+        
+        Note over UI,FS: Upload Phase
+        loop For each chunk
+            FM->>WS: Binary file chunk
+            WS->>Agent: Forward chunk
+            Agent->>FS: Write chunk
+            FS-->>Agent: Write complete
+            Agent-->>WS: Chunk ACK
+            WS-->>FM: Progress update
+            FM-->>UI: Update progress bar
+        end
+        
+        Note over UI,FS: Completion
+        Agent->>FS: Finalize file
+        FS-->>Agent: File complete
+        Agent-->>WS: Upload complete
+        WS-->>FM: Success
+        FM-->>UI: Upload finished
+    end

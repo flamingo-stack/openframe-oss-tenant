@@ -1,0 +1,40 @@
+flowchart TD
+    Tool["IntegratedTool Document"]
+    
+    subgraph Identity["Identity & Display"]
+        Name["name"]
+        Description["description"]
+        Icon["icon"]
+        Type["type/toolType"]
+    end
+    
+    subgraph Configuration["Configuration"]
+        URLs["ToolUrl[]"]
+        Credentials["ToolCredentials"]
+        Enabled["enabled"]
+    end
+    
+    subgraph Categorization["Categorization"]
+        Category["category"]
+        PlatformCat["platformCategory"]
+        Layer["layer"]
+        LayerOrder["layerOrder"]
+        LayerColor["layerColor"]
+    end
+    
+    subgraph Monitoring["Monitoring & Health"]
+        MetricsPath["metricsPath"]
+        HealthEndpoint["healthCheckEndpoint"]
+        HealthInterval["healthCheckInterval"]
+        Timeouts["connectionTimeout/readTimeout"]
+    end
+    
+    subgraph CDC["Change Data Capture"]
+        Debezium["debeziumConnectors[]"]
+    end
+    
+    Tool --> Identity
+    Tool --> Configuration
+    Tool --> Categorization
+    Tool --> Monitoring
+    Tool --> CDC

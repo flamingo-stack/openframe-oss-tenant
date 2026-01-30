@@ -1,0 +1,33 @@
+classDiagram
+    class GenericJsonMessageProcessor {
+        -Map~EventHandlerType, Map~Destination, MessageHandler~~ handlers
+        -Map~DataEnrichmentServiceType, DataEnrichmentService~ dataEnrichmentServices
+        -Map~MessageType, KafkaMessageDeserializer~ deserializers
+        +GenericJsonMessageProcessor(handlers, services, deserializers)
+        +process(message, type) void
+        -deserialize(message, type) DeserializedDebeziumMessage
+        -getExtraParams(message, type) IntegratedToolEnrichedData
+    }
+    
+    class MessageHandler {
+        <<interface>>
+        +getType() EventHandlerType
+        +getDestination() Destination
+        +handle(message, enrichedData) void
+    }
+    
+    class DataEnrichmentService {
+        <<interface>>
+        +getType() DataEnrichmentServiceType
+        +getExtraParams(message) IntegratedToolEnrichedData
+    }
+    
+    class KafkaMessageDeserializer {
+        <<interface>>
+        +getType() MessageType
+        +deserialize(message, type) DeserializedDebeziumMessage
+    }
+    
+    GenericJsonMessageProcessor --> MessageHandler : routes to
+    GenericJsonMessageProcessor --> DataEnrichmentService : enriches with
+    GenericJsonMessageProcessor --> KafkaMessageDeserializer : deserializes using

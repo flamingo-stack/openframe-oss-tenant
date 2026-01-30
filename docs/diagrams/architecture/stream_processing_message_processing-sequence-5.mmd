@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Processor as GenericJsonMessageProcessor
+    participant Registry as Deserializer Registry
+    participant Deserializer as KafkaMessageDeserializer
+    
+    Processor->>Registry: deserializers.get(type)
+    Registry-->>Processor: FleetHostDeserializer
+    Processor->>Deserializer: deserialize(message, type)
+    Deserializer->>Deserializer: Parse JSON payload
+    Deserializer->>Deserializer: Extract "after" state
+    Deserializer->>Deserializer: Map to domain object
+    Deserializer-->>Processor: DeserializedDebeziumMessage<Host>

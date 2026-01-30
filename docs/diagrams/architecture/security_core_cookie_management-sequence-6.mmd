@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant OAuthBFF
+    participant AuthServer
+    
+    Browser->>Gateway: GET /api/devices<br/>Cookie: access_token=expired
+    Gateway->>Browser: 401 Unauthorized
+    
+    Browser->>OAuthBFF: POST /oauth/refresh<br/>Cookie: refresh_token=valid
+    OAuthBFF->>AuthServer: POST /token (grant_type=refresh_token)
+    AuthServer->>OAuthBFF: new_access_token, new_refresh_token
+    OAuthBFF->>Browser: Set-Cookie: access_token=new<br/>Set-Cookie: refresh_token=new
+    
+    Browser->>Gateway: GET /api/devices<br/>Cookie: access_token=new
+    Gateway->>Browser: 200 OK

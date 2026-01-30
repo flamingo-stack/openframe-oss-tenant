@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph api_service["API Service"]
+        DeviceController["DeviceController"]
+        LogDataFetcher["LogDataFetcher"]
+    end
+    
+    subgraph external_api["External API Service"]
+        LogController["LogController"]
+        DeviceController2["DeviceController"]
+    end
+    
+    subgraph stream_service["Stream Processing"]
+        ActivityEnrichment["ActivityEnrichmentService"]
+    end
+    
+    subgraph data_layer_core["Data Layer Core"]
+        PinotDeviceRepo["PinotClientDeviceRepository"]
+        PinotLogRepo["PinotClientLogRepository"]
+    end
+    
+    DeviceController -->|"filter options"| PinotDeviceRepo
+    LogDataFetcher -->|"log queries"| PinotLogRepo
+    
+    LogController -->|"search logs"| PinotLogRepo
+    DeviceController2 -->|"device analytics"| PinotDeviceRepo
+    
+    ActivityEnrichment -->|"ingests to"| Pinot[("Pinot")]
+    
+    PinotDeviceRepo -->|"queries"| Pinot
+    PinotLogRepo -->|"queries"| Pinot

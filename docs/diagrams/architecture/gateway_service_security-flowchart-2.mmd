@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph SecurityConfig["Security Configuration Layer"]
+        GatewaySecurityConfig["GatewaySecurityConfig"]
+        JwtAuthConfig["JwtAuthConfig"]
+    end
+    
+    subgraph Filters["Filter Chain"]
+        ApiKeyAuthFilter["ApiKeyAuthenticationFilter"]
+        AddAuthHeaderFilter["AddAuthorizationHeaderFilter"]
+    end
+    
+    subgraph AuthManagers["Authentication Managers"]
+        IssuerResolver["JwtIssuerAuthenticationManagerResolver"]
+        ManagerCache["LoadingCache<String, ReactiveAuthenticationManager>"]
+        JwtManager["JwtReactiveAuthenticationManager"]
+    end
+    
+    subgraph Validators["Validators & Services"]
+        JwtDecoder["NimbusReactiveJwtDecoder"]
+        JwtValidator["OAuth2TokenValidator"]
+        ApiKeyService["ApiKeyValidationService"]
+        RateLimitService["RateLimitService"]
+    end
+    
+    subgraph External["External Dependencies"]
+        JwtConfig["JwtConfig<br/>(security-core)"]
+        IssuerProvider["IssuerUrlProvider"]
+        SecurityConstants["SecurityConstants"]
+    end
+    
+    GatewaySecurityConfig -->|"Configures"| Filters
+    GatewaySecurityConfig -->|"Uses"| IssuerResolver
+    
+    JwtAuthConfig -->|"Creates"| ManagerCache
+    JwtAuthConfig -->|"Provides"| IssuerResolver
+    JwtAuthConfig -->|"Uses"| JwtConfig
+    
+    ManagerCache -->|"Caches"| JwtManager
+    JwtManager -->|"Uses"| JwtDecoder
+    JwtDecoder -->|"Validates with"| JwtValidator
+    
+    ApiKeyAuthFilter -->|"Validates with"| ApiKeyService
+    ApiKeyAuthFilter -->|"Checks limits"| RateLimitService
+    
+    JwtValidator -->|"Checks issuer"| IssuerProvider
+    
+    AddAuthHeaderFilter -.->|"Adds headers"| Downstream["Downstream Services"]

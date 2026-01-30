@@ -1,0 +1,94 @@
+flowchart TD
+    subgraph external["External Systems"]
+        FleetMDM["Fleet MDM Database"]
+        TacticalRMM["Tactical RMM Database"]
+        MeshCentral["MeshCentral Database"]
+    end
+
+    subgraph debezium["Debezium CDC"]
+        DebeziumFleet["Fleet Debezium Connector"]
+        DebeziumTactical["Tactical Debezium Connector"]
+        DebeziumMesh["MeshCentral Debezium Connector"]
+    end
+
+    subgraph kafka_topics["Kafka Topics"]
+        ActivityTopic["fleet-mdm-activities"]
+        HostActivityTopic["fleet-mdm-host-activities"]
+        FleetEventsTopic["fleet-mdm-events"]
+        TacticalEventsTopic["tactical-rmm-events"]
+        MeshEventsTopic["meshcentral-events"]
+        QueryResultTopic["fleet-mdm-query-result-events"]
+        EnrichedTopic["Enriched Events Topic"]
+    end
+
+    subgraph stream_service["Stream Processing Service"]
+        direction TB
+        
+        subgraph config["Configuration Layer"]
+            KafkaConfig["KafkaConfig"]
+            KafkaStreamsConfig["KafkaStreamsConfig"]
+        end
+        
+        subgraph listeners["Event Listeners"]
+            JsonListener["JsonKafkaListener"]
+        end
+        
+        subgraph processing["Processing Layer"]
+            MessageProcessor["GenericJsonMessageProcessor"]
+            Deserializers["Message Deserializers"]
+            EnrichmentServices["Data Enrichment Services"]
+        end
+        
+        subgraph streams["Kafka Streams"]
+            ActivityEnrichment["ActivityEnrichmentService"]
+            StreamJoin["Activity-Host Join"]
+        end
+        
+        subgraph handlers["Event Handlers"]
+            DebeziumHandler["DebeziumMessageHandler"]
+            GenericHandler["GenericMessageHandler"]
+            SpecificHandlers["Tool-Specific Handlers"]
+        end
+    end
+
+    subgraph downstream["Downstream Consumers"]
+        EventStore["Event Store"]
+        Analytics["Analytics Pipeline"]
+        Notifications["Notification Service"]
+    end
+
+    FleetMDM -->|"CDC"| DebeziumFleet
+    TacticalRMM -->|"CDC"| DebeziumTactical
+    MeshCentral -->|"CDC"| DebeziumMesh
+
+    DebeziumFleet -->|"Activity Events"| ActivityTopic
+    DebeziumFleet -->|"Host Activity Events"| HostActivityTopic
+    DebeziumFleet -->|"General Events"| FleetEventsTopic
+    DebeziumFleet -->|"Query Results"| QueryResultTopic
+    DebeziumTactical --> TacticalEventsTopic
+    DebeziumMesh --> MeshEventsTopic
+
+    ActivityTopic --> ActivityEnrichment
+    HostActivityTopic --> ActivityEnrichment
+    ActivityEnrichment -->|"Stream Join"| StreamJoin
+    StreamJoin -->|"Enriched Activities"| FleetEventsTopic
+
+    FleetEventsTopic --> JsonListener
+    TacticalEventsTopic --> JsonListener
+    MeshEventsTopic --> JsonListener
+    QueryResultTopic --> JsonListener
+
+    JsonListener --> MessageProcessor
+    MessageProcessor --> Deserializers
+    MessageProcessor --> EnrichmentServices
+    MessageProcessor --> DebeziumHandler
+    DebeziumHandler --> GenericHandler
+    GenericHandler --> SpecificHandlers
+
+    SpecificHandlers --> EnrichedTopic
+    EnrichedTopic --> EventStore
+    EnrichedTopic --> Analytics
+    EnrichedTopic --> Notifications
+
+    config -.->|"Configures"| listeners
+    config -.->|"Configures"| streams

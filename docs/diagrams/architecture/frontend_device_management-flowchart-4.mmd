@@ -1,0 +1,24 @@
+flowchart TD
+    Hook["useDevices Hook"] --> State["State Management"]
+    Hook --> Fetch["Fetch Operations"]
+    Hook --> Filter["Filter Management"]
+    
+    State --> Devices["devices: Device[]"]
+    State --> Loading["isLoading: boolean"]
+    State --> PageInfo["pageInfo: PageInfo"]
+    State --> FilteredCount["filteredCount: number"]
+    
+    Fetch --> FetchDevices["fetchDevices()<br/>(with cursor)"]
+    Fetch --> SearchDevices["searchDevices()<br/>(with search term)"]
+    Fetch --> RefreshDevices["refreshDevices()<br/>(reload all)"]
+    Fetch --> FetchNextPage["fetchNextPage()<br/>(pagination)"]
+    
+    Filter --> FetchFilters["fetchDeviceFilters()<br/>(get filter options)"]
+    Filter --> ApplyFilters["Apply Filters<br/>(status, OS, org, tags)"]
+    
+    FetchDevices --> GraphQL["GraphQL Query<br/>GET_DEVICES_QUERY"]
+    GraphQL --> Transform["Transform to Device[]<br/>(createDeviceListItem)"]
+    
+    style Hook fill:#e1f5ff
+    style Fetch fill:#fff4e1
+    style GraphQL fill:#f0f0f0

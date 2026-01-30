@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Client
+    participant Server
+    participant Agent
+    participant FileSystem
+    
+    Client->>Server: UploadRequest (with hash)
+    Server->>Agent: Forward request
+    Agent->>FileSystem: Check existing file hash
+    
+    alt File exists with same hash
+        FileSystem-->>Agent: Hash matches
+        Agent-->>Server: Skip upload
+        Server-->>Client: Upload complete (skipped)
+    else File new or changed
+        FileSystem-->>Agent: Hash mismatch/not found
+        Agent-->>Server: Ready for upload
+        Server-->>Client: Send file data
+        
+        loop For each chunk
+            Client->>Server: Binary chunk
+            Server->>Agent: Forward chunk
+            Agent->>FileSystem: Write chunk
+            FileSystem-->>Agent: ACK
+            Agent-->>Server: Progress update
+            Server-->>Client: Progress callback
+        end
+        
+        Agent->>FileSystem: Finalize file
+        FileSystem-->>Agent: Complete
+        Agent-->>Server: Upload complete
+        Server-->>Client: Success
+    end

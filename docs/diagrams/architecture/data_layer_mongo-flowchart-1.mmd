@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph services["OpenFrame Services"]
+        API["API Service"]
+        Auth["Authorization Service"]
+        Mgmt["Management Service"]
+        Client["Client Service"]
+        External["External API"]
+    end
+
+    subgraph data_layer["Data Layer MongoDB"]
+        Config["MongoConfig"]
+        
+        subgraph documents["Document Models"]
+            User["User"]
+            Org["Organization"]
+            Machine["Machine"]
+            Device["Device"]
+            Tool["IntegratedTool"]
+            Event["CoreEvent"]
+        end
+        
+        subgraph repositories["Repository Layer"]
+            UserRepo["BaseUserRepository"]
+            TenantRepo["BaseTenantRepository"]
+            OtherRepos["Other Repositories"]
+        end
+    end
+
+    subgraph mongodb["MongoDB Database"]
+        Collections[("Collections:<br/>users, organizations,<br/>machines, devices,<br/>integrated_tools, events")]
+    end
+
+    API -->|"uses"| repositories
+    Auth -->|"uses"| repositories
+    Mgmt -->|"uses"| repositories
+    Client -->|"uses"| repositories
+    External -->|"uses"| repositories
+
+    Config -->|"configures"| repositories
+    repositories -->|"CRUD operations"| documents
+    documents -->|"persisted to"| Collections

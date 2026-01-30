@@ -1,0 +1,12 @@
+flowchart LR
+    Request["Incoming Request"] -->|"Extract JWT"| IssuerResolver["Issuer Resolver"]
+    IssuerResolver -->|"Lookup Issuer"| Cache["Issuer Cache"]
+    
+    Cache -->|"Cache Hit"| Decoder["JWT Decoder"]
+    Cache -->|"Cache Miss"| TenantDB["Tenant Database"]
+    TenantDB -->|"Load Issuer"| Cache
+    
+    Decoder -->|"Validate Token"| Claims["Extract Claims"]
+    Claims -->|"roles, scopes"| AuthContext["Authentication Context"]
+    
+    AuthContext --> Allow["Allow Request"]

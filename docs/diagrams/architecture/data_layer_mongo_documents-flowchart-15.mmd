@@ -1,0 +1,17 @@
+flowchart TD
+    Machine["Machine"]
+    
+    subgraph Security["Security Tracking"]
+        SecState["SecurityState"]
+        Alerts["SecurityAlert[]"]
+        LastScan["lastSecurityScan"]
+    end
+    
+    subgraph Compliance["Compliance Tracking"]
+        CompState["ComplianceState"]
+        Requirements["ComplianceRequirement[]"]
+        LastCompScan["lastComplianceScan"]
+    end
+    
+    Machine --> Security
+    Machine --> Compliance

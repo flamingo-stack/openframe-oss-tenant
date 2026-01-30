@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant LoginCtrl as LoginController
+    participant Security as SecurityConfig
+    participant UserService
+    participant MongoDB
+    
+    User->>Browser: Navigate to /login
+    Browser->>LoginCtrl: GET /login
+    LoginCtrl->>Browser: Render login.html
+    
+    User->>Browser: Enter email + password
+    Browser->>Security: POST /login
+    Security->>UserService: loadUserByUsername(email)
+    UserService->>MongoDB: findByEmailAndTenant(email, tenantId)
+    MongoDB-->>UserService: User Document
+    UserService->>Security: UserDetails
+    Security->>Security: Validate Password (BCrypt)
+    Security->>Browser: Redirect to Success URL

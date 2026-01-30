@@ -1,0 +1,18 @@
+flowchart TD
+    UseMingoDialog["useMingoDialog"] --> UseMutation["useMutation<br/>(React Query)"]
+    UseMingoDialog --> UseToast["useToast"]
+    UseMingoDialog --> UseQueryClient["useQueryClient"]
+    
+    UseMessages["useMessages"] --> UseInfiniteQuery["useInfiniteQuery<br/>(React Query)"]
+    UseMessages --> UseMingoDialogDetailsStore["useMingoDialogDetailsStore"]
+    
+    UseDialogs["useDialogs"] --> UseInfiniteQuery2["useInfiniteQuery<br/>(React Query)"]
+    UseDialogs --> UseMingoBackgroundMessagesStore["useMingoBackgroundMessagesStore"]
+    
+    UseMutation --> ApiClient["API Client"]
+    UseInfiniteQuery --> GraphQLClient["GraphQL Client"]
+    UseInfiniteQuery2 --> GraphQLClient
+    
+    style UseMingoDialog fill:#FF9800
+    style UseMessages fill:#4CAF50
+    style UseDialogs fill:#2196F3

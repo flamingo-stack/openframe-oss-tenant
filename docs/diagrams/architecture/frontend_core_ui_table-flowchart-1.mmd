@@ -1,0 +1,38 @@
+flowchart TD
+    Table["Table<T>"] -->|"renders"| TableHeader["TableHeader<T>"]
+    Table -->|"renders"| TableRow["TableRow<T>"]
+    Table -->|"renders"| TableCardSkeleton["TableCardSkeleton"]
+    Table -->|"renders"| TableEmptyState["TableEmptyState"]
+    Table -->|"renders"| CursorPagination["CursorPagination"]
+    Table -->|"renders"| Pagination["Pagination"]
+    
+    TableHeader -->|"renders"| FiltersDropdown["FiltersDropdown"]
+    TableHeader -->|"renders"| Checkbox["Checkbox"]
+    
+    TableRow -->|"renders"| TableCell["TableCell"]
+    TableRow -->|"renders"| Checkbox
+    
+    TableCell -->|"can render"| TableTimestampCell["TableTimestampCell"]
+    TableCell -->|"can render"| TableDescriptionCell["TableDescriptionCell"]
+    
+    subgraph "Core Components"
+        Table
+        TableHeader
+        TableRow
+        TableCell
+    end
+    
+    subgraph "Specialized Cells"
+        TableTimestampCell
+        TableDescriptionCell
+    end
+    
+    subgraph "State Components"
+        TableCardSkeleton
+        TableEmptyState
+    end
+    
+    subgraph "Pagination Components"
+        CursorPagination
+        Pagination
+    end

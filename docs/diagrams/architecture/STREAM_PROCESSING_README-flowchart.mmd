@@ -1,0 +1,22 @@
+flowchart LR
+    Tools["Integrated Tools<br/>(Fleet, Tactical, Mesh)"]
+    CDC["Debezium CDC"]
+    Kafka["Kafka Topics"]
+    Listeners["Kafka Listeners"]
+    Processor["Message Processor"]
+    Streams["Kafka Streams<br/>(Enrichment)"]
+    Handlers["Event Handlers"]
+    Storage["Data Storage<br/>(Mongo, Cassandra, Pinot)"]
+    
+    Tools -->|"DB Changes"| CDC
+    CDC -->|"CDC Events"| Kafka
+    Kafka -->|"Raw Events"| Listeners
+    Kafka -->|"Activity Events"| Streams
+    Streams -->|"Enriched Events"| Kafka
+    Listeners --> Processor
+    Processor --> Handlers
+    Handlers --> Storage
+    
+    style Streams fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style Processor fill:#2196F3,stroke:#0D47A1,color:#fff
+    style Handlers fill:#FF9800,stroke:#E65100,color:#fff

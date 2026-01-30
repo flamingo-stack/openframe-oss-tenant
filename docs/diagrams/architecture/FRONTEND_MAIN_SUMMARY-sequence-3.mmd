@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Component
+    participant APIClient
+    participant Gateway
+    participant AuthServer
+    
+    Component->>APIClient: API Request
+    APIClient->>Gateway: Request + Token
+    
+    alt Token Valid
+        Gateway-->>APIClient: Response
+        APIClient-->>Component: Data
+    else Token Expired (401)
+        Gateway-->>APIClient: 401 Unauthorized
+        APIClient->>AuthServer: Refresh Token
+        AuthServer-->>APIClient: New Access Token
+        APIClient->>Gateway: Retry Request
+        Gateway-->>APIClient: Response
+        APIClient-->>Component: Data
+    end

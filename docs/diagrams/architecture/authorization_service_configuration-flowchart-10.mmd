@@ -1,0 +1,28 @@
+flowchart TD
+    TokenRequest["Token Request<br/>(POST /oauth2/token)"] --> Authenticate["Authenticate User"]
+    Authenticate --> LoadUser["UserService.findActiveByEmailAndTenant()"]
+    LoadUser --> GetKey["TenantKeyService.getOrCreateActiveKey()"]
+    
+    GetKey --> CheckKey["Check Active Key in DB"]
+    CheckKey -->|"Exists"| DecryptKey["Decrypt Private Key"]
+    CheckKey -->|"Not Exists"| GenerateKey["Generate RSA Key Pair<br/>(2048-bit)"]
+    GenerateKey --> EncryptKey["Encrypt Private Key"]
+    EncryptKey --> SaveKey["Save to tenant_keys collection"]
+    SaveKey --> DecryptKey
+    
+    DecryptKey --> BuildRSAKey["Build RSAKey<br/>(public, private, kid)"]
+    BuildRSAKey --> CreateJWT["Create JWT"]
+    
+    CreateJWT --> StandardClaims["Standard Claims<br/>(iss, sub, aud, exp, iat)"]
+    StandardClaims --> CustomClaims["Custom Claims"]
+    
+    CustomClaims --> AddTenantId["Add tenant_id"]
+    AddTenantId --> AddUserId["Add userId"]
+    AddUserId --> AddRoles["Add roles array"]
+    
+    AddRoles --> SignJWT["Sign JWT with RSA Private Key"]
+    SignJWT --> ReturnToken["Return access_token"]
+    
+    style GenerateKey fill:#50C878
+    style CustomClaims fill:#FFD700
+    style SignJWT fill:#4A90E2

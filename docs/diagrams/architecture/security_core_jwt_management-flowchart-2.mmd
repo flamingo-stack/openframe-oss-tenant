@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph AppProps["application.yml"]
+        PubKeyProp["jwt.publicKey.value"]
+        PrivKeyProp["jwt.privateKey.value"]
+        IssuerProp["jwt.issuer"]
+        AudProp["jwt.audience"]
+    end
+    
+    subgraph JwtConfig["JwtConfig"]
+        LoadPub["loadPublicKey()"]
+        LoadPriv["loadPrivateKey()"]
+    end
+    
+    subgraph KeyConfig["KeyConfig"]
+        ParsePub["toRSAPublicKey()"]
+        ParsePriv["Base64 Decode"]
+    end
+    
+    subgraph Security["Spring Security"]
+        RSAKey["RSAKey Builder"]
+        JWKSet["JWKSet"]
+        Encoder["JwtEncoder"]
+        Decoder["JwtDecoder"]
+    end
+    
+    PubKeyProp -->|"binds to"| LoadPub
+    PrivKeyProp -->|"binds to"| LoadPriv
+    
+    LoadPub -->|"delegates to"| ParsePub
+    LoadPriv -->|"PKCS8 parsing"| ParsePriv
+    
+    ParsePub -->|"X.509 format"| RSAKey
+    ParsePriv -->|"PKCS8 format"| RSAKey
+    
+    RSAKey --> JWKSet
+    JWKSet --> Encoder
+    ParsePub --> Decoder

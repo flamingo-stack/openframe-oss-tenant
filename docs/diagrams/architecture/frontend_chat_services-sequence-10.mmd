@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant UI as Chat UI
+    participant MockSvc as MockChatService
+    participant Stream as AsyncGenerator
+    
+    UI->>MockSvc: streamResponse("Check system processes")
+    MockSvc->>MockSvc: Analyze message
+    
+    Note over MockSvc: Detected "process" keyword
+    
+    MockSvc->>Stream: yield {type: 'text', text: "Let me check..."}
+    Stream-->>UI: Display text
+    
+    Note over MockSvc: Simulate delay (500ms)
+    
+    MockSvc->>Stream: yield {type: 'tool_execution', EXECUTING_TOOL}
+    Stream-->>UI: Show tool executing indicator
+    
+    Note over MockSvc: Simulate execution (2000ms)
+    
+    MockSvc->>Stream: yield {type: 'tool_execution', EXECUTED_TOOL}
+    Stream-->>UI: Show tool result
+    
+    Note over MockSvc: Simulate delay (300ms)
+    
+    MockSvc->>Stream: yield {type: 'text', text: "Based on results..."}
+    Stream-->>UI: Display analysis
+    
+    alt Message mentions "memory"
+        MockSvc->>Stream: yield {type: 'tool_execution', EXECUTING_TOOL}
+        Stream-->>UI: Show second tool
+        MockSvc->>Stream: yield {type: 'tool_execution', EXECUTED_TOOL}
+        Stream-->>UI: Show second result
+        MockSvc->>Stream: yield {type: 'text', text: "Memory analysis..."}
+        Stream-->>UI: Display memory info
+    end
+    
+    MockSvc-->>UI: Stream complete

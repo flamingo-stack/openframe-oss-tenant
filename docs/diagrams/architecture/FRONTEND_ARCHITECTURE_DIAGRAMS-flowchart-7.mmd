@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph global["Global Stores"]
+        AuthStore["Auth Store<br/>- user<br/>- tokens<br/>- tenantId"]
+        RuntimeConfig["Runtime Config<br/>- env variables<br/>- feature flags"]
+    end
+    
+    subgraph feature["Feature Stores"]
+        DeviceStore["Device Store<br/>- devices<br/>- filters<br/>- pagination"]
+        LogsStore["Logs Store<br/>- logs<br/>- search<br/>- pageInfo"]
+        DialogsStore["Dialogs Store<br/>- dialogs<br/>- filters<br/>- pagination"]
+        DialogDetailsStore["Dialog Details Store<br/>- currentDialog<br/>- messages<br/>- typing"]
+        MingoStore["Mingo Store<br/>- conversations<br/>- background tasks"]
+    end
+    
+    subgraph persistence["Persistence"]
+        LocalStorage["localStorage<br/>- tokens<br/>- user<br/>- filters"]
+        SessionStorage["sessionStorage<br/>- cache<br/>- temp data"]
+        Cookies["HTTP Cookies<br/>- session<br/>- CSRF token"]
+    end
+    
+    AuthStore <-->|"tokens, user"| LocalStorage
+    AuthStore <-->|"session"| Cookies
+    RuntimeConfig <-->|"config"| LocalStorage
+    
+    DeviceStore -->|"cache"| SessionStorage
+    LogsStore -->|"filters"| LocalStorage
+    DialogsStore -->|"cache"| SessionStorage
+    
+    style AuthStore fill:#4CAF50
+    style feature fill:#2196F3
+    style persistence fill:#FF9800

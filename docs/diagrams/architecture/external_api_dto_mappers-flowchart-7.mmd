@@ -1,0 +1,16 @@
+flowchart TD
+    IntegratedTool["IntegratedTool<br/>(MongoDB)"]
+    
+    IntegratedTool --> Mapper["ToolMapper"]
+    
+    Mapper --> ToolResponse["ToolResponse<br/>(REST DTO)"]
+    
+    ToolResponse --> BasicFields["• id<br/>• name<br/>• description<br/>• icon<br/>• type<br/>• toolType<br/>• category<br/>• platformCategory<br/>• enabled"]
+    
+    ToolResponse --> NestedFields["• toolUrls[]<br/>• credentials"]
+    
+    NestedFields --> ToolUrls["ToolUrlResponse[]<br/>• url<br/>• port<br/>• type"]
+    
+    NestedFields --> Credentials["ToolCredentialsResponse<br/>• username<br/>• password<br/>• apiKey"]
+    
+    Credentials --> ApiKey["ToolApiKeyResponse<br/>• key<br/>• type<br/>• keyName"]

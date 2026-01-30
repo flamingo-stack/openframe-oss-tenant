@@ -1,0 +1,67 @@
+flowchart TD
+    subgraph Desktop["Desktop Application (Tauri)"]
+        subgraph Rust["Rust Backend Layer"]
+            TokenMgr["Token Manager<br/>(Secure Storage)"]
+            ConfigMgr["Configuration Manager<br/>(Settings)"]
+            EventBus["Event Bus<br/>(Rust ↔ JS)"]
+        end
+        
+        subgraph React["React Frontend Layer"]
+            subgraph Contexts["Context Providers"]
+                DebugCtx["Debug Mode Context"]
+            end
+            
+            subgraph Services["Service Layer"]
+                TokenSvc["Token Service"]
+                DialogSvc["Dialog GraphQL Service"]
+                ModelsSvc["Supported Models Service"]
+                MockSvc["Mock Chat Service"]
+            end
+            
+            subgraph UI["UI Components"]
+                ChatContainer["Chat Container"]
+                MessageList["Message List"]
+                InputArea["Input Area"]
+                ToolDisplay["Tool Execution Display"]
+            end
+        end
+    end
+    
+    subgraph Backend["OpenFrame Backend Services"]
+        Gateway["Gateway Service<br/>(API Router)"]
+        
+        subgraph APIs["API Services"]
+            AuthzAPI["Authorization Service<br/>(JWT Tokens)"]
+            ChatAPI["Chat API<br/>(GraphQL)"]
+            ExternalAPI["External API<br/>(REST)"]
+        end
+    end
+    
+    TokenMgr -->|"token-update events"| EventBus
+    ConfigMgr -->|"get_server_url()"| EventBus
+    EventBus -->|"Events & Commands"| TokenSvc
+    
+    TokenSvc -->|"Provides Auth"| DialogSvc
+    TokenSvc -->|"Provides Auth"| ModelsSvc
+    TokenSvc -->|"State Updates"| DebugCtx
+    
+    DialogSvc -->|"GraphQL Queries"| Gateway
+    ModelsSvc -->|"REST Requests"| Gateway
+    MockSvc -.->|"Development Mode"| UI
+    
+    Gateway -->|"Routes"| ChatAPI
+    Gateway -->|"Routes"| ExternalAPI
+    Gateway -->|"Routes"| AuthzAPI
+    
+    AuthzAPI -->|"JWT Tokens"| TokenMgr
+    ChatAPI -->|"Messages & Dialogs"| DialogSvc
+    ExternalAPI -->|"Model Metadata"| ModelsSvc
+    
+    Contexts -->|"Global State"| UI
+    Services -->|"Data & Logic"| UI
+    
+    style Desktop fill:#2d3748,stroke:#4a5568,color:#fff
+    style Rust fill:#c05621,stroke:#9c4221,color:#fff
+    style React fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style Backend fill:#48bb78,stroke:#2f855a,color:#fff
+    style APIs fill:#38a169,stroke:#276749,color:#fff

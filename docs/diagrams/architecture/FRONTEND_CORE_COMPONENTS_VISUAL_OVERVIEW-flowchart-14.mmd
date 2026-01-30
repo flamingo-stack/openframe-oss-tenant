@@ -1,0 +1,22 @@
+flowchart TD
+    Performance["Performance Optimization"]
+    
+    Performance --> Memoization["React.memo"]
+    Performance --> Callbacks["useCallback"]
+    Performance --> Effects["useEffect"]
+    Performance --> Lazy["Lazy Loading"]
+    
+    Memoization --> MemoComponents["Memoize expensive<br/>component renders"]
+    
+    Callbacks --> MemoCallbacks["Memoize callback<br/>functions"]
+    
+    Effects --> OptimizeEffects["Optimize effect<br/>dependencies"]
+    
+    Lazy --> CodeSplitting["Code splitting<br/>for large components"]
+    Lazy --> VirtualScrolling["Virtual scrolling<br/>for long lists"]
+    
+    style Performance fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Memoization fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Callbacks fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Effects fill:#E67E22,stroke:#A04000,color:#fff
+    style Lazy fill:#E74C3C,stroke:#922B21,color:#fff

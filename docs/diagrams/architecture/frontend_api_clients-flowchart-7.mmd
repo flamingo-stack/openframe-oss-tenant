@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph TacticalClient["TacticalApiClient"]
+        BaseURL["Base URL:<br/>/tools/tactical-rmm"]
+        
+        subgraph Agents["Agent Operations"]
+            GetAgents["getAgents()"]
+            GetAgent["getAgent(id)"]
+            RunScript["runScript(id, data)"]
+            BulkAction["runBulkAction(payload)"]
+        end
+        
+        subgraph Scripts["Script Management"]
+            GetScripts["getScripts()"]
+            GetScript["getScript(id)"]
+            CreateScript["createScript(data)"]
+            UpdateScript["updateScript(id, data)"]
+        end
+        
+        subgraph Monitoring["Monitoring & Logs"]
+            GetLogs["getAgentLogs(id)"]
+            GetChecks["getAgentChecks(id)"]
+            GetTasks["getAgentTasks(id)"]
+            GetEventLogs["getAgentEventLogs(id)"]
+        end
+        
+        subgraph System["System Information"]
+            GetServices["getAgentServices(id)"]
+            GetProcesses["getAgentProcesses(id)"]
+            GetSoftware["getAgentSoftware(id)"]
+            GetSystemInfo["getAgentSystemInfo(id)"]
+            GetDiskInfo["getAgentDiskInfo(id)"]
+            GetNetworkInfo["getAgentNetworkInfo(id)"]
+        end
+    end
+    
+    BaseURL --> Agents
+    BaseURL --> Scripts
+    BaseURL --> Monitoring
+    BaseURL --> System
+    
+    style BaseURL fill:#3498DB,stroke:#2874A6,color:#fff
+    style Agents fill:#E67E22,stroke:#A04000,color:#fff
+    style Scripts fill:#16A085,stroke:#117A65,color:#fff
+    style Monitoring fill:#8E44AD,stroke:#6C3483,color:#fff
+    style System fill:#2980B9,stroke:#1F618D,color:#fff

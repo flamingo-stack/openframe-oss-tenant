@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph Tenants["Multiple Tenants"]
+        Tenant1["Tenant A<br/>issuer: https://auth.tenant-a.com"]
+        Tenant2["Tenant B<br/>issuer: https://auth.tenant-b.com"]
+        Internal["OpenFrame<br/>issuer: https://auth.openframe.ai"]
+    end
+    
+    subgraph Gateway["API Gateway"]
+        IssuerResolver["Issuer Resolver"]
+        Cache["Authentication Manager Cache"]
+    end
+    
+    subgraph Validators["JWT Validators"]
+        Validator1["Tenant A Validator"]
+        Validator2["Tenant B Validator"]
+        Validator3["OpenFrame Validator"]
+    end
+    
+    Tenant1 -->|"JWT with iss=tenant-a"| IssuerResolver
+    Tenant2 -->|"JWT with iss=tenant-b"| IssuerResolver
+    Internal -->|"JWT with iss=openframe"| IssuerResolver
+    
+    IssuerResolver --> Cache
+    
+    Cache -->|"tenant-a"| Validator1
+    Cache -->|"tenant-b"| Validator2
+    Cache -->|"openframe"| Validator3
+    
+    Validator1 --> Downstream["Downstream Services"]
+    Validator2 --> Downstream
+    Validator3 --> Downstream

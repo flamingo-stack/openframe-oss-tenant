@@ -1,0 +1,61 @@
+flowchart TD
+    subgraph UI["UI Layer"]
+        ChatInterface["Chat Interface"]
+        DialogList["Dialog List"]
+        MessageInput["Message Input"]
+        TypingIndicator["Typing Indicator"]
+    end
+    
+    subgraph Hooks["React Hooks Layer"]
+        UseMingoDialog["useMingoDialog<br/>(Dialog Lifecycle)"]
+        UseMessages["useMessages<br/>(Message Queries)"]
+        UseDialogs["useDialogs<br/>(Dialog Queries)"]
+    end
+    
+    subgraph State["State Management - Zustand"]
+        ActiveStore["MingoDialogDetailsStore<br/>(Active Dialog State)"]
+        BackgroundStore["BackgroundMessagesStore<br/>(Background Dialogs)"]
+    end
+    
+    subgraph API["API Layer"]
+        RestAPI["REST API Client<br/>(Dialog/Message CRUD)"]
+        GraphQLAPI["GraphQL Client<br/>(Queries & Subscriptions)"]
+        WebSocketAPI["WebSocket<br/>(Real-time Updates)"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        ChatService["Chat API Service"]
+        DialogService["Dialog Management"]
+        MessageService["Message Processing"]
+        AIEngine["AI Engine (Mingo)"]
+    end
+    
+    ChatInterface --> UseMingoDialog
+    DialogList --> UseDialogs
+    MessageInput --> UseMingoDialog
+    TypingIndicator --> ActiveStore
+    
+    UseMingoDialog --> ActiveStore
+    UseMingoDialog --> BackgroundStore
+    UseMessages --> ActiveStore
+    UseDialogs --> BackgroundStore
+    
+    UseMingoDialog --> RestAPI
+    UseMessages --> GraphQLAPI
+    UseDialogs --> GraphQLAPI
+    
+    RestAPI --> ChatService
+    GraphQLAPI --> DialogService
+    GraphQLAPI --> MessageService
+    WebSocketAPI --> MessageService
+    
+    ChatService --> AIEngine
+    MessageService --> AIEngine
+    
+    ActiveStore -.->|"State Sync"| BackgroundStore
+    BackgroundStore -.->|"Dialog Switch"| ActiveStore
+    
+    style ActiveStore fill:#4CAF50
+    style BackgroundStore fill:#2196F3
+    style UseMingoDialog fill:#FF9800
+    style AIEngine fill:#9C27B0

@@ -1,0 +1,12 @@
+flowchart LR
+    UI["UI Components"] -->|"user actions"| Hooks["Custom Hooks"]
+    Hooks -->|"read/write"| Store["Zustand Stores"]
+    Hooks -->|"API calls"| APIClient["API Clients"]
+    
+    APIClient -->|"HTTP/GraphQL"| Backend["Backend Services"]
+    Backend -->|"responses"| APIClient
+    APIClient -->|"update state"| Store
+    Store -->|"reactive updates"| UI
+    
+    Store -->|"localStorage"| Browser["Browser Storage"]
+    Browser -->|"hydrate"| Store

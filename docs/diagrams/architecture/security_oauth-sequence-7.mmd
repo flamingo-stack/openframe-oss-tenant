@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway as Gateway<br/>(OAuthBffController)
+    participant BffService as OAuthBffService
+    participant CookieSvc as CookieService
+    participant AuthServer as Authorization Server
+    participant MongoDB
+    
+    Browser->>Gateway: GET /oauth/logout?tenantId=acme<br/>Cookie: refresh_token=<jwt>
+    
+    Gateway->>Gateway: Extract refresh_token from cookie
+    
+    alt tenantId provided
+        Gateway->>BffService: revokeRefreshToken(tenantId, token)
+    else tenantId not provided
+        Gateway->>BffService: revokeRefreshTokenByLookup(token)
+        BffService->>MongoDB: findByRefreshTokenValue(token)
+        MongoDB-->>BffService: OAuth2Authorization
+        BffService->>BffService: Extract tenantId from authorizationUri
+    end
+    
+    BffService->>AuthServer: POST /acme/oauth2/revoke<br/>token=<refresh_token><br/>token_type_hint=refresh_token<br/>Authorization: Basic <client_creds>
+    
+    AuthServer->>MongoDB: Delete OAuth2Authorization
+    AuthServer-->>BffService: 200 OK
+    
+    BffService-->>Gateway: Void
+    
+    Gateway->>CookieSvc: addClearAuthCookies()
+    CookieSvc-->>Gateway: Clear access_token cookie<br/>Clear refresh_token cookie<br/>Clear JSESSIONID cookies
+    
+    Gateway-->>Browser: 204 No Content<br/>Set-Cookie headers (cleared)
+    
+    Browser->>Browser: Remove all auth cookies<br/>Redirect to login page

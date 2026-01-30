@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph VersionTypes["Agent Version Types"]
+        Release["Release Version<br/>releaseVersion = true<br/>Version: LOCKED"]
+        Development["Development Version<br/>releaseVersion = false<br/>Version: UPDATABLE"]
+    end
+    
+    subgraph UpdateBehavior["Update Behavior"]
+        ReleaseUpdate["Release Agent Update<br/>✓ Preserve existing version<br/>✓ Update other properties<br/>✗ No version change"]
+        DevUpdate["Development Agent Update<br/>✓ Update version<br/>✓ Update all properties<br/>✓ Publish update event"]
+    end
+    
+    Release --> ReleaseUpdate
+    Development --> DevUpdate
+    
+    ReleaseUpdate --> NoEvent["No Kafka Event"]
+    DevUpdate --> KafkaEvent["Kafka Update Event"]
+    
+    style Release fill:#E74C3C,stroke:#C0392B,color:#fff
+    style Development fill:#3498DB,stroke:#2874A6,color:#fff
+    style KafkaEvent fill:#F39C12,stroke:#C87F0A,color:#fff

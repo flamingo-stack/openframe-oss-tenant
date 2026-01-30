@@ -1,0 +1,55 @@
+flowchart LR
+    subgraph External["External Systems"]
+        FleetMDM["Fleet MDM<br/>PostgreSQL"]
+        TacticalRMM["Tactical RMM<br/>PostgreSQL"]
+        MeshCentral["MeshCentral<br/>MongoDB"]
+    end
+    
+    subgraph CDC["Change Data Capture"]
+        DebeziumFleet["Debezium<br/>Fleet Connector"]
+        DebeziumTactical["Debezium<br/>Tactical Connector"]
+        DebeziumMesh["Debezium<br/>Mesh Connector"]
+    end
+    
+    subgraph Kafka["Kafka Topics"]
+        RawTopics["Raw Event Topics<br/>(fleet-mdm-events,<br/>tactical-rmm-events,<br/>meshcentral-events)"]
+        ActivityTopics["Activity Topics<br/>(fleet-mdm-activities,<br/>fleet-mdm-host-activities)"]
+        EnrichedTopics["Enriched Topics<br/>(fleet-mdm-events-enriched)"]
+    end
+    
+    subgraph StreamApp["Stream Processing Application"]
+        Listener["JsonKafkaListener"]
+        Processor["GenericJsonMessageProcessor"]
+        Handler["DebeziumMessageHandler"]
+        Enrichment["ActivityEnrichmentService<br/>(Kafka Streams)"]
+    end
+    
+    subgraph Downstream["Downstream Consumers"]
+        APIService["API Service"]
+        ClientService["Client Service"]
+        Management["Management Service"]
+    end
+    
+    FleetMDM -->|"DB Changes"| DebeziumFleet
+    TacticalRMM -->|"DB Changes"| DebeziumTactical
+    MeshCentral -->|"DB Changes"| DebeziumMesh
+    
+    DebeziumFleet --> RawTopics
+    DebeziumTactical --> RawTopics
+    DebeziumMesh --> RawTopics
+    
+    DebeziumFleet --> ActivityTopics
+    
+    RawTopics --> Listener
+    Listener --> Processor
+    Processor --> Handler
+    Handler --> EnrichedTopics
+    
+    ActivityTopics --> Enrichment
+    Enrichment --> EnrichedTopics
+    
+    EnrichedTopics --> APIService
+    EnrichedTopics --> ClientService
+    EnrichedTopics --> Management
+    
+    style StreamApp fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff

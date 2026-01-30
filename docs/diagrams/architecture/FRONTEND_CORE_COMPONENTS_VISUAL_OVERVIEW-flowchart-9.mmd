@@ -1,0 +1,28 @@
+flowchart LR
+    ODSTokens["ODS Design Tokens"]
+    
+    ODSTokens --> Background["Background Tokens"]
+    ODSTokens --> Text["Text Tokens"]
+    ODSTokens --> Border["Border Tokens"]
+    ODSTokens --> Accent["Accent Tokens"]
+    
+    Background --> BgPrimary["--ods-bg-primary"]
+    Background --> BgSecondary["--ods-bg-secondary"]
+    Background --> BgHover["--ods-bg-hover"]
+    Background --> BgCard["--ods-card"]
+    
+    Text --> TextPrimary["--ods-text-primary"]
+    Text --> TextSecondary["--ods-text-secondary"]
+    Text --> TextMuted["--ods-text-muted"]
+    
+    Border --> BorderDefault["--ods-border"]
+    Border --> BorderHover["--ods-border-hover"]
+    
+    Accent --> AccentDefault["--ods-accent"]
+    Accent --> AccentHover["--ods-accent-hover"]
+    
+    style ODSTokens fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Background fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Text fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Border fill:#E67E22,stroke:#A04000,color:#fff
+    style Accent fill:#E74C3C,stroke:#922B21,color:#fff

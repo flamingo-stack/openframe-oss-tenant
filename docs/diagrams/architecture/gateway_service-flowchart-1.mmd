@@ -1,0 +1,34 @@
+flowchart TD
+    Client["Client Applications"] -->|"HTTP/WS"| Gateway["Gateway Service"]
+    Agent["Agent Clients"] -->|"HTTP/WS"| Gateway
+    External["External API Clients"] -->|"HTTP + API Key"| Gateway
+    
+    Gateway -->|"JWT Auth"| ApiService["API Service"]
+    Gateway -->|"JWT Auth"| ClientService["Client Service"]
+    Gateway -->|"Public"| AuthzService["Authorization Service"]
+    Gateway -->|"API Key Auth"| ExternalApi["External API Service"]
+    Gateway -->|"WS Proxy"| ToolServices["Integrated Tool Services"]
+    Gateway -->|"WS Proxy"| NatsService["NATS Message Bus"]
+    
+    subgraph gateway_layer["Gateway Service Layer"]
+        direction TB
+        SecurityFilters["Security Filters"]
+        RoutingEngine["Routing Engine"]
+        RateLimiter["Rate Limiter"]
+        WebSocketProxy["WebSocket Proxy"]
+        
+        SecurityFilters --> RoutingEngine
+        RoutingEngine --> RateLimiter
+        RoutingEngine --> WebSocketProxy
+    end
+    
+    Gateway -.->|"contains"| gateway_layer
+    
+    subgraph security_components["Security Components"]
+        JwtAuth["JWT Authentication"]
+        ApiKeyAuth["API Key Authentication"]
+        CorsConfig["CORS Configuration"]
+        TenantIssuer["Multi-Tenant Issuer"]
+    end
+    
+    SecurityFilters -.->|"uses"| security_components

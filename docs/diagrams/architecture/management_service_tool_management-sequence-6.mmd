@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant Client
+    participant Controller as IntegratedToolController
+    participant Service as IntegratedToolService
+    participant Repository as IntegratedToolRepository
+    participant MongoDB
+    
+    Note over Client,MongoDB: Get All Tools
+    Client->>Controller: GET /v1/tools
+    activate Controller
+    Controller->>Service: getAllTools()
+    activate Service
+    Service->>Repository: findAll()
+    activate Repository
+    Repository->>MongoDB: db.integrated_tools.find({})
+    MongoDB-->>Repository: List<IntegratedTool>
+    Repository-->>Service: List<IntegratedTool>
+    deactivate Repository
+    Service-->>Controller: List<IntegratedTool>
+    deactivate Service
+    Controller-->>Client: {"status": "success", "tools": [...]}
+    deactivate Controller
+    
+    Note over Client,MongoDB: Get Specific Tool
+    Client->>Controller: GET /v1/tools/{id}
+    activate Controller
+    Controller->>Service: getTool(id)
+    activate Service
+    Service->>Repository: findByType(id)
+    activate Repository
+    Repository->>MongoDB: db.integrated_tools.findOne({type: id})
+    alt Tool Found
+        MongoDB-->>Repository: IntegratedTool
+        Repository-->>Service: Optional<IntegratedTool>
+        Service-->>Controller: Optional<IntegratedTool>
+        Controller-->>Client: {"status": "success", "tool": {...}}
+    else Tool Not Found
+        MongoDB-->>Repository: null
+        Repository-->>Service: Optional.empty()
+        Service-->>Controller: Optional.empty()
+        Controller-->>Client: {"status": "error", "message": "Tool not found"}
+    end
+    deactivate Repository
+    deactivate Service
+    deactivate Controller

@@ -1,0 +1,27 @@
+flowchart TD
+    User["User Document"]
+    
+    subgraph Identity["Identity"]
+        Email["email (indexed, normalized)"]
+        FirstName["firstName"]
+        LastName["lastName"]
+    end
+    
+    subgraph Auth["Authentication"]
+        EmailVerified["emailVerified"]
+        Status["status (indexed)"]
+    end
+    
+    subgraph Authorization["Authorization"]
+        Roles["UserRole[]"]
+    end
+    
+    subgraph Audit["Audit Trail"]
+        CreatedAt["createdAt"]
+        UpdatedAt["updatedAt"]
+    end
+    
+    User --> Identity
+    User --> Auth
+    User --> Authorization
+    User --> Audit

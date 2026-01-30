@@ -1,0 +1,10 @@
+flowchart LR
+    Machine["Machine<br/>(MongoDB)"]
+    Tags["List&lt;Tag&gt;<br/>(MongoDB)"]
+    
+    Machine --> Mapper["DeviceMapper"]
+    Tags --> Mapper
+    
+    Mapper --> DeviceResponse["DeviceResponse<br/>(REST DTO)"]
+    
+    DeviceResponse --> Fields["• id<br/>• machineId<br/>• hostname<br/>• displayName<br/>• ip, macAddress<br/>• osUuid<br/>• agentVersion<br/>• status<br/>• lastSeen<br/>• organizationId<br/>• hardware info<br/>• OS info<br/>• timestamps<br/>• tags[]"]

@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph CurrentModule["api_service_graphql_datafetchers"]
+        DataFetchers["GraphQL DataFetchers"]
+    end
+
+    subgraph Dependencies["Module Dependencies"]
+        Config["api_service_configuration"]
+        DataMongo["data_layer_mongo"]
+        DataCore["data_layer_core"]
+        SecurityCore["security_core"]
+    end
+
+    subgraph RelatedModules["Related Modules"]
+        RestControllers["api_service_rest_controllers"]
+        Gateway["gateway_service"]
+        Frontend["frontend_main"]
+    end
+
+    DataFetchers --> Config
+    DataFetchers --> DataMongo
+    DataFetchers --> DataCore
+    DataFetchers --> SecurityCore
+
+    Gateway --> DataFetchers
+    Frontend --> DataFetchers
+    DataFetchers -.alternative API.- RestControllers

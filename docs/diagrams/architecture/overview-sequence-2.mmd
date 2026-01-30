@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Client as Client Application
+    participant Gateway as API Gateway
+    participant Auth as Authorization Service
+    participant API as API Service
+    participant Data as Data Layer
+    participant Stream as Stream Processing
+    participant Kafka as Kafka
+
+    Client->>Gateway: HTTP Request + JWT
+    Gateway->>Gateway: Validate JWT
+    Gateway->>API: Route Request
+    API->>Data: Query/Mutation
+    Data-->>API: Data Response
+    API-->>Gateway: API Response
+    Gateway-->>Client: HTTP Response
+
+    Note over Data,Kafka: Async CDC Flow
+    Data->>Kafka: Change Event
+    Kafka->>Stream: CDC Event
+    Stream->>Stream: Process & Enrich
+    Stream->>Data: Update Analytics

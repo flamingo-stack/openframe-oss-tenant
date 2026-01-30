@@ -1,0 +1,58 @@
+flowchart TD
+    subgraph services["OpenFrame Services"]
+        StreamService["Stream Processing Service"]
+        ManagementService["Management Service"]
+        ClientService["Client Service"]
+    end
+
+    subgraph kafka_layer["Data Layer - Kafka"]
+        direction TB
+        
+        subgraph config["Configuration Layer"]
+            OssKafkaConfig["OssKafkaConfig"]
+            AutoConfig["OssTenantKafkaAutoConfiguration"]
+            TopicProps["KafkaTopicProperties"]
+            KafkaProps["OssTenantKafkaProperties"]
+        end
+        
+        subgraph producer["Producer Layer"]
+            MessageProducer["MessageProducer Interface"]
+            OssProducer["OssTenantKafkaProducer"]
+            GenericProducer["GenericKafkaProducer"]
+        end
+        
+        subgraph models["Model Layer"]
+            DebeziumMsg["DebeziumMessage"]
+            KafkaMsg["KafkaMessage Interface"]
+        end
+        
+        subgraph recovery["Recovery Layer"]
+            RecoveryHandler["KafkaRecoveryHandler"]
+            RecoveryImpl["KafkaRecoveryHandlerImpl"]
+        end
+        
+        AutoConfig -->|"creates"| MessageProducer
+        AutoConfig -->|"configures"| KafkaTemplate["KafkaTemplate"]
+        AutoConfig -->|"configures"| ListenerFactory["KafkaListenerContainerFactory"]
+        AutoConfig -->|"configures"| KafkaAdmin["KafkaAdmin"]
+        
+        OssProducer -->|"implements"| MessageProducer
+        OssProducer -->|"extends"| GenericProducer
+        GenericProducer -->|"uses"| KafkaTemplate
+        
+        RecoveryImpl -->|"implements"| RecoveryHandler
+    end
+
+    subgraph kafka_cluster["Apache Kafka Cluster"]
+        Topics["Kafka Topics"]
+        Brokers["Kafka Brokers"]
+    end
+
+    services -->|"produces/consumes"| kafka_layer
+    kafka_layer -->|"connects to"| kafka_cluster
+    
+    style kafka_layer fill:#e1f5ff
+    style config fill:#fff4e6
+    style producer fill:#e8f5e9
+    style models fill:#f3e5f5
+    style recovery fill:#ffebee

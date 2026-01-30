@@ -1,0 +1,32 @@
+flowchart TD
+    PageLoad["Page Load"]
+    CheckAuth["Check Authentication"]
+    CallMe["Call /api/me endpoint"]
+    
+    CheckStatus{"Response<br/>Status"}
+    
+    Authenticated["User Authenticated"]
+    UpdateStore["Update Auth Store"]
+    StartTimer["Start Periodic Check"]
+    
+    Unauthorized["401 Unauthorized"]
+    ClearTokens["Clear Stored Tokens"]
+    Redirect["Redirect to Login"]
+    
+    PageLoad --> CheckAuth
+    CheckAuth --> CallMe
+    CallMe --> CheckStatus
+    
+    CheckStatus -->|"200 OK"| Authenticated
+    CheckStatus -->|"401"| Unauthorized
+    
+    Authenticated --> UpdateStore
+    UpdateStore --> StartTimer
+    
+    Unauthorized --> ClearTokens
+    ClearTokens --> Redirect
+    
+    StartTimer -.->|"Every 5 min"| CallMe
+    
+    style Authenticated fill:#4CAF50
+    style Unauthorized fill:#F44336

@@ -1,0 +1,11 @@
+flowchart LR
+    UI["Chat UI"] --> Hook["useMingoDialog"]
+    Hook --> Active["Active Store"]
+    Hook --> Background["Background Store"]
+    Active --> API["API Layer"]
+    Background --> API
+    API --> Backend["Chat Service"]
+    
+    style Active fill:#4CAF50
+    style Background fill:#2196F3
+    style Hook fill:#FF9800

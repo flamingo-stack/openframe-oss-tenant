@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph Tenant1["Tenant: acme-corp"]
+        T1_TOPICS["Topics:<br/>acme-corp.fleet-mdm.activities<br/>acme-corp.fleet-mdm.host_activities<br/>acme-corp.fleet-mdm.events"]
+        T1_APP["Streams App:<br/>openframe-stream-acme-corp"]
+        T1_STATE["State Store:<br/>/tmp/kafka-streams/openframe-stream-acme-corp/"]
+    end
+    
+    subgraph Tenant2["Tenant: globex-inc"]
+        T2_TOPICS["Topics:<br/>globex-inc.fleet-mdm.activities<br/>globex-inc.fleet-mdm.host_activities<br/>globex-inc.fleet-mdm.events"]
+        T2_APP["Streams App:<br/>openframe-stream-globex-inc"]
+        T2_STATE["State Store:<br/>/tmp/kafka-streams/openframe-stream-globex-inc/"]
+    end
+    
+    T1_TOPICS --> T1_APP
+    T1_APP --> T1_STATE
+    
+    T2_TOPICS --> T2_APP
+    T2_APP --> T2_STATE
+    
+    style Tenant1 fill:#1a1a2e,stroke:#16213e,stroke-width:2px
+    style Tenant2 fill:#1a1a2e,stroke:#16213e,stroke-width:2px

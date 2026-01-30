@@ -1,0 +1,18 @@
+flowchart TD
+    SaveComplete["Tool Save Complete"] -->|"Iterate Hooks"| HookLoop["For Each Hook"]
+    
+    HookLoop -->|"Try Execute"| Hook["hook.onToolSaved()"]
+    Hook -->|"Success"| LogSuccess["Log Success"]
+    Hook -->|"Exception"| CatchError["Catch Exception"]
+    
+    CatchError -->|"Log Warning"| LogError["Log Hook Failure"]
+    LogError -->|"Continue"| NextHook["Next Hook"]
+    LogSuccess -->|"Continue"| NextHook
+    
+    NextHook -->|"More Hooks"| HookLoop
+    NextHook -->|"All Complete"| ReturnResponse["Return Response to Client"]
+    
+    style SaveComplete fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Hook fill:#9B59B6,stroke:#6C3483,color:#fff
+    style CatchError fill:#E74C3C,stroke:#C0392B,color:#fff
+    style ReturnResponse fill:#4A90E2,stroke:#2E5C8A,color:#fff

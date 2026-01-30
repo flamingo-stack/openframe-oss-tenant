@@ -1,0 +1,30 @@
+stateDiagram-v2
+    [*] --> Initializing
+    
+    Initializing --> LoadingHistory: Fetch historical messages
+    LoadingHistory --> ProcessingHistory: Messages received
+    ProcessingHistory --> Connected: Connect to NATS
+    
+    Connected --> Idle: Ready for input
+    
+    Idle --> Sending: User sends message
+    Sending --> Streaming: AI response starts
+    
+    Streaming --> DisplayingText: TEXT chunks
+    Streaming --> ExecutingTool: EXECUTING_TOOL chunk
+    Streaming --> RequestingApproval: APPROVAL_REQUEST chunk
+    
+    ExecutingTool --> Streaming: Continue streaming
+    
+    RequestingApproval --> WaitingApproval: Show approval UI
+    WaitingApproval --> Streaming: User approves/rejects
+    
+    DisplayingText --> Streaming: More chunks
+    Streaming --> MessageComplete: MESSAGE_END chunk
+    
+    MessageComplete --> Idle: Ready for next message
+    
+    Connected --> Disconnected: Connection lost
+    Disconnected --> Reconnecting: Attempt reconnect
+    Reconnecting --> Connected: Reconnected
+    Reconnecting --> [*]: Failed to reconnect

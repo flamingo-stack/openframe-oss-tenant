@@ -1,0 +1,34 @@
+flowchart TD
+    subgraph SpringData["Spring Data MongoDB"]
+        MongoRepository["MongoRepository<T, ID>"]
+        ReactiveMongoRepository["ReactiveMongoRepository<T, ID>"]
+    end
+    
+    subgraph BaseInterfaces["Base Repository Interfaces"]
+        BaseUserRepo["BaseUserRepository<T, B, ID>"]
+        BaseTenantRepo["BaseTenantRepository<T, B, ID>"]
+    end
+    
+    subgraph BlockingRepos["Blocking Repositories"]
+        UserRepo["UserRepository"]
+        TenantRepo["TenantRepository"]
+        DeviceRepo["DeviceRepository"]
+    end
+    
+    subgraph ReactiveRepos["Reactive Repositories"]
+        ReactiveUserRepo["ReactiveUserRepository"]
+        ReactiveTenantRepo["ReactiveTenantRepository"]
+    end
+    
+    MongoRepository -->|"Extended by"| UserRepo
+    MongoRepository -->|"Extended by"| TenantRepo
+    MongoRepository -->|"Extended by"| DeviceRepo
+    
+    ReactiveMongoRepository -->|"Extended by"| ReactiveUserRepo
+    ReactiveMongoRepository -->|"Extended by"| ReactiveTenantRepo
+    
+    BaseUserRepo -->|"Implemented by"| UserRepo
+    BaseUserRepo -->|"Implemented by"| ReactiveUserRepo
+    
+    BaseTenantRepo -->|"Implemented by"| TenantRepo
+    BaseTenantRepo -->|"Implemented by"| ReactiveTenantRepo

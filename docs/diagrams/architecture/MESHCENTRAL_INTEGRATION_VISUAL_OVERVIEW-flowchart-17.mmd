@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph CoreTypes["Core Types"]
+        DisplayInfo["DisplayInfo"]
+        DesktopInputHandlers["DesktopInputHandlers"]
+        BinaryHeader["BinaryHeader"]
+        BinaryAccumulator["BinaryAccumulator"]
+        FileEntry["FileEntry"]
+        FileManagerOptions["FileManagerOptions"]
+    end
+    
+    subgraph MainClasses["Main Classes"]
+        MeshDesktop["MeshDesktop"]
+        FileManagerClient["File Manager Client"]
+    end
+    
+    subgraph BrowserAPIs["Browser APIs"]
+        Canvas["Canvas API"]
+        WebSocket["WebSocket API"]
+        ImageBitmap["ImageBitmap API"]
+        Blob["Blob API"]
+        RAF["requestAnimationFrame"]
+    end
+    
+    subgraph ExternalDeps["External Dependencies"]
+        MeshCentralServer["MeshCentral Server"]
+        RemoteAgents["Remote Agents"]
+    end
+    
+    MeshDesktop -.implements.-> DesktopInputHandlers
+    MeshDesktop -.uses.-> DisplayInfo
+    MeshDesktop -.uses.-> Canvas
+    MeshDesktop -.uses.-> WebSocket
+    MeshDesktop -.uses.-> ImageBitmap
+    MeshDesktop -.uses.-> RAF
+    
+    FileManagerClient -.uses.-> BinaryHeader
+    FileManagerClient -.uses.-> BinaryAccumulator
+    FileManagerClient -.uses.-> FileEntry
+    FileManagerClient -.uses.-> FileManagerOptions
+    FileManagerClient -.uses.-> WebSocket
+    FileManagerClient -.uses.-> Blob
+    
+    MeshDesktop -->|"Binary Protocol"| MeshCentralServer
+    FileManagerClient -->|"Binary Protocol"| MeshCentralServer
+    MeshCentralServer -->|"Agent Protocol"| RemoteAgents

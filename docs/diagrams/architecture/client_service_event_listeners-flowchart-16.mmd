@@ -1,0 +1,52 @@
+flowchart TD
+    subgraph Sources["Event Sources"]
+        A1["Agent Connect/Disconnect"]
+        A2["Agent Heartbeat"]
+        A3["Agent Software Install"]
+    end
+    
+    subgraph Messaging["NATS Messaging"]
+        N1["Spring Cloud Stream<br/>Connection Events"]
+        N2["NATS Core<br/>Heartbeat Subject"]
+        N3["JetStream<br/>Agent Installation Stream"]
+    end
+    
+    subgraph Listeners["Event Listeners"]
+        L1["ClientConnectionListener"]
+        L2["MachineHeartbeatListener"]
+        L3["InstalledAgentListener"]
+    end
+    
+    subgraph Services["Business Logic"]
+        S1["MachineStatusService"]
+        S2["InstalledAgentService"]
+        U1["NatsTopicMachineIdExtractor"]
+    end
+    
+    subgraph Persistence["Data Persistence"]
+        R1["MachineRepository"]
+        R2["InstalledAgentRepository"]
+        DB["MongoDB"]
+    end
+    
+    A1 -->|"Publish"| N1
+    A2 -->|"Publish"| N2
+    A3 -->|"Publish"| N3
+    
+    N1 -->|"Consume"| L1
+    N2 -->|"Subscribe"| L2
+    N3 -->|"Subscribe"| L3
+    
+    L1 -->|"Update Status"| S1
+    L2 -->|"Update Status"| S1
+    L3 -->|"Track Agent"| S2
+    
+    L2 -.->|"Extract ID"| U1
+    L3 -.->|"Extract ID"| U1
+    
+    S1 -->|"Update Machine"| R1
+    S2 -->|"Update Agent"| R2
+    S2 -.->|"Validate"| R1
+    
+    R1 --> DB
+    R2 --> DB

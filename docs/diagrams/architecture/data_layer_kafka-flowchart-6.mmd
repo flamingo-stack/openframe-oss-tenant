@@ -1,0 +1,7 @@
+flowchart LR
+    MongoDB["MongoDB Database"]
+    Debezium["Debezium MongoDB Connector"]
+    KafkaLayer["Data Layer Kafka"]
+    
+    MongoDB -->|"change streams"| Debezium
+    Debezium -->|"publishes CDC events"| KafkaLayer

@@ -1,0 +1,23 @@
+flowchart TD
+    Monitor["Health Check Runs"]
+    Detect["Detect Failed Task"]
+    LogError["Log Error Trace"]
+    Restart["Restart Task"]
+    Wait["Wait for Next Check"]
+    Verify["Verify Task State"]
+    Success{Task<br/>Running?}
+    
+    Monitor --> Detect
+    Detect --> LogError
+    LogError --> Restart
+    Restart --> Wait
+    Wait --> Monitor
+    Monitor --> Verify
+    Verify --> Success
+    Success -->|"Yes"| Wait
+    Success -->|"No"| Detect
+    
+    style Monitor fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style Detect fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style Restart fill:#ffe0b2,stroke:#e65100,stroke-width:2px
+    style Success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px

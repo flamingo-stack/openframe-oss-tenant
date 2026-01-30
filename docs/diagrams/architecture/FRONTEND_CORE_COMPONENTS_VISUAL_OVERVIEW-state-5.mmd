@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> Visible
+    
+    Visible --> Hidden: Scroll Down
+    Hidden --> Visible: Scroll Up
+    
+    Visible --> DropdownOpen: Click Dropdown
+    DropdownOpen --> Visible: Click Outside
+    DropdownOpen --> Visible: Press Escape
+    DropdownOpen --> Visible: Select Item
+    
+    Visible --> MobileMenuOpen: Click Mobile Toggle
+    MobileMenuOpen --> Visible: Click Close
+    MobileMenuOpen --> Visible: Select Item
+    
+    note right of Visible
+        Auto-hide enabled:
+        - Hide on scroll down
+        - Show on scroll up
+    end note
+    
+    note right of DropdownOpen
+        Dropdown behavior:
+        - Click outside closes
+        - Escape key closes
+        - Item selection closes
+    end note

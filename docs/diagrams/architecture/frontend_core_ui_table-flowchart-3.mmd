@@ -1,0 +1,33 @@
+flowchart TD
+    TableProps["TableProps<T>"] -->|"contains"| TableColumn["TableColumn<T>"]
+    TableProps -->|"contains"| CursorPagination["CursorPagination"]
+    TableProps -->|"contains"| PagePagination["PagePagination"]
+    TableProps -->|"contains"| RowAction["RowAction<T>"]
+    TableProps -->|"contains"| BulkAction["BulkAction<T>"]
+    TableProps -->|"contains"| TableFilters["TableFilters"]
+    
+    TableColumn -->|"contains"| FilterOption["FilterOption"]
+    TableColumn -->|"contains"| TailwindBreakpoint["TailwindBreakpoint"]
+    
+    TableFilters -->|"maps to"| FilterSection["FilterSection"]
+    
+    subgraph "Core Types"
+        TableProps
+        TableColumn
+    end
+    
+    subgraph "Action Types"
+        RowAction
+        BulkAction
+    end
+    
+    subgraph "Pagination Types"
+        CursorPagination
+        PagePagination
+    end
+    
+    subgraph "Filter Types"
+        TableFilters
+        FilterOption
+        FilterSection
+    end

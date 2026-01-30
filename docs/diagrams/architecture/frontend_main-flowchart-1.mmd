@@ -1,0 +1,66 @@
+flowchart TD
+    User["User Browser"] -->|"HTTPS"| NextJS["Next.js App Router"]
+    
+    NextJS --> AuthFlow["Authentication Flow"]
+    NextJS --> DeviceUI["Device Management UI"]
+    NextJS --> LogsUI["Logs & Events UI"]
+    NextJS --> TicketsUI["Support Tickets UI"]
+    NextJS --> MingoUI["Mingo AI Assistant UI"]
+    
+    AuthFlow --> AuthStore["Auth Store (Zustand)"]
+    AuthFlow --> AuthAPI["Auth API Client"]
+    
+    DeviceUI --> DeviceStore["Device Store"]
+    LogsUI --> LogsStore["Logs Store"]
+    TicketsUI --> DialogStore["Dialog Stores"]
+    MingoUI --> MingoStore["Mingo Stores"]
+    
+    AuthAPI --> APIClient["Unified API Client"]
+    DeviceStore --> APIClient
+    LogsStore --> APIClient
+    DialogStore --> APIClient
+    MingoStore --> APIClient
+    
+    APIClient -->|"GraphQL/REST"| Gateway["API Gateway"]
+    AuthAPI -->|"OAuth 2.0"| AuthServer["Authorization Server"]
+    
+    APIClient --> FleetClient["Fleet API Client"]
+    APIClient --> TacticalClient["Tactical API Client"]
+    
+    FleetClient -->|"REST"| FleetMDM["Fleet MDM"]
+    TacticalClient -->|"REST"| TacticalRMM["Tactical RMM"]
+    
+    DeviceUI --> MeshCentral["MeshCentral Integration"]
+    MeshCentral -->|"WebSocket"| MeshServer["MeshCentral Server"]
+    
+    subgraph frontend_layer["Frontend Layer"]
+        NextJS
+        AuthFlow
+        DeviceUI
+        LogsUI
+        TicketsUI
+        MingoUI
+    end
+    
+    subgraph state_layer["State Management Layer"]
+        AuthStore
+        DeviceStore
+        LogsStore
+        DialogStore
+        MingoStore
+    end
+    
+    subgraph api_layer["API Client Layer"]
+        APIClient
+        AuthAPI
+        FleetClient
+        TacticalClient
+    end
+    
+    subgraph backend_layer["Backend Services"]
+        Gateway
+        AuthServer
+        FleetMDM
+        TacticalRMM
+        MeshServer
+    end

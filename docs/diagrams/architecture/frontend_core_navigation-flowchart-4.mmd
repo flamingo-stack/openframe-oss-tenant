@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph ComponentState["Component State"]
+        Show["show: boolean<br/>(header visibility)"]
+        LastScroll["lastScrollY: number<br/>(scroll position)"]
+        OpenDrops["openDropdowns: Record<br/>(dropdown states)"]
+    end
+    
+    subgraph RefManagement["Ref Management"]
+        DropdownRefs["dropdownRefs<br/>(DOM references)"]
+        TriggerRefs["triggerRefs<br/>(button references)"]
+    end
+    
+    subgraph Effects["useEffect Hooks"]
+        ScrollEffect["Scroll Listener<br/>(auto-hide)"]
+        ClickEffect["Click Outside Listener<br/>(close dropdowns)"]
+        CleanupEffect["Cleanup Effect<br/>(unmount)"]
+    end
+    
+    ScrollEffect -->|"updates"| Show
+    ScrollEffect -->|"tracks"| LastScroll
+    
+    ClickEffect -->|"monitors"| DropdownRefs
+    ClickEffect -->|"monitors"| TriggerRefs
+    ClickEffect -->|"updates"| OpenDrops
+    
+    CleanupEffect -->|"resets"| OpenDrops
+    CleanupEffect -->|"clears"| DropdownRefs
+    
+    style ComponentState fill:#9B59B6,stroke:#6C3483,color:#fff
+    style RefManagement fill:#E74C3C,stroke:#A93226,color:#fff
+    style Effects fill:#1ABC9C,stroke:#117A65,color:#fff

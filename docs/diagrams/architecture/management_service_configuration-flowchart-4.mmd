@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph ApplicationLayer["Application Layer"]
+        ManagementApp["ManagementApplication<br/>Entry Point"]
+    end
+    
+    subgraph ConfigurationLayer["Configuration Layer"]
+        ManagementConfig["ManagementConfiguration<br/>Core Config"]
+        AgentConfigProps["AgentConfigurationProperties<br/>External Config"]
+    end
+    
+    subgraph IntegrationLayer["Integration Layer"]
+        MongoConfig["MongoConfig<br/>Data Layer"]
+        SecurityConfig["JwtSecurityConfig<br/>Security Layer"]
+        KafkaConfig["KafkaConfig<br/>Messaging Layer"]
+    end
+    
+    subgraph ServiceLayer["Service Layer"]
+        DebeziumService["DebeziumService<br/>CDC Management"]
+        AgentService["IntegratedToolAgentService<br/>Agent Management"]
+        ToolService["IntegratedToolService<br/>Tool Management"]
+    end
+    
+    ManagementApp -->|"loads"| ManagementConfig
+    ManagementApp -->|"loads"| AgentConfigProps
+    
+    ManagementConfig -->|"enables"| MongoConfig
+    ManagementConfig -->|"enables"| SecurityConfig
+    ManagementConfig -->|"enables"| KafkaConfig
+    
+    MongoConfig -->|"provides repositories"| ServiceLayer
+    SecurityConfig -->|"provides security"| ServiceLayer
+    KafkaConfig -->|"provides messaging"| ServiceLayer
+    
+    style ConfigurationLayer fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style IntegrationLayer fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style ServiceLayer fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff

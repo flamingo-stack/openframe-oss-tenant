@@ -1,0 +1,20 @@
+flowchart TD
+    Timer["Spring @Scheduled<br/>(Every 5 min)"]
+    AcquireLock["Acquire ShedLock<br/>(debeziumHealthCheck)"]
+    LockAcquired{Lock<br/>Acquired?}
+    ExecuteCheck["checkAndRestartFailedTasks()"]
+    CallService["DebeziumService.checkAndRestartFailedTasks()"]
+    ReleaseLock["Release Lock"]
+    Skip["Skip Execution<br/>(Another Instance Running)"]
+    
+    Timer --> AcquireLock
+    AcquireLock --> LockAcquired
+    LockAcquired -->|"Yes"| ExecuteCheck
+    LockAcquired -->|"No"| Skip
+    ExecuteCheck --> CallService
+    CallService --> ReleaseLock
+    
+    style Timer fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style LockAcquired fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    style ExecuteCheck fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style Skip fill:#ffcdd2,stroke:#c62828,stroke-width:2px

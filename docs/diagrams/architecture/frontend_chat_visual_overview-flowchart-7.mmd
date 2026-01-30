@@ -1,0 +1,40 @@
+flowchart TD
+    subgraph AppRoot["Application Root"]
+        subgraph Providers["Context Providers"]
+            DebugProvider["DebugModeProvider"]
+        end
+        
+        subgraph AppComponents["Application Components"]
+            ChatPage["Chat Page"]
+            Settings["Settings"]
+            DevTools["Developer Tools"]
+        end
+    end
+    
+    subgraph TauriBackend["Tauri Backend"]
+        DebugConfig["Debug Configuration"]
+        DebugCommand["get_debug_mode Command"]
+    end
+    
+    subgraph ContextState["Context State"]
+        DebugState["debugMode: boolean"]
+        SetDebug["setDebugMode: function"]
+    end
+    
+    DebugProvider -->|"Provides"| ContextState
+    ContextState -->|"Consumed by"| ChatPage
+    ContextState -->|"Consumed by"| Settings
+    ContextState -->|"Consumed by"| DevTools
+    
+    DebugProvider -->|"invoke()"| DebugCommand
+    DebugCommand -->|"Returns state"| DebugConfig
+    DebugConfig -->|"Initial value"| DebugState
+    
+    Settings -->|"Toggle"| SetDebug
+    SetDebug -->|"Updates"| DebugState
+    DebugState -->|"Triggers re-render"| ChatPage
+    DebugState -->|"Triggers re-render"| DevTools
+    
+    style Providers fill:#9f7aea,stroke:#6b46c1,color:#fff
+    style ContextState fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style TauriBackend fill:#c05621,stroke:#9c4221,color:#fff

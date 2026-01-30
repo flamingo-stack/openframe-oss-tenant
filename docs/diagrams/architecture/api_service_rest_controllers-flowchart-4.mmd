@@ -1,0 +1,18 @@
+flowchart TD
+    Request["HTTP Request"] -->|"Bearer Token"| Gateway["Gateway Service"]
+    Gateway -->|"Forwards with JWT"| Controller["REST Controller"]
+    
+    Controller -->|"Extracts JWT"| SecurityFilter["Security Filter Chain"]
+    SecurityFilter -->|"Resolves Issuer"| IssuerResolver["JwtIssuerAuthenticationManagerResolver"]
+    
+    IssuerResolver -->|"Checks Cache"| Cache["JWT Provider Cache"]
+    Cache -->|"Cache Miss"| CreateProvider["Create JwtAuthenticationProvider"]
+    CreateProvider -->|"Fetch JWKS"| IssuerEndpoint["Issuer JWKS Endpoint"]
+    
+    Cache -->|"Cache Hit"| ValidateToken["Validate Token"]
+    IssuerEndpoint -->|"Store in Cache"| ValidateToken
+    
+    ValidateToken -->|"Valid"| AuthPrincipal["Create AuthPrincipal"]
+    ValidateToken -->|"Invalid"| Reject["401 Unauthorized"]
+    
+    AuthPrincipal -->|"Inject"| ControllerMethod["Controller Method"]

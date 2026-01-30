@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant JwtService
+    participant ApiService
+    
+    Client->>Gateway: GET /api/devices<br/>Authorization: Bearer TOKEN
+    Gateway->>JwtService: decodeToken(TOKEN)
+    
+    alt Valid Token
+        JwtService-->>Gateway: Jwt Object
+        Gateway->>Gateway: Extract AuthPrincipal
+        Gateway->>ApiService: Forward Request + JWT
+        ApiService-->>Gateway: Response
+        Gateway-->>Client: 200 OK
+    else Invalid Token
+        JwtService-->>Gateway: JwtException
+        Gateway-->>Client: 401 Unauthorized
+    end

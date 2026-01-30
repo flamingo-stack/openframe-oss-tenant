@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph Tenant1["Tenant Y0-1"]
+        App1["openframe-stream-tenant-y0-1"]
+        CG1["Consumer Group:<br/>openframe-stream-tenant-y0-1"]
+        State1["State Store:<br/>/tmp/kafka-streams/openframe-stream-tenant-y0-1"]
+        Topics1["Internal Topics:<br/>openframe-stream-tenant-y0-1-*"]
+    end
+    
+    subgraph Tenant2["Tenant Y0-2"]
+        App2["openframe-stream-tenant-y0-2"]
+        CG2["Consumer Group:<br/>openframe-stream-tenant-y0-2"]
+        State2["State Store:<br/>/tmp/kafka-streams/openframe-stream-tenant-y0-2"]
+        Topics2["Internal Topics:<br/>openframe-stream-tenant-y0-2-*"]
+    end
+    
+    subgraph SharedKafka["Shared Kafka Cluster"]
+        Brokers["Kafka Brokers"]
+        InputTopics["Input Topics<br/>(tenant-specific)"]
+        OutputTopics["Output Topics<br/>(tenant-specific)"]
+    end
+    
+    App1 --> CG1
+    App1 --> State1
+    App1 --> Topics1
+    
+    App2 --> CG2
+    App2 --> State2
+    App2 --> Topics2
+    
+    CG1 -.->|"Consumes"| InputTopics
+    CG2 -.->|"Consumes"| InputTopics
+    
+    App1 -.->|"Produces"| OutputTopics
+    App2 -.->|"Produces"| OutputTopics
+    
+    InputTopics --> Brokers
+    OutputTopics --> Brokers
+    Topics1 --> Brokers
+    Topics2 --> Brokers
+    
+    classDef tenant1Class fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef tenant2Class fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef sharedClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    
+    class App1,CG1,State1,Topics1 tenant1Class
+    class App2,CG2,State2,Topics2 tenant2Class
+    class Brokers,InputTopics,OutputTopics sharedClass

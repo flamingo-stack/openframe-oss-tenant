@@ -1,0 +1,17 @@
+flowchart TD
+    A["NATS message received"] --> B{"Message type?"}
+    
+    B -->|TEXT| C{"Owner type?"}
+    B -->|Other| D["Add as new message"]
+    
+    C -->|ASSISTANT| E{"Last message is<br/>TEXT from ASSISTANT?"}
+    C -->|CLIENT/ADMIN| D
+    
+    E -->|Yes| F["Concatenate text to<br/>last message"]
+    E -->|No| D
+    
+    F --> G["Update last message<br/>in messages array"]
+    D --> H["Append new message<br/>to messages array"]
+    
+    G --> I["Trigger UI re-render"]
+    H --> I

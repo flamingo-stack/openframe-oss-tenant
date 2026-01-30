@@ -1,0 +1,14 @@
+flowchart TD
+    Client["External Client<br/>(REST API Consumer)"]
+    
+    Client -->|"GET /api/devices?cursor=abc&limit=20"| Controller["DeviceController"]
+    
+    Controller -->|"PaginationCriteria"| Mapper1["DeviceMapper<br/>.toCursorPaginationCriteria()"]
+    
+    Mapper1 -->|"CursorPaginationCriteria"| Service["Internal Service<br/>(GraphQL/MongoDB)"]
+    
+    Service -->|"CountedGenericQueryResult&lt;Machine&gt;"| Mapper2["DeviceMapper<br/>.toDevicesResponse()"]
+    
+    Mapper2 -->|"DevicesResponse"| Controller
+    
+    Controller -->|"JSON Response"| Client

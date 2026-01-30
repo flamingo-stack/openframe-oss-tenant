@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Agent as OpenFrame Agent
+    participant GW as Gateway
+    participant AAC as AgentAuthController
+    participant AAS as AgentAuthService
+    participant DB as MongoDB
+
+    Agent->>GW: POST /oauth/token
+    Note over Agent,GW: grant_type=client_credentials<br/>client_id, client_secret
+    GW->>AAC: Forward request
+    AAC->>AAS: issueClientToken(...)
+    AAS->>DB: Validate client credentials
+    DB-->>AAS: Machine record
+    AAS->>AAS: Generate access_token
+    AAS->>AAS: Generate refresh_token
+    AAS->>DB: Store refresh token
+    AAS-->>AAC: AgentTokenResponse
+    AAC-->>GW: 200 OK + tokens
+    GW-->>Agent: Authentication successful
+    Note over Agent: Store access_token<br/>Use for API calls

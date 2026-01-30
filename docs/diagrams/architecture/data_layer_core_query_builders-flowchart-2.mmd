@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph QueryBuilder["PinotQueryBuilder"]
+        Select["SELECT Clause Builder"]
+        Where["WHERE Clause Builder"]
+        OrderBy["ORDER BY Builder"]
+        GroupBy["GROUP BY Builder"]
+        Limit["LIMIT Builder"]
+        
+        Select --> Validator["Query Validator"]
+        Where --> Validator
+        OrderBy --> Validator
+        GroupBy --> Validator
+        Limit --> Validator
+        
+        Validator --> SQLGen["SQL Generator"]
+    end
+    
+    subgraph Security["Security Layer"]
+        Escape["SQL Escaping"]
+        Sanitize["Input Sanitization"]
+        Validate["Parameter Validation"]
+    end
+    
+    Where --> Security
+    
+    SQLGen -->|"Produces"| SQL["SQL Query String"]
+    
+    style QueryBuilder fill:#E3F2FD
+    style Security fill:#FFEBEE
+    style SQL fill:#FFF9C4

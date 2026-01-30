@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph SecurityCore["Security Core Module"]
+        JwtSecurityConfig["JwtSecurityConfig"]
+        JwtConfig["JwtConfig"]
+        JwtService["JwtService"]
+    end
+    
+    subgraph AuthzService["Authorization Service"]
+        AuthzSecurityConfig["SecurityConfig"]
+        AuthzServerConfig["AuthorizationServerConfig"]
+    end
+    
+    subgraph GatewayService["Gateway Service"]
+        GatewayJwtAuthConfig["JwtAuthConfig"]
+        GatewaySecurityConfig["GatewaySecurityConfig"]
+    end
+    
+    subgraph ApiService["API Service"]
+        ApiSecurityConfig["SecurityConfig"]
+        ApiAuthConfig["AuthenticationConfig"]
+    end
+    
+    JwtSecurityConfig -->|"provides beans to"| AuthzService
+    JwtSecurityConfig -->|"provides beans to"| GatewayService
+    JwtSecurityConfig -->|"provides beans to"| ApiService
+    
+    JwtConfig -->|"configuration"| AuthzService
+    JwtConfig -->|"configuration"| GatewayService
+    JwtConfig -->|"configuration"| ApiService
+    
+    style SecurityCore fill:#e1f5ff
+    style AuthzService fill:#fff4e1
+    style GatewayService fill:#f3e5f5
+    style ApiService fill:#e8f5e9

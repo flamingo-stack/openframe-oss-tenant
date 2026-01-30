@@ -1,0 +1,13 @@
+flowchart TD
+    WebUI["Web UI<br/>(Admin Dashboard)"] -->|WS: /ws/nats| Gateway["API Gateway"]
+    Agent["RMM Agent"] -->|WS: /ws/nats| Gateway
+    
+    Gateway -->|Proxy| NATS["NATS Server<br/>(WebSocket Port)"]
+    
+    NATS --> Topics["NATS Topics"]
+    Topics --> DeviceEvents["device.events.*"]
+    Topics --> LogStreams["logs.stream.*"]
+    Topics --> Alerts["alerts.*"]
+    
+    style Gateway fill:#fff4e6
+    style NATS fill:#e8f5e9

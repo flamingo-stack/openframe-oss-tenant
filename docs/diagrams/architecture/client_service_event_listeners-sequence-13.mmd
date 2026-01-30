@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant Agent
+    participant NATS
+    participant Listener as ClientConnectionListener
+    participant Service as MachineStatusService
+    participant DB as MongoDB
+    
+    Agent->>NATS: Publish connection event
+    NATS->>Listener: Deliver message
+    
+    Listener->>Listener: Parse JSON
+    Listener->>Listener: Extract machine ID
+    Listener->>Listener: Parse timestamp
+    
+    alt Connection Event
+        Listener->>Service: updateToOnline(machineId, timestamp)
+    else Disconnection Event
+        Listener->>Service: updateToOffline(machineId, timestamp)
+    end
+    
+    Service->>DB: Find machine by ID
+    DB-->>Service: Machine document
+    
+    alt Event is newer
+        Service->>DB: Update status & lastSeen
+        DB-->>Service: Success
+    else Event is stale
+        Service->>Service: Log warning (ignore)
+    end
+    
+    Service-->>Listener: Complete
+    
+    alt Error occurs
+        Listener->>Listener: Log error
+        Listener->>Listener: Throw NatsException
+    end

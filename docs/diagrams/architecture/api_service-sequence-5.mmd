@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Query as GraphQL Query
+    participant DF as DataFetcher
+    participant DL as DataLoader
+    participant Service
+    participant DB as Database
+    
+    Query->>DF: Request devices with organizations
+    DF->>DL: load(orgId1)
+    DF->>DL: load(orgId2)
+    DF->>DL: load(orgId3)
+    
+    Note over DL: Batch window (16ms)
+    
+    DL->>Service: batchLoad([orgId1, orgId2, orgId3])
+    Service->>DB: SELECT * WHERE id IN (...)
+    DB-->>Service: Return all organizations
+    Service-->>DL: Return map of results
+    DL-->>DF: Return org1
+    DL-->>DF: Return org2
+    DL-->>DF: Return org3
+    DF-->>Query: Return complete response

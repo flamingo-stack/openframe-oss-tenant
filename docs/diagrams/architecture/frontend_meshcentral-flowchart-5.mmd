@@ -1,0 +1,38 @@
+flowchart TD
+    BinaryFrame["Binary Frame Received"]
+    
+    BinaryFrame --> Accumulator["Accumulator Buffer"]
+    Accumulator --> HeaderCheck{"Enough bytes<br/>for header?"}
+    
+    HeaderCheck -->|No| Wait["Wait for more data"]
+    HeaderCheck -->|Yes| ParseHeader["Parse Header"]
+    
+    ParseHeader --> JumboCheck{"Jumbo Frame?<br/>(cmd=27, size=8)"}
+    JumboCheck -->|Yes| JumboHeader["Parse Jumbo Header<br/>(24-bit size)"]
+    JumboCheck -->|No| StandardHeader["Use Standard Header"]
+    
+    JumboHeader --> FrameComplete{"Full frame<br/>available?"}
+    StandardHeader --> FrameComplete
+    
+    FrameComplete -->|No| Wait
+    FrameComplete -->|Yes| CommandSwitch{"Command Type?"}
+    
+    CommandSwitch -->|"7 (SCREEN_SIZE)"| ScreenSize["Update Canvas Size"]
+    CommandSwitch -->|"3 (TILE)"| TileData["Extract JPEG Tile"]
+    CommandSwitch -->|"11 (DISPLAY_LIST)"| DisplayList["Parse Display List"]
+    CommandSwitch -->|"82 (DISPLAY_LOCATION)"| DisplayLoc["Parse Display Location"]
+    
+    TileData --> TileQueue["Add to Tile Queue"]
+    TileQueue --> Backpressure{"Queue size<br/>> 300?"}
+    Backpressure -->|Yes| DropOldest["Drop oldest tile"]
+    Backpressure -->|No| Enqueue["Enqueue tile"]
+    
+    DropOldest --> KickDecoder["Kick Decoder"]
+    Enqueue --> KickDecoder
+    
+    ScreenSize --> NextFrame["Process Next Frame"]
+    DisplayList --> NextFrame
+    DisplayLoc --> NextFrame
+    KickDecoder --> NextFrame
+    
+    NextFrame --> Accumulator

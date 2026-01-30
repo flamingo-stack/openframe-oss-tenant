@@ -1,0 +1,33 @@
+flowchart TD
+    Client["External Client"] -->|"HTTP REST"| Controller["IntegratedToolController"]
+    
+    Controller -->|"manages tools"| ToolService["IntegratedToolService"]
+    Controller -->|"manages CDC"| DebeziumService["DebeziumService"]
+    Controller -->|"executes hooks"| Hooks["PostSaveHooks"]
+    
+    Initializer["IntegratedToolAgentInitializer"] -->|"loads agents"| AgentService["IntegratedToolAgentService"]
+    Initializer -->|"publishes updates"| Publisher["ToolAgentUpdatePublisher"]
+    
+    Scheduler["DebeziumHealthCheckScheduler"] -->|"monitors health"| DebeziumService
+    
+    ToolService -->|"persists"| MongoDB[("MongoDB")]
+    AgentService -->|"persists"| MongoDB
+    Publisher -->|"publishes"| Kafka[("Kafka")]
+    DebeziumService -->|"HTTP API"| DebeziumAPI["Debezium Connect API"]
+    
+    subgraph config_layer["Configuration Layer"]
+        ManagementConfig["ManagementConfiguration"]
+        AgentConfigProps["AgentConfigurationProperties"]
+    end
+    
+    subgraph data_layer["Data Access Layer"]
+        ToolService
+        AgentService
+        Publisher
+        MongoDB
+        Kafka
+    end
+    
+    subgraph external_systems["External Systems"]
+        DebeziumAPI
+    end

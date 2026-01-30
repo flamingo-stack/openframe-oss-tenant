@@ -1,0 +1,41 @@
+flowchart TD
+    Client["Client Application"] -->|"HTTP Requests"| Controllers["Controller Layer"]
+    
+    subgraph Controllers["Authorization Controllers"]
+        LoginCtrl["LoginController"]
+        TenantRegCtrl["TenantRegistrationController"]
+        InviteCtrl["InvitationRegistrationController"]
+        PwdResetCtrl["PasswordResetController"]
+    end
+    
+    subgraph Services["Service Layer"]
+        TenantRegSvc["TenantRegistrationService"]
+        SsoTenantSvc["SsoTenantRegistrationService"]
+        InviteRegSvc["InvitationRegistrationService"]
+        SsoInviteSvc["SsoInvitationService"]
+        PwdResetSvc["PasswordResetService"]
+    end
+    
+    subgraph Security["Security Components"]
+        AuthState["AuthStateUtils"]
+        Redirects["Redirects"]
+        SsoConstants["SsoRegistrationConstants"]
+    end
+    
+    LoginCtrl -->|"Render Views"| Views["Thymeleaf Templates"]
+    TenantRegCtrl -->|"Register Tenant"| TenantRegSvc
+    TenantRegCtrl -->|"SSO Registration"| SsoTenantSvc
+    TenantRegCtrl -->|"State Management"| AuthState
+    TenantRegCtrl -->|"Redirect"| Redirects
+    
+    InviteCtrl -->|"Accept Invitation"| InviteRegSvc
+    InviteCtrl -->|"SSO Accept"| SsoInviteSvc
+    InviteCtrl -->|"State Management"| AuthState
+    
+    PwdResetCtrl -->|"Reset Password"| PwdResetSvc
+    
+    Services -->|"Persist Data"| DataLayer["Data Layer (MongoDB)"]
+    Services -->|"OAuth 2.0 Flow"| OAuth["Spring Authorization Server"]
+    
+    SsoTenantSvc -->|"Set Cookie"| Cookies["HTTP Cookies"]
+    SsoInviteSvc -->|"Set Cookie"| Cookies

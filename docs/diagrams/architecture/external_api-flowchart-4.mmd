@@ -1,0 +1,7 @@
+flowchart LR
+    Request["HTTP Request"] -->|"Query Params"| FilterCriteria["FilterCriteria DTO"]
+    FilterCriteria -->|"Mapper"| FilterOptions["FilterOptions"]
+    FilterOptions -->|"Service"| Query["Database Query"]
+    Query -->|"Repository"| Entities["Domain Entities"]
+    Entities -->|"Mapper"| ResponseDTO["Response DTOs"]
+    ResponseDTO -->|"Controller"| JSON["JSON Response"]

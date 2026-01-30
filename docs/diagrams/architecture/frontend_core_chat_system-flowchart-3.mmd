@@ -1,0 +1,19 @@
+flowchart TD
+    Start["Dialog Opened"]
+    StartBuffer["Start Buffering<br/>NATS Chunks"]
+    FetchHistory["Fetch Historical<br/>Chunks from API"]
+    MergeData["Merge & Deduplicate<br/>Historical + Buffered"]
+    ProcessChunks["Process Chunks<br/>in Order"]
+    FlushBuffer["Flush Buffer"]
+    RealtimeMode["Real-time Mode"]
+    
+    Start --> StartBuffer
+    StartBuffer --> FetchHistory
+    FetchHistory --> MergeData
+    MergeData --> ProcessChunks
+    ProcessChunks --> FlushBuffer
+    FlushBuffer --> RealtimeMode
+    
+    style Start fill:#e1f5ff
+    style MergeData fill:#f39c12
+    style RealtimeMode fill:#27ae60

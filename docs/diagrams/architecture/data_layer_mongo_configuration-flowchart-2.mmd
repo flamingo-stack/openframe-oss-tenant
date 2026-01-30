@@ -1,0 +1,28 @@
+flowchart TD
+    subgraph Services["OpenFrame Services"]
+        API["API Service"]
+        Auth["Authorization Service"]
+        Management["Management Service"]
+        Client["Client Service"]
+        External["External API Service"]
+    end
+    
+    subgraph DataLayer["Data Layer MongoDB"]
+        Config["MongoConfig"]
+        Documents["Document Models"]
+        Repositories["Repository Interfaces"]
+    end
+    
+    subgraph Infrastructure["Infrastructure"]
+        MongoDB["MongoDB Database"]
+        MongoDriver["MongoDB Driver"]
+    end
+    
+    Services -->|"Use"| Repositories
+    Repositories -->|"Configured by"| Config
+    Documents -->|"Mapped by"| Config
+    Config -->|"Configures"| MongoDriver
+    MongoDriver -->|"Connects to"| MongoDB
+    
+    style Config fill:#4CAF50
+    style MongoDB fill:#47A248

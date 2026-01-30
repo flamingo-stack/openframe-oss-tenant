@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph API["API Service"]
+        DeviceDF["DeviceDataFetcher"]
+        LogDF["LogDataFetcher"]
+    end
+    
+    subgraph Repositories["Pinot Repositories"]
+        DeviceRepo["PinotClientDeviceRepository"]
+        LogRepo["PinotClientLogRepository"]
+    end
+    
+    subgraph Config["Configuration"]
+        PinotConfig["PinotConfig"]
+    end
+    
+    DeviceDF -->|"@Autowired"| DeviceRepo
+    LogDF -->|"@Autowired"| LogRepo
+    
+    DeviceRepo -->|"uses"| PinotConfig
+    LogRepo -->|"uses"| PinotConfig
+    
+    style DeviceDF fill:#E8F4F8
+    style LogDF fill:#E8F4F8
+    style DeviceRepo fill:#4A90E2
+    style LogRepo fill:#4A90E2

@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer as Authorization Server
+    participant MongoAuthz as MongoAuthorizationService
+    participant TenantKey as TenantKeyService
+    participant JwtEncoder as JWT Encoder
+
+    Client->>AuthServer: POST /oauth2/token<br/>(code + code_verifier)
+    
+    AuthServer->>MongoAuthz: findByToken(code, "code")
+    MongoAuthz-->>AuthServer: OAuth2Authorization with PKCE
+    
+    AuthServer->>AuthServer: Verify PKCE code_verifier
+    Note over AuthServer: SHA256(code_verifier) == code_challenge
+    
+    AuthServer->>TenantKey: getOrCreateActiveKey(tenantId)
+    TenantKey-->>AuthServer: RSAKey (kid, public, private)
+    
+    AuthServer->>JwtEncoder: encode(claims, tenantKey)
+    Note over JwtEncoder: Sign JWT with RS256<br/>kid header = tenant keyId
+    JwtEncoder-->>AuthServer: JWT Access Token
+    
+    AuthServer->>MongoAuthz: save(authorization)<br/>(update with tokens)
+    
+    AuthServer-->>Client: Access Token + Refresh Token

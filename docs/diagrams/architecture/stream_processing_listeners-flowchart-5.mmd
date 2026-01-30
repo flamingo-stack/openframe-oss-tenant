@@ -1,0 +1,6 @@
+flowchart TD
+    Receive["Receive CommonDebeziumMessage"] --> Lookup["Lookup Deserializer by MessageType"]
+    Lookup --> Deserialize["Deserialize to Specific Type"]
+    Deserialize --> Check{"Skip Processing?"}
+    Check -->|"Yes"| Return["Return null"]
+    Check -->|"No"| Continue["Continue Processing"]

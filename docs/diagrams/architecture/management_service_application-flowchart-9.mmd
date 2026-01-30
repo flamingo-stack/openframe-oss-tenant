@@ -1,0 +1,26 @@
+flowchart TD
+    Scheduler["Scheduler Triggered<br/>(Every 5 min)"] --> TryLock["Try Acquire Lock<br/>(ShedLock)"]
+    
+    TryLock -->|"Lock Acquired"| Instance1["Instance 1 Executes"]
+    TryLock -->|"Lock Held by Another"| Instance2["Instance 2 Skips"]
+    
+    Instance1 --> GetConnectors["GET /connectors"]
+    GetConnectors --> IterateConnectors["Iterate Each Connector"]
+    
+    IterateConnectors --> GetStatus["GET /connectors/{name}/status"]
+    GetStatus --> CheckTasks{"Any Tasks<br/>FAILED?"}
+    
+    CheckTasks -->|"Yes"| RestartTask["POST /connectors/{name}/tasks/{id}/restart"]
+    CheckTasks -->|"No"| NextConnector["Check Next Connector"]
+    
+    RestartTask --> LogRestart["Log Restart Action"]
+    LogRestart --> NextConnector
+    
+    NextConnector --> IterateConnectors
+    NextConnector --> ReleaseLock["Release Lock"]
+    
+    Instance2 --> WaitNext["Wait for Next Cycle"]
+    
+    style Instance1 fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style Instance2 fill:#FFC107,stroke:#F57F17,color:#000
+    style RestartTask fill:#FF6B6B,stroke:#C92A2A,color:#fff

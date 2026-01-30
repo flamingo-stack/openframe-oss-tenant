@@ -1,0 +1,20 @@
+flowchart TD
+    Header["Header Container"]
+    
+    Header -->|"applies"| Sticky["sticky top-0 z-50"]
+    Header -->|"applies"| Transition["transition-transform"]
+    Header -->|"applies"| Background["bg-ods-card backdrop-blur-sm"]
+    
+    NavItem["Navigation Item"]
+    NavItem -->|"applies"| Font["font-DM_Sans font-bold text-16px"]
+    NavItem -->|"applies"| Hover["hover:bg-ods-bg-hover"]
+    NavItem -->|"applies"| Active["isActive → bg-ods-bg-hover"]
+    
+    Dropdown["Dropdown Menu"]
+    Dropdown -->|"applies"| Position["absolute top-full left-0"]
+    Dropdown -->|"applies"| Style["rounded-lg shadow-xl z-9999"]
+    Dropdown -->|"applies"| DropBg["bg-ods-card border-ods-border"]
+    
+    style Header fill:#3498DB,stroke:#2471A3,color:#fff
+    style NavItem fill:#E67E22,stroke:#A04000,color:#fff
+    style Dropdown fill:#9B59B6,stroke:#6C3483,color:#fff

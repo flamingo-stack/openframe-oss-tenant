@@ -1,0 +1,42 @@
+flowchart LR
+    subgraph Constants["SecurityConstants"]
+        ACCESS_TOKEN["ACCESS_TOKEN<br/>'access_token'"]
+        REFRESH_TOKEN["REFRESH_TOKEN<br/>'refresh_token'"]
+        ACCESS_TOKEN_HEADER["ACCESS_TOKEN_HEADER<br/>'Access-Token'"]
+        REFRESH_TOKEN_HEADER["REFRESH_TOKEN_HEADER<br/>'Refresh-Token'"]
+        AUTHZ_QUERY_PARAM["AUTHORIZATION_QUERY_PARAM<br/>'authorization'"]
+    end
+    
+    subgraph CookieService["Cookie Service"]
+        AddAuthCookies["addAuthCookies()"]
+        GetAccessToken["getAccessTokenFromCookies()"]
+    end
+    
+    subgraph OAuthController["OAuth BFF Controller"]
+        CallbackHandler["callback()"]
+        RefreshHandler["refresh()"]
+        DevExchange["devExchange()"]
+    end
+    
+    subgraph GatewayFilter["Gateway Filters"]
+        JwtAuthFilter["JWT Auth Filter"]
+        ApiKeyFilter["API Key Filter"]
+    end
+    
+    ACCESS_TOKEN -->|"Cookie name"| AddAuthCookies
+    REFRESH_TOKEN -->|"Cookie name"| AddAuthCookies
+    ACCESS_TOKEN -->|"Cookie name"| GetAccessToken
+    
+    ACCESS_TOKEN_HEADER -->|"Dev header"| DevExchange
+    REFRESH_TOKEN_HEADER -->|"Dev header"| DevExchange
+    REFRESH_TOKEN_HEADER -->|"Fallback header"| RefreshHandler
+    
+    AUTHZ_QUERY_PARAM -->|"Query param"| ApiKeyFilter
+    
+    AddAuthCookies -->|"Sets cookies"| CallbackHandler
+    GetAccessToken -->|"Reads cookies"| JwtAuthFilter
+    
+    style ACCESS_TOKEN fill:#ffcccc
+    style REFRESH_TOKEN fill:#ccffcc
+    style ACCESS_TOKEN_HEADER fill:#ccccff
+    style REFRESH_TOKEN_HEADER fill:#ffffcc

@@ -1,0 +1,24 @@
+flowchart TD
+    Request["Incoming Request<br/>with JWT"]
+    ExtractIssuer["Extract 'iss' claim<br/>from JWT"]
+    CheckCache{"Issuer in<br/>cache?"}
+    LoadCache["Load from cache"]
+    CreateDecoder["Create new<br/>JwtDecoder for issuer"]
+    CacheDecoder["Cache decoder"]
+    ValidateToken["Validate token<br/>with decoder"]
+    Success["Authentication<br/>Success"]
+    Failure["Authentication<br/>Failure"]
+    
+    Request --> ExtractIssuer
+    ExtractIssuer --> CheckCache
+    CheckCache -->|"Yes"| LoadCache
+    CheckCache -->|"No"| CreateDecoder
+    CreateDecoder --> CacheDecoder
+    CacheDecoder --> ValidateToken
+    LoadCache --> ValidateToken
+    ValidateToken -->|"Valid"| Success
+    ValidateToken -->|"Invalid"| Failure
+    
+    style Request fill:#e1f5ff
+    style Success fill:#e8f5e9
+    style Failure fill:#ffebee

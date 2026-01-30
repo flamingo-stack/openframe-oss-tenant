@@ -1,0 +1,9 @@
+flowchart LR
+    Client["Client"] -->|"Authorization: Bearer TOKEN"| Gateway["Gateway Service"]
+    Gateway -->|"Validate JWT"| JWKSEndpoint["Authorization Server<br/>/.well-known/jwks.json"]
+    JWKSEndpoint -->|"Public Key (kid)"| Gateway
+    Gateway -->|"Extract tenant_id"| TenantContext["Set TenantContext"]
+    TenantContext --> RouteRequest["Route to Backend Service"]
+    
+    style Gateway fill:#4A90E2
+    style JWKSEndpoint fill:#50C878

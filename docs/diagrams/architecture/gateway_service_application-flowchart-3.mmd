@@ -1,0 +1,25 @@
+flowchart TD
+    Request["Incoming Request"] --> PathCheck{"Path Matcher"}
+    
+    PathCheck -->|"/error/**<br/>/health/**<br/>/actuator/**"| Permit["Permit All"]
+    PathCheck -->|"/dashboard/**"| AdminCheck{"Has ROLE_ADMIN?"}
+    PathCheck -->|"/tools/agent/**<br/>/ws/tools/agent/**<br/>/clients/**"| AgentCheck{"Has ROLE_AGENT?"}
+    PathCheck -->|"/ws/nats"| NatsCheck{"Has ROLE_AGENT<br/>or ROLE_ADMIN?"}
+    PathCheck -->|"/tools/**<br/>/ws/tools/**"| ToolCheck{"Has ROLE_ADMIN?"}
+    PathCheck -->|"/**"| Permit
+    
+    AdminCheck -->|"Yes"| Allow["Allow"]
+    AdminCheck -->|"No"| Deny["403 Forbidden"]
+    
+    AgentCheck -->|"Yes"| Allow
+    AgentCheck -->|"No"| Deny
+    
+    NatsCheck -->|"Yes"| Allow
+    NatsCheck -->|"No"| Deny
+    
+    ToolCheck -->|"Yes"| Allow
+    ToolCheck -->|"No"| Deny
+    
+    style Request fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    style Allow fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Deny fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff

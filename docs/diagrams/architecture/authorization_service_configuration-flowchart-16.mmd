@@ -1,0 +1,12 @@
+flowchart TD
+    CurrentKey["Current Active Key<br/>(kid-abc123)"] --> GenerateNew["Generate New Key<br/>(kid-def456)"]
+    GenerateNew --> MarkNewActive["Mark new key as active"]
+    MarkNewActive --> GracePeriod["Grace Period<br/>(24 hours)"]
+    GracePeriod --> DeactivateOld["Deactivate old key"]
+    
+    GracePeriod --> BothActive["Both keys in JWKS<br/>(for token validation)"]
+    BothActive --> NewTokens["New tokens signed with kid-def456"]
+    BothActive --> OldTokens["Old tokens validated with kid-abc123"]
+    
+    style GenerateNew fill:#50C878
+    style GracePeriod fill:#FFD700

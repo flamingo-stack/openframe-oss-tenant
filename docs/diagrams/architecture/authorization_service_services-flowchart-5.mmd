@@ -1,0 +1,23 @@
+flowchart TD
+    Scheduler["Key Rotation<br/>Scheduler"] -->|"1. Check key age"| CheckAge{Key older than<br/>90 days?}
+    CheckAge -->|"No"| End["End"]
+    CheckAge -->|"Yes"| GenerateNew["TenantKeyService<br/>Generate New Key"]
+    
+    GenerateNew -->|"2. Create new key"| NewKey["New RSA Key<br/>active: true"]
+    NewKey -->|"3. Save to MongoDB"| MongoDB1[("MongoDB<br/>tenant_keys")]
+    
+    MongoDB1 -->|"4. Mark old key"| OldKey["Old Key<br/>active: false<br/>validUntil: now + 24h"]
+    OldKey -->|"5. Update MongoDB"| MongoDB2[("MongoDB<br/>tenant_keys")]
+    
+    MongoDB2 -->|"6. Publish event"| Event["KeyRotationEvent"]
+    Event -->|"7. Notify services"| Services["Gateway, API Services"]
+    Services -->|"8. Refresh JWK cache"| JWKRefresh["Reload JWKS endpoint"]
+    
+    JWKRefresh -->|"9. Verify both keys"| Verify["Verify old tokens<br/>with old key<br/>Sign new tokens<br/>with new key"]
+    
+    Verify -->|"10. After 24h"| Cleanup["Delete old key"]
+    Cleanup -->|"11. Remove from MongoDB"| MongoDB3[("MongoDB<br/>tenant_keys")]
+    
+    style NewKey fill:#50C878
+    style OldKey fill:#F39C12
+    style Cleanup fill:#E74C3C

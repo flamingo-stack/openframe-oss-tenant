@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph AuthFlow["Authentication Flow"]
+        Login["OAuth Login"]
+        Callback["OAuth Callback"]
+        Authenticated["Authenticated Session"]
+        Refresh["Token Refresh"]
+        Logout["Logout"]
+    end
+    
+    subgraph Cookies["Cookie Types"]
+        AccessToken["access_token<br/>Path: /<br/>TTL: 15min"]
+        RefreshToken["refresh_token<br/>Path: /oauth<br/>TTL: 7 days"]
+        OAuthState["of_oauth_{state}<br/>Path: /oauth<br/>TTL: 3min"]
+        SessionID["JSESSIONID<br/>Path: /sas<br/>Session"]
+    end
+    
+    Login -->|"Create"| OAuthState
+    Login -->|"Clear"| SessionID
+    Callback -->|"Consume"| OAuthState
+    Callback -->|"Create"| AccessToken
+    Callback -->|"Create"| RefreshToken
+    Authenticated -->|"Read"| AccessToken
+    Refresh -->|"Read"| RefreshToken
+    Refresh -->|"Update"| AccessToken
+    Refresh -->|"Update"| RefreshToken
+    Logout -->|"Clear"| AccessToken
+    Logout -->|"Clear"| RefreshToken
+    Logout -->|"Clear"| SessionID

@@ -1,0 +1,21 @@
+flowchart TD
+    Error["Error Scenario"] --> TenantNotFound["Tenant Not Found"]
+    Error --> UserNotFound["User Not Found"]
+    Error --> InvalidCredentials["Invalid Credentials"]
+    Error --> KeyGenerationFailed["Key Generation Failed"]
+    Error --> SSOConfigMissing["SSO Config Missing"]
+    Error --> PKCEValidationFailed["PKCE Validation Failed"]
+    
+    TenantNotFound --> Return401["HTTP 401<br/>Unauthorized"]
+    UserNotFound --> Return401
+    InvalidCredentials --> Return401
+    
+    KeyGenerationFailed --> Return500["HTTP 500<br/>Internal Server Error"]
+    
+    SSOConfigMissing --> ReturnNull["Return null<br/>(Graceful degradation)"]
+    
+    PKCEValidationFailed --> Return400["HTTP 400<br/>Bad Request"]
+    
+    style Return401 fill:#E74C3C
+    style Return500 fill:#E74C3C
+    style Return400 fill:#E74C3C

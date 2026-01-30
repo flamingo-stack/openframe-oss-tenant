@@ -1,0 +1,19 @@
+flowchart TD
+    ManagementService["Management Service<br/>(CDC Management)"]
+    DebeziumConnect["Debezium Connect<br/>(Kafka Connect)"]
+    SourceDB["Source Databases<br/>(MongoDB, PostgreSQL)"]
+    KafkaCluster["Kafka Cluster<br/>(Event Streaming)"]
+    StreamService["Stream Processing Service"]
+    
+    ManagementService -->|"Create/Update<br/>Connectors"| DebeziumConnect
+    ManagementService -->|"Health Check<br/>Status API"| DebeziumConnect
+    ManagementService -->|"Restart Failed<br/>Tasks"| DebeziumConnect
+    
+    DebeziumConnect -->|"Read Change<br/>Events"| SourceDB
+    DebeziumConnect -->|"Publish CDC<br/>Events"| KafkaCluster
+    
+    KafkaCluster -->|"Consume<br/>Events"| StreamService
+    
+    style ManagementService fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style DebeziumConnect fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style KafkaCluster fill:#f3e5f5,stroke:#4a148c,stroke-width:2px

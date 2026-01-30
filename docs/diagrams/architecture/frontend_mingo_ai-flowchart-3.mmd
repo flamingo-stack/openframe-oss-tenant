@@ -1,0 +1,32 @@
+flowchart TD
+    Start["User types message"] --> Validate["Validate content"]
+    Validate -->|"Empty"| ShowError["Show error toast"]
+    Validate -->|"Valid"| CheckDialog{"Dialog exists?"}
+    
+    CheckDialog -->|"No"| CreateDialog["POST /chat/api/v2/dialogs"]
+    CreateDialog --> SetDialogId["Set currentDialogId"]
+    SetDialogId --> AddTyping["ensureTypingMessage()"]
+    
+    CheckDialog -->|"Yes"| AddTyping
+    
+    AddTyping --> SendMsg["POST /chat/api/v2/messages"]
+    SendMsg --> StreamStart["Backend starts streaming"]
+    
+    StreamStart --> ReceiveChunk["Receive response chunk"]
+    ReceiveChunk --> UpdateMsg["updateLastAssistantMessage()"]
+    UpdateMsg --> MoreChunks{"More chunks?"}
+    
+    MoreChunks -->|"Yes"| ReceiveChunk
+    MoreChunks -->|"No"| RemoveTyping["removeTypingMessage()"]
+    RemoveTyping --> Complete["Message complete"]
+    
+    SendMsg -->|"Error"| HandleError["Show error toast"]
+    HandleError --> RemoveTyping
+    
+    ShowError --> End["End"]
+    Complete --> End
+    
+    style CreateDialog fill:#FF9800
+    style SendMsg fill:#2196F3
+    style UpdateMsg fill:#4CAF50
+    style HandleError fill:#F44336

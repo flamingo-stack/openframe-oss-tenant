@@ -1,0 +1,8 @@
+flowchart LR
+    KafkaLayer["Data Layer Kafka"]
+    StreamService["Stream Processing Service"]
+    
+    KafkaLayer -->|"provides consumers"| StreamService
+    KafkaLayer -->|"provides DebeziumMessage"| StreamService
+    StreamService -->|"listens to topics"| KafkaLayer
+    StreamService -->|"processes CDC events"| KafkaLayer

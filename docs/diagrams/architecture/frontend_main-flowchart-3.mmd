@@ -1,0 +1,26 @@
+flowchart TD
+    Start["User Visits App"] --> CheckAuth["Check Existing Auth"]
+    CheckAuth -->|"has token/cookie"| ValidateToken["Validate via /me"]
+    CheckAuth -->|"no auth"| LoginPage["Redirect to Login"]
+    
+    ValidateToken -->|"valid"| LoadProfile["Load User Profile"]
+    ValidateToken -->|"401"| RefreshToken["Attempt Token Refresh"]
+    
+    RefreshToken -->|"success"| LoadProfile
+    RefreshToken -->|"failure"| LoginPage
+    
+    LoginPage --> DiscoverTenant["Discover Tenant by Email"]
+    DiscoverTenant -->|"existing account"| ShowProviders["Show Auth Providers"]
+    DiscoverTenant -->|"no account"| RegisterFlow["Registration Flow"]
+    
+    ShowProviders --> ChooseProvider["User Selects Provider"]
+    ChooseProvider -->|"SSO"| OAuthFlow["OAuth 2.0 Flow"]
+    ChooseProvider -->|"password"| PasswordLogin["Password Login"]
+    
+    OAuthFlow --> AuthCallback["OAuth Callback"]
+    PasswordLogin --> AuthCallback
+    RegisterFlow --> AuthCallback
+    
+    AuthCallback --> StoreTokens["Store Tokens & User Data"]
+    StoreTokens --> LoadProfile
+    LoadProfile --> Dashboard["Redirect to Dashboard"]

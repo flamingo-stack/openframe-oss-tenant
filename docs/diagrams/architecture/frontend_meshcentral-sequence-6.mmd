@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Client as MeshDesktop
+    participant Server as MeshCentral
+    participant Agent as MeshAgent
+    
+    Note over Client,Agent: Initialization
+    Client->>Server: KVM_INIT (0x000E)
+    Client->>Server: DISPLAY_LIST Request (0x000B)
+    
+    Server->>Agent: Query displays
+    Agent->>Server: Display info
+    Server->>Client: DISPLAY_LIST Response (0x000B)
+    
+    Note over Client: Parse display list<br/>Store in displayList[]
+    
+    Client->>Client: Trigger onDisplayListCallback
+    
+    Note over Client,Agent: Display Switching
+    Client->>Server: PAUSE (0x0008, pause=1)
+    Client->>Server: SWITCH_DISPLAY (0x000C, displayId)
+    Client->>Server: PAUSE (0x0008, pause=0)
+    Client->>Server: REFRESH (0x0006)
+    
+    Server->>Agent: Switch display
+    Agent->>Server: New display stream
+    Server->>Client: SCREEN_SIZE (0x0007)
+    Server->>Client: TILE frames (0x0003)
+    
+    Note over Client: Render new display

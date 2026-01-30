@@ -1,0 +1,28 @@
+flowchart TD
+    Start["Device Details Request<br/>(machineId)"] --> FetchGraphQL["1. Fetch GraphQL Device<br/>(Primary Source)"]
+    
+    FetchGraphQL --> CheckTools["2. Check Tool Connections<br/>(toolConnections array)"]
+    
+    CheckTools --> HasTactical{"Has Tactical<br/>Connection?"}
+    CheckTools --> HasFleet{"Has Fleet<br/>Connection?"}
+    
+    HasTactical -->|"Yes"| FetchTactical["3a. Fetch Tactical Agent<br/>(agentToolId)"]
+    HasTactical -->|"No"| SkipTactical["Skip Tactical"]
+    
+    HasFleet -->|"Yes"| FetchFleet["3b. Fetch Fleet Host<br/>(agentToolId)"]
+    HasFleet -->|"No"| SkipFleet["Skip Fleet"]
+    
+    FetchTactical --> MergeData["4. Merge All Data<br/>(createDevice)"]
+    FetchFleet --> MergeData
+    SkipTactical --> MergeData
+    SkipFleet --> MergeData
+    
+    MergeData --> UnifiedDevice["5. Unified Device Object<br/>(Single Source of Truth)"]
+    
+    UnifiedDevice --> SetState["6. Update React State<br/>(setDeviceDetails)"]
+    
+    SetState --> StartPolling["7. Start Adaptive Polling<br/>(5s or 10s interval)"]
+    
+    style Start fill:#e1f5ff
+    style UnifiedDevice fill:#d4edda
+    style StartPolling fill:#fff3cd

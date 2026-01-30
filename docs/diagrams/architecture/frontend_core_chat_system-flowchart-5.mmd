@@ -1,0 +1,34 @@
+flowchart TD
+    ChunkReceived["Chunk Received"]
+    ParseAction["Parse to Action"]
+    
+    MessageStart["MESSAGE_START<br/>Reset Accumulator"]
+    Text["TEXT<br/>Append to Buffer"]
+    ToolExec["EXECUTING_TOOL<br/>Add Tool Segment"]
+    ToolResult["EXECUTED_TOOL<br/>Update Tool Segment"]
+    ApprovalReq["APPROVAL_REQUEST<br/>Add Approval Segment"]
+    ApprovalRes["APPROVAL_RESULT<br/>Update Status"]
+    MessageEnd["MESSAGE_END<br/>Finalize Message"]
+    Error["ERROR<br/>Show Error"]
+    
+    UpdateSegments["Update Segments<br/>Callback"]
+    
+    ChunkReceived --> ParseAction
+    ParseAction --> MessageStart
+    ParseAction --> Text
+    ParseAction --> ToolExec
+    ParseAction --> ToolResult
+    ParseAction --> ApprovalReq
+    ParseAction --> ApprovalRes
+    ParseAction --> MessageEnd
+    ParseAction --> Error
+    
+    Text --> UpdateSegments
+    ToolExec --> UpdateSegments
+    ToolResult --> UpdateSegments
+    ApprovalReq --> UpdateSegments
+    ApprovalRes --> UpdateSegments
+    
+    style ChunkReceived fill:#e1f5ff
+    style ParseAction fill:#f39c12
+    style UpdateSegments fill:#27ae60

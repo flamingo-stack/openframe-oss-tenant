@@ -1,0 +1,51 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant AuthApp as Authorization Service
+    participant Microsoft as Microsoft Azure AD
+    participant SSOService as SSO Config Service
+    participant UserService
+    participant MongoDB
+    participant RegProcessor as Registration Processor
+    participant EmailService
+    
+    Note over User,MongoDB: 1. SSO Login Initiation
+    User->>Browser: Click "Sign in with Microsoft"
+    Browser->>AuthApp: GET /oauth2/authorization/microsoft
+    AuthApp->>Microsoft: Redirect to Azure AD Login
+    User->>Microsoft: Enter Microsoft Credentials
+    Microsoft->>AuthApp: Redirect with Authorization Code
+    
+    Note over AuthApp,MongoDB: 2. Token Exchange & User Info
+    AuthApp->>Microsoft: POST /token (exchange code)
+    Microsoft-->>AuthApp: ID Token + Access Token
+    AuthApp->>Microsoft: GET /userinfo
+    Microsoft-->>AuthApp: User Claims (email, name, etc.)
+    
+    Note over AuthApp,MongoDB: 3. Auto-Provisioning Check
+    AuthApp->>AuthApp: Extract email from Claims
+    AuthApp->>SSOService: getSSOConfig(tenantId, "microsoft")
+    SSOService->>MongoDB: findByTenantIdAndProvider(...)
+    MongoDB-->>SSOService: SSOPerTenantConfig
+    SSOService-->>AuthApp: Config (autoProvisionUsers: true)
+    
+    AuthApp->>UserService: findActiveByEmailAndTenant(email, tenantId)
+    UserService->>MongoDB: Query users collection
+    MongoDB-->>UserService: Empty Result
+    UserService-->>AuthApp: User Not Found
+    
+    Note over AuthApp,EmailService: 4. User Creation
+    AuthApp->>AuthApp: Validate Email Domain
+    AuthApp->>UserService: registerOrReactivateFromSso(...)
+    UserService->>MongoDB: Insert User Document<br/>(roles: [ADMIN])
+    MongoDB-->>UserService: Created User
+    UserService-->>AuthApp: AuthUser
+    
+    AuthApp->>RegProcessor: postProcessAutoProvision(user)
+    RegProcessor->>EmailService: sendWelcomeEmail(user.email)
+    RegProcessor->>MongoDB: Insert Audit Event
+    RegProcessor-->>AuthApp: Complete
+    
+    Note over AuthApp,Browser: 5. Login Success
+    AuthApp->>Browser: Set Authentication Cookie
+    AuthApp->>Browser: Redirect to Application

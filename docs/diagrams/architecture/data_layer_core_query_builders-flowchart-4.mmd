@@ -1,0 +1,16 @@
+flowchart TD
+    Input["User Input"] --> Validate["Validate Input"]
+    Validate --> Escape["Escape Special Characters"]
+    Escape --> Parameterize["Parameterize Values"]
+    Parameterize --> Build["Build SQL"]
+    
+    Validate -->|"Invalid"| Error["Throw PinotQueryException"]
+    
+    subgraph Protection["Security Layers"]
+        Validate
+        Escape
+        Parameterize
+    end
+    
+    style Protection fill:#FFEBEE
+    style Error fill:#F44336

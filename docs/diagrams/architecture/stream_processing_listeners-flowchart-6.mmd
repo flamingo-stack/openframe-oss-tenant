@@ -1,0 +1,6 @@
+flowchart TD
+    Message["DeserializedDebeziumMessage"] --> Service["Select DataEnrichmentService"]
+    Service --> Fetch["Fetch Organization Data"]
+    Fetch --> Fetch2["Fetch Device Metadata"]
+    Fetch2 --> Build["Build IntegratedToolEnrichedData"]
+    Build --> Return["Return Enriched Data"]

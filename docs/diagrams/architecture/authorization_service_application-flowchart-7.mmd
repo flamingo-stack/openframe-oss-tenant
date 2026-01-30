@@ -1,0 +1,21 @@
+flowchart TD
+    SSOLogin["SSO Login Success"] -->|"Extract Claims"| UserInfo["OidcUser Claims"]
+    UserInfo -->|"Get Email"| EmailCheck{"User Exists?"}
+    
+    EmailCheck -->|"Yes"| Login["Proceed to Login"]
+    EmailCheck -->|"No"| PolicyCheck{"Auto-Provision<br/>Enabled?"}
+    
+    PolicyCheck -->|"No"| Deny["Deny Access"]
+    PolicyCheck -->|"Yes"| DomainCheck{"Email Domain<br/>Allowed?"}
+    
+    DomainCheck -->|"No"| Deny
+    DomainCheck -->|"Yes"| CreateUser["Create User<br/>(ADMIN role)"]
+    
+    CreateUser -->|"Trigger"| PostProcess["RegistrationProcessor<br/>.postProcessAutoProvision()"]
+    PostProcess -->|"Send Email"| Notify["Welcome Email"]
+    PostProcess -->|"Audit Log"| AuditLog["Audit Event"]
+    PostProcess --> Login
+    
+    style PolicyCheck fill:#E67E22,stroke:#A04000,stroke-width:2px,color:#fff
+    style DomainCheck fill:#E67E22,stroke:#A04000,stroke-width:2px,color:#fff
+    style CreateUser fill:#27AE60,stroke:#1E8449,stroke-width:2px,color:#fff

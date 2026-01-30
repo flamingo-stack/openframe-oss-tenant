@@ -1,0 +1,9 @@
+flowchart LR
+    Request["Request"] -->|"~10ms"| Validation["Validation"]
+    Validation -->|"~50ms"| MongoDB["MongoDB Save"]
+    MongoDB -->|"~1-2s"| Debezium["Debezium CDC"]
+    Debezium -->|"~100ms"| Hooks["Post-Save Hooks"]
+    Hooks -->|"~10ms"| Response["Response"]
+    
+    style Debezium fill:#E74C3C,stroke:#C0392B,color:#fff
+    style MongoDB fill:#F39C12,stroke:#C87F0A,color:#fff

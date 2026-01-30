@@ -1,0 +1,28 @@
+flowchart TD
+    Root["StreamApplication<br/>Component Scan"]
+    
+    subgraph StreamPackage["com.openframe.stream"]
+        Config1["Configuration Classes"]
+        Listeners1["Kafka Listeners"]
+        Services1["Stream Services"]
+        Handlers1["Message Handlers"]
+        Processors1["Message Processors"]
+    end
+    
+    subgraph DataPackage["com.openframe.data"]
+        MongoConfig["MongoDB Configuration"]
+        Repositories["Data Repositories"]
+        Documents["Document Models"]
+    end
+    
+    subgraph KafkaPackage["com.openframe.kafka.producer"]
+        KafkaProducers["Kafka Producers"]
+        RecoveryHandlers["Recovery Handlers"]
+        Serializers["Custom Serializers"]
+    end
+    
+    Root --> StreamPackage
+    Root --> DataPackage
+    Root --> KafkaPackage
+    
+    style Root fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff

@@ -1,0 +1,21 @@
+flowchart TD
+    Client["External API Client"] -->|"HTTP Request"| Gateway["API Gateway"]
+    Gateway -->|"Authenticated Request"| Controller["REST Controller"]
+    Controller -->|"Business Logic"| Service["Service Layer"]
+    Service -->|"Data Access"| Repository["Repository Layer"]
+    
+    Repository -.->|"throws Exception"| ExHandler["GlobalExceptionHandler"]
+    Service -.->|"throws Exception"| ExHandler
+    Controller -.->|"throws Exception"| ExHandler
+    
+    ExHandler -->|"ErrorResponse + HTTP Status"| Client
+    
+    subgraph ExceptionHandling["Exception Handling Layer"]
+        ExHandler
+        ErrorResponse["ErrorResponse DTO"]
+        ExHandler -->|"creates"| ErrorResponse
+    end
+    
+    style ExHandler fill:#ff6b6b
+    style ErrorResponse fill:#ffd93d
+    style ExceptionHandling fill:#f8f9fa

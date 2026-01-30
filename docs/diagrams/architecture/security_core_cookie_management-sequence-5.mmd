@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Browser
+    participant OAuthBFF
+    participant CookieService
+    participant AuthServer
+    
+    Note over Browser,AuthServer: Login Initiation
+    Browser->>OAuthBFF: GET /oauth/login?tenantId=acme
+    OAuthBFF->>OAuthBFF: Generate state, PKCE verifier
+    OAuthBFF->>CookieService: addOAuthStateCookie(state, jwt, 180)
+    CookieService->>Browser: Set-Cookie: of_oauth_{state}=...
+    OAuthBFF->>Browser: 302 Redirect to AuthServer
+    
+    Note over Browser,AuthServer: Authorization
+    Browser->>AuthServer: GET /authorize?state={state}&code_challenge=...
+    AuthServer->>Browser: Login page
+    Browser->>AuthServer: POST /login (credentials)
+    AuthServer->>Browser: 302 Redirect to callback
+    
+    Note over Browser,AuthServer: Callback
+    Browser->>OAuthBFF: GET /oauth/callback?code=xyz&state={state}
+    Note right of Browser: Cookie: of_oauth_{state}=...
+    OAuthBFF->>CookieService: Extract state cookie
+    OAuthBFF->>OAuthBFF: Validate state, extract PKCE verifier
+    OAuthBFF->>AuthServer: POST /token (code, verifier)
+    AuthServer->>OAuthBFF: access_token, refresh_token
+    OAuthBFF->>CookieService: addAuthCookies(access, refresh)
+    OAuthBFF->>CookieService: addClearOAuthStateCookie(state)
+    CookieService->>Browser: Set-Cookie access_token
+    CookieService->>Browser: Set-Cookie refresh_token
+    CookieService->>Browser: Clear of_oauth state cookie
+    OAuthBFF->>Browser: 302 Redirect to application

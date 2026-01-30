@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph Services["OpenFrame Services"]
+        API["API Service<br/>(Blocking)"]
+        Auth["Authorization Service<br/>(Blocking)"]
+        Gateway["Gateway Service<br/>(Reactive)"]
+        Management["Management Service<br/>(Blocking)"]
+        Client["Client Service<br/>(Blocking)"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        MongoConfig["MongoConfig"]
+        BlockingRepos["Blocking Repositories"]
+        ReactiveRepos["Reactive Repositories"]
+        Documents["Document Models"]
+    end
+    
+    subgraph Database["Database"]
+        MongoDB["MongoDB"]
+    end
+    
+    API -->|"Uses"| BlockingRepos
+    Auth -->|"Uses"| BlockingRepos
+    Management -->|"Uses"| BlockingRepos
+    Client -->|"Uses"| BlockingRepos
+    Gateway -->|"Uses"| ReactiveRepos
+    
+    BlockingRepos -->|"Configured by"| MongoConfig
+    ReactiveRepos -->|"Configured by"| MongoConfig
+    
+    BlockingRepos -->|"Access"| Documents
+    ReactiveRepos -->|"Access"| Documents
+    
+    Documents -->|"Stored in"| MongoDB
+    
+    style MongoConfig fill:#4CAF50
+    style MongoDB fill:#47A248

@@ -1,0 +1,26 @@
+flowchart TD
+    Error["Error Occurred"] --> Classify["Classify Error"]
+    
+    Classify --> Recoverable{"Is<br/>Recoverable?"}
+    
+    Recoverable -->|"Yes"| AutoRetry["Automatic Retry"]
+    AutoRetry --> RetrySuccess{"Retry<br/>Successful?"}
+    
+    RetrySuccess -->|"Yes"| Recover["Recover State"]
+    Recover --> Complete["Complete"]
+    
+    RetrySuccess -->|"No"| ManualRetry["Offer Manual Retry"]
+    ManualRetry --> UserAction{"User<br/>Action?"}
+    
+    UserAction -->|"Retry"| AutoRetry
+    UserAction -->|"Cancel"| Rollback["Rollback State"]
+    
+    Recoverable -->|"No"| ShowError["Show Error Message"]
+    ShowError --> Rollback
+    
+    Rollback --> CleanState["Clean Error State"]
+    CleanState --> End["End"]
+    
+    style AutoRetry fill:#4CAF50
+    style Rollback fill:#F44336
+    style ManualRetry fill:#FF9800

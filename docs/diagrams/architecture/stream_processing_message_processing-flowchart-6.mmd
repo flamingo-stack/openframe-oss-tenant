@@ -1,0 +1,16 @@
+flowchart LR
+    MessageType["MessageType.FLEET_HOST"] -->|"getEventHandlerType()"| EventType["EventHandlerType.DEBEZIUM"]
+    EventType --> HandlerMap["handlers.get(DEBEZIUM)"]
+    HandlerMap --> DestinationMap["Map<Destination, Handler>"]
+    
+    Destination1["Destination.MONGO"] --> DestinationMap
+    Destination2["Destination.CASSANDRA"] --> DestinationMap
+    Destination3["Destination.PINOT"] --> DestinationMap
+    
+    DestinationMap -->|"get(MONGO)"| MongoHandler["FleetHostMongoHandler"]
+    DestinationMap -->|"get(CASSANDRA)"| CassandraHandler["FleetHostCassandraHandler"]
+    DestinationMap -->|"get(PINOT)"| PinotHandler["FleetHostPinotHandler"]
+    
+    style MessageType fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style EventType fill:#50C878,stroke:#2E7D4E,color:#fff
+    style DestinationMap fill:#FFB347,stroke:#CC8A38,color:#fff

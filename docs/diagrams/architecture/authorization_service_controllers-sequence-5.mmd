@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Client
+    participant Controller as TenantRegistrationController
+    participant SsoService as SsoTenantRegistrationService
+    participant AuthState as AuthStateUtils
+    participant OAuth as Spring OAuth2
+    participant Provider as SSO Provider
+    
+    Client->>Controller: GET /oauth/register/sso?provider=google
+    Controller->>AuthState: clearAuthState()
+    Note over AuthState: Clear existing session
+    
+    Controller->>SsoService: startRegistration(request)
+    SsoService->>SsoService: Generate HMAC token
+    SsoService->>SsoService: Build OAuth authorize URL
+    SsoService-->>Controller: SsoAuthorizeData
+    
+    Controller->>Controller: buildSsoRegistrationCookie()
+    Note over Controller: HttpOnly, Secure, TTL=300s
+    
+    Controller->>Client: 303 See Other + Set-Cookie
+    Note over Controller,Client: Location: /oauth2/authorization/{provider}
+    
+    Client->>OAuth: Follow redirect
+    OAuth->>Provider: OAuth authorize request
+    Provider-->>Client: Login page
+    
+    Client->>Provider: Authenticate
+    Provider->>OAuth: Authorization code
+    OAuth->>OAuth: Exchange code for token
+    OAuth->>OAuth: Validate SSO cookie
+    OAuth->>SsoService: Complete registration
+    SsoService->>SsoService: Create tenant + user

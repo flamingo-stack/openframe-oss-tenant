@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Gateway
+    participant AuthZ as Authorization Server
+    participant Provider as OAuth Provider
+    
+    User->>Frontend: Enter email
+    Frontend->>Gateway: Discover tenants
+    Gateway-->>Frontend: Tenant + providers
+    
+    User->>Frontend: Click SSO provider
+    Frontend->>Frontend: Generate login URL
+    Frontend->>Gateway: Redirect to /oauth/login
+    
+    Gateway->>AuthZ: OAuth login request
+    AuthZ->>AuthZ: Generate PKCE challenge
+    AuthZ-->>Frontend: Redirect to provider
+    
+    Frontend->>Provider: OAuth authorization
+    User->>Provider: Approve
+    Provider-->>AuthZ: Callback + code
+    
+    AuthZ->>Provider: Exchange code
+    Provider-->>AuthZ: Tokens + profile
+    
+    AuthZ->>AuthZ: Validate user
+    AuthZ->>AuthZ: Generate JWT
+    AuthZ-->>Frontend: Set session cookie
+    
+    Frontend->>Gateway: GET /api/me
+    Gateway->>Gateway: Validate session
+    Gateway-->>Frontend: User profile
+    
+    Frontend->>Frontend: Store in auth store
+    Frontend->>User: Show dashboard

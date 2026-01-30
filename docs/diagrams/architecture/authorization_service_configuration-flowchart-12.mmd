@@ -1,0 +1,10 @@
+flowchart LR
+    PlainPassword["Plain Password"] --> BCrypt["BCrypt Hash<br/>(cost factor 10)"]
+    BCrypt --> StoredHash["Stored Hash<br/>(60 chars)"]
+    
+    LoginAttempt["Login Attempt"] --> CompareHash["BCrypt.matches()"]
+    CompareHash --> StoredHash
+    CompareHash --> Success["Authentication Success/Failure"]
+    
+    style BCrypt fill:#50C878
+    style StoredHash fill:#4A90E2

@@ -1,0 +1,16 @@
+flowchart TD
+    Generate["Generate Random Token"] --> Hash["SHA-256 Hash"]
+    Hash --> Store["Store Hash in DB"]
+    Store --> Email["Send Token via Email"]
+    
+    Email --> UserClick["User Clicks Link"]
+    UserClick --> Validate["Validate Token"]
+    
+    Validate --> CheckExpiry{Expired?}
+    CheckExpiry -->|No| CheckUsed{Already Used?}
+    CheckExpiry -->|Yes| Reject["Reject Request"]
+    
+    CheckUsed -->|No| UpdatePassword["Update Password"]
+    CheckUsed -->|Yes| Reject
+    
+    UpdatePassword --> InvalidateToken["Invalidate Token"]

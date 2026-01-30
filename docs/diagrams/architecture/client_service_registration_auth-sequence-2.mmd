@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant Agent as Agent Client
+    participant Controller as AgentController
+    participant Service as AgentRegistrationService
+    participant Validator as SecretValidator
+    participant OAuthRepo as OAuthClientRepository
+    participant MachineRepo as MachineRepository
+    participant ToolService as ToolInstallationService
+    participant Processor as AgentRegistrationProcessor
+    
+    Agent->>Controller: POST /api/agents/register<br/>X-Initial-Key: secret<br/>Body: AgentRegistrationRequest
+    
+    Controller->>Service: register(initialKey, request)
+    
+    Service->>Validator: validate(initialKey)
+    Validator->>Validator: Check against active secret
+    Validator-->>Service: ✓ Valid
+    
+    Service->>Service: generate machineId
+    Service->>Service: generate clientId (agent_machineId)
+    Service->>Service: generate clientSecret
+    
+    Service->>OAuthRepo: save(OAuthClient)
+    OAuthRepo-->>Service: ✓ Saved
+    
+    Service->>MachineRepo: save(Machine)
+    MachineRepo-->>Service: ✓ Saved
+    
+    Service->>ToolService: process(machineId)
+    ToolService->>ToolService: Install Fleet MDM, Tactical RMM, etc.
+    ToolService-->>Service: ✓ Tools installed
+    
+    Service->>Processor: postProcessAgentRegistration(machine, request)
+    Processor->>Processor: Custom processing (optional)
+    Processor-->>Service: ✓ Complete
+    
+    Service-->>Controller: AgentRegistrationResponse
+    Controller-->>Agent: 200 OK<br/>{machineId, clientId, clientSecret}

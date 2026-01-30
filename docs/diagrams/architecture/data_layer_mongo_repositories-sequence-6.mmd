@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Service as Service Layer
+    participant Repo as OrganizationRepository
+    participant CustomImpl as CustomOrganizationRepositoryImpl
+    participant MongoTemplate as MongoTemplate
+    participant MongoDB as MongoDB
+    
+    Service->>Repo: searchOrganizations("tech", pageable)
+    Repo->>CustomImpl: Delegate to custom implementation
+    CustomImpl->>CustomImpl: Build Query with Criteria
+    CustomImpl->>MongoTemplate: find(query, Organization.class)
+    MongoTemplate->>MongoDB: Aggregation pipeline
+    MongoDB-->>MongoTemplate: Result documents
+    MongoTemplate-->>CustomImpl: List<Organization>
+    CustomImpl->>MongoTemplate: count(query, Organization.class)
+    MongoTemplate->>MongoDB: Count query
+    MongoDB-->>MongoTemplate: Total count
+    MongoTemplate-->>CustomImpl: Long count
+    CustomImpl->>CustomImpl: Create PageImpl
+    CustomImpl-->>Repo: Page<Organization>
+    Repo-->>Service: Page<Organization>

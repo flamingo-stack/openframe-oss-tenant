@@ -1,0 +1,11 @@
+flowchart TD
+    RestControllers["api_service_rest_controllers"]
+    
+    RestControllers -->|"Secured by"| Config["api_service_configuration"]
+    RestControllers -->|"Uses DTOs from"| DataMongo["data_layer_mongo"]
+    RestControllers -->|"Authenticated via"| SecurityCore["security_core"]
+    RestControllers -->|"Routed through"| Gateway["gateway_service"]
+    
+    Config -->|"JWT Validation"| SecurityCore
+    RestControllers -.->|"Complements"| GraphQL["api_service_graphql_datafetchers"]
+    RestControllers -.->|"Internal vs External"| ExternalAPI["external_api"]

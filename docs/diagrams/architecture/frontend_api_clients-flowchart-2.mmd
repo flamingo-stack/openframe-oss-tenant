@@ -1,0 +1,41 @@
+flowchart TD
+    Start["API Request"] --> CheckAuth{"Skip Auth?"}
+    CheckAuth -->|"Yes"| MakeRequest["Make Request"]
+    CheckAuth -->|"No"| AddHeaders["Add Auth Headers"]
+    
+    AddHeaders --> DevTicket{"Dev Ticket<br/>Enabled?"}
+    DevTicket -->|"Yes"| AddBearer["Add Bearer Token<br/>from localStorage"]
+    DevTicket -->|"No"| AddCookie["Include Cookies"]
+    
+    AddBearer --> MakeRequest
+    AddCookie --> MakeRequest
+    
+    MakeRequest --> CheckStatus{"Response<br/>Status?"}
+    
+    CheckStatus -->|"401"| CheckRetry{"Already<br/>Retried?"}
+    CheckStatus -->|"Success"| ParseResponse["Parse Response"]
+    CheckStatus -->|"Other Error"| ReturnError["Return Error"]
+    
+    CheckRetry -->|"Yes"| ForceLogout["Force Logout"]
+    CheckRetry -->|"No"| CheckRefreshing{"Already<br/>Refreshing?"}
+    
+    CheckRefreshing -->|"Yes"| QueueRequest["Queue Request"]
+    CheckRefreshing -->|"No"| RefreshToken["Refresh Access Token"]
+    
+    RefreshToken --> RefreshSuccess{"Refresh<br/>Success?"}
+    
+    RefreshSuccess -->|"Yes"| UpdateToken["Update Token"]
+    RefreshSuccess -->|"No"| ForceLogout
+    
+    UpdateToken --> RetryRequest["Retry Original Request"]
+    QueueRequest --> WaitForRefresh["Wait for Refresh"]
+    WaitForRefresh --> RetryRequest
+    
+    RetryRequest --> CheckStatus
+    ParseResponse --> EndNode["Return Response"]
+    ReturnError --> EndNode
+    ForceLogout --> EndNode
+    
+    style RefreshToken fill:#F39C12,stroke:#D68910,color:#fff
+    style ForceLogout fill:#E74C3C,stroke:#C0392B,color:#fff
+    style ParseResponse fill:#2ECC71,stroke:#27AE60,color:#fff

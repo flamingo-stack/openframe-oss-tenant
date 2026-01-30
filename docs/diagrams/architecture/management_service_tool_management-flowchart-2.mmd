@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph Request["Tool Save Request Flow"]
+        A["Client"] -->|"POST /v1/tools/{id}"| B["IntegratedToolController"]
+        B -->|"1. Validate & Set ID"| C["Request Processing"]
+        C -->|"2. Save Tool"| D["IntegratedToolService"]
+        D -->|"3. Persist"| E[("MongoDB")]
+        E -->|"4. Return Saved Tool"| D
+        D -->|"5. Saved Tool"| B
+        B -->|"6. Create/Update CDC"| F["DebeziumService"]
+        F -->|"7. HTTP API Calls"| G["Debezium Connect"]
+        G -->|"8. Connector Status"| F
+        F -->|"9. CDC Complete"| B
+        B -->|"10. Execute Hooks"| H["Post-Save Hooks"]
+        H -->|"11. Hook Results"| B
+        B -->|"12. Success Response"| A
+    end
+    
+    style A fill:#E8F4F8,stroke:#4A90E2
+    style B fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style D fill:#50C878,stroke:#2E7D4E,color:#fff
+    style F fill:#F39C12,stroke:#C87F0A,color:#fff
+    style H fill:#9B59B6,stroke:#6C3483,color:#fff

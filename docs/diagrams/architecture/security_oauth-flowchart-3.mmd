@@ -1,0 +1,24 @@
+flowchart TD
+    subgraph authorize["buildAuthorizeRedirect()"]
+        A1["Generate PKCE<br/>code_verifier + code_challenge"] --> A2["Generate state"]
+        A2 --> A3["Resolve redirect target"]
+        A3 --> A4["Build authorize URL"]
+        A4 --> A5["Return AuthorizeData"]
+    end
+    
+    subgraph callback["handleCallback()"]
+        C1["Validate state cookie"] --> C2["Extract session data"]
+        C2 --> C3["Exchange code for tokens"]
+        C3 --> C4["Resolve final redirect"]
+        C4 --> C5["Return OAuthCallbackResult"]
+    end
+    
+    subgraph refresh["refreshTokens()"]
+        R1["Build refresh grant request"] --> R2["POST to /oauth2/token"]
+        R2 --> R3["Return new TokenResponse"]
+    end
+    
+    subgraph revoke["revokeRefreshToken()"]
+        V1["Build revoke request"] --> V2["POST to /oauth2/revoke"]
+        V2 --> V3["Return Void"]
+    end

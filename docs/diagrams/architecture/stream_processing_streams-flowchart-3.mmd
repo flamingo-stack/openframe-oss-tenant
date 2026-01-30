@@ -1,0 +1,57 @@
+flowchart TD
+    subgraph FleetMDM["Fleet MDM (External)"]
+        FDB["Fleet Database<br/>(PostgreSQL)"]
+    end
+    
+    subgraph Debezium["Debezium CDC"]
+        CDC1["Activities CDC Connector"]
+        CDC2["Host Activities CDC Connector"]
+    end
+    
+    subgraph KafkaTopics["Kafka Topics"]
+        T1["fleet-mdm-activities"]
+        T2["fleet-mdm-host-activities"]
+        T3["fleet-mdm-events"]
+    end
+    
+    subgraph StreamsApp["Kafka Streams Application"]
+        READ1["Read Activity Stream"]
+        READ2["Read Host Activity Stream"]
+        REKEY1["Re-key by Activity ID"]
+        REKEY2["Re-key by Activity ID"]
+        JOIN["Left Join<br/>(5s Window)"]
+        ENRICH["Enrich with Host Info"]
+        HEADER["Add Headers"]
+        WRITE["Write to Output"]
+    end
+    
+    subgraph Consumers["Downstream Consumers"]
+        LISTENER["JsonKafkaListener"]
+        HANDLER["Message Handlers"]
+    end
+    
+    FDB -->|"CDC Events"| CDC1
+    FDB -->|"CDC Events"| CDC2
+    
+    CDC1 --> T1
+    CDC2 --> T2
+    
+    T1 --> READ1
+    T2 --> READ2
+    
+    READ1 --> REKEY1
+    READ2 --> REKEY2
+    
+    REKEY1 --> JOIN
+    REKEY2 --> JOIN
+    
+    JOIN --> ENRICH
+    ENRICH --> HEADER
+    HEADER --> WRITE
+    
+    WRITE --> T3
+    T3 --> LISTENER
+    LISTENER --> HANDLER
+    
+    style StreamsApp fill:#1a1a2e,stroke:#16213e,stroke-width:2px
+    style JOIN fill:#0f3460,stroke:#16213e,stroke-width:2px

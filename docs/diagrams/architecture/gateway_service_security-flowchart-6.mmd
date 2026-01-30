@@ -1,0 +1,23 @@
+flowchart TD
+    Request["API Request"] --> ExtractKey["Extract X-API-Key"]
+    ExtractKey --> ValidateKey["Validate API Key"]
+    
+    ValidateKey -->|"Invalid"| Reject401["401 Unauthorized"]
+    ValidateKey -->|"Valid"| IncrementTotal["Increment Total Requests"]
+    
+    IncrementTotal --> CheckMinute{"Minute Limit?"}
+    CheckMinute -->|"Exceeded"| Reject429["429 Too Many Requests"]
+    CheckMinute -->|"OK"| CheckHour{"Hour Limit?"}
+    
+    CheckHour -->|"Exceeded"| Reject429
+    CheckHour -->|"OK"| CheckDay{"Day Limit?"}
+    
+    CheckDay -->|"Exceeded"| Reject429
+    CheckDay -->|"OK"| IncrementCounters["Increment Rate Limit Counters"]
+    
+    IncrementCounters --> AddHeaders["Add Rate Limit Headers"]
+    AddHeaders --> AddContext["Add User Context"]
+    AddContext --> RouteRequest["Route to External API"]
+    
+    RouteRequest -->|"Success"| RecordSuccess["Record Success"]
+    RouteRequest -->|"Error"| RecordFailure["Record Failure"]

@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph Controllers["REST Controllers Layer"]
+        DC["DeviceController"]
+        OC["OrganizationController"]
+        UC["UserController"]
+    end
+    
+    subgraph Services["Service Layer"]
+        DS["DeviceService"]
+        OCS["OrganizationCommandService"]
+        US["UserService"]
+    end
+    
+    subgraph DTOs["Data Transfer Objects"]
+        DeviceDTO["UpdateDeviceStatusRequest"]
+        OrgDTO["Create/Update/Response"]
+        UserDTO["Update/Response/Page"]
+    end
+    
+    subgraph Security["Security Components"]
+        SC["SecurityConfig"]
+        AC["AuthenticationConfig"]
+        AP["AuthPrincipal"]
+    end
+    
+    DC -->|"Uses"| DS
+    OC -->|"Uses"| OCS
+    UC -->|"Uses"| US
+    
+    Controllers -->|"Validates"| DTOs
+    Security -->|"Secures"| Controllers
+    AC -->|"Injects"| AP

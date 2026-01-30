@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Admin as Admin User
+    participant API as API Service
+    participant MongoDB as MongoDB
+    
+    Admin->>API: Create Organization
+    API->>MongoDB: Insert Organization (isDefault=true)
+    MongoDB-->>API: Organization Created
+    API->>MongoDB: Create Default User
+    MongoDB-->>API: User Created
+    API-->>Admin: Setup Complete

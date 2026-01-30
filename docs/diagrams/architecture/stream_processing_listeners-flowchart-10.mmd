@@ -1,0 +1,20 @@
+flowchart TD
+    Consume["Consume Message"] --> Try{"Try Process"}
+    Try -->|"Success"| Commit["Commit Offset"]
+    Try -->|"Deserialization Error"| Log1["Log Error"]
+    Try -->|"Processing Error"| Log2["Log Error"]
+    Try -->|"Handler Error"| Log3["Log Error"]
+    
+    Log1 --> DLQ1["Send to DLQ"]
+    Log2 --> Retry["Retry Logic"]
+    Log3 --> Retry
+    
+    Retry --> MaxRetries{"Max Retries?"}
+    MaxRetries -->|"No"| Reprocess["Reprocess"]
+    MaxRetries -->|"Yes"| DLQ2["Send to DLQ"]
+    
+    Reprocess --> Try
+    DLQ1 --> Skip["Skip Message"]
+    DLQ2 --> Skip
+    Commit --> Continue["Continue"]
+    Skip --> Continue

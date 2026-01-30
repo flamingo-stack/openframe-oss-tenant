@@ -1,0 +1,30 @@
+flowchart TD
+    Request["requestDisplayList()"]
+    SendCmd["Send DISPLAY_LIST<br/>(cmd=0x000B)"]
+    
+    subgraph Response["Server Response"]
+        ParseHeader["Parse Header<br/>(cmd=11, size)"]
+        ReadCount["Read Display Count<br/>(uint16)"]
+        DetectFormat{"Detect Format"}
+    end
+    
+    subgraph Formats["Format Types"]
+        SimpleFormat["Simple Format<br/>(2-4 bytes/display)<br/>ID only"]
+        FullFormat["Full Format<br/>(8-12 bytes/display)<br/>ID + position + size"]
+    end
+    
+    BuildList["Build DisplayInfo[]"]
+    Callback["Trigger onDisplayListChange"]
+    
+    Request --> SendCmd
+    SendCmd --> ParseHeader
+    ParseHeader --> ReadCount
+    ReadCount --> DetectFormat
+    
+    DetectFormat -->|"2-4 bytes"| SimpleFormat
+    DetectFormat -->|"8-12 bytes"| FullFormat
+    
+    SimpleFormat --> BuildList
+    FullFormat --> BuildList
+    
+    BuildList --> Callback

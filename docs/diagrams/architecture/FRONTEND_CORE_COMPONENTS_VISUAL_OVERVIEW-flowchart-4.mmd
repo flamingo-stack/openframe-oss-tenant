@@ -1,0 +1,25 @@
+flowchart LR
+    Header["Header Component"]
+    
+    Header --> Left["Left Section"]
+    Header --> Center["Center Section"]
+    Header --> Right["Right Section"]
+    
+    Left --> Logo["Logo"]
+    Left --> LeftActions["Left Actions"]
+    
+    Center --> NavItems["Navigation Items"]
+    NavItems --> SimpleLink["Simple Links"]
+    NavItems --> Dropdown["Dropdown Menus"]
+    NavItems --> CustomElement["Custom Elements"]
+    
+    Right --> RightActions["Right Actions"]
+    Right --> MobileToggle["Mobile Menu Toggle"]
+    
+    Dropdown --> DropdownItems["Dropdown Items"]
+    Dropdown --> DropdownContent["Custom Content"]
+    
+    style Header fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Left fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Center fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Right fill:#E67E22,stroke:#A04000,color:#fff

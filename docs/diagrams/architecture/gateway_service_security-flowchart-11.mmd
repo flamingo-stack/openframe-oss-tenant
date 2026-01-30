@@ -1,0 +1,32 @@
+flowchart TD
+    subgraph Gateway["API Gateway Security"]
+        GatewaySec["Gateway Security Module"]
+    end
+    
+    subgraph Services["Downstream Services"]
+        ApiService["API Service"]
+        ClientService["Client Service"]
+        ExternalApi["External API Service"]
+        ManagementService["Management Service"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        MongoDB["MongoDB"]
+        Redis["Redis"]
+    end
+    
+    subgraph SecurityCore["Security Core"]
+        JwtConfig["JWT Config"]
+        SecurityConstants["Security Constants"]
+    end
+    
+    GatewaySec -->|"Authenticated Requests"| ApiService
+    GatewaySec -->|"Authenticated Requests"| ClientService
+    GatewaySec -->|"Authenticated Requests"| ExternalApi
+    GatewaySec -->|"Authenticated Requests"| ManagementService
+    
+    GatewaySec -->|"Validate API Keys"| MongoDB
+    GatewaySec -->|"Rate Limiting"| Redis
+    
+    GatewaySec -->|"JWT Configuration"| JwtConfig
+    GatewaySec -->|"Security Constants"| SecurityConstants

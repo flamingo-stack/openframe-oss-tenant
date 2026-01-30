@@ -1,0 +1,38 @@
+flowchart LR
+    subgraph Active["Active Dialog Store"]
+        direction TB
+        ActiveDialog["Current Dialog"]
+        ActiveMessages["Full Message History"]
+        ActiveTyping["Typing State"]
+        ActivePagination["Pagination Cursors"]
+    end
+    
+    subgraph Background["Background Store"]
+        direction TB
+        BgDialogs["Dialog Messages Map"]
+        BgUnread["Unread Counts"]
+        BgTyping["Typing Indicators"]
+        BgLimit["50 Message Limit"]
+    end
+    
+    subgraph Events["Event Handling"]
+        UserSend["User Sends Message"]
+        IncomingMsg["Incoming Message"]
+        DialogSwitch["Dialog Switch"]
+    end
+    
+    UserSend --> Active
+    IncomingMsg --> Router{"Active Dialog?"}
+    Router -->|"Yes"| Active
+    Router -->|"No"| Background
+    
+    DialogSwitch --> Transfer["Transfer State"]
+    Transfer --> Active
+    Transfer --> Background
+    
+    Background -.->|"Increment"| BgUnread
+    Active -.->|"Reset"| BgUnread
+    
+    style Active fill:#4CAF50
+    style Background fill:#2196F3
+    style Router fill:#FF9800

@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph internet["Internet"]
+        User1["User (Tenant A)"]
+        User2["User (Tenant B)"]
+    end
+    
+    subgraph cdn["CDN Layer"]
+        CloudFlare["CloudFlare<br/>(Static Assets)"]
+    end
+    
+    subgraph frontend["Frontend Layer"]
+        NextJS["Next.js App<br/>(Shared Instance)"]
+    end
+    
+    subgraph backend["Backend Layer"]
+        Gateway["API Gateway<br/>(Shared)"]
+        AuthServer["Auth Server<br/>(Shared)"]
+        Services["Microservices<br/>(Multi-tenant)"]
+    end
+    
+    subgraph data["Data Layer"]
+        MongoDB["MongoDB<br/>(Tenant Isolation)"]
+        Pinot["Apache Pinot<br/>(Tenant Partitioning)"]
+    end
+    
+    User1 -->|"tenant-a.openframe.ai"| CloudFlare
+    User2 -->|"tenant-b.openframe.ai"| CloudFlare
+    
+    CloudFlare --> NextJS
+    NextJS --> Gateway
+    Gateway --> AuthServer
+    Gateway --> Services
+    
+    Services --> MongoDB
+    Services --> Pinot
+    
+    style NextJS fill:#4CAF50
+    style Gateway fill:#2196F3
+    style MongoDB fill:#FF9800

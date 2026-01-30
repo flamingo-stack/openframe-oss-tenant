@@ -1,0 +1,22 @@
+flowchart TD
+    DebeziumMessage["DeserializedDebeziumMessage"] --> Transform["transform()"]
+    EnrichedData["IntegratedToolEnrichedData"] --> Transform
+    
+    Transform --> CreateKey["createKey()"]
+    Transform --> MapFields["Map Fields"]
+    
+    CreateKey --> KeyComponents["UnifiedLogEventKey<br/>- ingestDay<br/>- toolType<br/>- eventType<br/>- eventTimestamp<br/>- toolEventId"]
+    
+    MapFields --> EventFields["UnifiedLogEvent<br/>- userId<br/>- deviceId<br/>- hostname<br/>- organizationId<br/>- severity<br/>- message<br/>- details"]
+    
+    KeyComponents --> UnifiedLogEvent["UnifiedLogEvent"]
+    EventFields --> UnifiedLogEvent
+    
+    UnifiedLogEvent --> HandleCreate["handleCreate()"]
+    HandleCreate --> CassandraRepo["CassandraRepository.save()"]
+    CassandraRepo --> Cassandra[("Cassandra<br/>unified_log_events table")]
+    
+    style Transform fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style CreateKey fill:#FFB347,stroke:#CC8A38,color:#fff
+    style UnifiedLogEvent fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Cassandra fill:#E74C3C,stroke:#A93226,color:#fff

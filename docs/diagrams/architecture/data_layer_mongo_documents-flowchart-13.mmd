@@ -1,0 +1,23 @@
+flowchart TD
+    Tenant1["Tenant 1"]
+    Tenant2["Tenant 2"]
+    
+    Org1["Organization 1<br/>organizationId: uuid-1"]
+    Org2["Organization 2<br/>organizationId: uuid-2"]
+    
+    Machine1A["Machine 1A<br/>organizationId: uuid-1"]
+    Machine1B["Machine 1B<br/>organizationId: uuid-1"]
+    Machine2A["Machine 2A<br/>organizationId: uuid-2"]
+    
+    Tenant1 --> Org1
+    Tenant2 --> Org2
+    
+    Org1 --> Machine1A
+    Org1 --> Machine1B
+    Org2 --> Machine2A
+    
+    style Org1 fill:#e1f5ff
+    style Org2 fill:#e1f5ff
+    style Machine1A fill:#fff4e1
+    style Machine1B fill:#fff4e1
+    style Machine2A fill:#fff4e1

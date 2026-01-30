@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph api_service["API Service"]
+        DeviceController["DeviceController"]
+        LogDataFetcher["LogDataFetcher"]
+    end
+    
+    subgraph external_api["External API Service"]
+        LogController["LogController"]
+    end
+    
+    subgraph config["Configuration Module"]
+        PinotConfig["PinotConfig"]
+    end
+    
+    subgraph repositories["Repositories"]
+        PinotDeviceRepo["PinotClientDeviceRepository"]
+        PinotLogRepo["PinotClientLogRepository"]
+    end
+    
+    PinotConfig -->|"provides Connection"| PinotDeviceRepo
+    PinotConfig -->|"provides Connection"| PinotLogRepo
+    
+    DeviceController -->|"injects"| PinotDeviceRepo
+    LogDataFetcher -->|"injects"| PinotLogRepo
+    LogController -->|"injects"| PinotLogRepo
+    
+    PinotDeviceRepo -->|"queries"| Pinot[("Pinot Broker")]
+    PinotLogRepo -->|"queries"| Pinot

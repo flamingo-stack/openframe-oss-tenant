@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph Loading["Model Loading"]
+        CheckLoaded["Check if Loaded"]
+        CheckPromise["Check Load Promise"]
+        FetchAPI["Fetch from API"]
+        ParseResponse["Parse Response"]
+        PopulateMap["Populate Model Map"]
+        MarkLoaded["Mark as Loaded"]
+    end
+    
+    subgraph Lookup["Model Lookup"]
+        GetModel["Get Model by Name"]
+        CheckMap["Check Model Map"]
+        ReturnModel["Return Model"]
+        ReturnDefault["Return Default Name"]
+    end
+    
+    CheckLoaded -->|"Not loaded"| CheckPromise
+    CheckPromise -->|"No promise"| FetchAPI
+    CheckPromise -->|"Promise exists"| WaitPromise["Wait for Promise"]
+    FetchAPI --> ParseResponse
+    ParseResponse --> PopulateMap
+    PopulateMap --> MarkLoaded
+    
+    GetModel --> CheckMap
+    CheckMap -->|"Found"| ReturnModel
+    CheckMap -->|"Not found"| ReturnDefault

@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Search term:<br/>'authentication error'"] --> Build["Build TEXT_MATCH conditions"]
+    Build --> Query["TEXT_MATCH(summary, 'authentication error')<br/>OR<br/>TEXT_MATCH(userId, 'authentication error')"]
+    Query --> Execute["Execute with other filters"]
+    Execute --> Result["Returns matching logs<br/>ordered by timestamp"]
+    
+    style Start fill:#E8F4F8
+    style Query fill:#F39C12
+    style Result fill:#50C878

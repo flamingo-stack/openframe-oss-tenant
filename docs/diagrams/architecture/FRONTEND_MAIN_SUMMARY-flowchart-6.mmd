@@ -1,0 +1,10 @@
+flowchart LR
+    Code["Code Push"] --> Build["Build & Test"]
+    Build --> Staging["Deploy to Staging"]
+    Staging --> QA["QA Testing"]
+    QA --> Production["Deploy to Production"]
+    Production --> Monitor["Monitor & Alert"]
+    
+    style Code fill:#4CAF50
+    style Production fill:#2196F3
+    style Monitor fill:#FF9800

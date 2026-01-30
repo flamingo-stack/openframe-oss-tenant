@@ -1,0 +1,48 @@
+sequenceDiagram
+    participant User
+    participant Component
+    participant ChunkCatchup
+    participant NATSSubscription
+    participant NATS
+    participant API
+    
+    User->>Component: Open Dialog
+    Component->>ChunkCatchup: startInitialBuffering()
+    ChunkCatchup->>ChunkCatchup: Enable buffering
+    
+    Component->>NATSSubscription: Connect & Subscribe
+    NATSSubscription->>NATS: WebSocket Connect
+    NATS-->>NATSSubscription: Connected
+    NATSSubscription->>NATS: Subscribe dialog.{id}.message
+    
+    Note over NATS,ChunkCatchup: Real-time chunks arrive<br/>but are buffered
+    
+    NATS-->>NATSSubscription: Chunk 1
+    NATSSubscription->>ChunkCatchup: processChunk(chunk1)
+    ChunkCatchup->>ChunkCatchup: Buffer chunk1
+    
+    NATS-->>NATSSubscription: Chunk 2
+    NATSSubscription->>ChunkCatchup: processChunk(chunk2)
+    ChunkCatchup->>ChunkCatchup: Buffer chunk2
+    
+    Component->>ChunkCatchup: catchUpChunks(lastSeqId)
+    ChunkCatchup->>API: Fetch historical chunks
+    API-->>ChunkCatchup: Historical chunks
+    
+    ChunkCatchup->>ChunkCatchup: Merge historical + buffered
+    ChunkCatchup->>ChunkCatchup: Deduplicate by sequenceId
+    ChunkCatchup->>ChunkCatchup: Sort by sequenceId
+    
+    loop Process Merged Chunks
+        ChunkCatchup->>Component: onChunkReceived(chunk)
+        Component->>Component: Update UI
+    end
+    
+    ChunkCatchup->>ChunkCatchup: Disable buffering
+    
+    Note over NATS,Component: Now in real-time mode
+    
+    NATS-->>NATSSubscription: Chunk 3
+    NATSSubscription->>ChunkCatchup: processChunk(chunk3)
+    ChunkCatchup->>Component: onChunkReceived(chunk3)
+    Component->>Component: Update UI immediately

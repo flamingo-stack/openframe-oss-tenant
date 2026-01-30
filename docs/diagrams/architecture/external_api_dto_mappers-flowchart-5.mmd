@@ -1,0 +1,8 @@
+flowchart LR
+    Event["Event<br/>(MongoDB)"]
+    
+    Event --> Mapper["EventMapper"]
+    
+    Mapper --> EventResponse["EventResponse<br/>(REST DTO)"]
+    
+    EventResponse --> Fields["• id<br/>• type<br/>• payload (JSON)<br/>• timestamp<br/>• userId"]

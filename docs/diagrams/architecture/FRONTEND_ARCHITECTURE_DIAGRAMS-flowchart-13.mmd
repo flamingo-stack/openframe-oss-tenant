@@ -1,0 +1,44 @@
+flowchart TD
+    subgraph client["Client Layer"]
+        Browser["Browser"]
+        LocalStorage["localStorage<br/>(Dev Mode Only)"]
+        Cookies["HTTP-only Cookies<br/>(Production)"]
+    end
+    
+    subgraph transport["Transport Layer"]
+        HTTPS["HTTPS/TLS 1.3"]
+        CSP["Content Security Policy"]
+        CORS["CORS Headers"]
+    end
+    
+    subgraph application["Application Layer"]
+        TokenValidation["Token Validation"]
+        SessionCheck["Session Check"]
+        CSRF["CSRF Protection"]
+    end
+    
+    subgraph backend["Backend Layer"]
+        Gateway["API Gateway<br/>(Rate Limiting)"]
+        AuthServer["Auth Server<br/>(OAuth 2.0)"]
+        JWT["JWT Validation"]
+    end
+    
+    Browser --> HTTPS
+    LocalStorage -.->|"dev mode"| Browser
+    Cookies -->|"production"| Browser
+    
+    HTTPS --> CSP
+    CSP --> CORS
+    CORS --> TokenValidation
+    
+    TokenValidation --> SessionCheck
+    SessionCheck --> CSRF
+    
+    CSRF --> Gateway
+    Gateway --> AuthServer
+    AuthServer --> JWT
+    
+    style Browser fill:#4CAF50
+    style HTTPS fill:#2196F3
+    style Gateway fill:#FF9800
+    style JWT fill:#9C27B0

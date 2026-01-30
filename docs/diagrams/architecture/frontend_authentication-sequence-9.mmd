@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Gateway
+    participant AuthZ as Authorization Server
+    participant Mongo as MongoDB
+    
+    User->>Frontend: Click invitation link
+    Frontend->>Frontend: Extract invitation ID
+    Frontend->>Gateway: GET /sas/sso/providers/invite
+    Gateway->>AuthZ: Get available providers
+    AuthZ-->>Frontend: Provider list
+    
+    alt Password-based
+        User->>Frontend: Fill form + password
+        Frontend->>Gateway: POST /sas/invitations/accept
+        Gateway->>AuthZ: Accept invitation
+        AuthZ->>Mongo: Create user account
+        AuthZ->>Mongo: Link to organization
+        AuthZ-->>Frontend: Success + session
+    else SSO-based
+        User->>Frontend: Click SSO provider
+        Frontend->>Gateway: GET /sas/invitations/accept/sso
+        Gateway->>AuthZ: SSO invitation flow
+        AuthZ->>AuthZ: OAuth redirect
+        Note over AuthZ: (Similar to SSO registration)
+        AuthZ-->>Frontend: Success + session
+    end
+    
+    Frontend->>Frontend: Store authentication
+    Frontend->>User: Show dashboard

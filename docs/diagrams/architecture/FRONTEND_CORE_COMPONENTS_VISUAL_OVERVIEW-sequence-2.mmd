@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant User
+    participant ChatUI["Chat UI"]
+    participant Hooks["React Hooks"]
+    participant NATS["NATS Server"]
+    participant API["API Service"]
+    
+    User->>ChatUI: Type message
+    ChatUI->>API: Send message
+    API->>NATS: Publish to dialog topic
+    
+    NATS->>Hooks: MESSAGE_START
+    Hooks->>ChatUI: onStreamStart()
+    ChatUI->>User: Show typing indicator
+    
+    loop Streaming Response
+        NATS->>Hooks: TEXT chunk
+        Hooks->>ChatUI: onSegmentsUpdate()
+        ChatUI->>User: Display text
+    end
+    
+    NATS->>Hooks: EXECUTING_TOOL
+    Hooks->>ChatUI: Show tool execution
+    ChatUI->>User: Display tool status
+    
+    NATS->>Hooks: APPROVAL_REQUEST
+    Hooks->>ChatUI: Show approval UI
+    ChatUI->>User: Request approval
+    User->>ChatUI: Approve/Reject
+    ChatUI->>API: Send approval
+    
+    NATS->>Hooks: MESSAGE_END
+    Hooks->>ChatUI: onStreamEnd()
+    ChatUI->>User: Complete message

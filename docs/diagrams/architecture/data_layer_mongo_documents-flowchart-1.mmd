@@ -1,0 +1,37 @@
+flowchart TD
+    subgraph Documents["MongoDB Document Models"]
+        Device["Device"]
+        Machine["Machine"]
+        Organization["Organization"]
+        User["User"]
+        IntegratedTool["IntegratedTool"]
+        CoreEvent["CoreEvent"]
+    end
+    
+    subgraph MongoDB["MongoDB Collections"]
+        DeviceCol["devices"]
+        MachineCol["machines"]
+        OrgCol["organizations"]
+        UserCol["users"]
+        ToolCol["integrated_tools"]
+        EventCol["events"]
+    end
+    
+    subgraph Services["Service Layer"]
+        API["API Service"]
+        Client["Client Service"]
+        Management["Management Service"]
+        Auth["Authorization Service"]
+    end
+    
+    Device -->|"@Document"| DeviceCol
+    Machine -->|"@Document"| MachineCol
+    Organization -->|"@Document"| OrgCol
+    User -->|"@Document"| UserCol
+    IntegratedTool -->|"@Document"| ToolCol
+    CoreEvent -->|"@Document"| EventCol
+    
+    API -->|"Read/Write"| Documents
+    Client -->|"Read/Write"| Documents
+    Management -->|"Read/Write"| Documents
+    Auth -->|"Read/Write"| Documents

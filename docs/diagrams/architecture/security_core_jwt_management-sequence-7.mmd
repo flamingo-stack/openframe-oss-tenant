@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant AuthPrincipalResolver
+    participant JwtService
+    participant Service
+    
+    Client->>Controller: GET /api/users/me<br/>Authorization: Bearer TOKEN
+    Controller->>AuthPrincipalResolver: resolveArgument(@AuthPrincipal)
+    AuthPrincipalResolver->>JwtService: decodeToken(TOKEN)
+    JwtService-->>AuthPrincipalResolver: Jwt Object
+    AuthPrincipalResolver->>AuthPrincipalResolver: AuthPrincipal.fromJwt(jwt)
+    AuthPrincipalResolver-->>Controller: AuthPrincipal
+    Controller->>Service: getUserProfile(principal)
+    Service-->>Controller: UserProfile
+    Controller-->>Client: 200 OK + JSON

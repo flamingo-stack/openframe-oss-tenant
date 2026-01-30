@@ -1,0 +1,30 @@
+flowchart TD
+    SecurityCore["Security Core Module"]
+    
+    SecurityCore --> JwtManagement["JWT Management"]
+    SecurityCore --> Authentication["Authentication"]
+    SecurityCore --> OAuth["OAuth2 Primitives"]
+    SecurityCore --> Cookies["Cookie Management"]
+    SecurityCore --> Config["Security Configuration"]
+    
+    JwtManagement --> JwtConfig["JWT Configuration"]
+    JwtManagement --> JwtService["JWT Service"]
+    JwtManagement --> KeyConfig["Key Configuration"]
+    
+    Authentication --> AuthPrincipal["Auth Principal"]
+    Authentication --> ActorType["Actor Type"]
+    Authentication --> Resolver["Argument Resolver"]
+    
+    OAuth --> PKCEUtils["PKCE Utils"]
+    OAuth --> SecurityConstants["Security Constants"]
+    
+    Cookies --> CookieService["Cookie Service"]
+    
+    Config --> JwtSecurityConfig["JWT Security Config"]
+    
+    style SecurityCore fill:#e1f5ff
+    style JwtManagement fill:#fff4e1
+    style Authentication fill:#f0e1ff
+    style OAuth fill:#e1ffe1
+    style Cookies fill:#ffe1e1
+    style Config fill:#ffe1f5

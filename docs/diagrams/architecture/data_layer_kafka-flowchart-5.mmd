@@ -1,0 +1,6 @@
+flowchart LR
+    ClientService["Client Service"]
+    KafkaLayer["Data Layer Kafka"]
+    
+    ClientService -->|"uses MessageProducer"| KafkaLayer
+    ClientService -->|"publishes events"| KafkaLayer

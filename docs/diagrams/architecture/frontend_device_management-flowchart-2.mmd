@@ -1,0 +1,35 @@
+flowchart LR
+    subgraph Frontend["Frontend Layer"]
+        DeviceTypes["Device Types<br/>(device.types.ts)"]
+        Hooks["React Hooks<br/>(useDevices, useDeviceDetails)"]
+        Components["UI Components<br/>(Views, Grids, Tabs)"]
+    end
+    
+    subgraph API["API Layer"]
+        GraphQL["GraphQL API<br/>(Device Query)"]
+        TacticalAPI["Tactical RMM<br/>REST API"]
+        FleetAPI["Fleet MDM<br/>REST API"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        APIService["API Service<br/>(GraphQL Server)"]
+        MongoDB["MongoDB<br/>(Device Documents)"]
+        TacticalRMM["Tactical RMM<br/>(Agent Data)"]
+        FleetMDM["Fleet MDM<br/>(Host Data)"]
+    end
+    
+    Components --> Hooks
+    Hooks --> DeviceTypes
+    Hooks --> GraphQL
+    Hooks --> TacticalAPI
+    Hooks --> FleetAPI
+    
+    GraphQL --> APIService
+    TacticalAPI --> TacticalRMM
+    FleetAPI --> FleetMDM
+    
+    APIService --> MongoDB
+    
+    style Frontend fill:#e1f5ff
+    style API fill:#fff4e1
+    style Backend fill:#f0f0f0

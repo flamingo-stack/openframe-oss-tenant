@@ -1,0 +1,9 @@
+flowchart TD
+    Enriched["Enriched Message"] --> Destinations["Get Destination List"]
+    Destinations --> Loop{"For Each Destination"}
+    Loop --> Handler["Select Handler"]
+    Handler --> Transform["Transform Message"]
+    Transform --> OpType["Determine Operation Type"]
+    OpType --> Push["Push to Data Store"]
+    Push --> Loop
+    Loop --> Complete["Complete"]

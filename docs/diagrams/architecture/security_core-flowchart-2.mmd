@@ -1,0 +1,24 @@
+flowchart LR
+    SecurityCore["Security Core"]
+    
+    ApiService["API Service"]
+    AuthzService["Authorization Service"]
+    GatewayService["Gateway Service"]
+    ExternalApi["External API"]
+    ClientService["Client Service"]
+    
+    ApiService -->|"uses JWT validation"| SecurityCore
+    AuthzService -->|"uses JWT generation"| SecurityCore
+    GatewayService -->|"uses JWT validation<br/>& cookie management"| SecurityCore
+    ExternalApi -->|"uses JWT validation"| SecurityCore
+    ClientService -->|"uses JWT validation"| SecurityCore
+    
+    SecurityCore -->|"stores tokens"| Cookies["HTTP Cookies"]
+    SecurityCore -->|"validates"| JWT["JWT Tokens"]
+    
+    style SecurityCore fill:#e1f5ff
+    style ApiService fill:#fff4e1
+    style AuthzService fill:#f0e1ff
+    style GatewayService fill:#e1ffe1
+    style ExternalApi fill:#ffe1e1
+    style ClientService fill:#ffe1f5

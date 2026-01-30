@@ -1,0 +1,28 @@
+flowchart TD
+    JwtSecurityConfig["JwtSecurityConfig<br/>(Configuration)"]
+    JwtConfig["JwtConfig<br/>(Service)"]
+    KeyConfig["KeyConfig<br/>(Data Class)"]
+    JwtService["JwtService<br/>(Service)"]
+    
+    JwtEncoder["JwtEncoder<br/>(Spring Bean)"]
+    JwtDecoder["JwtDecoder<br/>(Spring Bean)"]
+    
+    NimbusJwtEncoder["NimbusJwtEncoder<br/>(Nimbus JOSE)"]
+    NimbusJwtDecoder["NimbusJwtDecoder<br/>(Nimbus JOSE)"]
+    
+    JwtSecurityConfig -->|"creates"| JwtEncoder
+    JwtSecurityConfig -->|"creates"| JwtDecoder
+    JwtSecurityConfig -->|"depends on"| JwtConfig
+    
+    JwtConfig -->|"contains"| KeyConfig
+    JwtConfig -->|"loads keys from"| KeyConfig
+    
+    JwtEncoder -->|"implemented by"| NimbusJwtEncoder
+    JwtDecoder -->|"implemented by"| NimbusJwtDecoder
+    
+    JwtService -->|"uses"| JwtEncoder
+    JwtService -->|"uses"| JwtDecoder
+    
+    style JwtSecurityConfig fill:#e1f5ff
+    style JwtConfig fill:#fff4e1
+    style JwtService fill:#e8f5e9

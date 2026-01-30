@@ -1,0 +1,15 @@
+flowchart LR
+    FrontendCore["Frontend Core Components"]
+    FrontendMain["Frontend Main Application"]
+    FrontendChat["Frontend Chat Client"]
+    
+    FrontendMain -->|"uses components"| FrontendCore
+    FrontendChat -->|"uses chat types"| FrontendCore
+    
+    FrontendCore -->|"provides"| ChatTypes["Chat Type System"]
+    FrontendCore -->|"provides"| UILib["UI Component Library"]
+    FrontendCore -->|"provides"| ThemeSystem["Theming System"]
+    
+    style FrontendCore fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style FrontendMain fill:#50C878,stroke:#2E7D4E,color:#fff
+    style FrontendChat fill:#9B59B6,stroke:#6C3483,color:#fff

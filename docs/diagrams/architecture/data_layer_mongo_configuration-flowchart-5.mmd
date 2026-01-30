@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph Java["Java Types"]
+        Instant["Instant"]
+        LocalDateTime["LocalDateTime"]
+        Enum["Enum"]
+        UUID["UUID"]
+    end
+    
+    subgraph MongoDB["MongoDB Types"]
+        Date["Date"]
+        ISODate["ISODate"]
+        String["String"]
+        Binary["Binary"]
+    end
+    
+    Instant <-->|"Converter"| Date
+    LocalDateTime <-->|"Converter"| ISODate
+    Enum <-->|"Converter"| String
+    UUID <-->|"Converter"| Binary

@@ -1,0 +1,12 @@
+flowchart LR
+    Client["Client"] -->|"POST/PUT/DELETE"| Controller["REST Controller"]
+    Controller -->|"validates"| Request["Request DTO"]
+    Request -->|"calls"| Service["Command Service"]
+    Service -->|"business logic"| Entity["Domain Entity"]
+    Entity -->|"persists"| Repository["Repository"]
+    Repository -->|"saves"| DB[("Database")]
+    DB -->|"returns saved"| Repository
+    Repository -->|"returns"| Service
+    Service -->|"maps to response"| Mapper["Mapper"]
+    Mapper -->|"returns"| Controller
+    Controller -->|"JSON Response"| Client

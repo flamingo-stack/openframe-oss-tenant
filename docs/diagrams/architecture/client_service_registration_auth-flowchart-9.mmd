@@ -1,0 +1,20 @@
+flowchart TD
+    ClientService["Client Service<br/>Registration & Auth"] --> DataMongo["Data Layer MongoDB"]
+    ClientService --> SecurityCore["Security Core"]
+    ClientService --> CoreServices["Core Services"]
+    
+    DataMongo --> OAuthClientRepo["OAuthClientRepository"]
+    DataMongo --> MachineRepo["MachineRepository"]
+    DataMongo --> SecretRepo["AgentRegistrationSecretRepository"]
+    DataMongo --> OrgService["OrganizationService"]
+    
+    SecurityCore --> JwtService["JwtService"]
+    SecurityCore --> PasswordEncoder["PasswordEncoder"]
+    
+    CoreServices --> EncryptionService["EncryptionService"]
+    CoreServices --> ToolInstallationService["ToolInstallationService"]
+    
+    style ClientService fill:#e1f5ff
+    style DataMongo fill:#fff4e1
+    style SecurityCore fill:#e8f5e9
+    style CoreServices fill:#f3e5f5

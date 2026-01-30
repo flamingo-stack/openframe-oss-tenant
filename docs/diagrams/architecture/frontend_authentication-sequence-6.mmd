@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Gateway
+    participant AuthZ as Authorization Server
+    participant Provider as OAuth Provider
+    
+    User->>Frontend: Click "Register with Google"
+    Frontend->>Gateway: GET /sas/oauth/register/sso
+    Gateway->>AuthZ: SSO registration request
+    
+    AuthZ->>AuthZ: Generate OAuth state
+    AuthZ-->>Frontend: Redirect to provider
+    
+    Frontend->>Provider: OAuth authorization request
+    User->>Provider: Approve access
+    Provider-->>AuthZ: OAuth callback + code
+    
+    AuthZ->>Provider: Exchange code for tokens
+    Provider-->>AuthZ: Access token + user info
+    
+    AuthZ->>AuthZ: Create organization
+    AuthZ->>AuthZ: Create user from profile
+    AuthZ->>AuthZ: Generate session
+    
+    AuthZ-->>Frontend: Redirect with session
+    Frontend->>Frontend: Store authentication
+    Frontend->>User: Show dashboard

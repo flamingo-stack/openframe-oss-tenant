@@ -1,0 +1,11 @@
+flowchart TD
+    Start["JWT Token"] --> Extract["Extract 'roles' claim"]
+    Extract --> CheckAgent{"Contains 'AGENT' role?"}
+    CheckAgent -->|"Yes"| Agent["ActorType.AGENT"]
+    CheckAgent -->|"No"| Admin["ActorType.ADMIN"]
+    
+    Agent --> AgentProps["Properties:<br/>- machineId populated<br/>- Limited scopes<br/>- Service account"]
+    Admin --> AdminProps["Properties:<br/>- email, firstName, lastName<br/>- Full user scopes<br/>- Human user"]
+    
+    style Agent fill:#ff9999
+    style Admin fill:#99ccff

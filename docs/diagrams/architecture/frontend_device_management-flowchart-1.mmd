@@ -1,0 +1,27 @@
+flowchart TD
+    DevicesPage["Devices Page<br/>(page.tsx)"] --> DevicesView["DevicesView<br/>(Main Container)"]
+    DevicesView --> DevicesGrid["DevicesGrid<br/>(Table/List)"]
+    DevicesView --> useDevices["useDevices Hook<br/>(Data Fetching)"]
+    
+    DevicesGrid --> DeviceDetailsButton["Device Details<br/>Button"]
+    DeviceDetailsButton --> DeviceDetailsView["DeviceDetailsView<br/>(Modal/Drawer)"]
+    
+    DeviceDetailsView --> useDeviceDetails["useDeviceDetails Hook<br/>(Detailed Data)"]
+    DeviceDetailsView --> DeviceTabs["Device Tabs<br/>(Hardware/Software/etc)"]
+    DeviceDetailsView --> DeviceActions["Device Actions<br/>Dropdown"]
+    
+    useDevices --> ApiClient["API Client<br/>(GraphQL)"]
+    useDeviceDetails --> ApiClient
+    useDeviceDetails --> TacticalClient["Tactical API<br/>Client"]
+    useDeviceDetails --> FleetClient["Fleet API<br/>Client"]
+    
+    DeviceActions --> RemoteShell["Remote Shell<br/>Modal"]
+    DeviceActions --> ScriptsModal["Scripts<br/>Modal"]
+    DeviceActions --> MeshFileManager["Mesh File<br/>Manager"]
+    
+    style DevicesPage fill:#e1f5ff
+    style useDevices fill:#fff4e1
+    style useDeviceDetails fill:#fff4e1
+    style ApiClient fill:#f0f0f0
+    style TacticalClient fill:#f0f0f0
+    style FleetClient fill:#f0f0f0

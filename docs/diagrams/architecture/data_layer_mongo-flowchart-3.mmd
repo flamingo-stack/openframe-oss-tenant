@@ -1,0 +1,6 @@
+flowchart TD
+    Service["Service Layer"] -->|"save/update"| Repo["Repository"]
+    Repo -->|"@CreatedDate/@LastModifiedDate"| Audit["Auditing"]
+    Audit -->|"apply timestamps"| Converter["MappingMongoConverter"]
+    Converter -->|"map key dot replacement"| Document["BSON Document"]
+    Document -->|"insert/update"| MongoDB[("MongoDB")]

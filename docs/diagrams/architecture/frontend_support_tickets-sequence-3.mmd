@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant UI as Tickets View
+    participant Hook as useDialogs Hook
+    participant Store as DialogsStore
+    participant API as API Client
+    participant Backend as Chat API Service
+    
+    UI->>Hook: Mount component
+    Hook->>Store: fetchDialogs(archived=false)
+    Store->>Store: Set isLoadingCurrent=true
+    Store->>API: POST /chat/graphql
+    API->>Backend: GET_DIALOGS_QUERY
+    Backend-->>API: DialogConnection
+    API-->>Store: Response with edges & pageInfo
+    Store->>Store: Update currentDialogs, currentPageInfo
+    Store->>Store: Set isLoadingCurrent=false
+    Store-->>Hook: State updated
+    Hook-->>UI: Re-render with dialogs

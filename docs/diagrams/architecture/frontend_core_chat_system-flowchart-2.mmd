@@ -1,0 +1,24 @@
+flowchart TD
+    Message["Message<br/>(Display Interface)"]
+    MessageContent["MessageContent<br/>(string | MessageSegment[])"]
+    MessageSegment["MessageSegment<br/>(Union Type)"]
+    
+    TextSegment["TextSegment<br/>{type: 'text', text: string}"]
+    ToolSegment["ToolExecutionSegment<br/>{type: 'tool_execution', data: ToolExecutionData}"]
+    ApprovalSegment["ApprovalRequestSegment<br/>{type: 'approval_request', data: ApprovalRequestData}"]
+    
+    HistoricalMessage["HistoricalMessage<br/>(From GraphQL)"]
+    ProcessedMessage["ProcessedMessage<br/>(After Processing)"]
+    
+    Message --> MessageContent
+    MessageContent --> MessageSegment
+    MessageSegment --> TextSegment
+    MessageSegment --> ToolSegment
+    MessageSegment --> ApprovalSegment
+    
+    HistoricalMessage --> ProcessedMessage
+    ProcessedMessage --> Message
+    
+    style Message fill:#4a90e2
+    style MessageSegment fill:#f39c12
+    style HistoricalMessage fill:#27ae60

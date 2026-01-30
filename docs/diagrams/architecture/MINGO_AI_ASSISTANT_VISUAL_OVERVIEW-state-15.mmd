@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Hidden: Initial
+    
+    Hidden --> Creating: ensureTypingMessage()
+    Creating --> Visible: Message created
+    
+    Visible --> Updating: updateLastAssistantMessage()
+    Updating --> Visible: Text accumulated
+    
+    Visible --> Removing: removeTypingMessage()
+    Removing --> Hidden: Message removed
+    
+    Hidden --> [*]: Complete

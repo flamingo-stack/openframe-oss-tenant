@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph JwtManagement["JWT Management"]
+        JwtDecoder["JwtDecoder"]
+        JwtValidator["JWT Validator"]
+    end
+    
+    subgraph Authentication["Authentication"]
+        AuthPrincipal["AuthPrincipal"]
+        Resolver["AuthPrincipalArgumentResolver"]
+    end
+    
+    JwtDecoder -->|"Validated Jwt"| Resolver
+    JwtValidator -->|"Ensures valid signature"| JwtDecoder
+    Resolver -->|"Converts to"| AuthPrincipal

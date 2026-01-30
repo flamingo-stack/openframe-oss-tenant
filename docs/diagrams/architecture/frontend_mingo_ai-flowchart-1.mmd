@@ -1,0 +1,52 @@
+flowchart TD
+    subgraph UI["UI Layer"]
+        ChatUI["Chat UI Components"]
+        DialogList["Dialog List"]
+        MessageInput["Message Input"]
+    end
+    
+    subgraph Hooks["React Hooks Layer"]
+        UseMingoDialog["useMingoDialog Hook"]
+        UseMessages["useMessages Hook"]
+        UseDialogs["useDialogs Hook"]
+    end
+    
+    subgraph State["State Management - Zustand"]
+        ActiveStore["MingoDialogDetailsStore<br/>(Active Dialog)"]
+        BackgroundStore["BackgroundMessagesStore<br/>(Background Dialogs)"]
+    end
+    
+    subgraph API["API Layer"]
+        ApiClient["API Client"]
+        GraphQLClient["GraphQL Client"]
+        WebSocket["WebSocket (Future)"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        ChatAPI["Chat API Service"]
+        DialogService["Dialog Service"]
+        MessageService["Message Service"]
+    end
+    
+    ChatUI --> UseMingoDialog
+    DialogList --> UseDialogs
+    MessageInput --> UseMingoDialog
+    
+    UseMingoDialog --> ActiveStore
+    UseMingoDialog --> BackgroundStore
+    UseMessages --> ActiveStore
+    UseDialogs --> BackgroundStore
+    
+    UseMingoDialog --> ApiClient
+    UseMessages --> GraphQLClient
+    UseDialogs --> GraphQLClient
+    
+    ApiClient --> ChatAPI
+    GraphQLClient --> DialogService
+    GraphQLClient --> MessageService
+    
+    ActiveStore -.->|"State Sync"| BackgroundStore
+    
+    style ActiveStore fill:#4CAF50
+    style BackgroundStore fill:#2196F3
+    style UseMingoDialog fill:#FF9800

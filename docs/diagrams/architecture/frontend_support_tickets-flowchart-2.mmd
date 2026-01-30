@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph Stores["Zustand Stores"]
+        DS["DialogsStore<br/>• Current dialogs<br/>• Archived dialogs<br/>• Pagination state<br/>• Search/filter state"]
+        DDS["DialogDetailsStore<br/>• Current dialog<br/>• Client messages<br/>• Admin messages<br/>• Typing indicators"]
+    end
+    
+    subgraph Actions["Store Actions"]
+        DSA["Dialogs Actions<br/>• fetchDialogs()<br/>• goToNextPage()<br/>• goToFirstPage()<br/>• resetDialogs()"]
+        DDSA["Details Actions<br/>• fetchDialog()<br/>• fetchMessages()<br/>• addRealtimeMessage()<br/>• updateDialogStatus()"]
+    end
+    
+    subgraph External["External Updates"]
+        GraphQLFetch["GraphQL Fetch<br/>(Initial Load)"]
+        NatsStream["NATS Stream<br/>(Real-time Updates)"]
+    end
+    
+    DS --> DSA
+    DDS --> DDSA
+    
+    GraphQLFetch --> DSA
+    GraphQLFetch --> DDSA
+    NatsStream --> DDSA
+    
+    DSA -.->|"Updates"| DS
+    DDSA -.->|"Updates"| DDS

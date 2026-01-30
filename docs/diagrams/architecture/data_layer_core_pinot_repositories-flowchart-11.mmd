@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph Stream["Stream Processing"]
+        KafkaListener["JsonKafkaListener"]
+        Enrichment["ActivityEnrichmentService"]
+    end
+    
+    subgraph Pinot["Apache Pinot"]
+        DevicesTable["devices Table"]
+        LogsTable["logs Table"]
+    end
+    
+    subgraph Repositories["Pinot Repositories"]
+        DeviceRepo["PinotClientDeviceRepository"]
+        LogRepo["PinotClientLogRepository"]
+    end
+    
+    KafkaListener -->|"ingests to"| DevicesTable
+    KafkaListener -->|"ingests to"| LogsTable
+    
+    DeviceRepo -->|"queries"| DevicesTable
+    LogRepo -->|"queries"| LogsTable
+    
+    style KafkaListener fill:#E8F4F8
+    style DevicesTable fill:#F39C12
+    style LogsTable fill:#F39C12

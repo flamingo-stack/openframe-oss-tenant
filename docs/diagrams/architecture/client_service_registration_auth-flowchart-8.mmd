@@ -1,0 +1,13 @@
+flowchart TD
+    Interface["AgentRegistrationProcessor<br/>(Interface)"] -.->|implements| Default["DefaultAgentRegistrationProcessor<br/>(Default no-op)"]
+    Interface -.->|implements| Custom["CustomAgentRegistrationProcessor<br/>(User-defined)"]
+    
+    Service["AgentRegistrationService"] -->|"postProcessAgentRegistration()"| Interface
+    
+    Spring["Spring Container"] -->|"@ConditionalOnMissingBean"| Decision{"Custom bean<br/>exists?"}
+    Decision -->|No| UseDefault["Use DefaultAgentRegistrationProcessor"]
+    Decision -->|Yes| UseCustom["Use CustomAgentRegistrationProcessor"]
+    
+    style Default fill:#e1f5ff
+    style Custom fill:#e8f5e9
+    style UseCustom fill:#fff4e1

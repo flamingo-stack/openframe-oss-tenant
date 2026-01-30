@@ -1,0 +1,10 @@
+flowchart LR
+    PlainPassword["Plain Text Password"] -->|"input"| BCrypt["BCryptPasswordEncoder"]
+    BCrypt -->|"generates"| Salt["Random Salt"]
+    BCrypt -->|"applies"| HashFunction["BCrypt Hash Function<br/>10 rounds"]
+    HashFunction -->|"produces"| HashedPassword["Hashed Password<br/>$2a$10$..."]
+    
+    HashedPassword -->|"stored in"| Database["MongoDB"]
+    
+    style BCrypt fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff
+    style HashedPassword fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff

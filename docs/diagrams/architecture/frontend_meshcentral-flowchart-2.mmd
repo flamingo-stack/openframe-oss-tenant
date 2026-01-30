@@ -1,0 +1,23 @@
+flowchart LR
+    MeshDesktop["MeshDesktop"]
+    
+    MeshDesktop --> InputCapture["Input Capture"]
+    MeshDesktop --> ProtocolEncode["Protocol Encoding"]
+    MeshDesktop --> FrameDecode["Frame Decoding"]
+    MeshDesktop --> Rendering["Canvas Rendering"]
+    MeshDesktop --> DisplayMgmt["Display Management"]
+    
+    InputCapture --> Mouse["Mouse Events"]
+    InputCapture --> Keyboard["Keyboard Events"]
+    
+    ProtocolEncode --> MouseCmd["Mouse Commands"]
+    ProtocolEncode --> KeyCmd["Key Commands"]
+    ProtocolEncode --> CtrlCmd["Control Commands"]
+    
+    FrameDecode --> ScreenSize["Screen Size"]
+    FrameDecode --> Tiles["JPEG Tiles"]
+    FrameDecode --> DisplayList["Display List"]
+    
+    Rendering --> TileQueue["Tile Queue"]
+    Rendering --> Decode["JPEG Decode"]
+    Rendering --> Draw["Canvas Draw"]

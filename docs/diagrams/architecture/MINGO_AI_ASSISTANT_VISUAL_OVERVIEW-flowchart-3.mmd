@@ -1,0 +1,31 @@
+flowchart TD
+    App["App Root"] --> MingoPage["Mingo Page"]
+    
+    MingoPage --> ChatContainer["Chat Container"]
+    MingoPage --> Sidebar["Sidebar"]
+    
+    ChatContainer --> ChatHeader["Chat Header"]
+    ChatContainer --> MessageList["Message List"]
+    ChatContainer --> InputArea["Input Area"]
+    
+    MessageList --> MessageBubble["Message Bubble"]
+    MessageList --> TypingIndicator["Typing Indicator"]
+    MessageList --> LoadMore["Load More Button"]
+    
+    MessageBubble --> UserMessage["User Message"]
+    MessageBubble --> AssistantMessage["Assistant Message"]
+    
+    InputArea --> MessageInput["Message Input"]
+    InputArea --> SendButton["Send Button"]
+    InputArea --> AttachButton["Attach Button (Future)"]
+    
+    Sidebar --> DialogList["Dialog List"]
+    Sidebar --> NewChatButton["New Chat Button"]
+    
+    DialogList --> DialogItem["Dialog Item"]
+    DialogItem --> UnreadBadge["Unread Badge"]
+    DialogItem --> DialogPreview["Dialog Preview"]
+    
+    style ChatContainer fill:#E8F5E9
+    style MessageList fill:#E3F2FD
+    style Sidebar fill:#FFF3E0

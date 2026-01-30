@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant User as User/Agent
+    participant AuthzServer as Authorization Server
+    participant JwtService as JwtService
+    participant Gateway as Gateway
+    participant ApiService as API Service
+    
+    User->>AuthzServer: Login Request
+    AuthzServer->>JwtService: generateToken(claims)
+    JwtService->>JwtEncoder: encode(JwtClaimsSet)
+    JwtEncoder-->>JwtService: JWT String
+    JwtService-->>AuthzServer: Token
+    AuthzServer-->>User: Access Token
+    
+    User->>Gateway: API Request + Token
+    Gateway->>JwtService: decodeToken(token)
+    JwtService->>JwtDecoder: decode(token)
+    JwtDecoder-->>JwtService: Jwt Object
+    JwtService-->>Gateway: Validated JWT
+    Gateway->>ApiService: Forward Request + JWT
+    
+    ApiService->>JwtService: decodeToken(token)
+    JwtService->>JwtDecoder: decode(token)
+    JwtDecoder-->>JwtService: Jwt Object
+    JwtService-->>ApiService: Validated JWT
+    ApiService-->>User: API Response

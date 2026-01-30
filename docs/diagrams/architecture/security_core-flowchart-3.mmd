@@ -1,0 +1,30 @@
+flowchart TD
+    Start["Incoming Request"] --> HasToken{"Token Present?"}
+    
+    HasToken -->|"No"| Unauthorized["401 Unauthorized"]
+    HasToken -->|"Yes"| ExtractToken["Extract Token<br/>(Cookie or Header)"]
+    
+    ExtractToken --> DecodeToken["JwtService.decodeToken()"]
+    
+    DecodeToken --> ValidateSignature{"Valid Signature?"}
+    ValidateSignature -->|"No"| Unauthorized
+    ValidateSignature -->|"Yes"| ValidateExpiry{"Token Expired?"}
+    
+    ValidateExpiry -->|"Yes"| Unauthorized
+    ValidateExpiry -->|"No"| ExtractClaims["Extract JWT Claims"]
+    
+    ExtractClaims --> CreatePrincipal["AuthPrincipal.fromJwt()"]
+    
+    CreatePrincipal --> DetermineActor["Determine Actor Type<br/>(ADMIN or AGENT)"]
+    
+    DetermineActor --> InjectPrincipal["Inject AuthPrincipal<br/>into Controller"]
+    
+    InjectPrincipal --> ProcessRequest["Process Request"]
+    
+    ProcessRequest --> End["Return Response"]
+    
+    style Start fill:#e1f5ff
+    style End fill:#e1ffe1
+    style Unauthorized fill:#ffe1e1
+    style CreatePrincipal fill:#fff4e1
+    style DetermineActor fill:#f0e1ff

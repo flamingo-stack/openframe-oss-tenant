@@ -1,0 +1,8 @@
+flowchart LR
+    Browser["Browser"] -->|"credentials"| AuthServer["Auth Server"]
+    AuthServer -->|"access_token + refresh_token"| Browser
+    Browser -->|"Authorization: Bearer token"| Gateway["API Gateway"]
+    Gateway -->|"validate JWT"| Services["Backend Services"]
+    
+    Browser -->|"store tokens"| LocalStorage["localStorage"]
+    LocalStorage -->|"retrieve tokens"| Browser

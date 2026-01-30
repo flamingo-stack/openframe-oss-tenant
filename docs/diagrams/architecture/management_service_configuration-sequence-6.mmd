@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant SpringBoot
+    participant AgentConfigProps
+    participant AgentInitializer
+    participant ClassPathResource
+    participant ObjectMapper
+    participant AgentService
+    participant MongoDB
+    
+    SpringBoot->>AgentConfigProps: Bind YAML properties
+    AgentConfigProps->>AgentConfigProps: Load agentConfigurations list
+    
+    SpringBoot->>AgentInitializer: @PostConstruct trigger
+    AgentInitializer->>AgentConfigProps: Get agentConfigurations
+    
+    loop For each configuration path
+        AgentInitializer->>ClassPathResource: Load resource(path)
+        ClassPathResource-->>AgentInitializer: InputStream
+        
+        AgentInitializer->>ObjectMapper: Deserialize JSON
+        ObjectMapper-->>AgentInitializer: IntegratedToolAgent
+        
+        AgentInitializer->>AgentService: findById(agentId)
+        
+        alt Agent exists
+            AgentService-->>AgentInitializer: Existing agent
+            AgentInitializer->>AgentInitializer: Check version update
+            AgentInitializer->>AgentService: save(updatedAgent)
+            AgentService->>MongoDB: Update document
+        else Agent not found
+            AgentService-->>AgentInitializer: Empty
+            AgentInitializer->>AgentService: save(newAgent)
+            AgentService->>MongoDB: Insert document
+        end
+    end
+    
+    AgentInitializer-->>SpringBoot: Initialization complete

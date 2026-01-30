@@ -1,0 +1,17 @@
+flowchart LR
+    FrontendCore["Frontend Core<br/>Components"]
+    
+    FrontendMain["Frontend Main<br/>Application"]
+    FrontendChat["Frontend Chat<br/>Client"]
+    
+    FrontendMain -->|"uses UI components"| FrontendCore
+    FrontendChat -->|"uses chat types"| FrontendCore
+    
+    FrontendCore -->|"integrates with"| APIService["API Service"]
+    FrontendCore -->|"connects to"| NATS["NATS Server"]
+    
+    style FrontendCore fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style FrontendMain fill:#50C878,stroke:#2E7D4E,color:#fff
+    style FrontendChat fill:#9B59B6,stroke:#6C3483,color:#fff
+    style APIService fill:#E67E22,stroke:#A04000,color:#fff
+    style NATS fill:#E74C3C,stroke:#922B21,color:#fff

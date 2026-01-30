@@ -1,0 +1,86 @@
+flowchart TD
+    subgraph Client["Client Layer"]
+        Frontend["Frontend Applications"]
+        GraphQLClient["GraphQL Clients"]
+    end
+
+    subgraph Gateway["API Gateway"]
+        GatewayService["Gateway Service"]
+    end
+
+    subgraph DataFetchers["GraphQL DataFetchers Module"]
+        DeviceDF["DeviceDataFetcher"]
+        EventDF["EventDataFetcher"]
+        LogDF["LogDataFetcher"]
+        OrgDF["OrganizationDataFetcher"]
+        ToolDF["ToolsDataFetcher"]
+    end
+
+    subgraph Services["Business Logic Layer"]
+        DeviceService["DeviceService"]
+        EventService["EventService"]
+        LogService["LogService"]
+        OrgService["OrganizationQueryService"]
+        ToolService["ToolService"]
+        FilterService["DeviceFilterService"]
+    end
+
+    subgraph Mappers["Data Mapping Layer"]
+        DeviceMapper["GraphQLDeviceMapper"]
+        EventMapper["GraphQLEventMapper"]
+        LogMapper["GraphQLLogMapper"]
+        OrgMapper["GraphQLOrganizationMapper"]
+        ToolMapper["GraphQLToolMapper"]
+    end
+
+    subgraph DataLoaders["DataLoader Layer"]
+        TagLoader["tagDataLoader"]
+        ToolConnLoader["toolConnectionDataLoader"]
+        AgentLoader["installedAgentDataLoader"]
+        OrgLoader["organizationDataLoader"]
+    end
+
+    subgraph DataLayer["Data Access Layer"]
+        MongoDB["MongoDB Repositories"]
+        Pinot["Apache Pinot"]
+        Cassandra["Cassandra"]
+    end
+
+    Frontend --> GatewayService
+    GraphQLClient --> GatewayService
+    GatewayService --> DeviceDF
+    GatewayService --> EventDF
+    GatewayService --> LogDF
+    GatewayService --> OrgDF
+    GatewayService --> ToolDF
+
+    DeviceDF --> DeviceService
+    DeviceDF --> FilterService
+    DeviceDF --> DeviceMapper
+    DeviceDF --> TagLoader
+    DeviceDF --> ToolConnLoader
+    DeviceDF --> AgentLoader
+    DeviceDF --> OrgLoader
+
+    EventDF --> EventService
+    EventDF --> EventMapper
+
+    LogDF --> LogService
+    LogDF --> LogMapper
+
+    OrgDF --> OrgService
+    OrgDF --> OrgMapper
+
+    ToolDF --> ToolService
+    ToolDF --> ToolMapper
+
+    DeviceService --> MongoDB
+    EventService --> MongoDB
+    LogService --> Pinot
+    OrgService --> MongoDB
+    ToolService --> MongoDB
+
+    TagLoader --> MongoDB
+    ToolConnLoader --> MongoDB
+    AgentLoader --> MongoDB
+    OrgLoader --> MongoDB

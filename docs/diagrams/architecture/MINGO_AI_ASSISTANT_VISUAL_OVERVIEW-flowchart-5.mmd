@@ -1,0 +1,37 @@
+flowchart TD
+    subgraph ActiveStore["MingoDialogDetailsStore (Active Dialog)"]
+        direction TB
+        AS_State["State"]
+        AS_Actions["Actions"]
+        
+        AS_State --> CurrentDialog["currentDialogId<br/>currentDialog<br/>adminMessages[]"]
+        AS_State --> Loading["isLoadingDialog<br/>isLoadingMessages"]
+        AS_State --> Errors["dialogError<br/>messagesError"]
+        AS_State --> Pagination["hasMoreMessages<br/>messagesCursor<br/>newestMessageCursor"]
+        AS_State --> Typing["dialogTypingStates{}"]
+        
+        AS_Actions --> DialogActions["setCurrentDialogId()<br/>setCurrentDialog()<br/>clearCurrent()"]
+        AS_Actions --> MessageActions["setAdminMessages()<br/>addAdminMessages()<br/>addRealtimeMessage()"]
+        AS_Actions --> TypingActions["ensureTypingMessage()<br/>removeTypingMessage()<br/>updateLastAssistantMessage()"]
+    end
+    
+    subgraph BgStore["BackgroundMessagesStore (Background Dialogs)"]
+        direction TB
+        BG_State["State"]
+        BG_Actions["Actions"]
+        
+        BG_State --> DialogMessages["dialogMessages{}<br/>(50 msg limit per dialog)"]
+        BG_State --> Unread["unreadCounts{}"]
+        BG_State --> BgTyping["backgroundTypingIndicators{}"]
+        BG_State --> ActiveId["activeDialogId"]
+        
+        BG_Actions --> BgMessageActions["addBackgroundMessage()<br/>setDialogMessages()<br/>mergeDialogMessages()"]
+        BG_Actions --> UnreadActions["incrementUnreadCount()<br/>resetUnreadCount()<br/>getUnreadCount()"]
+        BG_Actions --> TransferActions["moveBackgroundToActive()<br/>preserveStreamingMessage()"]
+    end
+    
+    ActiveStore -.->|"Dialog Switch"| BgStore
+    BgStore -.->|"Activate Dialog"| ActiveStore
+    
+    style ActiveStore fill:#4CAF50
+    style BgStore fill:#2196F3

@@ -1,0 +1,21 @@
+flowchart TD
+    Start["Key Rotation Triggered"] -->|"Admin Action"| NewKey["Generate New Key Pair"]
+    NewKey -->|"RSA 2048-bit"| Encrypt["Encrypt Private Key"]
+    Encrypt -->|"Master Encryption Key"| SaveNew["Save to MongoDB<br/>(active: false)"]
+    
+    SaveNew --> Activate{"Activate<br/>New Key?"}
+    Activate -->|"Yes"| DeactivateOld["Set Old Key<br/>active: false"]
+    Activate -->|"No"| Wait["Wait for<br/>Activation"]
+    
+    DeactivateOld --> ActivateNew["Set New Key<br/>active: true"]
+    ActivateNew --> UpdateIssuer["Update JWT Issuer<br/>kid in tokens"]
+    
+    UpdateIssuer --> GracePeriod["Grace Period<br/>(Both keys valid)"]
+    GracePeriod -->|"30 days"| DeleteOld["Delete Old Key"]
+    
+    Wait --> Activate
+    
+    style NewKey fill:#27AE60,stroke:#1E8449,stroke-width:2px,color:#fff
+    style Encrypt fill:#E67E22,stroke:#A04000,stroke-width:2px,color:#fff
+    style ActivateNew fill:#3498DB,stroke:#2471A3,stroke-width:2px,color:#fff
+    style DeleteOld fill:#E74C3C,stroke:#922B21,stroke-width:2px,color:#fff

@@ -1,0 +1,21 @@
+flowchart TD
+    Browser["Browser Client"] -->|"1. GET /oauth/login"| Controller["OAuthBffController"]
+    Controller -->|"2. Generate PKCE"| BffService["OAuthBffService"]
+    BffService -->|"3. Build authorize URL"| Controller
+    Controller -->|"4. Set state cookie + redirect"| Browser
+    
+    Browser -->|"5. Redirect to AuthZ Server"| AuthServer["Authorization Server"]
+    AuthServer -->|"6. User authenticates"| Browser
+    Browser -->|"7. Callback with code"| Controller
+    
+    Controller -->|"8. Validate state"| BffService
+    BffService -->|"9. Exchange code for tokens"| AuthServer
+    AuthServer -->|"10. Return tokens"| BffService
+    BffService -->|"11. Store in MongoDB"| MongoDB[("MongoDB")]
+    
+    Controller -->|"12. Set auth cookies"| Browser
+    Browser -->|"13. Redirect to app"| App["Application"]
+    
+    App -->|"Refresh token"| Controller
+    Controller -->|"Token refresh"| BffService
+    BffService -->|"Refresh grant"| AuthServer

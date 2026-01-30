@@ -1,0 +1,30 @@
+flowchart TD
+    App["Application Root"]
+    
+    App --> ThemeProvider["DynamicThemeProvider"]
+    
+    ThemeProvider --> ThemeHook["useDynamicTheming Hook"]
+    
+    ThemeHook --> ThemeState["Theme State"]
+    ThemeHook --> ThemeActions["Theme Actions"]
+    
+    ThemeState --> CurrentTheme["current theme config"]
+    ThemeState --> IsDark["isDark boolean"]
+    
+    ThemeActions --> UpdateTheme["updateTheme(theme)"]
+    ThemeActions --> ToggleDark["toggleDark()"]
+    
+    UpdateTheme --> CSSVars["Inject CSS Variables"]
+    ToggleDark --> CSSVars
+    
+    CSSVars --> DOMUpdate["Update DOM"]
+    
+    DOMUpdate --> Components["All Components<br/>Use ODS Tokens"]
+    
+    Components --> ColorTokens["Color Tokens<br/>--ods-bg-primary<br/>--ods-text-primary<br/>--ods-accent"]
+    
+    style ThemeProvider fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ThemeState fill:#50C878,stroke:#2E7D4E,color:#fff
+    style ThemeActions fill:#9B59B6,stroke:#6C3483,color:#fff
+    style CSSVars fill:#E67E22,stroke:#A04000,color:#fff
+    style Components fill:#E74C3C,stroke:#922B21,color:#fff

@@ -1,0 +1,24 @@
+flowchart TD
+    subgraph MongoConfig["MongoConfig (Parent)"]
+        direction TB
+        PropertyCheck["@ConditionalOnProperty Check"]
+        
+        subgraph BlockingConfig["MongoConfiguration (Blocking)"]
+            EnableRepos["@EnableMongoRepositories"]
+            EnableAudit["@EnableMongoAuditing"]
+            ConverterBean["MappingMongoConverter Bean"]
+        end
+        
+        subgraph ReactiveConfig["ReactiveMongoConfiguration"]
+            EnableReactive["@EnableReactiveMongoRepositories"]
+        end
+    end
+    
+    PropertyCheck -->|"spring.data.mongodb.enabled=true"| BlockingConfig
+    PropertyCheck -->|"WebFlux detected"| ReactiveConfig
+    
+    EnableRepos -->|"Scans"| BlockingPackage["com.openframe.data.repository"]
+    EnableReactive -->|"Scans"| ReactivePackage["com.openframe.data.reactive.repository"]
+    
+    ConverterBean -->|"Configures"| DotReplacement["mapKeyDotReplacement"]
+    ConverterBean -->|"Applies"| CustomConversions["MongoCustomConversions"]

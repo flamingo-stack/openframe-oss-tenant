@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Rust as Tauri Rust Backend
+    participant TokenSvc as Token Service
+    participant Listeners as Service Listeners
+    participant UI as React Components
+
+    Rust->>TokenSvc: Emit "token-update" event
+    TokenSvc->>TokenSvc: Update currentToken
+    TokenSvc->>Listeners: Notify all listeners
+    Listeners->>UI: Update authentication state
+    
+    Note over TokenSvc,Listeners: Listeners include:<br/>- DialogGraphQLService<br/>- SupportedModelsService<br/>- Custom subscribers
+    
+    UI->>TokenSvc: Request token (if needed)
+    TokenSvc->>Rust: invoke("get_token")
+    Rust-->>TokenSvc: Return token
+    TokenSvc-->>UI: Return token

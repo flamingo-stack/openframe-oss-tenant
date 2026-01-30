@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph frontend["Frontend"]
+        LogsPage["Logs Page"]
+        LogsStore["Logs Store<br/>(Zustand)"]
+    end
+    
+    subgraph api["API Layer"]
+        GraphQLQuery["GraphQL Query<br/>(Cursor Pagination)"]
+        APIClient["API Client"]
+    end
+    
+    subgraph backend["Backend"]
+        Gateway["API Gateway"]
+        APIService["API Service"]
+        StreamService["Stream Processing"]
+    end
+    
+    subgraph data["Data Layer"]
+        Pinot["Apache Pinot<br/>(Log Storage)"]
+        Kafka["Kafka<br/>(Real-time Stream)"]
+    end
+    
+    LogsPage -->|"initial load"| GraphQLQuery
+    GraphQLQuery --> APIClient
+    APIClient --> Gateway
+    Gateway --> APIService
+    
+    APIService --> Pinot
+    Pinot -->|"historical logs"| APIService
+    
+    APIService --> Gateway
+    Gateway --> APIClient
+    APIClient --> LogsStore
+    LogsStore --> LogsPage
+    
+    LogsPage -->|"scroll to bottom"| GraphQLQuery
+    GraphQLQuery -->|"next cursor"| APIClient
+    
+    StreamService --> Kafka
+    Kafka -->|"new logs"| Pinot
+    
+    LogsPage -.->|"WebSocket (future)"| StreamService
+    StreamService -.->|"real-time updates"| LogsPage
+    
+    style LogsPage fill:#4CAF50
+    style LogsStore fill:#2196F3
+    style Pinot fill:#FF9800

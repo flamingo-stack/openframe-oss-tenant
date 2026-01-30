@@ -1,0 +1,30 @@
+flowchart TD
+    Machine["Machine Document"]
+    
+    subgraph Identity["Identity & Auth"]
+        MachineID["machineId (unique)"]
+        OrgID["organizationId (indexed)"]
+    end
+    
+    subgraph Hardware["Hardware Info"]
+        Serial["serialNumber"]
+        Manufacturer["manufacturer"]
+        Model["model"]
+    end
+    
+    subgraph Security["Security & Compliance"]
+        SecState["SecurityState"]
+        CompState["ComplianceState"]
+        Alerts["SecurityAlert[]"]
+    end
+    
+    subgraph Status["Status Tracking"]
+        DevStatus["DeviceStatus (indexed)"]
+        LastSeen["lastSeen"]
+        OSType["osType (indexed)"]
+    end
+    
+    Machine --> Identity
+    Machine --> Hardware
+    Machine --> Security
+    Machine --> Status

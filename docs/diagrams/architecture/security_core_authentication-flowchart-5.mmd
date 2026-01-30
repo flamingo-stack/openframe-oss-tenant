@@ -1,0 +1,17 @@
+flowchart TD
+    Start["Controller Method Invoked"] --> Check["supportsParameter()"]
+    Check --> HasAnnotation{"Has @AuthenticationPrincipal?"}
+    HasAnnotation -->|"No"| Skip["Skip - Not supported"]
+    HasAnnotation -->|"Yes"| CheckType{"Type is AuthPrincipal?"}
+    CheckType -->|"No"| Skip
+    CheckType -->|"Yes"| Resolve["resolveArgument()"]
+    
+    Resolve --> GetPrincipal["Get Principal from SecurityContext"]
+    GetPrincipal --> IsJwt{"Is JwtAuthenticationToken?"}
+    IsJwt -->|"No"| ReturnNull["Return null"]
+    IsJwt -->|"Yes"| ExtractJwt["Extract Jwt token"]
+    ExtractJwt --> Convert["AuthPrincipal.fromJwt(jwt)"]
+    Convert --> Return["Return AuthPrincipal"]
+    
+    style Convert fill:#90EE90
+    style Return fill:#90EE90

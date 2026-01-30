@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant JwtCache as JWT Issuer Cache
+    participant Backend
+    participant Resolver
+    
+    Client->>Gateway: Request + Bearer token
+    Gateway->>Gateway: Extract JWT from Authorization header
+    Gateway->>JwtCache: Get decoder for issuer
+    JwtCache->>Gateway: Return cached decoder
+    Gateway->>Gateway: Validate JWT signature & claims
+    Gateway->>Backend: Forward with JwtAuthenticationToken
+    Backend->>Resolver: Resolve @AuthenticationPrincipal
+    Resolver->>Backend: Return AuthPrincipal

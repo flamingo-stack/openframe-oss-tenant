@@ -1,0 +1,28 @@
+flowchart TD
+    Request["HTTP Request"] -->|"1. Authenticate"| Auth["API Key Filter"]
+    Auth -->|"2. Route"| Controller["REST Controller"]
+    
+    Controller -->|"3. Validate"| Validation["@Valid Annotations"]
+    Validation -->|"4. Extract Params"| Params["Query/Path/Body Params"]
+    
+    Params -->|"5. Build Criteria"| FilterCriteria["FilterCriteria DTO"]
+    FilterCriteria -->|"6. Map"| Mapper["DTO Mapper"]
+    Mapper -->|"7. Transform"| FilterOptions["FilterOptions"]
+    
+    FilterOptions -->|"8. Query"| Service["Business Service"]
+    Service -->|"9. Execute"| Repository["Data Repository"]
+    
+    Repository -->|"10. Return"| Entities["Domain Entities"]
+    Entities -->|"11. Transform"| Mapper
+    Mapper -->|"12. Build DTO"| ResponseDTO["Response DTO"]
+    
+    ResponseDTO -->|"13. Serialize"| JSON["JSON Response"]
+    JSON -->|"14. Return"| Client["HTTP Response"]
+    
+    Error["Exception"] -.->|"Handle"| ExceptionHandler["GlobalExceptionHandler"]
+    ExceptionHandler -.->|"Error Response"| Client
+    
+    style Controller fill:#e1f5ff
+    style Mapper fill:#fff4e1
+    style Service fill:#e8f5e9
+    style Repository fill:#f3e5f5

@@ -1,0 +1,8 @@
+flowchart LR
+    User["User Input"] -->|"Types Message"| InputComponent["Input Component"]
+    InputComponent -->|"Send Message"| TokenService["Token Service"]
+    TokenService -->|"Validate Token"| ChatAPI["Chat API"]
+    ChatAPI -->|"Process Message"| MingoAI["Mingo AI Backend"]
+    MingoAI -->|"Stream Response"| ChatAPI
+    ChatAPI -->|"GraphQL Subscription"| DialogService["Dialog Service"]
+    DialogService -->|"Update UI"| MessageList["Message List"]

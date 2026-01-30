@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph Controllers["Controller Layer"]
+        LC["LoginController"]
+        TRC["TenantRegistrationController"]
+        IRC["InvitationRegistrationController"]
+        PRC["PasswordResetController"]
+    end
+    
+    subgraph Services["Service Layer"]
+        TRS["TenantRegistrationService"]
+        STRS["SsoTenantRegistrationService"]
+        IRS["InvitationRegistrationService"]
+        SIS["SsoInvitationService"]
+        PRS["PasswordResetService"]
+    end
+    
+    subgraph Infrastructure["Infrastructure"]
+        Email["Email Service"]
+        OAuth["OAuth 2.0 Server"]
+        DB["MongoDB"]
+    end
+    
+    TRC -->|"Standard Registration"| TRS
+    TRC -->|"SSO Registration"| STRS
+    IRC -->|"Standard Invitation"| IRS
+    IRC -->|"SSO Invitation"| SIS
+    PRC -->|"Password Reset"| PRS
+    
+    TRS --> DB
+    STRS --> OAuth
+    STRS --> DB
+    IRS --> DB
+    SIS --> OAuth
+    SIS --> DB
+    PRS --> DB
+    PRS --> Email

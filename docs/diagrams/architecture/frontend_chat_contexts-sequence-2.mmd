@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Provider as DebugModeProvider
+    participant Tauri as Tauri Runtime
+    participant Rust as Rust Backend
+    participant Config as Configuration Store
+    
+    Provider->>Tauri: invoke('get_debug_mode')
+    Tauri->>Rust: Execute Command
+    Rust->>Config: Read Debug Setting
+    Config-->>Rust: boolean value
+    Rust-->>Tauri: Return Result
+    Tauri-->>Provider: boolean | Error
+    
+    alt Success
+        Provider->>Provider: setDebugMode(enabled)
+        Provider->>Provider: Log initialization
+    else Error
+        Provider->>Provider: setDebugMode(false)
+        Provider->>Provider: Log error
+    end

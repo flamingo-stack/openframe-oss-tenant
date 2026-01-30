@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant DialogStore
+    participant WebSocket
+    participant ChatService
+    participant MingoAI
+    
+    User->>Frontend: Open Ticket
+    Frontend->>DialogStore: Load Dialog
+    DialogStore->>ChatService: GET /dialogs/:id
+    ChatService-->>DialogStore: Dialog Data
+    DialogStore-->>Frontend: Render Ticket
+    
+    Frontend->>WebSocket: Connect to Dialog
+    WebSocket->>ChatService: Subscribe to Dialog
+    
+    User->>Frontend: Type Message
+    Frontend->>DialogStore: Set Typing Indicator
+    DialogStore->>WebSocket: Send Typing Event
+    WebSocket->>ChatService: Broadcast Typing
+    
+    User->>Frontend: Send Message
+    Frontend->>DialogStore: Add Message (Optimistic)
+    DialogStore->>ChatService: POST /messages
+    ChatService-->>DialogStore: Message Confirmed
+    
+    ChatService->>MingoAI: Process Message
+    MingoAI->>MingoAI: Generate Response
+    
+    MingoAI-->>ChatService: AI Response (Streaming)
+    ChatService->>WebSocket: Stream Response
+    WebSocket->>DialogStore: Update Message
+    DialogStore->>Frontend: Render Streaming Response
+    Frontend->>User: Show AI Response
+    
+    Note over Frontend,ChatService: Real-time bidirectional communication

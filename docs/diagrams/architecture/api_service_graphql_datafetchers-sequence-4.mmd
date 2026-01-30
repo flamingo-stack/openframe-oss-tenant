@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant Client
+    participant DGS as DGS Framework
+    participant DF as DeviceDataFetcher
+    participant DL as DataLoader
+    participant Repo as Repository
+    participant DB as Database
+
+    Client->>DGS: Query devices with nested fields
+    DGS->>DF: devices(filter, pagination)
+    DF->>Repo: queryDevices()
+    Repo->>DB: SELECT devices
+    DB-->>Repo: Device list
+    Repo-->>DF: List<Machine>
+    
+    Note over DGS,DL: For each device, resolve nested fields
+    
+    DGS->>DF: tags(device1)
+    DF->>DL: dataLoader.load(device1.id)
+    Note over DL: Batch request queued
+    
+    DGS->>DF: tags(device2)
+    DF->>DL: dataLoader.load(device2.id)
+    Note over DL: Batch request queued
+    
+    DGS->>DF: tags(device3)
+    DF->>DL: dataLoader.load(device3.id)
+    Note over DL: Batch request queued
+    
+    Note over DL: Batch execution triggered
+    DL->>Repo: findTagsByDeviceIds([id1, id2, id3])
+    Repo->>DB: SELECT tags WHERE device_id IN (...)
+    DB-->>Repo: All tags for devices
+    Repo-->>DL: Map<DeviceId, List<Tag>>
+    
+    DL-->>DF: CompletableFuture<List<Tag>> for device1
+    DL-->>DF: CompletableFuture<List<Tag>> for device2
+    DL-->>DF: CompletableFuture<List<Tag>> for device3
+    
+    DF-->>DGS: Resolved nested fields
+    DGS-->>Client: Complete GraphQL response

@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph AuthMethods["Authentication Methods"]
+        Login["login()<br/>OAuth Login"]
+        Refresh["refresh()<br/>Token Refresh"]
+        Logout["logout()<br/>Session Termination"]
+        DevExchange["devExchange()<br/>Dev Ticket Exchange"]
+    end
+    
+    subgraph Registration["Registration Methods"]
+        RegisterOrg["registerOrganization()<br/>New Tenant"]
+        RegisterSSO["registerOrganizationSSO()<br/>SSO Registration"]
+        AcceptInvite["acceptInvitation()<br/>User Invitation"]
+        AcceptInviteSSO["acceptInvitationSSO()<br/>SSO Invitation"]
+    end
+    
+    subgraph Discovery["Discovery Methods"]
+        DiscoverTenants["discoverTenants()<br/>Find User Tenants"]
+        CheckDomain["checkDomainAvailability()<br/>Validate Subdomain"]
+        ValidateCode["validateAccessCode()<br/>Verify Access Code"]
+    end
+    
+    subgraph Password["Password Methods"]
+        RequestReset["requestPasswordReset()<br/>Send Reset Email"]
+        ConfirmReset["confirmPasswordReset()<br/>Set New Password"]
+    end
+    
+    style Login fill:#3498DB,stroke:#2874A6,color:#fff
+    style Refresh fill:#F39C12,stroke:#D68910,color:#fff
+    style RegisterOrg fill:#2ECC71,stroke:#27AE60,color:#fff
+    style DiscoverTenants fill:#9B59B6,stroke:#6C3483,color:#fff

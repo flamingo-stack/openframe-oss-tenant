@@ -1,0 +1,47 @@
+flowchart TD
+    IncomingFrame["Incoming Binary Frame"]
+    Accumulator["Byte Accumulator<br/>(16MB max)"]
+    Parser["Frame Parser"]
+    
+    subgraph TileProcessing["Tile Processing"]
+        TileQueue["Tile Queue<br/>(300 max)"]
+        Backpressure{"Queue Full?"}
+        DropOldest["Drop Oldest Tile"]
+        Enqueue["Enqueue New Tile"]
+    end
+    
+    subgraph Decoding["Concurrent Decoding"]
+        Decoder1["Decoder 1"]
+        Decoder2["Decoder 2"]
+        Decoder3["Decoder 3"]
+        CreateImageBitmap["createImageBitmap()"]
+        FallbackImage["Image() fallback"]
+    end
+    
+    DrawQueue["Draw Queue"]
+    RenderLoop["requestAnimationFrame"]
+    Canvas["Canvas drawImage()"]
+    
+    IncomingFrame --> Accumulator
+    Accumulator --> Parser
+    Parser -->|"cmd=3 TILE"| TileQueue
+    
+    TileQueue --> Backpressure
+    Backpressure -->|"Yes"| DropOldest
+    Backpressure -->|"No"| Enqueue
+    DropOldest --> Enqueue
+    
+    Enqueue --> Decoder1
+    Enqueue --> Decoder2
+    Enqueue --> Decoder3
+    
+    Decoder1 --> CreateImageBitmap
+    Decoder2 --> CreateImageBitmap
+    Decoder3 --> CreateImageBitmap
+    
+    CreateImageBitmap -->|"Success"| DrawQueue
+    CreateImageBitmap -->|"Fail"| FallbackImage
+    FallbackImage --> DrawQueue
+    
+    DrawQueue --> RenderLoop
+    RenderLoop --> Canvas

@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph Frontend["Frontend Application"]
+        FileUI["File Manager UI"]
+        FileClient["File Manager Client"]
+    end
+    
+    subgraph FileManagement["File Management Module"]
+        BinaryHeader["BinaryHeader"]
+        BinaryAccumulator["BinaryAccumulator"]
+        FileTypes["File Manager Types"]
+        FileOps["File Operations"]
+    end
+    
+    subgraph Protocol["MeshCentral Protocol"]
+        WSConnection["WebSocket Connection"]
+        BinaryProtocol["Binary Protocol Handler"]
+        MessageQueue["Message Queue"]
+    end
+    
+    subgraph Remote["Remote Device"]
+        FileSystem["File System"]
+        Agent["MeshCentral Agent"]
+    end
+    
+    FileUI -->|"User Actions"| FileClient
+    FileClient -->|"Uses Types"| FileTypes
+    FileClient -->|"Parses Messages"| BinaryHeader
+    FileClient -->|"Buffers Data"| BinaryAccumulator
+    FileClient -->|"Sends Commands"| FileOps
+    
+    FileOps -->|"Binary Messages"| BinaryProtocol
+    BinaryProtocol -->|"WebSocket Frames"| WSConnection
+    WSConnection -->|"Encrypted Tunnel"| Agent
+    Agent -->|"File Operations"| FileSystem
+    
+    FileSystem -->|"Results"| Agent
+    Agent -->|"Binary Response"| WSConnection
+    WSConnection -->|"Frames"| BinaryProtocol
+    BinaryProtocol -->|"Accumulates"| BinaryAccumulator
+    BinaryAccumulator -->|"Complete Messages"| FileClient
+    FileClient -->|"Updates UI"| FileUI

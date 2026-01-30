@@ -1,0 +1,39 @@
+flowchart TD
+    subgraph ClientInit["Client Initialization"]
+        CheckClient["Check Existing Client"]
+        GetToken["Get Token from TokenService"]
+        GetURL["Get API URL from TokenService"]
+        CreateClient["Create GraphQLClient"]
+        SetHeaders["Set Authorization Headers"]
+    end
+    
+    subgraph QueryExecution["Query Execution"]
+        InitClient["Initialize Client"]
+        BuildQuery["Build GraphQL Query"]
+        Execute["Execute Request"]
+        HandleResponse["Handle Response"]
+        HandleError["Handle Error"]
+    end
+    
+    subgraph MessagePagination["Message Pagination"]
+        FetchPage["Fetch Page"]
+        CheckNext["Has Next Page?"]
+        AccumulateEdges["Accumulate Edges"]
+        ReturnAll["Return All Messages"]
+    end
+    
+    CheckClient -->|"Not initialized"| GetToken
+    CheckClient -->|"Exists"| SetHeaders
+    GetToken --> GetURL
+    GetURL --> CreateClient
+    CreateClient --> SetHeaders
+    
+    InitClient --> BuildQuery
+    BuildQuery --> Execute
+    Execute --> HandleResponse
+    Execute --> HandleError
+    
+    FetchPage --> CheckNext
+    CheckNext -->|"Yes"| AccumulateEdges
+    AccumulateEdges --> FetchPage
+    CheckNext -->|"No"| ReturnAll

@@ -1,0 +1,33 @@
+flowchart TD
+    Query["GraphQL Query"] --> CheckCache{"In<br/>Cache?"}
+    
+    CheckCache -->|"Yes"| CheckStale{"Is<br/>Stale?"}
+    CheckCache -->|"No"| FetchAPI["Fetch from API"]
+    
+    CheckStale -->|"No"| ReturnCache["Return Cached Data"]
+    CheckStale -->|"Yes"| Background["Background Refetch"]
+    
+    Background --> ReturnCache
+    Background --> FetchAPI
+    
+    FetchAPI --> Success{"Fetch<br/>Success?"}
+    
+    Success -->|"Yes"| UpdateCache["Update Cache"]
+    Success -->|"No"| RetryLogic["Retry Logic"]
+    
+    RetryLogic --> FetchAPI
+    
+    UpdateCache --> Invalidate["Check Invalidation Rules"]
+    Invalidate --> RelatedQueries{"Related<br/>Queries?"}
+    
+    RelatedQueries -->|"Yes"| InvalidateRelated["Invalidate Related"]
+    RelatedQueries -->|"No"| ReturnData["Return Data"]
+    
+    InvalidateRelated --> ReturnData
+    ReturnCache --> ReturnData
+    
+    ReturnData --> End["End"]
+    
+    style CheckCache fill:#4CAF50
+    style UpdateCache fill:#2196F3
+    style RetryLogic fill:#FF9800

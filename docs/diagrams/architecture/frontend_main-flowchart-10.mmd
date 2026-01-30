@@ -1,0 +1,15 @@
+flowchart LR
+    Frontend["Frontend App"] --> Gateway["API Gateway"]
+    
+    Gateway --> APIService["API Service<br/>(GraphQL + REST)"]
+    Gateway --> AuthService["Authorization Service<br/>(OAuth 2.0)"]
+    Gateway --> ChatService["Chat Service<br/>(Mingo AI)"]
+    
+    APIService --> MongoDB["MongoDB"]
+    APIService --> Pinot["Apache Pinot"]
+    APIService --> FleetMDM["Fleet MDM"]
+    APIService --> TacticalRMM["Tactical RMM"]
+    
+    ChatService --> MingoAI["Mingo AI Engine"]
+    
+    Frontend --> MeshCentral["MeshCentral<br/>(Direct WebSocket)"]

@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer as AuthorizationServerConfig
+    participant Security as SecurityConfig
+    participant Dynamic as DynamicClientRegistrationRepository
+    participant TenantKey as TenantKeyService
+    participant UserSvc as UserService
+    participant Mongo as MongoDB
+
+    Client->>AuthServer: POST /oauth2/token
+    AuthServer->>Security: Authenticate User
+    Security->>UserSvc: Load UserDetails
+    UserSvc->>Mongo: findByEmailAndTenant()
+    Mongo-->>UserSvc: AuthUser
+    UserSvc-->>Security: UserDetails
+    
+    Security->>Dynamic: findByRegistrationId(provider)
+    Dynamic-->>Security: ClientRegistration
+    
+    AuthServer->>TenantKey: getOrCreateActiveKey(tenantId)
+    TenantKey->>Mongo: findFirstByTenantIdAndActiveTrue()
+    alt Key Exists
+        Mongo-->>TenantKey: TenantKey
+    else No Key
+        TenantKey->>TenantKey: Generate RSA Key Pair
+        TenantKey->>Mongo: save(TenantKey)
+    end
+    TenantKey-->>AuthServer: RSAKey
+    
+    AuthServer->>AuthServer: Customize JWT Claims
+    Note over AuthServer: Add tenant_id, userId, roles
+    
+    AuthServer-->>Client: JWT Access Token

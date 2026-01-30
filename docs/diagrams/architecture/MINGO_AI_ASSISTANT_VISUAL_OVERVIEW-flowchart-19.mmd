@@ -1,0 +1,29 @@
+flowchart TD
+    StateChange["State Change"] --> CheckScope{"Change<br/>Scope?"}
+    
+    CheckScope -->|"Global"| AllComponents["Re-render All"]
+    CheckScope -->|"Specific"| Selector["Use Selector"]
+    
+    Selector --> CheckChanged{"Value<br/>Changed?"}
+    
+    CheckChanged -->|"Yes"| TargetComponent["Re-render Target Component"]
+    CheckChanged -->|"No"| Skip["Skip Re-render"]
+    
+    TargetComponent --> Memo["React.memo Check"]
+    Memo --> PropsChanged{"Props<br/>Changed?"}
+    
+    PropsChanged -->|"Yes"| Render["Render Component"]
+    PropsChanged -->|"No"| Skip
+    
+    Render --> VirtualDOM["Update Virtual DOM"]
+    VirtualDOM --> Diff["Diff with Previous"]
+    Diff --> Patch["Patch Real DOM"]
+    
+    AllComponents --> VirtualDOM
+    
+    Patch --> End["End"]
+    Skip --> End
+    
+    style Selector fill:#4CAF50
+    style Skip fill:#2196F3
+    style Memo fill:#FF9800

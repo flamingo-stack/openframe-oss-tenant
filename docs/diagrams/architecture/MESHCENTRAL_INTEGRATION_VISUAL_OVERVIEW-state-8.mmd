@@ -1,0 +1,31 @@
+stateDiagram-v2
+    [*] --> Disconnected
+    
+    Disconnected --> Connecting: attach(canvas)
+    Connecting --> Initializing: setSender()
+    
+    Initializing --> Negotiating: Send KVM_INIT
+    Negotiating --> Configuring: Send COMPRESSION
+    Configuring --> Paused: Send PAUSE(1)
+    
+    Paused --> Streaming: Send UNPAUSE(0)
+    Streaming --> Paused: Send PAUSE(1)
+    
+    Streaming --> Streaming: Receive TILE
+    Streaming --> Streaming: Send MOUSE/KEY
+    Streaming --> Refreshing: Send REFRESH
+    Refreshing --> Streaming: Receive tiles
+    
+    Streaming --> SwitchingDisplay: switchDisplay()
+    SwitchingDisplay --> Paused: Send PAUSE(1)
+    Paused --> SwitchingDisplay: Send SWITCH_DISPLAY
+    SwitchingDisplay --> Streaming: Send UNPAUSE(0)
+    
+    Streaming --> ViewOnly: setViewOnly(true)
+    ViewOnly --> Streaming: setViewOnly(false)
+    
+    Streaming --> Disconnected: detach()
+    Paused --> Disconnected: detach()
+    ViewOnly --> Disconnected: detach()
+    
+    Disconnected --> [*]

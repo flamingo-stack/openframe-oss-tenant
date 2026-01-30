@@ -1,0 +1,11 @@
+flowchart TD
+    User[User/Agent] -->|1. Login Request| Auth[Authorization Service]
+    Auth -->|2. Validate Credentials| MongoDB[(MongoDB)]
+    MongoDB -->|3. User Data| Auth
+    Auth -->|4. Generate JWT| KeyService[Tenant Key Service]
+    KeyService -->|5. Sign with RSA Key| Auth
+    Auth -->|6. Return JWT| User
+    User -->|7. API Request + JWT| Gateway[Gateway Service]
+    Gateway -->|8. Validate JWT| JWTValidator[JWT Validator]
+    JWTValidator -->|9. Extract Claims| Gateway
+    Gateway -->|10. Authorized Request| API[API Service]

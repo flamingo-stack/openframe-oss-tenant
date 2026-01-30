@@ -1,0 +1,39 @@
+flowchart TD
+    subgraph ConsumerSettings["Consumer Settings"]
+        AutoOffset["auto.offset.reset: earliest"]
+        MaxPoll["max.poll.records: 100"]
+        FetchMin["fetch.min.bytes: 1"]
+        FetchMax["fetch.max.wait.ms: 500"]
+    end
+    
+    subgraph Impact["Performance Impact"]
+        Throughput["Throughput"]
+        Latency["Latency"]
+        Memory["Memory Usage"]
+    end
+    
+    subgraph Tradeoffs["Tradeoffs"]
+        HighPoll["Higher max.poll.records"]
+        LowPoll["Lower max.poll.records"]
+    end
+    
+    AutoOffset -.->|"Ensures"| Throughput
+    MaxPoll -->|"Affects"| Throughput
+    MaxPoll -->|"Affects"| Latency
+    MaxPoll -->|"Affects"| Memory
+    
+    HighPoll -->|"+"| Throughput
+    HighPoll -->|"-"| Latency
+    HighPoll -->|"+"| Memory
+    
+    LowPoll -->|"-"| Throughput
+    LowPoll -->|"+"| Latency
+    LowPoll -->|"-"| Memory
+    
+    classDef settingClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef impactClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef tradeoffClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    
+    class AutoOffset,MaxPoll,FetchMin,FetchMax settingClass
+    class Throughput,Latency,Memory impactClass
+    class HighPoll,LowPoll tradeoffClass

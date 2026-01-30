@@ -1,0 +1,18 @@
+flowchart TD
+    CLIENT["Client Request"] --> GATEWAY["Gateway Service"]
+    GATEWAY --> SECURITY["Security Filter Chain"]
+    SECURITY --> JWT["JWT Validation"]
+    JWT -->|"Valid"| CONTROLLER["REST Controller"]
+    JWT -->|"Invalid"| REJECT["401 Unauthorized"]
+    
+    CONTROLLER --> VALIDATE["Request Validation"]
+    VALIDATE -->|"Valid"| SERVICE["Business Service"]
+    VALIDATE -->|"Invalid"| ERROR["400 Bad Request"]
+    
+    SERVICE --> REPO["Repository Layer"]
+    REPO --> DB["Database"]
+    DB --> REPO
+    REPO --> SERVICE
+    SERVICE --> MAPPER["Response Mapper"]
+    MAPPER --> RESPONSE["HTTP Response"]
+    RESPONSE --> CLIENT

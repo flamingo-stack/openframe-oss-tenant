@@ -1,0 +1,19 @@
+flowchart TD
+    OpenFrameUI["OpenFrame Web UI"] -->|"User Actions"| IntegrationLayer["MeshCentral Integration Layer"]
+    
+    subgraph IntegrationLayer["MeshCentral Integration Module"]
+        DesktopClient["Desktop Client<br/>(MeshDesktop)"]
+        FileManager["File Manager<br/>(Types & Protocol)"]
+        BinaryProtocol["Binary Protocol Handler"]
+    end
+    
+    IntegrationLayer -->|"WebSocket Binary"| MeshCentralServer["MeshCentral Server"]
+    MeshCentralServer -->|"Agent Protocol"| RemoteDevices["Remote Devices<br/>(Windows/Linux/Mac)"]
+    
+    DesktopClient -->|"Input Events"| BinaryProtocol
+    BinaryProtocol -->|"Screen Tiles"| DesktopClient
+    FileManager -->|"File Operations"| BinaryProtocol
+    BinaryProtocol -->|"File Data"| FileManager
+    
+    DesktopClient -->|"Renders to"| Canvas["HTML5 Canvas"]
+    FileManager -->|"Updates"| FileUI["File Browser UI"]

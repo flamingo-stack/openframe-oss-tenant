@@ -1,0 +1,48 @@
+classDiagram
+    class IntegratedToolAgent {
+        +String id
+        +String toolId
+        +boolean releaseVersion
+        +String version
+        +SessionType sessionType
+        +List~DownloadConfiguration~ downloadConfigurations
+        +List~ToolAgentAsset~ assets
+        +List~String~ installationCommandArgs
+        +List~String~ runCommandArgs
+        +List~String~ agentToolIdCommandArgs
+        +List~String~ uninstallationCommandArgs
+        +boolean allowVersionUpdate
+        +boolean allowConfigurationUpdate
+        +ToolAgentStatus status
+    }
+    
+    class DownloadConfiguration {
+        +String platform
+        +String architecture
+        +String downloadUrl
+        +String checksum
+    }
+    
+    class ToolAgentAsset {
+        +String name
+        +String path
+        +String type
+    }
+    
+    class SessionType {
+        <<enumeration>>
+        USER
+        SYSTEM
+    }
+    
+    class ToolAgentStatus {
+        <<enumeration>>
+        ENABLED
+        DISABLED
+        DEPRECATED
+    }
+    
+    IntegratedToolAgent --> DownloadConfiguration
+    IntegratedToolAgent --> ToolAgentAsset
+    IntegratedToolAgent --> SessionType
+    IntegratedToolAgent --> ToolAgentStatus

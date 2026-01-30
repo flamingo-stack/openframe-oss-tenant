@@ -1,0 +1,20 @@
+flowchart TD
+    Client["Client/Agent"] -->|"WS Connection"| Gateway["Gateway WebSocket Handler"]
+    
+    Gateway -->|"Route 1"| ToolAgent["/ws/tools/agent/{toolId}/**<br/>Agent Tool WebSocket"]
+    Gateway -->|"Route 2"| ToolApi["/ws/tools/{toolId}/**<br/>API Tool WebSocket"]
+    Gateway -->|"Route 3"| Nats["/ws/nats<br/>NATS Message Bus"]
+    
+    subgraph security_layer["Security Layer"]
+        JwtExtract["Extract JWT from Query/Cookie"]
+        ClaimsRead["Read Claims"]
+        RoleCheck["Check Roles"]
+    end
+    
+    Gateway -.->|"before connection"| security_layer
+    
+    ToolAgent -->|"Proxy"| ToolService1["Tactical RMM"]
+    ToolAgent -->|"Proxy"| ToolService2["Fleet MDM"]
+    ToolApi -->|"Proxy"| ToolService1
+    ToolApi -->|"Proxy"| ToolService2
+    Nats -->|"Direct"| NatsServer["NATS Server"]

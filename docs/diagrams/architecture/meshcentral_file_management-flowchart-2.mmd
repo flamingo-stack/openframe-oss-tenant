@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph Upload["Upload Flow"]
+        UploadUI["Select File"]
+        UploadHash["Calculate Hash"]
+        UploadCheck["Check Exists"]
+        UploadChunk["Send Chunks"]
+        UploadComplete["Complete"]
+    end
+    
+    subgraph Download["Download Flow"]
+        DownloadReq["Request File"]
+        DownloadStart["Start Transfer"]
+        DownloadChunk["Receive Chunks"]
+        DownloadSave["Save to Disk"]
+    end
+    
+    subgraph Browse["Browse Flow"]
+        BrowseReq["List Directory"]
+        BrowseParse["Parse Entries"]
+        BrowseDisplay["Display Files"]
+    end
+    
+    UploadUI --> UploadHash
+    UploadHash --> UploadCheck
+    UploadCheck -->|"New/Changed"| UploadChunk
+    UploadCheck -->|"Unchanged"| UploadComplete
+    UploadChunk --> UploadComplete
+    
+    DownloadReq --> DownloadStart
+    DownloadStart --> DownloadChunk
+    DownloadChunk --> DownloadSave
+    
+    BrowseReq --> BrowseParse
+    BrowseParse --> BrowseDisplay

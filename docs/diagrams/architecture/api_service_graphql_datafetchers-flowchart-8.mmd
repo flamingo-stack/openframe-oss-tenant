@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Clients["Client Applications"]
+        WebApp["Web Application"]
+        MobileApp["Mobile App"]
+        CLI["CLI Tools"]
+    end
+
+    subgraph Gateway["gateway_service"]
+        GW["API Gateway"]
+        Auth["JWT Authentication"]
+        CORS["CORS Configuration"]
+    end
+
+    subgraph APIService["api_service"]
+        GraphQL["GraphQL Endpoint<br/>/graphql"]
+        DataFetchers["DataFetchers"]
+    end
+
+    WebApp --> GW
+    MobileApp --> GW
+    CLI --> GW
+
+    GW --> Auth
+    Auth --> CORS
+    CORS --> GraphQL
+    GraphQL --> DataFetchers

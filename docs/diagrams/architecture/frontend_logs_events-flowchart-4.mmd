@@ -1,0 +1,15 @@
+flowchart TD
+    LogEntry["LogEntry<br/>(deviceId, hostname, orgName)"]
+    Transform["transformLogEntry()"]
+    PartialDevice["Partial Device Object<br/>(from log fields)"]
+    Modal["LogInfoModal Opens"]
+    FetchDevice["fetchDeviceById(deviceId)"]
+    FullDevice["Full Device Object<br/>(from Device API)"]
+    Display["Display Complete Context"]
+    
+    LogEntry --> Transform
+    Transform --> PartialDevice
+    PartialDevice --> Modal
+    Modal --> FetchDevice
+    FetchDevice --> FullDevice
+    FullDevice --> Display

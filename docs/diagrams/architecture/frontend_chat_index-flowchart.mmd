@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph docs["Documentation Structure"]
+        summary["FRONTEND_CHAT_SUMMARY.md<br/>(Quick Reference)"]
+        readme["FRONTEND_CHAT_README.md<br/>(Getting Started)"]
+        main["frontend_chat.md<br/>(Complete Docs)"]
+        
+        subgraph submodules["Sub-Module Docs"]
+            contexts["frontend_chat_contexts.md<br/>(Context Providers)"]
+            services["frontend_chat_services.md<br/>(Service Layer)"]
+        end
+    end
+    
+    summary -->|"Detailed Info"| readme
+    readme -->|"Deep Dive"| main
+    main -->|"References"| submodules
+    
+    style summary fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style readme fill:#48bb78,stroke:#2f855a,color:#fff
+    style main fill:#ed8936,stroke:#c05621,color:#fff
+    style contexts fill:#9f7aea,stroke:#6b46c1,color:#fff
+    style services fill:#9f7aea,stroke:#6b46c1,color:#fff

@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Client
+    participant Controller as IntegratedToolController
+    participant ToolService as IntegratedToolService
+    participant DebeziumService
+    participant Hooks as PostSaveHooks
+    participant MongoDB
+    participant Debezium as Debezium API
+
+    Client->>Controller: POST /v1/tools/{id}
+    Controller->>ToolService: saveTool(tool)
+    ToolService->>MongoDB: save(tool)
+    MongoDB-->>ToolService: savedTool
+    ToolService-->>Controller: savedTool
+    
+    Controller->>DebeziumService: createOrUpdateDebeziumConnector()
+    DebeziumService->>Debezium: GET /connectors/{name}
+    alt Connector Exists
+        Debezium-->>DebeziumService: 200 OK
+        DebeziumService->>Debezium: PUT /connectors/{name}/config
+    else Connector Not Found
+        Debezium-->>DebeziumService: 404 Not Found
+        DebeziumService->>Debezium: POST /connectors
+    end
+    
+    Controller->>Hooks: onToolSaved(toolId, tool)
+    Hooks-->>Controller: completed
+    
+    Controller-->>Client: 200 OK with savedTool

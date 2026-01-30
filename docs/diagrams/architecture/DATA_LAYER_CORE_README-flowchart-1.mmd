@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph services["OpenFrame Services"]
+        API["API Service"]
+        External["External API"]
+        Stream["Stream Processing"]
+    end
+    
+    subgraph data_layer_core["Data Layer Core"]
+        DeviceRepo["Device Repository"]
+        LogRepo["Log Repository"]
+        QueryBuilder["Query Builder"]
+    end
+    
+    subgraph datastores["Analytical Data Stores"]
+        Pinot[("Apache Pinot<br/>Real-Time OLAP")]
+        Cassandra[("Apache Cassandra<br/>Time-Series")]
+    end
+    
+    API -->|"filter options"| DeviceRepo
+    API -->|"log queries"| LogRepo
+    External -->|"search logs"| LogRepo
+    
+    DeviceRepo -->|"builds queries"| QueryBuilder
+    LogRepo -->|"builds queries"| QueryBuilder
+    
+    QueryBuilder -->|"executes SQL"| Pinot
+    
+    Stream -->|"ingests data"| Pinot
+    Stream -->|"writes events"| Cassandra

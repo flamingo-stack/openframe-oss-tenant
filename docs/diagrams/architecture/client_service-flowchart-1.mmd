@@ -1,0 +1,57 @@
+flowchart TD
+    subgraph external["External Clients"]
+        Agent["OpenFrame Agent"]
+        Device["Managed Device"]
+    end
+
+    subgraph controllers["REST Controllers Layer"]
+        AgentCtrl["AgentController"]
+        AuthCtrl["AgentAuthController"]
+    end
+
+    subgraph listeners["Event Listeners Layer"]
+        ConnListener["ClientConnectionListener"]
+        HBListener["MachineHeartbeatListener"]
+        AgentListener["InstalledAgentListener"]
+    end
+
+    subgraph services["Business Logic Layer"]
+        RegService["AgentRegistrationService"]
+        AuthService["AgentAuthService"]
+        StatusService["MachineStatusService"]
+        InstalledService["InstalledAgentService"]
+    end
+
+    subgraph messaging["Messaging Infrastructure"]
+        NATS["NATS JetStream"]
+        Kafka["Kafka"]
+    end
+
+    subgraph data["Data Layer"]
+        MongoDB[("MongoDB")]
+    end
+
+    Agent -->|"POST /api/agents/register"| AgentCtrl
+    Agent -->|"POST /oauth/token"| AuthCtrl
+    Agent -->|"Heartbeat Events"| NATS
+    Agent -->|"Connection Events"| NATS
+    Agent -->|"Installed Agent Events"| NATS
+
+    AgentCtrl -->|"registers"| RegService
+    AuthCtrl -->|"authenticates"| AuthService
+
+    NATS -->|"machine.*.heartbeat"| HBListener
+    NATS -->|"connection events"| ConnListener
+    NATS -->|"machine.*.installed-agent"| AgentListener
+
+    HBListener -->|"updates status"| StatusService
+    ConnListener -->|"updates status"| StatusService
+    AgentListener -->|"tracks agents"| InstalledService
+
+    RegService -->|"persists"| MongoDB
+    AuthService -->|"validates"| MongoDB
+    StatusService -->|"updates"| MongoDB
+    InstalledService -->|"stores"| MongoDB
+
+    RegService -.->|"publishes events"| Kafka
+    StatusService -.->|"publishes events"| Kafka

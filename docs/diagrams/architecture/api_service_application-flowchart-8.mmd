@@ -1,0 +1,29 @@
+flowchart TD
+    CLIENT["GraphQL Client"] --> GATEWAY["Gateway Service"]
+    GATEWAY --> SECURITY["Security Filter Chain"]
+    SECURITY --> JWT["JWT Validation"]
+    JWT -->|"Valid"| DGS["DGS Framework"]
+    JWT -->|"Invalid"| REJECT["401 Unauthorized"]
+    
+    DGS --> PARSE["Parse Query"]
+    PARSE --> VALIDATE["Validate Schema"]
+    VALIDATE --> PLAN["Execution Plan"]
+    
+    PLAN --> DATAFETCHER["DataFetcher"]
+    DATAFETCHER --> DATALOADER["DataLoader (if nested)"]
+    DATALOADER --> SERVICE["Business Service"]
+    SERVICE --> REPO["Repository Layer"]
+    
+    REPO --> MONGO["MongoDB"]
+    REPO --> CASS["Cassandra"]
+    REPO --> PINOT["Apache Pinot"]
+    
+    MONGO --> REPO
+    CASS --> REPO
+    PINOT --> REPO
+    
+    REPO --> SERVICE
+    SERVICE --> DATALOADER
+    DATALOADER --> DATAFETCHER
+    DATAFETCHER --> RESULT["GraphQL Result"]
+    RESULT --> CLIENT

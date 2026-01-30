@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph Services["Services Using Documents"]
+        API["API Service"]
+        Client["Client Service"]
+        Auth["Authorization Service"]
+        Mgmt["Management Service"]
+        Stream["Stream Processing"]
+    end
+    
+    subgraph Documents["Document Models"]
+        Device["Device"]
+        Machine["Machine"]
+        Org["Organization"]
+        User["User"]
+        Tool["IntegratedTool"]
+        Event["CoreEvent"]
+    end
+    
+    API -->|"CRUD"| Device
+    API -->|"CRUD"| Machine
+    API -->|"CRUD"| Org
+    API -->|"CRUD"| User
+    API -->|"Read"| Tool
+    API -->|"Read"| Event
+    
+    Client -->|"Create/Update"| Machine
+    Client -->|"Create/Update"| Device
+    
+    Auth -->|"Read"| Machine
+    Auth -->|"CRUD"| User
+    Auth -->|"Read"| Org
+    
+    Mgmt -->|"CRUD"| Tool
+    
+    Stream -->|"Create"| Event

@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph UI["React UI Layer"]
+        DevicePage["Device Detail Page"]
+        RemoteDesktop["Remote Desktop Component"]
+        FileManager["File Manager Component"]
+    end
+    
+    subgraph Integration["Integration Layer"]
+        MeshDesktop["MeshDesktop Instance"]
+        FileClient["File Manager Client"]
+        WSManager["WebSocket Manager"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        Gateway["Gateway Service"]
+        MeshServer["MeshCentral Server"]
+    end
+    
+    DevicePage --> RemoteDesktop
+    DevicePage --> FileManager
+    
+    RemoteDesktop --> MeshDesktop
+    FileManager --> FileClient
+    
+    MeshDesktop --> WSManager
+    FileClient --> WSManager
+    
+    WSManager -->|"Binary Protocol"| Gateway
+    Gateway -->|"Proxy"| MeshServer
+    
+    MeshServer -->|"Agent Protocol"| Agent["MeshAgent on Device"]

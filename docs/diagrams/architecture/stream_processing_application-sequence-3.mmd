@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant JVM as JVM
+    participant Main as StreamApplication.main()
+    participant Spring as SpringApplication
+    participant Context as Application Context
+    participant Kafka as Kafka Infrastructure
+    participant Streams as Kafka Streams
+    participant Listeners as Kafka Listeners
+    
+    JVM->>Main: Start Application
+    Main->>Spring: SpringApplication.run()
+    
+    Spring->>Context: Initialize Context
+    Context->>Context: Scan Components<br/>(stream, data, kafka.producer)
+    
+    Context->>Kafka: Initialize @EnableKafka
+    Kafka->>Listeners: Register Kafka Listeners
+    Listeners-->>Kafka: JsonKafkaListener Ready
+    
+    Context->>Streams: Initialize @EnableKafkaStreams
+    Streams->>Streams: Build Topology<br/>(ActivityEnrichmentService)
+    Streams-->>Context: Streams Topology Ready
+    
+    Context->>Spring: Context Initialized
+    Spring->>Main: Application Started
+    
+    Note over Listeners,Streams: Application Running<br/>Processing Events

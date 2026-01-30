@@ -1,0 +1,17 @@
+flowchart LR
+    Browser["Browser<br/>(https://app.flamingo.run)"] -->|Preflight OPTIONS| Gateway["API Gateway"]
+    
+    Gateway --> CORSFilter["CorsWebFilter"]
+    
+    CORSFilter --> CORSConfig["CorsConfiguration<br/>@ConfigurationProperties"]
+    
+    CORSConfig --> AllowedOrigins["Allowed Origins<br/>(configured)"]
+    CORSConfig --> AllowedMethods["Allowed Methods<br/>(GET, POST, etc.)"]
+    CORSConfig --> AllowedHeaders["Allowed Headers<br/>(Authorization, etc.)"]
+    CORSConfig --> AllowCredentials["Allow Credentials<br/>(true/false)"]
+    
+    CORSFilter -->|CORS Headers| Browser
+    Browser -->|Actual Request| Gateway
+    
+    style CORSFilter fill:#e1f5ff
+    style CORSConfig fill:#fff3e0

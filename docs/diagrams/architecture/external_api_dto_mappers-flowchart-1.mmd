@@ -1,0 +1,40 @@
+flowchart TD
+    subgraph ExternalAPI["External API Layer"]
+        Controllers["REST Controllers"]
+        ExternalDTOs["External DTOs"]
+    end
+    
+    subgraph MapperLayer["Mapper Layer"]
+        BaseMapper["BaseRestMapper"]
+        DeviceMapper["DeviceMapper"]
+        EventMapper["EventMapper"]
+        LogMapper["LogMapper"]
+        ToolMapper["ToolMapper"]
+    end
+    
+    subgraph InternalLayer["Internal Layer"]
+        MongoDocuments["MongoDB Documents"]
+        InternalDTOs["Internal API DTOs"]
+        GraphQLDTOs["GraphQL DTOs"]
+    end
+    
+    Controllers -->|"uses"| DeviceMapper
+    Controllers -->|"uses"| EventMapper
+    Controllers -->|"uses"| LogMapper
+    Controllers -->|"uses"| ToolMapper
+    
+    DeviceMapper -->|"extends"| BaseMapper
+    EventMapper -->|"extends"| BaseMapper
+    LogMapper -->|"extends"| BaseMapper
+    
+    DeviceMapper -->|"transforms"| MongoDocuments
+    DeviceMapper -->|"transforms"| InternalDTOs
+    
+    EventMapper -->|"transforms"| MongoDocuments
+    LogMapper -->|"transforms"| GraphQLDTOs
+    ToolMapper -->|"transforms"| MongoDocuments
+    
+    DeviceMapper -->|"produces"| ExternalDTOs
+    EventMapper -->|"produces"| ExternalDTOs
+    LogMapper -->|"produces"| ExternalDTOs
+    ToolMapper -->|"produces"| ExternalDTOs

@@ -1,0 +1,31 @@
+flowchart TD
+    FrontendCore["Frontend Core Components"]
+    
+    FrontendCore --> ChatSystem["Chat System"]
+    FrontendCore --> Navigation["Navigation Components"]
+    FrontendCore --> UIComponents["UI Components"]
+    FrontendCore --> Providers["Context Providers"]
+    
+    ChatSystem --> ChatTypes["Type Definitions"]
+    ChatSystem --> ChatHooks["React Hooks"]
+    ChatSystem --> ChatComponents["Chat UI Components"]
+    
+    ChatTypes --> MessageTypes["Message Types"]
+    ChatTypes --> APITypes["API Types"]
+    ChatTypes --> ComponentTypes["Component Props"]
+    ChatTypes --> NetworkTypes["Network Types"]
+    
+    Navigation --> Header["Header Component"]
+    Navigation --> NavTypes["Navigation Types"]
+    
+    UIComponents --> Table["Table Component"]
+    UIComponents --> Buttons["Buttons"]
+    UIComponents --> Forms["Form Elements"]
+    
+    Providers --> ThemeProvider["Dynamic Theme Provider"]
+    
+    style FrontendCore fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ChatSystem fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Navigation fill:#9B59B6,stroke:#6C3483,color:#fff
+    style UIComponents fill:#E67E22,stroke:#A04000,color:#fff
+    style Providers fill:#E74C3C,stroke:#922B21,color:#fff

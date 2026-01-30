@@ -1,0 +1,9 @@
+flowchart TD
+    PasswordEncoder["PasswordEncoder Bean<br/>BCryptPasswordEncoder"] -->|"used by"| UserService["UserService<br/>Password hashing"]
+    PasswordEncoder -->|"used by"| AuthController["AuthController<br/>Login validation"]
+    PasswordEncoder -->|"used by"| ToolController["IntegratedToolController<br/>API key encryption"]
+    
+    UserService -->|"stores hashed"| MongoDB["MongoDB<br/>users collection"]
+    ToolController -->|"stores encrypted"| MongoDBTools["MongoDB<br/>integrated_tools collection"]
+    
+    style PasswordEncoder fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff

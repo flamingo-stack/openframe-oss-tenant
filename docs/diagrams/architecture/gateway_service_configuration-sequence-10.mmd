@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Decorator as WebSocketServiceSecurityDecorator
+    participant JwtReader as RequestJwtClaimsReader
+    participant Backend
+
+    Client->>Gateway: WS Handshake + JWT (query/header)
+    Gateway->>Decorator: handleRequest()
+    Decorator->>JwtReader: extractClaims(request)
+    JwtReader->>JwtReader: Validate token signature
+    JwtReader->>JwtReader: Check expiration
+    JwtReader-->>Decorator: JWT Claims (sub, roles, tenant)
+    Decorator->>Decorator: Inject claims into session
+    Decorator->>Backend: Proxy WS connection
+    Backend-->>Decorator: WS Upgrade
+    Decorator-->>Gateway: Forward response
+    Gateway-->>Client: WS connection established

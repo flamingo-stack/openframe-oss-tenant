@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph Metrics["Controller Metrics"]
+        M1["Request Count"]
+        M2["Response Time"]
+        M3["Error Rate"]
+        M4["Success Rate"]
+    end
+    
+    subgraph Business["Business Metrics"]
+        B1["Tenant Registrations"]
+        B2["User Invitations Accepted"]
+        B3["Password Resets Requested"]
+        B4["SSO vs Standard Auth"]
+    end
+    
+    subgraph Security["Security Metrics"]
+        S1["Failed Login Attempts"]
+        S2["Invalid Token Attempts"]
+        S3["Rate Limit Violations"]
+        S4["CSRF Rejections"]
+    end

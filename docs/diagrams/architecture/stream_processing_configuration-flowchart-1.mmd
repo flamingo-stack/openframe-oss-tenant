@@ -1,0 +1,54 @@
+flowchart TD
+    subgraph StreamConfig["Stream Processing Configuration"]
+        KafkaConfig["KafkaConfig"]
+        KafkaStreamsConfig["KafkaStreamsConfig"]
+        MessageTypeConverter["MessageType Converter"]
+    end
+    
+    subgraph Serdes["Serialization/Deserialization"]
+        ActivitySerde["ActivityMessage Serde"]
+        HostActivitySerde["HostActivityMessage Serde"]
+        OutgoingSerde["Outgoing Activity Serde"]
+    end
+    
+    subgraph KafkaInfra["Kafka Infrastructure"]
+        Brokers["Kafka Brokers"]
+        Topics["Kafka Topics"]
+        StateStores["State Stores"]
+    end
+    
+    subgraph StreamProcessing["Stream Processing"]
+        Listeners["Kafka Listeners"]
+        Streams["Kafka Streams"]
+        Handlers["Message Handlers"]
+    end
+    
+    KafkaConfig -->|"Provides Converter"| MessageTypeConverter
+    KafkaStreamsConfig -->|"Creates"| ActivitySerde
+    KafkaStreamsConfig -->|"Creates"| HostActivitySerde
+    KafkaStreamsConfig -->|"Creates"| OutgoingSerde
+    
+    KafkaStreamsConfig -->|"Connects to"| Brokers
+    KafkaStreamsConfig -->|"Configures"| StateStores
+    
+    ActivitySerde -->|"Used by"| Streams
+    HostActivitySerde -->|"Used by"| Streams
+    OutgoingSerde -->|"Used by"| Streams
+    
+    MessageTypeConverter -->|"Used by"| Listeners
+    
+    Brokers -->|"Hosts"| Topics
+    Topics -->|"Consumed by"| Listeners
+    Topics -->|"Processed by"| Streams
+    
+    Streams -->|"Delegates to"| Handlers
+    
+    classDef configClass fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    classDef serdeClass fill:#50C878,stroke:#2E7D4E,color:#fff
+    classDef infraClass fill:#F39C12,stroke:#C87F0A,color:#fff
+    classDef processingClass fill:#9B59B6,stroke:#6C3483,color:#fff
+    
+    class KafkaConfig,KafkaStreamsConfig,MessageTypeConverter configClass
+    class ActivitySerde,HostActivitySerde,OutgoingSerde serdeClass
+    class Brokers,Topics,StateStores infraClass
+    class Listeners,Streams,Handlers processingClass

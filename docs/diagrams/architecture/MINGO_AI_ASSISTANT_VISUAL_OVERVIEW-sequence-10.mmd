@@ -1,0 +1,48 @@
+sequenceDiagram
+    participant User
+    participant UI as Chat UI
+    participant Hook as useMingoDialog
+    participant Active as ActiveStore
+    participant API as API Client
+    participant Backend as Chat Service
+    participant AI as Mingo AI
+    
+    User->>UI: Type "Help with server issue"
+    UI->>Hook: sendMessage(content)
+    
+    Hook->>Hook: Validate content
+    
+    alt No Dialog Exists
+        Hook->>API: POST /chat/api/v2/dialogs
+        API->>Backend: Create dialog
+        Backend-->>API: Dialog ID: abc123
+        API-->>Hook: Return dialog ID
+        Hook->>Active: setCurrentDialogId("abc123")
+    end
+    
+    Hook->>Active: ensureTypingMessage("abc123")
+    Active-->>UI: Show typing indicator
+    
+    Hook->>API: POST /chat/api/v2/messages
+    API->>Backend: Send message
+    Backend->>AI: Process message
+    
+    AI->>AI: Generate response
+    
+    loop Streaming Response
+        AI-->>Backend: Response chunk
+        Backend-->>API: Forward chunk
+        API-->>Hook: Chunk data
+        Hook->>Active: updateLastAssistantMessage(chunk)
+        Active-->>UI: Update message text
+    end
+    
+    AI-->>Backend: Response complete
+    Backend-->>API: Stream complete
+    API-->>Hook: Complete signal
+    
+    Hook->>Active: removeTypingMessage("abc123")
+    Active-->>UI: Hide typing indicator
+    
+    Hook->>API: Invalidate query cache
+    UI-->>User: Show complete response

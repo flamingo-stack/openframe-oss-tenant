@@ -1,0 +1,46 @@
+flowchart LR
+    subgraph UserActions["User Actions"]
+        Search["Search Input"]
+        Filter["Apply Filters"]
+        Paginate["Next Page"]
+        ViewDetails["View Details"]
+    end
+    
+    subgraph StateLayer["State Layer"]
+        Store["LogsStore<br/>(Zustand)"]
+    end
+    
+    subgraph HookLayer["Hook Layer"]
+        Hook["useLogs()"]
+    end
+    
+    subgraph APILayer["API Layer"]
+        GraphQL["GraphQL Query"]
+        Client["ApiClient"]
+    end
+    
+    subgraph BackendLayer["Backend"]
+        Resolver["LogDataFetcher"]
+        Service["LogService"]
+        DB["Pinot DB"]
+    end
+    
+    Search --> Hook
+    Filter --> Hook
+    Paginate --> Hook
+    ViewDetails --> Hook
+    
+    Hook -->|"fetchLogs()"| GraphQL
+    Hook -->|"Update State"| Store
+    
+    GraphQL --> Client
+    Client --> Resolver
+    Resolver --> Service
+    Service --> DB
+    
+    DB -->|"Query Results"| Service
+    Service -->|"LogEvent[]"| Resolver
+    Resolver -->|"GraphQL Response"| Client
+    Client -->|"Transform Data"| Hook
+    
+    Store -->|"Re-render"| UserActions

@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph frontend["Frontend"]
+        DeviceUI["Device UI"]
+        FleetClient["Fleet API Client"]
+        TacticalClient["Tactical API Client"]
+        MeshClient["Mesh Client"]
+    end
+    
+    subgraph gateway["Gateway Layer"]
+        APIGateway["API Gateway<br/>(Proxy)"]
+    end
+    
+    subgraph tools["External Tools"]
+        FleetMDM["Fleet MDM<br/>(REST API)"]
+        TacticalRMM["Tactical RMM<br/>(REST API)"]
+        MeshCentral["MeshCentral<br/>(WebSocket)"]
+    end
+    
+    DeviceUI --> FleetClient
+    DeviceUI --> TacticalClient
+    DeviceUI --> MeshClient
+    
+    FleetClient --> APIGateway
+    TacticalClient --> APIGateway
+    
+    APIGateway -->|"/tools/fleetmdm-server/*"| FleetMDM
+    APIGateway -->|"/tools/tactical-rmm/*"| TacticalRMM
+    
+    MeshClient -.->|"Direct WebSocket"| MeshCentral
+    
+    FleetMDM -->|"device data"| APIGateway
+    TacticalRMM -->|"agent data"| APIGateway
+    MeshCentral -.->|"remote access"| MeshClient
+    
+    style DeviceUI fill:#4CAF50
+    style APIGateway fill:#2196F3
+    style tools fill:#FF9800

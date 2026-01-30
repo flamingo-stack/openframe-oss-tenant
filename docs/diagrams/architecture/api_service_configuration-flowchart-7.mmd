@@ -1,0 +1,21 @@
+flowchart TD
+    JWT["Incoming JWT"] --> Extract["Extract 'iss' Claim"]
+    Extract --> Cache{"Issuer in Cache?"}
+    
+    Cache -->|"Yes"| UseCache["Use Cached Provider"]
+    Cache -->|"No"| Fetch["Fetch OIDC Metadata"]
+    
+    Fetch --> OIDC["GET {issuer}/.well-known/openid-configuration"]
+    OIDC --> JWKS["GET {jwks_uri}"]
+    JWKS --> CreateDecoder["Create JwtDecoder"]
+    CreateDecoder --> CreateProvider["Create JwtAuthenticationProvider"]
+    CreateProvider --> CacheStore["Store in Cache"]
+    CacheStore --> UseCache
+    
+    UseCache --> Validate["Validate JWT"]
+    Validate --> Success{"Valid?"}
+    
+    Success -->|"Yes"| Principal["Create Authentication Principal"]
+    Success -->|"No"| Reject["Reject Request"]
+    
+    Principal --> Controller["Inject into Controller"]

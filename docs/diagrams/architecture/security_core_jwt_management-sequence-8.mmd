@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Agent
+    participant AgentAuthController
+    participant JwtService
+    participant RegistrationProcessor
+    participant DeviceRepository
+    
+    Agent->>AgentAuthController: POST /agent/auth<br/>Registration Token
+    AgentAuthController->>JwtService: decodeToken(token)
+    JwtService-->>AgentAuthController: Jwt Object
+    AgentAuthController->>RegistrationProcessor: processRegistration(jwt)
+    RegistrationProcessor->>DeviceRepository: createDevice(machineId, tenantId)
+    DeviceRepository-->>RegistrationProcessor: Device
+    RegistrationProcessor->>JwtService: generateToken(agentClaims)
+    JwtService-->>RegistrationProcessor: Agent Access Token
+    RegistrationProcessor-->>AgentAuthController: Registration Response
+    AgentAuthController-->>Agent: 200 OK + Agent Token

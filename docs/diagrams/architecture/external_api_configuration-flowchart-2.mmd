@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph SpringBoot["Spring Boot Application"]
+        App["ExternalApiApplication"]
+        ComponentScan["Component Scanning"]
+    end
+    
+    subgraph OpenAPIConfig["OpenAPI Configuration"]
+        OpenAPI["OpenAPI Bean"]
+        SecurityScheme["API Key Security Scheme"]
+        APIInfo["API Metadata"]
+        ServerConfig["Server Configuration"]
+    end
+    
+    subgraph Documentation["API Documentation"]
+        SwaggerUI["Swagger UI"]
+        OpenAPISpec["OpenAPI 3.0 Spec"]
+        GroupedAPIs["API Groups"]
+    end
+    
+    App -->|"initializes"| ComponentScan
+    ComponentScan -->|"scans packages"| OpenAPIConfig
+    OpenAPI -->|"defines"| SecurityScheme
+    OpenAPI -->|"includes"| APIInfo
+    OpenAPI -->|"configures"| ServerConfig
+    OpenAPISpec -->|"renders"| SwaggerUI
+    OpenAPI -->|"generates"| OpenAPISpec
+    GroupedAPIs -->|"organizes"| OpenAPISpec
+    
+    style SpringBoot fill:#e3f2fd
+    style OpenAPIConfig fill:#fff3e0
+    style Documentation fill:#f3e5f5

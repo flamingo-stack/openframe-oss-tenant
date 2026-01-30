@@ -1,0 +1,24 @@
+flowchart TD
+    Start["Application Start"] --> InitTauri["Initialize Tauri Runtime"]
+    InitTauri --> LoadEnv["Load Environment Variables"]
+    LoadEnv --> CheckEnv{"Env Variables<br/>Available?"}
+    
+    CheckEnv -->|"Yes (Dev Mode)"| UseEnv["Use VITE_TOKEN<br/>& VITE_SERVER_URL"]
+    CheckEnv -->|"No (Production)"| RequestToken["Request Token from Rust"]
+    
+    UseEnv --> InitServices["Initialize Services"]
+    RequestToken --> InitServices
+    
+    InitServices --> LoadModels["Load Supported Models"]
+    InitServices --> SetupListeners["Setup Event Listeners"]
+    
+    LoadModels --> CheckDialog{"Resumable<br/>Dialog Exists?"}
+    SetupListeners --> CheckDialog
+    
+    CheckDialog -->|"Yes"| LoadHistory["Load Dialog History"]
+    CheckDialog -->|"No"| ShowEmpty["Show Empty Chat"]
+    
+    LoadHistory --> RenderUI["Render Chat UI"]
+    ShowEmpty --> RenderUI
+    
+    RenderUI --> Ready["Application Ready"]

@@ -1,0 +1,15 @@
+flowchart TD
+    SecurityConfig["SecurityConfig"] -->|"Configures"| FormLogin["Form Login<br/>/login"]
+    SecurityConfig -->|"Configures"| OAuth2Login["OAuth2 Login<br/>(SSO Providers)"]
+    SecurityConfig -->|"Provides"| OidcUserService["OidcUserService<br/>(Auto-provision users)"]
+    SecurityConfig -->|"Provides"| JwtDecoderFactory["JwtDecoderFactory<br/>(Microsoft-aware)"]
+    
+    OAuth2Login --> AuthRequest["SsoAuthorizationRequestResolver<br/>(Custom resolver)"]
+    OAuth2Login --> SuccessHandler["AuthSuccessHandler<br/>(Post-login redirect)"]
+    
+    OidcUserService --> AutoProvision["Auto-Provision Logic"]
+    AutoProvision --> SSOConfig["SSOConfigService<br/>(Check allowed domains)"]
+    AutoProvision --> GlobalPolicy["GlobalDomainPolicyLookup<br/>(Domain-based policies)"]
+    
+    style SecurityConfig fill:#4A90E2
+    style AutoProvision fill:#50C878

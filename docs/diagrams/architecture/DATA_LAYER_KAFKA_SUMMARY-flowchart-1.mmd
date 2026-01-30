@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph services["OpenFrame Services"]
+        Stream["Stream Processing"]
+        Management["Management Service"]
+        Client["Client Service"]
+        API["API Service"]
+    end
+    
+    subgraph kafka_module["Data Layer Kafka Module"]
+        direction TB
+        Config["Configuration<br/>Auto-Configuration"]
+        Producer["Producer<br/>Async/Sync"]
+        Consumer["Consumer<br/>Listeners"]
+        Models["Models<br/>CDC/Events"]
+        Recovery["Recovery<br/>Error Handling"]
+    end
+    
+    subgraph infrastructure["Infrastructure"]
+        Kafka["Apache Kafka<br/>Cluster"]
+        Debezium["Debezium<br/>Connectors"]
+        MongoDB["MongoDB<br/>Database"]
+    end
+    
+    services -->|"produces/consumes"| kafka_module
+    kafka_module -->|"connects to"| Kafka
+    Debezium -->|"publishes CDC"| Kafka
+    MongoDB -->|"change streams"| Debezium
+    
+    style kafka_module fill:#e1f5ff
+    style services fill:#e8f5e9
+    style infrastructure fill:#fff4e6

@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant User
+    participant Canvas
+    participant Desktop as MeshDesktop
+    participant Encoder
+    participant Server as MeshCentral
+    
+    User->>Canvas: Mouse Move
+    Canvas->>Desktop: mousemove event
+    Desktop->>Desktop: getRemoteXY()
+    Desktop->>Encoder: encodeMouseMove(x, y)
+    Encoder->>Server: Binary message (10 bytes)
+    
+    User->>Canvas: Key Down
+    Canvas->>Desktop: keydown event
+    Desktop->>Desktop: convertKeyCode()
+    Desktop->>Desktop: isExtendedKey()
+    Desktop->>Desktop: Track pressed key
+    Desktop->>Encoder: encodeKeyEvent(DOWN, vk, ext)
+    Encoder->>Server: Binary message (6 bytes)
+    
+    User->>Canvas: Key Up
+    Canvas->>Desktop: keyup event
+    Desktop->>Desktop: Find pressed key
+    Desktop->>Desktop: Remove from tracking
+    Desktop->>Encoder: encodeKeyEvent(UP, vk, ext)
+    Encoder->>Server: Binary message (6 bytes)
+    
+    User->>Canvas: Mouse Click
+    Canvas->>Desktop: mousedown event
+    Desktop->>Desktop: mapMouseButton()
+    Desktop->>Encoder: encodeMouseButton(btn, x, y)
+    Encoder->>Server: Binary message (10 bytes)

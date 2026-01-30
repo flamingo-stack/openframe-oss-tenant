@@ -1,0 +1,12 @@
+flowchart TD
+    Start["Initial Request<br/>cursor=null"] --> Query1["SELECT * FROM logs<br/>ORDER BY eventTimestamp DESC<br/>LIMIT 50"]
+    Query1 --> Result1["Returns 50 logs<br/>Last: timestamp=1704067200000<br/>toolEventId='evt123'"]
+    Result1 --> Cursor["Generate cursor:<br/>'1704067200000_evt123'"]
+    Cursor --> Query2["Next Request<br/>cursor='1704067200000_evt123'"]
+    Query2 --> Build["WHERE (eventTimestamp < 1704067200000)<br/>OR (eventTimestamp = 1704067200000<br/>AND toolEventId < 'evt123')"]
+    Build --> Result2["Returns next 50 logs"]
+    
+    style Start fill:#E8F4F8
+    style Query1 fill:#F39C12
+    style Query2 fill:#F39C12
+    style Result2 fill:#50C878

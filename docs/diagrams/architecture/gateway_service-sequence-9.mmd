@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant WsSecurityDecorator
+    participant JwtValidator
+    participant ToolService
+    
+    Client->>Gateway: WS Upgrade Request + JWT
+    Gateway->>WsSecurityDecorator: Intercept Connection
+    WsSecurityDecorator->>JwtValidator: Extract & Validate JWT
+    JwtValidator->>JwtValidator: Check Claims & Roles
+    JwtValidator-->>WsSecurityDecorator: Valid Token
+    
+    WsSecurityDecorator->>Gateway: Allow Connection
+    Gateway->>ToolService: Proxy WebSocket
+    
+    loop Message Exchange
+        Client->>Gateway: WS Message
+        Gateway->>ToolService: Forward Message
+        ToolService-->>Gateway: Response Message
+        Gateway-->>Client: Forward Response
+    end
+    
+    Client->>Gateway: Close Connection
+    Gateway->>ToolService: Close Proxy

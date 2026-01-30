@@ -1,0 +1,42 @@
+flowchart TD
+    subgraph StreamApplication["Stream Processing Application"]
+        MainClass["StreamApplication<br/>(Main Entry Point)"]
+        SpringBoot["Spring Boot Runtime"]
+        
+        subgraph ComponentScan["Component Scanning"]
+            StreamPkg["com.openframe.stream"]
+            DataPkg["com.openframe.data"]
+            KafkaPkg["com.openframe.kafka.producer"]
+        end
+        
+        subgraph EnabledFeatures["Enabled Features"]
+            EnableKafka["@EnableKafka"]
+            EnableStreams["@EnableKafkaStreams"]
+        end
+    end
+    
+    subgraph CoreModules["Core Processing Modules"]
+        Config["Configuration<br/>(KafkaConfig, KafkaStreamsConfig)"]
+        Listeners["Kafka Listeners<br/>(JsonKafkaListener)"]
+        Streams["Kafka Streams<br/>(ActivityEnrichmentService)"]
+        Handlers["Message Handlers<br/>(DebeziumMessageHandler)"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        KafkaData["Kafka Data Models<br/>(DebeziumMessage)"]
+        MongoData["MongoDB Repositories"]
+        Producers["Kafka Producers"]
+    end
+    
+    MainClass --> SpringBoot
+    SpringBoot --> ComponentScan
+    SpringBoot --> EnabledFeatures
+    
+    ComponentScan --> CoreModules
+    ComponentScan --> DataLayer
+    
+    EnableKafka --> Listeners
+    EnableStreams --> Streams
+    
+    style MainClass fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style SpringBoot fill:#6DB33F,stroke:#4A7C2F,stroke-width:2px,color:#fff

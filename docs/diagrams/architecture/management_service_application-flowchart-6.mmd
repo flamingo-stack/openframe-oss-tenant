@@ -1,0 +1,19 @@
+flowchart TD
+    ToolSaved["Tool Saved via API"] --> ExtractConfig["Extract debeziumConnectors Array"]
+    ExtractConfig --> DebeziumService["DebeziumService<br/>.createOrUpdateDebeziumConnector()"]
+    
+    DebeziumService --> CheckExists{"Connector<br/>Exists?"}
+    CheckExists -->|"Yes"| UpdateConnector["PUT /connectors/{name}/config"]
+    CheckExists -->|"No"| CreateConnector["POST /connectors"]
+    
+    UpdateConnector --> RestartTasks["Restart Connector Tasks"]
+    CreateConnector --> RestartTasks
+    
+    RestartTasks --> MonitorHealth["Health Check Scheduler<br/>Monitors Status"]
+    
+    MonitorHealth -->|"Every 5 min"| CheckStatus["GET /connectors/{name}/status"]
+    CheckStatus -->|"FAILED Tasks"| RestartFailed["POST /connectors/{name}/tasks/{id}/restart"]
+    CheckStatus -->|"All RUNNING"| Continue["Continue Monitoring"]
+    
+    style DebeziumService fill:#FF6B6B,stroke:#C92A2A,color:#fff
+    style MonitorHealth fill:#2196F3,stroke:#0D47A1,color:#fff

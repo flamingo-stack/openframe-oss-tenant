@@ -1,0 +1,22 @@
+flowchart LR
+    ChatSystem["Chat System"]
+    
+    subgraph Backend["Backend Services"]
+        NATS["NATS Server<br/>(Real-time Streaming)"]
+        GraphQL["GraphQL API<br/>(Historical Messages)"]
+        RestAPI["REST API<br/>(Send Messages)"]
+        AuthService["Authorization Service<br/>(JWT Tokens)"]
+    end
+    
+    ChatSystem -->|"WebSocket<br/>Subscribe"| NATS
+    ChatSystem -->|"Query<br/>fetchMessages"| GraphQL
+    ChatSystem -->|"POST<br/>/api/chat"| RestAPI
+    ChatSystem -->|"Bearer Token"| AuthService
+    
+    NATS -.->|"Chunks"| ChatSystem
+    GraphQL -.->|"HistoricalMessage[]"| ChatSystem
+    RestAPI -.->|"ChatAPIResponse"| ChatSystem
+    AuthService -.->|"JWT"| ChatSystem
+    
+    style ChatSystem fill:#4a90e2
+    style Backend fill:#f0e1ff

@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph LoginController["LoginController"]
+        L1["GET /login"]
+        L2["GET /"]
+        L1 -->|"Render"| LoginPage["login.html"]
+        L2 -->|"Render"| IndexPage["index.html"]
+    end
+    
+    subgraph TenantRegistrationController["TenantRegistrationController"]
+        T1["POST /oauth/register"]
+        T2["GET /oauth/register/sso"]
+        T1 -->|"JSON"| TenantData["Tenant Object"]
+        T2 -->|"Redirect"| SsoProvider["SSO Provider"]
+    end
+    
+    subgraph InvitationRegistrationController["InvitationRegistrationController"]
+        I1["POST /invitations/accept"]
+        I2["GET /invitations/accept/sso"]
+        I1 -->|"JSON"| UserData["AuthUser Object"]
+        I2 -->|"Redirect"| SsoProvider
+    end
+    
+    subgraph PasswordResetController["PasswordResetController"]
+        P1["POST /password-reset/request"]
+        P2["POST /password-reset/confirm"]
+        P1 -->|"202 ACCEPTED"| EmailSent["Reset Email Sent"]
+        P2 -->|"204 NO_CONTENT"| PwdUpdated["Password Updated"]
+    end

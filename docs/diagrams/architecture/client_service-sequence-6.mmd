@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Agent as OpenFrame Agent
+    participant NATS as NATS Server
+    participant CCL as ClientConnectionListener
+    participant MSS as MachineStatusService
+    participant DB as MongoDB
+
+    Agent->>NATS: Connect
+    NATS->>NATS: Generate connection event
+    NATS->>CCL: machineConnectedConsumer
+    CCL->>CCL: Parse ClientConnectionEvent
+    CCL->>MSS: updateToOnline(machineId, timestamp)
+    MSS->>DB: Update status = ONLINE
+    MSS-->>CCL: Complete
+
+    Note over Agent,NATS: Later...
+
+    Agent->>NATS: Disconnect
+    NATS->>NATS: Generate disconnection event
+    NATS->>CCL: machineDisconnectionConsumer
+    CCL->>CCL: Parse ClientConnectionEvent
+    CCL->>MSS: updateToOffline(machineId, timestamp)
+    MSS->>DB: Update status = OFFLINE
+    MSS-->>CCL: Complete

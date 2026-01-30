@@ -1,0 +1,65 @@
+flowchart TD
+    subgraph UserAction["User Action"]
+        UserTypes["User Types Message"]
+        ClickSend["Click Send"]
+    end
+    
+    subgraph APIRequest["API Request"]
+        SendAPI["POST /api/chat"]
+        CreateMessage["Create Message<br/>in Database"]
+    end
+    
+    subgraph AIProcessing["AI Processing"]
+        AIReceives["AI Receives Message"]
+        AIProcesses["AI Processes<br/>(Tools, Context)"]
+        AIGenerates["AI Generates Response"]
+    end
+    
+    subgraph StreamingResponse["Streaming Response"]
+        PublishNATS["Publish to NATS<br/>dialog.{id}.message"]
+        ChunkStart["MESSAGE_START"]
+        ChunkText["TEXT chunks"]
+        ChunkTool["EXECUTING_TOOL"]
+        ChunkToolResult["EXECUTED_TOOL"]
+        ChunkApproval["APPROVAL_REQUEST"]
+        ChunkEnd["MESSAGE_END"]
+    end
+    
+    subgraph ClientProcessing["Client Processing"]
+        NATSReceive["NATS Subscription<br/>Receives Chunk"]
+        ParseChunk["Parse Chunk"]
+        Accumulate["Accumulate Segments"]
+        UpdateUI["Update UI"]
+    end
+    
+    UserTypes --> ClickSend
+    ClickSend --> SendAPI
+    SendAPI --> CreateMessage
+    CreateMessage --> AIReceives
+    AIReceives --> AIProcesses
+    AIProcesses --> AIGenerates
+    AIGenerates --> PublishNATS
+    
+    PublishNATS --> ChunkStart
+    ChunkStart --> ChunkText
+    ChunkText --> ChunkTool
+    ChunkTool --> ChunkToolResult
+    ChunkToolResult --> ChunkApproval
+    ChunkApproval --> ChunkEnd
+    
+    ChunkStart --> NATSReceive
+    ChunkText --> NATSReceive
+    ChunkTool --> NATSReceive
+    ChunkToolResult --> NATSReceive
+    ChunkApproval --> NATSReceive
+    ChunkEnd --> NATSReceive
+    
+    NATSReceive --> ParseChunk
+    ParseChunk --> Accumulate
+    Accumulate --> UpdateUI
+    
+    style UserAction fill:#e1f5ff
+    style APIRequest fill:#fff4e1
+    style AIProcessing fill:#f0e1ff
+    style StreamingResponse fill:#ffe1e1
+    style ClientProcessing fill:#e1ffe1

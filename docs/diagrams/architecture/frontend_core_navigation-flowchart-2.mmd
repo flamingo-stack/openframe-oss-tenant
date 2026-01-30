@@ -1,0 +1,29 @@
+flowchart TD
+    subgraph HeaderComponent["Header Component"]
+        Props["HeaderProps<br/>• config: HeaderConfig<br/>• platform?: string"]
+        State["Component State<br/>• show: boolean<br/>• lastScrollY: number<br/>• openDropdowns: Record"]
+        Refs["React Refs<br/>• dropdownRefs<br/>• triggerRefs"]
+    end
+    
+    subgraph Configuration["HeaderConfig"]
+        Logo["Logo Config<br/>• element<br/>• href"]
+        Nav["Navigation Config<br/>• items<br/>• position"]
+        ActionsConfig["Actions Config<br/>• left<br/>• right"]
+        MobileConfig["Mobile Config<br/>• enabled<br/>• onToggle"]
+        Behavior["Behavior Config<br/>• autoHide<br/>• backgroundColor"]
+    end
+    
+    subgraph NavigationItems["Navigation Items"]
+        SimpleItem["Simple Item<br/>• label<br/>• href<br/>• icon"]
+        DropdownItem["Dropdown Item<br/>• label<br/>• children<br/>• dropdownContent"]
+        CustomItem["Custom Element<br/>• element"]
+    end
+    
+    Props -->|"receives"| Configuration
+    Configuration -->|"defines"| NavigationItems
+    State -->|"manages"| Behavior
+    Refs -->|"controls"| DropdownItem
+    
+    style HeaderComponent fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Configuration fill:#E67E22,stroke:#A04000,color:#fff
+    style NavigationItems fill:#1ABC9C,stroke:#117A65,color:#fff

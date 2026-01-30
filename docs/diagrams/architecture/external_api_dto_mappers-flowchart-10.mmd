@@ -1,0 +1,18 @@
+flowchart TD
+    IntegratedTool["IntegratedTool<br/>(MongoDB)"]
+    
+    IntegratedTool --> ToolMapper["ToolMapper<br/>.toToolResponse()"]
+    
+    ToolMapper --> MapUrls["toToolUrlResponseList()"]
+    ToolMapper --> MapCreds["toToolCredentialsResponse()"]
+    
+    MapUrls --> UrlLoop["For each ToolUrl"]
+    UrlLoop --> UrlResponse["ToolUrlResponse"]
+    
+    MapCreds --> MapApiKey["toToolApiKeyResponse()"]
+    MapApiKey --> ApiKeyResponse["ToolApiKeyResponse"]
+    
+    UrlResponse --> Assemble["Assemble ToolResponse"]
+    ApiKeyResponse --> Assemble
+    
+    Assemble --> FinalResponse["ToolResponse<br/>(REST DTO)"]

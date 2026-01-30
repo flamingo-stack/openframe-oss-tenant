@@ -1,0 +1,36 @@
+flowchart TD
+    Start["@PostConstruct Triggered"] --> ReadPaths["Read Agent Config Paths<br/>from Properties"]
+    ReadPaths --> IteratePaths["Iterate Each Config Path"]
+    
+    IteratePaths --> LoadResource["Load ClassPathResource"]
+    LoadResource --> CheckExists{"Resource<br/>Exists?"}
+    
+    CheckExists -->|"No"| LogWarn["Log Warning & Skip"]
+    CheckExists -->|"Yes"| ParseJSON["Parse JSON to<br/>IntegratedToolAgent"]
+    
+    ParseJSON --> CheckDB{"Agent Exists<br/>in MongoDB?"}
+    
+    CheckDB -->|"Yes"| CheckRelease{"Is Release<br/>Version?"}
+    CheckRelease -->|"Yes"| PreserveVersion["Preserve Existing Version"]
+    CheckRelease -->|"No"| UpdateVersion["Update to New Version"]
+    
+    PreserveVersion --> SaveExisting["Update Agent in DB"]
+    UpdateVersion --> SaveExisting
+    
+    CheckDB -->|"No"| SaveNew["Create New Agent in DB"]
+    
+    SaveExisting --> CheckVersionChange{"Version<br/>Changed?"}
+    CheckVersionChange -->|"Yes"| PublishEvent["Publish Update Event to Kafka"]
+    CheckVersionChange -->|"No"| SkipPublish["Skip Event Publishing"]
+    
+    SaveNew --> NextConfig["Process Next Config"]
+    PublishEvent --> NextConfig
+    SkipPublish --> NextConfig
+    LogWarn --> NextConfig
+    
+    NextConfig --> IteratePaths
+    NextConfig --> Complete["Initialization Complete"]
+    
+    style Start fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style PublishEvent fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style Complete fill:#4CAF50,stroke:#2E7D32,color:#fff

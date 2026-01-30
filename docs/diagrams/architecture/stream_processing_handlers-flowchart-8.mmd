@@ -1,0 +1,39 @@
+flowchart LR
+    subgraph KafkaSource["Kafka Source"]
+        Topics["Kafka Topics<br/>- fleet-mdm-events<br/>- tactical-rmm-events<br/>- meshcentral-events"]
+    end
+    
+    subgraph Listener["Listener Layer"]
+        JsonKafkaListener["JsonKafkaListener"]
+    end
+    
+    subgraph Processor["Processing Layer"]
+        GenericJsonMessageProcessor["GenericJsonMessageProcessor"]
+        Deserializers["Deserializers"]
+        Enrichment["Enrichment Services"]
+    end
+    
+    subgraph Handlers["Handler Layer (This Module)"]
+        MessageHandlers["MessageHandler Implementations"]
+        CassandraHandler["DebeziumCassandraMessageHandler"]
+        KafkaHandler["DebeziumKafkaMessageHandler"]
+    end
+    
+    subgraph Destinations["Storage Destinations"]
+        Cassandra[("Cassandra")]
+        KafkaOut[("Kafka Topics")]
+    end
+    
+    Topics --> JsonKafkaListener
+    JsonKafkaListener --> GenericJsonMessageProcessor
+    GenericJsonMessageProcessor --> Deserializers
+    Deserializers --> Enrichment
+    Enrichment --> MessageHandlers
+    MessageHandlers --> CassandraHandler
+    MessageHandlers --> KafkaHandler
+    CassandraHandler --> Cassandra
+    KafkaHandler --> KafkaOut
+    
+    style Handlers fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Processor fill:#FFB347,stroke:#CC8A38,color:#fff
+    style Destinations fill:#50C878,stroke:#2E7D4E,color:#fff

@@ -1,0 +1,47 @@
+flowchart TB
+    subgraph onprem["On-Premises Network"]
+        User["Internal Users"]
+        
+        subgraph frontend["Frontend"]
+            NextJS["Next.js App<br/>(Single Tenant)"]
+        end
+        
+        subgraph backend["Backend Services"]
+            Gateway["API Gateway"]
+            AuthServer["Auth Server"]
+            APIService["API Service"]
+            ChatService["Chat Service"]
+        end
+        
+        subgraph data["Data Layer"]
+            MongoDB["MongoDB"]
+            Pinot["Apache Pinot"]
+            Kafka["Kafka"]
+        end
+        
+        subgraph tools["Management Tools"]
+            Fleet["Fleet MDM"]
+            Tactical["Tactical RMM"]
+            Mesh["MeshCentral"]
+        end
+    end
+    
+    User --> NextJS
+    NextJS --> Gateway
+    Gateway --> AuthServer
+    Gateway --> APIService
+    Gateway --> ChatService
+    Gateway --> Fleet
+    Gateway --> Tactical
+    
+    APIService --> MongoDB
+    APIService --> Pinot
+    ChatService --> MongoDB
+    
+    Kafka --> Pinot
+    
+    NextJS -.->|"Direct WebSocket"| Mesh
+    
+    style NextJS fill:#4CAF50
+    style Gateway fill:#2196F3
+    style MongoDB fill:#FF9800

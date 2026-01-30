@@ -1,0 +1,42 @@
+flowchart TD
+    subgraph MockService["Mock Chat Service"]
+        StreamResponse["streamResponse()"]
+        StreamWithTool["streamResponseWithTool()"]
+        StreamWithError["streamResponseWithError()"]
+        
+        subgraph ResponseGen["Response Generation"]
+            TextGen["Text Generator"]
+            ToolGen["Tool Execution Generator"]
+            ErrorGen["Error Generator"]
+        end
+        
+        subgraph MockData["Mock Data"]
+            Responses["Predefined Responses"]
+            ToolResults["Mock Tool Results"]
+            ErrorScenarios["Error Scenarios"]
+        end
+    end
+    
+    subgraph DevMode["Development Mode"]
+        TestUI["Test UI Components"]
+        DebugTools["Debug Tools"]
+        Integration["Integration Tests"]
+    end
+    
+    StreamResponse --> TextGen
+    StreamWithTool --> ToolGen
+    StreamWithError --> ErrorGen
+    
+    TextGen --> Responses
+    ToolGen --> ToolResults
+    ErrorGen --> ErrorScenarios
+    
+    StreamResponse -.->|"Provides data"| TestUI
+    StreamWithTool -.->|"Provides data"| TestUI
+    StreamWithError -.->|"Provides data"| DebugTools
+    
+    MockService -.->|"Used by"| Integration
+    
+    style MockService fill:#ed8936,stroke:#c05621,color:#fff
+    style DevMode fill:#4299e1,stroke:#2b6cb0,color:#fff
+    style MockData fill:#ecc94b,stroke:#d69e2e,color:#000

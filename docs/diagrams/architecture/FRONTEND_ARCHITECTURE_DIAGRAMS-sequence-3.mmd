@@ -1,0 +1,48 @@
+sequenceDiagram
+    participant Component
+    participant APIClient
+    participant TokenStorage
+    participant Gateway
+    participant AuthServer
+    
+    Component->>APIClient: API Request
+    APIClient->>TokenStorage: Get Access Token
+    TokenStorage-->>APIClient: Access Token
+    
+    APIClient->>Gateway: Request + Bearer Token
+    
+    alt Token Valid
+        Gateway-->>APIClient: 200 OK + Data
+        APIClient-->>Component: Success Response
+    else Token Expired (401)
+        Gateway-->>APIClient: 401 Unauthorized
+        
+        APIClient->>APIClient: Check if Already Refreshing
+        
+        alt Not Refreshing
+            APIClient->>APIClient: Set Refreshing Flag
+            APIClient->>TokenStorage: Get Refresh Token
+            TokenStorage-->>APIClient: Refresh Token
+            
+            APIClient->>AuthServer: POST /oauth/refresh
+            AuthServer-->>APIClient: New Access Token
+            
+            APIClient->>TokenStorage: Store New Token
+            APIClient->>APIClient: Clear Refreshing Flag
+            APIClient->>APIClient: Process Queued Requests
+            
+            APIClient->>Gateway: Retry Original Request
+            Gateway-->>APIClient: 200 OK + Data
+            APIClient-->>Component: Success Response
+        else Already Refreshing
+            APIClient->>APIClient: Queue Request
+            APIClient->>APIClient: Wait for Refresh
+            APIClient->>Gateway: Retry Request
+            Gateway-->>APIClient: 200 OK + Data
+            APIClient-->>Component: Success Response
+        end
+    else Refresh Failed
+        APIClient->>TokenStorage: Clear All Tokens
+        APIClient->>Component: Force Logout
+        Component->>Component: Redirect to Login
+    end

@@ -1,0 +1,25 @@
+flowchart TD
+    Request["API Request"] -->|"X-API-Key Header"| Parse["Parse API Key"]
+    Parse -->|"ak_{keyId}.sk_{secret}"| Validate["Validate Credentials"]
+    
+    Validate -->|"Check Active"| RateLimit["Rate Limit Check"]
+    
+    subgraph rate_limit_windows["Rate Limit Windows"]
+        Minute["Minute Window<br/>Default: 60 req/min"]
+        Hour["Hour Window<br/>Default: 1000 req/hr"]
+        Day["Day Window<br/>Default: 10000 req/day"]
+    end
+    
+    RateLimit --> Minute
+    RateLimit --> Hour
+    RateLimit --> Day
+    
+    Minute -->|"All Pass"| Allow["Allow Request"]
+    Hour -->|"All Pass"| Allow
+    Day -->|"All Pass"| Allow
+    
+    Minute -->|"Any Fail"| Reject["429 Too Many Requests"]
+    Hour -->|"Any Fail"| Reject
+    Day -->|"Any Fail"| Reject
+    
+    Allow -->|"Add Headers"| Response["Response + Rate Limit Headers"]

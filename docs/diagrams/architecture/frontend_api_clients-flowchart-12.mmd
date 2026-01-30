@@ -1,0 +1,11 @@
+flowchart TD
+    AuthClient["AuthApiClient"] -->|"OAuth Flows"| AuthService["Authorization Service"]
+    AuthClient -->|"Token Refresh"| AuthService
+    AuthClient -->|"Registration"| AuthService
+    AuthClient -->|"Password Reset"| AuthService
+    
+    AuthService -->|"JWT Tokens"| AuthClient
+    AuthService -->|"User Data"| AuthClient
+    
+    style AuthClient fill:#50C878,stroke:#2E7D4E,color:#fff
+    style AuthService fill:#3498DB,stroke:#2874A6,color:#fff

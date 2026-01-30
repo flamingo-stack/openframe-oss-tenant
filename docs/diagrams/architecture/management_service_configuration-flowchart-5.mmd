@@ -1,0 +1,20 @@
+flowchart TD
+    SpringBoot["Spring Boot Startup"] -->|"scans"| BasePackage["com.openframe"]
+    
+    BasePackage -->|"discovers"| Controllers["@RestController<br/>IntegratedToolController"]
+    BasePackage -->|"discovers"| Services["@Service<br/>DebeziumService"]
+    BasePackage -->|"discovers"| Repositories["@Repository<br/>IntegratedToolRepository"]
+    BasePackage -->|"discovers"| Configs["@Configuration<br/>MongoConfig"]
+    BasePackage -->|"discovers"| Components["@Component<br/>AgentInitializer"]
+    
+    BasePackage -->|"filters out"| Excluded["CassandraHealthIndicator"]
+    
+    Controllers -->|"registered in"| ApplicationContext["Application Context"]
+    Services -->|"registered in"| ApplicationContext
+    Repositories -->|"registered in"| ApplicationContext
+    Configs -->|"registered in"| ApplicationContext
+    Components -->|"registered in"| ApplicationContext
+    
+    style BasePackage fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style Excluded fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff
+    style ApplicationContext fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff

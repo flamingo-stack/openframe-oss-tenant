@@ -1,0 +1,9 @@
+flowchart TD
+    Start["User in PST<br/>selects 2024-01-01"] --> Convert["Convert to epoch:<br/>2024-01-01 00:00:00 PST<br/>= 1704096000000"]
+    Convert --> Query["WHERE eventTimestamp >= 1704096000000<br/>AND eventTimestamp <= 1704182399999"]
+    Query --> Result["Returns logs in<br/>user's date range"]
+    
+    style Start fill:#E8F4F8
+    style Convert fill:#50C878
+    style Query fill:#F39C12
+    style Result fill:#4A90E2

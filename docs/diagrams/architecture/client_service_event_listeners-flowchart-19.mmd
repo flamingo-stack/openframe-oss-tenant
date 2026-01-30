@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph External["External Systems"]
+        Agents["OpenFrame Agents"]
+        NATS["NATS Server"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        Mongo["data_layer_mongo"]
+        Models["Data Models"]
+    end
+    
+    subgraph Messaging["Messaging Layer"]
+        Kafka["data_layer_kafka"]
+        NatsModels["NATS Models"]
+    end
+    
+    subgraph CurrentModule["client_service_event_listeners"]
+        Listeners["Event Listeners"]
+    end
+    
+    Agents -->|"Publish Events"| NATS
+    NATS -->|"Deliver Events"| Listeners
+    
+    Mongo -->|"Repositories"| Listeners
+    Models -->|"Machine, InstalledAgent"| Listeners
+    
+    NatsModels -->|"Event Models"| Listeners

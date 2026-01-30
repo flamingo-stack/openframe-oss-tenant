@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant Request1 as Request 1
+    participant Request2 as Request 2
+    participant ApiClient as ApiClient
+    participant AuthClient as AuthApiClient
+    participant AuthService as Authorization Service
+    participant Storage as localStorage
+    
+    Request1->>ApiClient: API call (expired token)
+    ApiClient->>ApiClient: Receive 401 response
+    ApiClient->>ApiClient: Check isRefreshing flag
+    ApiClient->>ApiClient: Set isRefreshing = true
+    
+    Request2->>ApiClient: API call (concurrent)
+    ApiClient->>ApiClient: Receive 401 response
+    ApiClient->>ApiClient: isRefreshing = true
+    ApiClient->>ApiClient: Queue Request 2
+    
+    ApiClient->>AuthClient: refresh(tenantId)
+    AuthClient->>AuthService: POST /oauth/refresh
+    
+    alt Dev Ticket Mode
+        AuthClient->>Storage: Get refresh token
+        AuthClient->>AuthService: Send refresh token in header
+    else Cookie Mode
+        AuthClient->>AuthService: Send refresh token in cookie
+    end
+    
+    AuthService->>AuthClient: New access & refresh tokens
+    
+    alt Dev Ticket Mode
+        AuthClient->>Storage: Store new tokens
+    end
+    
+    AuthClient->>ApiClient: Refresh success
+    ApiClient->>ApiClient: Set isRefreshing = false
+    ApiClient->>ApiClient: Process queued requests
+    
+    ApiClient->>Request1: Retry with new token
+    ApiClient->>Request2: Retry with new token
+    
+    Request1->>ApiClient: Success response
+    Request2->>ApiClient: Success response

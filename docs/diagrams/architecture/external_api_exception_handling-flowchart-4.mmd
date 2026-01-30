@@ -1,0 +1,25 @@
+flowchart TD
+    Exceptions["Exception Types"]
+    
+    Exceptions --> NotFound["404 NOT FOUND"]
+    Exceptions --> BadRequest["400 BAD REQUEST"]
+    Exceptions --> ServiceUnavailable["503 SERVICE UNAVAILABLE"]
+    Exceptions --> InternalError["500 INTERNAL SERVER ERROR"]
+    
+    NotFound --> DeviceNF["DeviceNotFoundException"]
+    NotFound --> EventNF["EventNotFoundException"]
+    NotFound --> LogNF["LogNotFoundException"]
+    NotFound --> OrgNF["OrganizationNotFoundException"]
+    
+    BadRequest --> Validation["MethodArgumentNotValidException"]
+    BadRequest --> TypeMismatch["MethodArgumentTypeMismatchException"]
+    
+    ServiceUnavailable --> Pinot["PinotQueryException"]
+    ServiceUnavailable --> DataAccess["DataAccessException"]
+    
+    InternalError --> Generic["Exception<br/>(catch-all)"]
+    
+    style NotFound fill:#ffd93d
+    style BadRequest fill:#ff6b6b
+    style ServiceUnavailable fill:#ff9f43
+    style InternalError fill:#ee5a6f

@@ -1,0 +1,51 @@
+flowchart TD
+    subgraph tauri_runtime["Tauri Runtime (Rust)"]
+        RustCore["Rust Core"]
+        TokenManager["Token Manager"]
+        ConfigManager["Config Manager"]
+    end
+
+    subgraph react_app["React Application"]
+        subgraph contexts["Context Providers"]
+            DebugContext["Debug Mode Context"]
+        end
+
+        subgraph services["Service Layer"]
+            TokenService["Token Service"]
+            DialogService["Dialog GraphQL Service"]
+            ModelsService["Supported Models Service"]
+            MockService["Mock Chat Service"]
+        end
+
+        subgraph ui["UI Components"]
+            ChatContainer["Chat Container"]
+            MessageList["Message List"]
+            InputArea["Input Area"]
+        end
+    end
+
+    subgraph backend["OpenFrame Backend"]
+        AuthzService["Authorization Service"]
+        ChatAPI["Chat API (GraphQL)"]
+        RESTAPI["REST API"]
+    end
+
+    RustCore -->|"Events"| TokenService
+    RustCore -->|"Commands"| TokenService
+    TokenManager -->|"Provides Token"| RustCore
+    ConfigManager -->|"Provides Config"| RustCore
+
+    TokenService -->|"Updates"| DebugContext
+    TokenService -->|"Authenticates"| DialogService
+    TokenService -->|"Authenticates"| ModelsService
+
+    DialogService -->|"GraphQL Queries"| ChatAPI
+    ModelsService -->|"REST Requests"| RESTAPI
+    MockService -->|"Development Mode"| ui
+
+    DebugContext -->|"Controls"| ui
+    services -->|"Data"| ui
+
+    AuthzService -->|"JWT Token"| TokenManager
+    ChatAPI -->|"Messages & Dialogs"| DialogService
+    RESTAPI -->|"Model Metadata"| ModelsService

@@ -1,0 +1,19 @@
+flowchart TD
+    Message["Incoming Message"]
+    
+    Message --> CheckType{"Message Type?"}
+    
+    CheckType -->|"FLEET_MDM_EVENT"| FleetDest["Destinations:<br/>- Event Store<br/>- Analytics"]
+    CheckType -->|"TACTICAL_RMM_EVENT"| TacticalDest["Destinations:<br/>- Event Store<br/>- Analytics"]
+    CheckType -->|"MESHCENTRAL_EVENT"| MeshDest["Destinations:<br/>- Event Store<br/>- Analytics"]
+    CheckType -->|"FLEET_MDM_QUERY_RESULT"| QueryDest["Destinations:<br/>- Event Store<br/>- Cache"]
+    
+    FleetDest --> FleetHandler["Fleet Event Handler"]
+    TacticalDest --> TacticalHandler["Tactical RMM Handler"]
+    MeshDest --> MeshHandler["MeshCentral Handler"]
+    QueryDest --> QueryHandler["Query Result Handler"]
+    
+    FleetHandler --> Process["Transform & Publish"]
+    TacticalHandler --> Process
+    MeshHandler --> Process
+    QueryHandler --> Process

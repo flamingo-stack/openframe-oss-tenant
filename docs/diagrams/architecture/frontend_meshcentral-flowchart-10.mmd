@@ -1,0 +1,41 @@
+flowchart LR
+    subgraph Receive["Frame Reception"]
+        WS["WebSocket"]
+        Accum["Accumulator"]
+        Parse["Parser"]
+    end
+    
+    subgraph Queue["Tile Queue"]
+        TQ["Tile Queue<br/>(max 300)"]
+        BP["Backpressure<br/>Management"]
+    end
+    
+    subgraph Decode["Concurrent Decoding"]
+        D1["Decoder 1"]
+        D2["Decoder 2"]
+        D3["Decoder 3"]
+    end
+    
+    subgraph Render["Rendering"]
+        DrawQ["Draw Queue"]
+        RAF["RequestAnimationFrame"]
+        Canvas["Canvas Context"]
+    end
+    
+    WS -->|"Binary"| Accum
+    Accum -->|"Buffered"| Parse
+    Parse -->|"Tile Data"| TQ
+    TQ --> BP
+    BP -->|"Drop oldest if full"| TQ
+    
+    TQ -.->|"Slot available"| D1
+    TQ -.->|"Slot available"| D2
+    TQ -.->|"Slot available"| D3
+    
+    D1 -->|"ImageBitmap"| DrawQ
+    D2 -->|"ImageBitmap"| DrawQ
+    D3 -->|"ImageBitmap"| DrawQ
+    
+    DrawQ -->|"Schedule"| RAF
+    RAF -->|"Draw all"| Canvas
+    Canvas -->|"Release"| Cleanup["Bitmap Cleanup"]

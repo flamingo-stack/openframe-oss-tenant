@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant UI as Frontend UI
+    participant TacticalClient as TacticalApiClient
+    participant Gateway as Gateway Service
+    participant Tactical as Tactical RMM Server
+    participant Agent as Device Agent
+    
+    UI->>TacticalClient: runScript(agentId, scriptData)
+    TacticalClient->>TacticalClient: buildTacticalUrl("/agents/{id}/runscript/")
+    TacticalClient->>Gateway: POST with script payload
+    Gateway->>Gateway: Validate JWT
+    Gateway->>Tactical: Proxy request
+    Tactical->>Agent: Send script execution command
+    Agent->>Agent: Execute script
+    Agent->>Tactical: Return script output
+    Tactical->>Gateway: Script execution response
+    Gateway->>TacticalClient: Response with output
+    TacticalClient->>UI: ApiResponse with results

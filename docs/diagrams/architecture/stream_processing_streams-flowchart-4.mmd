@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph ExternalSystems["External Systems"]
+        FLEET["Fleet MDM<br/>(PostgreSQL)"]
+    end
+    
+    subgraph CDC["Change Data Capture"]
+        DEB["Debezium Connectors"]
+    end
+    
+    subgraph KafkaInfra["Kafka Infrastructure"]
+        BROKER["Kafka Brokers"]
+        T1["fleet-mdm-activities"]
+        T2["fleet-mdm-host-activities"]
+    end
+    
+    subgraph StreamsModule["Stream Processing Streams"]
+        AES["ActivityEnrichmentService"]
+    end
+    
+    FLEET -->|"Database Changes"| DEB
+    DEB -->|"CDC Events"| BROKER
+    BROKER --> T1
+    BROKER --> T2
+    T1 --> AES
+    T2 --> AES
+    
+    style AES fill:#0f3460,stroke:#16213e,stroke-width:3px

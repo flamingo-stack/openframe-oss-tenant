@@ -1,0 +1,5 @@
+flowchart LR
+    Tauri["Tauri Runtime<br/>(Rust)"] -->|"Events & Commands"| Services["Service Layer<br/>(TypeScript)"]
+    Services -->|"GraphQL/REST"| Backend["OpenFrame<br/>Backend"]
+    Services -->|"Data"| UI["React UI<br/>Components"]
+    Contexts["Context<br/>Providers"] -->|"State"| UI

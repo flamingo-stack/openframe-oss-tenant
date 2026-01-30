@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> Initializing: App Start
+    
+    Initializing --> CheckingEnv: Check Environment
+    CheckingEnv --> UsingEnvToken: VITE_TOKEN exists
+    CheckingEnv --> RequestingToken: No env token
+    
+    UsingEnvToken --> TokenReady: Token set
+    RequestingToken --> WaitingRust: invoke('get_token')
+    WaitingRust --> TokenReady: Token received
+    WaitingRust --> TokenMissing: No token
+    
+    TokenReady --> Active: Services initialized
+    TokenMissing --> Error: Show auth error
+    
+    Active --> Listening: Setup event listener
+    Listening --> Active: Normal operation
+    Listening --> Updating: token-update event
+    
+    Updating --> Validating: Validate new token
+    Validating --> Active: Token valid
+    Validating --> Error: Token invalid
+    
+    Active --> Refreshing: Token expiring
+    Refreshing --> RequestingToken: Request new token
+    
+    Error --> [*]: User must re-authenticate

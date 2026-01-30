@@ -1,0 +1,19 @@
+flowchart TD
+    Request["OAuth2 Login Request"] --> FindClient["findByRegistrationId(provider)"]
+    FindClient --> ResolveTenant["Resolve Tenant ID"]
+    
+    ResolveTenant --> CheckContext["TenantContext.getTenantId()"]
+    CheckContext -->|"Found"| LoadClient["DynamicClientRegistrationService<br/>.loadClient(provider, tenantId)"]
+    CheckContext -->|"Not Found"| CheckSession["Check HTTP Session"]
+    
+    CheckSession -->|"Found"| LoadClient
+    CheckSession -->|"Not Found"| ReturnNull["Return null<br/>(No client)"]
+    
+    LoadClient --> QueryMongo["Query MongoDB<br/>(sso_configs collection)"]
+    QueryMongo -->|"Config Found"| BuildClient["Build ClientRegistration<br/>(clientId, clientSecret, scopes)"]
+    QueryMongo -->|"Not Found"| ThrowError["Throw IllegalArgumentException"]
+    
+    BuildClient --> ReturnClient["Return ClientRegistration"]
+    
+    style LoadClient fill:#4A90E2
+    style BuildClient fill:#50C878

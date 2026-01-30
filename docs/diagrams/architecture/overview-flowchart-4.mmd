@@ -1,0 +1,33 @@
+flowchart TD
+    subgraph k8s[Kubernetes Cluster]
+        subgraph ingress[Ingress Layer]
+            Ingress[Ingress Controller]
+        end
+
+        subgraph services[Service Layer]
+            Gateway[Gateway Service<br/>3 replicas]
+            API[API Service<br/>3 replicas]
+            Auth[Authorization Service<br/>2 replicas]
+            Client[Client Service<br/>2 replicas]
+            Management[Management Service<br/>1 replica]
+            Stream[Stream Processing<br/>2 replicas]
+        end
+
+        subgraph data[Data Layer]
+            MongoDB[MongoDB StatefulSet<br/>3 replicas]
+            Kafka[Kafka StatefulSet<br/>3 replicas]
+            Pinot[Pinot Cluster<br/>3 brokers, 3 servers]
+        end
+    end
+
+    Ingress --> Gateway
+    Gateway --> API
+    Gateway --> Auth
+    Gateway --> Client
+    Gateway --> Management
+
+    API --> MongoDB
+    API --> Pinot
+    Client --> MongoDB
+    Stream --> Kafka
+    Stream --> Pinot

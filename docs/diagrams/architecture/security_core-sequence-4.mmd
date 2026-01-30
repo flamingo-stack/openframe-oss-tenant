@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Client as Client Application
+    participant PKCEUtils as PKCE Utils
+    participant AuthServer as Authorization Server
+    participant TokenEndpoint as Token Endpoint
+    
+    Client->>PKCEUtils: generateState()
+    PKCEUtils-->>Client: state (random)
+    
+    Client->>PKCEUtils: generateCodeVerifier()
+    PKCEUtils-->>Client: code_verifier (random)
+    
+    Client->>PKCEUtils: generateCodeChallenge(verifier)
+    PKCEUtils->>PKCEUtils: SHA-256 hash
+    PKCEUtils-->>Client: code_challenge
+    
+    Client->>AuthServer: Authorization Request<br/>(state, code_challenge)
+    AuthServer-->>Client: Authorization Code
+    
+    Client->>TokenEndpoint: Token Request<br/>(code, code_verifier)
+    TokenEndpoint->>TokenEndpoint: Verify challenge matches verifier
+    TokenEndpoint-->>Client: Access Token + Refresh Token
+    
+    Note over Client,TokenEndpoint: PKCE prevents authorization code interception attacks

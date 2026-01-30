@@ -1,0 +1,24 @@
+flowchart TD
+    Client["Client Connection"] -->|WS Handshake| Gateway["API Gateway"]
+    
+    Gateway --> RouteMatch{"Route Matching"}
+    
+    RouteMatch -->|"/ws/tools/agent/{toolId}/**"| AgentRoute["agent_gateway_websocket_route"]
+    RouteMatch -->|"/ws/tools/{toolId}/**"| APIRoute["api_gateway_websocket_route"]
+    RouteMatch -->|"/ws/nats"| NATSRoute["nats_websocket_route"]
+    
+    AgentRoute --> AgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    APIRoute --> APIFilter["ToolApiWebSocketProxyUrlFilter"]
+    NATSRoute --> NATSProxy["Direct Proxy"]
+    
+    AgentFilter --> ToolBackend["Tool Backend<br/>(TacticalRMM/FleetDM)"]
+    APIFilter --> ToolBackend
+    NATSProxy --> NATS["NATS Server<br/>`${nats-ws-url}`"]
+    
+    Gateway -.->|Decorated by| SecurityDecorator["WebSocketServiceSecurityDecorator<br/>JWT Claims Validation"]
+    
+    style Gateway fill:#fff4e6
+    style AgentRoute fill:#e8f5e9
+    style APIRoute fill:#e8f5e9
+    style NATSRoute fill:#e8f5e9
+    style SecurityDecorator fill:#ffebee

@@ -1,0 +1,27 @@
+flowchart TD
+    Index["📖 Documentation Index"]
+    
+    Index --> Summary["📊 Executive Summary"]
+    Index --> README["🚀 Getting Started"]
+    Index --> Main["🏗️ Main Architecture"]
+    Index --> Diagrams["📐 Architecture Diagrams"]
+    
+    Main --> Auth["🔐 Authentication"]
+    Main --> API["🔌 API Clients"]
+    Main --> Device["💻 Device Management"]
+    Main --> Logs["📝 Logs & Events"]
+    Main --> Tickets["🎫 Support Tickets"]
+    Main --> Mingo["🤖 Mingo AI"]
+    Main --> Mesh["🖥️ MeshCentral"]
+    
+    Auth --> API
+    Device --> API
+    Logs --> API
+    Tickets --> API
+    Mingo --> API
+    
+    Device --> Mesh
+    
+    style Index fill:#4CAF50
+    style Main fill:#2196F3
+    style API fill:#FF9800

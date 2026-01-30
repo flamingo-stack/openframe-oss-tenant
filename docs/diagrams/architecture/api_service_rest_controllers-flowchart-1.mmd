@@ -1,0 +1,25 @@
+flowchart TD
+    Gateway["Gateway Service"] -->|"JWT Token"| Controllers["REST Controllers"]
+    
+    subgraph ApiService["API Service"]
+        Controllers -->|"Delegates to"| Services["Service Layer"]
+        Services -->|"Uses"| Mappers["DTO Mappers"]
+        Services -->|"Persists"| Repositories["Data Repositories"]
+        
+        subgraph Controllers
+            DeviceCtrl["DeviceController"]
+            OrgCtrl["OrganizationController"]
+            UserCtrl["UserController"]
+        end
+        
+        subgraph Services
+            DeviceSvc["DeviceService"]
+            OrgSvc["OrganizationCommandService"]
+            UserSvc["UserService"]
+        end
+    end
+    
+    Repositories -->|"MongoDB"| DataLayer["Data Layer (Mongo)"]
+    
+    Security["SecurityConfig"] -.->|"Protects"| Controllers
+    AuthConfig["AuthenticationConfig"] -.->|"Resolves Principal"| Controllers

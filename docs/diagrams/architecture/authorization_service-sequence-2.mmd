@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant AuthZ as Authorization Service
+    participant UserService
+    participant MongoDB
+    participant KeyService
+
+    User->>Browser: Navigate to /login
+    Browser->>AuthZ: GET /login
+    AuthZ-->>Browser: Login form
+    
+    User->>Browser: Submit credentials
+    Browser->>AuthZ: POST /login (username, password)
+    
+    AuthZ->>UserService: loadUserByUsername(email)
+    UserService->>MongoDB: findByEmailAndTenant(email, tenantId)
+    MongoDB-->>UserService: AuthUser document
+    UserService-->>AuthZ: UserDetails
+    
+    AuthZ->>AuthZ: Validate password (BCrypt)
+    
+    AuthZ->>KeyService: getOrCreateActiveKey(tenantId)
+    KeyService->>MongoDB: findActiveKey(tenantId)
+    MongoDB-->>KeyService: TenantKey (RSA keypair)
+    KeyService-->>AuthZ: RSAKey
+    
+    AuthZ->>AuthZ: Generate JWT with claims<br/>(tenant_id, userId, roles)
+    AuthZ->>AuthZ: Sign JWT with tenant RSA key
+    
+    AuthZ-->>Browser: Redirect to callback with authorization code
+    Browser->>AuthZ: POST /oauth2/token (code, PKCE verifier)
+    AuthZ-->>Browser: Access token + Refresh token
+    
+    Browser->>User: Authenticated session

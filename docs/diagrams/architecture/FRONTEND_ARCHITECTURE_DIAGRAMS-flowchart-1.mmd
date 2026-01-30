@@ -1,0 +1,70 @@
+flowchart TB
+    subgraph browser["🌐 Browser Layer"]
+        UI["React UI Components<br/>(Next.js 14)"]
+        Router["App Router<br/>(File-based Routing)"]
+    end
+    
+    subgraph state["💾 State Management Layer"]
+        AuthStore["Auth Store<br/>(User, Tokens, Tenant)"]
+        DeviceStore["Device Store<br/>(Devices, Filters)"]
+        LogsStore["Logs Store<br/>(Logs, Pagination)"]
+        DialogStore["Dialog Store<br/>(Tickets, Messages)"]
+        MingoStore["Mingo Store<br/>(AI Conversations)"]
+    end
+    
+    subgraph hooks["🎣 Custom Hooks Layer"]
+        UseAuth["useAuth<br/>(Authentication)"]
+        UseDevices["useDevices<br/>(Device Management)"]
+        UseLogs["useLogs<br/>(Log Streaming)"]
+        UseDialogs["useDialogs<br/>(Support Tickets)"]
+        UseMingo["useMingo<br/>(AI Assistant)"]
+    end
+    
+    subgraph clients["🔌 API Client Layer"]
+        BaseClient["ApiClient<br/>(Base HTTP Client)"]
+        AuthClient["AuthApiClient<br/>(Auth Endpoints)"]
+        FleetClient["FleetApiClient<br/>(Fleet MDM)"]
+        TacticalClient["TacticalApiClient<br/>(Tactical RMM)"]
+    end
+    
+    subgraph backend["☁️ Backend Services"]
+        Gateway["API Gateway<br/>(Port 8080)"]
+        AuthServer["Authorization Server<br/>(Port 9000)"]
+        APIService["API Service<br/>(Port 8081)"]
+        ChatService["Chat Service<br/>(Port 8082)"]
+    end
+    
+    subgraph external["🔧 External Tools"]
+        FleetMDM["Fleet MDM"]
+        TacticalRMM["Tactical RMM"]
+        MeshCentral["MeshCentral"]
+    end
+    
+    UI --> Router
+    Router --> hooks
+    hooks --> state
+    hooks --> clients
+    
+    UseAuth --> AuthStore
+    UseDevices --> DeviceStore
+    UseLogs --> LogsStore
+    UseDialogs --> DialogStore
+    UseMingo --> MingoStore
+    
+    BaseClient --> Gateway
+    AuthClient --> Gateway
+    FleetClient --> Gateway
+    TacticalClient --> Gateway
+    
+    Gateway --> AuthServer
+    Gateway --> APIService
+    Gateway --> ChatService
+    Gateway --> FleetMDM
+    Gateway --> TacticalRMM
+    
+    UI -.->|"Direct WebSocket"| MeshCentral
+    
+    style UI fill:#4CAF50
+    style state fill:#2196F3
+    style clients fill:#FF9800
+    style Gateway fill:#9C27B0

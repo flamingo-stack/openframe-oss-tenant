@@ -1,0 +1,16 @@
+flowchart LR
+    UI["OpenFrame UI"] -->|"install command"| ClientSvc["Client Service"]
+    ClientSvc -->|"parse(command)"| Parser["RegistrationSecretParser"]
+    Parser -->|"secret"| ClientSvc
+    
+    ClientSvc -->|"register with secret"| TacticalAPI["Tactical RMM API"]
+    TacticalAPI -->|"JSON response"| ClientSvc
+    
+    ClientSvc -->|"deserialize"| Models["AgentInfo/<br/>AgentListItem"]
+    Models -->|"map to"| Device["OpenFrame Device"]
+    
+    Device -->|"store"| MongoDB["MongoDB<br/>(data_layer_mongo)"]
+    
+    style Parser fill:#fff4e6
+    style Models fill:#fff4e6
+    style Device fill:#e8f5e9

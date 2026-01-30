@@ -1,0 +1,18 @@
+flowchart TD
+    Start["User enters email"]
+    Discover["Call discoverTenants API"]
+    CheckResult{"Has existing<br/>accounts?"}
+    
+    ShowLogin["Show login options<br/>(password + SSO)"]
+    ShowRegister["Show registration form"]
+    
+    StoreInfo["Store tenant info<br/>+ available providers"]
+    
+    Start --> Discover
+    Discover --> CheckResult
+    CheckResult -->|"Yes"| StoreInfo
+    CheckResult -->|"No"| ShowRegister
+    StoreInfo --> ShowLogin
+    
+    style ShowLogin fill:#4CAF50
+    style ShowRegister fill:#2196F3

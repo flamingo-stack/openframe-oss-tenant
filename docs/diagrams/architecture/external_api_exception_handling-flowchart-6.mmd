@@ -1,0 +1,16 @@
+flowchart TD
+    Exception["Exception Occurs"] --> Severity{"Exception Severity"}
+    
+    Severity -->|"Client Error<br/>(4xx)"| WarnLog["log.warn()"]
+    Severity -->|"Server Error<br/>(5xx)"| ErrorLog["log.error()"]
+    
+    WarnLog --> WarnDetails["Log message only<br/>No stack trace"]
+    ErrorLog --> ErrorDetails["Log message + stack trace<br/>Full context"]
+    
+    WarnDetails --> Monitor["Monitoring System"]
+    ErrorDetails --> Monitor
+    
+    style Exception fill:#ff6b6b
+    style WarnLog fill:#ffd93d
+    style ErrorLog fill:#ee5a6f
+    style Monitor fill:#4ecdc4

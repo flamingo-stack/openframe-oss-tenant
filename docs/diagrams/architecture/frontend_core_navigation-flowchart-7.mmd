@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph FrontendMain["Frontend Main Application"]
+        Dashboard["Dashboard Pages"]
+        Devices["Device Management"]
+        Logs["Logs & Events"]
+    end
+    
+    subgraph FrontendChat["Frontend Chat Application"]
+        ChatUI["Chat Interface"]
+        Dialogs["Dialog Management"]
+    end
+    
+    subgraph CoreLib["openframe-frontend-core"]
+        Header["Header Component"]
+        ThemeProvider["Theme Provider"]
+        UIComponents["UI Components"]
+    end
+    
+    Dashboard -->|"renders"| Header
+    Devices -->|"renders"| Header
+    Logs -->|"renders"| Header
+    ChatUI -->|"renders"| Header
+    Dialogs -->|"renders"| Header
+    
+    Header -->|"uses"| ThemeProvider
+    Header -->|"uses"| UIComponents
+    
+    style FrontendMain fill:#3498DB,stroke:#2471A3,color:#fff
+    style FrontendChat fill:#9B59B6,stroke:#6C3483,color:#fff
+    style CoreLib fill:#E67E22,stroke:#A04000,color:#fff

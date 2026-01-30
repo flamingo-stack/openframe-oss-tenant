@@ -1,0 +1,37 @@
+flowchart TD
+    subgraph TauriRuntime["Tauri Runtime (Rust)"]
+        RustAuth["Authentication Manager"]
+        RustConfig["Configuration Store"]
+    end
+    
+    subgraph ChatServices["Chat Services Layer"]
+        TokenSvc["TokenService"]
+        DialogSvc["DialogGraphQLService"]
+        ModelsSvc["SupportedModelsService"]
+        MockSvc["MockChatService"]
+    end
+    
+    subgraph Backend["OpenFrame Backend"]
+        ChatAPI["Chat GraphQL API"]
+        ModelsAPI["AI Configuration API"]
+    end
+    
+    subgraph UILayer["UI Components"]
+        ChatUI["Chat Components"]
+        MessageUI["Message Components"]
+    end
+    
+    RustAuth -->|"token-update event"| TokenSvc
+    RustConfig -->|"get_server_url()"| TokenSvc
+    
+    TokenSvc -->|"Provides auth"| DialogSvc
+    TokenSvc -->|"Provides auth"| ModelsSvc
+    
+    DialogSvc -->|"GraphQL queries"| ChatAPI
+    ModelsSvc -->|"REST API"| ModelsAPI
+    
+    DialogSvc -->|"Dialog data"| ChatUI
+    ModelsSvc -->|"Model info"| ChatUI
+    MockSvc -->|"Test data"| ChatUI
+    
+    TokenSvc -.->|"Development fallback"| MockSvc

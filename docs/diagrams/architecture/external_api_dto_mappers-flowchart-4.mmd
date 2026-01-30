@@ -1,0 +1,19 @@
+flowchart TD
+    QueryResult["CountedGenericQueryResult&lt;Machine&gt;"]
+    TagsPerMachine["List&lt;List&lt;Tag&gt;&gt;"]
+    
+    QueryResult --> Extract["Extract items[]"]
+    TagsPerMachine --> Pair["Pair with devices"]
+    
+    Extract --> Pair
+    Pair --> MapEach["Map each (Machine, Tags)"]
+    MapEach --> DeviceResponse["DeviceResponse[]"]
+    
+    QueryResult --> PageInfo["Extract pageInfo"]
+    QueryResult --> FilteredCount["Extract filteredCount"]
+    
+    DeviceResponse --> Build["Build DevicesResponse"]
+    PageInfo --> Build
+    FilteredCount --> Build
+    
+    Build --> Response["DevicesResponse"]

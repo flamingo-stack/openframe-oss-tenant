@@ -1,0 +1,43 @@
+flowchart TD
+    subgraph Frontend["OpenFrame Frontend"]
+        UI["React UI Components"]
+        MeshDesktop["MeshDesktop Class"]
+        FileTypes["File Manager Types"]
+    end
+    
+    subgraph Protocol["Binary Protocol Layer"]
+        Encoder["Input Encoders"]
+        Decoder["Frame Decoder"]
+        DisplayMgr["Display Manager"]
+    end
+    
+    subgraph Rendering["Rendering Pipeline"]
+        TileQueue["Tile Queue"]
+        ImageDecoder["JPEG Decoder"]
+        Canvas["HTML5 Canvas"]
+    end
+    
+    subgraph MeshCentral["MeshCentral Server"]
+        KVM["KVM Protocol Handler"]
+        FileService["File Service"]
+        Agent["MeshAgent on Device"]
+    end
+    
+    UI -->|"attach(canvas)"| MeshDesktop
+    MeshDesktop -->|"Mouse/Keyboard Events"| Encoder
+    MeshDesktop -->|"Binary Frames"| Decoder
+    
+    Encoder -->|"Binary Commands"| KVM
+    KVM -->|"Screen Tiles"| Decoder
+    
+    Decoder -->|"Tile Data"| TileQueue
+    TileQueue -->|"Decode"| ImageDecoder
+    ImageDecoder -->|"Draw"| Canvas
+    
+    DisplayMgr -->|"Display List"| KVM
+    KVM -->|"Display Info"| DisplayMgr
+    
+    FileTypes -.->|"Type Definitions"| FileService
+    
+    Agent -->|"Desktop Stream"| KVM
+    Agent -->|"File Operations"| FileService

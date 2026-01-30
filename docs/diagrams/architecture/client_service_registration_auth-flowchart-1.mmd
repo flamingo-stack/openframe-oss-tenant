@@ -1,0 +1,29 @@
+flowchart TD
+    Agent["Agent Client<br/>(Desktop/Server)"] -->|"POST /api/agents/register"| AgentController["AgentController"]
+    Agent -->|"POST /oauth/token"| AgentAuthController["AgentAuthController"]
+    
+    AgentController -->|"register()"| AgentRegistrationService["AgentRegistrationService"]
+    AgentAuthController -->|"issueClientToken()"| AgentAuthService["AgentAuthService"]
+    
+    AgentRegistrationService -->|"validate()"| SecretValidator["AgentRegistrationSecretValidator"]
+    AgentRegistrationService -->|"generate()"| MachineIdGenerator["MachineIdGenerator"]
+    AgentRegistrationService -->|"generate()"| AgentSecretGenerator["AgentSecretGenerator"]
+    AgentRegistrationService -->|"save()"| OAuthClientRepo["OAuthClientRepository"]
+    AgentRegistrationService -->|"save()"| MachineRepo["MachineRepository"]
+    AgentRegistrationService -->|"process()"| ToolInstallationService["AgentRegistrationToolInstallationService"]
+    AgentRegistrationService -->|"postProcessAgentRegistration()"| AgentRegistrationProcessor["AgentRegistrationProcessor"]
+    
+    AgentAuthService -->|"handle()"| ClientCredentialsHandler["ClientCredentialsHandler"]
+    AgentAuthService -->|"handle()"| RefreshTokenHandler["RefreshTokenHandler"]
+    
+    ClientCredentialsHandler -->|"generate()"| AccessTokenGenerator["AccessTokenGenerator"]
+    ClientCredentialsHandler -->|"generate()"| RefreshTokenGenerator["RefreshTokenGenerator"]
+    
+    RefreshTokenHandler -->|"decodeToken()"| JwtService["JwtService"]
+    RefreshTokenHandler -->|"generate()"| AccessTokenGenerator
+    
+    style AgentController fill:#e1f5ff
+    style AgentAuthController fill:#e1f5ff
+    style AgentRegistrationService fill:#fff4e1
+    style AgentAuthService fill:#fff4e1
+    style AgentRegistrationProcessor fill:#e8f5e9

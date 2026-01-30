@@ -1,0 +1,11 @@
+flowchart TD
+    E2E["E2E Tests<br/>(10%)"]
+    Integration["Integration Tests<br/>(30%)"]
+    Unit["Unit Tests<br/>(60%)"]
+    
+    E2E --> Integration
+    Integration --> Unit
+    
+    style E2E fill:#FF5722
+    style Integration fill:#FF9800
+    style Unit fill:#4CAF50

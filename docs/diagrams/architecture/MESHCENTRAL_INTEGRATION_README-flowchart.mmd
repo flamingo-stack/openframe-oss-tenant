@@ -1,0 +1,15 @@
+flowchart TD
+    OpenFrameUI["OpenFrame Web UI"] -->|"User Actions"| Integration["MeshCentral Integration"]
+    
+    subgraph Integration["MeshCentral Integration Module"]
+        Desktop["Desktop Control<br/>(MeshDesktop)"]
+        FileManager["File Manager"]
+    end
+    
+    Integration -->|"WebSocket Binary"| MeshServer["MeshCentral Server"]
+    MeshServer -->|"Agent Protocol"| Devices["Remote Devices"]
+    
+    Desktop -->|"Renders to"| Canvas["HTML5 Canvas"]
+    FileManager -->|"Updates"| FileUI["File Browser UI"]
+    
+    style Integration fill:#e1f5ff

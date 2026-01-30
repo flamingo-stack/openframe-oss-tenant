@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant TenantRegController as Tenant Registration Controller
+    participant TenantRegService as Tenant Registration Service
+    participant MongoDB
+    participant KeyService as Tenant Key Service
+    participant NotificationService
+
+    User->>Browser: Fill registration form
+    Browser->>TenantRegController: POST /oauth/register<br/>(email, password, orgName, tenantId)
+    
+    TenantRegController->>TenantRegService: registerTenant(request)
+    
+    TenantRegService->>MongoDB: Check if tenantId exists
+    MongoDB-->>TenantRegService: Not found
+    
+    TenantRegService->>TenantRegService: Create Tenant document
+    TenantRegService->>MongoDB: Save Tenant
+    
+    TenantRegService->>TenantRegService: Create Organization document
+    TenantRegService->>MongoDB: Save Organization
+    
+    TenantRegService->>TenantRegService: Hash password (BCrypt)
+    TenantRegService->>TenantRegService: Create AuthUser (OWNER role)
+    TenantRegService->>MongoDB: Save AuthUser
+    
+    TenantRegService->>KeyService: getOrCreateActiveKey(tenantId)
+    KeyService->>KeyService: Generate RSA-2048 keypair
+    KeyService->>KeyService: Encrypt private key (AES-256-GCM)
+    KeyService->>MongoDB: Save TenantKey
+    KeyService-->>TenantRegService: RSAKey
+    
+    TenantRegService->>NotificationService: sendWelcomeEmail(email)
+    
+    TenantRegService-->>TenantRegController: Tenant document
+    TenantRegController-->>Browser: 200 OK (Tenant JSON)
+    
+    Browser->>User: Registration successful

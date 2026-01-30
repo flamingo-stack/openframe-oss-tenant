@@ -1,0 +1,15 @@
+flowchart LR
+    Agent["Device Agent<br/>(OpenFrame Agent)"] --> ClientService["Client Service"]
+    
+    ClientService --> AgentController["Agent Controller<br/>(Registration)"]
+    ClientService --> Listeners["Event Listeners<br/>(Heartbeat, Connection)"]
+    
+    AgentController --> MongoDB["MongoDB<br/>(Create Device)"]
+    Listeners --> MongoDB
+    
+    MongoDB --> APIService["API Service<br/>(Query Devices)"]
+    APIService --> Frontend["Frontend Device<br/>Management"]
+    
+    style Agent fill:#f0f0f0
+    style ClientService fill:#fff4e1
+    style Frontend fill:#e1f5ff

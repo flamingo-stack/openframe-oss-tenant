@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant UI as Chat UI
+    participant MockSvc as MockChatService
+    participant Generator as AsyncGenerator
+    
+    UI->>MockSvc: streamResponse("Check system processes")
+    MockSvc->>MockSvc: Analyze message
+    
+    Note over MockSvc: Keyword "process" detected → use tool simulation
+    
+    loop Stream text chunks
+        MockSvc->>Generator: yield {type: 'text', text: chunk}
+        Generator-->>UI: Render chunk
+        MockSvc->>MockSvc: await delay(20ms)
+    end
+    
+    Note over MockSvc: Simulate tool execution
+    
+    MockSvc->>Generator: yield {type: 'tool_execution', EXECUTING_TOOL}
+    Generator-->>UI: Show "Executing query..." indicator
+    
+    MockSvc->>MockSvc: await delay(2000ms)
+    
+    MockSvc->>Generator: yield {type: 'tool_execution', EXECUTED_TOOL}
+    Generator-->>UI: Show query results
+    
+    loop Stream follow-up text
+        MockSvc->>Generator: yield {type: 'text', text: chunk}
+        Generator-->>UI: Render analysis
+        MockSvc->>MockSvc: await delay(20ms)
+    end
+    
+    alt Message mentions "memory"
+        Note over MockSvc: Execute second tool
+        MockSvc->>Generator: yield {type: 'tool_execution', EXECUTING_TOOL}
+        Generator-->>UI: Show second tool
+        MockSvc->>MockSvc: await delay(1500ms)
+        MockSvc->>Generator: yield {type: 'tool_execution', EXECUTED_TOOL}
+        Generator-->>UI: Show memory results
+    end
+    
+    MockSvc-->>UI: Stream complete

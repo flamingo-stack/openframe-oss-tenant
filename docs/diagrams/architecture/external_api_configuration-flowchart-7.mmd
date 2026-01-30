@@ -1,0 +1,34 @@
+flowchart TD
+    ExternalAPIConfig["External API Configuration"]
+    
+    subgraph Internal["Internal Modules"]
+        Controllers["External API REST Controllers"]
+        Mappers["External API DTO Mappers"]
+        ExceptionHandling["External API Exception Handling"]
+        DataMongo["Data Layer MongoDB"]
+        DataKafka["Data Layer Kafka"]
+        Core["Core Utilities"]
+    end
+    
+    subgraph External["External Dependencies"]
+        SpringBoot["Spring Boot Web"]
+        SpringData["Spring Data MongoDB"]
+        SpringKafka["Spring Kafka"]
+        SpringDoc["SpringDoc OpenAPI"]
+    end
+    
+    ExternalAPIConfig -->|"configures"| Controllers
+    ExternalAPIConfig -->|"documents"| Mappers
+    ExternalAPIConfig -->|"integrates"| ExceptionHandling
+    ExternalAPIConfig -->|"uses"| DataMongo
+    ExternalAPIConfig -->|"uses"| DataKafka
+    ExternalAPIConfig -->|"uses"| Core
+    
+    ExternalAPIConfig -.->|"depends on"| SpringBoot
+    ExternalAPIConfig -.->|"depends on"| SpringData
+    ExternalAPIConfig -.->|"depends on"| SpringKafka
+    ExternalAPIConfig -.->|"depends on"| SpringDoc
+    
+    style ExternalAPIConfig fill:#e1f5ff
+    style Internal fill:#fff4e1
+    style External fill:#f3e5f5

@@ -1,0 +1,38 @@
+flowchart TD
+    subgraph Browser["Browser Environment"]
+        Canvas["HTML Canvas Element"]
+        InputEvents["DOM Input Events"]
+        WebSocket["WebSocket Connection"]
+    end
+    
+    subgraph MeshDesktop["MeshDesktop Class"]
+        InputHandler["Input Handler"]
+        ProtocolEncoder["Protocol Encoder"]
+        FrameDecoder["Frame Decoder"]
+        DisplayManager["Display Manager"]
+        TileQueue["Tile Queue"]
+        DrawQueue["Draw Queue"]
+    end
+    
+    subgraph Remote["Remote MeshCentral Server"]
+        KVMServer["KVM Server"]
+        DesktopCapture["Desktop Capture"]
+        InputProcessor["Input Processor"]
+    end
+    
+    InputEvents -->|"Mouse/Keyboard"| InputHandler
+    InputHandler -->|"Binary Commands"| ProtocolEncoder
+    ProtocolEncoder -->|"Send"| WebSocket
+    
+    WebSocket -->|"Binary Frames"| FrameDecoder
+    FrameDecoder -->|"Screen Size"| Canvas
+    FrameDecoder -->|"JPEG Tiles"| TileQueue
+    TileQueue -->|"Decode"| DrawQueue
+    DrawQueue -->|"Render"| Canvas
+    
+    WebSocket <-->|"Binary Protocol"| KVMServer
+    KVMServer --> DesktopCapture
+    KVMServer --> InputProcessor
+    
+    DisplayManager -->|"Display List"| FrameDecoder
+    DisplayManager -->|"Switch Display"| ProtocolEncoder

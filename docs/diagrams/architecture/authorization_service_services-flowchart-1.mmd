@@ -1,0 +1,35 @@
+flowchart TD
+    AuthServer["Authorization Server<br/>Config"] -->|"1. Request Signing Key"| TenantKeyService["TenantKeyService"]
+    AuthServer -->|"2. Save/Load Authorization"| MongoAuthzService["MongoAuthorizationService"]
+    
+    TenantKeyService -->|"3. Query Active Key"| TenantKeyRepo[("TenantKeyRepository<br/>MongoDB")]
+    TenantKeyService -->|"4. Generate if Missing"| KeyPairGen["AuthenticationKeyPairGenerator"]
+    TenantKeyService -->|"5. Encrypt Private Key"| EncryptionSvc["EncryptionService"]
+    TenantKeyService -->|"6. Parse PEM"| PemUtil["PemUtil"]
+    
+    MongoAuthzService -->|"7. Persist Authorization"| AuthzRepo[("MongoOAuth2AuthorizationRepository<br/>MongoDB")]
+    MongoAuthzService -->|"8. Map Domain/Entity"| AuthzMapper["MongoAuthorizationMapper"]
+    MongoAuthzService -->|"9. Load Client Config"| ClientRepo["RegisteredClientRepository"]
+    
+    KeyPairGen -->|"Generate RSA 2048"| RSAKeyPair["RSA Key Pair<br/>Public + Private PEM"]
+    EncryptionSvc -->|"AES-256 Encryption"| EncryptedKey["Encrypted Private Key"]
+    
+    subgraph tenant_key_flow["Tenant Key Management Flow"]
+        TenantKeyService
+        TenantKeyRepo
+        KeyPairGen
+        EncryptionSvc
+        PemUtil
+    end
+    
+    subgraph authz_persistence_flow["Authorization Persistence Flow"]
+        MongoAuthzService
+        AuthzRepo
+        AuthzMapper
+        ClientRepo
+    end
+    
+    style TenantKeyService fill:#4A90E2
+    style MongoAuthzService fill:#4A90E2
+    style TenantKeyRepo fill:#F39C12
+    style AuthzRepo fill:#F39C12

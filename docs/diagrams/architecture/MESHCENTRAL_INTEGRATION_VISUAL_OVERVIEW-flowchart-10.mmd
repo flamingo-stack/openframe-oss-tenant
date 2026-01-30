@@ -1,0 +1,25 @@
+flowchart TD
+    subgraph StandardFrame["Standard Frame (< 64KB)"]
+        SF1["Byte 0-1: Command<br/>(uint16 BE)"]
+        SF2["Byte 2-3: Size<br/>(uint16 BE)"]
+        SF3["Byte 4+: Payload"]
+    end
+    
+    subgraph JumboFrame["Jumbo Frame (≥ 64KB)"]
+        JF1["Byte 0-1: 0x001B<br/>(Jumbo marker)"]
+        JF2["Byte 2-3: 0x0008<br/>(Header size)"]
+        JF3["Byte 4: Reserved"]
+        JF4["Byte 5-7: Jumbo Size<br/>(24-bit BE)"]
+        JF5["Byte 8-9: Actual Command<br/>(uint16 BE)"]
+        JF6["Byte 10+: Payload"]
+    end
+    
+    IncomingData["Incoming Binary Data"]
+    Parser["Frame Parser"]
+    
+    IncomingData --> Parser
+    Parser -->|"cmd != 27"| StandardFrame
+    Parser -->|"cmd == 27"| JumboFrame
+    
+    StandardFrame --> ProcessPayload["Process Payload"]
+    JumboFrame --> ProcessPayload

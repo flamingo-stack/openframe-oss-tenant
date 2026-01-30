@@ -1,0 +1,22 @@
+flowchart TD
+    LoadAgent["Load Agent from JSON"] --> CheckExists{"Agent exists<br/>in database?"}
+    
+    CheckExists -->|"No"| CreateNew["Create new agent<br/>with version from JSON"]
+    CreateNew --> SaveNew["Save to MongoDB"]
+    
+    CheckExists -->|"Yes"| CheckRelease{"Is release<br/>version?"}
+    
+    CheckRelease -->|"Yes"| PreserveVersion["Preserve existing version<br/>(prevent override)"]
+    PreserveVersion --> UpdateAgent["Update agent metadata"]
+    UpdateAgent --> SaveExisting["Save to MongoDB"]
+    
+    CheckRelease -->|"No"| CompareVersion{"Version<br/>changed?"}
+    
+    CompareVersion -->|"No"| UpdateAgent
+    
+    CompareVersion -->|"Yes"| PublishUpdate["Publish version update event"]
+    PublishUpdate --> UpdateAgent
+    
+    style CheckRelease fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff
+    style PublishUpdate fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style PreserveVersion fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff

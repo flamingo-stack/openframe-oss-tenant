@@ -1,0 +1,10 @@
+flowchart LR
+    Client["Client"] -->|"GraphQL Query"| DataFetcher["DataFetcher"]
+    DataFetcher -->|"calls"| Service["Business Service"]
+    Service -->|"queries"| Repository["Repository"]
+    Repository -->|"fetches"| DB[("Database")]
+    DB -->|"returns entities"| Repository
+    Repository -->|"returns"| Service
+    Service -->|"maps to DTO"| Mapper["Mapper"]
+    Mapper -->|"returns"| DataFetcher
+    DataFetcher -->|"GraphQL Response"| Client

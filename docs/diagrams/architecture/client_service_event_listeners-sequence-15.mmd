@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant Agent
+    participant JetStream as NATS JetStream
+    participant Listener as InstalledAgentListener
+    participant Extractor as NatsTopicMachineIdExtractor
+    participant Service as InstalledAgentService
+    participant DB as MongoDB
+    
+    Agent->>JetStream: Publish agent installation
+    JetStream->>JetStream: Store in stream
+    
+    JetStream->>Listener: Deliver message (attempt 1)
+    
+    Listener->>Listener: Parse JSON
+    Listener->>Extractor: extract(subject)
+    Extractor-->>Listener: machineId
+    
+    Listener->>Listener: Check delivery count
+    
+    Listener->>Service: addInstalledAgent(machineId, type, version, lastAttempt)
+    
+    Service->>DB: Find existing agent
+    
+    alt Agent exists
+        Service->>DB: Update version & timestamp
+    else New agent
+        Service->>DB: Insert new record
+    end
+    
+    DB-->>Service: Success
+    Service-->>Listener: Complete
+    
+    Listener->>JetStream: Acknowledge message
+    
+    alt Processing fails
+        Listener->>Listener: Log error
+        Listener->>JetStream: Leave unacked
+        
+        Note over JetStream: Wait 30s (ackWait)
+        
+        JetStream->>Listener: Redeliver (attempt 2)
+        
+        Note over JetStream: Retry up to 50 times
+    end

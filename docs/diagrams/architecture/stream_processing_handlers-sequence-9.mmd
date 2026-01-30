@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Listener as JsonKafkaListener
+    participant Processor as GenericJsonMessageProcessor
+    participant Deserializer as KafkaMessageDeserializer
+    participant Enrichment as DataEnrichmentService
+    participant Handler as MessageHandler
+    participant Storage as Storage Backend
+    
+    Listener->>Processor: process(message, messageType)
+    Processor->>Deserializer: deserialize(message, type)
+    Deserializer-->>Processor: DeserializedDebeziumMessage
+    
+    Processor->>Enrichment: getExtraParams(message)
+    Enrichment-->>Processor: IntegratedToolEnrichedData
+    
+    loop For each destination
+        Processor->>Handler: handle(message, enrichedData)
+        Handler->>Handler: isValidMessage()
+        Handler->>Handler: transform()
+        Handler->>Handler: getOperationType()
+        Handler->>Handler: pushData()
+        Handler->>Storage: persist/publish
+    end

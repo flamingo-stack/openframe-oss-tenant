@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph APIService["API Service"]
+        REST["REST API"]
+        GQL["GraphQL API"]
+    end
+
+    subgraph Consumers["API Consumers"]
+        FE["Frontend Application"]
+        MGMT["Management Service"]
+        CLIENT["Client Service"]
+        EXTERNAL["External API Service"]
+    end
+
+    REST --> FE
+    REST --> MGMT
+    REST --> CLIENT
+    REST --> EXTERNAL
+
+    GQL --> FE
+    GQL --> MGMT

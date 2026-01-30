@@ -1,0 +1,21 @@
+flowchart LR
+    Event["CoreEvent Document"]
+    
+    subgraph EventData["Event Data"]
+        Type["type"]
+        Payload["payload (JSON)"]
+        Timestamp["timestamp"]
+    end
+    
+    subgraph Attribution["Attribution"]
+        UserID["userId"]
+    end
+    
+    subgraph Lifecycle["Lifecycle"]
+        Status["status"]
+        States["CREATED → PROCESSING → COMPLETED/FAILED"]
+    end
+    
+    Event --> EventData
+    Event --> Attribution
+    Event --> Lifecycle

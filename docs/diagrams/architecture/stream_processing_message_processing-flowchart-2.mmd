@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph ProcessorCore["GenericJsonMessageProcessor Core"]
+        ProcessMethod["process(message, type)"]
+        DeserializeMethod["deserialize()"]
+        EnrichMethod["getExtraParams()"]
+        RouteMethod["route to handlers"]
+    end
+    
+    subgraph Registries["Strategy Registries"]
+        DeserializerRegistry["Map<MessageType, Deserializer>"]
+        EnrichmentRegistry["Map<ServiceType, EnrichmentService>"]
+        HandlerRegistry["Map<EventHandlerType, Map<Destination, Handler>>"]
+    end
+    
+    subgraph Strategies["Strategy Implementations"]
+        Deserializers["KafkaMessageDeserializer[]"]
+        Enrichments["DataEnrichmentService[]"]
+        Handlers["MessageHandler[]"]
+    end
+    
+    ProcessMethod --> DeserializeMethod
+    DeserializeMethod --> DeserializerRegistry
+    DeserializerRegistry --> Deserializers
+    
+    DeserializeMethod --> EnrichMethod
+    EnrichMethod --> EnrichmentRegistry
+    EnrichmentRegistry --> Enrichments
+    
+    EnrichMethod --> RouteMethod
+    RouteMethod --> HandlerRegistry
+    HandlerRegistry --> Handlers
+    
+    style ProcessorCore fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style Registries fill:#50C878,stroke:#2E7D4E,color:#fff
+    style Strategies fill:#FFB347,stroke:#CC8A38,color:#fff

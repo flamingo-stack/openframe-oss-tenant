@@ -1,0 +1,24 @@
+flowchart TD
+    Request["HTTP Request"] --> Controller["Controller Method"]
+    Controller --> Service["Service Method"]
+    
+    Service -->|"Success"| Response["Success Response"]
+    Service -->|"Exception"| ExceptionHandler["GlobalExceptionHandler"]
+    
+    ExceptionHandler -->|"DeviceNotFoundException"| Error404["404 Not Found"]
+    ExceptionHandler -->|"ValidationException"| Error400["400 Bad Request"]
+    ExceptionHandler -->|"IllegalArgumentException"| Error400b["400 Bad Request"]
+    ExceptionHandler -->|"OrganizationHasMachinesException"| Error409["409 Conflict"]
+    ExceptionHandler -->|"Exception"| Error500["500 Internal Error"]
+    
+    Error404 --> ErrorResponse["Error Response JSON"]
+    Error400 --> ErrorResponse
+    Error400b --> ErrorResponse
+    Error409 --> ErrorResponse
+    Error500 --> ErrorResponse
+    
+    ErrorResponse --> Client["HTTP Response"]
+    Response --> Client
+    
+    style ExceptionHandler fill:#ffebee
+    style ErrorResponse fill:#ffcdd2

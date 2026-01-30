@@ -1,0 +1,35 @@
+flowchart TD
+    App["App Root<br/>(layout.tsx)"]
+    
+    App --> Auth["Auth Pages<br/>(/auth/*)"]
+    App --> Dashboard["Dashboard<br/>(/dashboard)"]
+    App --> Devices["Devices<br/>(/devices)"]
+    App --> Logs["Logs<br/>(/logs)"]
+    App --> Tickets["Tickets<br/>(/tickets)"]
+    App --> Mingo["Mingo AI<br/>(/mingo)"]
+    
+    Auth --> Login["Login Page"]
+    Auth --> Register["Register Page"]
+    Auth --> Invite["Invite Page"]
+    
+    Dashboard --> Overview["Overview"]
+    Dashboard --> Stats["Statistics"]
+    
+    Devices --> DeviceList["Device List"]
+    Devices --> DeviceDetail["Device Detail"]
+    DeviceDetail --> RemoteAccess["Remote Access"]
+    
+    Logs --> LogList["Log List"]
+    Logs --> LogDetail["Log Detail"]
+    
+    Tickets --> TicketList["Ticket List"]
+    Tickets --> TicketDetail["Ticket Detail"]
+    TicketDetail --> Chat["Chat Interface"]
+    
+    Mingo --> MingoChat["Mingo Chat"]
+    Mingo --> MingoHistory["Conversation History"]
+    
+    style App fill:#4CAF50
+    style Dashboard fill:#2196F3
+    style Devices fill:#FF9800
+    style Tickets fill:#9C27B0

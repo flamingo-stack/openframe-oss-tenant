@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant UI as UI Component
+    participant ModelsSvc as SupportedModelsService
+    participant TokenSvc as TokenService
+    participant API as AI Configuration API
+    
+    UI->>ModelsSvc: loadSupportedModels()
+    
+    alt Already loaded
+        ModelsSvc-->>UI: Return immediately
+    else Load promise exists
+        ModelsSvc-->>UI: Wait for existing promise
+    else Need to load
+        ModelsSvc->>TokenSvc: getCurrentApiBaseUrl()
+        TokenSvc-->>ModelsSvc: API URL
+        ModelsSvc->>TokenSvc: getCurrentToken()
+        TokenSvc-->>ModelsSvc: Token
+        
+        ModelsSvc->>API: GET /chat/api/v1/ai-configuration/supported-models
+        API-->>ModelsSvc: SupportedModelsResponse
+        
+        loop For each provider
+            ModelsSvc->>ModelsSvc: Add models to map
+        end
+        
+        ModelsSvc->>ModelsSvc: Mark as loaded
+        ModelsSvc-->>UI: Complete
+    end
+    
+    UI->>ModelsSvc: getModelDisplayName("claude-3-5-sonnet-20241022")
+    ModelsSvc-->>UI: "Claude 3.5 Sonnet"

@@ -1,0 +1,10 @@
+flowchart LR
+    BasePackage["com.openframe"] -->|"includes"| Management["com.openframe.management.*"]
+    BasePackage -->|"includes"| Data["com.openframe.data.*"]
+    BasePackage -->|"includes"| Core["com.openframe.core.*"]
+    BasePackage -->|"includes"| Security["com.openframe.security.*"]
+    
+    BasePackage -->|"excludes"| CassandraHealth["CassandraHealthIndicator"]
+    
+    style BasePackage fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style CassandraHealth fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#fff

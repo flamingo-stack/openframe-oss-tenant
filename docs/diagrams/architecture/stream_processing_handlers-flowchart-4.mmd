@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph GenericMessageHandler["GenericMessageHandler<T, U, V>"]
+        Constructor["Constructor(ObjectMapper)"]
+        HandleMethod["handle(message, extraParams)"]
+        IsValid["isValidMessage(message)"]
+        Transform["transform(message, extraParams)"]
+        GetOp["getOperationType(message)"]
+        PushData["pushData(data, operationType)"]
+        
+        HandleCreate["handleCreate(data)"]
+        HandleRead["handleRead(data)"]
+        HandleUpdate["handleUpdate(data)"]
+        HandleDelete["handleDelete(data)"]
+    end
+    
+    Constructor -->|"Configures"| ObjectMapper["ObjectMapper<br/>- JavaTimeModule<br/>- FAIL_ON_UNKNOWN_PROPERTIES: false<br/>- ACCEPT_EMPTY_STRING_AS_NULL_OBJECT: true"]
+    
+    HandleMethod --> IsValid
+    IsValid -->|"true"| Transform
+    Transform --> GetOp
+    GetOp --> PushData
+    
+    PushData --> Switch{"Operation Type"}
+    Switch -->|"CREATE"| HandleCreate
+    Switch -->|"READ"| HandleRead
+    Switch -->|"UPDATE"| HandleUpdate
+    Switch -->|"DELETE"| HandleDelete
+    
+    style GenericMessageHandler fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ObjectMapper fill:#FFB347,stroke:#CC8A38,color:#fff
+    style Switch fill:#9B59B6,stroke:#6C3483,color:#fff

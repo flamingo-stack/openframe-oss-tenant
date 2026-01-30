@@ -1,0 +1,68 @@
+flowchart TD
+    subgraph spring_boot["Spring Boot Application Context"]
+        direction TB
+        
+        AutoConfig["@Configuration<br/>Auto-Configuration"]
+        PropertySources["application.yml<br/>Environment Properties"]
+        
+        PropertySources -->|"injects values"| AutoConfig
+    end
+    
+    subgraph config_components["Configuration Components"]
+        direction TB
+        
+        DataConfiguration["DataConfiguration<br/>@Configuration"]
+        CassandraConfig["CassandraConfig<br/>extends AbstractCassandraConfiguration"]
+        PinotConfig["PinotConfig<br/>@Configuration"]
+        
+        DataConfiguration -->|"contains"| CassandraConfiguration["CassandraConfiguration<br/>@ConditionalOnProperty"]
+    end
+    
+    subgraph cassandra_setup["Cassandra Setup"]
+        direction TB
+        
+        SessionFactory["CqlSessionFactoryBean"]
+        DriverConfig["DriverConfigLoader"]
+        CqlSession["CqlSession Bean"]
+        SessionLogger["CassandraSessionLogger"]
+        
+        SessionFactory -->|"configures"| DriverConfig
+        SessionFactory -->|"creates"| CqlSession
+        CqlSession -->|"monitored by"| SessionLogger
+    end
+    
+    subgraph pinot_setup["Pinot Setup"]
+        direction TB
+        
+        BrokerConnection["Pinot Broker Connection<br/>(Query Execution)"]
+        ControllerConnection["Pinot Controller Connection<br/>(Admin Operations)"]
+    end
+    
+    subgraph repositories["Repository Layer"]
+        CassandraRepos["@EnableCassandraRepositories<br/>com.openframe.data.repository.cassandra"]
+        PinotRepos["Pinot Repositories<br/>(Manual Injection)"]
+    end
+    
+    subgraph datastores["Data Stores"]
+        CassandraCluster[("Apache Cassandra<br/>Time-Series Storage")]
+        PinotCluster[("Apache Pinot<br/>Real-Time Analytics")]
+    end
+    
+    AutoConfig -->|"loads"| DataConfiguration
+    AutoConfig -->|"loads"| CassandraConfig
+    AutoConfig -->|"loads"| PinotConfig
+    
+    CassandraConfig -->|"creates"| SessionFactory
+    CassandraConfig -->|"creates"| SessionLogger
+    
+    PinotConfig -->|"creates"| BrokerConnection
+    PinotConfig -->|"creates"| ControllerConnection
+    
+    CassandraConfiguration -->|"enables"| CassandraRepos
+    
+    CqlSession -->|"connects to"| CassandraCluster
+    BrokerConnection -->|"queries"| PinotCluster
+    ControllerConnection -->|"manages"| PinotCluster
+    
+    CassandraRepos -->|"uses"| CqlSession
+    PinotRepos -->|"uses"| BrokerConnection

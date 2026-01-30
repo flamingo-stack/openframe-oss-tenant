@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant UI as File Explorer UI
+    participant FM as File Manager
+    participant WS as WebSocket
+    participant Agent as Remote Agent
+    participant FS as File System
+    participant Browser as Browser Download
+    
+    Note over UI,Browser: Download Initiation
+    UI->>FM: Download file request
+    FM->>WS: download start command
+    WS->>Agent: Request file
+    Agent->>FS: Open file for reading
+    FS-->>Agent: File handle
+    
+    Note over UI,Browser: Transfer Phase
+    loop For each chunk
+        Agent->>FS: Read chunk
+        FS-->>Agent: Chunk data
+        Agent->>WS: Binary chunk
+        WS->>FM: Receive chunk
+        FM->>FM: Accumulate data
+        FM-->>UI: Update progress
+    end
+    
+    Note over UI,Browser: Completion
+    Agent->>WS: Transfer complete
+    WS->>FM: End of file
+    FM->>Browser: Trigger download
+    Browser-->>UI: Save file dialog
+    FM-->>UI: Download complete

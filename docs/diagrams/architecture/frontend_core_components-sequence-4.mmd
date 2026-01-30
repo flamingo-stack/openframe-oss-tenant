@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant User
+    participant ChatUI["Chat UI Component"]
+    participant NATSHook["useNatsDialogSubscription"]
+    participant NATS["NATS Server"]
+    participant ChunkProcessor["useRealtimeChunkProcessor"]
+    
+    User->>ChatUI: Send message
+    ChatUI->>NATSHook: Subscribe to dialog
+    NATSHook->>NATS: Connect WebSocket
+    NATS-->>NATSHook: Connected
+    
+    NATS->>NATSHook: MESSAGE_START chunk
+    NATSHook->>ChunkProcessor: Process chunk
+    ChunkProcessor->>ChatUI: onStreamStart()
+    
+    loop Streaming response
+        NATS->>NATSHook: TEXT chunk
+        NATSHook->>ChunkProcessor: Process chunk
+        ChunkProcessor->>ChatUI: onSegmentsUpdate()
+        ChatUI->>User: Display text
+    end
+    
+    NATS->>NATSHook: APPROVAL_REQUEST chunk
+    NATSHook->>ChunkProcessor: Process chunk
+    ChunkProcessor->>ChatUI: Show approval UI
+    User->>ChatUI: Approve/Reject
+    ChatUI->>NATS: Send approval response
+    
+    NATS->>NATSHook: MESSAGE_END chunk
+    NATSHook->>ChunkProcessor: Process chunk
+    ChunkProcessor->>ChatUI: onStreamEnd()

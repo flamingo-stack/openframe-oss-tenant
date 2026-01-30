@@ -1,0 +1,5 @@
+flowchart LR
+    Gateway["Gateway Service"] -->|"caching"| Redis["Redis"]
+    Gateway -->|"tenant data"| MongoDB["MongoDB"]
+    Gateway -->|"WebSocket proxy"| NATS["NATS Server"]
+    Gateway -->|"tool proxy"| ToolServices["Integrated Tool Services"]

@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant User
+    participant UI as Chat UI
+    participant TokenSvc as Token Service
+    participant DialogSvc as Dialog Service
+    participant Gateway as Gateway Service
+    participant ChatAPI as Chat API
+    participant MingoAI as Mingo AI
+    
+    User->>UI: Type message
+    UI->>UI: Validate input
+    UI->>TokenSvc: Ensure token ready
+    
+    alt Token Available
+        TokenSvc-->>UI: Token valid
+    else Token Missing
+        TokenSvc->>TokenSvc: Request from Rust
+        TokenSvc-->>UI: Token retrieved
+    end
+    
+    UI->>DialogSvc: Send message
+    DialogSvc->>Gateway: POST /chat/graphql
+    Note over DialogSvc,Gateway: Authorization: Bearer {token}
+    
+    Gateway->>ChatAPI: Route to Chat API
+    ChatAPI->>MingoAI: Process message
+    
+    MingoAI-->>ChatAPI: Stream response
+    ChatAPI-->>Gateway: Stream segments
+    Gateway-->>DialogSvc: Stream segments
+    
+    loop For each segment
+        DialogSvc-->>UI: Segment (text/tool)
+        UI->>UI: Render segment
+        UI-->>User: Display update
+    end
+    
+    ChatAPI-->>Gateway: Complete
+    Gateway-->>DialogSvc: Complete
+    DialogSvc-->>UI: Message complete
+    UI-->>User: Show complete message

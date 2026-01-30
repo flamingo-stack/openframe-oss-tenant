@@ -1,0 +1,15 @@
+flowchart LR
+    UserAction["User Action"] -->|"sort/filter/select"| Table["Table Component"]
+    Table -->|"callback"| ParentComponent["Parent Component"]
+    ParentComponent -->|"fetch data"| API["API/GraphQL"]
+    API -->|"return data"| ParentComponent
+    ParentComponent -->|"update props"| Table
+    
+    Table -->|"render data"| TableRow["Table Rows"]
+    Table -->|"loading state"| TableCardSkeleton["Skeleton Loader"]
+    Table -->|"empty state"| TableEmptyState["Empty State"]
+    
+    style UserAction fill:#FFD951,stroke:#161616,color:#161616
+    style Table fill:#212121,stroke:#3a3a3a,color:#fafafa
+    style ParentComponent fill:#212121,stroke:#3a3a3a,color:#fafafa
+    style API fill:#2a2a2a,stroke:#3a3a3a,color:#fafafa

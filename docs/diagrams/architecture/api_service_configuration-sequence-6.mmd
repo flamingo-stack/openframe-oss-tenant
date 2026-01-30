@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant APIService
+    participant Controller
+    
+    Client->>Gateway: GET /api/devices<br/>Cookie: access_token=JWT
+    Gateway->>Gateway: Extract JWT from Cookie
+    Gateway->>Gateway: Validate JWT Signature
+    Gateway->>Gateway: Check JWT Expiration
+    Gateway->>Gateway: Verify Scopes/Roles
+    
+    alt Authorization Success
+        Gateway->>APIService: GET /api/devices<br/>Authorization: Bearer JWT
+        APIService->>APIService: Extract Principal from JWT
+        APIService->>Controller: Invoke with @AuthenticationPrincipal
+        Controller-->>APIService: Response
+        APIService-->>Gateway: Response
+        Gateway-->>Client: Response
+    else Authorization Failure
+        Gateway-->>Client: 401 Unauthorized
+    end

@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant APIService
+    participant SecurityFilter
+    participant JwtResolver
+    participant Cache
+    participant JwtDecoder
+    participant Controller
+    
+    Client->>Gateway: HTTP Request + JWT Cookie
+    Gateway->>Gateway: Validate JWT
+    Gateway->>Gateway: Check Authorization
+    Gateway->>APIService: Forward Request + Authorization Header
+    APIService->>SecurityFilter: Process Request
+    SecurityFilter->>JwtResolver: Resolve Authentication
+    JwtResolver->>Cache: Get Provider for Issuer
+    
+    alt Cache Hit
+        Cache-->>JwtResolver: Return Cached Provider
+    else Cache Miss
+        Cache->>JwtDecoder: Create JwtDecoder from Issuer
+        JwtDecoder-->>Cache: JwtAuthenticationProvider
+        Cache-->>JwtResolver: Return New Provider
+    end
+    
+    JwtResolver->>JwtResolver: Authenticate JWT
+    JwtResolver-->>SecurityFilter: Authentication Object
+    SecurityFilter->>Controller: Invoke with @AuthenticationPrincipal
+    Controller-->>Client: Response

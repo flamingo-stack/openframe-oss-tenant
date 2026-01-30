@@ -1,0 +1,31 @@
+flowchart LR
+    subgraph client_svc["Client Service"]
+        Controllers["REST Controllers"]
+        Listeners["NATS Listeners"]
+    end
+
+    subgraph gateway["Gateway Service"]
+        GW["API Gateway"]
+    end
+
+    subgraph auth_svc["Authorization Service"]
+        OAuth["OAuth2 Server"]
+    end
+
+    subgraph data_layer["Data Layer"]
+        Mongo[("MongoDB")]
+        NATSMsg["NATS JetStream"]
+        KafkaMsg["Kafka"]
+    end
+
+    subgraph stream_svc["Stream Processing"]
+        StreamProc["Event Processors"]
+    end
+
+    GW -->|"routes requests"| Controllers
+    Controllers -->|"validates tokens"| OAuth
+    Listeners -->|"subscribes to"| NATSMsg
+    Controllers -->|"reads/writes"| Mongo
+    Listeners -->|"updates"| Mongo
+    Controllers -.->|"publishes events"| KafkaMsg
+    KafkaMsg -->|"processes"| StreamProc

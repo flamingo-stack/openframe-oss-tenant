@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph Frontend["Frontend Layer"]
+        UI["Chat UI Components"]
+        Hook["useMingoDialog Hook"]
+        ActiveStore["MingoDialogDetailsStore"]
+        BgStore["BackgroundMessagesStore"]
+    end
+    
+    subgraph Backend["Backend Services"]
+        API["Chat API Service"]
+        AI["Mingo AI Engine"]
+    end
+    
+    UI --> Hook
+    Hook --> ActiveStore
+    Hook --> BgStore
+    Hook --> API
+    API --> AI
+    
+    style ActiveStore fill:#4CAF50
+    style BgStore fill:#2196F3
+    style Hook fill:#FF9800
+    style AI fill:#9C27B0

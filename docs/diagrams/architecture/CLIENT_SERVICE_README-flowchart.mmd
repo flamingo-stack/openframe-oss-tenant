@@ -1,0 +1,33 @@
+flowchart TD
+    subgraph agents["OpenFrame Agents"]
+        A1["Agent 1"]
+        A2["Agent 2"]
+        AN["Agent N"]
+    end
+
+    subgraph client_service["Client Service"]
+        REST["REST Controllers"]
+        Listeners["Event Listeners"]
+        Services["Business Logic"]
+    end
+
+    subgraph infrastructure["Infrastructure"]
+        NATS["NATS JetStream"]
+        MongoDB[("MongoDB")]
+        Kafka["Kafka"]
+    end
+
+    A1 -->|"Register/Auth"| REST
+    A2 -->|"Register/Auth"| REST
+    AN -->|"Register/Auth"| REST
+
+    A1 -->|"Events"| NATS
+    A2 -->|"Events"| NATS
+    AN -->|"Events"| NATS
+
+    REST --> Services
+    NATS --> Listeners
+    Listeners --> Services
+
+    Services --> MongoDB
+    Services -.->|"Publish"| Kafka

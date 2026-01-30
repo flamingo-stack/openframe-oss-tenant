@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph ADMIN["ADMIN Actor"]
+        AdminProps["✓ email<br/>✓ firstName/lastName<br/>✓ Full UI access<br/>✓ User scopes<br/>✗ machineId"]
+    end
+    
+    subgraph AGENT["AGENT Actor"]
+        AgentProps["✓ machineId<br/>✓ Device scopes<br/>✓ Limited API access<br/>✗ email (optional)<br/>✗ firstName/lastName"]
+    end
+    
+    style ADMIN fill:#e1f5ff
+    style AGENT fill:#fff4e1

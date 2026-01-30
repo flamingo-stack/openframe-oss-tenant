@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant UI as Frontend UI
+    participant FleetClient as FleetApiClient
+    participant Gateway as Gateway Service
+    participant Fleet as Fleet MDM Server
+    participant Device as Target Device
+    
+    UI->>FleetClient: runPolicyOnHost(policyId, hostId)
+    FleetClient->>FleetClient: buildFleetUrl("/api/latest/fleet/policies/{id}/run")
+    FleetClient->>Gateway: POST with auth headers
+    Gateway->>Gateway: Validate JWT
+    Gateway->>Fleet: Proxy request
+    Fleet->>Device: Execute policy query via osquery
+    Device->>Fleet: Return query results
+    Fleet->>Gateway: Policy execution response
+    Gateway->>FleetClient: Response with results
+    FleetClient->>UI: ApiResponse with data

@@ -1,0 +1,29 @@
+flowchart TD
+    Start["Agent configuration loaded"] --> CheckExists{"Agent exists<br/>in database?"}
+    
+    CheckExists -->|No| CreateNew["Create new agent<br/>Use version from JSON"]
+    CreateNew --> SaveNew["Save to database"]
+    SaveNew --> EndNew["No event published"]
+    
+    CheckExists -->|Yes| CheckRelease{"Is release<br/>version?"}
+    
+    CheckRelease -->|Yes| PreserveVer["Preserve existing version<br/>Ignore JSON version"]
+    PreserveVer --> UpdateProps["Update other properties"]
+    UpdateProps --> SaveRelease["Save to database"]
+    SaveRelease --> NoPublish["No event published<br/>Version unchanged"]
+    
+    CheckRelease -->|No| CompareVer{"Version<br/>changed?"}
+    
+    CompareVer -->|No| UpdateNoVer["Update properties<br/>Keep same version"]
+    UpdateNoVer --> SaveNoChange["Save to database"]
+    SaveNoChange --> NoPublishSame["No event published<br/>Version unchanged"]
+    
+    CompareVer -->|Yes| UpdateVer["Update to new version<br/>Update properties"]
+    UpdateVer --> SaveDev["Save to database"]
+    SaveDev --> PublishEvent["Publish update event<br/>to Kafka"]
+    PublishEvent --> NotifyClients["Notify connected clients<br/>to update agents"]
+    
+    style CheckRelease fill:#F39C12,stroke:#C87F0A,color:#fff
+    style PublishEvent fill:#E74C3C,stroke:#C0392B,color:#fff
+    style PreserveVer fill:#3498DB,stroke:#2874A6,color:#fff
+    style NotifyClients fill:#27AE60,stroke:#1E8449,color:#fff

@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Frontend as Frontend<br/>(useLogs Hook)
+    participant ApiClient as ApiClient
+    participant Gateway as Gateway Service
+    participant LogDataFetcher as LogDataFetcher<br/>(DGS)
+    participant LogService as LogService
+    participant PinotRepo as PinotClientLogRepository
+    participant Pinot as Apache Pinot
+    
+    Frontend->>ApiClient: POST /api/graphql<br/>(GET_LOGS_QUERY)
+    ApiClient->>Gateway: Forward Request
+    Gateway->>LogDataFetcher: GraphQL Query
+    LogDataFetcher->>LogService: queryLogs(filter, pagination, search)
+    LogService->>PinotRepo: findLogs(criteria)
+    PinotRepo->>Pinot: SQL Query
+    Pinot-->>PinotRepo: Result Set
+    PinotRepo-->>LogService: List<LogEvent>
+    LogService-->>LogDataFetcher: GenericQueryResult
+    LogDataFetcher-->>Gateway: GraphQL Response
+    Gateway-->>ApiClient: JSON Response
+    ApiClient-->>Frontend: LogsResponse
+    Frontend->>Frontend: Transform Data<br/>(add Device objects)
+    Frontend->>Frontend: Update LogsStore

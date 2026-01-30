@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph Layer1["Layer 1: Base Interface"]
+        BaseRepo["BaseXxxRepository&lt;T,B,ID&gt;<br/><br/>Technology-agnostic<br/>Generic type parameters<br/>Common operations"]
+    end
+    
+    subgraph Layer2["Layer 2: Spring Data Interface"]
+        BlockingImpl["XxxRepository<br/><br/>extends MongoRepository<br/>extends BaseXxxRepository<br/>@ConditionalOnWebApplication(SERVLET)"]
+        ReactiveImpl["ReactiveXxxRepository<br/><br/>extends ReactiveMongoRepository<br/>extends BaseXxxRepository<br/>@ConditionalOnWebApplication(REACTIVE)"]
+    end
+    
+    subgraph Layer3["Layer 3: Spring Data Implementation"]
+        SpringDataBlocking["Spring Data MongoDB<br/>SimpleMongoRepository"]
+        SpringDataReactive["Spring Data MongoDB<br/>SimpleReactiveMongoRepository"]
+    end
+    
+    BaseRepo -.implements.-> BlockingImpl
+    BaseRepo -.implements.-> ReactiveImpl
+    
+    BlockingImpl --> SpringDataBlocking
+    ReactiveImpl --> SpringDataReactive
+    
+    SpringDataBlocking --> MongoDB[("MongoDB")]
+    SpringDataReactive --> MongoDB

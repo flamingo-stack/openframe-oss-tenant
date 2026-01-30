@@ -1,0 +1,27 @@
+flowchart LR
+    MeshDesktop["MeshDesktop<br/>Class"] -->|"uses"| BinaryProtocol["Binary Protocol<br/>Encoding/Decoding"]
+    MeshDesktop -->|"manages"| InputHandlers["Input Handlers<br/>(Mouse/Keyboard)"]
+    MeshDesktop -->|"renders to"| Canvas["HTML5 Canvas<br/>Context"]
+    
+    FileManager["File Manager"] -->|"uses"| BinaryHeader["BinaryHeader<br/>Interface"]
+    FileManager -->|"uses"| BinaryAccumulator["BinaryAccumulator<br/>Interface"]
+    FileManager -->|"operates on"| FileEntry["FileEntry<br/>Interface"]
+    
+    BinaryProtocol -->|"sends/receives"| WebSocket["WebSocket<br/>Connection"]
+    
+    subgraph DesktopSubsystem["Desktop Control Subsystem"]
+        MeshDesktop
+        InputHandlers
+        Canvas
+    end
+    
+    subgraph FileSubsystem["File Management Subsystem"]
+        FileManager
+        FileEntry
+    end
+    
+    subgraph ProtocolLayer["Protocol Layer"]
+        BinaryProtocol
+        BinaryHeader
+        BinaryAccumulator
+    end

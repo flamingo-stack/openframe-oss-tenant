@@ -1,0 +1,33 @@
+flowchart TD
+    Start["addInstalledAgent()"]
+    
+    Validate1["Validate Machine ID"]
+    Validate2["Validate Agent Type"]
+    Validate3["Validate Machine Exists"]
+    
+    Find["Find Existing Agent<br/>by machineId + agentType"]
+    
+    Exists{"Agent<br/>Exists?"}
+    
+    Update["Update Version<br/>Update Timestamp"]
+    Create["Create New Agent<br/>Set Initial Data"]
+    
+    Save["Save to Repository"]
+    Log["Log Operation"]
+    End["Complete"]
+    
+    Start --> Validate1
+    Validate1 --> Validate2
+    Validate2 --> Validate3
+    Validate3 --> Find
+    
+    Find --> Exists
+    
+    Exists -->|"Yes"| Update
+    Exists -->|"No"| Create
+    
+    Update --> Save
+    Create --> Save
+    
+    Save --> Log
+    Log --> End

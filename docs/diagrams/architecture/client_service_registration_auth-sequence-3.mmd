@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Agent as Agent Client
+    participant Controller as AgentAuthController
+    participant AuthService as AgentAuthService
+    participant Handler as ClientCredentialsHandler
+    participant OAuthRepo as OAuthClientRepository
+    participant AccessGen as AccessTokenGenerator
+    participant RefreshGen as RefreshTokenGenerator
+    
+    Agent->>Controller: POST /oauth/token<br/>grant_type=client_credentials<br/>client_id=agent_xxx<br/>client_secret=secret
+    
+    Controller->>AuthService: issueClientToken(grantType, ...)
+    
+    AuthService->>Handler: handle(clientId, clientSecret)
+    
+    Handler->>OAuthRepo: findByClientId(clientId)
+    OAuthRepo-->>Handler: OAuthClient
+    
+    Handler->>Handler: validateClientSecret()
+    Handler->>Handler: ✓ Password matches
+    
+    Handler->>AccessGen: generate(client, grantType)
+    AccessGen-->>Handler: JWT access token
+    
+    Handler->>RefreshGen: generate(clientId)
+    RefreshGen-->>Handler: JWT refresh token
+    
+    Handler-->>AuthService: AgentTokenResponse
+    AuthService-->>Controller: AgentTokenResponse
+    Controller-->>Agent: 200 OK<br/>{accessToken, refreshToken, tokenType, expiresIn}

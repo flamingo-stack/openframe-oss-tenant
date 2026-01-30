@@ -1,0 +1,26 @@
+flowchart TD
+    subgraph Layer1["Layer 1: Network"]
+        TLS["TLS/HTTPS"]
+        Firewall["Firewall Rules"]
+    end
+    
+    subgraph Layer2["Layer 2: Gateway"]
+        JwtValidation["JWT Validation"]
+        Authorization["Authorization"]
+        RateLimit["Rate Limiting"]
+    end
+    
+    subgraph Layer3["Layer 3: API Service"]
+        OAuth2["OAuth2 Resource Server"]
+        PrincipalExtraction["Principal Extraction"]
+    end
+    
+    subgraph Layer4["Layer 4: Business Logic"]
+        TenantIsolation["Tenant Isolation"]
+        DataValidation["Data Validation"]
+    end
+    
+    Client["Client"] --> Layer1
+    Layer1 --> Layer2
+    Layer2 --> Layer3
+    Layer3 --> Layer4

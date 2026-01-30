@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Gateway
+    participant AuthZ as Authorization Server
+    participant Mongo as MongoDB
+    
+    User->>Frontend: Fill registration form
+    Frontend->>Frontend: Validate access code (SaaS mode)
+    Frontend->>Gateway: POST /sas/oauth/register
+    Gateway->>AuthZ: Register organization
+    
+    AuthZ->>AuthZ: Validate access code
+    AuthZ->>Mongo: Create organization
+    AuthZ->>Mongo: Create admin user
+    AuthZ->>Mongo: Generate tenant keys
+    
+    Mongo-->>AuthZ: Success
+    AuthZ-->>Gateway: Registration complete
+    Gateway-->>Frontend: 200 OK
+    
+    Frontend->>Frontend: Discover tenants
+    Frontend->>User: Redirect to login

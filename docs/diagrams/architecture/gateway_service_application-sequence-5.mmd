@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant JWKSCache as JWKS Cache
+    participant IssuerProvider
+    participant Backend as Backend Service
+    
+    Client->>Gateway: Request with JWT<br/>(Authorization: Bearer token)
+    Gateway->>Gateway: Extract JWT issuer
+    Gateway->>JWKSCache: Get authentication manager<br/>for issuer
+    
+    alt Cache Hit
+        JWKSCache-->>Gateway: Return cached manager
+    else Cache Miss
+        JWKSCache->>IssuerProvider: Validate issuer
+        IssuerProvider-->>JWKSCache: Issuer valid
+        JWKSCache->>JWKSCache: Fetch JWKS from issuer
+        JWKSCache->>JWKSCache: Create authentication manager
+        JWKSCache-->>Gateway: Return new manager
+    end
+    
+    Gateway->>Gateway: Validate JWT signature
+    Gateway->>Gateway: Extract roles/scopes
+    Gateway->>Gateway: Check path authorization
+    
+    alt Authorized
+        Gateway->>Backend: Forward request with JWT
+        Backend-->>Gateway: Response
+        Gateway-->>Client: Response
+    else Unauthorized
+        Gateway-->>Client: 403 Forbidden
+    end

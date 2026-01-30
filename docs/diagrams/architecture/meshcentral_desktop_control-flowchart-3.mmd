@@ -1,0 +1,53 @@
+flowchart LR
+    subgraph Input["Input Processing"]
+        MouseEvents["Mouse Events"]
+        KeyEvents["Keyboard Events"]
+        SpecialCmds["Special Commands"]
+    end
+    
+    subgraph Encoding["Binary Encoding"]
+        MouseEncoder["Mouse Encoder"]
+        KeyEncoder["Key Encoder"]
+        CmdEncoder["Command Encoder"]
+    end
+    
+    subgraph Transport["Transport Layer"]
+        Sender["Sender Function"]
+        Receiver["Receiver Handler"]
+    end
+    
+    subgraph Decoding["Frame Decoding"]
+        Accumulator["Byte Accumulator"]
+        FrameParser["Frame Parser"]
+        JumboHandler["Jumbo Frame Handler"]
+    end
+    
+    subgraph Rendering["Rendering Pipeline"]
+        TileQueue["Tile Queue<br/>(max 300)"]
+        Decoder["JPEG Decoder<br/>(3 concurrent)"]
+        DrawQueue["Draw Queue"]
+        Canvas["Canvas 2D Context"]
+    end
+    
+    MouseEvents --> MouseEncoder
+    KeyEvents --> KeyEncoder
+    SpecialCmds --> CmdEncoder
+    
+    MouseEncoder --> Sender
+    KeyEncoder --> Sender
+    CmdEncoder --> Sender
+    
+    Sender -->|"Binary Data"| Transport
+    Transport -->|"Binary Frames"| Receiver
+    
+    Receiver --> Accumulator
+    Accumulator --> FrameParser
+    FrameParser --> JumboHandler
+    
+    JumboHandler -->|"cmd=7"| Canvas
+    JumboHandler -->|"cmd=3"| TileQueue
+    JumboHandler -->|"cmd=11"| DisplayMgr["Display Manager"]
+    
+    TileQueue --> Decoder
+    Decoder --> DrawQueue
+    DrawQueue --> Canvas

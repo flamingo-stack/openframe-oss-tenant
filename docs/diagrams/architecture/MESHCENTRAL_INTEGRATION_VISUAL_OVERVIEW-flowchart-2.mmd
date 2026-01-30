@@ -1,0 +1,68 @@
+flowchart TD
+    subgraph Browser["Browser Environment"]
+        Canvas["HTML5 Canvas<br/>(Display Surface)"]
+        DOMEvents["DOM Events<br/>(Mouse/Keyboard)"]
+        WSClient["WebSocket Client"]
+    end
+    
+    subgraph MeshDesktopClass["MeshDesktop Class"]
+        subgraph InputLayer["Input Layer"]
+            MouseHandler["Mouse Handler"]
+            KeyboardHandler["Keyboard Handler"]
+            InputEncoder["Input Encoder"]
+        end
+        
+        subgraph ProtocolLayer["Protocol Layer"]
+            CommandEncoder["Command Encoder"]
+            FrameDecoder["Frame Decoder"]
+            MessageAccumulator["Message Accumulator"]
+        end
+        
+        subgraph RenderingLayer["Rendering Layer"]
+            TileQueue["Tile Queue<br/>(300 max)"]
+            JPEGDecoder["JPEG Decoder<br/>(3 concurrent)"]
+            DrawQueue["Draw Queue"]
+            CanvasRenderer["Canvas Renderer"]
+        end
+        
+        subgraph DisplayLayer["Display Layer"]
+            DisplayManager["Display Manager"]
+            DisplayList["Display List"]
+            CoordinateMapper["Coordinate Mapper"]
+        end
+    end
+    
+    subgraph RemoteSystem["Remote System"]
+        DesktopCapture["Desktop Capture"]
+        InputInjector["Input Injector"]
+        DisplayConfig["Display Configuration"]
+    end
+    
+    DOMEvents -->|"Mouse Events"| MouseHandler
+    DOMEvents -->|"Key Events"| KeyboardHandler
+    
+    MouseHandler --> InputEncoder
+    KeyboardHandler --> InputEncoder
+    InputEncoder --> CommandEncoder
+    
+    CommandEncoder -->|"Binary Commands"| WSClient
+    WSClient -->|"Send"| InputInjector
+    
+    DesktopCapture -->|"Screen Tiles"| WSClient
+    WSClient -->|"Receive"| MessageAccumulator
+    
+    MessageAccumulator --> FrameDecoder
+    FrameDecoder -->|"cmd=7 Size"| Canvas
+    FrameDecoder -->|"cmd=3 Tile"| TileQueue
+    FrameDecoder -->|"cmd=11 List"| DisplayManager
+    
+    TileQueue --> JPEGDecoder
+    JPEGDecoder --> DrawQueue
+    DrawQueue --> CanvasRenderer
+    CanvasRenderer --> Canvas
+    
+    DisplayManager --> DisplayList
+    DisplayList --> CoordinateMapper
+    CoordinateMapper --> MouseHandler
+    
+    DisplayConfig -->|"Display Info"| WSClient

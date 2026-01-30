@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant User
+    participant Controller as PasswordResetController
+    participant Service as PasswordResetService
+    participant DB as MongoDB
+    participant Email as Email Service
+    
+    User->>Controller: POST /password-reset/request
+    Note over User,Controller: {email: "user@acme.com"}
+    
+    Controller->>Service: createResetToken(email)
+    Service->>DB: Find user by email
+    
+    alt User exists
+        Service->>Service: Generate reset token
+        Service->>Service: Set expiration (1 hour)
+        Service->>DB: Save reset token
+        Service->>Email: Send reset email
+        Note over Email: Contains reset link with token
+    else User not found
+        Service->>Service: Silent failure (security)
+    end
+    
+    Service-->>Controller: void
+    Controller-->>User: 202 ACCEPTED
+    Note over User: Always returns 202 (prevent email enumeration)
+    
+    User->>Email: Receive reset email
+    User->>User: Click reset link
+    
+    User->>Controller: POST /password-reset/confirm
+    Note over User,Controller: {token: "reset_xyz", newPassword: "NewP@ss"}
+    
+    Controller->>Service: resetPassword(token, newPassword)
+    Service->>DB: Find token
+    Service->>Service: Validate token expiry
+    Service->>Service: Hash new password
+    Service->>DB: Update user password
+    Service->>DB: Invalidate reset token
+    
+    DB-->>Service: Confirmation
+    Service-->>Controller: void
+    Controller-->>User: 204 NO_CONTENT

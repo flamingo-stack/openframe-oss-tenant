@@ -1,0 +1,27 @@
+flowchart TD
+    IncomingMsg["Incoming Message"] --> CheckActive{"Is active dialog?"}
+    
+    CheckActive -->|"Yes"| ActivePath["Active Dialog Path"]
+    ActivePath --> AddRealtime["addRealtimeMessage()"]
+    AddRealtime --> UpdateUI["Update UI immediately"]
+    
+    CheckActive -->|"No"| BgPath["Background Dialog Path"]
+    BgPath --> AddBg["addBackgroundMessage()"]
+    AddBg --> IncrementUnread["incrementUnreadCount()"]
+    IncrementUnread --> CheckTyping{"Is typing message?"}
+    
+    CheckTyping -->|"Yes"| SetTyping["setBackgroundTyping(true)"]
+    CheckTyping -->|"No"| UpdateBadge["Update unread badge"]
+    
+    SetTyping --> UpdateBadge
+    UpdateBadge --> CheckLimit{"Message count > 50?"}
+    
+    CheckLimit -->|"Yes"| TrimMessages["Trim to last 50 messages"]
+    CheckLimit -->|"No"| Complete["Complete"]
+    
+    TrimMessages --> Complete
+    UpdateUI --> Complete
+    
+    style ActivePath fill:#4CAF50
+    style BgPath fill:#2196F3
+    style IncrementUnread fill:#FF9800

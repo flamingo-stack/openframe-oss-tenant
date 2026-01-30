@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph Frontend["OpenFrame Frontend"]
+        DeviceUI["Device Management UI"]
+        RemoteAccessUI["Remote Access Interface"]
+        FileExplorerUI["File Explorer UI"]
+    end
+    
+    subgraph MeshCentralIntegration["MeshCentral Integration Module"]
+        MeshDesktop["Desktop Control"]
+        FileManager["File Manager"]
+    end
+    
+    subgraph ExternalServices["External Services"]
+        MeshCentralServer["MeshCentral Server"]
+        MeshAgents["MeshCentral Agents<br/>(on client devices)"]
+    end
+    
+    DeviceUI -->|"initiates session"| RemoteAccessUI
+    RemoteAccessUI -->|"uses"| MeshDesktop
+    RemoteAccessUI -->|"uses"| FileManager
+    FileExplorerUI -->|"uses"| FileManager
+    
+    MeshDesktop -->|"WebSocket Binary"| MeshCentralServer
+    FileManager -->|"WebSocket Binary"| MeshCentralServer
+    MeshCentralServer -->|"Agent Protocol"| MeshAgents
+    
+    style MeshCentralIntegration fill:#e1f5ff

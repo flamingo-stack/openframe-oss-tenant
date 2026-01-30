@@ -1,0 +1,38 @@
+flowchart TD
+    Request["Incoming Request"] --> CheckPath{"Check Path"}
+    
+    CheckPath -->|"/external-api/**"| ApiKeyFlow["API Key Flow"]
+    CheckPath -->|"Other Paths"| JwtFlow["JWT Flow"]
+    
+    subgraph api_key_flow["API Key Authentication"]
+        ExtractKey["Extract X-API-Key Header"]
+        ParseKey["Parse ak_{keyId}.sk_{secret}"]
+        ValidateKey["Validate Against Database"]
+        CheckRate["Check Rate Limits"]
+        AddContext["Add User Context Headers"]
+    end
+    
+    ApiKeyFlow --> ExtractKey
+    ExtractKey --> ParseKey
+    ParseKey --> ValidateKey
+    ValidateKey --> CheckRate
+    CheckRate --> AddContext
+    
+    subgraph jwt_flow["JWT Authentication"]
+        ExtractToken["Extract Bearer Token"]
+        ResolveIssuer["Resolve Issuer"]
+        ValidateJwt["Validate JWT Signature"]
+        ExtractClaims["Extract Roles & Scopes"]
+        CheckAuthz["Check Authorization"]
+    end
+    
+    JwtFlow --> ExtractToken
+    ExtractToken --> ResolveIssuer
+    ResolveIssuer --> ValidateJwt
+    ValidateJwt --> ExtractClaims
+    ExtractClaims --> CheckAuthz
+    
+    AddContext --> RouteRequest["Route to Backend"]
+    CheckAuthz --> RouteRequest
+    
+    RouteRequest --> Backend["Backend Service"]

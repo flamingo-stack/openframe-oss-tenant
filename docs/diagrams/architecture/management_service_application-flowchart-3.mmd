@@ -1,0 +1,28 @@
+flowchart TD
+    Start["Application Start"] --> SpringBoot["SpringApplication.run()"]
+    SpringBoot --> ComponentScan["Component Scanning<br/>(management, data, core)"]
+    
+    ComponentScan --> LoadBeans["Load Configuration Beans"]
+    LoadBeans --> ManagementConfig["ManagementConfiguration<br/>(PasswordEncoder)"]
+    LoadBeans --> MongoConfig["MongoConfig<br/>(Database Connection)"]
+    LoadBeans --> DataConfig["DataConfiguration<br/>(Repository Setup)"]
+    
+    DataConfig --> PostConstruct["@PostConstruct Methods"]
+    
+    PostConstruct --> AgentInit["IntegratedToolAgentInitializer<br/>.initializeToolAgents()"]
+    AgentInit --> LoadAgentConfigs["Load Agent JSON from Classpath"]
+    LoadAgentConfigs --> SaveAgents["Save/Update Agents in MongoDB"]
+    SaveAgents --> PublishUpdates["Publish Version Updates to Kafka"]
+    
+    PublishUpdates --> SchedulerInit["DebeziumHealthCheckScheduler<br/>.init()"]
+    SchedulerInit --> SchedulerReady["Scheduler Ready<br/>(Distributed Lock Configured)"]
+    
+    SchedulerReady --> ServerReady["Server Ready<br/>(REST API Available)"]
+    
+    ServerReady --> ScheduledTasks["Scheduled Tasks Start"]
+    ScheduledTasks --> HealthCheck["Health Check Every 5 Minutes<br/>(Default)"]
+    
+    style Start fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style ServerReady fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style AgentInit fill:#FF9800,stroke:#E65100,color:#fff
+    style HealthCheck fill:#2196F3,stroke:#0D47A1,color:#fff

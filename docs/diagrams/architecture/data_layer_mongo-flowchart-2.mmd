@@ -1,0 +1,4 @@
+flowchart LR
+    Request["Service Request"] -->|"tenant context"| Repo["Repository"]
+    Repo -->|"filter by organizationId"| Query["MongoDB Query"]
+    Query -->|"tenant-isolated data"| Result["Results"]

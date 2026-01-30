@@ -1,0 +1,42 @@
+flowchart TD
+    subgraph services["OpenFrame Services"]
+        API["API Service<br/>(REST + GraphQL)"]
+        Auth["Authorization Service<br/>(OAuth2)"]
+        Mgmt["Management Service<br/>(Tools + CDC)"]
+        Client["Client Service<br/>(Device Registration)"]
+        External["External API<br/>(Public API)"]
+    end
+
+    subgraph data_layer["MongoDB Data Layer"]
+        direction TB
+        Config["Configuration Layer<br/>MongoConfig"]
+        
+        subgraph documents["Document Models"]
+            User["User"]
+            Org["Organization"]
+            Machine["Machine"]
+            Device["Device"]
+            Tool["IntegratedTool"]
+            Event["CoreEvent"]
+        end
+        
+        subgraph repositories["Repository Layer"]
+            BaseRepos["Base Interfaces<br/>(Technology-Agnostic)"]
+            BlockingRepos["Blocking Repositories<br/>(Servlet)"]
+            ReactiveRepos["Reactive Repositories<br/>(WebFlux)"]
+        end
+    end
+
+    subgraph mongodb["MongoDB"]
+        Collections[("Collections:<br/>users, organizations,<br/>machines, devices,<br/>integrated_tools, events")]
+    end
+
+    API -->|"CRUD operations"| repositories
+    Auth -->|"User/Tenant queries"| repositories
+    Mgmt -->|"Tool management"| repositories
+    Client -->|"Device tracking"| repositories
+    External -->|"Public API access"| repositories
+
+    Config -->|"configures"| repositories
+    repositories -->|"persist/query"| documents
+    documents -->|"stored in"| Collections

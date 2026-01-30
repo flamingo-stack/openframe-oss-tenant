@@ -1,0 +1,56 @@
+sequenceDiagram
+    participant Client as Client App
+    participant PKCEUtils as PKCEUtils
+    participant Gateway as Gateway/BFF
+    participant AuthServer as Authorization Server
+    participant TokenEndpoint as Token Endpoint
+    
+    Note over Client,TokenEndpoint: Authorization Request Phase
+    
+    Client->>PKCEUtils: generateState()
+    PKCEUtils->>PKCEUtils: SecureRandom(16 bytes)
+    PKCEUtils-->>Client: state (Base64URL)
+    
+    Client->>PKCEUtils: generateCodeVerifier()
+    PKCEUtils->>PKCEUtils: SecureRandom(32 bytes)
+    PKCEUtils-->>Client: code_verifier (Base64URL)
+    
+    Client->>PKCEUtils: generateCodeChallenge(verifier)
+    PKCEUtils->>PKCEUtils: SHA-256(code_verifier)
+    PKCEUtils->>PKCEUtils: Base64URL(hash)
+    PKCEUtils-->>Client: code_challenge
+    
+    Client->>Gateway: GET /oauth/login?tenantId=...
+    Gateway->>PKCEUtils: Generate PKCE parameters
+    PKCEUtils-->>Gateway: state, verifier, challenge
+    
+    Gateway->>Gateway: Store verifier + state in cookie
+    Gateway->>AuthServer: Redirect to /authorize<br/>?code_challenge=...&state=...
+    
+    Note over Client,TokenEndpoint: User Authentication Phase
+    
+    AuthServer->>AuthServer: User authenticates
+    AuthServer->>AuthServer: Store code_challenge
+    AuthServer-->>Client: Redirect with authorization code
+    
+    Note over Client,TokenEndpoint: Token Exchange Phase
+    
+    Client->>Gateway: GET /oauth/callback?code=...&state=...
+    Gateway->>Gateway: Retrieve verifier from cookie
+    Gateway->>Gateway: Validate state matches
+    
+    Gateway->>TokenEndpoint: POST /token<br/>code=...&code_verifier=...
+    TokenEndpoint->>PKCEUtils: generateCodeChallenge(verifier)
+    PKCEUtils-->>TokenEndpoint: computed_challenge
+    
+    TokenEndpoint->>TokenEndpoint: Compare stored_challenge<br/>== computed_challenge
+    
+    alt PKCE Valid
+        TokenEndpoint-->>Gateway: access_token + refresh_token
+        Gateway->>SecurityConstants: Use ACCESS_TOKEN constant
+        Gateway->>SecurityConstants: Use REFRESH_TOKEN constant
+        Gateway-->>Client: Set-Cookie with tokens
+    else PKCE Invalid
+        TokenEndpoint-->>Gateway: 400 Bad Request
+        Gateway-->>Client: OAuth error redirect
+    end

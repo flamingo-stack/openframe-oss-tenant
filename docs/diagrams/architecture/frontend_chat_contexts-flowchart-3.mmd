@@ -1,0 +1,21 @@
+flowchart TD
+    Start["Application Start"] --> Mount["DebugModeProvider Mounts"]
+    Mount --> UseEffect["useEffect Executes"]
+    UseEffect --> Invoke["invoke('get_debug_mode')"]
+    
+    Invoke --> Success{"Success?"}
+    Success -->|"Yes"| SetState["setDebugMode(enabled)"]
+    Success -->|"No"| SetDefault["setDebugMode(false)"]
+    
+    SetState --> Log1["Log: Debug mode initialized"]
+    SetDefault --> Log2["Log: Failed to fetch debug mode"]
+    
+    Log1 --> Render["Render Children with Context"]
+    Log2 --> Render
+    
+    Render --> Ready["Application Ready"]
+    
+    style Start fill:#48bb78,stroke:#38a169,color:#fff
+    style Ready fill:#48bb78,stroke:#38a169,color:#fff
+    style Success fill:#ed8936,stroke:#dd6b20,color:#fff
+    style SetDefault fill:#f56565,stroke:#e53e3e,color:#fff

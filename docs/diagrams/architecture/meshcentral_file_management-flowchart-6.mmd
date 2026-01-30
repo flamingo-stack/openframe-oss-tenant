@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph Client["Client Layer"]
+        UI["File Manager UI"]
+        State["State Management"]
+    end
+    
+    subgraph Module["File Management Module"]
+        Types["Type Definitions"]
+        Parser["Binary Parser"]
+        Accumulator["Message Accumulator"]
+        Protocol["Protocol Handler"]
+    end
+    
+    subgraph Transport["Transport Layer"]
+        WS["WebSocket Client"]
+        Auth["Authentication"]
+        Encryption["TLS Encryption"]
+    end
+    
+    subgraph Server["MeshCentral Server"]
+        Router["Message Router"]
+        Relay["Agent Relay"]
+    end
+    
+    subgraph Agent["Remote Agent"]
+        FileOps["File Operations"]
+        FS["File System"]
+    end
+    
+    UI --> State
+    State --> Types
+    Types --> Parser
+    Parser --> Accumulator
+    Accumulator --> Protocol
+    Protocol --> WS
+    WS --> Auth
+    Auth --> Encryption
+    Encryption --> Router
+    Router --> Relay
+    Relay --> FileOps
+    FileOps --> FS

@@ -1,0 +1,12 @@
+flowchart LR
+    Agent["Agent Client"] -->|"Uses credentials"| GatewayService["Gateway Service"]
+    Agent -->|"Sends metrics"| ClientEventListeners["Client Event Listeners"]
+    
+    GatewayService -->|"Validates JWT"| ApiService["API Service"]
+    GatewayService -->|"Routes requests"| ExternalApi["External API"]
+    
+    ClientEventListeners -->|"Processes events"| StreamProcessing["Stream Processing"]
+    
+    style Agent fill:#e1f5ff
+    style GatewayService fill:#fff4e1
+    style ClientEventListeners fill:#e8f5e9

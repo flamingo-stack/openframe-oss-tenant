@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant AuthServer as Authorization Server
+    participant SSOProvider as SSO Provider<br/>(Microsoft/Google)
+    participant Dynamic as DynamicClientRegistrationRepository
+    participant OidcSvc as OidcUserService
+    participant UserSvc as UserService
+    participant Mongo as MongoDB
+
+    User->>Browser: Click "Login with Microsoft"
+    Browser->>AuthServer: GET /oauth2/authorization/microsoft
+    
+    AuthServer->>Dynamic: findByRegistrationId("microsoft")
+    Dynamic->>Mongo: Load SSO config for tenant
+    Mongo-->>Dynamic: SSOPerTenantConfig<br/>(clientId, clientSecret, scopes)
+    Dynamic-->>AuthServer: ClientRegistration
+    
+    AuthServer->>Browser: Redirect to Microsoft login
+    Browser->>SSOProvider: Authenticate user
+    SSOProvider->>Browser: Redirect to /login/oauth2/code/microsoft?code=...
+    
+    Browser->>AuthServer: GET /login/oauth2/code/microsoft?code=...
+    AuthServer->>SSOProvider: Exchange code for tokens
+    SSOProvider-->>AuthServer: id_token, access_token
+    
+    AuthServer->>OidcSvc: loadUser(userRequest)
+    OidcSvc->>OidcSvc: Extract email from id_token
+    
+    OidcSvc->>Mongo: Check SSO config<br/>(autoProvisionUsers, allowedDomains)
+    alt Auto-provision enabled & domain allowed
+        OidcSvc->>UserSvc: findActiveByEmailAndTenant(email, tenantId)
+        alt User not found
+            UserSvc->>Mongo: Create new user (ADMIN role)
+            UserSvc->>UserSvc: postProcessAutoProvision()
+        end
+    end
+    
+    OidcSvc-->>AuthServer: OidcUser
+    AuthServer->>Browser: Set session, redirect to app
+    Browser->>User: Logged in

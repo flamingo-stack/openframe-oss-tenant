@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph producers["Event Producers"]
+        Client["Client Service<br/>Connection Events"]
+        Management["Management Service<br/>CDC Management"]
+    end
+    
+    subgraph kafka["Data Layer Kafka"]
+        Topics["Kafka Topics"]
+    end
+    
+    subgraph consumers["Event Consumers"]
+        Stream["Stream Processing<br/>Event Processing"]
+        API["API Service<br/>Real-time Updates"]
+    end
+    
+    subgraph cdc["CDC Pipeline"]
+        MongoDB["MongoDB"]
+        Debezium["Debezium"]
+    end
+    
+    producers -->|"publish"| Topics
+    Topics -->|"consume"| consumers
+    MongoDB -->|"change streams"| Debezium
+    Debezium -->|"CDC events"| Topics
+    
+    style kafka fill:#e1f5ff
+    style producers fill:#e8f5e9
+    style consumers fill:#fff4e6
+    style cdc fill:#f3e5f5

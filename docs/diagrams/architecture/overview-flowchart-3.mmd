@@ -1,0 +1,10 @@
+flowchart LR
+    Request[Client Request] -->|JWT with tenant_id| Gateway[Gateway Service]
+    Gateway -->|Extract tenant_id| TenantContext[Tenant Context]
+    TenantContext -->|Inject into request| Service[Backend Service]
+    Service -->|Filter by tenant_id| MongoDB[(MongoDB)]
+    Service -->|Filter by tenant_id| Pinot[(Apache Pinot)]
+    MongoDB -->|Tenant-isolated data| Service
+    Pinot -->|Tenant-isolated data| Service
+    Service -->|Response| Gateway
+    Gateway -->|Response| Request

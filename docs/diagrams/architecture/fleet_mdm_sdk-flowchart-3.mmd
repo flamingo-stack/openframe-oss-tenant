@@ -1,0 +1,16 @@
+flowchart LR
+    subgraph openframe["OpenFrame Platform"]
+        API["API Service"] --> FleetSDK["Fleet MDM SDK"]
+        Management["Management Service"] --> FleetSDK
+        External["External API"] --> FleetSDK
+    end
+    
+    FleetSDK -->|"HTTP/REST"| FleetServer["Fleet MDM Server"]
+    
+    FleetServer -->|"manages"| Devices["Managed Devices<br/>- Workstations<br/>- Servers<br/>- IoT Devices"]
+    
+    Devices -->|"osquery agent"| FleetServer
+    
+    style FleetSDK fill:#e1f5ff
+    style FleetServer fill:#fff4e1
+    style Devices fill:#f0f0f0

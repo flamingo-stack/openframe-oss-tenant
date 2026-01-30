@@ -1,0 +1,20 @@
+flowchart LR
+    Frontend["Frontend Main"] --> Auth["Authentication"]
+    Frontend --> API["API Clients"]
+    Frontend --> Device["Device Management"]
+    Frontend --> Logs["Logs & Events"]
+    Frontend --> Tickets["Support Tickets"]
+    Frontend --> Mingo["Mingo AI"]
+    Frontend --> Mesh["MeshCentral"]
+    
+    Auth --> API
+    Device --> API
+    Logs --> API
+    Tickets --> API
+    Mingo --> API
+    
+    Device --> Mesh
+    
+    style Frontend fill:#4CAF50
+    style Auth fill:#2196F3
+    style API fill:#FF9800

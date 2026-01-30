@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Agent
+    participant NATS
+    participant Listener as MachineHeartbeatListener
+    participant Extractor as NatsTopicMachineIdExtractor
+    participant Service as MachineStatusService
+    participant DB as MongoDB
+    
+    loop Every 30 seconds
+        Agent->>NATS: Publish to machine.{id}.heartbeat
+    end
+    
+    NATS->>Listener: Deliver message
+    
+    Listener->>Extractor: extract(subject)
+    Extractor-->>Listener: machineId
+    
+    Listener->>Listener: Generate server timestamp
+    
+    Listener->>Service: processHeartbeat(machineId, timestamp)
+    
+    Service->>DB: Find machine by ID
+    DB-->>Service: Machine document
+    
+    Service->>DB: Update status=ONLINE, lastSeen
+    DB-->>Service: Success
+    
+    Service-->>Listener: Complete
+    
+    alt Error occurs
+        Listener->>Listener: Log error (no retry)
+    end

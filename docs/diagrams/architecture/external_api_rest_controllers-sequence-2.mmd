@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Controller
+    participant Validator
+    participant Mapper
+    participant Service
+    participant Repository
+    
+    Client->>Gateway: HTTP Request + API Key
+    Gateway->>Gateway: Authenticate API Key
+    Gateway->>Controller: Route to Endpoint
+    Controller->>Validator: Validate Request Params
+    Validator-->>Controller: Validation Result
+    
+    alt Validation Failed
+        Controller-->>Client: 400 Bad Request
+    else Validation Passed
+        Controller->>Mapper: Map Request to Filter Options
+        Mapper-->>Controller: Filter Options
+        Controller->>Service: Execute Business Logic
+        Service->>Repository: Query Data
+        Repository-->>Service: Domain Entities
+        Service-->>Controller: Query Result
+        Controller->>Mapper: Map to Response DTOs
+        Mapper-->>Controller: Response DTOs
+        Controller-->>Client: 200 OK + JSON Response
+    end
+    
+    Note over Controller,Service: Error Handling
+    Service--xController: Exception
+    Controller->>ExceptionHandler: Handle Exception
+    ExceptionHandler-->>Client: Error Response

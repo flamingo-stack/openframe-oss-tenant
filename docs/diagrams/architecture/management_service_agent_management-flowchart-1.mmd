@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph ManagementService["Management Service"]
+        Initializer["IntegratedToolAgentInitializer"]
+        ConfigProps["AgentConfigurationProperties"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        AgentService["IntegratedToolAgentService"]
+        AgentRepo["IntegratedToolAgentRepository"]
+        Publisher["ToolAgentUpdatePublisher"]
+    end
+    
+    subgraph Storage["Storage Layer"]
+        MongoDB[("MongoDB<br/>integrated_tool_agents")]
+        Kafka[("Kafka<br/>Agent Update Events")]
+    end
+    
+    subgraph Resources["Classpath Resources"]
+        JSON1["agent-config-1.json"]
+        JSON2["agent-config-2.json"]
+        JSONN["agent-config-n.json"]
+    end
+    
+    ConfigProps -->|"Provides paths"| Initializer
+    Resources -->|"Load JSON"| Initializer
+    Initializer -->|"Save/Update"| AgentService
+    Initializer -->|"Publish updates"| Publisher
+    AgentService -->|"CRUD operations"| AgentRepo
+    AgentRepo -->|"Persist"| MongoDB
+    Publisher -->|"Publish events"| Kafka
+    
+    style Initializer fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style AgentService fill:#50C878,stroke:#2E7D4E,color:#fff
+    style MongoDB fill:#13AA52,stroke:#0D7A3A,color:#fff
+    style Kafka fill:#231F20,stroke:#000,color:#fff

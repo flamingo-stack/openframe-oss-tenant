@@ -1,0 +1,24 @@
+flowchart TD
+    subgraph Processor["Message Processing"]
+        GenericProcessor["GenericJsonMessageProcessor"]
+    end
+    
+    subgraph DataLayer["Data Layer"]
+        MongoRepo["MongoDB Repositories"]
+        CassandraRepo["Cassandra Repositories"]
+        PinotRepo["Pinot Repositories"]
+    end
+    
+    subgraph Kafka["Kafka Infrastructure"]
+        KafkaModel["Debezium Message Models"]
+        KafkaConfig["Kafka Configuration"]
+    end
+    
+    GenericProcessor -->|"Persists via"| MongoRepo
+    GenericProcessor -->|"Persists via"| CassandraRepo
+    GenericProcessor -->|"Persists via"| PinotRepo
+    GenericProcessor -->|"Uses models from"| KafkaModel
+    
+    style Processor fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style DataLayer fill:#9B59B6,stroke:#6C3483,color:#fff
+    style Kafka fill:#E74C3C,stroke:#A93226,color:#fff

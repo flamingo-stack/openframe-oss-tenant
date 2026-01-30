@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Service
+    participant Resolver as AuthPrincipalArgumentResolver
+    participant Controller
+    
+    Client->>Gateway: Request with JWT Bearer token
+    Gateway->>Gateway: Validate JWT signature
+    Gateway->>Gateway: Create JwtAuthenticationToken
+    Gateway->>Service: Forward request with SecurityContext
+    Service->>Controller: Route to controller method
+    Controller->>Resolver: Resolve @AuthenticationPrincipal parameter
+    Resolver->>Resolver: Extract Jwt from SecurityContext
+    Resolver->>Resolver: Call AuthPrincipal.fromJwt(jwt)
+    Resolver->>Controller: Return AuthPrincipal object
+    Controller->>Controller: Execute business logic with principal
+    Controller->>Client: Return response

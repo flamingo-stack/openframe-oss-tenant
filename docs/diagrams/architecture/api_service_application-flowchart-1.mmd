@@ -1,0 +1,67 @@
+flowchart TD
+    subgraph External["External Clients"]
+        GW["Gateway Service"]
+        FE["Frontend Application"]
+        ES["External Services"]
+    end
+
+    subgraph APIService["API Service Application"]
+        APP["ApiApplication<br/>(Bootstrap)"]
+        
+        subgraph REST["REST Layer"]
+            DC["DeviceController"]
+            OC["OrganizationController"]
+            UC["UserController"]
+        end
+        
+        subgraph GraphQL["GraphQL Layer"]
+            DDF["DeviceDataFetcher"]
+            ODF["OrganizationDataFetcher"]
+            EDF["EventDataFetcher"]
+            LDF["LogDataFetcher"]
+            TDF["ToolsDataFetcher"]
+        end
+        
+        subgraph Config["Configuration"]
+            SEC["SecurityConfig"]
+            AUTH["AuthenticationConfig"]
+            APPCONF["ApiApplicationConfig"]
+        end
+        
+        subgraph Services["Business Services"]
+            DS["DeviceService"]
+            OS["OrganizationService"]
+            US["UserService"]
+            ES_SVC["EventService"]
+            LS["LogService"]
+        end
+    end
+
+    subgraph DataLayer["Data Layer"]
+        MONGO["MongoDB<br/>(Devices, Orgs, Users)"]
+        CASS["Cassandra<br/>(Time-series Data)"]
+        PINOT["Apache Pinot<br/>(Analytics)"]
+    end
+
+    subgraph Messaging["Event Streaming"]
+        KAFKA["Apache Kafka"]
+    end
+
+    GW -->|"REST/GraphQL"| APP
+    FE -->|"GraphQL Queries"| APP
+    ES -->|"REST API"| APP
+
+    APP --> REST
+    APP --> GraphQL
+    APP --> Config
+
+    REST --> Services
+    GraphQL --> Services
+
+    Services --> MONGO
+    Services --> CASS
+    Services --> PINOT
+    Services --> KAFKA
+
+    SEC -.->|"Secures"| REST
+    SEC -.->|"Secures"| GraphQL

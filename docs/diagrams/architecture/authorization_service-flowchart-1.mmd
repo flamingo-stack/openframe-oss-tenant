@@ -1,0 +1,47 @@
+flowchart TD
+    Client["Client Application<br/>(Web/Mobile)"] -->|"1. Authorization Request"| Gateway["Gateway Service"]
+    Gateway -->|"2. Route to AuthZ"| AuthZ["Authorization Service"]
+    
+    AuthZ -->|"3. Authenticate"| AuthFlow{Authentication<br/>Method}
+    
+    AuthFlow -->|"Username/Password"| FormLogin["Form Login<br/>Controller"]
+    AuthFlow -->|"SSO Provider"| SSOFlow["SSO OAuth2<br/>Flow"]
+    
+    FormLogin -->|"4. Validate Credentials"| UserService["User Service"]
+    SSOFlow -->|"4. OIDC Callback"| OIDCService["OIDC User Service"]
+    
+    UserService -->|"5. Load User"| MongoDB[("MongoDB<br/>Users/Tenants")]
+    OIDCService -->|"5. Auto-Provision"| MongoDB
+    
+    UserService -->|"6. Generate JWT"| JWTEncoder["JWT Encoder"]
+    OIDCService -->|"6. Generate JWT"| JWTEncoder
+    
+    JWTEncoder -->|"7. Sign with Tenant Key"| KeyService["Tenant Key<br/>Service"]
+    KeyService -->|"Load/Generate RSA Key"| MongoDB
+    
+    JWTEncoder -->|"8. Return Token"| Client
+    
+    subgraph config_layer["Configuration Layer"]
+        AuthServerConfig["Authorization Server<br/>Config"]
+        SecurityConfig["Security Config"]
+        DynamicClientRepo["Dynamic Client<br/>Registration"]
+    end
+    
+    subgraph controller_layer["Controller Layer"]
+        LoginController["Login Controller"]
+        TenantRegController["Tenant Registration<br/>Controller"]
+        InviteController["Invitation<br/>Controller"]
+        PasswordResetController["Password Reset<br/>Controller"]
+    end
+    
+    subgraph service_layer["Service Layer"]
+        MongoAuthzService["Mongo Authorization<br/>Service"]
+        KeyService
+        UserService
+        OIDCService
+    end
+    
+    AuthZ -.->|"uses"| config_layer
+    AuthZ -.->|"exposes"| controller_layer
+    controller_layer -.->|"delegates to"| service_layer
+    service_layer -.->|"persists"| MongoDB

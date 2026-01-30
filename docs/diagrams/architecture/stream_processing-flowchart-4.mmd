@@ -1,0 +1,19 @@
+flowchart TD
+    Input["Kafka Message<br/>(CommonDebeziumMessage)"]
+    
+    Input --> Deserialize["1. Deserialize<br/>(Type-specific deserializer)"]
+    Deserialize --> Validate["2. Validate<br/>(Skip if invalid)"]
+    Validate --> Enrich["3. Enrich<br/>(Lookup contextual data)"]
+    Enrich --> Route["4. Route<br/>(By MessageType & Destination)"]
+    
+    Route --> Handler1["Handler A<br/>(Destination 1)"]
+    Route --> Handler2["Handler B<br/>(Destination 2)"]
+    Route --> Handler3["Handler C<br/>(Destination 3)"]
+    
+    Handler1 --> Transform1["Transform"]
+    Handler2 --> Transform2["Transform"]
+    Handler3 --> Transform3["Transform"]
+    
+    Transform1 --> Publish1["Publish to Kafka"]
+    Transform2 --> Publish2["Store in Database"]
+    Transform3 --> Publish3["Send Notification"]

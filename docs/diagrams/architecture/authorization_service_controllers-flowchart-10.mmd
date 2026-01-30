@@ -1,0 +1,41 @@
+flowchart TD
+    Start["New Organization"] --> RegChoice{Registration Method?}
+    
+    RegChoice -->|Standard| StdReg["POST /oauth/register"]
+    RegChoice -->|SSO| SsoReg["GET /oauth/register/sso"]
+    
+    StdReg --> CreateTenant["Create Tenant + Admin User"]
+    SsoReg --> SsoFlow["OAuth 2.0 Flow"]
+    SsoFlow --> CreateTenant
+    
+    CreateTenant --> TenantActive["Tenant Active"]
+    
+    TenantActive --> InviteUsers["Admin Invites Users"]
+    InviteUsers --> SendInvites["Email Invitations Sent"]
+    
+    SendInvites --> UserChoice{User Registration?}
+    
+    UserChoice -->|Standard| StdInvite["POST /invitations/accept"]
+    UserChoice -->|SSO| SsoInvite["GET /invitations/accept/sso"]
+    
+    StdInvite --> CreateUser["Create User in Tenant"]
+    SsoInvite --> SsoUserFlow["OAuth 2.0 Flow"]
+    SsoUserFlow --> CreateUser
+    
+    CreateUser --> UserActive["User Active"]
+    
+    UserActive --> Login["User Logs In"]
+    Login --> LoginPage["GET /login"]
+    LoginPage --> Authenticate["Spring Security Auth"]
+    
+    Authenticate --> AuthSuccess{Success?}
+    AuthSuccess -->|Yes| AccessApp["Access Application"]
+    AuthSuccess -->|No| LoginError["GET /login?error"]
+    
+    AccessApp --> ForgotPwd{Forgot Password?}
+    ForgotPwd -->|Yes| ResetRequest["POST /password-reset/request"]
+    ForgotPwd -->|No| UseApp["Use Application"]
+    
+    ResetRequest --> ResetEmail["Receive Reset Email"]
+    ResetEmail --> ResetConfirm["POST /password-reset/confirm"]
+    ResetConfirm --> Login

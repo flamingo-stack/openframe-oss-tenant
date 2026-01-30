@@ -1,0 +1,33 @@
+flowchart TD
+    Operation["API Operation"] --> Try["Try Operation"]
+    
+    Try -->|"Success"| Success["Update State"]
+    Success --> Invalidate["Invalidate Cache"]
+    Invalidate --> Complete["Complete"]
+    
+    Try -->|"Error"| CatchError["Catch Error"]
+    CatchError --> CheckType{"Error<br/>Type?"}
+    
+    CheckType -->|"Network"| NetworkError["Network Error"]
+    CheckType -->|"Validation"| ValidationError["Validation Error"]
+    CheckType -->|"API"| APIError["API Error"]
+    CheckType -->|"Unknown"| UnknownError["Unknown Error"]
+    
+    NetworkError --> CheckRetry{"Retry<br/>Count < 3?"}
+    CheckRetry -->|"Yes"| Backoff["Exponential Backoff"]
+    Backoff --> Retry["Retry Operation"]
+    Retry --> Try
+    
+    CheckRetry -->|"No"| ShowError["Show Error Toast"]
+    ValidationError --> ShowError
+    APIError --> ShowError
+    UnknownError --> ShowError
+    
+    ShowError --> LogError["Log Error"]
+    LogError --> UpdateErrorState["Update Error State"]
+    UpdateErrorState --> End["End"]
+    
+    style NetworkError fill:#FF9800
+    style ValidationError fill:#FFC107
+    style APIError fill:#F44336
+    style ShowError fill:#E91E63

@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Service as Service Layer
+    participant BaseRepo as Base Repository Interface
+    participant ConcreteRepo as Concrete Repository
+    participant SpringData as Spring Data MongoDB
+    participant MongoDB as MongoDB Database
+    
+    Service->>BaseRepo: findByEmail("user@example.com")
+    BaseRepo->>ConcreteRepo: Route to implementation
+    
+    alt Blocking Mode (Servlet)
+        ConcreteRepo->>SpringData: MongoRepository.findByEmail()
+        SpringData->>MongoDB: db.users.findOne({email: "..."})
+        MongoDB-->>SpringData: Document
+        SpringData-->>ConcreteRepo: User entity
+        ConcreteRepo-->>BaseRepo: Optional<User>
+        BaseRepo-->>Service: Optional<User>
+    else Reactive Mode (WebFlux)
+        ConcreteRepo->>SpringData: ReactiveMongoRepository.findByEmail()
+        SpringData->>MongoDB: db.users.findOne({email: "..."})
+        MongoDB-->>SpringData: Document (async)
+        SpringData-->>ConcreteRepo: User entity (async)
+        ConcreteRepo-->>BaseRepo: Mono<User>
+        BaseRepo-->>Service: Mono<User>
+    end

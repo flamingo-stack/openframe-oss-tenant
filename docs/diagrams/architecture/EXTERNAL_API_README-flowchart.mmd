@@ -1,0 +1,15 @@
+flowchart TD
+    Client["External Client"] -->|"HTTP + API Key"| Gateway["API Gateway"]
+    Gateway -->|"Routes"| Controllers["REST Controllers"]
+    
+    subgraph external_api["External API Service"]
+        Controllers -->|"Delegates"| Mappers["DTO Mappers"]
+        Mappers -->|"Transforms"| Services["Business Services"]
+        Services -->|"Queries"| DataLayer["Data Layer"]
+    end
+    
+    DataLayer -->|"MongoDB"| MongoDB[("MongoDB")]
+    DataLayer -->|"Apache Pinot"| Pinot[("Apache Pinot")]
+    
+    ExceptionHandler["GlobalExceptionHandler"] -.->|"Handles Errors"| Controllers
+    OpenAPIConfig["OpenAPI Config"] -.->|"Documents"| Controllers

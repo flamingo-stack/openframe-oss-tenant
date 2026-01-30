@@ -1,0 +1,23 @@
+flowchart TD
+    Operation["User Operation"] --> TryCatch["Try-Catch Block"]
+    
+    TryCatch -->|"Success"| UpdateState["Update State"]
+    TryCatch -->|"Error"| CheckType{"Error Type"}
+    
+    CheckType -->|"Network Error"| NetworkHandler["Network Error Handler"]
+    CheckType -->|"API Error"| ApiHandler["API Error Handler"]
+    CheckType -->|"Validation Error"| ValidationHandler["Validation Error Handler"]
+    
+    NetworkHandler --> ShowToast["Show Error Toast"]
+    ApiHandler --> ShowToast
+    ValidationHandler --> ShowToast
+    
+    ShowToast --> LogError["Log to Console"]
+    LogError --> ResetState["Reset Operation State"]
+    
+    UpdateState --> Success["Success"]
+    ResetState --> End["End"]
+    
+    style CheckType fill:#FF9800
+    style ShowToast fill:#F44336
+    style Success fill:#4CAF50

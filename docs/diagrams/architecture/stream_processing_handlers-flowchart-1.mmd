@@ -1,0 +1,30 @@
+flowchart TD
+    MessageHandlerInterface["MessageHandler<U, V>"]
+    GenericMessageHandler["GenericMessageHandler<T, U, V>"]
+    DebeziumMessageHandler["DebeziumMessageHandler<T, U>"]
+    
+    CassandraHandler["DebeziumCassandraMessageHandler"]
+    KafkaHandler["DebeziumKafkaMessageHandler"]
+    
+    MessageHandlerInterface -->|"implements"| GenericMessageHandler
+    GenericMessageHandler -->|"extends"| DebeziumMessageHandler
+    DebeziumMessageHandler -->|"extends"| CassandraHandler
+    DebeziumMessageHandler -->|"extends"| KafkaHandler
+    
+    subgraph Interface["Interface Layer"]
+        MessageHandlerInterface
+    end
+    
+    subgraph AbstractLayers["Abstract Base Classes"]
+        GenericMessageHandler
+        DebeziumMessageHandler
+    end
+    
+    subgraph ConcreteHandlers["Concrete Implementations"]
+        CassandraHandler
+        KafkaHandler
+    end
+    
+    style Interface fill:#9B59B6,stroke:#6C3483,color:#fff
+    style AbstractLayers fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ConcreteHandlers fill:#50C878,stroke:#2E7D4E,color:#fff

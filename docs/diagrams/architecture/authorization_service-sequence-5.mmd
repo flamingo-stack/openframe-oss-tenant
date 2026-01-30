@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant Admin
+    participant InviteService as Invitation Service
+    participant MongoDB
+    participant NotificationService
+    participant NewUser as New User
+    participant Browser
+    participant InviteController as Invitation Controller
+
+    Admin->>InviteService: createInvitation(email, roles, tenantId)
+    InviteService->>InviteService: Generate secure token (UUID)
+    InviteService->>MongoDB: Save Invitation (expires in 7 days)
+    InviteService->>NotificationService: sendInvitationEmail(email, token)
+    NotificationService-->>NewUser: Email with invitation link
+    
+    NewUser->>Browser: Click invitation link
+    Browser->>InviteController: GET /invitations/accept?token=...
+    InviteController-->>Browser: Registration form (pre-filled email)
+    
+    NewUser->>Browser: Submit password
+    Browser->>InviteController: POST /invitations/accept<br/>(token, password)
+    
+    InviteController->>InviteService: registerByInvitation(request)
+    InviteService->>MongoDB: findInvitationByToken(token)
+    MongoDB-->>InviteService: Invitation document
+    
+    InviteService->>InviteService: Validate token not expired
+    InviteService->>InviteService: Hash password (BCrypt)
+    InviteService->>InviteService: Create AuthUser with invited roles
+    InviteService->>MongoDB: Save AuthUser
+    InviteService->>MongoDB: Mark invitation as used
+    
+    InviteService-->>InviteController: AuthUser document
+    InviteController-->>Browser: 200 OK
+    
+    Browser->>NewUser: Registration complete, redirect to login
