@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;zachary.gerlach@yahoo.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZWJjNTYzZGYtNzRmNi00NjVjLWIwNWEtNjJlMGM0YzYzYzY3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmY2U0NjkzYS1jOGFkLTQ0MmUtODliMS1iNWFjZmIxNDRlYmEiLCJzdWIiOiJhbGZvbnNvLmZsYXRsZXlAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3MzYzNjgsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2ZjZTQ2OTNhLWM4YWQtNDQyZS04OWIxLWI1YWNmYjE0NGViYSIsImV4cCI6MTc2OTczNzI2OCwiaWF0IjoxNzY5NzM2MzY4LCJ1c2VySWQiOiJkYTFmNzkzNC1mYzk1LTQ5M2YtODM0ZS1jNWQwNjQ2YjNmODAiLCJqdGkiOiI3OTg5MDM4MS0xZDkxLTQ0MWQtYmIzNS1jMTU5YWNhZjE0MzIifQ.ryxlzlcQrd8LgJF_uRHW2qmUA0FLQ8x_0Ho-syXJn6zvan-25cgrkJvQCRxY9-4_P0Vfhtg0Sjedv6_wTOE0onyVpjHlEAGTKz2CW4TqVYq9ct-gFuPnuUDQZCAkttKlx_EbybCIGosc0e2yuG0B6F8HFuSFC0mt0kABER0y1YHlseKFLm9S-bK3FcIXcJK9rH3qIh-Zi4xLuniO9BNzLqPm-l2eyIzu_QbpHHiGSw1XZxvgyhiuUm877jzrWubRJpogyDU28nxQm99A_KCC5sEV38TYhisrhicHiB_I2g7bHtyZADsX4jz9cQiOvuWHI3ChbPyxvBT0HBh_SlEfbQ</div>
+        <div>refresh_token: 5QR4KsGG-0WoDG-BRauPYZZBjahP18V5oC-F9WyKMm0_eaVguVSR0IKQEy9D5DsEdzPZBIrz1hXjfr15vpZJiRi0CNSgk7M0oTviOTPUqFtzQwE8eLPfDXL6OJmLkCoK</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZWJjNTYzZGYtNzRmNi00NjVjLWIwNWEtNjJlMGM0YzYzYzY3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmY2U0NjkzYS1jOGFkLTQ0MmUtODliMS1iNWFjZmIxNDRlYmEiLCJzdWIiOiJhbGZvbnNvLmZsYXRsZXlAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3MzYzNjgsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2ZjZTQ2OTNhLWM4YWQtNDQyZS04OWIxLWI1YWNmYjE0NGViYSIsImV4cCI6MTc2OTczNzI2OCwiaWF0IjoxNzY5NzM2MzY4LCJ1c2VySWQiOiJkYTFmNzkzNC1mYzk1LTQ5M2YtODM0ZS1jNWQwNjQ2YjNmODAiLCJqdGkiOiI3OTg5MDM4MS0xZDkxLTQ0MWQtYmIzNS1jMTU5YWNhZjE0MzIifQ.ryxlzlcQrd8LgJF_uRHW2qmUA0FLQ8x_0Ho-syXJn6zvan-25cgrkJvQCRxY9-4_P0Vfhtg0Sjedv6_wTOE0onyVpjHlEAGTKz2CW4TqVYq9ct-gFuPnuUDQZCAkttKlx_EbybCIGosc0e2yuG0B6F8HFuSFC0mt0kABER0y1YHlseKFLm9S-bK3FcIXcJK9rH3qIh-Zi4xLuniO9BNzLqPm-l2eyIzu_QbpHHiGSw1XZxvgyhiuUm877jzrWubRJpogyDU28nxQm99A_KCC5sEV38TYhisrhicHiB_I2g7bHtyZADsX4jz9cQiOvuWHI3ChbPyxvBT0HBh_SlEfbQ&#39; -b &#39;refresh_token=5QR4KsGG-0WoDG-BRauPYZZBjahP18V5oC-F9WyKMm0_eaVguVSR0IKQEy9D5DsEdzPZBIrz1hXjfr15vpZJiRi0CNSgk7M0oTviOTPUqFtzQwE8eLPfDXL6OJmLkCoK&#39; -d &#39;{
+    &quot;email&quot;: &quot;zachary.gerlach@yahoo.com&quot;
+}&#39;
+</div>
