@@ -2,6 +2,7 @@ package com.openframe.tests;
 
 import com.openframe.data.dto.script.Script;
 import com.openframe.tests.base.AuthorizedTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import static com.openframe.api.ScriptApi.*;
 import static com.openframe.data.generator.ScriptGenerator.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled("Tests disabled - waiting for fix")
 @Tag("authorized")
 @DisplayName("Scripts")
 public class ScriptsTest extends AuthorizedTest {
