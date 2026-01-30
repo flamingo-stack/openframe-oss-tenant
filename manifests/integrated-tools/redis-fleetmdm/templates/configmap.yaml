@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleetmdm-redis
+data:
+  REDIS_HOST: "fleetmdm-redis-0.fleetmdm-redis.integrated-tools.svc.cluster.local"
+  REDIS_PORT: "6379"

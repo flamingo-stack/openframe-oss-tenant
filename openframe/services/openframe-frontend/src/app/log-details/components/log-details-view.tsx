@@ -1,16 +1,16 @@
 'use client'
 
-import React, { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
-import { Button, StatusTag, DetailPageContainer, DetailLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
 import { CopyIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { Button, DetailLoader, DetailPageContainer, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
+import { ChevronLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { DeviceInfoSection } from '../../components/shared'
-import { FullInformationSection } from './full-information-section'
-import { DetailsSection } from './details-section'
 import { useLogDetails } from '../hooks/use-log-details'
-import { toUiKitToolType } from '@lib/tool-labels'
+import { DetailsSection } from './details-section'
+import { FullInformationSection } from './full-information-section'
 
 interface LogDetailsViewProps {
   logId: string
@@ -146,7 +146,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
                 {logDetails.message || 'No message available'}
               </div>
               <div className="flex items-center gap-2 font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
-                <ToolBadge toolType={toUiKitToolType(logDetails.toolType) as any} />
+                <ToolBadge toolType={normalizeToolTypeWithFallback(logDetails.toolType)} />
                 <span>•</span>
                 <span>{logDetails.eventType}</span>
               </div>

@@ -146,6 +146,12 @@ export function DevicesView() {
     </>
   )
 
+  const filterGroups = columns.filter(column => column.filterable).map(column => ({
+    id: column.key,
+    title: column.label,
+    options: column.filterOptions || []
+  }))
+
   return (
     <ListPageLayout
       title="Devices"
@@ -156,6 +162,9 @@ export function DevicesView() {
       error={error}
       padding="none"
       className="pt-6"
+      onMobileFilterChange={handleFilterChange}
+      mobileFilterGroups={filterGroups}
+      currentMobileFilters={tableFilters}
     >
       {/* Conditional View Rendering */}
       {extraParams.viewMode === 'table' ? (
@@ -172,7 +181,6 @@ export function DevicesView() {
           filters={tableFilters}
           onFilterChange={handleFilterChange}
           showFilters={true}
-          mobileColumns={['device', 'status', 'lastSeen']}
           rowClassName="mb-1"
           cursorPagination={cursorPagination}
         />

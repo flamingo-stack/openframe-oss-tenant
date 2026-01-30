@@ -1,25 +1,24 @@
 'use client'
 
-import { useCallback, useMemo, Suspense, useEffect, useState, useRef } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { NavigationSidebar } from '@flamingo-stack/openframe-frontend-core/components/navigation'
-import { AppHeader } from '@flamingo-stack/openframe-frontend-core/components/navigation'
-import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation'
-import { useAuthStore } from '../auth/stores/auth-store'
-import { useAuth } from '../auth/hooks/use-auth'
-import { getNavigationItems } from '../../lib/navigation-config'
-import { shouldShowNavigationSidebar, isAuthOnlyMode, getDefaultRedirectPath, isSaasTenantMode, isOssTenantMode } from '../../lib/app-mode'
-import { UnauthorizedOverlay } from './unauthorized-overlay'
-import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { AppShellSkeleton } from './app-shell-skeleton'
-import { runtimeEnv } from '@lib/runtime-config'
 import { apiClient } from '@/src/lib/api-client'
+import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation'
+import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation'
+import { runtimeEnv } from '@lib/runtime-config'
+import { usePathname, useRouter } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode'
+import { getNavigationItems } from '../../lib/navigation-config'
+import { useAuth } from '../auth/hooks/use-auth'
+import { useAuthStore } from '../auth/stores/auth-store'
+import { AppShellSkeleton } from './app-shell-skeleton'
+import { UnauthorizedOverlay } from './unauthorized-overlay'
 
 function ContentLoading() {
   return <CompactPageLoader />
 }
 
-function AppShell({ children }: { children: React.ReactNode }) {
+function AppShell({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const { logout } = useAuth()
@@ -29,14 +28,14 @@ function AppShell({ children }: { children: React.ReactNode }) {
     router.push(path)
   }, [router])
 
-  const handleLogout = useCallback(async () => {
-    await logout()
+  const handleLogout = useCallback(() => {
+    logout()
     router.push(getDefaultRedirectPath(false))
   }, [logout, router])
 
   const navigationItems = useMemo(
-    () => getNavigationItems(pathname, handleLogout),
-    [pathname, handleLogout]
+    () => getNavigationItems(pathname),
+    [pathname]
   )
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
@@ -48,36 +47,32 @@ function AppShell({ children }: { children: React.ReactNode }) {
     [navigationItems, handleNavigate]
   )
 
-  return (
-    <div className="flex h-screen bg-ods-bg">
-      {/* Navigation Sidebar - Only show if navigation should be visible */}
-      {shouldShowNavigationSidebar() && (
-        <NavigationSidebar config={sidebarConfig} />
-      )}
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* App Header */}
-        <AppHeader
-          showNotifications
-          showUser
-          userName={user?.name}
-          userEmail={user?.email}
-          onProfile={() => router.push('/settings/?tab=profile')}
-          onLogout={logout}
-        />
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6 pt-0">
-          <Suspense fallback={<ContentLoading />}>
-            {children}
-          </Suspense>
-        </main>
-      </div>
-    </div>
-  )
+  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+
+  return <CoreAppLayout 
+    mainClassName={mainClassName}
+    sidebarConfig={sidebarConfig}
+    loadingFallback={<ContentLoading />}
+    mobileBurgerMenuProps={{
+      user: {
+        userName: displayName,
+        userEmail: user?.email,
+        userAvatarUrl: user?.image?.imageUrl || null,
+        userRole: user?.role,
+      },
+      onLogout: handleLogout,
+    }}
+    headerProps={{
+      showNotifications: false,
+      showUser: true,
+      userName: displayName,
+      userEmail: user?.email,
+      onProfile: () => router.push('/settings/?tab=profile'),
+      onLogout: handleLogout
+    }}>{children}</CoreAppLayout>
 }
 
-function AppLayoutInner({ children }: { children: React.ReactNode }) {
+function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   const { isAuthenticated } = useAuthStore()
   const { handleAuthenticationSuccess } = useAuth()
   const handleAuthSuccessRef = useRef(handleAuthenticationSuccess)
@@ -171,13 +166,13 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
     return <AppShellSkeleton />
   }
 
-  return <AppShell>{children}</AppShell>
+  return <AppShell mainClassName={mainClassName}>{children}</AppShell>
 }
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayout({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   return (
     <Suspense fallback={<AppShellSkeleton />}>
-      <AppLayoutInner>{children}</AppLayoutInner>
+      <AppLayoutInner mainClassName={mainClassName}>{children}</AppLayoutInner>
     </Suspense>
   )
 }

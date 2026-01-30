@@ -1,20 +1,20 @@
 'use client'
 
+import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core'
+import { CommandBox, OPENFRAME_PATHS, OrganizationSelector, OSPlatformSelector, PathsDisplay } from '@flamingo-stack/openframe-frontend-core/components/features'
+import { Button, Input } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils'
+import { AlertTriangle, Copy, Play } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { AppLayout } from '../../components/app-layout'
+import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
+import { useRegistrationSecret } from '../hooks/use-registration-secret'
+import { useReleaseVersion } from '../hooks/use-release-version'
 
 // Force dynamic rendering for this page due to useSearchParams in AppLayout
 export const dynamic = 'force-dynamic'
-import { AppLayout } from '../../components/app-layout'
-import { Button, Input } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core'
-import { OrganizationSelector, PathsDisplay, OPENFRAME_PATHS, CommandBox, OSPlatformSelector } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { useRouter } from 'next/navigation'
-import { useRegistrationSecret } from '../hooks/use-registration-secret'
-import { useReleaseVersion } from '../hooks/use-release-version'
-import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils'
-import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
-import { AlertTriangle, Copy, Play } from 'lucide-react'
 
 type Platform = OSPlatformId
 
@@ -39,7 +39,7 @@ export default function NewDevicePage() {
   const [argInput, setArgInput] = useState('')
   const [args, setArgs] = useState<string[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string>('')
-  const { items: orgs, isLoading: isOrgsLoading, fetch: fetchOrgs } = useOrganizationsMin()
+  const { items: orgs, isLoading: isOrgsLoading, fetch: fetchOrgs } = useOrganizationsMin(100)
 
   const serverUrl = useMemo(() => {
     if (typeof window === 'undefined')
@@ -260,6 +260,7 @@ echo "OpenFrame client installation complete!"
               label="Select Organization"
               placeholder="Choose organization"
               isLoading={isOrgsLoading}
+              searchable
             />
             {/* Select Platform */}
             <OSPlatformSelector

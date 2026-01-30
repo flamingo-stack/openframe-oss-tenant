@@ -1,18 +1,17 @@
 'use client'
 
-import React, { useCallback, useMemo, useRef, useEffect } from 'react'
-import {
-  Table,
-  Button,
-  ListPageLayout,
-  type TableColumn,
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { useBatchImages, useTablePagination, useApiParams, useCursorPaginationState } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { useOrganizations } from '../hooks/use-organizations'
-import { useRouter } from 'next/navigation'
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
+import {
+  ListPageLayout,
+  Table,
+  type TableColumn
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useApiParams, useBatchImages, useCursorPaginationState, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { featureFlags } from '@lib/feature-flags'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useOrganizations } from '../hooks/use-organizations'
 
 interface UIOrganizationEntry {
   id: string
@@ -194,7 +193,8 @@ export function OrganizationsTable() {
     {
       key: 'lastActivityDisplay',
       label: 'Last Activity',
-      width: 'w-1/4',
+      width: 'w-[200px]',
+      hideAt: 'md',
       renderCell: (org) => {
         const [first, second] = org.lastActivityDisplay.split('\n')
         return (
@@ -264,26 +264,24 @@ export function OrganizationsTable() {
     router.push('/organizations/edit/new')
   }
 
-  const headerActions = (
-    <Button
-      onClick={handleAddOrganization}
-      leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay />}
-      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
-    >
-      Add Organization
-    </Button>
-  )
-
   // Convert URL params to table filters format
   const tableFilters = useMemo(() => ({
     tier: filterParams.tier,
     industry: filterParams.industry
   }), [filterParams.tier, filterParams.industry])
 
+  const actions = useMemo(() => [
+    {
+      label: 'Add Organization',
+      icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+      onClick: handleAddOrganization
+    }
+  ], [handleAddOrganization])
+
   return (
     <ListPageLayout
       title="Organizations"
-      headerActions={headerActions}
+      actions={actions}
       searchPlaceholder="Search for Organization"
       searchValue={searchInput}
       onSearch={setSearchInput}
@@ -302,7 +300,6 @@ export function OrganizationsTable() {
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={false}
-        mobileColumns={['name', 'tier', 'mrrDisplay']}
         rowClassName="mb-1"
         onRowClick={(row) => router.push(`/organizations/details/${row.id}`)}
         cursorPagination={cursorPagination}

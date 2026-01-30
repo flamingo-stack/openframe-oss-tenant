@@ -1,6 +1,6 @@
+import openframeCorePreset from '@flamingo-stack/openframe-frontend-core/tailwind.config.ts'
 import type { Config } from 'tailwindcss'
 import tailwindcssAnimate from 'tailwindcss-animate'
-import openframeCorePreset from '@flamingo-stack/openframe-frontend-core/tailwind.config.ts'
 
 const config: Config = {
   content: [
@@ -9,11 +9,6 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Custom breakpoints for OpenFrame layout requirements
-      screens: {
-        'md': '860px',     // Custom breakpoint for 2-column layout
-        'xl': '1550px',    // Custom breakpoint for 3-column vendor grid
-      },
       // Extend with ui-kit design tokens
       fontFamily: {
         'body': ['var(--font-dm-sans)', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],

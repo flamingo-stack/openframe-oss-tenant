@@ -198,6 +198,18 @@ jobs:
             make build TARGET="${{ matrix.target }}"
           fi          
 
+      - name: Sign Windows package
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'Windows'
+        uses: ./.github/steps/sign-windows-package
+        with:
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          signing_endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          code_signing_account_name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
+          certificate_profile_name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
+          binary_path: ${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}.exe
+
       - name: Upload Rust Artifacts for Windows / Linux
         if: steps.should_run.outputs.run == 'true' && runner.os != 'macOS'
         uses: actions/upload-artifact@v4
@@ -346,28 +358,6 @@ jobs:
       - name: Force update latest tag
         if: ${{ github.event_name == 'push' }}
         run: git tag -f latest && git push -f origin latest
-
-      - name: Configure Git
-        if: ${{ inputs.version != '' }}
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
-
-      - name: Create Stage Release PR
-        if: ${{ inputs.version != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_PR_TOKEN: ${{ secrets.PR_WRITE_ACCESS_TOKEN }}
-          VALUES_PATH: manifests/apps
-        run: |
-          sed -i "s/tag: .*/tag: ${{ inputs.version }}/g" ${VALUES_PATH}/values-stage.yaml
-          git checkout -b release/stage-${{ inputs.version }}
-          git commit -am "Release ${{ inputs.version }} to Stage"
-          git push -u origin HEAD --force
-          PR_URL=$(gh pr create --draft --title "Openframe Release Stage ${{ inputs.version }} (automatically generated PR)" --body "Update Stage tags to ${{ inputs.version }}" --base main)
-          GH_TOKEN=$GH_PR_TOKEN gh pr ready "${PR_URL}"  # to trigger the workflow
-          GH_TOKEN=$GH_PR_TOKEN gh pr review "${PR_URL}" --approve
-          gh pr merge "${PR_URL}" --squash --auto
 
 
 

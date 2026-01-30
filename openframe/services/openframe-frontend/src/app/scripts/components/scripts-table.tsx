@@ -1,21 +1,19 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
-import { toStandardToolLabel, toUiKitToolType } from '@lib/tool-labels'
-import { useRouter } from "next/navigation"
+import { OSTypeBadgeGroup, ShellTypeBadge, ToolBadge, type ShellType } from "@flamingo-stack/openframe-frontend-core/components"
+import { PlayIcon, PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
 import {
-  Table,
   Button,
   ListPageLayout,
-  TableDescriptionCell,
-  type TableColumn
+  MoreActionsMenu,
+  Table,
+  type TableColumn,
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
-import { CirclePlusIcon } from "lucide-react"
-import { useDebounce, useTablePagination, useApiParams } from "@flamingo-stack/openframe-frontend-core/hooks"
+import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
+import { getOSLabel, normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils'
+import { useRouter } from "next/navigation"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useScripts } from "../hooks/use-scripts"
-import { ToolBadge, ShellTypeBadge } from "@flamingo-stack/openframe-frontend-core/components"
-import { OSTypeBadgeGroup } from "@flamingo-stack/openframe-frontend-core/components/features"
-import type { ShellType } from "@flamingo-stack/openframe-frontend-core"
 
 interface UIScriptEntry {
   id: number
@@ -24,6 +22,8 @@ interface UIScriptEntry {
   shellType: string
   addedBy: string
   supportedPlatforms: string[]
+  category: string
+  timeout: number
 }
 
 /**
@@ -37,6 +37,8 @@ export function ScriptsTable() {
     search: { type: 'string', default: '' },
     shellType: { type: 'array', default: [] },
     addedBy: { type: 'array', default: [] },
+    category: { type: 'array', default: [] },
+    supportedPlatforms: { type: 'array', default: [] },
     page: { type: 'number', default: 1 }
   })
   const pageSize = 10
@@ -61,8 +63,9 @@ export function ScriptsTable() {
   // Backend filters from URL params (for useScripts hook)
   const filters = useMemo(() => ({
     shellType: params.shellType,
-    addedBy: params.addedBy
-  }), [params.shellType, params.addedBy])
+    addedBy: params.addedBy,
+    category: params.category
+  }), [params.shellType, params.addedBy, params.category])
 
   const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
 
@@ -72,8 +75,10 @@ export function ScriptsTable() {
       name: script.name,
       description: script.description,
       shellType: script.shell,
-      addedBy: toUiKitToolType('tactical'),
-      supportedPlatforms: script.supported_platforms || []
+      addedBy: normalizeToolTypeWithFallback('tactical'),
+      supportedPlatforms: script.supported_platforms || [],
+      category: script.category || 'General',
+      timeout: script.default_timeout || 300
     }))
   }, [scripts])
 
@@ -90,8 +95,26 @@ export function ScriptsTable() {
     const addedBySet = new Set(transformedScripts.map(script => script.addedBy))
     return Array.from(addedBySet).sort().map(toolType => ({
       id: toolType,
-      label: toStandardToolLabel(toolType.toUpperCase()),
+      label: toToolLabel(toolType.toUpperCase()),
       value: toolType
+    }))
+  }, [transformedScripts])
+
+  const uniqueCategories = useMemo(() => {
+    const categoriesSet = new Set(transformedScripts.map(script => script.category))
+    return Array.from(categoriesSet).sort().map(category => ({
+      id: category,
+      label: category,
+      value: category
+    }))
+  }, [transformedScripts])
+
+  const uniquePlatforms = useMemo(() => {
+    const platformsSet = new Set(transformedScripts.flatMap(script => script.supportedPlatforms))
+    return Array.from(platformsSet).sort().map(platform => ({
+      id: platform,
+      label: getOSLabel(platform),
+      value: platform
     }))
   }, [transformedScripts])
 
@@ -118,8 +141,20 @@ export function ScriptsTable() {
       )
     }
 
+    if (params.category && params.category.length > 0) {
+      filtered = filtered.filter(script =>
+        params.category.includes(script.category)
+      )
+    }
+
+    if (params.supportedPlatforms && params.supportedPlatforms.length > 0) {
+      filtered = filtered.filter(script =>
+        script.supportedPlatforms.some(platform => params.supportedPlatforms.includes(platform))
+      )
+    }
+
     return filtered
-  }, [transformedScripts, params.search, params.shellType, params.addedBy])
+  }, [transformedScripts, params.search, params.shellType, params.addedBy, params.category, params.supportedPlatforms])
 
   const paginatedScripts = useMemo(() => {
     const startIndex = (params.page - 1) * pageSize
@@ -135,19 +170,17 @@ export function ScriptsTable() {
     {
       key: 'name',
       label: 'Name',
-      width: 'w-[25%]',
       renderCell: (script) => (
-        <div className="flex flex-col justify-center shrink-0">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary line-clamp-2 break-words">
-            {script.name}
-          </span>
-        </div>
+        <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
+          {script.name}
+        </span>
       )
     },
     {
       key: 'shellType',
       label: 'Shell Type',
-      width: 'w-[12%]',
+      width: 'w-[160px]',
+      hideAt: 'sm',
       filterable: true,
       filterOptions: uniqueShellTypes,
       renderCell: (script) => (
@@ -157,34 +190,81 @@ export function ScriptsTable() {
     {
       key: 'supportedPlatforms',
       label: 'OS',
-      width: 'w-[12%]',
+      width: 'w-[80px]',
+      hideAt: 'xl',
+      filterable: true,
+      filterOptions: uniquePlatforms,
       renderCell: (script) => (
         <OSTypeBadgeGroup
           osTypes={script.supportedPlatforms}
+          iconSize="w-4 h-4"
         />
       )
     },
     {
       key: 'addedBy',
       label: 'Added By',
-      width: 'w-[12%]',
+      width: 'w-[120px]',
       filterable: true,
       filterOptions: uniqueAddedBy,
+      hideAt: 'xl',
       renderCell: (script) => (
-        <ToolBadge toolType={script.addedBy as any} />
+        <ToolBadge toolType={normalizeToolTypeWithFallback(script.addedBy)} />
+      )
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      width: 'w-[160px]',
+      filterable: true,
+      filterOptions: uniqueCategories,
+      hideAt: 'lg',
+      renderCell: (script) => (
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary line-clamp-2">
+          {script.category}
+        </span>
       )
     },
     {
       key: 'description',
       label: 'Description',
-      width: 'w-[39%]',
+      hideAt: 'md',
       renderCell: (script) => (
-        <span className="w-full pr-4 font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary line-clamp-3 break-words">
-          {script.description || 'No description provided.'}
+        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary line-clamp-2">
+          {script.description || 'No description'}
         </span>
       )
     }
-  ], [uniqueShellTypes, uniqueAddedBy])
+  ], [uniqueShellTypes, uniqueAddedBy, uniqueCategories, uniquePlatforms])
+
+  const rowActions = useCallback((script: UIScriptEntry) => [
+    {
+      label: 'Edit Script',
+      onClick: () => router.push(`/scripts/edit/${script.id}`)
+    },
+    {
+      label: 'Script Details',
+      onClick: () => router.push(`/scripts/details/${script.id}`)
+    }
+  ], [router])
+
+  const renderRowActions = useMemo(() => {
+    return (script: UIScriptEntry) => (
+      <div className="flex items-center gap-1">
+        <MoreActionsMenu
+          items={rowActions(script)}
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => router.push(`/scripts/details/${script.id}/run`)}
+          className="bg-ods-card"
+        >
+          <PlayIcon size={20} className="text-ods-text-primary" />
+        </Button>
+      </div>
+    )
+  }, [])
 
   useEffect(() => {
     if (!isInitialized) {
@@ -205,6 +285,8 @@ export function ScriptsTable() {
       const filterKey = JSON.stringify({
         shellType: params.shellType?.sort() || [],
         addedBy: params.addedBy?.sort() || [],
+        category: params.category?.sort() || [],
+        supportedPlatforms: params.supportedPlatforms?.sort() || [],
       })
 
       if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
@@ -213,21 +295,23 @@ export function ScriptsTable() {
       }
       prevFilterKeyRef.current = filterKey
     }
-  }, [params.shellType, params.addedBy, refreshScripts, isInitialized])
+  }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms, refreshScripts, isInitialized, setParam])
 
   const handleRowClick = (script: UIScriptEntry) => {
     router.push(`/scripts/details/${script.id}`)
   }
 
-  const handleNewScript = () => {
+  const handleNewScript = useCallback(() => {
     router.push('/scripts/edit/new')
-  }
+  }, [router])
 
   const handleFilterChange = useCallback((columnFilters: Record<string, any[]>) => {
     setParams({
       page: 1,
       shellType: columnFilters.shellType || [],
-      addedBy: columnFilters.addedBy || []
+      addedBy: columnFilters.addedBy || [],
+      category: columnFilters.category || [],
+      supportedPlatforms: columnFilters.supportedPlatforms || []
     })
   }, [setParams])
 
@@ -247,26 +331,29 @@ export function ScriptsTable() {
   // Convert URL params to table filters format
   const tableFilters = useMemo(() => ({
     shellType: params.shellType,
-    addedBy: params.addedBy
-  }), [params.shellType, params.addedBy])
+    addedBy: params.addedBy,
+    category: params.category,
+    supportedPlatforms: params.supportedPlatforms
+  }), [params.shellType, params.addedBy, params.category, params.supportedPlatforms])
 
-  const headerActions = (
-    <>
-      <Button
-        onClick={handleNewScript}
-        variant="primary"
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
-        leftIcon={<CirclePlusIcon size={20} />}
-      >
-        Add Script
-      </Button>
-    </>
-  )
+  const actions = useMemo(() => [
+    {
+      label: 'Add Script',
+      icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+      onClick: handleNewScript
+    }
+  ], [handleNewScript])
+
+  const filterGroups = columns.filter(column => column.filterable).map(column => ({
+    id: column.key,
+    title: column.label,
+    options: column.filterOptions || []
+  }))
 
   return (
     <ListPageLayout
       title="Scripts"
-      headerActions={headerActions}
+      actions={actions}
       searchPlaceholder="Search for Scripts"
       searchValue={searchInput}
       onSearch={setSearchInput}
@@ -274,6 +361,9 @@ export function ScriptsTable() {
       background="default"
       padding="none"
       className="pt-6"
+      onMobileFilterChange={handleFilterChange}
+      mobileFilterGroups={filterGroups}
+      currentMobileFilters={tableFilters}
     >
       {/* Table */}
       <Table
@@ -290,20 +380,11 @@ export function ScriptsTable() {
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}
-        mobileColumns={['logId', 'status', 'device']}
         rowClassName="mb-1"
         onRowClick={handleRowClick}
         cursorPagination={cursorPagination}
+        renderRowActions={renderRowActions}
       />
-
-      {/* New Script Modal - Now handled by routing */}
-      {/* <EditScriptModal
-        isOpen={isNewScriptModalOpen}
-        onClose={() => setIsNewScriptModalOpen(false)}
-        onSave={handleSaveScript}
-        scriptData={null}
-        isEditMode={false}
-      /> */}
     </ListPageLayout>
   )
 }

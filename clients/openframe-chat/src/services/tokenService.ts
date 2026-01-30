@@ -184,6 +184,28 @@ class TokenService {
     const last = token.substring(token.length - 4);
     return `${first}...${last}`;
   }
+
+  async ensureTokenReady(): Promise<void> {
+    let token = this.getCurrentToken()
+    
+    if (!token) {
+      token = await this.requestToken()
+      
+      if (!token) {
+        throw new Error('Authentication token not available.')
+      }
+    }
+    
+    let apiUrl = this.getCurrentApiBaseUrl()
+    if (!apiUrl) {
+      await this.initApiUrl()
+      apiUrl = this.getCurrentApiBaseUrl()
+      
+      if (!apiUrl) {
+        throw new Error('API server URL not configured.')
+      }
+    }
+  }
 }
 
 // Export singleton instance

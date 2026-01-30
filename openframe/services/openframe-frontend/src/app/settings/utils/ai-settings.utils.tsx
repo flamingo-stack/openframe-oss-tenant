@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
 import type { ApprovalLevel, PermissionCategory } from '@flamingo-stack/openframe-frontend-core'
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
 import { Shield } from 'lucide-react'
-import { toUiKitToolType } from '@lib/tool-labels'
+import type { ReactNode } from 'react'
 import type { PolicyRule } from '../types/ai-policies'
 
 function slugify(value: string) {
@@ -50,7 +50,7 @@ export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCa
       naturalKey: rule.naturalKey,
       name: rule.operation || rule.naturalKey,
       commandPattern: rule.commandPattern,
-      toolName: toUiKitToolType(rule.tool),
+      toolName: normalizeToolTypeWithFallback(rule.tool),
       approvalLevel: rule.approvalLevel as ApprovalLevel,
     })
   }

@@ -1,11 +1,10 @@
 'use client'
 
-import React from 'react'
-import { InfoCard, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@flamingo-stack/openframe-frontend-core'
+import { InfoCard, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@flamingo-stack/openframe-frontend-core'
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
 import { Info as InfoIcon } from 'lucide-react'
-import { toUiKitToolType } from '@lib/tool-labels'
-import type { Device, ToolConnection, InstalledAgent } from '../../types/device.types'
+import type { Device, InstalledAgent, ToolConnection } from '../../types/device.types'
 
 interface AgentsTabProps {
   device: Device
@@ -64,7 +63,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
       {hasAgents ? (
         combinedAgents.map((agent: any, idx: number) => {
-          const toolType = toUiKitToolType(agent.toolType)
+          const toolType = normalizeToolTypeWithFallback(agent.toolType)
           const items = []
           
           if (agent.agentToolId) {

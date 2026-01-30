@@ -42,6 +42,14 @@ image:
   repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-gateway
   tag: latest
 
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "500m"
+    memory: "1Gi"
+
 podAnnotations:
   loki.grafana.com/scrape: "true"
   prometheus.io/scrape: "true"

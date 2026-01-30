@@ -20,6 +20,7 @@ spec:
       {{- end }}
       {{- end }}
     spec:
+      priorityClassName: redis-authentik
 
       containers:
       - name: redis

@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { tokenService } from '../services/tokenService'
 import { supportedModelsService } from '../services/supportedModelsService'
+import { useNatsDialogSubscription, buildNatsWsUrl } from '@flamingo-stack/openframe-frontend-core'
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting'
 
@@ -21,63 +22,65 @@ interface UseConnectionStatusReturn {
   isFullyLoaded: boolean
 }
 
-const RETRY_DELAYS = [1000, 3000, 5000, 10000, 20000, 30000]
-const REGULAR_CHECK_INTERVAL = 300000
-
 export function useConnectionStatus(): UseConnectionStatusReturn {
-  const [status, setStatus] = useState<ConnectionStatus>('disconnected')
+  const [status, setStatus] = useState<ConnectionStatus>('connecting')
   const [serverUrl, setServerUrl] = useState<string | null>(null)
   const [aiConfiguration, setAiConfiguration] = useState<AIConfiguration | null>(null)
   const [isFullyLoaded, setIsFullyLoaded] = useState(false)
-  const retryCountRef = useRef(0)
-  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isCheckingRef = useRef(false)
-  const currentStatusRef = useRef<ConnectionStatus>('disconnected')
-  const isInitializedRef = useRef(false)
-
+  
+  const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl())
+  const [token, setToken] = useState(tokenService.getCurrentToken())
+  
   useEffect(() => {
-    currentStatusRef.current = status
-  }, [status])
-
-  useEffect(() => {
-    const checkConnection = async (isRegularCheck: boolean = false): Promise<boolean> => {
-      if (isCheckingRef.current) {
-        return currentStatusRef.current === 'connected'
-      }
-      
-      isCheckingRef.current = true
-      
-      if (!isRegularCheck && currentStatusRef.current === 'disconnected') {
-        setStatus('connecting')
-      }
-      
+    const initializeCredentials = async () => {
       try {
-        let apiUrl = tokenService.getCurrentApiBaseUrl()
-        let token = tokenService.getCurrentToken()
-        
-        if (!apiUrl) {
+        if (!apiBaseUrl) {
           await tokenService.initApiUrl()
-          apiUrl = tokenService.getCurrentApiBaseUrl()
+          setApiBaseUrl(tokenService.getCurrentApiBaseUrl())
         }
         
         if (!token) {
           await tokenService.requestToken()
-          token = tokenService.getCurrentToken()
+          setToken(tokenService.getCurrentToken())
+        }
+      } catch (error) {
+        console.error('Failed to initialize credentials:', error)
+      }
+    }
+    
+    initializeCredentials()
+  }, [apiBaseUrl, token])
+  
+  useEffect(() => {
+    const unsubscribeToken = tokenService.onTokenUpdate(setToken)
+    const unsubscribeApiUrl = tokenService.onApiUrlUpdate(setApiBaseUrl)
+    
+    return () => {
+      unsubscribeToken()
+      unsubscribeApiUrl()
+    }
+  }, [])
+  
+  useEffect(() => {
+    if (apiBaseUrl) {
+      setServerUrl(apiBaseUrl.replace(/^https?:\/\//, ''))
+    }
+  }, [apiBaseUrl])
+
+  useEffect(() => {
+    const loadAiConfiguration = async () => {
+      try {
+        const currentApiBaseUrl = tokenService.getCurrentApiBaseUrl()
+        const currentToken = tokenService.getCurrentToken()
+        
+        if (!currentApiBaseUrl || !currentToken) {
+          return
         }
         
-        if (!apiUrl || !token) {
-          if (currentStatusRef.current !== 'disconnected') {
-            setStatus('disconnected')
-          }
-          return false
-        }
-        
-        setServerUrl(apiUrl)
-        
-        const response = await fetch(`${apiUrl}/chat/api/v1/ai-configuration`, {
+        const response = await fetch(`${currentApiBaseUrl}/chat/api/v1/ai-configuration`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${currentToken}`
           },
           signal: AbortSignal.timeout(5000)
         })
@@ -88,145 +91,54 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
           
           await supportedModelsService.loadSupportedModels()
           setIsFullyLoaded(true)
-          
-          if (currentStatusRef.current !== 'connected') {
-            setStatus('connected')
-          }
-          retryCountRef.current = 0
-          return true
-        } else {
-          if (currentStatusRef.current !== 'disconnected') {
-            setStatus('disconnected')
-          }
-          setAiConfiguration(null)
-          setIsFullyLoaded(false)
-          return false
         }
       } catch (error) {
-        if (currentStatusRef.current !== 'disconnected') {
-          setStatus('disconnected')
-        }
-        setAiConfiguration(null)
-        setIsFullyLoaded(false)
-        return false
-      } finally {
-        isCheckingRef.current = false
+        console.error('Failed to load AI configuration:', error)
       }
     }
     
-    const scheduleRetry = () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current)
-      }
-      
-      const delay = RETRY_DELAYS[Math.min(retryCountRef.current, RETRY_DELAYS.length - 1)]
-      
-      
-      retryTimeoutRef.current = setTimeout(async () => {
-        retryCountRef.current++
-        const isConnected = await checkConnection()
-        
-        if (!isConnected) {
-          scheduleRetry()
-        } else {
-          scheduleRegularCheck()
-        }
-      }, delay)
-    }
-    
-    const scheduleRegularCheck = () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current)
-        retryTimeoutRef.current = null
-      }
-      
-      retryTimeoutRef.current = setTimeout(async () => {
-        const isConnected = await checkConnection(true)
-        
-        if (isConnected) {
-          scheduleRegularCheck()
-        } else {
-          retryCountRef.current = 0
-          scheduleRetry()
-        }
-      }, REGULAR_CHECK_INTERVAL)
-    }
-    
-    let mounted = true
-    
-    checkConnection().then(isConnected => {
-      if (!mounted) return
-      
-      isInitializedRef.current = true
-      
-      if (isConnected) {
-        scheduleRegularCheck()
-      } else {
-        scheduleRetry()
-      }
-    })
-    
-    const unsubscribeToken = tokenService.onTokenUpdate(() => {
-      if (!mounted) return
-      
-      if (!isInitializedRef.current) {
-        return
-      }
+    loadAiConfiguration()
+  }, [apiBaseUrl, token])
 
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current)
-        retryTimeoutRef.current = null
-      }
-      
-      checkConnection().then(isConnected => {
-        if (!mounted) return
-        
-        if (isConnected) {
-          scheduleRegularCheck()
-        } else {
-          retryCountRef.current = 0
-          scheduleRetry()
-        }
-      })
-    })
-    
-    const unsubscribeApiUrl = tokenService.onApiUrlUpdate((apiUrl) => {
-      if (!mounted) return
-      
-      if (!isInitializedRef.current) {
-        setServerUrl(apiUrl)
-        return
-      }
-      
-      setServerUrl(apiUrl)
-      
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current)
-        retryTimeoutRef.current = null
-      }
-
-      checkConnection().then(isConnected => {
-        if (!mounted) return
-        
-        if (isConnected) {
-          scheduleRegularCheck()
-        } else {
-          retryCountRef.current = 0
-          scheduleRetry()
-        }
-      })
-    })
-    
-    return () => {
-      mounted = false
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current)
-        retryTimeoutRef.current = null
-      }
-      unsubscribeToken()
-      unsubscribeApiUrl()
+  const getNatsWsUrl = useMemo(() => {
+    return (): string => {
+      if (!apiBaseUrl || !token) return ''
+      return buildNatsWsUrl(apiBaseUrl, { token, includeAuthParam: true })
     }
-  }, [])
+  }, [apiBaseUrl, token])
+
+  const clientConfig = useMemo(() => ({
+    name: 'openframe-chat-status',
+    user: 'machine',
+    pass: ''
+  }), [])
+
+  const { isConnected } = useNatsDialogSubscription({
+    enabled: !!apiBaseUrl && !!token,
+    dialogId: null, // No dialog subscription, just connection monitoring
+    topics: [],
+    onConnect: () => {
+      setStatus('connected')
+    },
+    onDisconnect: () => {
+      setStatus('disconnected')
+    },
+    getNatsWsUrl,
+    clientConfig
+  })
+
+  useEffect(() => {
+    if (!apiBaseUrl || !token) {
+      setStatus('connecting')
+      return
+    }
+    
+    if (isConnected) {
+      setStatus('connected')
+    } else {
+      setStatus('disconnected')
+    }
+  }, [isConnected, apiBaseUrl, token])
   
   const displayUrl = serverUrl?.replace(/^https?:\/\//, '') || null
   
