@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 import static com.openframe.api.graphql.DeviceQueries.*;
+import static com.openframe.config.ApiConfig.GRAPHQL;
 import static com.openframe.helpers.RequestSpecHelper.getAuthorizedSpec;
 import static io.restassured.RestAssured.given;
 
 public class DeviceApi {
 
-    private static final String GRAPHQL = "api/graphql";
     private static final String DEVICES = "api/devices/{machineId}";
 
     public static List<String> getDeviceHostnames(DeviceFilterInput filter) {
