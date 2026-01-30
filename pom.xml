@@ -44,7 +44,7 @@
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
         <!-- Centralized OpenFrame OSS libs version -->
-        <openframe.libs.version>5.22.1</openframe.libs.version>
+        <openframe.libs.version>5.23.0</openframe.libs.version>
     </properties>
 
     <modules>
@@ -273,6 +273,11 @@
             <dependency>
                 <groupId>com.openframe.oss</groupId>
                 <artifactId>openframe-data-mongo</artifactId>
+                <version>${openframe.libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-data-redis</artifactId>
                 <version>${openframe.libs.version}</version>
             </dependency>
             <dependency>
