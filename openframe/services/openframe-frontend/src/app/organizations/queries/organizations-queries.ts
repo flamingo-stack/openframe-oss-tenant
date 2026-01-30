@@ -38,8 +38,8 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
 `
 
 export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
-  query GetOrganizationsMin($search: String) {
-    organizations(search: $search) {
+  query GetOrganizationsMin($search: String, $pagination: CursorPaginationInput) {
+    organizations(search: $search, pagination: $pagination) {
       edges {
         node {
           id

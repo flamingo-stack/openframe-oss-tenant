@@ -17,7 +17,11 @@ public class RestAssuredConfig {
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
 
     public static void configure() {
-        RestAssured.baseURI = getBaseUrl();
+        configure(getBaseUrl());
+    }
+
+    public static void configure(String baseUrl) {
+        RestAssured.baseURI = baseUrl;
         RestAssured.config = RestAssured.config()
                 .logConfig(LogConfig.logConfig().enableLoggingOfRequestAndResponseIfValidationFails())
                 .sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation())

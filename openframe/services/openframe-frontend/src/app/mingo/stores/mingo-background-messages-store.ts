@@ -31,6 +31,7 @@ interface BackgroundMessagesStore {
   initializeDialog: (dialogId: string) => void
   mergeDialogMessages: (dialogId: string, messages: Message[]) => void
   moveBackgroundToActive: (dialogId: string) => Message[]
+  preserveStreamingMessage: (dialogId: string, streamingMessage: Message) => void
 }
 
 const MAX_BACKGROUND_MESSAGES_PER_DIALOG = 50
@@ -54,12 +55,14 @@ export const useMingoBackgroundMessagesStore = create<BackgroundMessagesStore>()
           state.dialogMessages[dialogId] = []
         }
 
-        const exists = state.dialogMessages[dialogId].some(msg => msg.id === message.id)
-        if (exists) return
-
-        state.dialogMessages[dialogId].push(message)
-        if (state.dialogMessages[dialogId].length > MAX_BACKGROUND_MESSAGES_PER_DIALOG) {
-          state.dialogMessages[dialogId] = state.dialogMessages[dialogId].slice(-MAX_BACKGROUND_MESSAGES_PER_DIALOG)
+        const existingIndex = state.dialogMessages[dialogId].findIndex(msg => msg.id === message.id)
+        if (existingIndex !== -1) {
+          state.dialogMessages[dialogId][existingIndex] = message
+        } else {
+          state.dialogMessages[dialogId].push(message)
+          if (state.dialogMessages[dialogId].length > MAX_BACKGROUND_MESSAGES_PER_DIALOG) {
+            state.dialogMessages[dialogId] = state.dialogMessages[dialogId].slice(-MAX_BACKGROUND_MESSAGES_PER_DIALOG)
+          }
         }
       })
     },
@@ -154,6 +157,22 @@ export const useMingoBackgroundMessagesStore = create<BackgroundMessagesStore>()
       })
       
       return [...backgroundMessages]
+    },
+
+    preserveStreamingMessage: (dialogId: string, streamingMessage: Message) => {
+      set(state => {
+        if (!state.dialogMessages[dialogId]) {
+          state.dialogMessages[dialogId] = []
+        }
+        
+        const filtered = state.dialogMessages[dialogId].filter(msg => msg.id !== streamingMessage.id)
+        
+        state.dialogMessages[dialogId] = [...filtered, streamingMessage]
+        
+        if (state.dialogMessages[dialogId].length > MAX_BACKGROUND_MESSAGES_PER_DIALOG) {
+          state.dialogMessages[dialogId] = state.dialogMessages[dialogId].slice(-MAX_BACKGROUND_MESSAGES_PER_DIALOG)
+        }
+      })
     }
   }))
 )

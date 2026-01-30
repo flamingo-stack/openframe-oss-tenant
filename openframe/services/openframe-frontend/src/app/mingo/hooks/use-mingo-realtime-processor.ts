@@ -23,6 +23,8 @@ interface UseMingoRealtimeProcessorOptions {
 
 interface DialogState {
   isStreaming: boolean
+  currentStreamingMessage?: Message
+  hasReceivedFirstTextChunk: boolean
 }
 
 export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOptions) {
@@ -36,7 +38,7 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     onBackgroundUnreadIncrement,
   } = options
 
-  const { addRealtimeMessage } = useMingoDialogDetailsStore()
+  const { addRealtimeMessage, getLastEmptyAssistantMessage } = useMingoDialogDetailsStore()
   const { addBackgroundMessage } = useMingoBackgroundMessagesStore()
 
   const dialogStatesRef = useRef<Map<string, DialogState>>(new Map())
@@ -46,6 +48,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     if (!state) {
       state = {
         isStreaming: false,
+        currentStreamingMessage: undefined,
+        hasReceivedFirstTextChunk: false,
       }
       dialogStatesRef.current.set(dialogId, state)
     }
@@ -88,16 +92,22 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     switch (action.action) {
       case 'message_start':
         dialogState.isStreaming = true
+        dialogState.hasReceivedFirstTextChunk = false
         
         if (isActiveDialog) {
           onActiveStreamStart()
         } else {
+          const streamingMessage = createBaseMessage('TEXT')
+          dialogState.currentStreamingMessage = streamingMessage
+          addBackgroundMessage(dialogId, streamingMessage)
           onBackgroundStreamStart(dialogId)
         }
         break
 
       case 'message_end':
         dialogState.isStreaming = false
+        dialogState.currentStreamingMessage = undefined
+        dialogState.hasReceivedFirstTextChunk = false
         
         if (isActiveDialog) {
           onActiveStreamEnd()
@@ -109,6 +119,8 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
 
       case 'error':
         dialogState.isStreaming = false
+        dialogState.currentStreamingMessage = undefined
+        dialogState.hasReceivedFirstTextChunk = false
         
         if (isActiveDialog) {
           onActiveError(action.error)
@@ -118,15 +130,62 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
         break
 
       case 'text':
-        const textMessage = {
-          ...createBaseMessage('TEXT'),
-          messageData: { type: 'TEXT', text: action.text } as any,
-        }
-
         if (isActiveDialog) {
-          addRealtimeMessage(textMessage)
+          if (!dialogState.currentStreamingMessage) {
+            const emptyMessage = getLastEmptyAssistantMessage(dialogId)
+            if (emptyMessage) {
+              const updatedMessage = {
+                ...emptyMessage,
+                messageData: {
+                  ...emptyMessage.messageData,
+                  text: action.text
+                }
+              }
+              dialogState.currentStreamingMessage = updatedMessage
+              addRealtimeMessage(updatedMessage)
+            } else {
+              const streamingMessage = {
+                id: `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                dialogId,
+                chatType: CHAT_TYPE.ADMIN as any,
+                dialogMode: 'DEFAULT',
+                createdAt: new Date().toISOString(),
+                owner: { type: 'ASSISTANT', model: 'mingo' } as any,
+                messageData: { type: 'TEXT', text: action.text } as any,
+              }
+              dialogState.currentStreamingMessage = streamingMessage
+              addRealtimeMessage(streamingMessage)
+            }
+          } else {
+            const updatedMessage = {
+              ...dialogState.currentStreamingMessage,
+              messageData: {
+                ...dialogState.currentStreamingMessage.messageData,
+                text: (dialogState.currentStreamingMessage.messageData?.text || '') + action.text
+              }
+            }
+            dialogState.currentStreamingMessage = updatedMessage
+            addRealtimeMessage(updatedMessage)
+          }
         } else {
-          addBackgroundMessage(dialogId, textMessage)
+          if (dialogState.currentStreamingMessage) {
+            const updatedMessage = {
+              ...dialogState.currentStreamingMessage,
+              messageData: {
+                ...dialogState.currentStreamingMessage.messageData,
+                text: (dialogState.currentStreamingMessage.messageData?.text || '') + action.text
+              }
+            }
+            dialogState.currentStreamingMessage = updatedMessage
+            addBackgroundMessage(dialogId, updatedMessage)
+          } else {
+            const textMessage = {
+              ...createBaseMessage('TEXT'),
+              messageData: { type: 'TEXT', text: action.text } as any,
+            }
+            dialogState.currentStreamingMessage = textMessage
+            addBackgroundMessage(dialogId, textMessage)
+          }
         }
         break
 
@@ -195,6 +254,7 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     activeDialogId,
     getDialogState,
     addRealtimeMessage,
+    getLastEmptyAssistantMessage,
     addBackgroundMessage,
     onActiveStreamStart,
     onActiveStreamEnd,
@@ -227,6 +287,11 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     dialogStatesRef.current.delete(dialogId)
   }, [])
 
+  const getDialogStreamingMessage = useCallback((dialogId: string): Message | undefined => {
+    const state = getDialogState(dialogId)
+    return state.currentStreamingMessage
+  }, [getDialogState])
+
   const cleanup = useCallback(() => {
     dialogStatesRef.current.clear()
   }, [])
@@ -235,5 +300,6 @@ export function useMingoRealtimeProcessor(options: UseMingoRealtimeProcessorOpti
     processChunk,
     resetDialog,
     cleanup,
+    getDialogStreamingMessage,
   }
 }
