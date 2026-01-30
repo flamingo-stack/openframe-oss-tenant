@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;dallas.zulauf@gmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMmVkNzE0M2UtMmFmNi00NTVkLTkzMTQtYjZkOTBkNzI4MDJlIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2N2IzZGVmZS0wMTI4LTRiY2QtYWE5MS01MTlmMWUyNDlkNzIiLCJzdWIiOiJwYXNxdWFsZS56aWVtYW5uQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3OTg0MDgsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzY3YjNkZWZlLTAxMjgtNGJjZC1hYTkxLTUxOWYxZTI0OWQ3MiIsImV4cCI6MTc2OTc5OTMwOCwiaWF0IjoxNzY5Nzk4NDA4LCJ1c2VySWQiOiI2ZGNhNDIwMi02YmUyLTQ2ZTItYTFjMy1hYTVhN2I4ZWJiYzMiLCJqdGkiOiI3OWQ3ZGJkZi0yYjI3LTQ1YjQtOWM5ZS1kODNmOTU2ZmU4M2QifQ.G_whWkBdq9zm32yHd5bye9-vgVrlomlWXrDohMOmTjAihawOVVbMz-8tgg1IU3MFMg5vQXYn5B-phcyhI7kB1o869tqC4KQWtGrjhlsAHE3khLqmRxuUJNGaVr9IrqbWveHYviZJXnwlUWq12WjHIWrGEtStelWtu0cYUg2_eOgo6ErCKpjDDg5heWKaArEqEInpqOGLbVHgzYCVDZf4TEJUBorpz0vS0473VaIl0_gqzB-c7-u-CbNthIgQBp5XQPCfE0gtMPdiS3s9pwciA7ztP9jODh1CUDTxW5jW-5wvWP5po-vs4RJY1Xaset7HwpdGHVZPEhhH-DARToA1_Q</div>
+        <div>refresh_token: -AhMmeTuQBMrAOUZ54_ARplURpF2i3DRnVed5uGkWtIrDSvxItnYhktM6467bt25PRUaJ1nf-J-rZWHIRsmxEJnPs2D1M-eUKe9n2luOtkX8-ASbevkzQYYh4zbaqzRy</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMmVkNzE0M2UtMmFmNi00NTVkLTkzMTQtYjZkOTBkNzI4MDJlIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2N2IzZGVmZS0wMTI4LTRiY2QtYWE5MS01MTlmMWUyNDlkNzIiLCJzdWIiOiJwYXNxdWFsZS56aWVtYW5uQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk3OTg0MDgsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzY3YjNkZWZlLTAxMjgtNGJjZC1hYTkxLTUxOWYxZTI0OWQ3MiIsImV4cCI6MTc2OTc5OTMwOCwiaWF0IjoxNzY5Nzk4NDA4LCJ1c2VySWQiOiI2ZGNhNDIwMi02YmUyLTQ2ZTItYTFjMy1hYTVhN2I4ZWJiYzMiLCJqdGkiOiI3OWQ3ZGJkZi0yYjI3LTQ1YjQtOWM5ZS1kODNmOTU2ZmU4M2QifQ.G_whWkBdq9zm32yHd5bye9-vgVrlomlWXrDohMOmTjAihawOVVbMz-8tgg1IU3MFMg5vQXYn5B-phcyhI7kB1o869tqC4KQWtGrjhlsAHE3khLqmRxuUJNGaVr9IrqbWveHYviZJXnwlUWq12WjHIWrGEtStelWtu0cYUg2_eOgo6ErCKpjDDg5heWKaArEqEInpqOGLbVHgzYCVDZf4TEJUBorpz0vS0473VaIl0_gqzB-c7-u-CbNthIgQBp5XQPCfE0gtMPdiS3s9pwciA7ztP9jODh1CUDTxW5jW-5wvWP5po-vs4RJY1Xaset7HwpdGHVZPEhhH-DARToA1_Q&#39; -b &#39;refresh_token=-AhMmeTuQBMrAOUZ54_ARplURpF2i3DRnVed5uGkWtIrDSvxItnYhktM6467bt25PRUaJ1nf-J-rZWHIRsmxEJnPs2D1M-eUKe9n2luOtkX8-ASbevkzQYYh4zbaqzRy&#39; -d &#39;{
+    &quot;email&quot;: &quot;dallas.zulauf@gmail.com&quot;
+}&#39;
+</div>
