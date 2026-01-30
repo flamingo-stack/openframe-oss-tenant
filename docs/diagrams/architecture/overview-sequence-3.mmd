@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Agent as OpenFrame Agent
+    participant Client as Client Service
+    participant Kafka as Kafka
+    participant Debezium as Debezium CDC
+    participant Stream as Stream Processing
+    participant Mongo as MongoDB
+    participant API as API Service
+    participant Frontend as Frontend App
+    
+    Agent->>Client: Register & Send Events
+    Client->>Kafka: Publish Event
+    Kafka->>Stream: Consume Event
+    Stream->>Mongo: Enrich & Store
+    
+    Mongo->>Debezium: Change Data Capture
+    Debezium->>Kafka: CDC Event
+    Kafka->>Stream: Process CDC
+    Stream->>Mongo: Update Aggregates
+    
+    Frontend->>API: GraphQL Query
+    API->>Mongo: Fetch Data
+    Mongo-->>API: Return Data
+    API-->>Frontend: GraphQL Response

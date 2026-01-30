@@ -1,0 +1,22 @@
+graph TD
+    Client[Client Browser] --> Gateway[Gateway Service]
+    Agent[OpenFrame Agent] --> ClientService[Client Agent Service]
+    
+    Gateway --> AuthZ[Authorization Service]
+    Gateway --> API[API Service]
+    Gateway --> ExternalAPI[External API Service]
+    Gateway --> Frontend[Frontend Application]
+    
+    ClientService --> Kafka[Kafka Event Stream]
+    API --> Mongo[(MongoDB)]
+    AuthZ --> Mongo
+    
+    Kafka --> Debezium[Debezium CDC]
+    Debezium --> StreamProc[Stream Processing Service]
+    StreamProc --> Mongo
+    
+    Management[Management Service] --> Mongo
+    Management --> Tools[Tool Integrations]
+    
+    Tools --> FleetDM[Fleet MDM]
+    Tools --> TacticalRMM[Tactical RMM]

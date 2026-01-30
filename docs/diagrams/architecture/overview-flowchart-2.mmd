@@ -1,0 +1,37 @@
+graph LR
+    subgraph Frontend["Frontend Layer"]
+        FrontendApp[Frontend Application]
+        ChatClient[Chat Client]
+    end
+    
+    subgraph Gateway["Gateway Layer"]
+        GatewayService[Gateway Service]
+        CORS[CORS Config]
+        APIKeyAuth[API Key Auth]
+    end
+    
+    subgraph Services["Service Layer"]
+        APIService[API Service]
+        AuthZService[Authorization Service]
+        ClientAgentService[Client Agent Service]
+        ExternalAPIService[External API Service]
+        ManagementService[Management Service]
+    end
+    
+    subgraph DataProcessing["Data Processing Layer"]
+        StreamService[Stream Processing Service]
+        KafkaLayer[Kafka Event Bus]
+        DebeziumCDC[Debezium CDC]
+    end
+    
+    subgraph DataStorage["Data Storage Layer"]
+        MongoDB[(MongoDB)]
+        KafkaTopics[(Kafka Topics)]
+    end
+    
+    FrontendApp --> GatewayService
+    ChatClient --> GatewayService
+    GatewayService --> Services
+    Services --> DataProcessing
+    Services --> DataStorage
+    DataProcessing --> DataStorage
