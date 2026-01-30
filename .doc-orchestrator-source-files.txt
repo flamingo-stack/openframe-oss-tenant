@@ -383,6 +383,8 @@
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/exception/ApiKeyNotFoundException.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/exception/OrganizationHasMachinesException.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/exception/UserNotFoundException.java
+../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/model/redis/CachedMachineInfo.java
+../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/model/redis/CachedOrganizationInfo.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/reactive/repository/apikey/ReactiveApiKeyRepository.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/reactive/repository/oauth/ReactiveOAuthClientRepository.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/reactive/repository/tenant/ReactiveTenantRepository.java
@@ -411,6 +413,7 @@
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/repository/organization/CustomOrganizationRepository.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/repository/organization/CustomOrganizationRepositoryImpl.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/repository/organization/OrganizationRepository.java
+../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/repository/redis/MachineIdCacheService.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/repository/sso/SSOConfigRepository.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/repository/tenant/BaseTenantRepository.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/repository/tenant/SSOPerTenantConfigRepository.java
@@ -432,15 +435,18 @@
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/service/OpenFrameClientConfigurationService.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/service/OrganizationService.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/service/ToolUrlService.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/config/CacheConfig.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/config/RedisConfig.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ApiKeyStatsSyncRepository.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ReactiveApiKeyStatsRepository.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ReactiveRateLimitRepository.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/aspect/MachineTagEventAspect.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/CacheConfig.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/CassandraConfig.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/CassandraKeyspaceNormalizer.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/CassandraSessionLogger.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/ConfigurationLogger.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/DataConfiguration.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/PinotConfig.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/RedisConfig.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/ToolSdkConfig.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/health/CassandraHealthIndicator.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/mapper/DownloadConfigurationMapper.java
@@ -465,8 +471,6 @@
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/pinot/LogProjection.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/pinot/OrganizationOption.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/pinot/PinotEventEntity.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/redis/CachedMachineInfo.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/redis/CachedOrganizationInfo.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/cassandra/UnifiedLogEventRepository.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/nats/NatsMessagePublisher.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/pinot/PinotClientDeviceRepository.java
@@ -475,10 +479,6 @@
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/pinot/PinotLogRepository.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/pinot/PinotQueryBuilder.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/pinot/exception/PinotQueryException.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/redis/ApiKeyStatsSyncRepository.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/redis/MachineIdCacheService.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/redis/ReactiveApiKeyStatsRepository.java
-../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/repository/redis/ReactiveRateLimitRepository.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/resolver/DownloadConfigurationLinkResolver.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/service/MachineTagEventService.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/service/OpenFrameClientUpdatePublisher.java
