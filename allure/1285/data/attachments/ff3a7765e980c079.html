@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697c20e2390d3a013aa6696f</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jamie Simonis&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(912) 903-7484 x9233&quot;,
+                &quot;email&quot;: &quot;keneth.lindgren@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;4274 Baumbach Walks&quot;,
+            &quot;street2&quot;: &quot;Apt. 497&quot;,
+            &quot;city&quot;: &quot;Ortizbury&quot;,
+            &quot;state&quot;: &quot;Connecticut&quot;,
+            &quot;postalCode&quot;: &quot;32226&quot;,
+            &quot;country&quot;: &quot;Azerbaijan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;55809 Senaida Plaza&quot;,
+            &quot;street2&quot;: &quot;Suite 601&quot;,
+            &quot;city&quot;: &quot;Kiehnview&quot;,
+            &quot;state&quot;: &quot;California&quot;,
+            &quot;postalCode&quot;: &quot;74744&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        30
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYjQ5OTM0ZjYtNGI3ZC00NTRjLWI1MjItMzJkZTFiZWI4MWUyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkYmQ1ZjBmMC0yN2ExLTRkYzUtYmNjMy01MWZkNDc4YzgzZDEiLCJzdWIiOiJsYXdlcmVuY2UucG9sbGljaEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTc0MjU2MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZGJkNWYwZjAtMjdhMS00ZGM1LWJjYzMtNTFmZDQ3OGM4M2QxIiwiZXhwIjoxNzY5NzQzNDYxLCJpYXQiOjE3Njk3NDI1NjEsInVzZXJJZCI6IjFkYThmMDgxLTY3ODktNDZmZi04ZGUzLTAyNjIzNTVlMWI0ZiIsImp0aSI6IjFmMDVmMGU5LWU3NDMtNDQ2NC1iMGEwLTVjMjVmMmRmNWRmNSJ9.QB_Ii0tKRND9do32f7PvjGh9Lg60JOhpZjg2rNBdob1NRq5YFOkGpsOF051rLRAerXDZFDcsWjRsp7mBFjxJCOWAn7H1OalMy4pB0A6zfT2V9pySfohAlpCJxx_0Bw8ywUIleC2QVSmr4WcJO6g56IrG7xlRv67E_NEPzrNRmu2wONngVlZcFkDGL11heTGZcxgM9mXNPE9Xqs9y9nyQJipELb1up7qbeDOe7y0ZMDjnkPQeULddKtQf1lGL3fvfV4YNY9kcw2G6pImqCcXRy5AQu8YaeRXZMKakHzvNrfEWeaSOQ-AHhAFJIKWc40FTVkC-wSOQZYWQ81WQdU4MbA</div>
+        <div>refresh_token: 0aeu8aXCk8apLp7Owv7HxCmqowgIEI3bpFGTa20x2-8MRYgKmBFzUumULBW6b9MH41VTPM7hLBFiXRrY9qWCSL63pZVi5ZKwFQFXFUCAsFlURh5Y-KMNO7NY_Md0iq_f</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697c20e2390d3a013aa6696f&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYjQ5OTM0ZjYtNGI3ZC00NTRjLWI1MjItMzJkZTFiZWI4MWUyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkYmQ1ZjBmMC0yN2ExLTRkYzUtYmNjMy01MWZkNDc4YzgzZDEiLCJzdWIiOiJsYXdlcmVuY2UucG9sbGljaEBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTc0MjU2MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZGJkNWYwZjAtMjdhMS00ZGM1LWJjYzMtNTFmZDQ3OGM4M2QxIiwiZXhwIjoxNzY5NzQzNDYxLCJpYXQiOjE3Njk3NDI1NjEsInVzZXJJZCI6IjFkYThmMDgxLTY3ODktNDZmZi04ZGUzLTAyNjIzNTVlMWI0ZiIsImp0aSI6IjFmMDVmMGU5LWU3NDMtNDQ2NC1iMGEwLTVjMjVmMmRmNWRmNSJ9.QB_Ii0tKRND9do32f7PvjGh9Lg60JOhpZjg2rNBdob1NRq5YFOkGpsOF051rLRAerXDZFDcsWjRsp7mBFjxJCOWAn7H1OalMy4pB0A6zfT2V9pySfohAlpCJxx_0Bw8ywUIleC2QVSmr4WcJO6g56IrG7xlRv67E_NEPzrNRmu2wONngVlZcFkDGL11heTGZcxgM9mXNPE9Xqs9y9nyQJipELb1up7qbeDOe7y0ZMDjnkPQeULddKtQf1lGL3fvfV4YNY9kcw2G6pImqCcXRy5AQu8YaeRXZMKakHzvNrfEWeaSOQ-AHhAFJIKWc40FTVkC-wSOQZYWQ81WQdU4MbA&#39; -b &#39;refresh_token=0aeu8aXCk8apLp7Owv7HxCmqowgIEI3bpFGTa20x2-8MRYgKmBFzUumULBW6b9MH41VTPM7hLBFiXRrY9qWCSL63pZVi5ZKwFQFXFUCAsFlURh5Y-KMNO7NY_Md0iq_f&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Jamie Simonis&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(912) 903-7484 x9233&quot;,
+                &quot;email&quot;: &quot;keneth.lindgren@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;4274 Baumbach Walks&quot;,
+            &quot;street2&quot;: &quot;Apt. 497&quot;,
+            &quot;city&quot;: &quot;Ortizbury&quot;,
+            &quot;state&quot;: &quot;Connecticut&quot;,
+            &quot;postalCode&quot;: &quot;32226&quot;,
+            &quot;country&quot;: &quot;Azerbaijan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;55809 Senaida Plaza&quot;,
+            &quot;street2&quot;: &quot;Suite 601&quot;,
+            &quot;city&quot;: &quot;Kiehnview&quot;,
+            &quot;state&quot;: &quot;California&quot;,
+            &quot;postalCode&quot;: &quot;74744&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        30
+    ]
+}&#39;
+</div>
