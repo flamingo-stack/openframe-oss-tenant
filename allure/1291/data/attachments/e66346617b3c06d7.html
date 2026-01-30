@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;dacia.bosco@gmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYWQyYmY0MmEtNGI3NS00Y2YyLTkyNmQtMzUzMWUwMDA5NTYxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkMjkxYWFmZi01YjFkLTRhOWItYjAwOC05ODE5NTE4MGFjY2QiLCJzdWIiOiJrZW1iZXJseS5nbG92ZXJAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTc4OTM3OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZDI5MWFhZmYtNWIxZC00YTliLWIwMDgtOTgxOTUxODBhY2NkIiwiZXhwIjoxNzY5NzkwMjc5LCJpYXQiOjE3Njk3ODkzNzksInVzZXJJZCI6IjM1MTViYzMxLTBiZWUtNDMxZS05MDI4LTk2NGUyY2QwNzA2ZSIsImp0aSI6Ijg2ZGJiODJkLWU3ZjUtNDRkNS1iOTFjLTVlY2I1OTJlODM2NyJ9.HU1p9fV9X0n7GZkJVAl6L872n8_sOHh-DCsv8vdlx3OKorbMcFNPhxCOWE2NjfRP9OOHMsLkKmfq3nfv6Gw_g--hfqP37XpL8YfZWSabBSvsOC54CEEYwSLM6vw8aRB7tG9OVp6u4OHEnepD8X-FONmC-mS-PxUNTuri0L7WcOVqi7Kxa13tNIMA_TGDrAJ26BgY86Ur9Ht5PflJwS06BtMwjyL2aS1gjLNjdZqRbg0bA_GqAmYe-cK4BN3zyA1iAgrcrFnRCAStPH9fhzI9Z0iS6jdcXXHoUD_7E2QjhG_KZj_IQMfPTjx1QkPJig-IxxxgNFyhMPnz4MvAzeKoeA</div>
+        <div>refresh_token: oGQeG3K3t12JTwRFPN6XLHn3zLK_L6Nty155N0_Mi6q07xGVnjwVJgUEsnXiRg4qNEYILF3HLN5Vm1mxMS4d3flWIwR5H-_xSvWBe8US4SVt1ISzQeum1VveHmL_X3FA</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYWQyYmY0MmEtNGI3NS00Y2YyLTkyNmQtMzUzMWUwMDA5NTYxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkMjkxYWFmZi01YjFkLTRhOWItYjAwOC05ODE5NTE4MGFjY2QiLCJzdWIiOiJrZW1iZXJseS5nbG92ZXJAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTc4OTM3OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZDI5MWFhZmYtNWIxZC00YTliLWIwMDgtOTgxOTUxODBhY2NkIiwiZXhwIjoxNzY5NzkwMjc5LCJpYXQiOjE3Njk3ODkzNzksInVzZXJJZCI6IjM1MTViYzMxLTBiZWUtNDMxZS05MDI4LTk2NGUyY2QwNzA2ZSIsImp0aSI6Ijg2ZGJiODJkLWU3ZjUtNDRkNS1iOTFjLTVlY2I1OTJlODM2NyJ9.HU1p9fV9X0n7GZkJVAl6L872n8_sOHh-DCsv8vdlx3OKorbMcFNPhxCOWE2NjfRP9OOHMsLkKmfq3nfv6Gw_g--hfqP37XpL8YfZWSabBSvsOC54CEEYwSLM6vw8aRB7tG9OVp6u4OHEnepD8X-FONmC-mS-PxUNTuri0L7WcOVqi7Kxa13tNIMA_TGDrAJ26BgY86Ur9Ht5PflJwS06BtMwjyL2aS1gjLNjdZqRbg0bA_GqAmYe-cK4BN3zyA1iAgrcrFnRCAStPH9fhzI9Z0iS6jdcXXHoUD_7E2QjhG_KZj_IQMfPTjx1QkPJig-IxxxgNFyhMPnz4MvAzeKoeA&#39; -b &#39;refresh_token=oGQeG3K3t12JTwRFPN6XLHn3zLK_L6Nty155N0_Mi6q07xGVnjwVJgUEsnXiRg4qNEYILF3HLN5Vm1mxMS4d3flWIwR5H-_xSvWBe8US4SVt1ISzQeum1VveHmL_X3FA&#39; -d &#39;{
+    &quot;email&quot;: &quot;dacia.bosco@gmail.com&quot;
+}&#39;
+</div>
