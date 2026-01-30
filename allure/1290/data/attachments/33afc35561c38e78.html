@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697c8de07eaadc054d31e072</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Leopoldo Ondricka DVM&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(517) 785-2388&quot;,
+                &quot;email&quot;: &quot;lyman.carroll@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;77716 Mayer Manor&quot;,
+            &quot;street2&quot;: &quot;Suite 765&quot;,
+            &quot;city&quot;: &quot;North Melda&quot;,
+            &quot;state&quot;: &quot;Hawaii&quot;,
+            &quot;postalCode&quot;: &quot;68839&quot;,
+            &quot;country&quot;: &quot;Saint Pierre and Miquelon&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;74223 Kozey Shore&quot;,
+            &quot;street2&quot;: &quot;Apt. 277&quot;,
+            &quot;city&quot;: &quot;South Marcelenestad&quot;,
+            &quot;state&quot;: &quot;Virginia&quot;,
+            &quot;postalCode&quot;: &quot;53910&quot;,
+            &quot;country&quot;: &quot;Peru&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        30
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMGFlYzBlNjYtNzcxNS00MmJiLWJlMDgtODc4NjMxMDYxYWY1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMGI5NWI5MS1mZWE1LTRjNDUtYTFkNS01NDM4N2I2ZDVkZDQiLCJzdWIiOiJqYW1lcy5sZWZmbGVyQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzcwNDYzLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9iMGI5NWI5MS1mZWE1LTRjNDUtYTFkNS01NDM4N2I2ZDVkZDQiLCJleHAiOjE3Njk3NzEzNjMsImlhdCI6MTc2OTc3MDQ2MywidXNlcklkIjoiMmJiMTlkN2MtMzA4MS00ZjM2LWI4OTktODFlMDM0N2UzNWE5IiwianRpIjoiZDMzN2FiNjItZTlmZC00YzFmLThmYzUtMGMzMmUyNDk5ODhkIn0.IlLFwoKmtq8skIh5K3Ri4LiWcOcvq6Ndw-UGlmwroLx5FeLc7xUHUZb8hy483aA15vDZTgc06D2IswHlHF9JQI_MI4WLgu3dIDDSBH7NtiwayBUW2VDBYQLpJVIUfestlC0mw4sFb_Ob3aAY5pK5fQIgXz_nHRLxt4m4BL3exl4MAjFd2TG3zr2jA3K0T6q4KPnJIPQyLjG3MFFrTfyXLqMSHNWSZ4ecXQDdnBrhw4tkRY19_givA0LPEgu3GZ457OYbWaZ5M_QsmBMEJZ3hA4EtwhyJZVXF1mDe7aErkWRFMCKS5akfdTZX_0Xj7-L8L4z7gZgMjZg0UaA19RFj-Q</div>
+        <div>refresh_token: I83oCPUVEfJASYci98nQ1H2oF9TD0EVCNiIfWXQW5y2M5aMKRfThgFeB4Sw5oKwyH8fP9pUnuOROQX1CzcL06MllgqK-3nQjxDRbKqPp4o1aoZciV96_xFMSP5XghdeN</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697c8de07eaadc054d31e072&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMGFlYzBlNjYtNzcxNS00MmJiLWJlMDgtODc4NjMxMDYxYWY1IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMGI5NWI5MS1mZWE1LTRjNDUtYTFkNS01NDM4N2I2ZDVkZDQiLCJzdWIiOiJqYW1lcy5sZWZmbGVyQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzY5NzcwNDYzLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9iMGI5NWI5MS1mZWE1LTRjNDUtYTFkNS01NDM4N2I2ZDVkZDQiLCJleHAiOjE3Njk3NzEzNjMsImlhdCI6MTc2OTc3MDQ2MywidXNlcklkIjoiMmJiMTlkN2MtMzA4MS00ZjM2LWI4OTktODFlMDM0N2UzNWE5IiwianRpIjoiZDMzN2FiNjItZTlmZC00YzFmLThmYzUtMGMzMmUyNDk5ODhkIn0.IlLFwoKmtq8skIh5K3Ri4LiWcOcvq6Ndw-UGlmwroLx5FeLc7xUHUZb8hy483aA15vDZTgc06D2IswHlHF9JQI_MI4WLgu3dIDDSBH7NtiwayBUW2VDBYQLpJVIUfestlC0mw4sFb_Ob3aAY5pK5fQIgXz_nHRLxt4m4BL3exl4MAjFd2TG3zr2jA3K0T6q4KPnJIPQyLjG3MFFrTfyXLqMSHNWSZ4ecXQDdnBrhw4tkRY19_givA0LPEgu3GZ457OYbWaZ5M_QsmBMEJZ3hA4EtwhyJZVXF1mDe7aErkWRFMCKS5akfdTZX_0Xj7-L8L4z7gZgMjZg0UaA19RFj-Q&#39; -b &#39;refresh_token=I83oCPUVEfJASYci98nQ1H2oF9TD0EVCNiIfWXQW5y2M5aMKRfThgFeB4Sw5oKwyH8fP9pUnuOROQX1CzcL06MllgqK-3nQjxDRbKqPp4o1aoZciV96_xFMSP5XghdeN&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Leopoldo Ondricka DVM&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(517) 785-2388&quot;,
+                &quot;email&quot;: &quot;lyman.carroll@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;77716 Mayer Manor&quot;,
+            &quot;street2&quot;: &quot;Suite 765&quot;,
+            &quot;city&quot;: &quot;North Melda&quot;,
+            &quot;state&quot;: &quot;Hawaii&quot;,
+            &quot;postalCode&quot;: &quot;68839&quot;,
+            &quot;country&quot;: &quot;Saint Pierre and Miquelon&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;74223 Kozey Shore&quot;,
+            &quot;street2&quot;: &quot;Apt. 277&quot;,
+            &quot;city&quot;: &quot;South Marcelenestad&quot;,
+            &quot;state&quot;: &quot;Virginia&quot;,
+            &quot;postalCode&quot;: &quot;53910&quot;,
+            &quot;country&quot;: &quot;Peru&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        28
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        8,
+        30
+    ]
+}&#39;
+</div>
