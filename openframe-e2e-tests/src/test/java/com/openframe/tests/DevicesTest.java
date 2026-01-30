@@ -6,6 +6,7 @@ import com.openframe.data.dto.device.Machine;
 import com.openframe.tests.base.AuthorizedTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import static com.openframe.data.generator.DeviceGenerator.*;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 @Disabled("Tests disabled - waiting for devices")
+@Tag("authorized")
 @DisplayName("Devices")
 public class DevicesTest extends AuthorizedTest {
 
