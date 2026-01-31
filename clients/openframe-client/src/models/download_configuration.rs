@@ -6,14 +6,14 @@ use std::path::Path;
 pub struct DownloadConfiguration {
     pub os: String,
     pub file_name: String,
-    pub agent_file_name: String,
+    pub target_file_name: String,
     pub link: String,
 }
 
 impl DownloadConfiguration {
-    /// Returns true if agent_file_name is a path (requires extracting entire archive).
+    /// Returns true if target_file_name is a path (requires extracting entire archive).
     pub fn is_folder_extraction(&self) -> bool {
-        Path::new(&self.agent_file_name).components().count() > 1
+        Path::new(&self.target_file_name).components().count() > 1
     }
 
     /// Checks if this configuration matches the current OS

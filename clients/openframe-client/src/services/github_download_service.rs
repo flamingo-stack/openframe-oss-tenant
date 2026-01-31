@@ -47,15 +47,15 @@ impl GithubDownloadService {
         }
 
         // Extract based on file extension
-        info!("Archive file_name: '{}', agent_file_name: '{}'", config.file_name, config.agent_file_name);
+        info!("Archive file_name: '{}', target_file_name: '{}'", config.file_name, config.target_file_name);
 
         let binary_bytes = if config.file_name.ends_with(".zip") {
             info!("Detected ZIP format, extracting...");
-            self.extract_from_zip(archive_bytes, &config.agent_file_name)
+            self.extract_from_zip(archive_bytes, &config.target_file_name)
                 .with_context(|| "Failed to extract from ZIP archive")?
         } else if config.file_name.ends_with(".tar.gz") || config.file_name.ends_with(".tgz") {
             info!("Detected tar.gz format, extracting...");
-            self.extract_from_tar_gz(archive_bytes, &config.agent_file_name)
+            self.extract_from_tar_gz(archive_bytes, &config.target_file_name)
                 .with_context(|| "Failed to extract from tar.gz archive")?
         } else {
             return Err(anyhow!("Unsupported archive format: {}", config.file_name));
@@ -70,7 +70,7 @@ impl GithubDownloadService {
             ));
         }
 
-        info!("Extracted binary: {} ({} bytes)", config.agent_file_name, binary_bytes.len());
+        info!("Extracted binary: {} ({} bytes)", config.target_file_name, binary_bytes.len());
 
         Ok(binary_bytes)
     }
@@ -277,13 +277,13 @@ impl GithubDownloadService {
         default_agent_path: &Path,
     ) -> Result<Option<String>> {
         if config.is_folder_extraction() {
-            let file_path = tool_folder_path.join(&config.agent_file_name);
+            let file_path = tool_folder_path.join(&config.target_file_name);
             self.download_and_extract_all(config, tool_folder_path).await?;
             Self::set_executable_permissions(&file_path).await?;
             if !file_path.exists() {
                 warn!("Executable not found at {} after extraction", file_path.display());
             }
-            Ok(Some(config.agent_file_name.clone()))
+            Ok(Some(config.target_file_name.clone()))
         } else {
             let bytes = self.download_and_extract(config).await?;
             File::create(default_agent_path).await?.write_all(&bytes).await?;
