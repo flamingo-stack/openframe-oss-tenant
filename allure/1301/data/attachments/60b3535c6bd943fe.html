@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;wilmer.watsica@gmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOTcxOWIyYjEtMGU4YS00NzhhLWEwNWYtZmJjYzZkMjc4YzJkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwMjA0M2FmZS1lOTk3LTQ5MTgtYWNhMy1iZjhkMDlhN2ZkM2EiLCJzdWIiOiJkZWxvaXMua2VybHVrZUBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTg4NDk0OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMDIwNDNhZmUtZTk5Ny00OTE4LWFjYTMtYmY4ZDA5YTdmZDNhIiwiZXhwIjoxNzY5ODg1ODQ4LCJpYXQiOjE3Njk4ODQ5NDgsInVzZXJJZCI6ImVkOTI4M2M4LTliZmMtNGNiZC1hMWVlLTUzMWRkMjMxZjIyZiIsImp0aSI6IjE5YmZmNTQ5LWI1MmUtNGIzZi1hMjcxLTRlYmUwZDdlYTk3ZCJ9.zhpowN1f8wnCvEcsvxiQfys0C9eYoQGE5rVNmFTi1xrq3PGm45xQuxu7YZNrXFo9kqOSk1X6e2V2ReAcF67Z-SVcTxZxM_G3y2lJITa2iFtEJYWrzXQvBGS2EV0kx84pDKKP7j1HJJ4Nnioc42CCnAfwNGyWxiWZddm1BOYAeFShmvb2OcLn-Qmx_Pq3HsAwgJdxnwrt6tLa3KwvfdI5XZlbwh0ydjLuJm2YgETRCbcITNW1aunLwvYMjQa3TwLhbic7OWETvRZmYwgnRHEbKskL7lacfQI8UPXKUbxYOeDE6z8hHEuuHDMqqx2FE1kztlaiSQwBXFLnhWk6wYWMWQ</div>
+        <div>refresh_token: pe65VzuhEp30KYppWq8i1SHKLX539LvqjAd8puNqBlrvH7-VXZ6s1WGqXNw0OgSTH1lkxFuQps28nrToevQqmZ47yTid4BpdyYafw3nxgxauM-bRafxg0SAaGeGGDkzN</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOTcxOWIyYjEtMGU4YS00NzhhLWEwNWYtZmJjYzZkMjc4YzJkIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwMjA0M2FmZS1lOTk3LTQ5MTgtYWNhMy1iZjhkMDlhN2ZkM2EiLCJzdWIiOiJkZWxvaXMua2VybHVrZUBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTg4NDk0OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMDIwNDNhZmUtZTk5Ny00OTE4LWFjYTMtYmY4ZDA5YTdmZDNhIiwiZXhwIjoxNzY5ODg1ODQ4LCJpYXQiOjE3Njk4ODQ5NDgsInVzZXJJZCI6ImVkOTI4M2M4LTliZmMtNGNiZC1hMWVlLTUzMWRkMjMxZjIyZiIsImp0aSI6IjE5YmZmNTQ5LWI1MmUtNGIzZi1hMjcxLTRlYmUwZDdlYTk3ZCJ9.zhpowN1f8wnCvEcsvxiQfys0C9eYoQGE5rVNmFTi1xrq3PGm45xQuxu7YZNrXFo9kqOSk1X6e2V2ReAcF67Z-SVcTxZxM_G3y2lJITa2iFtEJYWrzXQvBGS2EV0kx84pDKKP7j1HJJ4Nnioc42CCnAfwNGyWxiWZddm1BOYAeFShmvb2OcLn-Qmx_Pq3HsAwgJdxnwrt6tLa3KwvfdI5XZlbwh0ydjLuJm2YgETRCbcITNW1aunLwvYMjQa3TwLhbic7OWETvRZmYwgnRHEbKskL7lacfQI8UPXKUbxYOeDE6z8hHEuuHDMqqx2FE1kztlaiSQwBXFLnhWk6wYWMWQ&#39; -b &#39;refresh_token=pe65VzuhEp30KYppWq8i1SHKLX539LvqjAd8puNqBlrvH7-VXZ6s1WGqXNw0OgSTH1lkxFuQps28nrToevQqmZ47yTid4BpdyYafw3nxgxauM-bRafxg0SAaGeGGDkzN&#39; -d &#39;{
+    &quot;email&quot;: &quot;wilmer.watsica@gmail.com&quot;
+}&#39;
+</div>
