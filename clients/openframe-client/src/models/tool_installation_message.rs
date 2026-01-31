@@ -39,9 +39,9 @@ pub enum SessionType {
 pub struct Asset {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub local_filename: Option<String>, // Deprecated: use localFilenameConfiguration instead
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub local_filename_configuration: Option<Vec<LocalFilenameConfiguration>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub download_configurations: Option<Vec<DownloadConfiguration>>,
     pub source: AssetSource,
     pub path: Option<String>,
     #[serde(default)]
@@ -61,4 +61,6 @@ pub enum AssetSource {
     Artifactory,
     #[serde(rename = "TOOL_API")]
     ToolApi,
+    #[serde(rename = "GITHUB")]
+    Github,
 }
