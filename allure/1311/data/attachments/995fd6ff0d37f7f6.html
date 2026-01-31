@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Dr. Wesley Powlowski&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(865) 304-1404&quot;,
+                &quot;email&quot;: &quot;blaine.walter@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;65911 Hoeger Shore&quot;,
+            &quot;street2&quot;: &quot;Suite 492&quot;,
+            &quot;city&quot;: &quot;Zemlakshire&quot;,
+            &quot;state&quot;: &quot;Iowa&quot;,
+            &quot;postalCode&quot;: &quot;31916&quot;,
+            &quot;country&quot;: &quot;Solomon Islands&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        31
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        31
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMWU1MThkODEtZmVjYy00MDY5LTk4NDAtYzI1YjkwZWQ3Mjk2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4YTBlOGU0ZS02NzE3LTQyYzUtYjQzMi01YmY2OTEwZTI0YWQiLCJzdWIiOiJ2YW5pYS56Ym9uY2FrQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5MDI1MjksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhhMGU4ZTRlLTY3MTctNDJjNS1iNDMyLTViZjY5MTBlMjRhZCIsImV4cCI6MTc2OTkwMzQyOSwiaWF0IjoxNzY5OTAyNTI5LCJ1c2VySWQiOiI0MTcxYTRmNy01YTRmLTRkMTItYmYyYy03ZjQyMjYxYzIzYmEiLCJqdGkiOiJkNmM5MGM4Ny1mNjIzLTQyZWMtOWY1Ny02NjhiM2U1NWJhYTEifQ.UR5r7NgQJLMdUOgK05JAJEjWcquFtdRuMkq2sLWW5oyjf_OKhONh5GJIKZF1rJBpnmIWjzqr-qLzoxnXLYJ2AtcNj0E-66cLGURJPtorPmBCTVxkKnDUzMw8gsSzUNXy_x0PygpmnTxJIga1BhSYHY6YxR5UOzVSiT1Vp9mL5C-1wqOmIvCFciuwnesD0T_j5QvX2UnbJbfMONcNTN_8RG3fWEJTHxFmZNovaBhKn7J-yi4iwB5ijRFIU5u1XMpfHFHuYAjE4d2DNAodoV0hWlGwEU-mynW2W4roIh41DNtO06yXo94U3v4d8ylLrWqk35wooJl9PUhVRTTzQih_dg</div>
+        <div>refresh_token: Xob_gcQDXayiNXpLJgbNqhnVKalJvnVuEUDeTDnGqwS5iAAo68NuG6APpj7flBLJyQYUvDNPdAXDf-ro2rllku257s7ySKipyVAbeNjpNZeszp4Wdus8haFWiS6mKQlU</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMWU1MThkODEtZmVjYy00MDY5LTk4NDAtYzI1YjkwZWQ3Mjk2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4YTBlOGU0ZS02NzE3LTQyYzUtYjQzMi01YmY2OTEwZTI0YWQiLCJzdWIiOiJ2YW5pYS56Ym9uY2FrQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5MDI1MjksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhhMGU4ZTRlLTY3MTctNDJjNS1iNDMyLTViZjY5MTBlMjRhZCIsImV4cCI6MTc2OTkwMzQyOSwiaWF0IjoxNzY5OTAyNTI5LCJ1c2VySWQiOiI0MTcxYTRmNy01YTRmLTRkMTItYmYyYy03ZjQyMjYxYzIzYmEiLCJqdGkiOiJkNmM5MGM4Ny1mNjIzLTQyZWMtOWY1Ny02NjhiM2U1NWJhYTEifQ.UR5r7NgQJLMdUOgK05JAJEjWcquFtdRuMkq2sLWW5oyjf_OKhONh5GJIKZF1rJBpnmIWjzqr-qLzoxnXLYJ2AtcNj0E-66cLGURJPtorPmBCTVxkKnDUzMw8gsSzUNXy_x0PygpmnTxJIga1BhSYHY6YxR5UOzVSiT1Vp9mL5C-1wqOmIvCFciuwnesD0T_j5QvX2UnbJbfMONcNTN_8RG3fWEJTHxFmZNovaBhKn7J-yi4iwB5ijRFIU5u1XMpfHFHuYAjE4d2DNAodoV0hWlGwEU-mynW2W4roIh41DNtO06yXo94U3v4d8ylLrWqk35wooJl9PUhVRTTzQih_dg&#39; -b &#39;refresh_token=Xob_gcQDXayiNXpLJgbNqhnVKalJvnVuEUDeTDnGqwS5iAAo68NuG6APpj7flBLJyQYUvDNPdAXDf-ro2rllku257s7ySKipyVAbeNjpNZeszp4Wdus8haFWiS6mKQlU&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Dr. Wesley Powlowski&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(865) 304-1404&quot;,
+                &quot;email&quot;: &quot;blaine.walter@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;65911 Hoeger Shore&quot;,
+            &quot;street2&quot;: &quot;Suite 492&quot;,
+            &quot;city&quot;: &quot;Zemlakshire&quot;,
+            &quot;state&quot;: &quot;Iowa&quot;,
+            &quot;postalCode&quot;: &quot;31916&quot;,
+            &quot;country&quot;: &quot;Solomon Islands&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        31
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        31
+    ]
+}&#39;
+</div>
