@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Stephany Streich&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(570) 718-3819 x0673&quot;,
+                &quot;email&quot;: &quot;miles.abernathy@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8114 Marielle Drives&quot;,
+            &quot;street2&quot;: &quot;Apt. 372&quot;,
+            &quot;city&quot;: &quot;Leontinechester&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;94867&quot;,
+            &quot;country&quot;: &quot;Brazil&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        31
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        31
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtN2NhOTQ4MWMtZWE0Mi00ODVmLWIzM2YtM2U4NWRiNTBhMjYxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5YjM0ZmFmMy00OTBkLTQ1ZmQtYjdjMi02ZjQ2MDU4ZDcyYTYiLCJzdWIiOiJnaW5nZXIuYmFzaGlyaWFuQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk4ODgwMjIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzliMzRmYWYzLTQ5MGQtNDVmZC1iN2MyLTZmNDYwNThkNzJhNiIsImV4cCI6MTc2OTg4ODkyMiwiaWF0IjoxNzY5ODg4MDIyLCJ1c2VySWQiOiIxNGMwYTcwZi0zN2EzLTQ4YjUtOWQ3NC0yNWVjMjdhOTU0ZTMiLCJqdGkiOiJiOGU0MjllMi0xMmI3LTQ3ZGQtYmNmYS02Nzk2ZGZkMTMxNTcifQ.SbcRrRmYklmSfeyBNx3zKfOH04kRlT96-vGyY06xr4KtHrXi2C9qe6itrUrRI7Q8HGLZ49-lGn5lo8B15jXB0Kw4ybL90FB7J23T-z-y4C0GTzo9CB3osHfnq2MNgSCnE4gPvxIZd3667_lJKgvAnAZJm5T_1uQ7a0RIq19cuwT4BLP5cRNEFRxGeXpwuRZk1PT4i25e4k61IDj0LhEqzfI-U3RGBLcbhitUMDXk_UvzIH4rITNEPBWoCV2kT3kljj7r5yfVzHuq7G5ny41TEs2WRXyNiwXtELa-2anZtceoZputLub64_3bYJFq-Z8hBbv9oI2-g8fc3XHE2eRNlw</div>
+        <div>refresh_token: hJXQhiLkaITMe7CyqThGSDwrTP7cynkqCpDal73YSfHJaSawJMk147_VFGmQ2hMtQsYWrFRrAOMfYvx3B0UDUFO9wifj6MNV-PosfGYhTPWJhpxRnTkREIwP2iISwh1l</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtN2NhOTQ4MWMtZWE0Mi00ODVmLWIzM2YtM2U4NWRiNTBhMjYxIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5YjM0ZmFmMy00OTBkLTQ1ZmQtYjdjMi02ZjQ2MDU4ZDcyYTYiLCJzdWIiOiJnaW5nZXIuYmFzaGlyaWFuQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk4ODgwMjIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzliMzRmYWYzLTQ5MGQtNDVmZC1iN2MyLTZmNDYwNThkNzJhNiIsImV4cCI6MTc2OTg4ODkyMiwiaWF0IjoxNzY5ODg4MDIyLCJ1c2VySWQiOiIxNGMwYTcwZi0zN2EzLTQ4YjUtOWQ3NC0yNWVjMjdhOTU0ZTMiLCJqdGkiOiJiOGU0MjllMi0xMmI3LTQ3ZGQtYmNmYS02Nzk2ZGZkMTMxNTcifQ.SbcRrRmYklmSfeyBNx3zKfOH04kRlT96-vGyY06xr4KtHrXi2C9qe6itrUrRI7Q8HGLZ49-lGn5lo8B15jXB0Kw4ybL90FB7J23T-z-y4C0GTzo9CB3osHfnq2MNgSCnE4gPvxIZd3667_lJKgvAnAZJm5T_1uQ7a0RIq19cuwT4BLP5cRNEFRxGeXpwuRZk1PT4i25e4k61IDj0LhEqzfI-U3RGBLcbhitUMDXk_UvzIH4rITNEPBWoCV2kT3kljj7r5yfVzHuq7G5ny41TEs2WRXyNiwXtELa-2anZtceoZputLub64_3bYJFq-Z8hBbv9oI2-g8fc3XHE2eRNlw&#39; -b &#39;refresh_token=hJXQhiLkaITMe7CyqThGSDwrTP7cynkqCpDal73YSfHJaSawJMk147_VFGmQ2hMtQsYWrFRrAOMfYvx3B0UDUFO9wifj6MNV-PosfGYhTPWJhpxRnTkREIwP2iISwh1l&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Stephany Streich&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(570) 718-3819 x0673&quot;,
+                &quot;email&quot;: &quot;miles.abernathy@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8114 Marielle Drives&quot;,
+            &quot;street2&quot;: &quot;Apt. 372&quot;,
+            &quot;city&quot;: &quot;Leontinechester&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;94867&quot;,
+            &quot;country&quot;: &quot;Brazil&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        1,
+        31
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        1,
+        31
+    ]
+}&#39;
+</div>
