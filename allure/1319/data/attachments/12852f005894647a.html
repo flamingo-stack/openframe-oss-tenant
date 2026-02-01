@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697ee36b6c179b4f3f691d0d</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Andres Boyle&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(212) 920-9616&quot;,
+                &quot;email&quot;: &quot;danny.bauch@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;78821 Hintz Circle&quot;,
+            &quot;street2&quot;: &quot;Apt. 430&quot;,
+            &quot;city&quot;: &quot;Lottieview&quot;,
+            &quot;state&quot;: &quot;Maryland&quot;,
+            &quot;postalCode&quot;: &quot;87691&quot;,
+            &quot;country&quot;: &quot;Jamaica&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;3161 Kurtis Wall&quot;,
+            &quot;street2&quot;: &quot;Apt. 437&quot;,
+            &quot;city&quot;: &quot;Robertmouth&quot;,
+            &quot;state&quot;: &quot;Wyoming&quot;,
+            &quot;postalCode&quot;: &quot;27436&quot;,
+            &quot;country&quot;: &quot;Equatorial Guinea&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        1
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYTc4OTYzMTEtMTAyOS00Y2ZlLTk0YzctZWMzY2Q1OTNjODQ0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1YTY2Zjg1Yi0yZGZhLTQyOWYtODVlZi0xZDJmZTJmZjAwNDAiLCJzdWIiOiJndXN0YXZvLmxhbmdvc2hAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5MjM0MzMsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzVhNjZmODViLTJkZmEtNDI5Zi04NWVmLTFkMmZlMmZmMDA0MCIsImV4cCI6MTc2OTkyNDMzMywiaWF0IjoxNzY5OTIzNDMzLCJ1c2VySWQiOiI5NDk0MDk4YS1jOTk1LTQzNWEtYjYwNS1hYTk0ZDUxZGMzZGYiLCJqdGkiOiI4OGQxMmI5YS1iMDgxLTQxOGMtYTQ2NC1hMDhmNGIzNmM0YWUifQ.ygIXfmEMcY0XqNtdbo4VdpQwH-akq6V5MnrTA5hkLCQ6tHa4COLm9E889tYD9_PXRnJfXstvJpAG_dzX42TkbYoxb53ZmjBtl3YH1ZqIQqyUCeY2wes1RCn7DAJxLURMsbWoRgU_WrJzo0HRQbkbUq-W6K054GHCmM_gIYAfH4LIrCD94bzTh4sVfCl6JDMC6cSZCDk7V-MhKiQSinhZuZlBX_fVVO4tKGqOxukqtBPDHB-JyN9s5aGZ7wkhp1BztoX-LKWMBnFINfdY2qy4KLImGb8OaDuD-weM1z_Fyw2ygAF-24tRd-LKSvtgw9v0sx1UfHVyYIWSkGHJ-7fpNA</div>
+        <div>refresh_token: aCKfQCJwyQfIhvi74uVd266uaWSMcqQ0zJ06259jrXzBMyJGYvJSQRTMINpv4AJb3mKN5RISEDHMzjwwIqzXVLT6RK_wPtAyKm-oI5l5Z8dI6XbIHoMsxcSNHyRKaXVR</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697ee36b6c179b4f3f691d0d&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYTc4OTYzMTEtMTAyOS00Y2ZlLTk0YzctZWMzY2Q1OTNjODQ0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1YTY2Zjg1Yi0yZGZhLTQyOWYtODVlZi0xZDJmZTJmZjAwNDAiLCJzdWIiOiJndXN0YXZvLmxhbmdvc2hAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5MjM0MzMsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzVhNjZmODViLTJkZmEtNDI5Zi04NWVmLTFkMmZlMmZmMDA0MCIsImV4cCI6MTc2OTkyNDMzMywiaWF0IjoxNzY5OTIzNDMzLCJ1c2VySWQiOiI5NDk0MDk4YS1jOTk1LTQzNWEtYjYwNS1hYTk0ZDUxZGMzZGYiLCJqdGkiOiI4OGQxMmI5YS1iMDgxLTQxOGMtYTQ2NC1hMDhmNGIzNmM0YWUifQ.ygIXfmEMcY0XqNtdbo4VdpQwH-akq6V5MnrTA5hkLCQ6tHa4COLm9E889tYD9_PXRnJfXstvJpAG_dzX42TkbYoxb53ZmjBtl3YH1ZqIQqyUCeY2wes1RCn7DAJxLURMsbWoRgU_WrJzo0HRQbkbUq-W6K054GHCmM_gIYAfH4LIrCD94bzTh4sVfCl6JDMC6cSZCDk7V-MhKiQSinhZuZlBX_fVVO4tKGqOxukqtBPDHB-JyN9s5aGZ7wkhp1BztoX-LKWMBnFINfdY2qy4KLImGb8OaDuD-weM1z_Fyw2ygAF-24tRd-LKSvtgw9v0sx1UfHVyYIWSkGHJ-7fpNA&#39; -b &#39;refresh_token=aCKfQCJwyQfIhvi74uVd266uaWSMcqQ0zJ06259jrXzBMyJGYvJSQRTMINpv4AJb3mKN5RISEDHMzjwwIqzXVLT6RK_wPtAyKm-oI5l5Z8dI6XbIHoMsxcSNHyRKaXVR&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Andres Boyle&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(212) 920-9616&quot;,
+                &quot;email&quot;: &quot;danny.bauch@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;78821 Hintz Circle&quot;,
+            &quot;street2&quot;: &quot;Apt. 430&quot;,
+            &quot;city&quot;: &quot;Lottieview&quot;,
+            &quot;state&quot;: &quot;Maryland&quot;,
+            &quot;postalCode&quot;: &quot;87691&quot;,
+            &quot;country&quot;: &quot;Jamaica&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;3161 Kurtis Wall&quot;,
+            &quot;street2&quot;: &quot;Apt. 437&quot;,
+            &quot;city&quot;: &quot;Robertmouth&quot;,
+            &quot;state&quot;: &quot;Wyoming&quot;,
+            &quot;postalCode&quot;: &quot;27436&quot;,
+            &quot;country&quot;: &quot;Equatorial Guinea&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        1
+    ]
+}&#39;
+</div>
