@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mitsue Kertzmann&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(856) 619-7384 x5575&quot;,
+                &quot;email&quot;: &quot;alfred.kihn@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;43233 Feest Stream&quot;,
+            &quot;street2&quot;: &quot;Apt. 266&quot;,
+            &quot;city&quot;: &quot;West Tyishaland&quot;,
+            &quot;state&quot;: &quot;Georgia&quot;,
+            &quot;postalCode&quot;: &quot;18379&quot;,
+            &quot;country&quot;: &quot;New Zealand&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        1
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNjVmOGVmMmYtZDhmMy00ZjRkLTgwY2ItODVhYzkxOTQ0N2NiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzMWZiMzI5NS00NzQ3LTRhNzctODU0Yy0zNzUxZjg0Mjk5ZTMiLCJzdWIiOiJ0ZXJyYW5jZS5nb29kd2luQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5NzgzMzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzMxZmIzMjk1LTQ3NDctNGE3Ny04NTRjLTM3NTFmODQyOTllMyIsImV4cCI6MTc2OTk3OTIzNiwiaWF0IjoxNzY5OTc4MzM2LCJ1c2VySWQiOiIyMTlhY2FmNy0wNGVhLTQ0ZmYtOTUyZC1kYjlkNDliMjM3YTciLCJqdGkiOiJiZWMxM2RiOS1jNGRmLTQwYTgtYjkxNy0xZDhjNTcyNmMzYmMifQ.IdpNBeto6LEEkhPONDv15n94iTe8wz_1xLAqzQkN1aue_MPH2JaXwIWPjNtQngoYabXkhzC4gUibeOzTcRV64a-VpPtSrXMqr7LnNIpfPJC9XHtw1WXdBo7tXalSpznKlstbUjDONNpoe2kEVnwsx2HrXB5nJWFc7nrSgP-i__Ji3HxonUCjRDFlUyTzeP2upmMBEsaVLB5T8JNc8LlIrxoHEv1Hn2Jt3_33C4Fg2K7XyOFgxNDtLLgo_CK7MPNCXmKYkG-dW7m47QV9uBhX9aKsXJIxSlOpFTKrLWLGkfPU5uVi3LtvgANtA1v5-Z7roSLeQZNzTXZHCpq2xSQlxg</div>
+        <div>refresh_token: bq97xTsaq5Y5Tt5tXA4NADd0trwK-HYZuyOY3XtcPG6BRNlWLQCcILQlS2psL6RF9C5dqEelhiMdO8KaLeGqHRFV2dUBiODSu2k34Rm6UQNZjroPCI1r9WY1PTpPxRB1</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNjVmOGVmMmYtZDhmMy00ZjRkLTgwY2ItODVhYzkxOTQ0N2NiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzMWZiMzI5NS00NzQ3LTRhNzctODU0Yy0zNzUxZjg0Mjk5ZTMiLCJzdWIiOiJ0ZXJyYW5jZS5nb29kd2luQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5NzgzMzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzMxZmIzMjk1LTQ3NDctNGE3Ny04NTRjLTM3NTFmODQyOTllMyIsImV4cCI6MTc2OTk3OTIzNiwiaWF0IjoxNzY5OTc4MzM2LCJ1c2VySWQiOiIyMTlhY2FmNy0wNGVhLTQ0ZmYtOTUyZC1kYjlkNDliMjM3YTciLCJqdGkiOiJiZWMxM2RiOS1jNGRmLTQwYTgtYjkxNy0xZDhjNTcyNmMzYmMifQ.IdpNBeto6LEEkhPONDv15n94iTe8wz_1xLAqzQkN1aue_MPH2JaXwIWPjNtQngoYabXkhzC4gUibeOzTcRV64a-VpPtSrXMqr7LnNIpfPJC9XHtw1WXdBo7tXalSpznKlstbUjDONNpoe2kEVnwsx2HrXB5nJWFc7nrSgP-i__Ji3HxonUCjRDFlUyTzeP2upmMBEsaVLB5T8JNc8LlIrxoHEv1Hn2Jt3_33C4Fg2K7XyOFgxNDtLLgo_CK7MPNCXmKYkG-dW7m47QV9uBhX9aKsXJIxSlOpFTKrLWLGkfPU5uVi3LtvgANtA1v5-Z7roSLeQZNzTXZHCpq2xSQlxg&#39; -b &#39;refresh_token=bq97xTsaq5Y5Tt5tXA4NADd0trwK-HYZuyOY3XtcPG6BRNlWLQCcILQlS2psL6RF9C5dqEelhiMdO8KaLeGqHRFV2dUBiODSu2k34Rm6UQNZjroPCI1r9WY1PTpPxRB1&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mitsue Kertzmann&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(856) 619-7384 x5575&quot;,
+                &quot;email&quot;: &quot;alfred.kihn@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;43233 Feest Stream&quot;,
+            &quot;street2&quot;: &quot;Apt. 266&quot;,
+            &quot;city&quot;: &quot;West Tyishaland&quot;,
+            &quot;state&quot;: &quot;Georgia&quot;,
+            &quot;postalCode&quot;: &quot;18379&quot;,
+            &quot;country&quot;: &quot;New Zealand&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        1
+    ]
+}&#39;
+</div>
