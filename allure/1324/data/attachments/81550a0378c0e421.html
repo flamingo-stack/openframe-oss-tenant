@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697fb93c78c6bd5ef7f59587</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Celeste Sauer&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(256) 719-1433 x0974&quot;,
+                &quot;email&quot;: &quot;josh.lakin@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;850 Daryl Park&quot;,
+            &quot;street2&quot;: &quot;Apt. 379&quot;,
+            &quot;city&quot;: &quot;North Lesleyshire&quot;,
+            &quot;state&quot;: &quot;Connecticut&quot;,
+            &quot;postalCode&quot;: &quot;33810&quot;,
+            &quot;country&quot;: &quot;Northern Mariana Islands&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;86058 Shelton Valleys&quot;,
+            &quot;street2&quot;: &quot;Suite 650&quot;,
+            &quot;city&quot;: &quot;West Jamaal&quot;,
+            &quot;state&quot;: &quot;Wyoming&quot;,
+            &quot;postalCode&quot;: &quot;39411&quot;,
+            &quot;country&quot;: &quot;Cambodia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        1
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNDk5NjQzZjctZThhNi00MTQyLTlhZWEtMzU1MGRlYTcyMzA2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkYzQ0Y2I1My1mYTg4LTRjOWItOTExZS1hZjI5NTM1MDAyNzAiLCJzdWIiOiJqZW5lbGxlLndlaG5lckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTk3ODE3MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZGM0NGNiNTMtZmE4OC00YzliLTkxMWUtYWYyOTUzNTAwMjcwIiwiZXhwIjoxNzY5OTc5MDcxLCJpYXQiOjE3Njk5NzgxNzEsInVzZXJJZCI6IjE1MjRiNGJhLTY5N2UtNDA3MC1hYmRiLTQ5NWNjYzZkMjM0MCIsImp0aSI6IjFkNTNkZmRkLTNlMWMtNGUwNC1hODQ1LTQ3NWU2NmMzMzllZiJ9.7dJ-6ebo6g5v4HRIkRWAKB9a8xHOIv8M5PZ1JnWjXU6G4CJlgHwSQC4aAUK-ZyBEHuDwW2TAAyfIeKognrbWmsQZtC79mv2k-BZTpzLdDwWpoZG3vZs_KyDOeqlGZEc6Oa6uPqxXI0N6wpxelvmpEGkvrNbKMJdaLDjFtcjX8ep5eqsoSAabFYzTmqhWShqWsR3nJbdrc3YjzBuDAqQcyEDrdxiAeXpCCbw5lvPc9nCbbGv6BY2lrZgHuPR8x6PyZSGa25zROdF7zerlXMFaOMQ8M5P-3tMNcLsQSMLsP04UCXK_6elqe2sLoSgXdFJRLXr982sz-2NlEZKCWjEGPQ</div>
+        <div>refresh_token: cdgSjeQTd38H3vMDa_A--fiMvIpKw2wWH769HCSxLNjSvc8lXvtmESh5rdLWG5x8pEaILb4d_wkVza7ogU7zlx_gApXzmBQ4k1ePMnM-lip99fe0kREFCHNuCOZXOj2y</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697fb93c78c6bd5ef7f59587&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNDk5NjQzZjctZThhNi00MTQyLTlhZWEtMzU1MGRlYTcyMzA2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkYzQ0Y2I1My1mYTg4LTRjOWItOTExZS1hZjI5NTM1MDAyNzAiLCJzdWIiOiJqZW5lbGxlLndlaG5lckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTk3ODE3MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZGM0NGNiNTMtZmE4OC00YzliLTkxMWUtYWYyOTUzNTAwMjcwIiwiZXhwIjoxNzY5OTc5MDcxLCJpYXQiOjE3Njk5NzgxNzEsInVzZXJJZCI6IjE1MjRiNGJhLTY5N2UtNDA3MC1hYmRiLTQ5NWNjYzZkMjM0MCIsImp0aSI6IjFkNTNkZmRkLTNlMWMtNGUwNC1hODQ1LTQ3NWU2NmMzMzllZiJ9.7dJ-6ebo6g5v4HRIkRWAKB9a8xHOIv8M5PZ1JnWjXU6G4CJlgHwSQC4aAUK-ZyBEHuDwW2TAAyfIeKognrbWmsQZtC79mv2k-BZTpzLdDwWpoZG3vZs_KyDOeqlGZEc6Oa6uPqxXI0N6wpxelvmpEGkvrNbKMJdaLDjFtcjX8ep5eqsoSAabFYzTmqhWShqWsR3nJbdrc3YjzBuDAqQcyEDrdxiAeXpCCbw5lvPc9nCbbGv6BY2lrZgHuPR8x6PyZSGa25zROdF7zerlXMFaOMQ8M5P-3tMNcLsQSMLsP04UCXK_6elqe2sLoSgXdFJRLXr982sz-2NlEZKCWjEGPQ&#39; -b &#39;refresh_token=cdgSjeQTd38H3vMDa_A--fiMvIpKw2wWH769HCSxLNjSvc8lXvtmESh5rdLWG5x8pEaILb4d_wkVza7ogU7zlx_gApXzmBQ4k1ePMnM-lip99fe0kREFCHNuCOZXOj2y&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Celeste Sauer&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(256) 719-1433 x0974&quot;,
+                &quot;email&quot;: &quot;josh.lakin@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;850 Daryl Park&quot;,
+            &quot;street2&quot;: &quot;Apt. 379&quot;,
+            &quot;city&quot;: &quot;North Lesleyshire&quot;,
+            &quot;state&quot;: &quot;Connecticut&quot;,
+            &quot;postalCode&quot;: &quot;33810&quot;,
+            &quot;country&quot;: &quot;Northern Mariana Islands&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;86058 Shelton Valleys&quot;,
+            &quot;street2&quot;: &quot;Suite 650&quot;,
+            &quot;city&quot;: &quot;West Jamaal&quot;,
+            &quot;state&quot;: &quot;Wyoming&quot;,
+            &quot;postalCode&quot;: &quot;39411&quot;,
+            &quot;country&quot;: &quot;Cambodia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        1
+    ]
+}&#39;
+</div>
