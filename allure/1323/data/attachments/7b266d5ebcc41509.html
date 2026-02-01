@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;in.quitzon@gmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMTMyMWI4YmEtNDZkZC00MDQwLTg4NzItYzVjMzg4YWIyODJjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1NzFkNTNmMC0yNjNlLTQyZDMtYWI3Yi0zMzEzZmM0YTRjNTQiLCJzdWIiOiJlbWlsZS5icmFrdXNAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5MjY1OTcsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzU3MWQ1M2YwLTI2M2UtNDJkMy1hYjdiLTMzMTNmYzRhNGM1NCIsImV4cCI6MTc2OTkyNzQ5NywiaWF0IjoxNzY5OTI2NTk3LCJ1c2VySWQiOiJiMzJmZmE5Ni1jZTRlLTRjYmYtYjljMi05N2EyOTU4ODcyNGUiLCJqdGkiOiI0YzNkMWE4MS0yMjdkLTQwMDMtYTFmZC0zOTVhOWY1MmQ4MTkifQ.CeVcA-UY7R9IkfQIq9lQruDctTUsRkpVT1CfisRGQGDg62e_eqUezu6HUP_oan7_VrWUm3mh3WgJ5EqG_BU2y1rt1AmjZ3V6zewzurHcPzK8eKnPnZpeXleC-uhCvBH8SJRjm8EhQElmGo_DLhcyhvHavXIZj2UJjfdGhgOYN41fxsuNTdW84M54SAYKzoqn4znfhbTUn4-D-eJI3MVbvcI2tDimssZ-iIu87J3taKQPMTCVZHAjAdh7gJ9WIlOXAOm5BKT1aLMZkubFH50h0vcUdSg3qR6XFy1Moak5vORbf_ICiOHYbW4Pz4yPqlgI-g9VfZVa8IklKmWxNAipjA</div>
+        <div>refresh_token: HZWFw703OsiQ2EAbRl91LAOv1WBN1dHXjP88YuEKUgQvvHmDhgNOc4C2EqGCcpBpaXoqm66RdqcmU7vtVh-td212n_OoXa-_H9GyUNfFZYhI6FRTTG3RvCtuJ-B0IJ8I</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMTMyMWI4YmEtNDZkZC00MDQwLTg4NzItYzVjMzg4YWIyODJjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1NzFkNTNmMC0yNjNlLTQyZDMtYWI3Yi0zMzEzZmM0YTRjNTQiLCJzdWIiOiJlbWlsZS5icmFrdXNAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5MjY1OTcsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzU3MWQ1M2YwLTI2M2UtNDJkMy1hYjdiLTMzMTNmYzRhNGM1NCIsImV4cCI6MTc2OTkyNzQ5NywiaWF0IjoxNzY5OTI2NTk3LCJ1c2VySWQiOiJiMzJmZmE5Ni1jZTRlLTRjYmYtYjljMi05N2EyOTU4ODcyNGUiLCJqdGkiOiI0YzNkMWE4MS0yMjdkLTQwMDMtYTFmZC0zOTVhOWY1MmQ4MTkifQ.CeVcA-UY7R9IkfQIq9lQruDctTUsRkpVT1CfisRGQGDg62e_eqUezu6HUP_oan7_VrWUm3mh3WgJ5EqG_BU2y1rt1AmjZ3V6zewzurHcPzK8eKnPnZpeXleC-uhCvBH8SJRjm8EhQElmGo_DLhcyhvHavXIZj2UJjfdGhgOYN41fxsuNTdW84M54SAYKzoqn4znfhbTUn4-D-eJI3MVbvcI2tDimssZ-iIu87J3taKQPMTCVZHAjAdh7gJ9WIlOXAOm5BKT1aLMZkubFH50h0vcUdSg3qR6XFy1Moak5vORbf_ICiOHYbW4Pz4yPqlgI-g9VfZVa8IklKmWxNAipjA&#39; -b &#39;refresh_token=HZWFw703OsiQ2EAbRl91LAOv1WBN1dHXjP88YuEKUgQvvHmDhgNOc4C2EqGCcpBpaXoqm66RdqcmU7vtVh-td212n_OoXa-_H9GyUNfFZYhI6FRTTG3RvCtuJ-B0IJ8I&#39; -d &#39;{
+    &quot;email&quot;: &quot;in.quitzon@gmail.com&quot;
+}&#39;
+</div>
