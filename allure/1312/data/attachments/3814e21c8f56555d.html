@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;assunta.jakubowski@yahoo.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOWE4MDRmMDAtYzE4Yy00YTkxLThmN2YtNzY1NTE0ODBiNDc3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2OGI3ZGI4NC02MWQ0LTQ4MjItOTY2MC03YzI0Y2M5MWQ2NmIiLCJzdWIiOiJlbGlzc2Eua2VybHVrZUB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTkxMDQ3OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNjhiN2RiODQtNjFkNC00ODIyLTk2NjAtN2MyNGNjOTFkNjZiIiwiZXhwIjoxNzY5OTExMzc5LCJpYXQiOjE3Njk5MTA0NzksInVzZXJJZCI6ImFhMjMzMWQ2LThmNjItNGFiNi04NWEyLWE1MGNkMGQ0Y2FjYyIsImp0aSI6ImIyZTNmMDgxLTMxZDAtNGU4Mi04MWYxLTVmMGVmOWQyMjQyOSJ9.BPzAgCKOtilCNp_nwrHPPjXEaMgJjpttb_h989EQV6lzZGUDZUNp5mgzFc01fYHnmUv1ihMsAul_U7Uuzk_PkOWMJkGMwwKVwzgKXfHEHChKCXrPg-iBE6D3WhF9pqbU2APUN3_iVD0TwDLC_42QkxdUx0EFMN8u1B_1sn7ssYeIrenRbushdMNjnYYDEfsY46yC-z52m4pb5UiMlDRzPdJ9LrDrF0tANCInmTlyO3UUjTmmGDYQHOnmDShemxs0QSHh5SvuN1PFjJtTnjaWVjwRce0_FefeB045WRlaCNjzJUNK-XFFUCOfimkL0uZonjEWj2npSDNzgrsJahoY2A</div>
+        <div>refresh_token: zHpYWKPsA9Aj-vWkkYW5t_BCuSK5MdDDjJUvyRSuu5U8_aOuzfHyPu18xB4-lt-CJkFtuFA19DghZEO8ajezhP8Up456Fhe0tF9rOV-tTdYQfE6hQcGIXLpyeLb-G9Nm</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOWE4MDRmMDAtYzE4Yy00YTkxLThmN2YtNzY1NTE0ODBiNDc3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2OGI3ZGI4NC02MWQ0LTQ4MjItOTY2MC03YzI0Y2M5MWQ2NmIiLCJzdWIiOiJlbGlzc2Eua2VybHVrZUB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTkxMDQ3OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNjhiN2RiODQtNjFkNC00ODIyLTk2NjAtN2MyNGNjOTFkNjZiIiwiZXhwIjoxNzY5OTExMzc5LCJpYXQiOjE3Njk5MTA0NzksInVzZXJJZCI6ImFhMjMzMWQ2LThmNjItNGFiNi04NWEyLWE1MGNkMGQ0Y2FjYyIsImp0aSI6ImIyZTNmMDgxLTMxZDAtNGU4Mi04MWYxLTVmMGVmOWQyMjQyOSJ9.BPzAgCKOtilCNp_nwrHPPjXEaMgJjpttb_h989EQV6lzZGUDZUNp5mgzFc01fYHnmUv1ihMsAul_U7Uuzk_PkOWMJkGMwwKVwzgKXfHEHChKCXrPg-iBE6D3WhF9pqbU2APUN3_iVD0TwDLC_42QkxdUx0EFMN8u1B_1sn7ssYeIrenRbushdMNjnYYDEfsY46yC-z52m4pb5UiMlDRzPdJ9LrDrF0tANCInmTlyO3UUjTmmGDYQHOnmDShemxs0QSHh5SvuN1PFjJtTnjaWVjwRce0_FefeB045WRlaCNjzJUNK-XFFUCOfimkL0uZonjEWj2npSDNzgrsJahoY2A&#39; -b &#39;refresh_token=zHpYWKPsA9Aj-vWkkYW5t_BCuSK5MdDDjJUvyRSuu5U8_aOuzfHyPu18xB4-lt-CJkFtuFA19DghZEO8ajezhP8Up456Fhe0tF9rOV-tTdYQfE6hQcGIXLpyeLb-G9Nm&#39; -d &#39;{
+    &quot;email&quot;: &quot;assunta.jakubowski@yahoo.com&quot;
+}&#39;
+</div>

@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/697eb0d042b9031ed137771a</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Forrest Considine I&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(417) 320-7219&quot;,
+                &quot;email&quot;: &quot;dawn.lakin@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;08078 Alethia Corner&quot;,
+            &quot;street2&quot;: &quot;Apt. 141&quot;,
+            &quot;city&quot;: &quot;Legrosland&quot;,
+            &quot;state&quot;: &quot;Pennsylvania&quot;,
+            &quot;postalCode&quot;: &quot;25402&quot;,
+            &quot;country&quot;: &quot;United States of America&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;9255 Devon Pike&quot;,
+            &quot;street2&quot;: &quot;Apt. 603&quot;,
+            &quot;city&quot;: &quot;West Jackson&quot;,
+            &quot;state&quot;: &quot;Kentucky&quot;,
+            &quot;postalCode&quot;: &quot;15416&quot;,
+            &quot;country&quot;: &quot;Spain&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        1
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOWE4MDRmMDAtYzE4Yy00YTkxLThmN2YtNzY1NTE0ODBiNDc3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2OGI3ZGI4NC02MWQ0LTQ4MjItOTY2MC03YzI0Y2M5MWQ2NmIiLCJzdWIiOiJlbGlzc2Eua2VybHVrZUB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTkxMDQ3OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNjhiN2RiODQtNjFkNC00ODIyLTk2NjAtN2MyNGNjOTFkNjZiIiwiZXhwIjoxNzY5OTExMzc5LCJpYXQiOjE3Njk5MTA0NzksInVzZXJJZCI6ImFhMjMzMWQ2LThmNjItNGFiNi04NWEyLWE1MGNkMGQ0Y2FjYyIsImp0aSI6ImIyZTNmMDgxLTMxZDAtNGU4Mi04MWYxLTVmMGVmOWQyMjQyOSJ9.BPzAgCKOtilCNp_nwrHPPjXEaMgJjpttb_h989EQV6lzZGUDZUNp5mgzFc01fYHnmUv1ihMsAul_U7Uuzk_PkOWMJkGMwwKVwzgKXfHEHChKCXrPg-iBE6D3WhF9pqbU2APUN3_iVD0TwDLC_42QkxdUx0EFMN8u1B_1sn7ssYeIrenRbushdMNjnYYDEfsY46yC-z52m4pb5UiMlDRzPdJ9LrDrF0tANCInmTlyO3UUjTmmGDYQHOnmDShemxs0QSHh5SvuN1PFjJtTnjaWVjwRce0_FefeB045WRlaCNjzJUNK-XFFUCOfimkL0uZonjEWj2npSDNzgrsJahoY2A</div>
+        <div>refresh_token: zHpYWKPsA9Aj-vWkkYW5t_BCuSK5MdDDjJUvyRSuu5U8_aOuzfHyPu18xB4-lt-CJkFtuFA19DghZEO8ajezhP8Up456Fhe0tF9rOV-tTdYQfE6hQcGIXLpyeLb-G9Nm</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/697eb0d042b9031ed137771a&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOWE4MDRmMDAtYzE4Yy00YTkxLThmN2YtNzY1NTE0ODBiNDc3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2OGI3ZGI4NC02MWQ0LTQ4MjItOTY2MC03YzI0Y2M5MWQ2NmIiLCJzdWIiOiJlbGlzc2Eua2VybHVrZUB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc2OTkxMDQ3OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNjhiN2RiODQtNjFkNC00ODIyLTk2NjAtN2MyNGNjOTFkNjZiIiwiZXhwIjoxNzY5OTExMzc5LCJpYXQiOjE3Njk5MTA0NzksInVzZXJJZCI6ImFhMjMzMWQ2LThmNjItNGFiNi04NWEyLWE1MGNkMGQ0Y2FjYyIsImp0aSI6ImIyZTNmMDgxLTMxZDAtNGU4Mi04MWYxLTVmMGVmOWQyMjQyOSJ9.BPzAgCKOtilCNp_nwrHPPjXEaMgJjpttb_h989EQV6lzZGUDZUNp5mgzFc01fYHnmUv1ihMsAul_U7Uuzk_PkOWMJkGMwwKVwzgKXfHEHChKCXrPg-iBE6D3WhF9pqbU2APUN3_iVD0TwDLC_42QkxdUx0EFMN8u1B_1sn7ssYeIrenRbushdMNjnYYDEfsY46yC-z52m4pb5UiMlDRzPdJ9LrDrF0tANCInmTlyO3UUjTmmGDYQHOnmDShemxs0QSHh5SvuN1PFjJtTnjaWVjwRce0_FefeB045WRlaCNjzJUNK-XFFUCOfimkL0uZonjEWj2npSDNzgrsJahoY2A&#39; -b &#39;refresh_token=zHpYWKPsA9Aj-vWkkYW5t_BCuSK5MdDDjJUvyRSuu5U8_aOuzfHyPu18xB4-lt-CJkFtuFA19DghZEO8ajezhP8Up456Fhe0tF9rOV-tTdYQfE6hQcGIXLpyeLb-G9Nm&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Forrest Considine I&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(417) 320-7219&quot;,
+                &quot;email&quot;: &quot;dawn.lakin@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;08078 Alethia Corner&quot;,
+            &quot;street2&quot;: &quot;Apt. 141&quot;,
+            &quot;city&quot;: &quot;Legrosland&quot;,
+            &quot;state&quot;: &quot;Pennsylvania&quot;,
+            &quot;postalCode&quot;: &quot;25402&quot;,
+            &quot;country&quot;: &quot;United States of America&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;9255 Devon Pike&quot;,
+            &quot;street2&quot;: &quot;Apt. 603&quot;,
+            &quot;city&quot;: &quot;West Jackson&quot;,
+            &quot;state&quot;: &quot;Kentucky&quot;,
+            &quot;postalCode&quot;: &quot;15416&quot;,
+            &quot;country&quot;: &quot;Spain&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        1
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        1
+    ]
+}&#39;
+</div>
