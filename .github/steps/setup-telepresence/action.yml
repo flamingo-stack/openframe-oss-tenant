@@ -27,7 +27,7 @@ runs:
     - name: Setup port-forwarding to services
       shell: bash
       run: |
-        kubectl port-forward svc/openframe-gateway -n microservices 8100:8100 > /tmp/pf-gateway.log 2>&1 &
+        kubectl port-forward svc/openframe-gateway -n microservices 8100:80 > /tmp/pf-gateway.log 2>&1 &
         echo $! > /tmp/pf-gateway.pid
         sleep 5
 
