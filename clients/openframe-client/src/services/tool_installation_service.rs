@@ -227,13 +227,13 @@ impl ToolInstallationService {
                 if is_executable {
                     if let Some(ref version) = asset.version {
                         info!("Publishing installed asset message for: {} v{}", asset.id, version);
-                        if let Ok(machine_id) = self.config_service.get_machine_id().await {
-                            if let Err(e) = self.installed_agent_publisher
-                                .publish(machine_id, asset.id.clone(), version.clone())
-                                .await
-                            {
-                                warn!("Failed to publish installed asset message for {}: {:#}", asset.id, e);
-                            }
+                        let machine_id = self.config_service.get_machine_id().await
+                            .with_context(|| format!("Failed to get machine_id for asset publish: {}", asset.id))?;
+                        if let Err(e) = self.installed_agent_publisher
+                            .publish(machine_id, asset.id.clone(), version.clone())
+                            .await
+                        {
+                            warn!("Failed to publish installed asset message for {}: {:#}", asset.id, e);
                         }
                     }
                 }
