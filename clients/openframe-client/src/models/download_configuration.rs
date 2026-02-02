@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,6 +12,11 @@ pub struct DownloadConfiguration {
 }
 
 impl DownloadConfiguration {
+    /// Returns true if agent_file_name is a path (requires extracting entire archive).
+    pub fn is_folder_extraction(&self) -> bool {
+        Path::new(&self.agent_file_name).components().count() > 1
+    }
+
     /// Checks if this configuration matches the current OS
     pub fn matches_current_os(&self) -> bool {
         let current_os = if cfg!(target_os = "windows") {

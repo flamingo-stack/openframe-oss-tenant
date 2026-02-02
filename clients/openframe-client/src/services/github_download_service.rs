@@ -9,7 +9,12 @@ use crate::config::update_config::{
 use reqwest::Client;
 use bytes::Bytes;
 use std::io::Cursor;
+use std::path::Path;
 use tokio::time::Duration;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+#[cfg(target_family = "unix")]
+use std::os::unix::fs::PermissionsExt;
 
 #[derive(Clone)]
 pub struct GithubDownloadService {
@@ -262,6 +267,123 @@ impl GithubDownloadService {
         configs.iter()
             .find(|c| c.matches_current_os())
             .ok_or_else(|| anyhow!("No download configuration found for current OS"))
+    }
+
+    /// Downloads and saves tool agent. Returns executable path for folder extraction, None for single binary.
+    pub async fn download_and_save(
+        &self,
+        config: &DownloadConfiguration,
+        tool_folder_path: &Path,
+        default_agent_path: &Path,
+    ) -> Result<Option<String>> {
+        if config.is_folder_extraction() {
+            let file_path = tool_folder_path.join(&config.agent_file_name);
+            self.download_and_extract_all(config, tool_folder_path).await?;
+            Self::set_executable_permissions(&file_path).await?;
+            if !file_path.exists() {
+                warn!("Executable not found at {} after extraction", file_path.display());
+            }
+            Ok(Some(config.agent_file_name.clone()))
+        } else {
+            let bytes = self.download_and_extract(config).await?;
+            File::create(default_agent_path).await?.write_all(&bytes).await?;
+            Self::set_executable_permissions(default_agent_path).await?;
+            info!("Saved to {}", default_agent_path.display());
+            Ok(None)
+        }
+    }
+
+    async fn set_executable_permissions(path: &Path) -> Result<()> {
+        #[cfg(target_family = "unix")]
+        {
+            let mut perms = tokio::fs::metadata(path).await?.permissions();
+            perms.set_mode(0o755);
+            tokio::fs::set_permissions(path, perms).await?;
+        }
+        Ok(())
+    }
+
+    /// Downloads archive and extracts all contents to target path (macOS only).
+    #[cfg(target_os = "macos")]
+    pub async fn download_and_extract_all(&self, config: &DownloadConfiguration, target_dir: &Path) -> Result<()> {
+        info!("Downloading archive from: {}", config.link);
+
+        let archive_bytes = self.download_with_retry(&config.link).await
+            .with_context(|| format!("Failed to download from: {}", config.link))?;
+
+        info!("Downloaded {} bytes", archive_bytes.len());
+
+        if archive_bytes.len() < MIN_BINARY_SIZE_BYTES as usize {
+            return Err(anyhow!(
+                "Downloaded file too small ({} bytes), minimum expected: {} bytes",
+                archive_bytes.len(),
+                MIN_BINARY_SIZE_BYTES
+            ));
+        }
+
+        if config.file_name.ends_with(".tar.gz") || config.file_name.ends_with(".tgz") {
+            self.extract_all_from_tar_gz(archive_bytes, target_dir)
+                .with_context(|| "Failed to extract tar.gz archive")?;
+        } else {
+            return Err(anyhow!("Unsupported archive format for macOS: {}. Expected .tar.gz", config.file_name));
+        }
+
+        info!("Archive extracted to {}", target_dir.display());
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    pub async fn download_and_extract_all(&self, config: &DownloadConfiguration, _target_dir: &Path) -> Result<()> {
+        Err(anyhow!("Archive extraction is only supported on macOS. Config: {}", config.file_name))
+    }
+
+    /// Extracts all contents from tar.gz archive to target path (macOS only)
+    #[cfg(target_os = "macos")]
+    fn extract_all_from_tar_gz(&self, archive_bytes: Bytes, target_dir: &Path) -> Result<()> {
+        use flate2::read::GzDecoder;
+        use tar::Archive;
+        use std::fs;
+        use std::os::unix::fs::PermissionsExt;
+
+        let cursor = Cursor::new(archive_bytes);
+        let decoder = GzDecoder::new(cursor);
+        let mut archive = Archive::new(decoder);
+
+        let mut extracted_count = 0;
+
+        for entry_result in archive.entries().context("Failed to read tar entries")? {
+            let mut entry = entry_result.context("Failed to read tar entry")?;
+            let path = entry.path().context("Failed to get entry path")?;
+            let dest_path = target_dir.join(&path);
+
+            if entry.header().entry_type().is_dir() {
+                fs::create_dir_all(&dest_path)
+                    .with_context(|| format!("Failed to create directory: {}", dest_path.display()))?;
+            } else {
+                if let Some(parent) = dest_path.parent() {
+                    fs::create_dir_all(parent)
+                        .with_context(|| format!("Failed to create parent directory: {}", parent.display()))?;
+                }
+
+                let mut file = std::fs::File::create(&dest_path)
+                    .with_context(|| format!("Failed to create file: {}", dest_path.display()))?;
+                std::io::copy(&mut entry, &mut file)
+                    .with_context(|| format!("Failed to write file: {}", dest_path.display()))?;
+
+                if let Ok(mode) = entry.header().mode() {
+                    fs::set_permissions(&dest_path, fs::Permissions::from_mode(mode)).ok();
+                }
+            }
+
+            extracted_count += 1;
+        }
+
+        if extracted_count == 0 {
+            return Err(anyhow!("Archive is empty"));
+        }
+
+        info!("Extracted {} entries", extracted_count);
+        Ok(())
     }
 }
 

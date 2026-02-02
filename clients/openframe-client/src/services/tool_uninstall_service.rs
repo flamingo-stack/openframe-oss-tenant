@@ -104,8 +104,8 @@ impl ToolUninstallService {
 
         debug!("Processed uninstallation args for {}: {:?}", tool_agent_id, processed_args);
 
-        // Get the tool agent executable path
-        let agent_path = self.directory_manager.get_agent_path(tool_agent_id);
+        let agent_path = self.directory_manager
+            .get_tool_executable_path(tool_agent_id, tool.executable_path.as_deref());
 
         if !agent_path.exists() {
             warn!("Tool agent executable not found at {}, skipping uninstallation command", agent_path.display());
