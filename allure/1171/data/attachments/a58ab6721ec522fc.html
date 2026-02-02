@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6980da6280ead01dfdaf6731</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Elfriede Wunsch&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(478) 978-1770 x2092&quot;,
+                &quot;email&quot;: &quot;domenica.kerluke@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;0719 Reynolds Fall&quot;,
+            &quot;street2&quot;: &quot;Suite 877&quot;,
+            &quot;city&quot;: &quot;New Burton&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;35929&quot;,
+            &quot;country&quot;: &quot;Thailand&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;07595 Micheline Fork&quot;,
+            &quot;street2&quot;: &quot;Apt. 304&quot;,
+            &quot;city&quot;: &quot;Champlinton&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;31980&quot;,
+            &quot;country&quot;: &quot;Croatia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMzdmMjBmODctZmM3NS00MjQwLWEyODMtYTQ4NDljODY3ODZiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2MDE4YWJlMi1mZjFjLTQ3YTgtYTA0Ni00ZmIwOTc4ZDBlYmUiLCJzdWIiOiJ0ZXJyZW5jZS5zdGVockB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDA1MjE5Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNjAxOGFiZTItZmYxYy00N2E4LWEwNDYtNGZiMDk3OGQwZWJlIiwiZXhwIjoxNzcwMDUzMDkzLCJpYXQiOjE3NzAwNTIxOTMsInVzZXJJZCI6IjU3ODljY2YxLTA2MTAtNGRjYS1iMTBlLWE2MjBkMjQ2NjllZiIsImp0aSI6IjM0N2JmMTIyLWJkNzgtNDk3My04ZjQwLTQxNmEyNmNmMzZhYSJ9.q3w6EygaRV4s0YvHkaL41VLwSg_CgOEO5RRawmC1Vvaw1OCG3PRq_LLOce-VMaYpkZBPgdop2ryDA8w204Eh4rk23bxF5LRMb7CHijdlCR-HfujrTueVB4hqHRfYQJEceivtGWLiJha7CWLtkf1O5pj4VPFWfgorTsDcIKYnibVSu0c-1UanTbUkqCyEfcdTRNMoV07eHqNcvYIF0S-IFMSAyEfd0Df34pVf4FShNI2auYIdO8owDbeTNsthLD71ws3smR5Ho6N9YBsgJx1vJqMO-UgO-beHwZod9UeKbvdRlIwpN7BEbNlo90wMn7pIr_6CMX61TFYF6jGRJxlGDQ</div>
+        <div>refresh_token: XRZQ4Z8joMIhKtGUlPeG4eXo_r_tLLL3jFGZon_7c8gcWzyEZXepWnaLeWHUp8Z66FXI7FTrCRdMI8qbJjg30RexnnJ4KC7QLYyj35HstpSv2Me85bBr3B-Pe0SIS4zw</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6980da6280ead01dfdaf6731&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMzdmMjBmODctZmM3NS00MjQwLWEyODMtYTQ4NDljODY3ODZiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2MDE4YWJlMi1mZjFjLTQ3YTgtYTA0Ni00ZmIwOTc4ZDBlYmUiLCJzdWIiOiJ0ZXJyZW5jZS5zdGVockB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDA1MjE5Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNjAxOGFiZTItZmYxYy00N2E4LWEwNDYtNGZiMDk3OGQwZWJlIiwiZXhwIjoxNzcwMDUzMDkzLCJpYXQiOjE3NzAwNTIxOTMsInVzZXJJZCI6IjU3ODljY2YxLTA2MTAtNGRjYS1iMTBlLWE2MjBkMjQ2NjllZiIsImp0aSI6IjM0N2JmMTIyLWJkNzgtNDk3My04ZjQwLTQxNmEyNmNmMzZhYSJ9.q3w6EygaRV4s0YvHkaL41VLwSg_CgOEO5RRawmC1Vvaw1OCG3PRq_LLOce-VMaYpkZBPgdop2ryDA8w204Eh4rk23bxF5LRMb7CHijdlCR-HfujrTueVB4hqHRfYQJEceivtGWLiJha7CWLtkf1O5pj4VPFWfgorTsDcIKYnibVSu0c-1UanTbUkqCyEfcdTRNMoV07eHqNcvYIF0S-IFMSAyEfd0Df34pVf4FShNI2auYIdO8owDbeTNsthLD71ws3smR5Ho6N9YBsgJx1vJqMO-UgO-beHwZod9UeKbvdRlIwpN7BEbNlo90wMn7pIr_6CMX61TFYF6jGRJxlGDQ&#39; -b &#39;refresh_token=XRZQ4Z8joMIhKtGUlPeG4eXo_r_tLLL3jFGZon_7c8gcWzyEZXepWnaLeWHUp8Z66FXI7FTrCRdMI8qbJjg30RexnnJ4KC7QLYyj35HstpSv2Me85bBr3B-Pe0SIS4zw&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Elfriede Wunsch&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(478) 978-1770 x2092&quot;,
+                &quot;email&quot;: &quot;domenica.kerluke@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;0719 Reynolds Fall&quot;,
+            &quot;street2&quot;: &quot;Suite 877&quot;,
+            &quot;city&quot;: &quot;New Burton&quot;,
+            &quot;state&quot;: &quot;Colorado&quot;,
+            &quot;postalCode&quot;: &quot;35929&quot;,
+            &quot;country&quot;: &quot;Thailand&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;07595 Micheline Fork&quot;,
+            &quot;street2&quot;: &quot;Apt. 304&quot;,
+            &quot;city&quot;: &quot;Champlinton&quot;,
+            &quot;state&quot;: &quot;Washington&quot;,
+            &quot;postalCode&quot;: &quot;31980&quot;,
+            &quot;country&quot;: &quot;Croatia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}&#39;
+</div>
