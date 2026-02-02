@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/698013554de8ae6ffd618fae</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mrs. Israel Morar&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(509) 610-5442&quot;,
+                &quot;email&quot;: &quot;palmira.wehner@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;55377 Carter Views&quot;,
+            &quot;street2&quot;: &quot;Apt. 858&quot;,
+            &quot;city&quot;: &quot;East Haydeefort&quot;,
+            &quot;state&quot;: &quot;Massachusetts&quot;,
+            &quot;postalCode&quot;: &quot;75042&quot;,
+            &quot;country&quot;: &quot;Germany&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;956 Jacalyn Village&quot;,
+            &quot;street2&quot;: &quot;Apt. 510&quot;,
+            &quot;city&quot;: &quot;West Joseberg&quot;,
+            &quot;state&quot;: &quot;Maryland&quot;,
+            &quot;postalCode&quot;: &quot;83768&quot;,
+            &quot;country&quot;: &quot;Italy&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtY2FmZTVkNzYtYjBlMS00M2U0LTllYWEtOWU4ZWI1NDc5NWRmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzMDQ1M2M1ZC04MTE4LTQxYmUtYWNkMi1hMGEzZWQ3NWUzOTgiLCJzdWIiOiJtYXJnLm5pdHpzY2hlQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAwMDEyMzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzMwNDUzYzVkLTgxMTgtNDFiZS1hY2QyLWEwYTNlZDc1ZTM5OCIsImV4cCI6MTc3MDAwMjEzNiwiaWF0IjoxNzcwMDAxMjM2LCJ1c2VySWQiOiIxYTA3NzAxZi0xZGNlLTRlNzktODVmNC03NzUwZjFjMWY5NmQiLCJqdGkiOiJhNGE5NWMyNy04MTE2LTQ0YzktYTgyNS02MzNlZTg0OThmZTYifQ.DVazCxHhKcpy7dO_c4VJCnVccuf2yJVYmGnX_CslNw4uZBbthrFp-02888X0oFwaEhpJwVYxyAbZXdK8TajgaNeFJLnAivjdhYZuN8UWz5VMuyTvwbPNKANtuznYQckAf1eTjUPSBhs8hKsPHX0ZdIjQfzVWAe5NAgwHxz4KMIgm20gcm9lN0NrPsmtxqPHYf0b_wU1H-80lIxC0SrCwFdUvMQBCxlYIcOtNf2zyQSW4VIxCYygAxxTG6taGIEV-Vs8UoKOrEGW2okWhwyNFfSNKn14tgHzIwEbL5SOPUYtt0iK1jjkWG2W5ipgVYEB0aPkJpSW4QU_twoHrLVenCw</div>
+        <div>refresh_token: TZO4jAqRitFRhV8U9qi4FC2tAo_BhHV0vWM6S3DinksemU1qE9IyUFLYArVAUwFyaZMrEC9EbcJwAP00ANhdQJwAkr7vLDYPTXzW_YeK8PjgWznQKnFYpqGmqoMce6yS</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/698013554de8ae6ffd618fae&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtY2FmZTVkNzYtYjBlMS00M2U0LTllYWEtOWU4ZWI1NDc5NWRmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzMDQ1M2M1ZC04MTE4LTQxYmUtYWNkMi1hMGEzZWQ3NWUzOTgiLCJzdWIiOiJtYXJnLm5pdHpzY2hlQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAwMDEyMzYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzMwNDUzYzVkLTgxMTgtNDFiZS1hY2QyLWEwYTNlZDc1ZTM5OCIsImV4cCI6MTc3MDAwMjEzNiwiaWF0IjoxNzcwMDAxMjM2LCJ1c2VySWQiOiIxYTA3NzAxZi0xZGNlLTRlNzktODVmNC03NzUwZjFjMWY5NmQiLCJqdGkiOiJhNGE5NWMyNy04MTE2LTQ0YzktYTgyNS02MzNlZTg0OThmZTYifQ.DVazCxHhKcpy7dO_c4VJCnVccuf2yJVYmGnX_CslNw4uZBbthrFp-02888X0oFwaEhpJwVYxyAbZXdK8TajgaNeFJLnAivjdhYZuN8UWz5VMuyTvwbPNKANtuznYQckAf1eTjUPSBhs8hKsPHX0ZdIjQfzVWAe5NAgwHxz4KMIgm20gcm9lN0NrPsmtxqPHYf0b_wU1H-80lIxC0SrCwFdUvMQBCxlYIcOtNf2zyQSW4VIxCYygAxxTG6taGIEV-Vs8UoKOrEGW2okWhwyNFfSNKn14tgHzIwEbL5SOPUYtt0iK1jjkWG2W5ipgVYEB0aPkJpSW4QU_twoHrLVenCw&#39; -b &#39;refresh_token=TZO4jAqRitFRhV8U9qi4FC2tAo_BhHV0vWM6S3DinksemU1qE9IyUFLYArVAUwFyaZMrEC9EbcJwAP00ANhdQJwAkr7vLDYPTXzW_YeK8PjgWznQKnFYpqGmqoMce6yS&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mrs. Israel Morar&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(509) 610-5442&quot;,
+                &quot;email&quot;: &quot;palmira.wehner@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;55377 Carter Views&quot;,
+            &quot;street2&quot;: &quot;Apt. 858&quot;,
+            &quot;city&quot;: &quot;East Haydeefort&quot;,
+            &quot;state&quot;: &quot;Massachusetts&quot;,
+            &quot;postalCode&quot;: &quot;75042&quot;,
+            &quot;country&quot;: &quot;Germany&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;956 Jacalyn Village&quot;,
+            &quot;street2&quot;: &quot;Apt. 510&quot;,
+            &quot;city&quot;: &quot;West Joseberg&quot;,
+            &quot;state&quot;: &quot;Maryland&quot;,
+            &quot;postalCode&quot;: &quot;83768&quot;,
+            &quot;country&quot;: &quot;Italy&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}&#39;
+</div>
