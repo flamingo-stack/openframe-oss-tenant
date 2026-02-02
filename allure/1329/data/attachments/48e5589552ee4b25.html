@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Clarita Rippin&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(563) 717-2915 x5430&quot;,
+                &quot;email&quot;: &quot;karisa.boyer@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;30419 Robbie Creek&quot;,
+            &quot;street2&quot;: &quot;Suite 290&quot;,
+            &quot;city&quot;: &quot;Port Brooks&quot;,
+            &quot;state&quot;: &quot;Arizona&quot;,
+            &quot;postalCode&quot;: &quot;85023&quot;,
+            &quot;country&quot;: &quot;Monaco&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        2
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOTRjYmMzYTYtMjFiYi00MGMzLWExY2YtOWViMDk1ZGFiZjk5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYTEwOTliMi1hZDE5LTQ3YzYtOGJlNS1lMmM2YzU0ZjZhOGUiLCJzdWIiOiJqZXJhbGQua29lcHBAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5OTI5MzgsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzBhMTA5OWIyLWFkMTktNDdjNi04YmU1LWUyYzZjNTRmNmE4ZSIsImV4cCI6MTc2OTk5MzgzOCwiaWF0IjoxNzY5OTkyOTM4LCJ1c2VySWQiOiJhNjJmZmIyMy01OGM4LTQwNGMtOTRlOC1kNzYwNGJhMzA4OGUiLCJqdGkiOiJlMTFiZjVhNy05OGE2LTRkYjMtOWYzNy02NmIyOWU4OTEyNWQifQ.LDWHcYNQ6MN0lFWZyRDI3ON9b3P3aAp6mPo6MI5rcNo1ksDA-5KSYD6Rl8J6FCfESC2CwcqDLGOcAoa2Nsrfoj5TfX0vi0GdEAGroqam7xbIdBFZm_wpzyXIqUPBTwGUF0Jt1EfXPae2PJgAKWURE4ACeWO45XxxYsc7DagtzQAlbVA2aTvTXLfc87dWOs1-uogjIrYKTcFI_PN66YXTa5u9MSaPV5e6n3IK5tj11VwYaV74Stj7cWN_D8zBxpV0oSlxpcIzyS-2LqEuBqd4Z8gFfLlckSJpMDWKpOfrqdq6tWllHbmRHIKDBrDrLgGlPRO1_Nz68d59lU88rvPUrg</div>
+        <div>refresh_token: 0T76ObEVSXdh9amAoBNTVa-TuKepWEXYGd8RVq15FPrYf_W1bPmrliZCZ-weyFRXHjCZ_thF-NqenXYAub-Cc080MBV_HePCkcpty55X--IO1lH8PrDX9LRqjSVmIjQ5</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOTRjYmMzYTYtMjFiYi00MGMzLWExY2YtOWViMDk1ZGFiZjk5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYTEwOTliMi1hZDE5LTQ3YzYtOGJlNS1lMmM2YzU0ZjZhOGUiLCJzdWIiOiJqZXJhbGQua29lcHBAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3Njk5OTI5MzgsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzBhMTA5OWIyLWFkMTktNDdjNi04YmU1LWUyYzZjNTRmNmE4ZSIsImV4cCI6MTc2OTk5MzgzOCwiaWF0IjoxNzY5OTkyOTM4LCJ1c2VySWQiOiJhNjJmZmIyMy01OGM4LTQwNGMtOTRlOC1kNzYwNGJhMzA4OGUiLCJqdGkiOiJlMTFiZjVhNy05OGE2LTRkYjMtOWYzNy02NmIyOWU4OTEyNWQifQ.LDWHcYNQ6MN0lFWZyRDI3ON9b3P3aAp6mPo6MI5rcNo1ksDA-5KSYD6Rl8J6FCfESC2CwcqDLGOcAoa2Nsrfoj5TfX0vi0GdEAGroqam7xbIdBFZm_wpzyXIqUPBTwGUF0Jt1EfXPae2PJgAKWURE4ACeWO45XxxYsc7DagtzQAlbVA2aTvTXLfc87dWOs1-uogjIrYKTcFI_PN66YXTa5u9MSaPV5e6n3IK5tj11VwYaV74Stj7cWN_D8zBxpV0oSlxpcIzyS-2LqEuBqd4Z8gFfLlckSJpMDWKpOfrqdq6tWllHbmRHIKDBrDrLgGlPRO1_Nz68d59lU88rvPUrg&#39; -b &#39;refresh_token=0T76ObEVSXdh9amAoBNTVa-TuKepWEXYGd8RVq15FPrYf_W1bPmrliZCZ-weyFRXHjCZ_thF-NqenXYAub-Cc080MBV_HePCkcpty55X--IO1lH8PrDX9LRqjSVmIjQ5&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Clarita Rippin&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(563) 717-2915 x5430&quot;,
+                &quot;email&quot;: &quot;karisa.boyer@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;30419 Robbie Creek&quot;,
+            &quot;street2&quot;: &quot;Suite 290&quot;,
+            &quot;city&quot;: &quot;Port Brooks&quot;,
+            &quot;state&quot;: &quot;Arizona&quot;,
+            &quot;postalCode&quot;: &quot;85023&quot;,
+            &quot;country&quot;: &quot;Monaco&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        2
+    ]
+}&#39;
+</div>
