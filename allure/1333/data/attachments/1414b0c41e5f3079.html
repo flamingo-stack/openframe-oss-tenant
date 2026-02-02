@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;marco.olson@yahoo.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMjQ2NmZjMzAtMTI2MC00NTk2LWFkMDgtYWZiYTFiMTYyYTJhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJlOWVlNDM1NS00ZmY1LTRhODItOWY4My00MTUwNDllMThlNmIiLCJzdWIiOiJsdWNhcy5zY2hvd2FsdGVyQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAwMDQ2MzksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2U5ZWU0MzU1LTRmZjUtNGE4Mi05ZjgzLTQxNTA0OWUxOGU2YiIsImV4cCI6MTc3MDAwNTUzOSwiaWF0IjoxNzcwMDA0NjM5LCJ1c2VySWQiOiIzMDM0YThkMC1jOGQzLTQ5MGItYmIwYi04NjM3YjhjNmMzYjAiLCJqdGkiOiI4MmVlNTlkMi1hM2I2LTQxNjctYmI3OS0zNzViYzUwZDQ5YmIifQ.t_NLzLMw6M4EOln_CU8WFxJHONu30Bs1mlVDoT2PqZtYUv_x_XhqvDVD-t_XCQZ6LBH8-NPhk4qegH4O_4hpNqIedUU8o-j_aXbd2cL6Z8tOy5pho4prhZgWwQiwHiGB5iWeJDEDNGnmO28uPH3RgHlPINOoBsHbY5-2lrHgM9_4Jglra6DpcUp--b4Km8GUAavISGIoAANsA_uAPupgZ4UmB6nFkBYxUJrowpn_WB8saYYZkGw3meNYFEW4WTcC00JLe6fMTrICJuD8hzDxYac-bL8hDHzTwR57p1G_FwXx6vpspNAd_olyMC8i36Ph8IR06SjsMZgIQdcjvS4U5g</div>
+        <div>refresh_token: r6QN0f5adoArsADCIQNDtl22Z1nvy8Ho4EgyMEJvXswk8byDnWmRR6B7jzU1JBFveshqOdXqccIhTFVZlhl5IvFSuGKZKiwRCPKhCkSZQUBPWYPXbNpNA_cLz5mKNIIB</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMjQ2NmZjMzAtMTI2MC00NTk2LWFkMDgtYWZiYTFiMTYyYTJhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJlOWVlNDM1NS00ZmY1LTRhODItOWY4My00MTUwNDllMThlNmIiLCJzdWIiOiJsdWNhcy5zY2hvd2FsdGVyQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAwMDQ2MzksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2U5ZWU0MzU1LTRmZjUtNGE4Mi05ZjgzLTQxNTA0OWUxOGU2YiIsImV4cCI6MTc3MDAwNTUzOSwiaWF0IjoxNzcwMDA0NjM5LCJ1c2VySWQiOiIzMDM0YThkMC1jOGQzLTQ5MGItYmIwYi04NjM3YjhjNmMzYjAiLCJqdGkiOiI4MmVlNTlkMi1hM2I2LTQxNjctYmI3OS0zNzViYzUwZDQ5YmIifQ.t_NLzLMw6M4EOln_CU8WFxJHONu30Bs1mlVDoT2PqZtYUv_x_XhqvDVD-t_XCQZ6LBH8-NPhk4qegH4O_4hpNqIedUU8o-j_aXbd2cL6Z8tOy5pho4prhZgWwQiwHiGB5iWeJDEDNGnmO28uPH3RgHlPINOoBsHbY5-2lrHgM9_4Jglra6DpcUp--b4Km8GUAavISGIoAANsA_uAPupgZ4UmB6nFkBYxUJrowpn_WB8saYYZkGw3meNYFEW4WTcC00JLe6fMTrICJuD8hzDxYac-bL8hDHzTwR57p1G_FwXx6vpspNAd_olyMC8i36Ph8IR06SjsMZgIQdcjvS4U5g&#39; -b &#39;refresh_token=r6QN0f5adoArsADCIQNDtl22Z1nvy8Ho4EgyMEJvXswk8byDnWmRR6B7jzU1JBFveshqOdXqccIhTFVZlhl5IvFSuGKZKiwRCPKhCkSZQUBPWYPXbNpNA_cLz5mKNIIB&#39; -d &#39;{
+    &quot;email&quot;: &quot;marco.olson@yahoo.com&quot;
+}&#39;
+</div>
