@@ -187,7 +187,7 @@ jobs:
       - name: Run Tests
         id: tests
         env:
-          API_BASE_URL: http://localhost
+          API_BASE_URL: http://localhost:8100
         run: |
           cd openframe-e2e-tests
           mvn test -Dgroups="start"
