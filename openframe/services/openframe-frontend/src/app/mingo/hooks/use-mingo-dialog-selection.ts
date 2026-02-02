@@ -2,34 +2,36 @@
 
 import React from 'react'
 import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query'
+import { 
+  processHistoricalMessagesWithErrors,
+  type HistoricalMessage
+} from '@flamingo-stack/openframe-frontend-core'
 import { apiClient } from '@lib/api-client'
-import { useMingoDialogDetailsStore } from '../stores/mingo-dialog-details-store'
-import { useMingoBackgroundMessagesStore } from '../stores/mingo-background-messages-store'
+import { useMingoMessagesStore } from '../stores/mingo-messages-store'
 import { GET_MINGO_DIALOG_QUERY, GET_DIALOG_MESSAGES_QUERY } from '../queries/dialogs-queries'
-import { CHAT_TYPE } from '../../tickets/constants'
-import type { DialogResponse, MessagesResponse, MessagePage, Message } from '../types'
+import { CHAT_TYPE, ASSISTANT_CONFIG } from '../../tickets/constants'
+import type { DialogResponse, MessagesResponse, MessagePage, GraphQLMessage } from '../types'
 
 export function useMingoDialogSelection() {
   const {
-    currentDialogId,
-    setCurrentDialogId,
-    setCurrentDialog,
-    setAdminMessages,
-    setPagination,
+    activeDialogId,
+    setActiveDialogId,
+    setMessages,
     setLoadingDialog,
-    setLoadingMessages
-  } = useMingoDialogDetailsStore()
-
-  const { moveBackgroundToActive } = useMingoBackgroundMessagesStore()
+    setLoadingMessages,
+    setPagination,
+    dialogs,
+    setDialogs
+  } = useMingoMessagesStore()
 
   const dialogQuery = useQuery({
-    queryKey: ['mingo-dialog', currentDialogId],
+    queryKey: ['mingo-dialog', activeDialogId],
     queryFn: async () => {
-      if (!currentDialogId) return null
+      if (!activeDialogId) return null
 
       const response = await apiClient.post<DialogResponse>('/chat/graphql', {
         query: GET_MINGO_DIALOG_QUERY,
-        variables: { id: currentDialogId }
+        variables: { id: activeDialogId }
       })
 
       if (!response.ok || !response.data?.data?.dialog) {
@@ -38,19 +40,19 @@ export function useMingoDialogSelection() {
 
       return response.data.data.dialog
     },
-    enabled: !!currentDialogId,
+    enabled: !!activeDialogId,
     staleTime: 30 * 1000,
   })
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: ['mingo-dialog-messages', currentDialogId],
+    queryKey: ['mingo-dialog-messages', activeDialogId],
     queryFn: async ({ pageParam }: { pageParam: string | undefined }): Promise<MessagePage> => {
-      if (!currentDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } }
+      if (!activeDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } }
 
       const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
         query: GET_DIALOG_MESSAGES_QUERY,
         variables: { 
-          dialogId: currentDialogId, 
+          dialogId: activeDialogId, 
           cursor: pageParam,
           limit: 100
         }
@@ -70,30 +72,24 @@ export function useMingoDialogSelection() {
       return lastPage.pageInfo.hasNextPage ? lastPage.pageInfo.endCursor : undefined
     },
     initialPageParam: undefined as string | undefined,
-    enabled: !!currentDialogId,
+    enabled: !!activeDialogId,
     staleTime: 30 * 1000,
   })
 
   const selectDialogMutation = useMutation({
     mutationFn: async (dialogId: string) => {
-      setCurrentDialog(null)
-      setAdminMessages([])
+      // Don't clear messages - let them persist for fast switching
+      // Only clear pagination state for new queries
       setPagination(false, null, null)
       
       setLoadingDialog(true)
       setLoadingMessages(true)
       
-      setCurrentDialogId(dialogId)
+      setActiveDialogId(dialogId)
       
       return dialogId
     }
   })
-
-  React.useEffect(() => {
-    if (dialogQuery.data) {
-      setCurrentDialog(dialogQuery.data)
-    }
-  }, [dialogQuery.data, setCurrentDialog])
 
   React.useEffect(() => {
     if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage && !messagesQuery.isLoading) {
@@ -102,41 +98,37 @@ export function useMingoDialogSelection() {
   }, [messagesQuery.hasNextPage, messagesQuery.isFetchingNextPage, messagesQuery.isLoading, messagesQuery.fetchNextPage])
 
   React.useEffect(() => {
-    if (messagesQuery.data?.pages && currentDialogId) {
-      const allAdminMessages = messagesQuery.data.pages.flatMap(page => page.messages)
-      const backgroundMessages = moveBackgroundToActive(currentDialogId)
-      const messageMap = new Map<string, Message>()
-
-      allAdminMessages.forEach(msg => messageMap.set(msg.id, msg))
+    if (messagesQuery.data?.pages && activeDialogId) {
+      const allGraphQLMessages = messagesQuery.data.pages.flatMap(page => page.messages)
       
-      backgroundMessages.forEach(msg => {
-        const existing = messageMap.get(msg.id)
-        
-        if (msg.owner?.type === 'ASSISTANT' && 
-            (!msg.messageData?.text || msg.messageData.text === '') &&
-            msg.id.startsWith('typing-')) {
-          messageMap.set(msg.id, msg)
-          return
-        }
-        
-        if (msg.id.startsWith('nats-') && existing) {
-          const backgroundText = msg.messageData?.text || ''
-          const existingText = existing.messageData?.text || ''
-          if (backgroundText.length > existingText.length) {
-            messageMap.set(msg.id, msg)
-          }
-          return
-        }
-        
-        if (!existing) {
-          messageMap.set(msg.id, msg)
-        }
+      // Convert GraphQL messages to HistoricalMessage format
+      const historicalMessages: HistoricalMessage[] = allGraphQLMessages
+        .filter(msg => msg.chatType === CHAT_TYPE.ADMIN)
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .map(msg => ({
+          id: msg.id,
+          dialogId: msg.dialogId,
+          chatType: msg.chatType,
+          createdAt: msg.createdAt,
+          owner: msg.owner,
+          messageData: msg.messageData,
+        }))
+      
+      // Process through core library to get CoreMessage format
+      const assistantConfig = ASSISTANT_CONFIG.MINGO
+      const coreMessages = processHistoricalMessagesWithErrors(historicalMessages, {
+        assistantName: assistantConfig.name,
+        assistantType: assistantConfig.type,
+        chatTypeFilter: CHAT_TYPE.ADMIN,
       })
       
-      const combinedMessages = Array.from(messageMap.values())
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      // Only update if we have new data or the dialog is empty
+      const { getMessages } = useMingoMessagesStore.getState()
+      const existingMessages = getMessages(activeDialogId)
       
-      setAdminMessages(combinedMessages)
+      if (existingMessages.length === 0 || existingMessages.length !== coreMessages.length) {
+        setMessages(activeDialogId, coreMessages)
+      }
 
       const lastPage = messagesQuery.data.pages[messagesQuery.data.pages.length - 1]
       if (lastPage) {
@@ -147,7 +139,7 @@ export function useMingoDialogSelection() {
         )
       }
     }
-  }, [messagesQuery.data?.pages, currentDialogId, setAdminMessages, setPagination, moveBackgroundToActive])
+  }, [messagesQuery.data?.pages, activeDialogId, setMessages, setPagination])
 
   return {
     selectDialog: selectDialogMutation.mutate,

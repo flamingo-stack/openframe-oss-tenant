@@ -1,0 +1,343 @@
+import { create } from 'zustand'
+import { devtools } from 'zustand/middleware'
+import type { DialogNode, Message } from '../types'
+import type { MessageSegment } from '@flamingo-stack/openframe-frontend-core'
+
+interface MingoMessagesStore {
+  // Unified message storage - key is dialogId
+  messagesByDialog: Map<string, Message[]>
+  
+  // Dialog state
+  activeDialogId: string | null
+  dialogs: DialogNode[]
+  
+  // Real-time state management
+  typingStates: Map<string, boolean>
+  unreadCounts: Map<string, number>
+  streamingMessages: Map<string, Message | null> // Track streaming messages per dialog
+  
+  // Loading states
+  isLoadingDialog: boolean
+  isLoadingMessages: boolean
+  isCreatingDialog: boolean
+  isSendingMessage: boolean
+  
+  // Error states
+  dialogError: string | null
+  messagesError: string | null
+  
+  // Pagination
+  hasMoreMessages: boolean
+  messagesCursor: string | null
+  newestMessageCursor: string | null
+  
+  // Core Actions
+  setActiveDialogId: (dialogId: string | null) => void
+  setDialogs: (dialogs: DialogNode[]) => void
+  
+  // Message Management
+  setMessages: (dialogId: string, messages: Message[]) => void
+  addMessage: (dialogId: string, message: Message) => void
+  updateMessage: (dialogId: string, messageId: string, updates: Partial<Message>) => void
+  removeMessage: (dialogId: string, messageId: string) => void
+  getMessages: (dialogId: string) => Message[]
+  
+  // Real-time State Management
+  setTyping: (dialogId: string, typing: boolean) => void
+  getTyping: (dialogId: string) => boolean
+  incrementUnread: (dialogId: string) => void
+  resetUnread: (dialogId: string) => void
+  getUnread: (dialogId: string) => number
+  
+  // Streaming Messages
+  setStreamingMessage: (dialogId: string, message: Message | null) => void
+  getStreamingMessage: (dialogId: string) => Message | null
+  updateStreamingMessageSegments: (dialogId: string, segments: MessageSegment[]) => void
+  
+  // Utility Actions
+  removeWelcomeMessages: (dialogId: string) => void
+  clearDialog: (dialogId: string) => void
+  resetAll: () => void
+  
+  // Loading States
+  setLoadingDialog: (loading: boolean) => void
+  setLoadingMessages: (loading: boolean) => void
+  setCreatingDialog: (creating: boolean) => void
+  setSendingMessage: (sending: boolean) => void
+  
+  // Error States
+  setDialogError: (error: string | null) => void
+  setMessagesError: (error: string | null) => void
+  
+  // Pagination
+  setPagination: (hasMore: boolean, cursor: string | null, newestCursor: string | null) => void
+}
+
+export const useMingoMessagesStore = create<MingoMessagesStore>()(
+  devtools(
+    (set, get) => ({
+      // Initial state
+      messagesByDialog: new Map(),
+      activeDialogId: null,
+      dialogs: [],
+      typingStates: new Map(),
+      unreadCounts: new Map(),
+      streamingMessages: new Map(),
+      
+      isLoadingDialog: false,
+      isLoadingMessages: false,
+      isCreatingDialog: false,
+      isSendingMessage: false,
+      
+      dialogError: null,
+      messagesError: null,
+      
+      hasMoreMessages: false,
+      messagesCursor: null,
+      newestMessageCursor: null,
+      
+      // Core Actions
+      setActiveDialogId: (dialogId: string | null) => {
+        set({ activeDialogId: dialogId })
+      },
+      
+      setDialogs: (dialogs: DialogNode[]) => {
+        set({ dialogs })
+      },
+      
+      // Message Management
+      setMessages: (dialogId: string, messages: Message[]) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog)
+          newMap.set(dialogId, messages)
+          return { messagesByDialog: newMap }
+        })
+      },
+      
+      addMessage: (dialogId: string, message: Message) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog)
+          const currentMessages = newMap.get(dialogId) || []
+          
+          // Check if message already exists and update, otherwise append
+          const existingIndex = currentMessages.findIndex(msg => msg.id === message.id)
+          if (existingIndex !== -1) {
+            const updatedMessages = [...currentMessages]
+            updatedMessages[existingIndex] = message
+            newMap.set(dialogId, updatedMessages)
+          } else {
+            newMap.set(dialogId, [...currentMessages, message])
+          }
+          
+          return { messagesByDialog: newMap }
+        })
+      },
+      
+      updateMessage: (dialogId: string, messageId: string, updates: Partial<Message>) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog)
+          const currentMessages = newMap.get(dialogId) || []
+          
+          const messageIndex = currentMessages.findIndex(msg => msg.id === messageId)
+          if (messageIndex !== -1) {
+            const updatedMessages = [...currentMessages]
+            updatedMessages[messageIndex] = { ...updatedMessages[messageIndex], ...updates }
+            newMap.set(dialogId, updatedMessages)
+          }
+          
+          return { messagesByDialog: newMap }
+        })
+      },
+      
+      removeMessage: (dialogId: string, messageId: string) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog)
+          const currentMessages = newMap.get(dialogId) || []
+          const filteredMessages = currentMessages.filter(msg => msg.id !== messageId)
+          newMap.set(dialogId, filteredMessages)
+          return { messagesByDialog: newMap }
+        })
+      },
+      
+      getMessages: (dialogId: string) => {
+        const state = get()
+        return state.messagesByDialog.get(dialogId) || []
+      },
+      
+      // Real-time State Management
+      setTyping: (dialogId: string, typing: boolean) => {
+        set(state => {
+          const newMap = new Map(state.typingStates)
+          newMap.set(dialogId, typing)
+          return { typingStates: newMap }
+        })
+      },
+      
+      getTyping: (dialogId: string) => {
+        const state = get()
+        return state.typingStates.get(dialogId) || false
+      },
+      
+      incrementUnread: (dialogId: string) => {
+        set(state => {
+          // Only increment if not the active dialog
+          if (state.activeDialogId === dialogId) return state
+          
+          const newMap = new Map(state.unreadCounts)
+          const currentCount = newMap.get(dialogId) || 0
+          newMap.set(dialogId, currentCount + 1)
+          return { unreadCounts: newMap }
+        })
+      },
+      
+      resetUnread: (dialogId: string) => {
+        set(state => {
+          const newMap = new Map(state.unreadCounts)
+          newMap.set(dialogId, 0)
+          return { unreadCounts: newMap }
+        })
+      },
+      
+      getUnread: (dialogId: string) => {
+        const state = get()
+        return state.unreadCounts.get(dialogId) || 0
+      },
+      
+      // Streaming Messages
+      setStreamingMessage: (dialogId: string, message: Message | null) => {
+        set(state => {
+          const newMap = new Map(state.streamingMessages)
+          newMap.set(dialogId, message)
+          return { streamingMessages: newMap }
+        })
+      },
+      
+      getStreamingMessage: (dialogId: string) => {
+        const state = get()
+        return state.streamingMessages.get(dialogId) || null
+      },
+      
+      updateStreamingMessageSegments: (dialogId: string, segments: MessageSegment[]) => {
+        set(state => {
+          const currentStreaming = state.streamingMessages.get(dialogId)
+          if (!currentStreaming) return state
+          
+          // Update the streaming message content directly (CoreMessage format)
+          const updatedMessage = {
+            ...currentStreaming,
+            content: segments
+          }
+          
+          // Update both streaming and main message collections
+          const newStreamingMap = new Map(state.streamingMessages)
+          newStreamingMap.set(dialogId, updatedMessage)
+          
+          const newMessagesMap = new Map(state.messagesByDialog)
+          const currentMessages = newMessagesMap.get(dialogId) || []
+          const existingIndex = currentMessages.findIndex(msg => msg.id === updatedMessage.id)
+          
+          if (existingIndex !== -1) {
+            const updatedMessages = [...currentMessages]
+            updatedMessages[existingIndex] = updatedMessage
+            newMessagesMap.set(dialogId, updatedMessages)
+          }
+          
+          return { 
+            streamingMessages: newStreamingMap,
+            messagesByDialog: newMessagesMap 
+          }
+        })
+      },
+      
+      // Utility Actions
+      removeWelcomeMessages: (dialogId: string) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog)
+          const currentMessages = newMap.get(dialogId) || []
+          const filteredMessages = currentMessages.filter(msg => !msg.id.startsWith('welcome-'))
+          newMap.set(dialogId, filteredMessages)
+          return { messagesByDialog: newMap }
+        })
+      },
+      
+      clearDialog: (dialogId: string) => {
+        set(state => {
+          const newMessagesMap = new Map(state.messagesByDialog)
+          const newTypingMap = new Map(state.typingStates)
+          const newUnreadMap = new Map(state.unreadCounts)
+          const newStreamingMap = new Map(state.streamingMessages)
+          
+          newMessagesMap.delete(dialogId)
+          newTypingMap.delete(dialogId)
+          newUnreadMap.delete(dialogId)
+          newStreamingMap.delete(dialogId)
+          
+          return {
+            messagesByDialog: newMessagesMap,
+            typingStates: newTypingMap,
+            unreadCounts: newUnreadMap,
+            streamingMessages: newStreamingMap
+          }
+        })
+      },
+      
+      resetAll: () => {
+        set({
+          messagesByDialog: new Map(),
+          activeDialogId: null,
+          dialogs: [],
+          typingStates: new Map(),
+          unreadCounts: new Map(),
+          streamingMessages: new Map(),
+          isLoadingDialog: false,
+          isLoadingMessages: false,
+          isCreatingDialog: false,
+          isSendingMessage: false,
+          dialogError: null,
+          messagesError: null,
+          hasMoreMessages: false,
+          messagesCursor: null,
+          newestMessageCursor: null
+        })
+      },
+      
+      // Loading States
+      setLoadingDialog: (loading: boolean) => {
+        set({ isLoadingDialog: loading })
+      },
+      
+      setLoadingMessages: (loading: boolean) => {
+        set({ isLoadingMessages: loading })
+      },
+      
+      setCreatingDialog: (creating: boolean) => {
+        set({ isCreatingDialog: creating })
+      },
+      
+      setSendingMessage: (sending: boolean) => {
+        set({ isSendingMessage: sending })
+      },
+      
+      // Error States
+      setDialogError: (error: string | null) => {
+        set({ dialogError: error })
+      },
+      
+      setMessagesError: (error: string | null) => {
+        set({ messagesError: error })
+      },
+      
+      // Pagination
+      setPagination: (hasMore: boolean, cursor: string | null, newestCursor: string | null) => {
+        set({
+          hasMoreMessages: hasMore,
+          messagesCursor: cursor,
+          newestMessageCursor: newestCursor
+        })
+      }
+    }),
+    {
+      name: 'mingo-messages-store'
+    }
+  )
+)
