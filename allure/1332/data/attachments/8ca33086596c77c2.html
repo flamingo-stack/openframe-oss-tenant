@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/69801be867e36378b1525e74</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lionel Block&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(765) 715-3119&quot;,
+                &quot;email&quot;: &quot;carmen.hermann@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;666 Laree Burgs&quot;,
+            &quot;street2&quot;: &quot;Suite 506&quot;,
+            &quot;city&quot;: &quot;New Rosanastad&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;98576&quot;,
+            &quot;country&quot;: &quot;Burkina Faso&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;14229 Gaylord Overpass&quot;,
+            &quot;street2&quot;: &quot;Suite 234&quot;,
+            &quot;city&quot;: &quot;Connieside&quot;,
+            &quot;state&quot;: &quot;Virginia&quot;,
+            &quot;postalCode&quot;: &quot;24402&quot;,
+            &quot;country&quot;: &quot;Indonesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNWIwZWZiZmQtMDA0NC00MTM1LWI0Y2ItMDc4ZTZhMGQzNTI0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2Nzg2N2I4YS04ZTM0LTQzYjMtYWFlZi0wMWEzNzIyZDYxYzEiLCJzdWIiOiJub2FoLnNoYW5haGFuQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMDAzNDMxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy82Nzg2N2I4YS04ZTM0LTQzYjMtYWFlZi0wMWEzNzIyZDYxYzEiLCJleHAiOjE3NzAwMDQzMzEsImlhdCI6MTc3MDAwMzQzMSwidXNlcklkIjoiNTc1MjRlNzYtYTBlNS00ZWYwLWJkMTAtNmIwMmI1YjNhOThlIiwianRpIjoiMzMzZjZjMjQtZTU4NC00N2IwLTllMjktNjY2ZjQxMTRhOWQ0In0.f9BgSKUQA4pmfubmQRZMhLAjimLChN8oFeZc331cezQGZw_fHT0wlrcyA87Jnktf54bOVTCxbQdEkIo6I5j0vAJgULL0ynZ9c9x5EQtBJaDjW_v0X6H7D0Xs7HMrDf1lH8ZkydKrpRo9xSen9m-I355Tm4jWxQtpJkmAelhj1L9_XvTXnsXsYsbbjniqE5loETeapcmBgcQMm-fTwvIdVfKYfw5HrLrWPyA9DsxXPbOL9QxEBzyrKSFT8okVmFv-TNQEwishR-1--eI39C5ZOfLvYNFF4_Rup1S7lsFKsteS55dvIFWbi7NDdCJFwghUeUqiPqsTkSktUReZQrD4zw</div>
+        <div>refresh_token: cTt1jBVt47udh5EPjK_yjjPVs2dSl3Oy7BDz5vIeDtVxErNkWKTkrQAEyePDn5WZ8okoZvhac-c4wFmbYDasi7XaG2tK5x0ekVTWCRz6QA3kKxHv1dM777ypJnRnfl0-</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/69801be867e36378b1525e74&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNWIwZWZiZmQtMDA0NC00MTM1LWI0Y2ItMDc4ZTZhMGQzNTI0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2Nzg2N2I4YS04ZTM0LTQzYjMtYWFlZi0wMWEzNzIyZDYxYzEiLCJzdWIiOiJub2FoLnNoYW5haGFuQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMDAzNDMxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy82Nzg2N2I4YS04ZTM0LTQzYjMtYWFlZi0wMWEzNzIyZDYxYzEiLCJleHAiOjE3NzAwMDQzMzEsImlhdCI6MTc3MDAwMzQzMSwidXNlcklkIjoiNTc1MjRlNzYtYTBlNS00ZWYwLWJkMTAtNmIwMmI1YjNhOThlIiwianRpIjoiMzMzZjZjMjQtZTU4NC00N2IwLTllMjktNjY2ZjQxMTRhOWQ0In0.f9BgSKUQA4pmfubmQRZMhLAjimLChN8oFeZc331cezQGZw_fHT0wlrcyA87Jnktf54bOVTCxbQdEkIo6I5j0vAJgULL0ynZ9c9x5EQtBJaDjW_v0X6H7D0Xs7HMrDf1lH8ZkydKrpRo9xSen9m-I355Tm4jWxQtpJkmAelhj1L9_XvTXnsXsYsbbjniqE5loETeapcmBgcQMm-fTwvIdVfKYfw5HrLrWPyA9DsxXPbOL9QxEBzyrKSFT8okVmFv-TNQEwishR-1--eI39C5ZOfLvYNFF4_Rup1S7lsFKsteS55dvIFWbi7NDdCJFwghUeUqiPqsTkSktUReZQrD4zw&#39; -b &#39;refresh_token=cTt1jBVt47udh5EPjK_yjjPVs2dSl3Oy7BDz5vIeDtVxErNkWKTkrQAEyePDn5WZ8okoZvhac-c4wFmbYDasi7XaG2tK5x0ekVTWCRz6QA3kKxHv1dM777ypJnRnfl0-&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lionel Block&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(765) 715-3119&quot;,
+                &quot;email&quot;: &quot;carmen.hermann@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;666 Laree Burgs&quot;,
+            &quot;street2&quot;: &quot;Suite 506&quot;,
+            &quot;city&quot;: &quot;New Rosanastad&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;98576&quot;,
+            &quot;country&quot;: &quot;Burkina Faso&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;14229 Gaylord Overpass&quot;,
+            &quot;street2&quot;: &quot;Suite 234&quot;,
+            &quot;city&quot;: &quot;Connieside&quot;,
+            &quot;state&quot;: &quot;Virginia&quot;,
+            &quot;postalCode&quot;: &quot;24402&quot;,
+            &quot;country&quot;: &quot;Indonesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}&#39;
+</div>
