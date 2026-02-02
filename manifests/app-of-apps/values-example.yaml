@@ -13,8 +13,6 @@
 
 deployment:
   oss:
-    enabled: true    
-    # Ingress configuration - enable only ONE of the following
     ingress:
       localhost:
         enabled: true   # Enable localhost ingress with nginx
@@ -32,38 +30,7 @@ deployment:
       branch: main
       profile: dev
       autoSync: true
-  saas:
-    enabled: false
-    # Ingress configuration for SaaS deployment
-    ingress:
-      localhost:
-        enabled: true   # Enable localhost ingress with nginx for SaaS
-      gcp:
-        enabled: false 
-        gkeSecurityGroup: "gke-security-groups@flamingo.cx"
-        privateDomain: "internal.flamingo.cx"
-        tenantID: "cluster-1001" 
-    repository:
-      baseDir: manifests
-      appsDir: apps
-      URL: https://github.com/flamingo-stack/openframe-saas-tenant.git
-      repoName: openframe-saas-tenant
-      branch: main
-      password: ""  # GitHub PAT for private repo access
-      profile: dev
-      autoSync: true
-  
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
-  ghcr:
-    server: ghcr.io
-    username: ""
-    password: ""
-    email: ""
+
 
 registerJob:
   enabled: true       # Enable registration job for integrated tools

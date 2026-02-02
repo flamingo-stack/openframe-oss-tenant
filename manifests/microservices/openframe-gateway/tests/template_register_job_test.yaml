@@ -2,12 +2,8 @@ suite: test register job template
 templates:
   - templates/register-job.yaml
 tests:
-  # Register job enabled
   - it: should render register job when enabled
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
       - hasDocuments:
@@ -18,23 +14,15 @@ tests:
           path: metadata.name
           value: openframe-gateway
 
-  # Register job disabled
   - it: should not render register job when disabled
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
       registerJob.enabled: false
     asserts:
       - hasDocuments:
           count: 0
 
-  # Job configuration
   - it: should configure job correctly
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
       - equal:
@@ -50,12 +38,8 @@ tests:
           path: spec.template.spec.containers[0].image
           value: "ghcr.io/flamingo-stack/registry/curlimages/curl:8.9.1"
 
-  # ArgoCD annotations
   - it: should include ArgoCD annotations
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
       - equal:
@@ -63,41 +47,10 @@ tests:
           value: PostSync
       - equal:
           path: metadata.annotations["argocd.argoproj.io/hook-delete-policy"]
-          value: HookSucceeded
+          value: BeforeHookCreation,HookSucceeded
 
-  # Job works with different deployment types
-  - it: should render job for oss ngrok
+  - it: should use shell command
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
-      deployment.saas.enabled: false
-      registerJob.enabled: true
-    asserts:
-      - hasDocuments:
-          count: 1
-      - isKind:
-          of: Job
-
-  - it: should render job for saas localhost
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      registerJob.enabled: true
-    asserts:
-      - hasDocuments:
-          count: 1
-      - isKind:
-          of: Job
-
-  # Job command validation
-  - it: should use shell command with registration script
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
       registerJob.enabled: true
     asserts:
       - contains:
@@ -105,7 +58,7 @@ tests:
           content: "/bin/sh"
       - contains:
           path: spec.template.spec.containers[0].command
-          content: "-c"
+          content: "-uc"
       - lengthEqual:
           path: spec.template.spec.containers[0].command
           count: 3

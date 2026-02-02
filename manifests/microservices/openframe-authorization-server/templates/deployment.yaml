@@ -36,10 +36,10 @@ spec:
             - containerPort: 9006
               name: management
           env:
-            {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
+            {{- if .Values.deployment.oss.ingress.ngrok.enabled }}
             - name: TENANT_HOST_URL
               value: {{ printf "https://%s" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
-            {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
+            {{- else if .Values.deployment.oss.ingress.localhost.enabled }}
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}

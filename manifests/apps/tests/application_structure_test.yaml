@@ -6,7 +6,6 @@ tests:
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       # Test basic application structure
       - isKind:
@@ -37,7 +36,6 @@ tests:
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       # Test sync wave ordering
       - equal:
@@ -63,7 +61,6 @@ tests:
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       # Test required ArgoCD Application spec fields
       - isNotEmpty:

@@ -2,10 +2,8 @@ suite: test TLS certificate handling
 templates:
   - templates/ingress.yaml
 tests:
-  # Valid TLS certificates
   - it: should include secretName for valid certificate
     set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
       deployment.oss.ingress.localhost.tls:
         cert: |
@@ -25,62 +23,26 @@ tests:
           QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
           QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
           -----END PRIVATE KEY-----
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.tls[0].secretName
           value: localhost-tls
 
-  # No TLS certificate
   - it: should not include secretName when no certificate provided
     set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       - isNull:
           path: spec.tls[0].secretName
 
-  # Invalid TLS certificate
   - it: should not include secretName for invalid certificate
     set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
       deployment.oss.ingress.localhost.tls:
         cert: "invalid-cert-format"
         key: "invalid-key-format"
-      deployment.saas.enabled: false
     asserts:
       - hasDocuments:
           count: 1
       - notExists:
           path: spec.tls[0].secretName
-
-  # TLS with SaaS deployment
-  - it: should work with saas deployment TLS
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      deployment.saas.ingress.localhost.tls:
-        cert: |
-          -----BEGIN CERTIFICATE-----
-          MIIDXTCCAkWgAwIBAgIJAKZhQpQQQQQQMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
-          BAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBX
-          aWRnaXRzIFB0eSBMdGQwHhcNMjQwMTAxMDAwMDAwWhcNMjUwMTAxMDAwMDAwWjBF
-          MQswCQYDVQQGEwJBVTETMBEGA1UECAwKS29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
-          ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-          CgKCAQEAwU4PhL2hLOaVVH1VwPK5LtgwUhQ+CQOKEwUHqQQQQQQQQQQQQQQQQQQQ
-          -----END CERTIFICATE-----
-        key: |
-          -----BEGIN PRIVATE KEY-----
-          MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDBTg+EvaEs5pVU
-          fVXA8rku2DBSFDwPK5LtgwUhQ+CQOKEwUHqQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
-          QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
-          QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
-          QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
-          -----END PRIVATE KEY-----
-    asserts:
-      - equal:
-          path: spec.tls[0].secretName
-          value: localhost-tls
