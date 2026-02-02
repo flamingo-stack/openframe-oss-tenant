@@ -161,10 +161,21 @@ impl ToolInstallationService {
 
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
+            let current_os = Self::get_current_os();
+            
             for asset in assets {
+                // Resolve local filename based on OS
+                let local_filename = match Self::resolve_asset_filename(asset, current_os) {
+                    Some(filename) => filename,
+                    None => {
+                        warn!("Asset {} has no valid filename configuration for OS: {}, skipping", asset.id, current_os);
+                        continue;
+                    }
+                };
+                
                 // Use the executable field from the asset
                 let is_executable = asset.executable;
-                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename, is_executable);
+                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &local_filename, is_executable);
                 
                 // Check if asset file already exists
                 if asset_path.exists() {
@@ -196,6 +207,19 @@ impl ToolInstallationService {
                             .get_tool_asset(tool_id, resolved_path)
                             .await
                             .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
+                    },
+                    AssetSource::Github => {
+                        info!("Downloading GitHub asset: {}", asset.id);
+                        let download_configs = asset.download_configurations.as_ref()
+                            .with_context(|| format!("No downloadConfigurations for GitHub asset: {}", asset.id))?;
+                        
+                        let config = GithubDownloadService::find_config_for_current_os(download_configs)
+                            .with_context(|| format!("No download config for current OS for asset: {}", asset.id))?;
+                        
+                        self.github_download_service
+                            .download_and_extract(config)
+                            .await
+                            .with_context(|| format!("Failed to download GitHub asset: {}", asset.id))?
                     }
                 };
                 
@@ -205,6 +229,21 @@ impl ToolInstallationService {
                 if is_executable {
                     self.set_executable_permissions(&asset_path).await
                         .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
+
+                    // Publish installed asset message for GitHub assets with version
+                    if let AssetSource::Github = asset.source {
+                        if let Some(ref version) = asset.version {
+                            info!("Publishing installed asset message for: {} v{}", asset.id, version);
+                            if let Ok(machine_id) = self.config_service.get_machine_id().await {
+                                if let Err(e) = self.installed_agent_publisher
+                                    .publish(machine_id, asset.id.clone(), version.clone())
+                                    .await
+                                {
+                                    warn!("Failed to publish installed asset message for {}: {:#}", asset.id, e);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 info!("Asset {} saved to: {}", asset.id, asset_path.display());
@@ -324,5 +363,39 @@ impl ToolInstallationService {
             fs::set_permissions(path, perms).await?;
         }
         Ok(())
+    }
+
+    /// Returns the current operating system as a string
+    fn get_current_os() -> &'static str {
+        if cfg!(target_os = "windows") {
+            "windows"
+        } else if cfg!(target_os = "macos") {
+            "macos"
+        } else if cfg!(target_os = "linux") {
+            "linux"
+        } else {
+            "unknown"
+        }
+    }
+
+    /// Resolves the asset filename based on OS-specific configuration
+    /// Returns None if no valid configuration found for current OS
+    fn resolve_asset_filename(asset: &crate::models::tool_installation_message::Asset, current_os: &str) -> Option<String> {
+        // Try new localFilenameConfiguration first
+        if let Some(ref configs) = asset.local_filename_configuration {
+            if let Some(config) = configs.iter().find(|c| c.os.eq_ignore_ascii_case(current_os)) {
+                info!("Using OS-specific filename for asset {}: {} (os: {})", 
+                      asset.id, config.filename, current_os);
+                return Some(config.filename.clone());
+            }
+        }
+        
+        // Fallback to legacy localFilename field (backward compatibility)
+        if let Some(ref filename) = asset.local_filename {
+            info!("Using legacy localFilename for asset {}: {}", asset.id, filename);
+            return Some(filename.clone());
+        }
+        
+        None
     }
 }
