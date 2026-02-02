@@ -1,5 +1,5 @@
 server:
-  port: 80
+  port: 8100
 
 # Gateway service common configuration
 spring:
