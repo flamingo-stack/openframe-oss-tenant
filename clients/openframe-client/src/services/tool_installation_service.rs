@@ -164,7 +164,10 @@ impl ToolInstallationService {
             for asset in assets {
                 // Use the executable field from the asset
                 let is_executable = asset.executable;
-                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename, is_executable);
+                let local_filename_config = asset.local_filename_configuration.iter()
+                    .find(|c| c.matches_current_os())
+                    .with_context(|| format!("No local filename configuration for current OS for asset: {}", asset.id))?;
+                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &local_filename_config.filename, is_executable);
                 
                 // Download and save asset if it doesn't already exist
                 if !asset_path.exists() {
