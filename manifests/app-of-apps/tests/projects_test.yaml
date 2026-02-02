@@ -7,11 +7,6 @@ tests:
   # ========================================
 
   - it: should generate all required ArgoCD projects
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - hasDocuments:
           count: 5
@@ -49,11 +44,6 @@ tests:
   # ========================================
 
   - it: should have correct project metadata and permissions
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       # Metadata validation
       - equal:
@@ -79,11 +69,6 @@ tests:
         documentIndex: 0
 
   - it: should have correct cluster resource whitelist
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.clusterResourceWhitelist[0].group
@@ -95,49 +80,10 @@ tests:
         documentIndex: 0
 
   # ========================================
-  # DEPLOYMENT TYPE CONSISTENCY
-  # ========================================
-
-  - it: should generate project for SaaS deployment
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      deployment.saas.ingress.gcp.enabled: false
-    asserts:
-      - hasDocuments:
-          count: 5  # One additional project for SaaS
-      - equal:
-          path: metadata.name
-          value: platform
-        documentIndex: 0
-      - equal:
-          path: metadata.name
-          value: datasources
-        documentIndex: 1
-      - equal:
-          path: metadata.name
-          value: microservices
-        documentIndex: 2
-      - equal:
-          path: metadata.name
-          value: integrated-tools
-        documentIndex: 3
-      - equal:
-          path: metadata.name
-          value: client-tools
-        documentIndex: 4
-
-  # ========================================
   # PROJECT DESCRIPTIONS VALIDATION
   # ========================================
 
   - it: should have correct project descriptions
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.description

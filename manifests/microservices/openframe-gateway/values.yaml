@@ -1,7 +1,5 @@
 deployment:
   oss:
-    enabled: true    
-    # Ingress configuration - enable only ONE of the following
     ingress:
       localhost:
         enabled: true   # Enable localhost ingress with nginx
@@ -16,16 +14,6 @@ deployment:
       URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
       branch: main
       autoSync: true
-  saas:
-    enabled: false
-    # Ingress configuration for SaaS deployment
-    ingress:
-      localhost:
-        enabled: false   # Enable localhost ingress with nginx for SaaS
-      gcp:
-        enabled: true 
-        privateDomain: "internal.flamingo.cx"
-        tenantID: "cluster-1001" 
 
 registerJob:
   enabled: true

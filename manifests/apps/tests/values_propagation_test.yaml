@@ -6,7 +6,6 @@ tests:
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       # Test deployment values on regular app
       - matchRegex:
@@ -32,7 +31,6 @@ tests:
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       # Test that openframe-config gets its specific values
       - matchRegex:
@@ -47,29 +45,3 @@ tests:
         documentSelector:
           path: metadata.name
           value: "openframe-config"
-
-  - it: should propagate SaaS deployment values correctly
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-    asserts:
-      # Test SaaS deployment values on regular app
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "deployment:"
-        documentSelector:
-          path: metadata.name
-          value: "mongodb"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "saas:"
-        documentSelector:
-          path: metadata.name
-          value: "mongodb"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "enabled: true"
-        documentSelector:
-          path: metadata.name
-          value: "mongodb"

@@ -1,51 +1,14 @@
 suite: edge cases and configuration tests
 templates:
   - templates/argocd-apps.yaml
-  - templates/docker-secret.yaml
-  - templates/repo-secret.yaml
   - templates/projects.yaml
 tests:
-  # ========================================
-  # SAAS CONFIGURATION EDGE CASES
-  # ========================================
-
-  - it: should handle SaaS with ignored ngrok configuration
-    template: templates/argocd-apps.yaml
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      deployment.saas.ingress.ngrok.enabled: false  # Should be ignored for SaaS
-      deployment.saas.ingress.ngrok.credentials.apiKey: "ignored-key"
-      deployment.saas.ingress.ngrok.credentials.authtoken: "ignored-token"
-    asserts:
-      - hasDocuments:
-          count: 1
-      - isKind:
-          of: Application
-      - equal:
-          path: metadata.name
-          value: argocd-apps
-      # Should propagate deployment configuration
-      - matchRegex:
-          path: spec.sources[1].helm.values
-          pattern: "deployment:"
-      - matchRegex:
-          path: spec.sources[1].helm.values
-          pattern: "saas:"
-
   # ========================================
   # MISSING CONFIGURATION HANDLING
   # ========================================
 
   - it: should handle missing optional configuration gracefully
     template: templates/argocd-apps.yaml
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      apps: {}  # Empty apps configuration
     asserts:
       - hasDocuments:
           count: 1
@@ -56,21 +19,10 @@ tests:
           value: argocd-apps
 
   - it: should generate all templates with minimal configuration
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - hasDocuments:
           count: 1
         template: templates/argocd-apps.yaml
-      - hasDocuments:
-          count: 0  # No docker secret without password
-        template: templates/docker-secret.yaml
-      - hasDocuments:
-          count: 0  # No repo secret for OSS
-        template: templates/repo-secret.yaml
       - hasDocuments:
           count: 5
         template: templates/projects.yaml
@@ -82,10 +34,6 @@ tests:
   - it: should handle custom repository configuration
     template: templates/argocd-apps.yaml
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
       deployment.oss.repository.URL: "https://example.com/custom-repo.git"
       deployment.oss.repository.branch: "custom-branch"
       deployment.oss.repository.baseDir: "custom-dir"
@@ -102,42 +50,21 @@ tests:
           value: "custom-dir/custom-apps-dir"
 
   # ========================================
-  # SPECIAL CHARACTER HANDLING
+  # ENVIRONMENT CONFIGURATION
   # ========================================
 
-  - it: should handle special characters in configuration
+  - it: should propagate environment setting
     template: templates/argocd-apps.yaml
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      registry.docker.username: "user@domain.com"
-      registry.docker.password: "pass/word-with@special#chars!"
-      apps.test-app.values.custom.value: "special-chars:!@#$%^&*()"
+      environment: production
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "username: user@domain.com"
-      # Values should be properly escaped and included
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "registry:"
+          pattern: "environment: production"
 
-  # ========================================
-  # CONFIGURATION BOUNDARY VALIDATION
-  # ========================================
-
-  - it: should handle disabled registerJob configuration
+  - it: should use default environment when not specified
     template: templates/argocd-apps.yaml
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      registerJob.enabled: false
     asserts:
-      # registerJob config should be passed through
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "registerJob:"
+          pattern: "environment: dev"

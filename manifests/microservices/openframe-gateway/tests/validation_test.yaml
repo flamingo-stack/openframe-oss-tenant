@@ -2,51 +2,30 @@ suite: test validation logic
 templates:
   - templates/ingress.yaml
 tests:
-  # Deployment validation
-  - it: should fail when no deployment type enabled
+  - it: should render localhost ingress successfully
     set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=false, saas=false"
-
-  - it: should fail when both deployment types enabled
-    set:
-      deployment.oss.enabled: true
-      deployment.saas.enabled: true
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=true, saas=true"
-
-  # Ingress validation for oss
-  - it: should fail when oss has no ingress
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=false, ngrok=false"
-
-  - it: should fail when oss has multiple ingresses
-    set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+
+  - it: should render ngrok ingress successfully
+    set:
+      deployment.oss.ingress.localhost.enabled: false
       deployment.oss.ingress.ngrok.enabled: true
       deployment.oss.ingress.ngrok.url: "test.ngrok.io"
-      deployment.saas.enabled: false
     asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=true, ngrok=true"
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
 
-  # Ingress validation for saas
-  - it: should fail when saas has no localhost ingress
+  - it: should not render when no ingress enabled
     set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: false
+      deployment.oss.ingress.localhost.enabled: false
+      deployment.oss.ingress.ngrok.enabled: false
     asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: localhost ingress must be enabled for SaaS deployment"
+      - hasDocuments:
+          count: 0

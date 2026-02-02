@@ -20,12 +20,8 @@ spec:
     spec:
       initContainers:
         - name: wait-for-config-server
-          image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
-          {{- if .Values.deployment.saas.enabled }}
-          command: ["sh", "-c", "until curl -f http://openframe-saas-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
-          {{- else }}
+          image: {{ .Values.initContainer.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
           command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
-          {{- end }}
 
       containers:
         - name: openframe-management
@@ -36,10 +32,10 @@ spec:
             - containerPort: 8096
               name: management
           env:
-            {{- if and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.ngrok.enabled }}
+            {{- if .Values.deployment.oss.ingress.ngrok.enabled }}
             - name: TENANT_HOST_URL
               value: {{ printf "https://%s" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
-            {{- else if or (and .Values.deployment.oss.enabled .Values.deployment.oss.ingress.localhost.enabled) (and .Values.deployment.saas.enabled .Values.deployment.saas.ingress.localhost.enabled) }}
+            {{- else if .Values.deployment.oss.ingress.localhost.enabled }}
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}

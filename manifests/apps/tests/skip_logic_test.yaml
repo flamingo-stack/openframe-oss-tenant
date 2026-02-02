@@ -2,16 +2,15 @@ suite: skip logic tests
 templates:
   - templates/application.yaml
 tests:
-  - it: self-hosted localhost should skip ngrok-operator and include others
+  - it: OSS localhost should skip ngrok-operator and include others
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
       deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
-      # Count verification - ngrok-operator skipped, so 36 apps
+      # Count verification - ngrok-operator skipped
       - hasDocuments:
-          count: 36
+          count: 39
       # Verify ingress-nginx is included
       - equal:
           path: metadata.name
@@ -27,16 +26,15 @@ tests:
           path: metadata.name
           value: "openframe-authorization-server"
 
-  - it: self-hosted ngrok should skip ingress-nginx and include others
+  - it: OSS ngrok should skip ingress-nginx and include others
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: false
       deployment.oss.ingress.ngrok.enabled: true
-      deployment.saas.enabled: false
     asserts:
-      # Count verification - ingress-nginx skipped, so 36 apps
+      # Count verification - ingress-nginx skipped
       - hasDocuments:
-          count: 36
+          count: 39
       # Verify ngrok-operator is included
       - equal:
           path: metadata.name
@@ -52,47 +50,12 @@ tests:
           path: metadata.name
           value: "openframe-authorization-server"
 
-  - it: SaaS should skip both ngrok-operator and auth-server
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-    asserts:
-      # Count verification - ngrok-operator and auth-server skipped, so 35 apps
-      - hasDocuments:
-          count: 35
-      # Verify ingress-nginx is included
-      - equal:
-          path: metadata.name
-          value: "ingress-nginx"
-        documentSelector:
-          path: metadata.name
-          value: "ingress-nginx"
-
   - it: should skip explicitly disabled apps
     set:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
       apps.mongodb.enabled: false
     asserts:
-      # One additional app (mongodb) should be skipped, plus ngrok-operator, so 35 apps
+      # One additional app (mongodb) should be skipped, plus ngrok-operator
       - hasDocuments:
-          count: 35
-
-  - it: both deployment types enabled should use SaaS logic
-    set:
-      deployment.oss.enabled: true
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-    asserts:
-      # Should follow SaaS logic - skip both ngrok-operator and auth-server, so 35 apps
-      - hasDocuments:
-          count: 35
-      # Verify ingress-nginx is included for SaaS
-      - equal:
-          path: metadata.name
-          value: "ingress-nginx"
-        documentSelector:
-          path: metadata.name
-          value: "ingress-nginx"
+          count: 38

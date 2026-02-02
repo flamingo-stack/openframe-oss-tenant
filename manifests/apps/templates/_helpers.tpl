@@ -16,7 +16,6 @@ Rules:
 2. If `enabled: false` → skip
 3. If deployment.oss.enabled and ingress.localhost.enabled → skip "ngrok-operator"
 4. If deployment.oss.enabled and ingress.ngrok.enabled → skip "ingress-nginx"
-5. If deployment.saas.enabled → skip "all that are at saas" + "ngrok-operator"
 */}}
 
 {{- define "app.skip" -}}
@@ -36,19 +35,13 @@ Rules:
 {{- else }}
 
 {{/* Extract deployment and ingress configuration */}}
-{{- $oss := $vals.deployment.oss.enabled | default false }}
 {{- $ossLocalhost := $vals.deployment.oss.ingress.localhost.enabled | default false }}
 {{- $ossNgrok := $vals.deployment.oss.ingress.ngrok.enabled | default false }}
-{{- $saas := $vals.deployment.saas.enabled | default false }}
-{{- $saasLocalhost := $vals.deployment.saas.ingress.localhost.enabled | default false }}
-{{- $saasGcp := $vals.deployment.saas.ingress.gcp.enabled | default false }}
 
 {{/* Apply skipping logic */}}
-{{- if and $oss $ossLocalhost (eq $name "ngrok-operator") }}
+{{- if and $ossLocalhost (eq $name "ngrok-operator") }}
   true
-{{- else if and $oss $ossNgrok (eq $name "ingress-nginx") }}
-  true
-{{- else if and $saas (or (eq $name "ingress-nginx") (eq $name "cassandra") (eq $name "debezium-connect") (eq $name "grafana") (eq $name "kafka") (eq $name "kafka-ui") (eq $name "loki") (eq $name "mongo-express") (eq $name "mongodb") (eq $name "zookeeper") (eq $name "namespace-client-tools") (eq $name "namespace-datasources") (eq $name "namespace-integrated-tools") (eq $name "namespace-microservices") (eq $name "namespace-platform") (eq $name "nats") (eq $name "ngrok-operator") (eq $name "openframe-api") (eq $name "openframe-authorization-server") (eq $name "openframe-client") (eq $name "openframe-config") (eq $name "openframe-external-api") (eq $name "openframe-frontend") (eq $name "openframe-gateway") (eq $name "openframe-stream") (eq $name "openframe-management") (eq $name "pinot") (eq $name "prometheus") (eq $name "alloy") (eq $name "redis") (eq $name "telepresence") (eq $name "postgres-authentik") (eq $name "redis-authentik") (eq $name "authentik") (eq $name "mysql-fleetmdm") (eq $name "redis-fleetmdm") (eq $name "fleetmdm") (eq $name "mongodb-meshcentral") (eq $name "meshcentral") (eq $name "postgres-tactical") (eq $name "redis-tactical") (eq $name "tactical-rmm") (eq $name "registration")) }}
+{{- else if and $ossNgrok (eq $name "ingress-nginx") }}
   true
 {{- else }}
   false

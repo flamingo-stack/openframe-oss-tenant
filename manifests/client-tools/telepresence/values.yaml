@@ -24,13 +24,3 @@ telepresence-oss:
       registry: ghcr.io/flamingo-stack/registry
       image: curlimages/curl
       tag: "8.9.1"
-
-deployment:
-  saas:
-    enabled: true
-    ingress:
-      localhost:
-        enabled: true   # Enable localhost ingress with nginx for SaaS
-      gcp:
-        enabled: false
-        gkeSecurityGroup: "gke-security-groups@flamingo.cx"

@@ -1,6 +1,0 @@
-registry:
-  docker:
-    server: https://index.docker.io/v1/
-    username: ""
-    password: ""
-    email: ""
