@@ -145,7 +145,7 @@ impl ToolInstallationService {
         let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
         let executable_path = match &tool_installation_message.download_configurations {
             Some(configs) => {
-                let config = GithubDownloadService::find_config_for_current_os(configs)
+                let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
                 self.github_download_service
                     .download_and_save(config, &tool_folder_path, &default_agent_path)
@@ -200,7 +200,7 @@ impl ToolInstallationService {
                     AssetSource::Github => {
                         let download_configs = asset.download_configurations.as_ref()
                             .with_context(|| format!("No download configurations for Github asset: {}", asset.id))?;
-                        let config = GithubDownloadService::find_config_for_current_os(download_configs)
+                        let config = self.github_download_service.find_config_for_current_os(download_configs)
                             .with_context(|| format!("Failed to find download configuration for current OS: {}", asset.id))?;
                         info!("Downloading Github asset: {} from {}", asset.id, config.link);
 

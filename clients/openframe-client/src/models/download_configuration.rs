@@ -14,7 +14,7 @@ pub struct DownloadConfiguration {
 impl DownloadConfiguration {
     /// Returns true if agent_file_name is a path (requires extracting entire archive).
     pub fn is_folder_extraction(&self) -> bool {
-        Path::new(&self.agent_file_name).components().count() > 1
+        Path::new(&self.target_file_name).components().count() > 1
     }
 
     /// Checks if this configuration matches the current OS

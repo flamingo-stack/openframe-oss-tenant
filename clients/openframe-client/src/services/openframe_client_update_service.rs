@@ -130,7 +130,7 @@ impl OpenFrameClientUpdateService {
     /// Execute the actual update process
     async fn execute_update(&self, message: &OpenFrameClientUpdateMessage, update_state: &mut UpdateState) -> Result<()> {
         // 1. Find the appropriate download configuration for current OS
-        let download_config = GithubDownloadService::find_config_for_current_os(&message.download_configurations)
+        let download_config = self.github_download_service.find_config_for_current_os(&message.download_configurations)
             .context("Failed to find download configuration for current OS")?;
 
         info!("Using download configuration for OS: {}", download_config.os);

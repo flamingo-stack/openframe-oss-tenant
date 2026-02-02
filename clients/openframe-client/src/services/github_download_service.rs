@@ -263,7 +263,7 @@ impl GithubDownloadService {
     }
 
     /// Finds the appropriate download configuration for the current OS
-    pub fn find_config_for_current_os(configs: &[DownloadConfiguration]) -> Result<&DownloadConfiguration> {
+    pub fn find_config_for_current_os<'a>(&self, configs: &'a [DownloadConfiguration]) -> Result<&'a DownloadConfiguration> {
         configs.iter()
             .find(|c| c.matches_current_os())
             .ok_or_else(|| anyhow!("No download configuration found for current OS"))
@@ -277,13 +277,13 @@ impl GithubDownloadService {
         default_agent_path: &Path,
     ) -> Result<Option<String>> {
         if config.is_folder_extraction() {
-            let file_path = tool_folder_path.join(&config.agent_file_name);
+            let file_path = tool_folder_path.join(&config.target_file_name);
             self.download_and_extract_all(config, tool_folder_path).await?;
             Self::set_executable_permissions(&file_path).await?;
             if !file_path.exists() {
                 warn!("Executable not found at {} after extraction", file_path.display());
             }
-            Ok(Some(config.agent_file_name.clone()))
+            Ok(Some(config.target_file_name.clone()))
         } else {
             let bytes = self.download_and_extract(config).await?;
             File::create(default_agent_path).await?.write_all(&bytes).await?;
