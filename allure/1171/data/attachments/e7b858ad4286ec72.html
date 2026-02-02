@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;randal.cormier@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMmI5MjlhZGItMDFiMi00ZWIyLTk0ZmUtOWJlNDc0MDMxZDY4IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0NWM5ZjY4MC1kZTY1LTQ1NjEtYTRlOC1lODI5ZGExYmYwZTUiLCJzdWIiOiJwYXR0aS52b25AaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDA0MzcxNSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNDVjOWY2ODAtZGU2NS00NTYxLWE0ZTgtZTgyOWRhMWJmMGU1IiwiZXhwIjoxNzcwMDQ0NjE1LCJpYXQiOjE3NzAwNDM3MTUsInVzZXJJZCI6IjIyMGNmMWYxLTU0YWMtNDdhYy04YjI1LWU2MzhlODE0YTMxMSIsImp0aSI6ImVmM2VkYzcyLWRmOWItNDdhZi1hYWYwLWQyM2UzODg2YzZkOSJ9.ubXd2YeQsXZ7SvJN7dpOiAsEwRsP1C2KyGjnU1Eogyp8c8vjk4S_JQCB072ugy-I6hZekUCz-3xe0PdZW20cJzUyarvqdiablrClujbHFPX_ilecekLdIurVSm1LeJEu9rQ8bfjPKPnzrdbmPh9MWfsLEql7eoFAJxuZ07imJ895SbIBuyRl7VLSjNm5eK0kQl6IQKH_E7w8J67uNNsRpixlrv1CVTELIxWP8PwOcgbX6k7SSdR_hlrsXGLMNBI40eOUyZZcYzT82yqnxfGV1SXZg1_17gTWT3MeQv_uWUzPduqO0WcW54YbaZW9wYQSaOAhDxf95XuvactU3B80qw</div>
+        <div>refresh_token: ZdrSmIFk9nf6M6G1EKWbHQMspES4TcAYR8hQt83ZqPrLKrWiC04yvq9BnmNC0KLJ7PeL1VXgC5L34dgWXPCY9_fdtSx8L66_tDH1TALPpGL8g3CKdGGK9pCoMAKnWf09</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMmI5MjlhZGItMDFiMi00ZWIyLTk0ZmUtOWJlNDc0MDMxZDY4IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI0NWM5ZjY4MC1kZTY1LTQ1NjEtYTRlOC1lODI5ZGExYmYwZTUiLCJzdWIiOiJwYXR0aS52b25AaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDA0MzcxNSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvNDVjOWY2ODAtZGU2NS00NTYxLWE0ZTgtZTgyOWRhMWJmMGU1IiwiZXhwIjoxNzcwMDQ0NjE1LCJpYXQiOjE3NzAwNDM3MTUsInVzZXJJZCI6IjIyMGNmMWYxLTU0YWMtNDdhYy04YjI1LWU2MzhlODE0YTMxMSIsImp0aSI6ImVmM2VkYzcyLWRmOWItNDdhZi1hYWYwLWQyM2UzODg2YzZkOSJ9.ubXd2YeQsXZ7SvJN7dpOiAsEwRsP1C2KyGjnU1Eogyp8c8vjk4S_JQCB072ugy-I6hZekUCz-3xe0PdZW20cJzUyarvqdiablrClujbHFPX_ilecekLdIurVSm1LeJEu9rQ8bfjPKPnzrdbmPh9MWfsLEql7eoFAJxuZ07imJ895SbIBuyRl7VLSjNm5eK0kQl6IQKH_E7w8J67uNNsRpixlrv1CVTELIxWP8PwOcgbX6k7SSdR_hlrsXGLMNBI40eOUyZZcYzT82yqnxfGV1SXZg1_17gTWT3MeQv_uWUzPduqO0WcW54YbaZW9wYQSaOAhDxf95XuvactU3B80qw&#39; -b &#39;refresh_token=ZdrSmIFk9nf6M6G1EKWbHQMspES4TcAYR8hQt83ZqPrLKrWiC04yvq9BnmNC0KLJ7PeL1VXgC5L34dgWXPCY9_fdtSx8L66_tDH1TALPpGL8g3CKdGGK9pCoMAKnWf09&#39; -d &#39;{
+    &quot;email&quot;: &quot;randal.cormier@hotmail.com&quot;
+}&#39;
+</div>
