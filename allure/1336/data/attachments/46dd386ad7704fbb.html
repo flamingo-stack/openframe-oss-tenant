@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/69803b9626cc5d27601cda49</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mrs. Shauna Ullrich&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(818) 765-9561&quot;,
+                &quot;email&quot;: &quot;thad.thiel@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;32296 Sally View&quot;,
+            &quot;street2&quot;: &quot;Apt. 171&quot;,
+            &quot;city&quot;: &quot;Gulgowskitown&quot;,
+            &quot;state&quot;: &quot;Florida&quot;,
+            &quot;postalCode&quot;: &quot;41362&quot;,
+            &quot;country&quot;: &quot;United States of America&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;0003 Tomi Village&quot;,
+            &quot;street2&quot;: &quot;Apt. 643&quot;,
+            &quot;city&quot;: &quot;South Monte&quot;,
+            &quot;state&quot;: &quot;Georgia&quot;,
+            &quot;postalCode&quot;: &quot;94371&quot;,
+            &quot;country&quot;: &quot;Uzbekistan&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtY2RmMTVhYmMtNmE5Mi00NWQ0LTkwNjItOGQxYzliOTgyYTI0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1MjE3NjQxNy0yYjc1LTRjMmQtYWRhYy0zNjUwMmE0N2RkYjkiLCJzdWIiOiJyb25kYS5uaWNvbGFzQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMDExNTQxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy81MjE3NjQxNy0yYjc1LTRjMmQtYWRhYy0zNjUwMmE0N2RkYjkiLCJleHAiOjE3NzAwMTI0NDEsImlhdCI6MTc3MDAxMTU0MSwidXNlcklkIjoiZDBmNWM4MzAtNzQ0OS00ZmE5LWI0OTktYTg4MjcxNzhlYzJkIiwianRpIjoiYjk5MDAwN2YtNjhkMi00NzZhLTg4YmUtZGUwZDc0NDE1OWFkIn0.kh9S4l_qprXP6HH-t68U06v4tC6B4nP6uf1oNzhLK3FxNLs4mNa6FkS6i7BHUTtBgsSVWQCwMBoYh96uhdt3w3drc2oAH5a83-E9FjXS10xlzVXOjxVzKxbYPlB0HdoG6Rp_m6xRuJUc8EKl6NiLcKtoV9-0aFhQpA62WEbWXW-jwo-iB7YYNay5v7GUg5-Vpb8ksN4PL9B26XFltu8zTZjmxbHPTKEZmOTt-W-YU1TXDphdyO4qmv2GBMFl0KpcYnlYvtULjZO0JVaJvvlRy4YrVfUHT57_vIm5CkO-6RbFxiNcXR9sApqGP5JxJplFtv0M63bWUCMLPuWH9UxwxQ</div>
+        <div>refresh_token: AuBXEUMoXQAFyKujxCcOIPIEszo2-P_56YkBDdMkvNRk2hv23YIThU255TAn41p5Uly7tnepDAGBrczvxDDL1X0iMKOd37VJ51_Qq7QbDgdcwbowRytUBfKPrR8FKI9i</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/69803b9626cc5d27601cda49&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtY2RmMTVhYmMtNmE5Mi00NWQ0LTkwNjItOGQxYzliOTgyYTI0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1MjE3NjQxNy0yYjc1LTRjMmQtYWRhYy0zNjUwMmE0N2RkYjkiLCJzdWIiOiJyb25kYS5uaWNvbGFzQHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMDExNTQxLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy81MjE3NjQxNy0yYjc1LTRjMmQtYWRhYy0zNjUwMmE0N2RkYjkiLCJleHAiOjE3NzAwMTI0NDEsImlhdCI6MTc3MDAxMTU0MSwidXNlcklkIjoiZDBmNWM4MzAtNzQ0OS00ZmE5LWI0OTktYTg4MjcxNzhlYzJkIiwianRpIjoiYjk5MDAwN2YtNjhkMi00NzZhLTg4YmUtZGUwZDc0NDE1OWFkIn0.kh9S4l_qprXP6HH-t68U06v4tC6B4nP6uf1oNzhLK3FxNLs4mNa6FkS6i7BHUTtBgsSVWQCwMBoYh96uhdt3w3drc2oAH5a83-E9FjXS10xlzVXOjxVzKxbYPlB0HdoG6Rp_m6xRuJUc8EKl6NiLcKtoV9-0aFhQpA62WEbWXW-jwo-iB7YYNay5v7GUg5-Vpb8ksN4PL9B26XFltu8zTZjmxbHPTKEZmOTt-W-YU1TXDphdyO4qmv2GBMFl0KpcYnlYvtULjZO0JVaJvvlRy4YrVfUHT57_vIm5CkO-6RbFxiNcXR9sApqGP5JxJplFtv0M63bWUCMLPuWH9UxwxQ&#39; -b &#39;refresh_token=AuBXEUMoXQAFyKujxCcOIPIEszo2-P_56YkBDdMkvNRk2hv23YIThU255TAn41p5Uly7tnepDAGBrczvxDDL1X0iMKOd37VJ51_Qq7QbDgdcwbowRytUBfKPrR8FKI9i&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Mrs. Shauna Ullrich&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(818) 765-9561&quot;,
+                &quot;email&quot;: &quot;thad.thiel@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;32296 Sally View&quot;,
+            &quot;street2&quot;: &quot;Apt. 171&quot;,
+            &quot;city&quot;: &quot;Gulgowskitown&quot;,
+            &quot;state&quot;: &quot;Florida&quot;,
+            &quot;postalCode&quot;: &quot;41362&quot;,
+            &quot;country&quot;: &quot;United States of America&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;0003 Tomi Village&quot;,
+            &quot;street2&quot;: &quot;Apt. 643&quot;,
+            &quot;city&quot;: &quot;South Monte&quot;,
+            &quot;state&quot;: &quot;Georgia&quot;,
+            &quot;postalCode&quot;: &quot;94371&quot;,
+            &quot;country&quot;: &quot;Uzbekistan&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}&#39;
+</div>
