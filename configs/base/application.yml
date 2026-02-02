@@ -127,6 +127,8 @@ logging:
 
 openframe:
   cluster-id: ${OPENFRAME_CLUSTER_ID:cluster-id}
+  redis:
+    tenant-id: default
   client:
     update:
       feature:
