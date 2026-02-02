@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6980ea787a4a26082c0e7da1</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Verla Berge&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(832) 931-7330 x2787&quot;,
+                &quot;email&quot;: &quot;lindsey.langosh@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;17342 Lashonda Lake&quot;,
+            &quot;street2&quot;: &quot;Apt. 742&quot;,
+            &quot;city&quot;: &quot;Johnstonton&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;27354&quot;,
+            &quot;country&quot;: &quot;Bolivia&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;6448 Jina Neck&quot;,
+            &quot;street2&quot;: &quot;Suite 618&quot;,
+            &quot;city&quot;: &quot;Faheyville&quot;,
+            &quot;state&quot;: &quot;South Carolina&quot;,
+            &quot;postalCode&quot;: &quot;61087&quot;,
+            &quot;country&quot;: &quot;Northern Mariana Islands&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYWE2NzllOWUtZWY1Yy00N2JhLTk2YmYtMWQ5YWJhN2ZmNzkzIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2NTI2MTliOS00YzZiLTQ4ZDAtODQwNy02MWFmYjQ4ZmE0MmYiLCJzdWIiOiJtaXRjaGVsbC5kYW1vcmVAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAwNTYzMTIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzY1MjYxOWI5LTRjNmItNDhkMC04NDA3LTYxYWZiNDhmYTQyZiIsImV4cCI6MTc3MDA1NzIxMiwiaWF0IjoxNzcwMDU2MzEyLCJ1c2VySWQiOiJiNGIyZDdjOS02MDI5LTQ0YmEtYjY0Ni0yM2RlOWJjNDAxZTIiLCJqdGkiOiI5OWE1ZDYwYy0wYmZhLTQ0NGEtYWQyMy1mZGJhOTg4MjYyMjIifQ.Pt0GHCse4YFTj3wgMMi5ldXl76HN3GxTyur6D-z0lf_3yaAJF0OvZUpMKbtHj5-FPEjK4Y3kFf6Gn-wGfxDb0MXbKJg6EwuIyjuyQTBzuUMl1yWH5093WuvsvBguTw37XJn6hmXH9me3bqlvdXlVH5HPtnPgtWzyMotwHdIvK2G1exA8DKe0Kn-hQKxb5eis0oqBP1ZCtn8yDOzqdljj9k78Wax1_Jr4cBCEiscVrxX4MeBspxa5HrbaI3zKIvPxtMfWAJcN_3U_YTPNsVoK8DZADlcsb6neDcfx6u330IJDm1mQ9CDUa1lqIaX_2N_mtImKMp5xPCLH9bLjUDkbYw</div>
+        <div>refresh_token: GL_An1jG_56ltSaAwDHo6ZsV6rxslP4yna0JuKYRAvi75b8apxjLkOD6p2VdZDDknarmic_KFgTfl1NeDnER0wBybTV8701sgHXSikEqAz-lF3yOINkeMxlh2NQ0LfnR</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6980ea787a4a26082c0e7da1&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYWE2NzllOWUtZWY1Yy00N2JhLTk2YmYtMWQ5YWJhN2ZmNzkzIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2NTI2MTliOS00YzZiLTQ4ZDAtODQwNy02MWFmYjQ4ZmE0MmYiLCJzdWIiOiJtaXRjaGVsbC5kYW1vcmVAZ21haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAwNTYzMTIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzY1MjYxOWI5LTRjNmItNDhkMC04NDA3LTYxYWZiNDhmYTQyZiIsImV4cCI6MTc3MDA1NzIxMiwiaWF0IjoxNzcwMDU2MzEyLCJ1c2VySWQiOiJiNGIyZDdjOS02MDI5LTQ0YmEtYjY0Ni0yM2RlOWJjNDAxZTIiLCJqdGkiOiI5OWE1ZDYwYy0wYmZhLTQ0NGEtYWQyMy1mZGJhOTg4MjYyMjIifQ.Pt0GHCse4YFTj3wgMMi5ldXl76HN3GxTyur6D-z0lf_3yaAJF0OvZUpMKbtHj5-FPEjK4Y3kFf6Gn-wGfxDb0MXbKJg6EwuIyjuyQTBzuUMl1yWH5093WuvsvBguTw37XJn6hmXH9me3bqlvdXlVH5HPtnPgtWzyMotwHdIvK2G1exA8DKe0Kn-hQKxb5eis0oqBP1ZCtn8yDOzqdljj9k78Wax1_Jr4cBCEiscVrxX4MeBspxa5HrbaI3zKIvPxtMfWAJcN_3U_YTPNsVoK8DZADlcsb6neDcfx6u330IJDm1mQ9CDUa1lqIaX_2N_mtImKMp5xPCLH9bLjUDkbYw&#39; -b &#39;refresh_token=GL_An1jG_56ltSaAwDHo6ZsV6rxslP4yna0JuKYRAvi75b8apxjLkOD6p2VdZDDknarmic_KFgTfl1NeDnER0wBybTV8701sgHXSikEqAz-lF3yOINkeMxlh2NQ0LfnR&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Verla Berge&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(832) 931-7330 x2787&quot;,
+                &quot;email&quot;: &quot;lindsey.langosh@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;17342 Lashonda Lake&quot;,
+            &quot;street2&quot;: &quot;Apt. 742&quot;,
+            &quot;city&quot;: &quot;Johnstonton&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;27354&quot;,
+            &quot;country&quot;: &quot;Bolivia&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;6448 Jina Neck&quot;,
+            &quot;street2&quot;: &quot;Suite 618&quot;,
+            &quot;city&quot;: &quot;Faheyville&quot;,
+            &quot;state&quot;: &quot;South Carolina&quot;,
+            &quot;postalCode&quot;: &quot;61087&quot;,
+            &quot;country&quot;: &quot;Northern Mariana Islands&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}&#39;
+</div>
