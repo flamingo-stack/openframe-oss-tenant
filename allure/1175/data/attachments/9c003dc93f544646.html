@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6980855105f69074871419d5</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Vanda Funk&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(479) 419-4243&quot;,
+                &quot;email&quot;: &quot;gus.dietrich@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;1304 Lind Cliffs&quot;,
+            &quot;street2&quot;: &quot;Apt. 526&quot;,
+            &quot;city&quot;: &quot;Pourosside&quot;,
+            &quot;state&quot;: &quot;Oklahoma&quot;,
+            &quot;postalCode&quot;: &quot;32286&quot;,
+            &quot;country&quot;: &quot;Libyan Arab Jamahiriya&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;2716 Hanna Points&quot;,
+            &quot;street2&quot;: &quot;Suite 775&quot;,
+            &quot;city&quot;: &quot;Mitchelview&quot;,
+            &quot;state&quot;: &quot;Arizona&quot;,
+            &quot;postalCode&quot;: &quot;20670&quot;,
+            &quot;country&quot;: &quot;Mexico&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtY2YwN2E2MDctODFkMC00OGY1LThkNTMtZGY0MTVhYWJmMTVmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhODEyODI4MC01YzBhLTRiNDktYWUzOS03YWI0YWUxNDA5MDIiLCJzdWIiOiJkZXNoYXduLmJhcnRlbGxAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDAzMDQxNiwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYTgxMjgyODAtNWMwYS00YjQ5LWFlMzktN2FiNGFlMTQwOTAyIiwiZXhwIjoxNzcwMDMxMzE2LCJpYXQiOjE3NzAwMzA0MTYsInVzZXJJZCI6ImE0MDgxNGRlLWY3YWItNGNjYy05NDk3LTg5MjU1ODNkYjYwOCIsImp0aSI6ImEwM2Q4YjcwLTRiYWMtNDM1OC05MmI0LTg5MmU5MjVlNDg1MiJ9.LPC1gYgeBVVUdiJE0JU609xyZd9xv2kd4WIJSr8RBTkqRUPR2vUl2HGukNW3HYIgwnNJq5eG7Cv_FNhVVB18ezxAlrnPU0djoFj-XL8MTvUQz-0C89wbjrWCz__I1CR_1zlYzMS3zsjJRXU1E4_FkA_d59zsf8JVa_x62oqLu8PwacfHMGcZeqAKZ_s7zthFVGryHfysK38a8Tlte81rEIMx7kRbHZHhVQPhr-a2ML4-vm7ljJqKOLapt_ycNmgmUhEgQjVC13JhQegE_LGHczGOIoDHm7rQvO5Yc9J9krVkhJlE88Ergzbkc7qgrt2fLWQpn2UA53D3fIpCfNKJgA</div>
+        <div>refresh_token: B29aKPQ-iacumtZLpkYeEbN-XUwXTT7ZPLMTArI1H2vtzoS_i2ydgdjtZmSboww970yuUlhPw1PdMIxK3czIKSj_wv1AxRZCxq7JGKIn9lfzxYcxFNK0ymq8TcSPPp7U</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6980855105f69074871419d5&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtY2YwN2E2MDctODFkMC00OGY1LThkNTMtZGY0MTVhYWJmMTVmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJhODEyODI4MC01YzBhLTRiNDktYWUzOS03YWI0YWUxNDA5MDIiLCJzdWIiOiJkZXNoYXduLmJhcnRlbGxAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDAzMDQxNiwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvYTgxMjgyODAtNWMwYS00YjQ5LWFlMzktN2FiNGFlMTQwOTAyIiwiZXhwIjoxNzcwMDMxMzE2LCJpYXQiOjE3NzAwMzA0MTYsInVzZXJJZCI6ImE0MDgxNGRlLWY3YWItNGNjYy05NDk3LTg5MjU1ODNkYjYwOCIsImp0aSI6ImEwM2Q4YjcwLTRiYWMtNDM1OC05MmI0LTg5MmU5MjVlNDg1MiJ9.LPC1gYgeBVVUdiJE0JU609xyZd9xv2kd4WIJSr8RBTkqRUPR2vUl2HGukNW3HYIgwnNJq5eG7Cv_FNhVVB18ezxAlrnPU0djoFj-XL8MTvUQz-0C89wbjrWCz__I1CR_1zlYzMS3zsjJRXU1E4_FkA_d59zsf8JVa_x62oqLu8PwacfHMGcZeqAKZ_s7zthFVGryHfysK38a8Tlte81rEIMx7kRbHZHhVQPhr-a2ML4-vm7ljJqKOLapt_ycNmgmUhEgQjVC13JhQegE_LGHczGOIoDHm7rQvO5Yc9J9krVkhJlE88Ergzbkc7qgrt2fLWQpn2UA53D3fIpCfNKJgA&#39; -b &#39;refresh_token=B29aKPQ-iacumtZLpkYeEbN-XUwXTT7ZPLMTArI1H2vtzoS_i2ydgdjtZmSboww970yuUlhPw1PdMIxK3czIKSj_wv1AxRZCxq7JGKIn9lfzxYcxFNK0ymq8TcSPPp7U&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Vanda Funk&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(479) 419-4243&quot;,
+                &quot;email&quot;: &quot;gus.dietrich@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;1304 Lind Cliffs&quot;,
+            &quot;street2&quot;: &quot;Apt. 526&quot;,
+            &quot;city&quot;: &quot;Pourosside&quot;,
+            &quot;state&quot;: &quot;Oklahoma&quot;,
+            &quot;postalCode&quot;: &quot;32286&quot;,
+            &quot;country&quot;: &quot;Libyan Arab Jamahiriya&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;2716 Hanna Points&quot;,
+            &quot;street2&quot;: &quot;Suite 775&quot;,
+            &quot;city&quot;: &quot;Mitchelview&quot;,
+            &quot;state&quot;: &quot;Arizona&quot;,
+            &quot;postalCode&quot;: &quot;20670&quot;,
+            &quot;country&quot;: &quot;Mexico&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        2
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        2
+    ]
+}&#39;
+</div>
