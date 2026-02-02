@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;sheridan.jerde@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZDVmY2M3Y2QtYmQ0Zi00ZWJkLTkxMDAtYTUzMWZkY2QzYjcyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkMTljNmEzZC01ZThiLTRiZGMtYjA2OS1hZWNhZDQ4MWY1YjYiLCJzdWIiOiJtb3NlLmtpcmxpbkBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDAzMDM3OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZDE5YzZhM2QtNWU4Yi00YmRjLWIwNjktYWVjYWQ0ODFmNWI2IiwiZXhwIjoxNzcwMDMxMjc4LCJpYXQiOjE3NzAwMzAzNzgsInVzZXJJZCI6IjNiZDJhYjYyLWEzZjEtNDRjMy04NzRiLTdiN2Q0NTM4NjI4YSIsImp0aSI6IjNmNjlmYmY0LTkwOGEtNDU5Ny1hMDUxLWU3MDk5YzY4ZWU2YiJ9.NW1NmbkyO0qqDUsAsIoEGz2RwSGY-bORdDNidrB4yKGtcL0E1fFNkMifW27sy-luciyB-jHIOYN2ec8BqNzZgMqGSOvMqPNikQrwBx6U_UH_QWUIAsN9uMvTl-LDvTJOnAM6hJB_GKje_1uhgbQKxLfr3Bo1c_jpIQOJ1kUJqKVD74mdbrQuLRkHFRACodo-8cMEnlsWhG_JqKo87YyLlL2SIfpKu9K2g1rquTWCSbcOcQxa3PXMYnyyYozBIq1GlbjfcF9S9qzLVGJ6HhxW3k1i66yQJdej3-gw5dHLoeAleMoY3j3vCGEB_8muyxSC0nitzZlSqAI5EdfbSfL3dg</div>
+        <div>refresh_token: _82dC_Yks25hIhqA2zKZAdhDv2CzwBUZzHDDktdGSRIsfAqX-4HPCIvxJUtDkWgIkEbhH-cHFA4eX1Ikey2aH4IDoFJzh-rLRGVS4mW7095fgU0C2Y5326EqVMJUitL3</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZDVmY2M3Y2QtYmQ0Zi00ZWJkLTkxMDAtYTUzMWZkY2QzYjcyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJkMTljNmEzZC01ZThiLTRiZGMtYjA2OS1hZWNhZDQ4MWY1YjYiLCJzdWIiOiJtb3NlLmtpcmxpbkBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDAzMDM3OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZDE5YzZhM2QtNWU4Yi00YmRjLWIwNjktYWVjYWQ0ODFmNWI2IiwiZXhwIjoxNzcwMDMxMjc4LCJpYXQiOjE3NzAwMzAzNzgsInVzZXJJZCI6IjNiZDJhYjYyLWEzZjEtNDRjMy04NzRiLTdiN2Q0NTM4NjI4YSIsImp0aSI6IjNmNjlmYmY0LTkwOGEtNDU5Ny1hMDUxLWU3MDk5YzY4ZWU2YiJ9.NW1NmbkyO0qqDUsAsIoEGz2RwSGY-bORdDNidrB4yKGtcL0E1fFNkMifW27sy-luciyB-jHIOYN2ec8BqNzZgMqGSOvMqPNikQrwBx6U_UH_QWUIAsN9uMvTl-LDvTJOnAM6hJB_GKje_1uhgbQKxLfr3Bo1c_jpIQOJ1kUJqKVD74mdbrQuLRkHFRACodo-8cMEnlsWhG_JqKo87YyLlL2SIfpKu9K2g1rquTWCSbcOcQxa3PXMYnyyYozBIq1GlbjfcF9S9qzLVGJ6HhxW3k1i66yQJdej3-gw5dHLoeAleMoY3j3vCGEB_8muyxSC0nitzZlSqAI5EdfbSfL3dg&#39; -b &#39;refresh_token=_82dC_Yks25hIhqA2zKZAdhDv2CzwBUZzHDDktdGSRIsfAqX-4HPCIvxJUtDkWgIkEbhH-cHFA4eX1Ikey2aH4IDoFJzh-rLRGVS4mW7095fgU0C2Y5326EqVMJUitL3&#39; -d &#39;{
+    &quot;email&quot;: &quot;sheridan.jerde@hotmail.com&quot;
+}&#39;
+</div>
