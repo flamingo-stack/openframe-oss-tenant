@@ -308,19 +308,37 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e && mkdir -p final-artifacts/clients
-          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
+
+          echo "=== Available artifacts from this run ==="
+          ls -la release-artifacts/ || echo "No release-artifacts directory"
+
+          echo "=== Processing clients ==="
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
+            echo "--- Processing: ${client} ---"
+
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
-              tar -czf "final-artifacts/clients/${client}_macos.tar.gz" \
+              echo "[macOS] New artifact found - packaging ${client}"
+              tar -czvf "final-artifacts/clients/${client}_macos.tar.gz" \
                 -C "release-artifacts/${client}-macos" .
+            else
+              echo "[macOS] No new artifact - downloading ${client} from latest"
+              gh release download latest --pattern "${client}_macos.tar.gz" --dir final-artifacts/clients || echo "[macOS] Download failed or not found"
             fi
+
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
+              echo "[Windows] New artifact found - packaging ${client}"
               (cd "release-artifacts/${client}-windows" && \
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
+            else
+              echo "[Windows] No new artifact - downloading ${client} from latest"
+              gh release download latest --pattern "${client}_windows.zip" --dir final-artifacts/clients || echo "[Windows] Download failed or not found"
             fi
           done
+
+          echo "=== Final artifacts ==="
+          ls -la final-artifacts/clients/
 
       - name: Generate release header
         run: |
@@ -342,6 +360,12 @@ jobs:
           ---
           EOF
 
+      - name: Delete existing latest release
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete latest --yes --cleanup-tag || true
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -354,10 +378,3 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
-      
-      - name: Force update latest tag
-        if: ${{ github.event_name == 'push' }}
-        run: git tag -f latest && git push -f origin latest
-
-
-
