@@ -60,7 +60,7 @@ export type AssistantType = typeof ASSISTANT_CONFIG[keyof typeof ASSISTANT_CONFI
 
 export const API_ENDPOINTS = {
   APPROVAL_REQUEST: '/chat/api/v1/approval-requests',
-  SEND_MESSAGE: '/chat/api/v2/messages',
+  SEND_MESSAGE: '/chat/api/v1/messages',
   DIALOG_CHUNKS: '/chat/api/v1/dialogs',
 } as const
 
