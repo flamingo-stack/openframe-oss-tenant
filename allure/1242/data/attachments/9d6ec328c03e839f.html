@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;damian.dooley@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZDllNzg1M2MtOGZhZi00Mzk4LTgyMGYtNjQ4MzJjZDgyNGFjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJlYWZjNzU1Zi00YmVlLTQ2YjMtYTExNi0wM2MxMjliMGIyMWMiLCJzdWIiOiJmcmVkZXJpYy5zYXVlckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDEzMjA5Miwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZWFmYzc1NWYtNGJlZS00NmIzLWExMTYtMDNjMTI5YjBiMjFjIiwiZXhwIjoxNzcwMTMyOTkyLCJpYXQiOjE3NzAxMzIwOTIsInVzZXJJZCI6IjA0Nzg5N2RkLWFmM2UtNGZmMS1hYTNiLTA5YWM0MDQzNWJmOSIsImp0aSI6IjQ5NzA5NjA4LWI0YTYtNGQ1ZS1hZmRlLTg3NzVhNzNmOTcwNSJ9.WExfwkGpjers5SPhhRAvaem1BfifdQzLiLsCuTfzeyOMDllyh8pP1Nf1eaWlklZdp_E8SeKOUd_l88uW0-5UFDfh7vMIDIT4FEJFChQm62EQ1ITnnH72DWyyNmfoV-PclYeb0a5VZW8U60389yfNQHUmwpo9KHAm8ijFuT6pzqg1dSxOo5OAi3uglm_Eg_cBJoDicOeBDEEJ0AJrK0SHzjUe_su_FCjlZuJALhsRa8fhgFkF1SR1iRsbbc-fCul4fT3RM4L3mMVK-1H6tL6ssvlKcnh2rSt8NQqDNiipnXJECcP9XHEIU90OypT5LGPpk4lj8GjmYia8LGiAmR1VcA</div>
+        <div>refresh_token: _lZjfhoSR03IiBl0HEqJquGzR5YpCKwsl8ToFQyvsaldYptkBq_dRY7GK1mazTIGOAIEnTYihNWZ1eYnANX2S6Lzg7go9HRpWXE5JFeLOBG6QT2JdPfDOoevT_BQ_9ga</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZDllNzg1M2MtOGZhZi00Mzk4LTgyMGYtNjQ4MzJjZDgyNGFjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJlYWZjNzU1Zi00YmVlLTQ2YjMtYTExNi0wM2MxMjliMGIyMWMiLCJzdWIiOiJmcmVkZXJpYy5zYXVlckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDEzMjA5Miwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZWFmYzc1NWYtNGJlZS00NmIzLWExMTYtMDNjMTI5YjBiMjFjIiwiZXhwIjoxNzcwMTMyOTkyLCJpYXQiOjE3NzAxMzIwOTIsInVzZXJJZCI6IjA0Nzg5N2RkLWFmM2UtNGZmMS1hYTNiLTA5YWM0MDQzNWJmOSIsImp0aSI6IjQ5NzA5NjA4LWI0YTYtNGQ1ZS1hZmRlLTg3NzVhNzNmOTcwNSJ9.WExfwkGpjers5SPhhRAvaem1BfifdQzLiLsCuTfzeyOMDllyh8pP1Nf1eaWlklZdp_E8SeKOUd_l88uW0-5UFDfh7vMIDIT4FEJFChQm62EQ1ITnnH72DWyyNmfoV-PclYeb0a5VZW8U60389yfNQHUmwpo9KHAm8ijFuT6pzqg1dSxOo5OAi3uglm_Eg_cBJoDicOeBDEEJ0AJrK0SHzjUe_su_FCjlZuJALhsRa8fhgFkF1SR1iRsbbc-fCul4fT3RM4L3mMVK-1H6tL6ssvlKcnh2rSt8NQqDNiipnXJECcP9XHEIU90OypT5LGPpk4lj8GjmYia8LGiAmR1VcA&#39; -b &#39;refresh_token=_lZjfhoSR03IiBl0HEqJquGzR5YpCKwsl8ToFQyvsaldYptkBq_dRY7GK1mazTIGOAIEnTYihNWZ1eYnANX2S6Lzg7go9HRpWXE5JFeLOBG6QT2JdPfDOoevT_BQ_9ga&#39; -d &#39;{
+    &quot;email&quot;: &quot;damian.dooley@hotmail.com&quot;
+}&#39;
+</div>
