@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/69820c35a65ab52157e67543</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Carri Kerluke&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(631) 936-5305 x3673&quot;,
+                &quot;email&quot;: &quot;bree.barrows@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;9347 Harris Mission&quot;,
+            &quot;street2&quot;: &quot;Apt. 877&quot;,
+            &quot;city&quot;: &quot;Stephenieton&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;73464&quot;,
+            &quot;country&quot;: &quot;Singapore&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;98126 Rolf Fork&quot;,
+            &quot;street2&quot;: &quot;Suite 140&quot;,
+            &quot;city&quot;: &quot;Port Levibury&quot;,
+            &quot;state&quot;: &quot;Nevada&quot;,
+            &quot;postalCode&quot;: &quot;43788&quot;,
+            &quot;country&quot;: &quot;Lithuania&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYWEwMjM1ZGQtMzMwZi00MGUzLTg5OTYtNWM2ZjE3MWJmY2U4IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmNThkMjk2My1iMGFjLTRjYzQtYjk5My01NDRkNjcxYjZjNWUiLCJzdWIiOiJqYW1lcy5oYXJiZXJAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAxMzA0ODQsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2Y1OGQyOTYzLWIwYWMtNGNjNC1iOTkzLTU0NGQ2NzFiNmM1ZSIsImV4cCI6MTc3MDEzMTM4NCwiaWF0IjoxNzcwMTMwNDg0LCJ1c2VySWQiOiJmZjc2NGJjMi0yNzk0LTQwMGMtOWNmZC0xNTVkNTNmMWI1ZmYiLCJqdGkiOiJkZDgyZTk2Ni03YzBlLTQ1MzAtOTUxMi1mOTY1OGNhMjRmMjAifQ.tGrI96Rb5vjVynq_Sfu52uizJUdnLRUOUdfKQM4WHdiDpEKzsDm-zGLdWCyh8u2-c1M1R7bU0F8oCZSqt4lpb2GbfFjlabDq45lRVnXmp5-VSEApFa9blwwPeH3xRMqGNy6xzhRJDew431bG7Vps_-AYZOl6QeYrWUCTE9QJvqm9EkIHbwDB1WL94otlGahcpczr9tgeWbrkD7XHYOby1tbt0sl5kNaOb5WOOwwHZK4CLyMrMNCsBS8u3l-KidE2r_YHVEuNynoYu6VsTdg96ZEvw5AY5NnKTDLEjjI9nwBO2fLqdWJ-Eh184lqDH5vksm7gBeSOkQtQoZy9LkEKCg</div>
+        <div>refresh_token: KXj_y09ifhCSehXfyuRT-VX92qyl3nUle0vLvUxY88w9IHdVtyG4RI1pbYNqE2XaB0XfDIdqdooJKvh3602gu8hm4weUysdyoJVABpzpbT4b3TkcK_--PeucyMekRTpo</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/69820c35a65ab52157e67543&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYWEwMjM1ZGQtMzMwZi00MGUzLTg5OTYtNWM2ZjE3MWJmY2U4IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmNThkMjk2My1iMGFjLTRjYzQtYjk5My01NDRkNjcxYjZjNWUiLCJzdWIiOiJqYW1lcy5oYXJiZXJAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAxMzA0ODQsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzL2Y1OGQyOTYzLWIwYWMtNGNjNC1iOTkzLTU0NGQ2NzFiNmM1ZSIsImV4cCI6MTc3MDEzMTM4NCwiaWF0IjoxNzcwMTMwNDg0LCJ1c2VySWQiOiJmZjc2NGJjMi0yNzk0LTQwMGMtOWNmZC0xNTVkNTNmMWI1ZmYiLCJqdGkiOiJkZDgyZTk2Ni03YzBlLTQ1MzAtOTUxMi1mOTY1OGNhMjRmMjAifQ.tGrI96Rb5vjVynq_Sfu52uizJUdnLRUOUdfKQM4WHdiDpEKzsDm-zGLdWCyh8u2-c1M1R7bU0F8oCZSqt4lpb2GbfFjlabDq45lRVnXmp5-VSEApFa9blwwPeH3xRMqGNy6xzhRJDew431bG7Vps_-AYZOl6QeYrWUCTE9QJvqm9EkIHbwDB1WL94otlGahcpczr9tgeWbrkD7XHYOby1tbt0sl5kNaOb5WOOwwHZK4CLyMrMNCsBS8u3l-KidE2r_YHVEuNynoYu6VsTdg96ZEvw5AY5NnKTDLEjjI9nwBO2fLqdWJ-Eh184lqDH5vksm7gBeSOkQtQoZy9LkEKCg&#39; -b &#39;refresh_token=KXj_y09ifhCSehXfyuRT-VX92qyl3nUle0vLvUxY88w9IHdVtyG4RI1pbYNqE2XaB0XfDIdqdooJKvh3602gu8hm4weUysdyoJVABpzpbT4b3TkcK_--PeucyMekRTpo&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Carri Kerluke&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(631) 936-5305 x3673&quot;,
+                &quot;email&quot;: &quot;bree.barrows@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;9347 Harris Mission&quot;,
+            &quot;street2&quot;: &quot;Apt. 877&quot;,
+            &quot;city&quot;: &quot;Stephenieton&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;73464&quot;,
+            &quot;country&quot;: &quot;Singapore&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;98126 Rolf Fork&quot;,
+            &quot;street2&quot;: &quot;Suite 140&quot;,
+            &quot;city&quot;: &quot;Port Levibury&quot;,
+            &quot;state&quot;: &quot;Nevada&quot;,
+            &quot;postalCode&quot;: &quot;43788&quot;,
+            &quot;country&quot;: &quot;Lithuania&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}&#39;
+</div>
