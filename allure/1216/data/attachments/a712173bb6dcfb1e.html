@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/69826dd0bd477c1a5330aef7</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Laverna Marks&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(504) 620-0341 x9237&quot;,
+                &quot;email&quot;: &quot;neida.simonis@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;936 Garry Views&quot;,
+            &quot;street2&quot;: &quot;Apt. 866&quot;,
+            &quot;city&quot;: &quot;Buckridgeborough&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;73130&quot;,
+            &quot;country&quot;: &quot;Kazakhstan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;9395 O&#39;Conner Knolls&quot;,
+            &quot;street2&quot;: &quot;Suite 826&quot;,
+            &quot;city&quot;: &quot;South Gustavochester&quot;,
+            &quot;state&quot;: &quot;Iowa&quot;,
+            &quot;postalCode&quot;: &quot;59392&quot;,
+            &quot;country&quot;: &quot;French Polynesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOGUzM2E4OTQtZDE0Yy00NDJkLTg0YWQtZDQ3YTQ1YWNlNGY0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5YjI3MjBlMC1mMzdmLTQwMDMtODBlZC05MjI2MDVhZjFjOGMiLCJzdWIiOiJoYW5uZWxvcmUuYWx0ZW53ZXJ0aEB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDE1NTQ3MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvOWIyNzIwZTAtZjM3Zi00MDAzLTgwZWQtOTIyNjA1YWYxYzhjIiwiZXhwIjoxNzcwMTU2MzcxLCJpYXQiOjE3NzAxNTU0NzEsInVzZXJJZCI6IjMyNGJiYTNhLWMzZGItNDkzYS1iMWMzLWI5OGJiZWM0YTcyNiIsImp0aSI6ImYxMTUxNjFhLTdmN2ItNDA5MS04YTBmLWNkMjZlMGJiYjhmOSJ9.AsAQ1qCCFE2O-J90o9xUo4CG_lOblx2tndxD60L-6U8yjfJvqv8Zc9iYz7-yNWsRqrWreCxiDQPTI0CBFiEg937-hvsMvyxsoZbChkS_7Pp0m_8IEoxKubXcl3RpZ51I9MAVvpyDhyonkpqXoXoIW48IYUTHed0yPGnN6TTuNIy3ibkZODVIcyuM-UoQElPThU0JOFL-X8jZfaYGNwiuuFEO_kcQZiQzrftJ_VUjUN-du8NiPQu-D0rMOvLOgfv11GgQ_U4zoq7vuCEhlnVSe5PAxh2Zmm-MUFoBbMXcNGqdWdqUdK8M-NexlTl2B2uV4QGiH-oQiiLTLg0t5tXeHA</div>
+        <div>refresh_token: vgeVA_5U8Wlysyl3A9ad88KTor_OgxQLA-xfAAIBlwnDPm8OVdA8zqJkECVoqGhLZxrvw9sr4s5UrFusgSzonCulzPIlyiHnpreXNOtW6VitVj7u7Vy8sNpFXHuhYwh5</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/69826dd0bd477c1a5330aef7&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOGUzM2E4OTQtZDE0Yy00NDJkLTg0YWQtZDQ3YTQ1YWNlNGY0IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5YjI3MjBlMC1mMzdmLTQwMDMtODBlZC05MjI2MDVhZjFjOGMiLCJzdWIiOiJoYW5uZWxvcmUuYWx0ZW53ZXJ0aEB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDE1NTQ3MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvOWIyNzIwZTAtZjM3Zi00MDAzLTgwZWQtOTIyNjA1YWYxYzhjIiwiZXhwIjoxNzcwMTU2MzcxLCJpYXQiOjE3NzAxNTU0NzEsInVzZXJJZCI6IjMyNGJiYTNhLWMzZGItNDkzYS1iMWMzLWI5OGJiZWM0YTcyNiIsImp0aSI6ImYxMTUxNjFhLTdmN2ItNDA5MS04YTBmLWNkMjZlMGJiYjhmOSJ9.AsAQ1qCCFE2O-J90o9xUo4CG_lOblx2tndxD60L-6U8yjfJvqv8Zc9iYz7-yNWsRqrWreCxiDQPTI0CBFiEg937-hvsMvyxsoZbChkS_7Pp0m_8IEoxKubXcl3RpZ51I9MAVvpyDhyonkpqXoXoIW48IYUTHed0yPGnN6TTuNIy3ibkZODVIcyuM-UoQElPThU0JOFL-X8jZfaYGNwiuuFEO_kcQZiQzrftJ_VUjUN-du8NiPQu-D0rMOvLOgfv11GgQ_U4zoq7vuCEhlnVSe5PAxh2Zmm-MUFoBbMXcNGqdWdqUdK8M-NexlTl2B2uV4QGiH-oQiiLTLg0t5tXeHA&#39; -b &#39;refresh_token=vgeVA_5U8Wlysyl3A9ad88KTor_OgxQLA-xfAAIBlwnDPm8OVdA8zqJkECVoqGhLZxrvw9sr4s5UrFusgSzonCulzPIlyiHnpreXNOtW6VitVj7u7Vy8sNpFXHuhYwh5&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Laverna Marks&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(504) 620-0341 x9237&quot;,
+                &quot;email&quot;: &quot;neida.simonis@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;936 Garry Views&quot;,
+            &quot;street2&quot;: &quot;Apt. 866&quot;,
+            &quot;city&quot;: &quot;Buckridgeborough&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;73130&quot;,
+            &quot;country&quot;: &quot;Kazakhstan&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;9395 O&#39;Conner Knolls&quot;,
+            &quot;street2&quot;: &quot;Suite 826&quot;,
+            &quot;city&quot;: &quot;South Gustavochester&quot;,
+            &quot;state&quot;: &quot;Iowa&quot;,
+            &quot;postalCode&quot;: &quot;59392&quot;,
+            &quot;country&quot;: &quot;French Polynesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}&#39;
+</div>
