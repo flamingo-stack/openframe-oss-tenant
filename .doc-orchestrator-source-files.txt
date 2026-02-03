@@ -370,6 +370,7 @@
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/tool/filter/ToolQueryFilter.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/IntegratedToolAgent.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/IntegratedToolInstallationTaskStatus.java
+../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/LocalFilenameConfiguration.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/SessionType.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/ToolAgentAsset.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/ToolAgentAssetSource.java
@@ -437,6 +438,9 @@
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/service/ToolUrlService.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/config/CacheConfig.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/config/RedisConfig.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/redis/OpenframeRedisKeyBuilder.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/redis/OpenframeRedisKeyConfiguration.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/redis/OpenframeRedisProperties.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ApiKeyStatsSyncRepository.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ReactiveApiKeyStatsRepository.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ReactiveRateLimitRepository.java
@@ -450,6 +454,7 @@
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/ToolSdkConfig.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/health/CassandraHealthIndicator.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/mapper/DownloadConfigurationMapper.java
+../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/mapper/LocalFilenameConfigurationMapper.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/IntegratedToolTypes.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/ToolCredentials.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/cassandra/UnifiedLogEvent.java
@@ -2534,6 +2539,8 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/persistent-filter-controls.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/persistent-pagination.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/platform/CveLink.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/components/platform/ScriptArguments.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/components/platform/ScriptInfoSection.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/platform/ShellTypeBadge.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/platform/SoftwareInfo.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/platform/SoftwareSourceBadge.tsx
@@ -2592,6 +2599,7 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/alert.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/allowed-domains-input.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/aspect-ratio.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/autocomplete.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/badge.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/benefit-card.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/brand-association-card.tsx
@@ -2600,6 +2608,7 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/bullet-list.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/button.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/card.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/checkbox-block.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/checkbox-with-description.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/checkbox.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/chevron-button.tsx
@@ -2608,6 +2617,7 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/cursor-pagination.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/custom-icons.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/dashboard-info-card.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/date-picker.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/device-card-compact.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/device-card.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/dialog.tsx
@@ -2652,8 +2662,8 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/release-changelog-section.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/responsive-icons-block-stub.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/search-bar.tsx
-../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/select-card.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/select.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/selectable-device-card.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/separator.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/service-card.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/components/ui/sheet.tsx
@@ -2743,7 +2753,13 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/nats/index.ts
 ../deps/openframe-oss-lib/openframe-frontend-core/src/nats/nats.ts
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/AppLayout.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/Autocomplete.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/Checkbox.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/CheckboxBlock.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/CheckboxWithDescription.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/DatePicker.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/DeviceCard.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/Input.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/ListPageLayout.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/MobileFilterModal.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/MobileFilterSheet.stories.tsx
@@ -2754,8 +2770,12 @@
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/OSTypeBadgeGroup.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/OrganizationSelector.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/PageActions.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/ScriptArguments.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/ScriptInfoSection.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/SelectableDeviceCard.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/ShellTypeBadge.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/Table.stories.tsx
+../deps/openframe-oss-lib/openframe-frontend-core/src/stories/TagsInput.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/stories/ToolBadge.stories.tsx
 ../deps/openframe-oss-lib/openframe-frontend-core/src/types/access-code-cohorts.ts
 ../deps/openframe-oss-lib/openframe-frontend-core/src/types/announcement.ts
@@ -3039,6 +3059,8 @@
 ./clients/openframe-client/src/platform/updater_launcher/macos.rs
 ./clients/openframe-client/src/platform/updater_launcher/mod.rs
 ./clients/openframe-client/src/platform/updater_launcher/windows.rs
+./clients/openframe-client/src/platform/user_session/macos.rs
+./clients/openframe-client/src/platform/user_session/mod.rs
 ./clients/openframe-client/src/platform/windows_cleanup.rs
 ./clients/openframe-client/src/service.rs
 ./clients/openframe-client/src/service_adapter.rs
@@ -3330,13 +3352,17 @@
 ./openframe/services/openframe-frontend/src/app/policies-and-queries/types/policies.types.ts
 ./openframe/services/openframe-frontend/src/app/scripts/components/edit-script-page.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/components/run-script-view.tsx
+./openframe/services/openframe-frontend/src/app/scripts/components/schedule-script-view.tsx
+./openframe/services/openframe-frontend/src/app/scripts/components/scheduled-runs-section.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/components/script-details-view.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/components/script-info-section.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/components/scripts-table.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/details/[id]/page.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/details/[id]/run/page.tsx
+./openframe/services/openframe-frontend/src/app/scripts/details/[id]/schedule/page.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/edit/[id]/page.tsx
 ./openframe/services/openframe-frontend/src/app/scripts/hooks/use-run-script-data.ts
+./openframe/services/openframe-frontend/src/app/scripts/hooks/use-scheduled-tasks.ts
 ./openframe/services/openframe-frontend/src/app/scripts/hooks/use-script-details.ts
 ./openframe/services/openframe-frontend/src/app/scripts/hooks/use-scripts.ts
 ./openframe/services/openframe-frontend/src/app/scripts/page.tsx
