@@ -354,10 +354,3 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
-      
-      - name: Force update latest tag
-        if: ${{ github.event_name == 'push' }}
-        run: git tag -f latest && git push -f origin latest
-
-
-
