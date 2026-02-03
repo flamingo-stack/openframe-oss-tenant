@@ -89,7 +89,7 @@ export class MingoApiService {
     const { toast } = useToast()
     
     return useMutation({
-      mutationFn: async (requestId: string): Promise<ApprovalResponse> => {
+      mutationFn: async (requestId: string): Promise<ApprovalResponse | undefined> => {
         const response = await apiClient.post<ApprovalResponse>(
           `/chat/api/v1/approval-requests/${requestId}/approve`,
           { approve: true }
@@ -97,10 +97,6 @@ export class MingoApiService {
 
         if (!response.ok) {
           throw new Error(response.error || 'Failed to approve request')
-        }
-
-        if (!response.data) {
-          throw new Error('Invalid response from approval request')
         }
 
         return response.data
@@ -132,7 +128,7 @@ export class MingoApiService {
     const { toast } = useToast()
     
     return useMutation({
-      mutationFn: async (requestId: string): Promise<ApprovalResponse> => {
+      mutationFn: async (requestId: string): Promise<ApprovalResponse | undefined> => {
         const response = await apiClient.post<ApprovalResponse>(
           `/chat/api/v1/approval-requests/${requestId}/approve`,
           { approve: false }
@@ -140,10 +136,6 @@ export class MingoApiService {
 
         if (!response.ok) {
           throw new Error(response.error || 'Failed to reject request')
-        }
-
-        if (!response.data) {
-          throw new Error('Invalid response from approval request')
         }
 
         return response.data

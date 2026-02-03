@@ -198,13 +198,13 @@ export function useMingoRealtimeSubscription(
 interface DialogSubscriptionProps {
   dialogId: string
   isActive: boolean
-  onChunkReceived: (dialogId: string, chunk: ChunkData, messageType: NatsMessageType) => void
+  processChunk: (targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => void
 }
 
 export function DialogSubscription({
   dialogId,
   isActive,
-  onChunkReceived
+  processChunk
 }: DialogSubscriptionProps) {
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl)
   const [hasCaughtUp, setHasCaughtUp] = useState(false)
@@ -221,7 +221,7 @@ export function DialogSubscription({
   } = useMingoChunkCatchup({
     dialogId,
     onChunkReceived: (chunk, messageType) => {
-      onChunkReceived(dialogId, chunk, messageType)
+      processChunk(dialogId, chunk, messageType)
     }
   })
   
@@ -243,10 +243,10 @@ export function DialogSubscription({
     pass: '',
   }), [dialogId])
   
-  // Handle NATS events
+  // Handle NATS events - now with dialog-specific processing
   const handleNatsEvent = useCallback((payload: unknown, messageType: NatsMessageType) => {
-    onChunkReceived(dialogId, payload as ChunkData, messageType)
-  }, [dialogId, onChunkReceived])
+    processChunk(dialogId, payload as ChunkData, messageType)
+  }, [dialogId, processChunk])
   
   // Handle subscription success
   const handleSubscribed = useCallback(async () => {

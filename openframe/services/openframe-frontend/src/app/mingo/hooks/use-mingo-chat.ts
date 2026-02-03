@@ -33,11 +33,9 @@ interface UseMingoChat {
   
   // Approval system
   approvals: MessageSegment[]
-  handleApprove: (requestId?: string) => void
-  handleReject: (requestId?: string) => void
   
-  // Real-time processing
-  processChunk: (chunk: ChunkData, messageType: NatsMessageType) => void
+  // Real-time processing - now dialog-specific
+  processChunk: (targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => void
   
   // State
   isCreatingDialog: boolean
@@ -45,10 +43,18 @@ interface UseMingoChat {
   assistantType: 'mingo'
 }
 
-export function useMingoChat(dialogId: string | null): UseMingoChat {
+interface ApprovalHandlers {
+  handleApprove: (requestId?: string) => void
+  handleReject: (requestId?: string) => void
+  approvalStatuses: Record<string, any>
+}
+
+export function useMingoChat(
+  dialogId: string | null, 
+  approvalHandlers?: ApprovalHandlers
+): UseMingoChat {
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const [approvalStatuses, setApprovalStatuses] = useState<Record<string, any>>({})
   
   
   // Store integration
@@ -60,6 +66,8 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     updateMessage,
     setStreamingMessage,
     getStreamingMessage,
+    updateStreamingMessageSegments,
+    getOrCreateAccumulator,
     getTyping,
     setTyping,
     removeWelcomeMessages,
@@ -76,42 +84,24 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   // API mutations
   const createDialogMutation = MingoApiService.createDialogMutation()
   const sendMessageMutation = MingoApiService.sendMessageMutation()
-  const approveRequestMutation = MingoApiService.approveRequestMutation()
-  const rejectRequestMutation = MingoApiService.rejectRequestMutation()
   
-  // Handle approval and rejection - defined early for use in message processing
-  const handleApprove = useCallback((requestId?: string) => {
-    if (!requestId) return
-    
-    approveRequestMutation.mutate(requestId, {
-      onSuccess: (result) => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: result
-        }))
-      }
-    })
-  }, [approveRequestMutation])
-  
-  const handleReject = useCallback((requestId?: string) => {
-    if (!requestId) return
-    
-    rejectRequestMutation.mutate(requestId, {
-      onSuccess: (result) => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: result
-        }))
-      }
-    })
-  }, [rejectRequestMutation])
+  // Initialize accumulator with approval handlers when dialog or handlers change
+  useEffect(() => {
+    if (dialogId && approvalHandlers) {
+      getOrCreateAccumulator(dialogId, {
+        onApprove: approvalHandlers.handleApprove,
+        onReject: approvalHandlers.handleReject
+      })
+    }
+  }, [dialogId, approvalHandlers, getOrCreateAccumulator])
   
   
   // Helper functions for streaming message management (like openframe-chat)
-  const ensureAssistantMessage = useCallback(() => {
-    if (!dialogId) return
+  const ensureAssistantMessage = useCallback((targetDialogId?: string) => {
+    const effectiveDialogId = targetDialogId || dialogId
+    if (!effectiveDialogId) return
     
-    const currentStreaming = getStreamingMessage(dialogId)
+    const currentStreaming = getStreamingMessage(effectiveDialogId)
     if (currentStreaming) return
     
     const assistantMessage: CoreMessage = {
@@ -123,28 +113,22 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       timestamp: new Date()
     }
     
-    setStreamingMessage(dialogId, assistantMessage)
-    addMessage(dialogId, assistantMessage)
+    setStreamingMessage(effectiveDialogId, assistantMessage)
+    addMessage(effectiveDialogId, assistantMessage)
   }, [dialogId, getStreamingMessage, setStreamingMessage, addMessage])
   
-  const updateStreamingMessageWithSegments = useCallback((segments: MessageSegment[]) => {
-    if (!dialogId) return
+  const updateStreamingMessageWithSegments = useCallback((segments: MessageSegment[], targetDialogId?: string) => {
+    const effectiveDialogId = targetDialogId || dialogId
+    if (!effectiveDialogId) return
     
-    const currentStreaming = getStreamingMessage(dialogId)
+    const currentStreaming = getStreamingMessage(effectiveDialogId)
     if (!currentStreaming) {
       return
     }
     
-    // Update the streaming message with segments directly (CoreMessage format)
-    const updatedMessage: CoreMessage = {
-      ...currentStreaming as CoreMessage,
-      content: segments  // Store segments directly as content
-    }
-    
-    // Update both streaming and main message stores
-    setStreamingMessage(dialogId, updatedMessage)
-    updateMessage(dialogId, currentStreaming.id, updatedMessage)
-  }, [dialogId, getStreamingMessage, setStreamingMessage, updateMessage])
+    // Use the store's accumulator-based method to process segments
+    updateStreamingMessageSegments(effectiveDialogId, segments)
+  }, [dialogId, getStreamingMessage, updateStreamingMessageSegments])
   
   // Add welcome message for empty dialogs
   const addWelcomeMessage = useCallback(() => {
@@ -168,8 +152,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   }, [dialogId, getMessages, addMessage])
 
   // Add error message (same pattern as openframe-chat)
-  const addErrorMessage = useCallback((errorText: string) => {
-    if (!dialogId) return
+  const addErrorMessage = useCallback((errorText: string, targetDialogId?: string) => {
+    const effectiveDialogId = targetDialogId || dialogId
+    if (!effectiveDialogId) return
     
     const errorMessage: CoreMessage = {
       id: `error-${Date.now()}`,
@@ -179,7 +164,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       content: errorText,
     }
     
-    const currentMessages = getMessages(dialogId)
+    const currentMessages = getMessages(effectiveDialogId)
     const lastMessage = currentMessages[currentMessages.length - 1]
     
     // Replace empty assistant message with error, or add new error message
@@ -187,10 +172,10 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         (lastMessage.content === '' || 
          (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))) {
       // Replace empty assistant message with error
-      updateMessage(dialogId, lastMessage.id, errorMessage)
+      updateMessage(effectiveDialogId, lastMessage.id, errorMessage)
     } else {
       // Add new error message
-      addMessage(dialogId, errorMessage)
+      addMessage(effectiveDialogId, errorMessage)
     }
   }, [dialogId, getMessages, updateMessage, addMessage])
   
@@ -201,17 +186,22 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     }
   }, [dialogId, messagesByDialog, addWelcomeMessage])
 
-  // Get messages for current dialog (already in CoreMessage format)
+  // Get messages for current dialog with proper approval extraction (same pattern as tickets)
   const messages = useMemo((): ProcessedMessage[] => {
     if (!dialogId) return []
 
     const currentMessages = getMessages(dialogId)
     
+    // First, filter out special pending-approvals messages (they contain approval segments)
+    const filteredMessages = currentMessages.filter(msg => 
+      !msg.id.startsWith('pending-approvals-')
+    )
+    
     // Convert CoreMessage to ProcessedMessage format for interface compatibility
-    return currentMessages.map(msg => {
+    return filteredMessages.map(msg => {
       let filteredContent = msg.content
       
-      // Filter out pending approval requests from message display (they appear in separate section)
+      // Filter out pending approval requests from regular message display
       if (Array.isArray(msg.content)) {
         filteredContent = (msg.content as MessageSegment[]).filter(segment => 
           !(segment.type === 'approval_request' && segment.status === 'pending')
@@ -247,8 +237,8 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     onSegmentsUpdate: (segments: MessageSegment[]) => {
       if (!dialogId) return
       
-      ensureAssistantMessage()
-      updateStreamingMessageWithSegments(segments)
+      ensureAssistantMessage(dialogId)
+      updateStreamingMessageWithSegments(segments, dialogId)
     },
     
     onError: (error: string) => {
@@ -257,35 +247,50 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       console.error('[MingoChat] Stream error:', error)
       setTyping(dialogId, false)
       setStreamingMessage(dialogId, null)
-      addErrorMessage(error)
-    }
-  }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageWithSegments, addErrorMessage])
+      addErrorMessage(error, dialogId)
+    },
+    
+    // Add approval handlers for real-time processing
+    onApprove: approvalHandlers?.handleApprove,
+    onReject: approvalHandlers?.handleReject
+  }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageWithSegments, addErrorMessage, approvalHandlers])
   
-  // Real-time processor
-  const { processChunk } = useRealtimeChunkProcessor({
+  // Real-time processor for active dialog (fallback)
+  const { processChunk: baseProcessChunk } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
-    approvalStatuses: approvalStatuses
+    approvalStatuses: approvalHandlers?.approvalStatuses || {}
   })
   
-  // Extract pending approvals from messages
+  // Dialog-specific chunk processor that only processes for target dialog
+  const processChunk = useCallback((targetDialogId: string, chunk: ChunkData, _messageType: NatsMessageType) => {
+    // Only process if the target dialog matches the current active dialog
+    // This ensures chunks are only processed for their intended dialog
+    if (targetDialogId === dialogId) {
+      baseProcessChunk(chunk)
+    }
+    // If targetDialogId !== dialogId, ignore the chunk (it's from a background dialog)
+  }, [dialogId, baseProcessChunk])
+  
+  // Extract pending approvals from messages (both special pending-approvals- messages and regular assistant messages)
   const approvals = useMemo(() => {
-    const allApprovals: MessageSegment[] = []
+    if (!dialogId) return []
+
+    const currentMessages = getMessages(dialogId)
+    const pendingApprovalSegments: MessageSegment[] = []
     
-    messages.forEach(message => {
-      // Check if content is an array of segments
-      if (Array.isArray(message.content)) {
-        const segments = message.content as MessageSegment[]
-        segments.forEach(segment => {
+    currentMessages.forEach(msg => {
+      if (Array.isArray(msg.content)) {
+        msg.content.forEach(segment => {
           if (segment.type === 'approval_request' && segment.status === 'pending') {
-            allApprovals.push(segment)
+            pendingApprovalSegments.push(segment as MessageSegment)
           }
         })
       }
     })
     
-    return allApprovals
-  }, [messages])
+    return pendingApprovalSegments
+  }, [dialogId, messagesByDialog, getMessages])
   
   // Create dialog
   const createDialog = useCallback(async (): Promise<string | null> => {
@@ -372,8 +377,6 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     
     // Approval system
     approvals,
-    handleApprove,
-    handleReject,
     
     // Real-time processing
     processChunk,

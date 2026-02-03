@@ -1,18 +1,24 @@
 'use client'
 
-import React from 'react'
+import React, { useCallback, useState } from 'react'
 import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query'
 import { 
   processHistoricalMessagesWithErrors,
   type HistoricalMessage
 } from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
 import { useMingoMessagesStore } from '../stores/mingo-messages-store'
 import { GET_MINGO_DIALOG_QUERY, GET_DIALOG_MESSAGES_QUERY } from '../queries/dialogs-queries'
-import { CHAT_TYPE, ASSISTANT_CONFIG } from '../../tickets/constants'
-import type { DialogResponse, MessagesResponse, MessagePage, GraphQLMessage } from '../types'
+import { CHAT_TYPE, ASSISTANT_CONFIG, APPROVAL_STATUS, MESSAGE_TYPE } from '../../tickets/constants'
+import type { ApprovalStatus } from '../../tickets/constants'
+import { MingoApiService } from '../services/mingo-api-service'
+import type { DialogResponse, MessagesResponse, MessagePage } from '../types'
 
 export function useMingoDialogSelection() {
+  const { toast } = useToast()
+  const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({})
+  
   const {
     activeDialogId,
     setActiveDialogId,
@@ -20,9 +26,77 @@ export function useMingoDialogSelection() {
     setLoadingDialog,
     setLoadingMessages,
     setPagination,
-    dialogs,
-    setDialogs
+    updateApprovalStatusInMessages
   } = useMingoMessagesStore()
+  
+  // API mutations for approvals
+  const approveRequestMutation = MingoApiService.approveRequestMutation()
+  const rejectRequestMutation = MingoApiService.rejectRequestMutation()
+  
+  // Handle approval and rejection - defined here where they're used
+  const handleApprove = useCallback((requestId?: string) => {
+    if (!requestId || !activeDialogId) return
+    
+    approveRequestMutation.mutate(requestId, {
+      onSuccess: () => {
+        // Update approval status in local state
+        setApprovalStatuses(prev => ({
+          ...prev,
+          [requestId]: APPROVAL_STATUS.APPROVED
+        }))
+        
+        // Update message content to reflect the approval status
+        updateApprovalStatusInMessages(activeDialogId, requestId, 'approved')
+        
+        toast({
+          title: "Request Approved",
+          description: "The approval request was processed successfully",
+          variant: "success",
+          duration: 3000
+        })
+      },
+      onError: (error) => {
+        toast({
+          title: "Approval Failed",
+          description: error instanceof Error ? error.message : "Unable to approve request",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
+    })
+  }, [approveRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages])
+  
+  const handleReject = useCallback((requestId?: string) => {
+    if (!requestId || !activeDialogId) return
+    
+    rejectRequestMutation.mutate(requestId, {
+      onSuccess: () => {
+        // Update approval status in local state
+        setApprovalStatuses(prev => ({
+          ...prev,
+          [requestId]: APPROVAL_STATUS.REJECTED
+        }))
+        
+        // Update message content to reflect the rejection status
+        updateApprovalStatusInMessages(activeDialogId, requestId, 'rejected')
+        
+        toast({
+          title: "Request Rejected",
+          description: "The approval request was rejected successfully",
+          variant: "success",
+          duration: 3000
+        })
+      },
+      onError: (error) => {
+        toast({
+          title: "Rejection Failed",
+          description: error instanceof Error ? error.message : "Unable to reject request",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
+    })
+  }, [rejectRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages])
 
   const dialogQuery = useQuery({
     queryKey: ['mingo-dialog', activeDialogId],
@@ -97,6 +171,32 @@ export function useMingoDialogSelection() {
     }
   }, [messagesQuery.hasNextPage, messagesQuery.isFetchingNextPage, messagesQuery.isLoading, messagesQuery.fetchNextPage])
 
+  // Extract approval statuses from GraphQL messages (separate effect to avoid infinite loop)
+  React.useEffect(() => {
+    if (messagesQuery.data?.pages && activeDialogId) {
+      const allGraphQLMessages = messagesQuery.data.pages.flatMap(page => page.messages)
+      
+      // Extract approval statuses from GraphQL messages (same pattern as tickets)
+      const extractedStatuses = allGraphQLMessages.reduce<Record<string, ApprovalStatus>>((acc, msg) => {
+        const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData]
+        
+        messageDataArray.forEach((data: any) => {
+          if (data?.type === MESSAGE_TYPE.APPROVAL_RESULT && data.approvalRequestId) {
+            acc[data.approvalRequestId] = data.approved ? APPROVAL_STATUS.APPROVED : APPROVAL_STATUS.REJECTED
+          }
+        })
+        
+        return acc
+      }, {})
+      
+      // Update approval statuses if we found any
+      if (Object.keys(extractedStatuses).length > 0) {
+        setApprovalStatuses(prev => ({ ...prev, ...extractedStatuses }))
+      }
+    }
+  }, [messagesQuery.data?.pages, activeDialogId]) // No approvalStatuses dependency to avoid loop
+
+  // Process messages with current approval statuses (separate effect)
   React.useEffect(() => {
     if (messagesQuery.data?.pages && activeDialogId) {
       const allGraphQLMessages = messagesQuery.data.pages.flatMap(page => page.messages)
@@ -120,13 +220,15 @@ export function useMingoDialogSelection() {
         assistantName: assistantConfig.name,
         assistantType: assistantConfig.type,
         chatTypeFilter: CHAT_TYPE.ADMIN,
+        onApprove: handleApprove,
+        onReject: handleReject,
+        approvalStatuses: Object.fromEntries(
+          Object.entries(approvalStatuses).map(([k, v]) => [k, v as any])
+        )
       })
       
-      // Only update if we have new data or the dialog is empty
-      const { getMessages } = useMingoMessagesStore.getState()
-      const existingMessages = getMessages(activeDialogId)
-      
-      if (existingMessages.length === 0 || existingMessages.length !== coreMessages.length) {
+      // Load messages when GraphQL data is fresh (not just approval status changes)
+      if (messagesQuery.isFetched && coreMessages.length > 0) {
         setMessages(activeDialogId, coreMessages)
       }
 
@@ -139,7 +241,7 @@ export function useMingoDialogSelection() {
         )
       }
     }
-  }, [messagesQuery.data?.pages, activeDialogId, setMessages, setPagination])
+  }, [messagesQuery.data?.pages, activeDialogId])
 
   return {
     selectDialog: selectDialogMutation.mutate,
@@ -150,6 +252,10 @@ export function useMingoDialogSelection() {
     dialogError: dialogQuery.error?.message || null,
     messagesError: messagesQuery.error?.message || null,
     refetchDialog: dialogQuery.refetch,
-    refetchMessages: messagesQuery.refetch
+    refetchMessages: messagesQuery.refetch,
+    // Approval handlers for real-time processing
+    handleApprove,
+    handleReject,
+    approvalStatuses
   }
 }

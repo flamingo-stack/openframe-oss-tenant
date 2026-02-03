@@ -57,7 +57,10 @@ export default function Mingo() {
     isLoadingDialog,
     isLoadingMessages,
     isSelectingDialog,
-    rawMessagesCount
+    rawMessagesCount,
+    handleApprove,
+    handleReject,
+    approvalStatuses
   } = useMingoDialogSelection()
 
   // Unified chat functionality
@@ -70,7 +73,11 @@ export default function Mingo() {
     isCreatingDialog,
     isTyping,
     assistantType
-  } = useMingoChat(activeDialogId)
+  } = useMingoChat(activeDialogId, {
+    handleApprove,
+    handleReject,
+    approvalStatuses
+  })
 
   // Realtime subscription management
   const {
@@ -78,13 +85,16 @@ export default function Mingo() {
     subscribedDialogs
   } = useMingoRealtimeSubscription(activeDialogId)
 
-  const handleChunkReceived = useCallback((dialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
-    // Handle background vs active dialog processing
-    if (dialogId !== activeDialogId) {
-      incrementUnread(dialogId)
+  // Create dialog-specific chunk processor with unread count handling
+  const createDialogChunkProcessor = useCallback((targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
+    // Handle unread count updates for background dialogs
+    if (targetDialogId !== activeDialogId) {
+      incrementUnread(targetDialogId)
     }
-    processChunk(chunk, messageType)
-  }, [processChunk, activeDialogId, incrementUnread])
+    
+    // Process chunk with dialog-specific isolation
+    processChunk(targetDialogId, chunk, messageType)
+  }, [activeDialogId, incrementUnread, processChunk])
 
   // Escape key handler for closing dialogs
   useEffect(() => {
@@ -190,7 +200,7 @@ export default function Mingo() {
             key={dialogId}
             dialogId={dialogId}
             isActive={dialogId === activeDialogId}
-            onChunkReceived={handleChunkReceived}
+            processChunk={createDialogChunkProcessor}
           />
         ))}
 
