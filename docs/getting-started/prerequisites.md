@@ -1,167 +1,360 @@
 # Prerequisites
 
-Before setting up OpenFrame, ensure your system meets the following requirements:
+Before getting started with OpenFrame, ensure your development environment meets the following requirements. This guide covers all necessary software, system requirements, and account setup needed for OpenFrame development and deployment.
 
 ## System Requirements
 
-### Minimum Hardware
-- **CPU**: 4 cores (2.4 GHz or higher)
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **Storage**: 50 GB available disk space
-- **Network**: Stable internet connection for downloading dependencies
+### Minimum Requirements
 
-### Recommended Hardware (Production)
-- **CPU**: 8+ cores (3.0 GHz or higher)
-- **RAM**: 32 GB or more
-- **Storage**: 200 GB+ SSD storage
-- **Network**: High-bandwidth connection (1 Gbps+)
+| Component | Specification |
+|-----------|---------------|
+| **OS** | macOS 10.15+, Ubuntu 20.04+, Windows 10+ (with WSL2) |
+| **CPU** | 4 cores (8+ recommended for development) |
+| **Memory** | 8 GB RAM (16+ GB recommended) |
+| **Storage** | 50 GB free space (SSD recommended) |
+| **Network** | Reliable internet connection for dependencies |
 
-## Development Environment
+### Recommended for Production
 
-### Required Software
+| Component | Specification |
+|-----------|---------------|
+| **CPU** | 8+ cores per service node |
+| **Memory** | 32+ GB RAM per node |
+| **Storage** | 500+ GB SSD with RAID |
+| **Network** | Gigabit ethernet, redundant connections |
 
-#### Java Development
-- **OpenJDK 21.0.1+** - Required for Spring Boot services
-- **Maven 3.9.6+** - Build and dependency management
-- **IDE**: IntelliJ IDEA, Eclipse, or VSCode with Java extensions
+## Required Software
 
-#### Frontend Development  
-- **Node.js 18+** with npm - Required for Vue.js frontend
-- **Modern Browser** - Chrome, Firefox, Safari, or Edge (latest versions)
+### Core Development Tools
 
-#### Rust Development (for client agent)
-- **Rust 1.70+** with Cargo - Cross-platform agent development
-- **Platform-specific tools**:
-  - Windows: Visual Studio Build Tools or Visual Studio
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC and essential build tools
+#### Java Development Kit (JDK 21)
 
-#### Containerization
-- **Docker 24.0+** - Container runtime
-- **Docker Compose 2.23+** - Multi-container orchestration
-
-#### Version Control
-- **Git 2.42+** - Source code management
-
-### Optional Tools
-
-#### Production Deployment
-- **Kubernetes 1.28+** - Container orchestration (for production)
-- **kubectl** - Kubernetes command-line tool
-- **Helm 3.0+** - Kubernetes package manager
-
-#### Development Tools
-- **Postman** or **Insomnia** - API testing
-- **MongoDB Compass** - Database GUI (optional)
-- **Redis CLI** - Cache inspection (optional)
-
-## Authentication Requirements
-
-### GitHub Access
-You'll need a **GitHub Personal Access Token (Classic)** with the following permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to GitHub packages
-- `write:packages` - Write access to GitHub packages
-
-#### Creating a GitHub Token
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions listed above
-4. Set an appropriate expiration date
-5. Copy the generated token securely
-
-## Network Configuration
-
-### Required Ports
-Ensure the following ports are available:
-
-#### Development Environment
-- `8080` - Main application UI
-- `8888` - Configuration server
-- `5432` - PostgreSQL (if using)
-- `27017` - MongoDB
-- `6379` - Redis
-- `9092` - Kafka
-- `8086` - InfluxDB (if using)
-
-#### Production Environment
-- `80/443` - HTTP/HTTPS traffic
-- `6443` - Kubernetes API server
-- Additional ports based on your specific configuration
-
-### Firewall Considerations
-- Allow outbound connections to GitHub for package downloads
-- Allow inbound connections on the specified ports
-- Consider corporate firewall/proxy settings
-
-## Platform-Specific Notes
-
-### Windows
-- Enable WSL2 for better Docker performance
-- Consider using Git Bash or PowerShell Core
-- Ensure Windows Defender exclusions for development directories
-
-### macOS
-- Install Homebrew for easier package management
-- Ensure Xcode Command Line Tools are installed
-- Consider using Docker Desktop for Mac
-
-### Linux
-- Ensure your user is in the `docker` group
-- Install development packages: `build-essential`, `curl`, `git`
-- Consider using your distribution's package manager for tool installation
-
-## Verification Steps
-
-After installing the prerequisites, verify your setup:
+OpenFrame requires Java 21 for backend services:
 
 ```bash
-# Check Java version
+# Using SDKMAN (recommended)
+curl -s "https://get.sdkman.io" | bash
+sdk install java 21.0.2-tem
+sdk use java 21.0.2-tem
+
+# Verify installation
 java -version
+```
 
-# Check Maven version
+Expected output:
+```text
+openjdk version "21.0.2" 2024-01-16
+```
+
+#### Apache Maven 3.8+
+
+For building Java services:
+
+```bash
+# Using SDKMAN
+sdk install maven 3.9.6
+
+# Verify installation
 mvn -version
+```
 
-# Check Node.js and npm versions
+#### Node.js 18+ and npm
+
+For frontend development:
+
+```bash
+# Using Node Version Manager (nvm)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 18
+nvm use 18
+
+# Verify installation
 node --version
 npm --version
+```
 
-# Check Rust version (if applicable)
-rustc --version
-cargo --version
+#### Docker and Docker Compose
 
-# Check Docker version
+For running integrated services:
+
+```bash
+# Install Docker Desktop (macOS/Windows)
+# Visit: https://docs.docker.com/get-docker/
+
+# Linux installation
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Verify installation
 docker --version
 docker-compose --version
+```
 
-# Check Git version
-git --version
+#### Rust (Optional)
+
+For client agent development:
+
+```bash
+# Install Rust toolchain
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source `$HOME/.cargo/env`
+
+# Verify installation
+rustc --version
+cargo --version
+```
+
+### Database Software
+
+#### MongoDB 7.x
+
+For primary data storage:
+
+```bash
+# Using Docker (recommended for development)
+docker run --name mongodb -d -p 27017:27017 mongo:7
+
+# Or install locally following MongoDB documentation
+# https://docs.mongodb.com/manual/installation/
+```
+
+#### Redis
+
+For caching and session storage:
+
+```bash
+# Using Docker
+docker run --name redis -d -p 6379:6379 redis:7-alpine
+
+# Verify connection
+redis-cli ping
+```
+
+### Message Brokers
+
+#### Apache Kafka
+
+For event streaming:
+
+```bash
+# Using Docker Compose (see integrated-tools/ directory)
+cd integrated-tools/kafka
+docker-compose up -d
+```
+
+#### NATS
+
+For real-time messaging:
+
+```bash
+# Using Docker
+docker run --name nats -d -p 4222:4222 -p 8222:8222 nats:latest
+```
+
+## Development Environment Setup
+
+### IDE Configuration
+
+#### IntelliJ IDEA (Recommended)
+
+1. Install IntelliJ IDEA Community/Ultimate
+2. Install required plugins:
+   - Spring Boot
+   - GraphQL
+   - Vue.js (for frontend work)
+   - Rust (if working with client agent)
+
+#### VS Code Alternative
+
+1. Install Visual Studio Code
+2. Install recommended extensions:
+   - Extension Pack for Java
+   - Spring Boot Extension Pack
+   - Vue Language Features (Volar)
+   - Rust Analyzer
+
+### Git Configuration
+
+```bash
+# Configure Git (if not already done)
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+
+# Clone the repository
+git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+cd openframe-oss-tenant
+```
+
+## Environment Variables
+
+### Required Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+# Database Configuration
+MONGODB_URI=mongodb://localhost:27017/openframe
+REDIS_URL=redis://localhost:6379
+
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+
+# NATS Configuration
+NATS_URL=nats://localhost:4222
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-signing-key-here-change-in-production
+JWT_EXPIRATION=86400
+
+# OAuth Configuration (for development)
+OAUTH_CLIENT_ID=openframe-dev
+OAUTH_CLIENT_SECRET=dev-secret-change-in-production
+
+# External Tool Configuration
+TACTICAL_RMM_URL=http://localhost:8001
+FLEET_MDM_URL=http://localhost:8002
+MESHCENTRAL_URL=http://localhost:3000
+
+# AI Configuration (optional)
+OPENAI_API_KEY=your-openai-api-key-here
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+```
+
+### Development vs Production Variables
+
+| Variable | Development | Production Notes |
+|----------|-------------|------------------|
+| `JWT_SECRET` | Simple string | Use strong 256-bit key |
+| `MONGODB_URI` | Local instance | MongoDB cluster with auth |
+| `KAFKA_BOOTSTRAP_SERVERS` | Single broker | Multiple brokers with SSL |
+| `OAUTH_CLIENT_SECRET` | Simple secret | Cryptographically secure |
+
+## Account Setup
+
+### Required Accounts
+
+#### GitHub Account
+- Fork the OpenFrame repository
+- Configure SSH keys for repository access
+
+#### Docker Hub Account (Optional)
+- For pushing custom images
+- Access to private registry if needed
+
+### External Service Accounts (Development)
+
+#### OpenAI (for AI Features)
+```bash
+# Sign up at https://platform.openai.com/
+# Get API key from dashboard
+export OPENAI_API_KEY=sk-your-openai-api-key
+```
+
+#### Anthropic (Alternative AI Provider)
+```bash
+# Sign up at https://console.anthropic.com/
+export ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+```
+
+## Verification Commands
+
+Run these commands to verify your environment is properly configured:
+
+### Java Environment
+```bash
+java -version
+mvn --version
+echo `$JAVA_HOME`
+```
+
+### Node.js Environment
+```bash
+node --version
+npm --version
+npx --version
+```
+
+### Docker Environment
+```bash
+docker --version
+docker-compose --version
+docker ps
+```
+
+### Database Connectivity
+```bash
+# MongoDB
+mongosh --eval "db.runCommand('ping')"
+
+# Redis
+redis-cli ping
+
+# Or using Docker
+docker exec -it mongodb mongosh --eval "db.runCommand('ping')"
+docker exec -it redis redis-cli ping
+```
+
+### Repository Access
+```bash
+# Verify Git configuration
+git config --list | grep user
+
+# Test repository access
+cd openframe-oss-tenant
+git status
+```
+
+## Common Issues and Solutions
+
+### Java Version Conflicts
+If you have multiple Java versions installed:
+```bash
+# List all Java versions (SDKMAN)
+sdk list java
+
+# Set default version
+sdk default java 21.0.2-tem
+
+# Verify JAVA_HOME
+echo `$JAVA_HOME`
+```
+
+### Docker Permission Issues (Linux)
+```bash
+# Add user to docker group
+sudo usermod -aG docker `$USER`
+# Logout and login again
+```
+
+### MongoDB Connection Issues
+```bash
+# Check if MongoDB is running
+docker ps | grep mongo
+
+# Check MongoDB logs
+docker logs mongodb
+```
+
+### Port Conflicts
+If you encounter port conflicts, check what's running:
+```bash
+# Check which process is using a port
+lsof -i :27017  # MongoDB
+lsof -i :6379   # Redis
+lsof -i :9092   # Kafka
 ```
 
 ## Next Steps
 
-Once all prerequisites are met, proceed to:
-1. [Quick Start Guide](quick-start.md) for a rapid setup
-2. [Introduction](introduction.md) for a detailed overview
-3. [Development Setup](../development/setup/environment.md) for development environment configuration
+Once your environment is configured:
 
-## Troubleshooting
+1. **Verify Prerequisites**: Ensure all verification commands pass
+2. **Run Quick Start**: Follow the [Quick Start Guide](quick-start.md)
+3. **Set Up IDE**: Configure your development environment
+4. **Join Community**: Connect with the [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
 
-### Common Issues
+> **💡 Pro Tip**: Keep a development checklist to ensure your environment stays consistent across different machines and team members.
 
-#### Java Installation Issues
-- Ensure JAVA_HOME is properly set
-- Verify PATH includes Java binaries
-- Use `alternatives` (Linux) or `java_home` (macOS) for version management
+---
 
-#### Docker Issues
-- Ensure Docker daemon is running
-- Check Docker Desktop settings on Windows/macOS
-- Verify user permissions on Linux
-
-#### Network Issues
-- Check corporate proxy settings
-- Verify firewall configuration
-- Test connectivity to GitHub and other required services
-
-If you encounter issues not covered here, see our [Troubleshooting Guide](../operations/troubleshooting/common-issues.md).
+Ready to proceed? Move on to the **Quick Start Guide** to get OpenFrame running locally!
