@@ -308,17 +308,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e && mkdir -p final-artifacts/clients
-          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
+
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
-            # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
               tar -czf "final-artifacts/clients/${client}_macos.tar.gz" \
                 -C "release-artifacts/${client}-macos" .
+            else
+              gh release download latest --pattern "${client}_macos.tar.gz" --dir final-artifacts/clients || true
             fi
-            # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
               (cd "release-artifacts/${client}-windows" && \
                 zip -r "${GITHUB_WORKSPACE}/final-artifacts/clients/${client}_windows.zip" .)
+            else
+              gh release download latest --pattern "${client}_windows.zip" --dir final-artifacts/clients || true
             fi
           done
 
