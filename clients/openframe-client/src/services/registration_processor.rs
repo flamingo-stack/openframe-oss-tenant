@@ -48,6 +48,7 @@ impl RegistrationProcessor {
             }
         }
     }
+    
 
     async fn attempt_registration(&self) -> Result<AgentRegistrationResponse> {
         self.registration_service
