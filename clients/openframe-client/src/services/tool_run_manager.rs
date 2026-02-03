@@ -491,13 +491,16 @@ impl ToolRunManager {
                     }
                 };
 
-                debug!("Run tool {} with args: {:?}", tool.tool_agent_id, processed_args);
+                debug!("Running tool {} with args: {:?}", tool.tool_agent_id, processed_args);
 
-                // Build executable path (always uses app support directory)
                 let command_path = params_processor.directory_manager
-                    .get_agent_path(&tool.tool_agent_id)
+                    .get_tool_executable_path(&tool.tool_agent_id, tool.executable_path.as_deref())
                     .to_string_lossy()
                     .to_string();
+
+                if !std::path::Path::new(&command_path).exists() {
+                    warn!("Executable not found at: {}", command_path);
+                }
 
                 // On Windows, check session type to determine launch method
                 #[cfg(windows)]
@@ -565,7 +568,7 @@ impl ToolRunManager {
                     }
                 }
 
-                // macOS: Handle session types
+// macOS: Handle session types
                 #[cfg(target_os = "macos")]
                 {
                     use crate::models::SessionType;
@@ -617,7 +620,7 @@ impl ToolRunManager {
                             continue;
                         }
                         SessionType::Console => {
-                            info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping on macOS");
+                            info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
                             return;
                         }
                         SessionType::Service => {
@@ -631,12 +634,12 @@ impl ToolRunManager {
                 {
                     use crate::models::SessionType;
                     if tool.session_type == SessionType::Console {
-                        info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping");
+                        info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
                         return;
                     }
                 }
 
-                // Standard spawn for Service session type
+                // For all other tools (or non-Windows), use standard spawn
                 let mut child = match Command::new(&command_path)
                     .args(&processed_args)
                     .stdout(Stdio::piped())

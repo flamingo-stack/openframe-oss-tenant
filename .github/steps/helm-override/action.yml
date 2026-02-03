@@ -18,29 +18,9 @@ inputs:
   github-token:
     description: 'GitHub token for repository access'
     required: true
-  saas-config-token:
-    description: 'SAAS config read access token'
-    required: true
   branch-name:
     description: 'Branch name for deployment'
     required: true
-  docker-username:
-    description: 'Docker registry username'
-    required: true
-  docker-password:
-    description: 'Docker registry password'
-    required: true
-  docker-email:
-    description: 'Docker registry email'
-    required: false
-    default: 'dmtkov@flamingo.cx'
-  github-actor:
-    description: 'GitHub actor username'
-    required: true
-  ghcr-email:
-    description: 'GHCR registry email'
-    required: false
-    default: 'CI@flamingo.cx'
 
 runs:
   using: 'composite'
@@ -111,39 +91,9 @@ runs:
       env:
         HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
         GITHUB_TOKEN: '${{ inputs.github-token }}'
-        SAAS_CONFIG_TOKEN: '${{ inputs.saas-config-token }}'
         BRANCH_NAME: '${{ inputs.branch-name }}'
       run: |
         set -euo pipefail
         yq eval ".deployment.oss.repository.branch = \"$BRANCH_NAME\"" -i "$HELM_VALUES_FILE"
-        yq eval ".deployment.saas.repository.password = \"$SAAS_CONFIG_TOKEN\"" -i "$HELM_VALUES_FILE"
         echo "Updated deployment.oss.repository.branch to: $BRANCH_NAME"
-
-    - name: Override registry
-      shell: bash
-      env:
-        HELM_VALUES_FILE: '${{ inputs.helm-values-file }}'
-        DOCKER_USERNAME: '${{ inputs.docker-username }}'
-        DOCKER_PASSWORD: '${{ inputs.docker-password }}'
-        DOCKER_EMAIL: '${{ inputs.docker-email }}'
-        GITHUB_ACTOR: '${{ inputs.github-actor }}'
-        GITHUB_TOKEN: '${{ inputs.github-token }}'
-        GHCR_EMAIL: '${{ inputs.ghcr-email }}'
-      run: |
-        set -euo pipefail
-
-        # Override Docker registry
-        yq eval ".registry.docker.server = \"https://index.docker.io/v1/\"" -i "$HELM_VALUES_FILE"
-        yq eval ".registry.docker.username = \"$DOCKER_USERNAME\"" -i "$HELM_VALUES_FILE"
-        yq eval ".registry.docker.password = \"$DOCKER_PASSWORD\"" -i "$HELM_VALUES_FILE"
-        yq eval ".registry.docker.email = \"$DOCKER_EMAIL\"" -i "$HELM_VALUES_FILE"
-        echo "Updated registry.docker configuration"
-
-        # Override GHCR registry
-        yq eval ".registry.ghcr.server = \"ghcr.io\"" -i "$HELM_VALUES_FILE"
-        yq eval ".registry.ghcr.username = \"$GITHUB_ACTOR\"" -i "$HELM_VALUES_FILE"
-        yq eval ".registry.ghcr.password = \"$GITHUB_TOKEN\"" -i "$HELM_VALUES_FILE"
-        yq eval ".registry.ghcr.email = \"$GHCR_EMAIL\"" -i "$HELM_VALUES_FILE"
-        echo "Updated registry.ghcr configuration"
-
         cat "$HELM_VALUES_FILE"

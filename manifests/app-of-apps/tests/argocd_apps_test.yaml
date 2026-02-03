@@ -7,11 +7,6 @@ tests:
   # ========================================
 
   - it: should have correct ArgoCD application metadata
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: apiVersion
@@ -31,22 +26,12 @@ tests:
   # ========================================
 
   - it: should have correct project configuration
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.project
           value: default
 
   - it: should have correct OSS source configuration
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.sources[0].repoURL
@@ -61,11 +46,6 @@ tests:
           path: spec.sources[0].helm.values
 
   - it: should have correct destination configuration
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.destination.name
@@ -79,11 +59,6 @@ tests:
   # ========================================
 
   - it: should have correct default sync policy
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.syncPolicy.automated.prune
@@ -96,83 +71,51 @@ tests:
           value: 5
 
   - it: should have sync policy structure
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - exists:
           path: spec.syncPolicy.automated
       - exists:
           path: spec.syncPolicy.retry
 
-  - it: should have both sources when SaaS enabled
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      deployment.saas.ingress.gcp.enabled: false
-    asserts:
-      - equal:
-          path: spec.sources[0].repoURL
-          value: https://github.com/flamingo-stack/openframe-oss-tenant.git
-      - equal:
-          path: spec.sources[1].repoURL
-          value: https://github.com/flamingo-stack/openframe-saas-tenant.git
-      - lengthEqual:
-          path: spec.sources
-          count: 2
-
   # ========================================
   # HELM VALUES STRUCTURE TESTS
   # ========================================
 
   - it: should include required helm values structure
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
           pattern: "deployment:"
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "registry:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "registerJob:"
+          pattern: "environment:"
 
   # ========================================
   # DOCUMENT COUNT TESTS
   # ========================================
 
   - it: should generate exactly one ArgoCD application
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
       - hasDocuments:
           count: 1
 
   # ========================================
-  # EDGE CASES
+  # CUSTOM CONFIGURATION
   # ========================================
 
-  - it: should handle empty apps configuration
+  - it: should handle custom repository configuration
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      apps: {}
+      deployment.oss.repository.URL: "https://example.com/custom-repo.git"
+      deployment.oss.repository.branch: "custom-branch"
+      deployment.oss.repository.baseDir: "custom-dir"
+      deployment.oss.repository.appsDir: "custom-apps-dir"
     asserts:
-      - hasDocuments:
-          count: 1
       - equal:
-          path: metadata.name
-          value: argocd-apps
+          path: spec.sources[0].repoURL
+          value: "https://example.com/custom-repo.git"
+      - equal:
+          path: spec.sources[0].targetRevision
+          value: "custom-branch"
+      - equal:
+          path: spec.sources[0].path
+          value: "custom-dir/custom-apps-dir"

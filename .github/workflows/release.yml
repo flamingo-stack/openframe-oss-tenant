@@ -281,7 +281,7 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           name: app-of-apps
-          tag: ${{ inputs.version || '0.0.1' }}
+          tag: ${{ inputs.version || '9.9.9' }}
           path: ./manifests/app-of-apps
           registry: ${{ env.REGISTRY }}
           repository: ${{ env.ORGANISATION }}/${{ env.REPOSITORY }}

@@ -305,6 +305,13 @@ data:
         action        = "drop"
       }
 
+      // Drop Cilium metrics (high cardinality, unused)
+      rule {
+        source_labels = ["__name__"]
+        regex         = "cilium_.*"
+        action        = "drop"
+      }
+
       forward_to = [prometheus.remote_write.prometheus.receiver]
     }
 

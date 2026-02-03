@@ -14,8 +14,8 @@ prometheus:
     podAnnotations:
       loki.grafana.com/scrape: "true"
 
-    # 14 days retention
-    retention: "14d"
+    # 25 days retention
+    retention: "25d"
 
     # Resources
     resources:
@@ -34,7 +34,7 @@ prometheus:
     extraFlags:
       - "web.enable-remote-write-receiver"
       - "web.enable-lifecycle"
-      - "storage.tsdb.retention.size=18GB" 
+      - "storage.tsdb.retention.size=17GB" 
 
     # Global settings
     global:

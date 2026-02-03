@@ -51,17 +51,17 @@ export default function Mingo() {
   const {
     selectDialog,
     isLoadingDialog,
-    isLoadingMessages
+    isLoadingMessages,
+    isSelectingDialog,
+    rawMessagesCount
   } = useMingoDialogSelection()
 
   const {
     currentDialogId,
-    isAdminChatTyping,
-    adminMessages,
     addRealtimeMessage,
-    setTypingIndicator,
+    setDialogTyping,
+    getDialogTyping,
     clearCurrent,
-    addAdminMessages,
     removeWelcomeMessages
   } = useMingoDialogDetailsStore()
 
@@ -71,7 +71,7 @@ export default function Mingo() {
     resetUnreadCount,
     setBackgroundTyping,
     initializeDialog,
-    moveBackgroundToActive,
+    preserveStreamingMessage
   } = useMingoBackgroundMessagesStore()
 
   const {
@@ -80,23 +80,33 @@ export default function Mingo() {
     assistantType
   } = useProcessedMessages()
 
-  const { processChunk } = useMingoRealtimeProcessor({
+  const isCurrentDialogTyping = currentDialogId ? getDialogTyping(currentDialogId) : false
+
+  const { processChunk, getDialogStreamingMessage } = useMingoRealtimeProcessor({
     activeDialogId: currentDialogId,
     onActiveStreamStart: () => {
-      setTypingIndicator(true)
+      if (currentDialogId) {
+        setDialogTyping(currentDialogId, true)
+      }
     },
     onActiveStreamEnd: () => {
-      setTypingIndicator(false)
+      if (currentDialogId) {
+        setDialogTyping(currentDialogId, false)
+      }
     },
     onActiveError: (error: string) => {
-      setTypingIndicator(false)
+      if (currentDialogId) {
+        setDialogTyping(currentDialogId, false)
+      }
       console.error('[Mingo] Active dialog error:', error)
     },
     onBackgroundStreamStart: (dialogId: string) => {
       setBackgroundTyping(dialogId, true)
+      setDialogTyping(dialogId, true)
     },
     onBackgroundStreamEnd: (dialogId: string) => {
       setBackgroundTyping(dialogId, false)
+      setDialogTyping(dialogId, false)
     },
     onBackgroundUnreadIncrement: (dialogId: string) => {
       incrementUnreadCount(dialogId)
@@ -128,11 +138,11 @@ export default function Mingo() {
   }, [currentDialogId])
 
   const addWelcomeMessageIfNeeded = useCallback(() => {
-    if (currentDialogId && adminMessages.length === 0) {
+    if (currentDialogId) {
       const welcomeMessage = createWelcomeMessage()
       addRealtimeMessage(welcomeMessage)
     }
-  }, [currentDialogId, adminMessages.length, createWelcomeMessage, addRealtimeMessage])
+  }, [currentDialogId, createWelcomeMessage, addRealtimeMessage])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -155,6 +165,13 @@ export default function Mingo() {
   }, [router])
 
   const selectDialogInternal = useCallback((dialogId: string) => {
+    if (currentDialogId && currentDialogId !== dialogId) {
+      const streamingMessage = getDialogStreamingMessage(currentDialogId)
+      if (streamingMessage) {
+        preserveStreamingMessage(currentDialogId, streamingMessage)
+      }
+    }
+
     initializeDialog(dialogId)
     resetUnreadCount(dialogId)
     setActiveDialogId(dialogId)
@@ -166,20 +183,15 @@ export default function Mingo() {
       return [...prev, dialogId]
     })
     
-    const backgroundMessages = moveBackgroundToActive(dialogId)
-    
     selectDialog(dialogId)
-    
-    if (backgroundMessages.length > 0) {
-      addAdminMessages(backgroundMessages)
-    }
   }, [
+    currentDialogId,
+    getDialogStreamingMessage,
+    preserveStreamingMessage,
     initializeDialog,
     resetUnreadCount,
     setActiveDialogId,
-    selectDialog,
-    moveBackgroundToActive,
-    addAdminMessages
+    selectDialog
   ])
 
   const handleDialogSelect = useCallback(async (dialogId: string) => {
@@ -207,10 +219,14 @@ export default function Mingo() {
   }, [searchParams, currentDialogId, selectDialogInternal, clearCurrent, setActiveDialogId])
 
   useEffect(() => {
-    if (currentDialogId && !isLoadingMessages && adminMessages.length === 0) {
+    if (currentDialogId && 
+        !isLoadingDialog && 
+        !isLoadingMessages && 
+        !isSelectingDialog &&
+        rawMessagesCount === 0) {
       addWelcomeMessageIfNeeded()
     }
-  }, [currentDialogId, isLoadingMessages, adminMessages.length, addWelcomeMessageIfNeeded])
+  }, [currentDialogId, isLoadingDialog, isLoadingMessages, isSelectingDialog, rawMessagesCount, addWelcomeMessageIfNeeded])
 
   const handleNewChat = useCallback(async () => {
     resetDialog()
@@ -241,12 +257,34 @@ export default function Mingo() {
     }
 
     addRealtimeMessage(optimisticMessage)
+    
+    const emptyAssistantMessage: Message = {
+      id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      dialogId: currentDialogId,
+      chatType: 'ADMIN_AI_CHAT',
+      dialogMode: 'DEFAULT',
+      createdAt: new Date().toISOString(),
+      owner: {
+        type: 'ASSISTANT',
+        model: 'mingo'
+      },
+      messageData: {
+        type: 'TEXT',
+        text: ''
+      }
+    }
+    
+    addRealtimeMessage(emptyAssistantMessage)
+    
+    setDialogTyping(currentDialogId, true)
+    
     const success = await sendMessage(message, currentDialogId)
     
     if (!success) {
       console.warn('[Mingo] Failed to send message')
+      setDialogTyping(currentDialogId, false)
     }
-  }, [sendMessage, currentDialogId, addRealtimeMessage, removeWelcomeMessages])
+  }, [sendMessage, currentDialogId, addRealtimeMessage, removeWelcomeMessages, setDialogTyping])
 
   if (!isSaasTenantMode()) {
     return null
@@ -301,8 +339,8 @@ export default function Mingo() {
                 <ChatMessageList
                   messages={processedMessages}
                   dialogId={currentDialogId}
-                  isTyping={isAdminChatTyping}
-                  isLoading={isLoadingDialog || isLoadingMessages}
+                  isTyping={isCurrentDialogTyping}
+                  isLoading={isLoadingDialog || isLoadingMessages || isSelectingDialog}
                   assistantType={assistantType}
                   pendingApprovals={pendingApprovals}
                   showAvatars={false}
@@ -335,8 +373,8 @@ export default function Mingo() {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
-                  sending={isSendingMessage || isAdminChatTyping}
-                  disabled={isCreatingDialog}
+                  sending={isSendingMessage || isCurrentDialogTyping}
+                  disabled={isCreatingDialog || isSelectingDialog}
                   autoFocus={false}
                   className="bg-ods-card rounded-lg"
                 />

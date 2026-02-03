@@ -6,12 +6,7 @@ tests:
   # DEPLOYMENT VALUES PROPAGATION
   # ========================================
 
-  - it: should propagate self-hosted localhost values
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
+  - it: should propagate OSS deployment values
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
@@ -19,49 +14,6 @@ tests:
       - matchRegex:
           path: spec.sources[0].helm.values
           pattern: "oss:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "localhost:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "enabled: true"
-
-  - it: should propagate self-hosted ngrok values
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.saas.enabled: false
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "deployment:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "ngrok:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "enabled: true"
-
-  - it: should propagate SaaS deployment values
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      deployment.saas.ingress.gcp.enabled: false
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "deployment:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "saas:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "localhost:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "enabled: true"
 
   # ========================================
   # GLOBAL VALUES PROPAGATION
@@ -69,10 +21,6 @@ tests:
 
   - it: should propagate custom global repository values
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
       deployment.oss.repository.URL: "https://custom-repo.com/openframe.git"
       deployment.oss.repository.branch: "development"
       deployment.oss.repository.baseDir: "custom-manifests"
@@ -88,15 +36,8 @@ tests:
           path: spec.sources[0].path
           value: "custom-manifests/custom-apps"
 
-  - it: should have hardcoded sync policy regardless of autoSync setting
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      deployment.oss.repository.autoSync: false
+  - it: should have hardcoded sync policy
     asserts:
-      # Sync policy is hardcoded in argocd-apps template
       - equal:
           path: spec.syncPolicy.automated.prune
           value: true
@@ -105,112 +46,19 @@ tests:
           value: true
 
   # ========================================
-  # REGISTRY VALUES PROPAGATION
+  # ENVIRONMENT PROPAGATION
   # ========================================
 
-  - it: should propagate docker registry configuration
+  - it: should propagate environment configuration
     set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      registry.docker.username: "testuser"
-      registry.docker.password: "testpass"
-      registry.docker.email: "test@example.com"
+      environment: production
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "registry:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "username: testuser"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "password: testpass"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "email: test@example.com"
+          pattern: "environment: production"
 
-  - it: should propagate GHCR registry configuration
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      registry.ghcr.username: "ghcruser"
-      registry.ghcr.password: "ghcrtoken"
+  - it: should use default environment
     asserts:
       - matchRegex:
           path: spec.sources[0].helm.values
-          pattern: "ghcr:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "username: ghcruser"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "password: ghcrtoken"
-
-  # ========================================
-  # APP-SPECIFIC VALUES PROPAGATION
-  # ========================================
-
-  - it: should propagate app-specific configuration
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      apps.openframe-config.values.config.branch: "feature-branch"
-      apps.openframe-config.values.config.environment: "stage"
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "openframe-config:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "branch: feature-branch"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "environment: stage"
-
-  # ========================================
-  # NGROK CREDENTIALS PROPAGATION
-  # ========================================
-
-  - it: should propagate ngrok credentials
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.oss.ingress.ngrok.credentials.apiKey: "test-api-key"
-      deployment.oss.ingress.ngrok.credentials.authtoken: "test-auth-token"
-      deployment.saas.enabled: false
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "credentials:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "apiKey: test-api-key"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "authtoken: test-auth-token"
-
-  # ========================================
-  # REGISTER JOB CONFIGURATION
-  # ========================================
-
-  - it: should propagate registerJob configuration
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-      registerJob.enabled: false
-    asserts:
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "registerJob:"
-      - matchRegex:
-          path: spec.sources[0].helm.values
-          pattern: "enabled: false"
+          pattern: "environment: dev"

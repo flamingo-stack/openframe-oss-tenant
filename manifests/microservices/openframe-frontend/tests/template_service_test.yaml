@@ -2,12 +2,7 @@ suite: test service template
 templates:
   - templates/service.yaml
 tests:
-  # Basic service rendering
   - it: should render service correctly
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       - hasDocuments:
           count: 1
@@ -17,12 +12,7 @@ tests:
           path: metadata.name
           value: openframe-frontend
 
-  # Service configuration
   - it: should configure service correctly
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.selector.app
@@ -39,34 +29,3 @@ tests:
       - equal:
           path: spec.ports[0].name
           value: http
-
-  # Service works with different deployment types
-  - it: should render service for oss ngrok
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
-      deployment.saas.enabled: false
-    asserts:
-      - hasDocuments:
-          count: 1
-      - isKind:
-          of: Service
-      - equal:
-          path: metadata.name
-          value: openframe-frontend
-
-  - it: should render service for saas localhost
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-    asserts:
-      - hasDocuments:
-          count: 1
-      - isKind:
-          of: Service
-      - equal:
-          path: metadata.name
-          value: openframe-frontend

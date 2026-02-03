@@ -153,7 +153,9 @@ jobs:
       !github.event.pull_request.draft &&
       !startsWith(github.head_ref, 'release/') &&
       !startsWith(github.head_ref, 'revert/') &&
-      !startsWith(github.head_ref, 'hotfix/')
+      !startsWith(github.head_ref, 'hotfix/') &&
+      !startsWith(github.head_ref, 'setup/') &&
+      !startsWith(github.head_ref, 'docs/')
     steps:
       - uses: actions/checkout@v4
         with:
@@ -293,7 +295,7 @@ jobs:
       - name: Test Chart
         run: |
           helm template app ./manifests/app-of-apps 
-          helm unittest ./manifests/app-of-apps 
+          helm unittest ./manifests/app-of-apps
 
 
   cleanup:

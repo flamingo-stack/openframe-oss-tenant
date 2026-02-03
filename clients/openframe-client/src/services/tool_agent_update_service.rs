@@ -114,7 +114,7 @@ impl ToolAgentUpdateService {
         let new_agent_bytes = if !message.download_configurations.is_empty() {
             // Use GithubDownloadService with download configurations
             info!("Using download configurations to update tool agent");
-            let download_config = GithubDownloadService::find_config_for_current_os(&message.download_configurations)
+            let download_config = self.github_download_service.find_config_for_current_os(&message.download_configurations)
                 .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
 
             self.github_download_service
