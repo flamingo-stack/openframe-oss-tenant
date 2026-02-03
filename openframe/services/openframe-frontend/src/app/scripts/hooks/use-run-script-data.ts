@@ -107,7 +107,6 @@ export function useRunScriptData({ scriptId }: UseRunScriptDataOptions) {
       }
 
       const nodes = graphqlResponse.data.devices.edges.map(e => e.node)
-      console.log(nodes)
       const transformedDevices: Device[] = nodes.map(createDeviceListItem)
 
       setDevices(transformedDevices)
