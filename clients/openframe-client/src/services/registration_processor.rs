@@ -45,12 +45,12 @@ impl RegistrationProcessor {
                     return Ok(());
                 }
                 Err(e) => {
-                    let backoff_secs = (INITIAL_BACKOFF_SECS * 2u64.pow(attempt - 1)).min(MAX_BACKOFF_SECS);
-                    error!(
-                        "Registration attempt {}/{} failed. Retrying in {} seconds: {:#}",
-                        attempt, MAX_RETRIES, backoff_secs, e
-                    );
-                    sleep(Duration::from_secs(backoff_secs)).await;
+                    error!("Registration attempt {}/{} failed: {:#}", attempt, MAX_RETRIES, e);
+                    if attempt < MAX_RETRIES {
+                        let backoff_secs = (INITIAL_BACKOFF_SECS * 2u64.pow(attempt - 1)).min(MAX_BACKOFF_SECS);
+                        info!("Retrying in {} seconds", backoff_secs);
+                        sleep(Duration::from_secs(backoff_secs)).await;
+                    }
                 }
             }
         }
