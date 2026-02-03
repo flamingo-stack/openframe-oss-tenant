@@ -68,7 +68,7 @@ export class ChatApiService {
   async createDialog(): Promise<string> {
     await tokenService.ensureTokenReady()
 
-    const url = `${this.getApiBaseUrl()}/chat/api/v2/dialogs`
+    const url = `${this.getApiBaseUrl()}/chat/api/v1/dialogs`
     const response = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(),
@@ -98,7 +98,7 @@ export class ChatApiService {
   async sendMessage(args: { dialogId: string; content: string; chatType: 'CLIENT_CHAT' }): Promise<void> {
     await tokenService.ensureTokenReady()
 
-    const url = `${this.getApiBaseUrl()}/chat/api/v2/messages`
+    const url = `${this.getApiBaseUrl()}/chat/api/v1/messages`
     const response = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(),
