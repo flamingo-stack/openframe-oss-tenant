@@ -370,6 +370,7 @@
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/tool/filter/ToolQueryFilter.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/IntegratedToolAgent.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/IntegratedToolInstallationTaskStatus.java
+../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/LocalFilenameConfiguration.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/SessionType.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/ToolAgentAsset.java
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/document/toolagent/ToolAgentAssetSource.java
@@ -437,6 +438,9 @@
 ../deps/openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data/service/ToolUrlService.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/config/CacheConfig.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/config/RedisConfig.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/redis/OpenframeRedisKeyBuilder.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/redis/OpenframeRedisKeyConfiguration.java
+../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/redis/OpenframeRedisProperties.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ApiKeyStatsSyncRepository.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ReactiveApiKeyStatsRepository.java
 ../deps/openframe-oss-lib/openframe-data-redis/src/main/java/com/openframe/data/repository/redis/ReactiveRateLimitRepository.java
@@ -450,6 +454,7 @@
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/config/ToolSdkConfig.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/health/CassandraHealthIndicator.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/mapper/DownloadConfigurationMapper.java
+../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/mapper/LocalFilenameConfigurationMapper.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/IntegratedToolTypes.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/ToolCredentials.java
 ../deps/openframe-oss-lib/openframe-data/src/main/java/com/openframe/data/model/cassandra/UnifiedLogEvent.java
