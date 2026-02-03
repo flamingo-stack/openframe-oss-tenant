@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/698215f3d8feeb42d31e1157</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Hosea Upton DVM&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(618) 847-3189&quot;,
+                &quot;email&quot;: &quot;casey.bogisich@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;7831 Gus Mountains&quot;,
+            &quot;street2&quot;: &quot;Suite 416&quot;,
+            &quot;city&quot;: &quot;Bergeton&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;31948&quot;,
+            &quot;country&quot;: &quot;South Georgia and the South Sandwich Islands&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;777 Schmitt Groves&quot;,
+            &quot;street2&quot;: &quot;Apt. 642&quot;,
+            &quot;city&quot;: &quot;Huelshire&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;33759&quot;,
+            &quot;country&quot;: &quot;Republic of Korea&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMmYyYjA3MzQtMjcyMi00ZjFmLWFiYjUtMTUxNjc0ZGE3MmFiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5YzZjNmM2ZS1iYjViLTRiNTgtYmU4MC03ZWUyYjNiMTdjYjUiLCJzdWIiOiJ0ZXF1aWxhLnNjaGlubmVyQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMTMyOTc4LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy85YzZjNmM2ZS1iYjViLTRiNTgtYmU4MC03ZWUyYjNiMTdjYjUiLCJleHAiOjE3NzAxMzM4NzgsImlhdCI6MTc3MDEzMjk3OCwidXNlcklkIjoiZjdhMDI4YmEtZWE1Yi00MDE5LTkyNjMtMGY3ZTQ2NDJmM2RlIiwianRpIjoiMDlkNjExOGEtZTU1NC00MTMyLTliN2YtOGQ3MzkyOWFiZjZlIn0.VhHB_4lrzyjaUD_uWTrcUG7NcufYIOMqX9gPMwrElJl9XYQqIGGh1N2aHuHDGM6eOmuvNrwx0d3ptyVI8onXtaEJHLGHweXPxe3MYScer_qbvs-2HPUcpx-aP89AxVZM7R6Mw0pPNILnSWGsGUpA6De5VeLBqiQ0C1NGLl_AjWMNPxhOkzr5LS9f_Bvx4owQvc_QksWf7A5GuhFmIGg7yOWg0EeR77hpNLSIORLhF5vnUe4QUIkND5x2jQsmV_qJZ04A41gQ4cPR4Z1JsVpeQ2ufF7WcR3KuzcoF2jtBXTbsrYZkvPHyA0d32KekVvzwGdfNsva7obDMuMkyAcWTvQ</div>
+        <div>refresh_token: X_UM4dwnpb3KhzIlTlo6c305FswKR57lRwAhpXzlJuDsY1c1GTGdMwptGFVrlaNZdzME61gjtT8wlr71CSIX2uBRrmIoz3wrZZwNjtid3Js3-p3enHgvY5xDNTyHw5aj</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/698215f3d8feeb42d31e1157&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMmYyYjA3MzQtMjcyMi00ZjFmLWFiYjUtMTUxNjc0ZGE3MmFiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI5YzZjNmM2ZS1iYjViLTRiNTgtYmU4MC03ZWUyYjNiMTdjYjUiLCJzdWIiOiJ0ZXF1aWxhLnNjaGlubmVyQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMTMyOTc4LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy85YzZjNmM2ZS1iYjViLTRiNTgtYmU4MC03ZWUyYjNiMTdjYjUiLCJleHAiOjE3NzAxMzM4NzgsImlhdCI6MTc3MDEzMjk3OCwidXNlcklkIjoiZjdhMDI4YmEtZWE1Yi00MDE5LTkyNjMtMGY3ZTQ2NDJmM2RlIiwianRpIjoiMDlkNjExOGEtZTU1NC00MTMyLTliN2YtOGQ3MzkyOWFiZjZlIn0.VhHB_4lrzyjaUD_uWTrcUG7NcufYIOMqX9gPMwrElJl9XYQqIGGh1N2aHuHDGM6eOmuvNrwx0d3ptyVI8onXtaEJHLGHweXPxe3MYScer_qbvs-2HPUcpx-aP89AxVZM7R6Mw0pPNILnSWGsGUpA6De5VeLBqiQ0C1NGLl_AjWMNPxhOkzr5LS9f_Bvx4owQvc_QksWf7A5GuhFmIGg7yOWg0EeR77hpNLSIORLhF5vnUe4QUIkND5x2jQsmV_qJZ04A41gQ4cPR4Z1JsVpeQ2ufF7WcR3KuzcoF2jtBXTbsrYZkvPHyA0d32KekVvzwGdfNsva7obDMuMkyAcWTvQ&#39; -b &#39;refresh_token=X_UM4dwnpb3KhzIlTlo6c305FswKR57lRwAhpXzlJuDsY1c1GTGdMwptGFVrlaNZdzME61gjtT8wlr71CSIX2uBRrmIoz3wrZZwNjtid3Js3-p3enHgvY5xDNTyHw5aj&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Hosea Upton DVM&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(618) 847-3189&quot;,
+                &quot;email&quot;: &quot;casey.bogisich@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;7831 Gus Mountains&quot;,
+            &quot;street2&quot;: &quot;Suite 416&quot;,
+            &quot;city&quot;: &quot;Bergeton&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;31948&quot;,
+            &quot;country&quot;: &quot;South Georgia and the South Sandwich Islands&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;777 Schmitt Groves&quot;,
+            &quot;street2&quot;: &quot;Apt. 642&quot;,
+            &quot;city&quot;: &quot;Huelshire&quot;,
+            &quot;state&quot;: &quot;South Dakota&quot;,
+            &quot;postalCode&quot;: &quot;33759&quot;,
+            &quot;country&quot;: &quot;Republic of Korea&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}&#39;
+</div>
