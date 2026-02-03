@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/69824357ae63e70daf06c7b9</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Marianela Ondricka&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(817) 815-3230&quot;,
+                &quot;email&quot;: &quot;genesis.stiedemann@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;999 Jalisa Wall&quot;,
+            &quot;street2&quot;: &quot;Apt. 637&quot;,
+            &quot;city&quot;: &quot;Danielview&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;19917&quot;,
+            &quot;country&quot;: &quot;Belarus&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;90510 Carl Villages&quot;,
+            &quot;street2&quot;: &quot;Apt. 596&quot;,
+            &quot;city&quot;: &quot;Lake Lettiebury&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;73857&quot;,
+            &quot;country&quot;: &quot;Saint Helena&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZTdjNDFmODQtNGJmZC00MDAwLTg2NGItZjMxMzJkN2UyYzk5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYjRlYjgyMy1iYjZiLTRhYTAtODgyNS1jNmQ5NjkyOGRmMjEiLCJzdWIiOiJjbGVtZW50LnNlbmdlckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDE0NDU5OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMGI0ZWI4MjMtYmI2Yi00YWEwLTg4MjUtYzZkOTY5MjhkZjIxIiwiZXhwIjoxNzcwMTQ1NDk4LCJpYXQiOjE3NzAxNDQ1OTgsInVzZXJJZCI6IjViOTQyMzk4LTg1NzktNDdlNy1iODJhLWE2OGJhYmY3NTI5MCIsImp0aSI6Ijg5ZGMwN2M3LTFmZmQtNGQ5Yi05MTlkLTJhYzQ0MjdkZjE4OCJ9.JjJFBYqvddf5DXCWLoHpKJhTESJGkSFaVrsFCakrLOqvxoY4qIHbsmvywyclpCv44JElRDYTl-OGwciE5puUyWu_roGwifFrao1-rKiuHIZgyCyoVqOcvKAzJs1PIPzl3UWGDs9scZXDUU6zi-GSm34f8g3sWiPsiCANQnleSIsIrZIJW-GCDrGfBhSLSkfYhVzISVR62hc3rACj9oDHsQV1eFGkJ_Ii5h0Aa4dLl3y4SuGOnrvxww7cc-4ADhYROjZ-As49PJeaOICEG0v9cqAjgZmR20tKz1M5CFJ-7fLDL6D2i4NncwxvHNa1-r4cIQJjp0WHvBA8Yyhkyyp_rQ</div>
+        <div>refresh_token: kzY9XfBrBgoXRJN0fPRlgWi2NQjwzV_KtzsbmLqA5Y7FKTKTfMXgejO_OSyiBOk9jVg87nKVlTa-f-VqThIiX0nkOQ6BbPSndCki710zUlmw6eVlg143JLNfXLziB2tu</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/69824357ae63e70daf06c7b9&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZTdjNDFmODQtNGJmZC00MDAwLTg2NGItZjMxMzJkN2UyYzk5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYjRlYjgyMy1iYjZiLTRhYTAtODgyNS1jNmQ5NjkyOGRmMjEiLCJzdWIiOiJjbGVtZW50LnNlbmdlckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDE0NDU5OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMGI0ZWI4MjMtYmI2Yi00YWEwLTg4MjUtYzZkOTY5MjhkZjIxIiwiZXhwIjoxNzcwMTQ1NDk4LCJpYXQiOjE3NzAxNDQ1OTgsInVzZXJJZCI6IjViOTQyMzk4LTg1NzktNDdlNy1iODJhLWE2OGJhYmY3NTI5MCIsImp0aSI6Ijg5ZGMwN2M3LTFmZmQtNGQ5Yi05MTlkLTJhYzQ0MjdkZjE4OCJ9.JjJFBYqvddf5DXCWLoHpKJhTESJGkSFaVrsFCakrLOqvxoY4qIHbsmvywyclpCv44JElRDYTl-OGwciE5puUyWu_roGwifFrao1-rKiuHIZgyCyoVqOcvKAzJs1PIPzl3UWGDs9scZXDUU6zi-GSm34f8g3sWiPsiCANQnleSIsIrZIJW-GCDrGfBhSLSkfYhVzISVR62hc3rACj9oDHsQV1eFGkJ_Ii5h0Aa4dLl3y4SuGOnrvxww7cc-4ADhYROjZ-As49PJeaOICEG0v9cqAjgZmR20tKz1M5CFJ-7fLDL6D2i4NncwxvHNa1-r4cIQJjp0WHvBA8Yyhkyyp_rQ&#39; -b &#39;refresh_token=kzY9XfBrBgoXRJN0fPRlgWi2NQjwzV_KtzsbmLqA5Y7FKTKTfMXgejO_OSyiBOk9jVg87nKVlTa-f-VqThIiX0nkOQ6BbPSndCki710zUlmw6eVlg143JLNfXLziB2tu&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Marianela Ondricka&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(817) 815-3230&quot;,
+                &quot;email&quot;: &quot;genesis.stiedemann@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;999 Jalisa Wall&quot;,
+            &quot;street2&quot;: &quot;Apt. 637&quot;,
+            &quot;city&quot;: &quot;Danielview&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;19917&quot;,
+            &quot;country&quot;: &quot;Belarus&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;90510 Carl Villages&quot;,
+            &quot;street2&quot;: &quot;Apt. 596&quot;,
+            &quot;city&quot;: &quot;Lake Lettiebury&quot;,
+            &quot;state&quot;: &quot;North Carolina&quot;,
+            &quot;postalCode&quot;: &quot;73857&quot;,
+            &quot;country&quot;: &quot;Saint Helena&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        3
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        3
+    ]
+}&#39;
+</div>

@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;tiffani.labadie@yahoo.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZTdjNDFmODQtNGJmZC00MDAwLTg2NGItZjMxMzJkN2UyYzk5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYjRlYjgyMy1iYjZiLTRhYTAtODgyNS1jNmQ5NjkyOGRmMjEiLCJzdWIiOiJjbGVtZW50LnNlbmdlckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDE0NDU5OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMGI0ZWI4MjMtYmI2Yi00YWEwLTg4MjUtYzZkOTY5MjhkZjIxIiwiZXhwIjoxNzcwMTQ1NDk4LCJpYXQiOjE3NzAxNDQ1OTgsInVzZXJJZCI6IjViOTQyMzk4LTg1NzktNDdlNy1iODJhLWE2OGJhYmY3NTI5MCIsImp0aSI6Ijg5ZGMwN2M3LTFmZmQtNGQ5Yi05MTlkLTJhYzQ0MjdkZjE4OCJ9.JjJFBYqvddf5DXCWLoHpKJhTESJGkSFaVrsFCakrLOqvxoY4qIHbsmvywyclpCv44JElRDYTl-OGwciE5puUyWu_roGwifFrao1-rKiuHIZgyCyoVqOcvKAzJs1PIPzl3UWGDs9scZXDUU6zi-GSm34f8g3sWiPsiCANQnleSIsIrZIJW-GCDrGfBhSLSkfYhVzISVR62hc3rACj9oDHsQV1eFGkJ_Ii5h0Aa4dLl3y4SuGOnrvxww7cc-4ADhYROjZ-As49PJeaOICEG0v9cqAjgZmR20tKz1M5CFJ-7fLDL6D2i4NncwxvHNa1-r4cIQJjp0WHvBA8Yyhkyyp_rQ</div>
+        <div>refresh_token: kzY9XfBrBgoXRJN0fPRlgWi2NQjwzV_KtzsbmLqA5Y7FKTKTfMXgejO_OSyiBOk9jVg87nKVlTa-f-VqThIiX0nkOQ6BbPSndCki710zUlmw6eVlg143JLNfXLziB2tu</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZTdjNDFmODQtNGJmZC00MDAwLTg2NGItZjMxMzJkN2UyYzk5IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwYjRlYjgyMy1iYjZiLTRhYTAtODgyNS1jNmQ5NjkyOGRmMjEiLCJzdWIiOiJjbGVtZW50LnNlbmdlckBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDE0NDU5OCwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvMGI0ZWI4MjMtYmI2Yi00YWEwLTg4MjUtYzZkOTY5MjhkZjIxIiwiZXhwIjoxNzcwMTQ1NDk4LCJpYXQiOjE3NzAxNDQ1OTgsInVzZXJJZCI6IjViOTQyMzk4LTg1NzktNDdlNy1iODJhLWE2OGJhYmY3NTI5MCIsImp0aSI6Ijg5ZGMwN2M3LTFmZmQtNGQ5Yi05MTlkLTJhYzQ0MjdkZjE4OCJ9.JjJFBYqvddf5DXCWLoHpKJhTESJGkSFaVrsFCakrLOqvxoY4qIHbsmvywyclpCv44JElRDYTl-OGwciE5puUyWu_roGwifFrao1-rKiuHIZgyCyoVqOcvKAzJs1PIPzl3UWGDs9scZXDUU6zi-GSm34f8g3sWiPsiCANQnleSIsIrZIJW-GCDrGfBhSLSkfYhVzISVR62hc3rACj9oDHsQV1eFGkJ_Ii5h0Aa4dLl3y4SuGOnrvxww7cc-4ADhYROjZ-As49PJeaOICEG0v9cqAjgZmR20tKz1M5CFJ-7fLDL6D2i4NncwxvHNa1-r4cIQJjp0WHvBA8Yyhkyyp_rQ&#39; -b &#39;refresh_token=kzY9XfBrBgoXRJN0fPRlgWi2NQjwzV_KtzsbmLqA5Y7FKTKTfMXgejO_OSyiBOk9jVg87nKVlTa-f-VqThIiX0nkOQ6BbPSndCki710zUlmw6eVlg143JLNfXLziB2tu&#39; -d &#39;{
+    &quot;email&quot;: &quot;tiffani.labadie@yahoo.com&quot;
+}&#39;
+</div>
