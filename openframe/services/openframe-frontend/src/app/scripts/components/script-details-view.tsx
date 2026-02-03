@@ -1,10 +1,11 @@
 'use client'
 
-import { Button, CardLoader, DetailPageContainer, InfoCard, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
-import { Edit2, Play } from 'lucide-react'
+import { Button, CardLoader, DetailPageContainer, InfoCard, LoadError, MoreActionsMenu, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
+import { Calendar, Edit2, Play } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useRef } from 'react'
 import { useScriptDetails } from '../hooks/use-script-details'
+import { ScheduledRunsSection } from './scheduled-runs-section'
 import { ScriptInfoSection } from './script-info-section'
 
 interface ScriptDetailsViewProps {
@@ -35,6 +36,12 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     }
   }
 
+  const handleScheduleScript = () => {
+    if (scriptDetails?.id) {
+      router.push(`/scripts/details/${scriptDetails.id}/schedule`)
+    }
+  }
+
   if (isLoading) {
     return <CardLoader items={4} />
   }
@@ -49,37 +56,27 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
 
   const headerActions = (
     <>
+      <MoreActionsMenu
+        items={[{
+          label: 'Edit Script',
+          icon: <Edit2 size={20} />,
+          onClick: handleEditScript,
+        },
+        {
+          label: 'Schedule Script',
+          icon: <Calendar size={20} />,
+          onClick: handleScheduleScript,
+        }]}
+      />
       <Button
-        onClick={handleEditScript}
-        variant="outline"
-        leftIcon={<Edit2 size={20} />}
-      >
-        Edit Script
-      </Button>
-      <Button
-        onClick={handleRunScript}
         variant="primary"
+        onClick={handleRunScript}
         leftIcon={<Play size={20} />}
       >
         Run Script
       </Button>
     </>
   )
-
-  const actions = [
-    {
-      label: 'Edit Script',
-      icon: <Edit2 size={20} />,
-      onClick: handleEditScript,
-      variant: 'outline' as const,
-    },
-    {
-      label: 'Run Script',
-      icon: <Play size={20} />,
-      onClick: handleRunScript,
-      variant: 'primary' as const,
-    }
-  ]
 
   return (
     <DetailPageContainer
@@ -88,7 +85,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         label: 'Back to Scripts',
         onClick: handleBack
       }}
-      actions={actions}
+      headerActions={headerActions}
       actionsVariant="primary-buttons"
     >
 
@@ -159,6 +156,9 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
             </div>
           </div>
         )}
+
+        {/* Scheduled Runs Section */}
+        <ScheduledRunsSection scriptId={scriptId} />
       </div>
     </DetailPageContainer>
   )

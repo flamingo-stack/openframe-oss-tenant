@@ -3,7 +3,7 @@
  * Extends the base API client with Tactical-specific functionality
  */
 
-import { apiClient, type ApiResponse, type ApiRequestOptions } from './api-client'
+import { apiClient, type ApiRequestOptions, type ApiResponse } from './api-client'
 import { runtimeEnv } from './runtime-config'
 
 class TacticalApiClient {
@@ -229,6 +229,58 @@ class TacticalApiClient {
     return this.get(path)
   }
 
+  async getScheduledTasksByScript(scriptId: string): Promise<ApiResponse<any[]>> {
+    return this.get(`/tasks/?script=${scriptId}`)
+  }
+
+  async getScheduledTask(taskId: string): Promise<ApiResponse<any>> {
+    return this.get(`/tasks/${taskId}/`)
+  }
+
+  async deleteScheduledTask(taskId: string): Promise<ApiResponse<any>> {
+    return this.delete(`/tasks/${taskId}/`)
+  }
+
+  async createScheduledTask(agentId: string, taskData: {
+    actions: Array<{
+      type: 'script'
+      name: string
+      script: number
+      timeout: number
+      script_args: string[]
+      env_vars: string[]
+      run_as_user: boolean
+    }>
+    name: string
+    task_type: 'daily' | 'weekly' | 'monthly' | 'runonce'
+    run_time_date: string
+    expire_date?: string | null
+    daily_interval?: number
+    weekly_interval?: number
+    run_time_bit_weekdays?: number | null
+    monthly_days_of_month?: number[] | null
+    monthly_months_of_year?: number[] | null
+    monthly_weeks_of_month?: number[] | null
+    random_task_delay?: string | null
+    task_repetition_interval?: string | null
+    task_repetition_duration?: string | null
+    stop_task_at_duration_end?: boolean
+    task_instance_policy?: number
+    run_asap_after_missed?: boolean
+    remove_if_not_scheduled?: boolean
+    continue_on_error?: boolean
+    alert_severity?: 'info' | 'warning' | 'error'
+    collector_all_output?: boolean
+    custom_field?: any
+    assigned_check?: any
+    task_supported_platforms?: string[]
+  }): Promise<ApiResponse<any>> {
+    return this.post('/tasks/', {
+      ...taskData,
+      agent: agentId,
+    })
+  }
+
   getBaseUrl(): string {
     return this.baseUrl
   }
@@ -237,4 +289,5 @@ class TacticalApiClient {
 const tacticalApiClient = new TacticalApiClient()
 
 export { tacticalApiClient, TacticalApiClient }
-export type { ApiResponse, ApiRequestOptions }
+export type { ApiRequestOptions, ApiResponse }
+
