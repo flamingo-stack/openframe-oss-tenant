@@ -1,167 +1,266 @@
 # Prerequisites
 
-Before setting up OpenFrame, ensure your system meets the following requirements:
+Before setting up OpenFrame, ensure your environment meets the following requirements. This guide covers system requirements, software dependencies, and access requirements.
 
 ## System Requirements
 
-### Minimum Hardware
-- **CPU**: 4 cores (2.4 GHz or higher)
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **Storage**: 50 GB available disk space
-- **Network**: Stable internet connection for downloading dependencies
+### Minimum Hardware Requirements
 
-### Recommended Hardware (Production)
-- **CPU**: 8+ cores (3.0 GHz or higher)
-- **RAM**: 32 GB or more
-- **Storage**: 200 GB+ SSD storage
-- **Network**: High-bandwidth connection (1 Gbps+)
+| Component | Requirement | Recommended |
+|-----------|-------------|-------------|
+| **CPU** | 4 cores | 8+ cores |
+| **RAM** | 8 GB | 16+ GB |
+| **Storage** | 50 GB available | 100+ GB SSD |
+| **Network** | Stable internet connection | Dedicated bandwidth for MSP operations |
 
-## Development Environment
+### Operating System Support
+
+OpenFrame supports the following operating systems:
+
+- **Linux**: Ubuntu 20.04+, CentOS 8+, RHEL 8+, Debian 11+
+- **macOS**: 10.15+ (Catalina and later)
+- **Windows**: Windows 10/11, Windows Server 2019/2022
+
+## Software Dependencies
 
 ### Required Software
 
-#### Java Development
-- **OpenJDK 21.0.1+** - Required for Spring Boot services
-- **Maven 3.9.6+** - Build and dependency management
-- **IDE**: IntelliJ IDEA, Eclipse, or VSCode with Java extensions
+| Software | Version | Purpose | Installation Check |
+|----------|---------|---------|-------------------|
+| **Java** | 21+ | Backend services runtime | `java --version` |
+| **Maven** | 3.8+ | Build tool for Java services | `mvn --version` |
+| **Node.js** | 18+ | Frontend build and development | `node --version` |
+| **Docker** | 20.10+ | Container runtime | `docker --version` |
+| **Docker Compose** | 2.0+ | Multi-container orchestration | `docker compose version` |
 
-#### Frontend Development  
-- **Node.js 18+** with npm - Required for Vue.js frontend
-- **Modern Browser** - Chrome, Firefox, Safari, or Edge (latest versions)
+### Database Requirements
 
-#### Rust Development (for client agent)
-- **Rust 1.70+** with Cargo - Cross-platform agent development
-- **Platform-specific tools**:
-  - Windows: Visual Studio Build Tools or Visual Studio
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC and essential build tools
+OpenFrame requires the following databases:
 
-#### Containerization
-- **Docker 24.0+** - Container runtime
-- **Docker Compose 2.23+** - Multi-container orchestration
+| Database | Version | Purpose | Required |
+|----------|---------|---------|----------|
+| **MongoDB** | 7.x | Primary data store | ✅ Required |
+| **Apache Kafka** | 3.6+ | Event streaming | ✅ Required |
+| **Redis** | 6.0+ | Caching layer | ✅ Required |
+| **Apache Pinot** | 1.2+ | Analytics engine | 🔄 Optional (for analytics) |
+| **Cassandra** | 4.x | Event storage | 🔄 Optional (for event history) |
 
-#### Version Control
-- **Git 2.42+** - Source code management
+### Development Tools (Optional)
 
-### Optional Tools
+For development and debugging:
 
-#### Production Deployment
-- **Kubernetes 1.28+** - Container orchestration (for production)
-- **kubectl** - Kubernetes command-line tool
-- **Helm 3.0+** - Kubernetes package manager
+- **Git**: Version control and source code management
+- **IDE**: IntelliJ IDEA, VS Code, or Eclipse for Java development
+- **Kubernetes CLI** (`kubectl`): For production deployments
+- **Helm**: Kubernetes package manager (for K8s deployments)
 
-#### Development Tools
-- **Postman** or **Insomnia** - API testing
-- **MongoDB Compass** - Database GUI (optional)
-- **Redis CLI** - Cache inspection (optional)
+## Environment Variables
 
-## Authentication Requirements
+Configure these essential environment variables:
 
-### GitHub Access
-You'll need a **GitHub Personal Access Token (Classic)** with the following permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to GitHub packages
-- `write:packages` - Write access to GitHub packages
-
-#### Creating a GitHub Token
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions listed above
-4. Set an appropriate expiration date
-5. Copy the generated token securely
-
-## Network Configuration
-
-### Required Ports
-Ensure the following ports are available:
-
-#### Development Environment
-- `8080` - Main application UI
-- `8888` - Configuration server
-- `5432` - PostgreSQL (if using)
-- `27017` - MongoDB
-- `6379` - Redis
-- `9092` - Kafka
-- `8086` - InfluxDB (if using)
-
-#### Production Environment
-- `80/443` - HTTP/HTTPS traffic
-- `6443` - Kubernetes API server
-- Additional ports based on your specific configuration
-
-### Firewall Considerations
-- Allow outbound connections to GitHub for package downloads
-- Allow inbound connections on the specified ports
-- Consider corporate firewall/proxy settings
-
-## Platform-Specific Notes
-
-### Windows
-- Enable WSL2 for better Docker performance
-- Consider using Git Bash or PowerShell Core
-- Ensure Windows Defender exclusions for development directories
-
-### macOS
-- Install Homebrew for easier package management
-- Ensure Xcode Command Line Tools are installed
-- Consider using Docker Desktop for Mac
-
-### Linux
-- Ensure your user is in the `docker` group
-- Install development packages: `build-essential`, `curl`, `git`
-- Consider using your distribution's package manager for tool installation
-
-## Verification Steps
-
-After installing the prerequisites, verify your setup:
+### Core Configuration
 
 ```bash
-# Check Java version
-java -version
+# Database connections
+export SPRING_DATA_MONGODB_URI="mongodb://localhost:27017/openframe"
+export SPRING_REDIS_URL="redis://localhost:6379"
+export SPRING_KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 
-# Check Maven version
-mvn -version
+# Security settings
+export JWT_SECRET="your-secure-jwt-secret-key-here"
+export ENCRYPTION_KEY="your-aes-256-encryption-key"
 
-# Check Node.js and npm versions
-node --version
-npm --version
+# Service ports (default values)
+export API_SERVICE_PORT="8080"
+export GATEWAY_SERVICE_PORT="8081"
+export AUTH_SERVICE_PORT="8082"
+export CLIENT_SERVICE_PORT="8083"
+export MANAGEMENT_SERVICE_PORT="8084"
+export STREAM_SERVICE_PORT="8085"
+export EXTERNAL_API_SERVICE_PORT="8086"
+export CONFIG_SERVICE_PORT="8087"
+```
 
-# Check Rust version (if applicable)
-rustc --version
-cargo --version
+### Optional Configuration
 
-# Check Docker version
+```bash
+# Analytics (if using Pinot/Cassandra)
+export PINOT_BROKER_URL="http://localhost:8000"
+export CASSANDRA_CONTACT_POINTS="localhost"
+export CASSANDRA_PORT="9042"
+
+# NATS messaging (for real-time features)
+export NATS_SERVER_URL="nats://localhost:4222"
+
+# External integrations
+export HUBSPOT_API_KEY="your-hubspot-api-key"
+export SMTP_HOST="your-smtp-server"
+export SMTP_PORT="587"
+```
+
+## Access Requirements
+
+### Network Access
+
+Ensure the following ports are accessible:
+
+| Service | Port | Protocol | Purpose |
+|---------|------|----------|---------|
+| MongoDB | 27017 | TCP | Database access |
+| Redis | 6379 | TCP | Cache access |
+| Kafka | 9092 | TCP | Message streaming |
+| NATS | 4222 | TCP | Real-time messaging |
+| Pinot Broker | 8000 | HTTP | Analytics queries |
+| Cassandra | 9042 | TCP | Event storage |
+
+### External Services
+
+For full functionality, configure access to:
+
+- **Email Service**: SMTP server for notifications and user invitations
+- **OAuth Providers**: Google, Microsoft, or other OIDC providers for SSO
+- **Monitoring**: Prometheus/Grafana endpoints (optional)
+
+## Account Requirements
+
+### Development Accounts
+
+- **GitHub Account**: For accessing source code and CLI tools
+- **Docker Hub**: For pulling official container images
+
+### Production Accounts (Optional)
+
+- **Cloud Provider**: AWS, GCP, or Azure for cloud deployments
+- **Domain Name**: For SSL certificates and proper OAuth redirects
+- **SSL Certificate**: Let's Encrypt or commercial certificate
+- **Email Service**: SendGrid, Mailgun, or similar for production emails
+
+## Verification Commands
+
+Run these commands to verify your environment is ready:
+
+### Check Java Installation
+
+```bash
+java --version
+# Should output: openjdk 21.x.x or similar
+```
+
+### Check Maven Setup
+
+```bash
+mvn --version
+# Should show Maven 3.8+ and Java 21+
+```
+
+### Check Node.js and npm
+
+```bash
+node --version && npm --version
+# Should show Node 18+ and compatible npm version
+```
+
+### Check Docker Environment
+
+```bash
 docker --version
-docker-compose --version
+docker compose version
+# Verify Docker daemon is running
+docker run hello-world
+```
 
-# Check Git version
-git --version
+### Test Database Connectivity
+
+```bash
+# MongoDB (if running locally)
+mongosh --eval "db.adminCommand('hello')"
+
+# Redis (if running locally)
+redis-cli ping
+# Should return: PONG
+```
+
+## Quick Setup Script
+
+For convenience, use this script to verify prerequisites:
+
+```bash
+#!/bin/bash
+echo "🔍 Checking OpenFrame Prerequisites..."
+
+# Check Java
+if command -v java &> /dev/null; then
+    echo "✅ Java found: $(java --version | head -n1)"
+else
+    echo "❌ Java not found. Please install Java 21+"
+fi
+
+# Check Maven
+if command -v mvn &> /dev/null; then
+    echo "✅ Maven found: $(mvn --version | head -n1)"
+else
+    echo "❌ Maven not found. Please install Maven 3.8+"
+fi
+
+# Check Node.js
+if command -v node &> /dev/null; then
+    echo "✅ Node.js found: $(node --version)"
+else
+    echo "❌ Node.js not found. Please install Node.js 18+"
+fi
+
+# Check Docker
+if command -v docker &> /dev/null; then
+    echo "✅ Docker found: $(docker --version)"
+    if docker info &> /dev/null; then
+        echo "✅ Docker daemon is running"
+    else
+        echo "⚠️ Docker daemon is not running"
+    fi
+else
+    echo "❌ Docker not found. Please install Docker 20.10+"
+fi
+
+echo "🎯 Prerequisites check complete!"
+```
+
+## Common Issues
+
+### Java Version Problems
+
+```bash
+# If multiple Java versions are installed
+export JAVA_HOME="/path/to/java-21"
+export PATH="$JAVA_HOME/bin:$PATH"
+```
+
+### Docker Permission Issues (Linux)
+
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+# Logout and login again
+```
+
+### Port Conflicts
+
+```bash
+# Check if ports are in use
+netstat -tulpn | grep :8080
+# or use lsof on macOS/Linux
+lsof -i :8080
 ```
 
 ## Next Steps
 
-Once all prerequisites are met, proceed to:
-1. [Quick Start Guide](quick-start.md) for a rapid setup
-2. [Introduction](introduction.md) for a detailed overview
-3. [Development Setup](../development/setup/environment.md) for development environment configuration
+Once your environment meets all prerequisites:
 
-## Troubleshooting
+1. **[Quick Start Guide](quick-start.md)**: Get OpenFrame running in 5 minutes
+2. **[Development Setup](../development/setup/environment.md)**: Configure your development environment
+3. **[First Steps](first-steps.md)**: Explore OpenFrame features
 
-### Common Issues
+> **Note**: Missing optional dependencies (Pinot, Cassandra) will limit analytics features but won't prevent core functionality from working.
 
-#### Java Installation Issues
-- Ensure JAVA_HOME is properly set
-- Verify PATH includes Java binaries
-- Use `alternatives` (Linux) or `java_home` (macOS) for version management
+---
 
-#### Docker Issues
-- Ensure Docker daemon is running
-- Check Docker Desktop settings on Windows/macOS
-- Verify user permissions on Linux
-
-#### Network Issues
-- Check corporate proxy settings
-- Verify firewall configuration
-- Test connectivity to GitHub and other required services
-
-If you encounter issues not covered here, see our [Troubleshooting Guide](../operations/troubleshooting/common-issues.md).
+Need help with prerequisites? Join our [OpenMSP Slack community](https://www.openmsp.ai/) for assistance!
