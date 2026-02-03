@@ -1,367 +1,740 @@
-# Testing Guidelines
+# Testing Overview
 
-This document outlines testing practices and procedures for OpenFrame's Java Spring Boot backend and Vue.js frontend.
+OpenFrame maintains high code quality through comprehensive testing at multiple levels. This guide covers our testing strategy, tools, frameworks, and best practices for writing and running tests across the platform.
 
-## Testing Strategy
+## Testing Philosophy
+
+Our testing approach follows the **Testing Pyramid** principle:
 
 ```mermaid
-graph TD
-    A[Testing Pyramid] -->|Unit Tests| B[Component Tests]
-    A -->|Integration Tests| C[Service Tests]
-    A -->|E2E Tests| D[System Tests]
-    B -->|Fast| E[Quick Feedback]
-    C -->|Reliable| F[Service Integration]
-    D -->|Confident| G[System Validation]
+graph TB
+    subgraph "Testing Pyramid"
+        E2E[End-to-End Tests<br/>~5%<br/>Cypress, REST Assured]
+        Integration[Integration Tests<br/>~25%<br/>Spring Boot Test, TestContainers]
+        Unit[Unit Tests<br/>~70%<br/>JUnit 5, Vitest, Jest]
+    end
+    
+    Unit --> Integration
+    Integration --> E2E
 ```
 
-## Test Types
+### Testing Principles
 
-### 1. Unit Tests (Backend)
+1. **Fast Feedback**: Unit tests provide immediate feedback during development
+2. **Comprehensive Coverage**: Aim for >80% code coverage across all modules
+3. **Realistic Testing**: Integration tests use real dependencies when possible
+4. **Automated Execution**: All tests run in CI/CD pipeline
+5. **Test-Driven Development**: Write tests before implementation when appropriate
 
-```java
-// src/test/java/com/openframe/service/DeviceServiceTest.java
-@SpringBootTest
-class DeviceServiceTest {
-    
-    @Autowired
-    private DeviceService deviceService;
-    
-    @MockBean
-    private DeviceRepository deviceRepository;
-    
-    @Test
-    void shouldGetDeviceById() {
-        // Arrange
-        String deviceId = "test-device-1";
-        Device expectedDevice = new Device(deviceId, "Test Device", "ACTIVE");
-        when(deviceRepository.findByDeviceId(deviceId))
-            .thenReturn(Optional.of(expectedDevice));
-        
-        // Act
-        Device device = deviceService.getDevice(deviceId);
-        
-        // Assert
-        assertThat(device).isNotNull();
-        assertThat(device.getId()).isEqualTo(deviceId);
-        assertThat(device.getStatus()).isEqualTo("ACTIVE");
-    }
-}
-```
+## Test Structure and Organization
 
-### 2. Integration Tests (Backend)
-
-```java
-// src/test/java/com/openframe/controller/DeviceControllerIntegrationTest.java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class DeviceControllerIntegrationTest {
-    
-    @Autowired
-    private TestRestTemplate restTemplate;
-    
-    @Test
-    void shouldCreateDevice() {
-        // Arrange
-        DeviceRequest request = new DeviceRequest("Test Device", "workstation");
-        
-        // Act
-        ResponseEntity<Device> response = restTemplate.postForEntity(
-            "/api/devices",
-            request,
-            Device.class
-        );
-        
-        // Assert
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getName()).isEqualTo("Test Device");
-    }
-}
-```
-
-### 3. Unit Tests (Frontend)
-
-```typescript
-// src/components/DeviceList.spec.ts
-import { mount } from '@vue/test-utils'
-import DeviceList from './DeviceList.vue'
-
-describe('DeviceList', () => {
-  it('should display devices', () => {
-    // Arrange
-    const devices = [
-      { id: '1', name: 'Device 1', status: 'active' },
-      { id: '2', name: 'Device 2', status: 'inactive' }
-    ]
-    
-    // Act
-    const wrapper = mount(DeviceList, {
-      props: { devices }
-    })
-    
-    // Assert
-    expect(wrapper.findAll('.device-item')).toHaveLength(2)
-    expect(wrapper.text()).toContain('Device 1')
-    expect(wrapper.text()).toContain('Device 2')
-  })
-})
-```
-
-### 4. End-to-End Tests (Frontend)
-
-```typescript
-// tests/e2e/device-management.spec.ts
-import { test, expect } from '@playwright/test'
-
-test('device management workflow', async ({ page }) => {
-  // Arrange
-  await page.goto('http://localhost:3000/devices')
-  
-  // Act
-  await page.click('#add-device')
-  await page.fill('#device-name', 'Test Device')
-  await page.click('#submit-device')
-  
-  // Assert
-  await expect(page.locator('#device-list')).toContainText('Test Device')
-})
-```
-
-## Test Organization
-
-### 1. Backend Structure
+### Java Backend Testing
 
 ```
 src/
-├── main/
-│   └── java/
-│       └── com/openframe/
-│           ├── controller/
-│           ├── service/
-│           └── repository/
-└── test/
-    └── java/
-        └── com/openframe/
-            ├── controller/
-            │   └── DeviceControllerTest.java
-            ├── service/
-            │   └── DeviceServiceTest.java
-            └── repository/
-                └── DeviceRepositoryTest.java
+├── main/java/com/openframe/...
+└── test/java/com/openframe/
+    ├── unit/                    # Unit tests
+    │   ├── service/            # Service layer tests
+    │   ├── controller/         # Controller tests
+    │   └── util/               # Utility class tests
+    ├── integration/            # Integration tests
+    │   ├── repository/         # Repository integration tests
+    │   ├── api/                # API integration tests
+    │   └── messaging/          # Kafka integration tests
+    └── resources/
+        ├── application-test.yml # Test configuration
+        └── test-data/          # Test fixtures
 ```
 
-### 2. Frontend Structure
+### Frontend Testing
 
 ```
 src/
 ├── components/
-│   └── DeviceList.vue
-├── views/
-│   └── DeviceManagement.vue
-└── tests/
-    ├── unit/
-    │   └── components/
-    │       └── DeviceList.spec.ts
-    └── e2e/
-        └── device-management.spec.ts
+│   ├── Component.vue
+│   └── Component.test.ts       # Component unit tests
+├── services/
+│   ├── ApiService.ts
+│   └── ApiService.test.ts      # Service unit tests
+├── stores/
+│   ├── userStore.ts
+│   └── userStore.test.ts       # Store unit tests
+└── __tests__/
+    ├── integration/            # Integration tests
+    └── e2e/                    # End-to-end tests
 ```
 
-## Testing Tools
+## Testing Technologies and Frameworks
 
-### 1. Backend Testing
+### Backend Testing Stack
 
-```xml
-<!-- pom.xml -->
-<dependencies>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
+| Framework | Version | Purpose | Usage |
+|-----------|---------|---------|-------|
+| **JUnit 5** | 5.10+ | Unit testing framework | Primary test runner |
+| **Mockito** | 5.x | Mocking framework | Service/dependency mocking |
+| **Spring Boot Test** | 3.3.0 | Integration testing | Application context testing |
+| **TestContainers** | 1.19+ | Container testing | Database integration tests |
+| **REST Assured** | 5.x | API testing | REST endpoint testing |
+| **WireMock** | 3.x | HTTP mocking | External service mocking |
+
+### Frontend Testing Stack
+
+| Framework | Version | Purpose | Usage |
+|-----------|---------|---------|-------|
+| **Vitest** | 1.x | Unit testing (Vue.js) | Component and service testing |
+| **Jest** | 29.x | Unit testing (React) | Chat UI testing |
+| **Vue Test Utils** | 2.x | Vue component testing | Component rendering and interaction |
+| **React Testing Library** | 14.x | React component testing | Chat UI component testing |
+| **Cypress** | 13.x | End-to-end testing | Full application testing |
+
+## Running Tests
+
+### Backend Tests
+
+#### Run All Tests
+```bash
+# Run all tests with coverage
+mvn clean test
+
+# Run tests without coverage (faster)
+mvn test -DskipCoverage
+
+# Run tests for specific module
+mvn test -pl openframe-api-service-core
 ```
 
-### 2. Frontend Testing
+#### Run Specific Test Categories
+```bash
+# Unit tests only
+mvn test -Dgroups=unit
 
-```json
-// package.json
-{
-  "devDependencies": {
-    "@vue/test-utils": "^2.4.0",
-    "@playwright/test": "^1.40.0",
-    "vitest": "^1.0.0"
-  }
+# Integration tests only  
+mvn test -Dgroups=integration
+
+# Fast tests (exclude slow integration tests)
+mvn test -Dgroups="unit,fast-integration"
+
+# Specific test class
+mvn test -Dtest=DeviceServiceTest
+
+# Specific test method
+mvn test -Dtest=DeviceServiceTest#shouldCreateDevice
+```
+
+#### Parallel Test Execution
+```bash
+# Run tests in parallel (faster execution)
+mvn test -T 4 -Dparallel=classes -DthreadCount=4
+```
+
+### Frontend Tests
+
+#### Vue.js Frontend Tests
+```bash
+cd openframe/services/openframe-frontend
+
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run specific test file
+npm test -- DeviceCard.test.ts
+
+# Run tests matching pattern
+npm test -- --grep "device management"
+```
+
+#### React Chat UI Tests
+```bash
+cd clients/openframe-chat
+
+# Run Jest tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### End-to-End Tests
+```bash
+# Run E2E tests (requires running application)
+cd openframe-e2e-tests
+
+# Run all E2E tests
+mvn test -Dtest=**/*E2E*
+
+# Run specific test suite
+mvn test -Dtest=DevicesE2ETest
+
+# Run with different environment
+mvn test -Dtest.environment=staging
+```
+
+## Writing Effective Tests
+
+### Unit Tests
+
+#### Java Service Unit Test Example
+```java
+@ExtendWith(MockitoExtension.class)
+class DeviceServiceTest {
+
+    @Mock
+    private DeviceRepository deviceRepository;
+    
+    @Mock
+    private EventPublisher eventPublisher;
+    
+    @InjectMocks
+    private DeviceService deviceService;
+
+    @Test
+    @DisplayName("Should create device successfully")
+    void shouldCreateDevice() {
+        // Given
+        String organizationId = "org-123";
+        Device device = Device.builder()
+            .hostname("test-device")
+            .platform(Platform.LINUX)
+            .organizationId(organizationId)
+            .build();
+            
+        when(deviceRepository.save(any(Device.class)))
+            .thenReturn(device);
+
+        // When
+        Device result = deviceService.createDevice(organizationId, device);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getHostname()).isEqualTo("test-device");
+        
+        verify(deviceRepository).save(device);
+        verify(eventPublisher).publishDeviceCreated(device);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when device already exists")
+    void shouldThrowExceptionWhenDeviceExists() {
+        // Given
+        String organizationId = "org-123";
+        Device device = Device.builder().hostname("existing-device").build();
+        
+        when(deviceRepository.existsByHostnameAndOrganizationId(
+            "existing-device", organizationId))
+            .thenReturn(true);
+
+        // When & Then
+        assertThatThrownBy(() -> deviceService.createDevice(organizationId, device))
+            .isInstanceOf(DuplicateDeviceException.class)
+            .hasMessage("Device with hostname 'existing-device' already exists");
+    }
 }
 ```
 
-## Test Coverage
+#### Vue.js Component Unit Test Example
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest'
+import { mount } from '@vue/test-utils'
+import DeviceCard from '@/components/DeviceCard.vue'
+import type { Device } from '@/types/device'
 
-### 1. Backend Coverage
+describe('DeviceCard', () => {
+  const mockDevice: Device = {
+    id: 'device-123',
+    hostname: 'test-device',
+    platform: 'linux',
+    status: 'online',
+    lastSeen: new Date('2024-01-15T10:00:00Z'),
+    organizationId: 'org-123'
+  }
+
+  it('should render device information correctly', () => {
+    // Given
+    const wrapper = mount(DeviceCard, {
+      props: {
+        device: mockDevice
+      }
+    })
+
+    // Then
+    expect(wrapper.find('[data-testid="device-hostname"]').text())
+      .toBe('test-device')
+    expect(wrapper.find('[data-testid="device-status"]').text())
+      .toBe('online')
+  })
+
+  it('should emit device-selected event when clicked', async () => {
+    // Given
+    const wrapper = mount(DeviceCard, {
+      props: {
+        device: mockDevice
+      }
+    })
+
+    // When
+    await wrapper.find('[data-testid="device-card"]').trigger('click')
+
+    // Then
+    expect(wrapper.emitted('device-selected')).toHaveLength(1)
+    expect(wrapper.emitted('device-selected')![0]).toEqual([mockDevice])
+  })
+})
+```
+
+### Integration Tests
+
+#### Spring Boot Integration Test Example
+```java
+@SpringBootTest
+@TestPropertySource(properties = {
+    "spring.datasource.url=jdbc:h2:mem:testdb",
+    "spring.jpa.hibernate.ddl-auto=create-drop"
+})
+class DeviceRepositoryIntegrationTest {
+
+    @Autowired
+    private TestEntityManager entityManager;
+    
+    @Autowired
+    private DeviceRepository deviceRepository;
+
+    @Test
+    void shouldFindDevicesByOrganizationId() {
+        // Given
+        String organizationId = "org-123";
+        Device device1 = createDevice("device1", organizationId);
+        Device device2 = createDevice("device2", organizationId);
+        Device otherOrgDevice = createDevice("device3", "org-456");
+        
+        entityManager.persistAndFlush(device1);
+        entityManager.persistAndFlush(device2);
+        entityManager.persistAndFlush(otherOrgDevice);
+
+        // When
+        List<Device> result = deviceRepository
+            .findByOrganizationId(organizationId);
+
+        // Then
+        assertThat(result).hasSize(2);
+        assertThat(result)
+            .extracting(Device::getHostname)
+            .containsExactlyInAnyOrder("device1", "device2");
+    }
+
+    private Device createDevice(String hostname, String organizationId) {
+        return Device.builder()
+            .hostname(hostname)
+            .organizationId(organizationId)
+            .platform(Platform.LINUX)
+            .status(DeviceStatus.ONLINE)
+            .build();
+    }
+}
+```
+
+#### API Integration Test Example
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(locations = "classpath:application-integration-test.properties")
+class DeviceControllerIntegrationTest {
+
+    @Autowired
+    private TestRestTemplate restTemplate;
+    
+    @Autowired
+    private DeviceRepository deviceRepository;
+    
+    @Test
+    void shouldReturnDevicesForOrganization() {
+        // Given
+        String organizationId = "org-123";
+        Device device = createAndSaveDevice("test-device", organizationId);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(generateTestJwtToken(organizationId));
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        // When
+        ResponseEntity<DeviceListResponse> response = restTemplate.exchange(
+            "/api/v1/devices",
+            HttpMethod.GET,
+            entity,
+            DeviceListResponse.class
+        );
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getDevices()).hasSize(1);
+        assertThat(response.getBody().getDevices().get(0).getHostname())
+            .isEqualTo("test-device");
+    }
+}
+```
+
+### TestContainers Integration
+
+For realistic database testing:
+
+```java
+@Testcontainers
+@SpringBootTest
+class DeviceServiceIntegrationTest {
+
+    @Container
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0")
+            .withExposedPorts(27017);
+
+    @Container  
+    static GenericContainer<?> redisContainer = new GenericContainer<>("redis:7.0")
+            .withExposedPorts(6379);
+
+    @DynamicPropertySource
+    static void setProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
+        registry.add("spring.redis.url", 
+            () -> "redis://localhost:" + redisContainer.getMappedPort(6379));
+    }
+
+    @Test
+    void shouldPersistDeviceToMongoDB() {
+        // Test with real MongoDB instance
+        // ... test implementation
+    }
+}
+```
+
+## Test Configuration and Data
+
+### Test Profiles
+
+#### `application-test.yml`
+```yaml
+spring:
+  profiles: test
+  
+  # Use in-memory databases for unit tests
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test_db
+      
+  # Disable security for testing
+  security:
+    enabled: false
+    
+  # Faster startup for tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+      
+logging:
+  level:
+    com.openframe: DEBUG
+    org.springframework.web: DEBUG
+```
+
+### Test Data Management
+
+#### Test Fixtures
+```java
+public class TestDataBuilder {
+    
+    public static Device.DeviceBuilder aDevice() {
+        return Device.builder()
+            .hostname("test-device-" + UUID.randomUUID().toString().substring(0, 8))
+            .platform(Platform.LINUX)
+            .status(DeviceStatus.ONLINE)
+            .createdAt(Instant.now())
+            .lastSeen(Instant.now());
+    }
+    
+    public static Organization.OrganizationBuilder anOrganization() {
+        return Organization.builder()
+            .name("Test Organization")
+            .domain("test-org.com")
+            .status(OrganizationStatus.ACTIVE)
+            .createdAt(Instant.now());
+    }
+}
+```
+
+#### Database Cleanup
+```java
+@TestExecutionListeners({
+    DependencyInjectionTestExecutionListener.class,
+    DirtiesContextTestExecutionListener.class,
+    TransactionalTestExecutionListener.class,
+    DbUnitTestExecutionListener.class
+})
+@DatabaseSetup("classpath:test-data/initial-data.xml")
+@DatabaseTearDown(type = DatabaseOperation.DELETE_ALL, value = "classpath:test-data/cleanup.xml")
+public class DatabaseIntegrationTest {
+    // Test methods
+}
+```
+
+## Code Coverage Requirements
+
+### Coverage Targets
+
+| Module Type | Target Coverage | Enforcement |
+|-------------|----------------|-------------|
+| **Core Services** | >85% | Build fails below 80% |
+| **Shared Libraries** | >90% | Build fails below 85% |
+| **Controllers** | >80% | Build fails below 75% |
+| **Utilities** | >95% | Build fails below 90% |
+
+### Maven Coverage Configuration
 
 ```xml
-<!-- pom.xml -->
 <plugin>
     <groupId>org.jacoco</groupId>
     <artifactId>jacoco-maven-plugin</artifactId>
-    <version>0.8.11</version>
+    <version>0.8.10</version>
     <executions>
         <execution>
             <goals>
                 <goal>prepare-agent</goal>
             </goals>
         </execution>
+        <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+                <goal>report</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>check</id>
+            <goals>
+                <goal>check</goal>
+            </goals>
+            <configuration>
+                <rules>
+                    <rule>
+                        <element>CLASS</element>
+                        <limits>
+                            <limit>
+                                <counter>LINE</counter>
+                                <value>COVEREDRATIO</value>
+                                <minimum>0.80</minimum>
+                            </limit>
+                        </limits>
+                    </rule>
+                </rules>
+            </configuration>
+        </execution>
     </executions>
 </plugin>
 ```
 
-### 2. Frontend Coverage
-
-```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config'
-
-export default defineConfig({
-  test: {
-    coverage: {
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'tests/']
-    }
-  }
-})
-```
-
 ## Performance Testing
 
-### 1. Backend Load Testing
+### Load Testing with Maven
 
-```java
-// src/test/java/com/openframe/performance/DeviceApiLoadTest.java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class DeviceApiLoadTest {
-    
-    @Autowired
-    private TestRestTemplate restTemplate;
-    
-    @Test
-    void shouldHandleConcurrentRequests() throws InterruptedException {
-        int numberOfThreads = 100;
-        CountDownLatch latch = new CountDownLatch(numberOfThreads);
-        
-        ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
-        for (int i = 0; i < numberOfThreads; i++) {
-            executor.submit(() -> {
-                try {
-                    ResponseEntity<Device> response = restTemplate.getForEntity(
-                        "/api/devices/1",
-                        Device.class
-                    );
-                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-        
-        latch.await(30, TimeUnit.SECONDS);
-        executor.shutdown();
-    }
-}
+```xml
+<plugin>
+    <groupId>com.lazerycode.jmeter</groupId>
+    <artifactId>jmeter-maven-plugin</artifactId>
+    <version>3.7.0</version>
+    <executions>
+        <execution>
+            <id>performance-test</id>
+            <goals>
+                <goal>jmeter</goal>
+            </goals>
+            <phase>integration-test</phase>
+        </execution>
+    </executions>
+</plugin>
 ```
 
-### 2. Frontend Performance Testing
+### API Performance Test Example
+```bash
+# Run performance tests
+mvn clean verify -Pperformance
 
-```typescript
-// tests/performance/device-list.spec.ts
-import { test, expect } from '@playwright/test'
-
-test('device list performance', async ({ page }) => {
-  // Measure initial load time
-  const startTime = performance.now()
-  await page.goto('http://localhost:3000/devices')
-  const loadTime = performance.now() - startTime
-  
-  // Assert performance metrics
-  expect(loadTime).toBeLessThan(2000) // Should load within 2 seconds
-  
-  // Test scrolling performance
-  await page.evaluate(() => {
-    const list = document.querySelector('.device-list')
-    list.scrollTop = list.scrollHeight
-  })
-  
-  // Verify smooth scrolling
-  await expect(page.locator('.device-list')).toBeVisible()
-})
+# With specific parameters
+mvn clean verify -Pperformance \
+  -Dthreads=50 \
+  -Dduration=300 \
+  -Dtarget.host=localhost \
+  -Dtarget.port=8080
 ```
 
-## Continuous Integration
+## Continuous Integration Testing
 
-### 1. GitHub Actions
+### GitHub Actions Test Workflow
 
 ```yaml
-# .github/workflows/test.yml
-name: Tests
+name: Test Suite
 
 on: [push, pull_request]
 
 jobs:
-  backend-test:
+  test:
     runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+          
+      redis:
+        image: redis:7.0
+        ports:
+          - 6379:6379
+    
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-    - name: Run Backend Tests
-      run: mvn test
+      - uses: actions/checkout@v4
       
-  frontend-test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - name: Install Dependencies
-      run: npm ci
-    - name: Run Frontend Tests
-      run: npm test
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          
+      - name: Run backend tests
+        run: mvn clean test
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install frontend dependencies
+        run: |
+          cd openframe/services/openframe-frontend
+          npm ci
+          
+      - name: Run frontend tests
+        run: |
+          cd openframe/services/openframe-frontend
+          npm test
+          
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./target/site/jacoco/jacoco.xml,./coverage/lcov.info
 ```
 
-## Best Practices
+## Testing Best Practices
 
-### 1. Test Design
+### 1. Test Naming Convention
+```java
+// Pattern: should[ExpectedBehavior]When[StateUnderTest]
+@Test
+void shouldReturnDeviceWhenValidIdProvided() { }
 
-- Follow AAA pattern (Arrange, Act, Assert)
-- Keep tests independent
-- Use meaningful test names
-- Test edge cases
-- Avoid test interdependence
+@Test  
+void shouldThrowExceptionWhenDeviceNotFound() { }
 
-### 2. Test Maintenance
+@Test
+void shouldUpdateDeviceStatusWhenHeartbeatReceived() { }
+```
 
-- Regular test updates
-- Remove obsolete tests
-- Update test data
-- Monitor test performance
-- Review test coverage
+### 2. Arrange-Act-Assert Pattern
+```java
+@Test
+void shouldCreateDeviceSuccessfully() {
+    // Arrange
+    String organizationId = "org-123";
+    Device device = TestDataBuilder.aDevice()
+        .organizationId(organizationId)
+        .build();
+    
+    // Act
+    Device result = deviceService.createDevice(organizationId, device);
+    
+    // Assert
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isNotNull();
+    assertThat(result.getOrganizationId()).isEqualTo(organizationId);
+}
+```
 
-### 3. Test Documentation
+### 3. Test Data Isolation
+```java
+@BeforeEach
+void setUp() {
+    // Clean test data before each test
+    deviceRepository.deleteAll();
+    organizationRepository.deleteAll();
+}
+```
 
-- Document test setup
-- Explain test scenarios
-- Document test data
-- Keep test documentation updated
-- Include examples
+### 4. Parameterized Tests
+```java
+@ParameterizedTest
+@ValueSource(strings = {"", " ", "  ", "\t", "\n"})
+void shouldValidateDeviceHostnameNotBlank(String invalidHostname) {
+    Device device = TestDataBuilder.aDevice()
+        .hostname(invalidHostname)
+        .build();
+        
+    assertThatThrownBy(() -> deviceValidator.validate(device))
+        .isInstanceOf(ValidationException.class);
+}
+```
 
-## Next Steps
+## Test Debugging
 
-- [Development Setup](setup.md) - Set up your environment
-- [Architecture](architecture.md) - Understand the codebase
-- [Contributing](contributing.md) - Learn how to contribute
-- [Code Style](code-style.md) - Follow coding standards 
+### Running Tests in Debug Mode
+
+**IntelliJ IDEA:**
+1. Right-click on test method/class
+2. Select "Debug [TestName]"
+3. Set breakpoints in test or implementation code
+
+**Command Line:**
+```bash
+# Debug Maven tests
+mvn test -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000"
+
+# Debug specific test
+mvn test -Dtest=DeviceServiceTest -Dmaven.surefire.debug
+```
+
+### Test Logging Configuration
+
+```xml
+<!-- logback-test.xml -->
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <logger name="com.openframe" level="DEBUG"/>
+    <logger name="org.springframework.web" level="DEBUG"/>
+    
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
+```
+
+---
+
+This comprehensive testing strategy ensures OpenFrame maintains high quality, reliability, and maintainability as the platform evolves. Follow these guidelines to contribute effective tests that provide confidence in the system's behavior.
