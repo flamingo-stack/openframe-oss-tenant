@@ -1,256 +1,364 @@
 # First Steps with OpenFrame
 
-Congratulations on successfully setting up OpenFrame! This guide will walk you through your first hour with the platform, helping you understand its key features and capabilities.
+Congratulations! You now have OpenFrame running. This guide walks you through the essential first steps to start using your OpenFrame instance effectively.
 
-## Initial Access
+## 1. Complete Initial Configuration
 
-### Accessing the Dashboard
+### Set Up Your Organization
 
-1. **Open your browser** and navigate to: http://localhost:8080
-2. **Login** using the default credentials (if authentication is enabled)
-3. **Explore the main dashboard** - your central hub for all operations
+After logging in for the first time, complete your organization setup:
 
-### Key Interface Elements
+1. **Navigate to Organizations** in the sidebar
+2. **Click "Create Organization"** 
+3. **Fill in details**:
+   - Organization name
+   - Contact information
+   - Business address
+   - Primary contact person
+4. **Save your organization**
 
-- **Navigation Bar**: Quick access to major sections
-- **Dashboard Widgets**: Real-time metrics and status indicators  
-- **Service Status Panel**: Monitor all integrated services
-- **Quick Actions**: Common tasks and shortcuts
+Your organization serves as the root container for all devices, users, and configurations.
 
-## Understanding the Architecture
+### Configure User Access
 
-### Core Components Overview
+Set up additional users and access controls:
 
-OpenFrame consists of several interconnected services:
+1. **Go to Settings → Company and Users**
+2. **Add team members**:
+   - Click "Invite Users"
+   - Enter email addresses
+   - Select appropriate roles
+   - Send invitations
+3. **Configure SSO** (Optional):
+   - Navigate to Settings → SSO Configuration
+   - Set up Google Workspace or Microsoft 365
+   - Test SSO integration
 
-1. **Gateway Service** (Port 8080) - Your main entry point
-2. **API Service** - GraphQL and REST endpoints
-3. **Client Service** - Agent management
-4. **Management Service** - Administrative functions
-5. **Stream Service** - Real-time data processing
-6. **Config Service** (Port 8888) - Configuration management
-7. **UI Service** - Vue.js frontend application
+## 2. Connect Your First Devices
 
-### Data Flow
-```
-User Request → Gateway → Service → Database → Response
-```
+### Deploy OpenFrame Agent
 
-## Exploring Key Features
+The OpenFrame agent is the bridge between your devices and the platform:
 
-### 1. Service Management
+1. **Download the agent installer**:
+   - Go to Devices → "Add New Device"
+   - Select your operating system
+   - Download the agent installer
 
-**View Service Status**:
-- Navigate to the Services section
-- Check health status of all components
-- Review performance metrics
+2. **Install on target devices**:
 
-**Service Controls**:
-- Start/stop individual services
-- View service logs
-- Monitor resource usage
+   **Windows:**
+   ```powershell
+   # Run as Administrator
+   ./openframe-agent-installer.exe --registration-key YOUR_KEY
+   ```
 
-### 2. API Exploration
+   **macOS:**
+   ```bash
+   sudo ./openframe-agent-installer --registration-key YOUR_KEY
+   ```
 
-**GraphQL Playground**:
-1. Visit: http://localhost:8080/graphql
-2. Explore available queries and mutations
-3. Try sample queries:
+   **Linux:**
+   ```bash
+   sudo ./openframe-agent-installer.sh --registration-key YOUR_KEY
+   ```
 
-```graphql
-query {
-  systemInfo {
-    version
-    status
-    services {
-      name
-      status
-      port
-    }
-  }
-}
-```
+3. **Verify device registration**:
+   - Devices should appear in the Devices tab within 2-3 minutes
+   - Check device status shows as "Online"
 
-**REST Endpoints**:
-- Authentication: `/oauth/token`
-- Health checks: `/actuator/health`
-- Service discovery: `/api/services`
+### Test Device Connectivity
 
-### 3. Integrated Tools
+1. **View device details**:
+   - Click on a device in the Devices list
+   - Explore the tabs: Hardware, Software, Network, Security
+   - Review compliance status and alerts
 
-OpenFrame includes several integrated tools:
+2. **Test remote access** (if MeshCentral is configured):
+   - Click "Remote Desktop" on a device
+   - Verify remote connection works
+   - Test file manager functionality
 
-**Currently Available**:
-- **MeshCentral** - Remote management platform
-- **Tactical RMM** - IT management suite  
-- **Fleet MDM** - Mobile device management
-- **Authentik** - Identity provider
+## 3. Explore Core Features
 
-**Accessing Tools**:
-1. From the main dashboard, click on "Integrated Tools"
-2. Select the tool you want to use
-3. Tools open in embedded views or new tabs
+### Dashboard Overview
 
-### 4. Agent Management
+The dashboard provides a quick overview of your environment:
 
-**Understanding Agents**:
-- Cross-platform Rust agents for system monitoring
-- Automatic registration and management
-- Real-time metrics collection
+- **Device count** and status distribution
+- **Recent log events** and their severity levels  
+- **Organization summary** and user activity
+- **Quick actions** for common tasks
 
-**Agent Operations**:
-1. View registered agents in the Client section
-2. Monitor agent health and connectivity
-3. Deploy configuration updates
-4. Review collected metrics
+### Device Management
 
-## Common First Tasks
+OpenFrame provides comprehensive device management:
 
-### 1. Configure Your Environment
+1. **Device Monitoring**:
+   - Real-time status and health metrics
+   - Hardware and software inventory
+   - Network configuration and connectivity
+   - Security compliance status
 
-**Update Configuration**:
-1. Access the Config Service at http://localhost:8888
-2. Review default settings
-3. Customize for your environment
+2. **Remote Operations**:
+   - Remote desktop access via MeshCentral
+   - File management and transfers
+   - Script execution and automation
+   - Command-line access
 
-**Environment Variables**:
+3. **Compliance Tracking**:
+   - Security policy enforcement
+   - Vulnerability assessments
+   - Update management
+   - Audit trail maintenance
+
+### Log Analysis
+
+OpenFrame centralizes logs from all connected systems:
+
+1. **Browse logs**:
+   - Navigate to Logs in the sidebar
+   - Use filters to find specific events
+   - Set date ranges and severity levels
+
+2. **Advanced filtering**:
+   - Filter by organization, device, or user
+   - Search by message content or event type
+   - Export filtered results for analysis
+
+3. **Log analysis**:
+   - Click on log entries for detailed view
+   - Review related events and context
+   - Set up alerts for critical events
+
+## 4. Configure Tool Integrations
+
+### FleetDM Integration
+
+If you have FleetDM, integrate it for enhanced device management:
+
+1. **Get FleetDM credentials**:
+   - FleetDM instance URL
+   - API key with appropriate permissions
+
+2. **Configure in OpenFrame**:
+   - Settings → Integrations → FleetDM
+   - Enter instance URL and API key
+   - Test connection and save
+
+3. **Verify integration**:
+   - Check that FleetDM devices appear in OpenFrame
+   - Test queries and policy deployment
+
+### Tactical RMM Integration
+
+For remote monitoring and management:
+
+1. **Configure Tactical RMM**:
+   - Get Tactical RMM API credentials
+   - Settings → Integrations → Tactical RMM
+   - Enter connection details
+
+2. **Test functionality**:
+   - Verify agents are synchronized
+   - Test remote command execution
+   - Check alert forwarding
+
+### MeshCentral Setup
+
+For remote desktop and file management:
+
+1. **MeshCentral connection**:
+   - Ensure MeshCentral is accessible
+   - Configure in Settings → Integrations
+   - Test remote desktop functionality
+
+2. **Verify remote access**:
+   - Connect to a test device
+   - Test file transfer capabilities
+   - Verify session recording (if enabled)
+
+## 5. Set Up AI Features
+
+### Enable Mingo AI
+
+Configure OpenFrame's AI assistant for automated support:
+
+1. **AI Configuration**:
+   - Navigate to Settings → AI Settings
+   - Configure AI provider (OpenAI, Anthropic, etc.)
+   - Set API keys and model preferences
+
+2. **Test AI features**:
+   - Open the Mingo chat interface
+   - Ask questions about your devices or issues
+   - Test autonomous incident response
+
+3. **Configure AI policies**:
+   - Set automation boundaries
+   - Define approval requirements for AI actions
+   - Configure escalation procedures
+
+### Ticket Integration
+
+Set up AI-assisted ticketing:
+
+1. **Access tickets**:
+   - Navigate to Tickets in the sidebar
+   - Review open tickets and their status
+   - Test AI-assisted triage and resolution
+
+2. **Configure workflows**:
+   - Set up automatic ticket creation from alerts
+   - Define escalation rules and SLAs
+   - Configure customer notification templates
+
+## 6. Essential Configurations
+
+### Security Settings
+
+Secure your OpenFrame instance:
+
 ```bash
-# Key environment variables to consider
-SPRING_PROFILES_ACTIVE=dev
-SERVER_PORT=8080
-DATABASE_URL=mongodb://localhost:27017/openframe
+# Generate secure JWT secret
+openssl rand -base64 64
+
+# Generate encryption key  
+openssl rand -hex 32
 ```
 
-### 2. Set Up Monitoring
+1. **Update environment variables**:
+   - Set strong `JWT_SECRET`
+   - Configure `ENCRYPTION_KEY`
+   - Enable HTTPS in production
 
-**Dashboard Setup**:
-1. Navigate to Monitoring section
-2. Configure alert thresholds
-3. Set up notification channels
+2. **Configure access controls**:
+   - Set up role-based permissions
+   - Configure session timeouts
+   - Enable audit logging
 
-**Grafana Access** (if enabled):
-- URL: http://localhost:3000
-- Default credentials: admin/admin
-- Pre-configured OpenFrame dashboards
+### Backup Configuration
 
-### 3. Test API Integration
+Set up automated backups:
 
-**Using curl**:
+1. **Database backups**:
+   ```bash
+   # MongoDB backup script example
+   mongodump --host localhost:27017 --db openframe --out /backup/$(date +%Y%m%d)
+   ```
+
+2. **Configuration backups**:
+   - Export organization settings
+   - Save integration configurations
+   - Document custom scripts and policies
+
+### Monitoring Setup
+
+Configure system monitoring:
+
+1. **Log retention policies**:
+   - Set appropriate log retention periods
+   - Configure log rotation
+   - Set up log archiving
+
+2. **Alert configuration**:
+   - Define critical alert thresholds
+   - Configure notification channels
+   - Set up escalation procedures
+
+## 7. Test Core Workflows
+
+### Device Onboarding Workflow
+
+Test the complete device lifecycle:
+
+1. **Register a new device** using the agent installer
+2. **Verify automatic discovery** and inventory collection
+3. **Apply initial policies** and compliance checks
+4. **Test remote access** and management capabilities
+5. **Validate monitoring** and alert generation
+
+### Incident Response Workflow
+
+Test your incident response capabilities:
+
+1. **Generate a test alert** (e.g., simulate high CPU usage)
+2. **Verify alert reaches OpenFrame** and creates a ticket
+3. **Test AI triage** and suggested resolution steps  
+4. **Practice manual resolution** and ticket closure
+5. **Review audit trail** and documentation
+
+### User Management Workflow
+
+Test multi-user capabilities:
+
+1. **Invite a new user** via email
+2. **Verify SSO integration** (if configured)
+3. **Test role-based access** controls
+4. **Practice user deactivation** and cleanup
+5. **Review access audit logs**
+
+## Common First-Steps Issues
+
+### Agent Registration Failures
+
 ```bash
-# Get system status
-curl -X GET http://localhost:8080/api/system/status
+# Check agent logs for connection issues
+tail -f /var/log/openframe-agent.log
 
-# Test authentication
-curl -X POST http://localhost:8080/oauth/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=your_client_id&client_secret=your_secret"
+# Verify network connectivity
+curl -I http://your-openframe-instance.com:8080/health
+
+# Check registration key validity
+# Go to Settings → Agents → Registration Keys
 ```
 
-**Using GraphQL**:
+### Service Discovery Problems
+
 ```bash
-# Test GraphQL endpoint
-curl -X POST http://localhost:8080/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ systemInfo { version status } }"}'
+# Verify all services are running
+docker-compose ps
+
+# Check service health endpoints
+curl http://localhost:8080/health
+curl http://localhost:8081/health  
+curl http://localhost:8082/health
 ```
 
-## Development Workflow
+### Integration Connection Failures
 
-### 1. Making Your First Change
-
-**Frontend Changes**:
-1. Navigate to `openframe/services/openframe-frontend`
-2. Run `npm run dev` for development mode
-3. Make changes and see live updates
-
-**Backend Changes**:
-1. Open your preferred Java IDE
-2. Import the Maven project
-3. Make changes and use Spring Boot DevTools for hot reload
-
-### 2. Testing Changes
-
-**Run Tests**:
 ```bash
-# Backend tests
-mvn test
+# Test external tool connectivity
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://your-fleetdm-instance.com/api/latest/fleet/hosts
 
-# Frontend tests  
-cd openframe/services/openframe-frontend
-npm run test
-
-# Rust agent tests
-cd client
-cargo test
+# Check firewall and network settings
+# Verify API credentials are correct
 ```
-
-## Next Steps
-
-### Immediate Actions (Next 30 minutes)
-1. **Explore the API documentation**: [API Overview](../api/overview.md)
-2. **Review architecture details**: [Architecture Overview](../development/architecture/overview.md)
-3. **Set up your development environment**: [Development Setup](../development/setup/environment.md)
-
-### Short-term Goals (Next few hours)
-1. **Deploy additional integrated tools**
-2. **Configure monitoring and alerting**
-3. **Set up your first custom integration**
-4. **Explore the client agent capabilities**
-
-### Learning Resources
-- **[Development Guide](../development/README.md)** - Comprehensive development documentation
-- **[API Reference](../api/README.md)** - Complete API documentation
-- **[Deployment Guide](../deployment/README.md)** - Production deployment information
-- **[Operations Manual](../operations/README.md)** - Operational procedures
 
 ## Getting Help
 
-### Documentation
-- **Search this documentation** using your browser's search function
-- **Check the troubleshooting guides** for common issues
-- **Review the FAQ** for frequently asked questions
+### Community Resources
 
-### Community
-- **GitHub Issues**: Report bugs and request features
-- **Discussion Forums**: Ask questions and share knowledge
-- **Community Chat**: Real-time help and discussion
+- **OpenMSP Slack**: [Join our community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Documentation**: [OpenFrame Documentation](https://openframe.ai/docs)
+- **Website**: [https://openframe.ai](https://openframe.ai)
 
-### Troubleshooting
+### Debugging Tips
 
-**Common First-Time Issues**:
-1. **Port conflicts**: Ensure required ports are available
-2. **Permission issues**: Check file and directory permissions
-3. **Service startup failures**: Review logs for specific error messages
-4. **Authentication problems**: Verify credentials and token configuration
+1. **Check service logs** in each terminal window
+2. **Verify network connectivity** between services
+3. **Confirm database connections** are working
+4. **Test API endpoints** individually
+5. **Review browser console** for frontend errors
 
-**Getting Logs**:
-```bash
-# Service logs
-docker-compose logs -f [service-name]
+## What's Next?
 
-# Application logs
-tail -f logs/openframe.log
+After completing these first steps, you're ready to:
 
-# System logs
-journalctl -f -u openframe
-```
+1. **[Set up development environment](../development/setup/environment.md)** - For customization and development
+2. **[Learn the architecture](../development/architecture/overview.md)** - Understand how OpenFrame works
+3. **[Explore advanced features](../development/testing/overview.md)** - Testing and advanced configuration
+4. **[Contribute to the project](../development/contributing/guidelines.md)** - Join the development community
 
-**Quick Health Check**:
-```bash
-# Check all services
-curl http://localhost:8080/actuator/health
-
-# Check specific service
-curl http://localhost:8080/api/services/health
-```
-
-## Congratulations!
-
-You've completed your first steps with OpenFrame. You should now have:
-- ✅ A running OpenFrame installation
-- ✅ Understanding of core components
-- ✅ Experience with the main interface
-- ✅ Knowledge of key features and capabilities
-- ✅ Direction for next steps
-
-Ready to dive deeper? Continue with the [Development Guide](../development/README.md) or explore specific areas that interest you most.
+Congratulations! You now have a fully functional OpenFrame instance and understand the core workflows. Start managing your devices, monitoring your infrastructure, and leveraging AI-powered automation!
