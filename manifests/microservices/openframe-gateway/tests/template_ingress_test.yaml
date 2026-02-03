@@ -2,12 +2,9 @@ suite: test ingress template
 templates:
   - templates/ingress.yaml
 tests:
-  # Localhost ingress rendering
-  - it: should render localhost ingress for oss
+  - it: should render localhost ingress
     set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       - hasDocuments:
           count: 1
@@ -26,29 +23,11 @@ tests:
           path: spec.rules[0].http.paths[0].backend.service.port.name
           value: http
 
-  - it: should render localhost ingress for saas
+  - it: should render ngrok ingress
     set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-    asserts:
-      - hasDocuments:
-          count: 1
-      - equal:
-          path: spec.ingressClassName
-          value: nginx
-      - equal:
-          path: spec.rules[0].host
-          value: localhost
-
-  # Ngrok ingress rendering
-  - it: should render ngrok ingress for oss
-    set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: false
       deployment.oss.ingress.ngrok.enabled: true
       deployment.oss.ingress.ngrok.url: "test.ngrok.io"
-      deployment.saas.enabled: false
     asserts:
       - hasDocuments:
           count: 1
@@ -62,12 +41,9 @@ tests:
           path: spec.rules[0].http.paths[0].backend.service.port.number
           value: 8100
 
-  # TLS configuration
   - it: should include TLS section for localhost
     set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: true
-      deployment.saas.enabled: false
     asserts:
       - equal:
           path: spec.tls[0].hosts[0]
@@ -75,21 +51,17 @@ tests:
 
   - it: should not include TLS for ngrok
     set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: false
       deployment.oss.ingress.ngrok.enabled: true
       deployment.oss.ingress.ngrok.url: "test.ngrok.io"
-      deployment.saas.enabled: false
     asserts:
       - isNull:
           path: spec.tls
 
-  # No ingress scenarios
-  - it: should not render when deployment enabled but no ingress
+  - it: should not render when no ingress enabled
     set:
-      deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: false
       deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
     asserts:
-      - failedTemplate: {}
+      - hasDocuments:
+          count: 0

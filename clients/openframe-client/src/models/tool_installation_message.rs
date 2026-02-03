@@ -38,11 +38,37 @@ pub enum SessionType {
 #[serde(rename_all = "camelCase")]
 pub struct Asset {
     pub id: String,
-    pub local_filename: String,
+    pub local_filename_configuration: Vec<LocalFilenameConfig>,
     pub source: AssetSource,
     pub path: Option<String>,
     #[serde(default)]
     pub executable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub download_configurations: Option<Vec<DownloadConfiguration>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalFilenameConfig {
+    pub filename: String,
+    pub os: String,
+}
+
+impl LocalFilenameConfig {
+    pub fn matches_current_os(&self) -> bool {
+        let current_os = if cfg!(target_os = "windows") {
+            "windows"
+        } else if cfg!(target_os = "macos") {
+            "macos"
+        } else if cfg!(target_os = "linux") {
+            "linux"
+        } else {
+            return false;
+        };
+        self.os.eq_ignore_ascii_case(current_os)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -51,4 +77,6 @@ pub enum AssetSource {
     Artifactory,
     #[serde(rename = "TOOL_API")]
     ToolApi,
+    #[serde(rename = "GITHUB")]
+    Github,
 }

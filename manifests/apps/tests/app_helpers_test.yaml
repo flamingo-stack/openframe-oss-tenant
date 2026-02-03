@@ -9,7 +9,6 @@ tests:
       deployment.oss.ingress.ngrok.enabled: true
       deployment.oss.ingress.ngrok.credentials.apiKey: "custom-api-key"
       deployment.oss.ingress.ngrok.credentials.authtoken: "custom-auth-token"
-      deployment.saas.enabled: false
     asserts:
       # Verify deployment values are propagated
       - matchRegex:
@@ -56,7 +55,6 @@ tests:
       deployment.oss.enabled: true
       deployment.oss.ingress.localhost.enabled: false
       deployment.oss.ingress.ngrok.enabled: true
-      deployment.saas.enabled: false
     asserts:
       # Should NOT add ngrok-operator config when credentials are empty
       - notMatchRegex:

@@ -5,13 +5,8 @@ tests:
   # ========================================
   # VALID DEPLOYMENT SCENARIOS
   # ========================================
-  
-  - it: should validate self-hosted with localhost ingress
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
+
+  - it: should render valid OSS deployment
     asserts:
       - isKind:
           of: Application
@@ -19,109 +14,52 @@ tests:
           path: metadata.name
           value: argocd-apps
 
-  - it: should validate self-hosted with ngrok ingress
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.saas.enabled: false
+  - it: should have valid source configuration
     asserts:
-      - isKind:
-          of: Application
+      - exists:
+          path: spec.sources[0].repoURL
+      - exists:
+          path: spec.sources[0].targetRevision
+      - exists:
+          path: spec.sources[0].path
+
+  - it: should have valid destination configuration
+    asserts:
       - equal:
-          path: metadata.name
-          value: argocd-apps
-
-  - it: should validate SaaS deployment with localhost
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      deployment.saas.ingress.gcp.enabled: false
-    asserts:
-      - isKind:
-          of: Application
+          path: spec.destination.name
+          value: in-cluster
       - equal:
-          path: metadata.name
-          value: argocd-apps
+          path: spec.destination.namespace
+          value: argocd
 
-  - it: should validate SaaS deployment with GCP
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: false
-      deployment.saas.ingress.gcp.enabled: true
+  - it: should have valid sync policy
     asserts:
-      - isKind:
-          of: Application
+      - exists:
+          path: spec.syncPolicy.automated
+      - exists:
+          path: spec.syncPolicy.retry
       - equal:
-          path: metadata.name
-          value: argocd-apps
+          path: spec.syncPolicy.automated.prune
+          value: true
+      - equal:
+          path: spec.syncPolicy.automated.selfHeal
+          value: true
 
   # ========================================
-  # DEPLOYMENT TYPE VALIDATION ERRORS
+  # RETRY CONFIGURATION
   # ========================================
 
-  - it: should fail when both deployment types enabled
-    set:
-      deployment.oss.enabled: true
-      deployment.saas.enabled: true
+  - it: should have valid retry configuration
     asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=true, saas=true"
-
-  - it: should fail when no deployment types enabled
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=false, saas=false"
-
-  # ========================================
-  # SELF-HOSTED INGRESS VALIDATION ERRORS
-  # ========================================
-
-  - it: should fail when self-hosted has both ingresses
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=true, ngrok=true"
-
-  - it: should fail when self-hosted has no ingresses
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=false, ngrok=false"
-
-  # ========================================
-  # SAAS INGRESS VALIDATION ERRORS
-  # ========================================
-
-  - it: should fail when SaaS has both ingresses
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
-      deployment.saas.ingress.gcp.enabled: true
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for SaaS deployment. Currently localhost=true, gcp=true"
-
-  - it: should fail when SaaS has no ingresses
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: false
-      deployment.saas.ingress.gcp.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for SaaS deployment. Currently localhost=false, gcp=false"
+      - equal:
+          path: spec.syncPolicy.retry.limit
+          value: 5
+      - equal:
+          path: spec.syncPolicy.retry.backoff.duration
+          value: 15s
+      - equal:
+          path: spec.syncPolicy.retry.backoff.factor
+          value: 2
+      - equal:
+          path: spec.syncPolicy.retry.backoff.maxDuration
+          value: 30m

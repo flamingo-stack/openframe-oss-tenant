@@ -2,82 +2,39 @@ suite: test validation logic
 templates:
   - templates/deployment.yaml
 tests:
-  # Deployment validation
-  - it: should fail when no deployment type enabled
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=false, saas=false"
-
-  - it: should fail when both deployment types enabled
-    set:
-      deployment.oss.enabled: true
-      deployment.saas.enabled: true
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one deployment type must be enabled. Currently oss=true, saas=true"
-
-  # Ingress validation for oss
-  - it: should fail when oss has no ingress
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=false, ngrok=false"
-
-  - it: should fail when oss has multiple ingresses
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
-      deployment.saas.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: Exactly one ingress must be enabled for oss deployment. Currently localhost=true, ngrok=true"
-
-  # Ingress validation for saas
-  - it: should fail when saas has no localhost ingress
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: false
-    asserts:
-      - failedTemplate:
-          errorMessage: "ERROR: localhost ingress must be enabled for SaaS deployment"
-
-  # Valid configurations
-  - it: should pass when oss with localhost enabled
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: true
-      deployment.oss.ingress.ngrok.enabled: false
-      deployment.saas.enabled: false
+  - it: should render deployment successfully
     asserts:
       - hasDocuments:
           count: 1
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: openframe-frontend
 
-  - it: should pass when oss with ngrok enabled
-    set:
-      deployment.oss.enabled: true
-      deployment.oss.ingress.localhost.enabled: false
-      deployment.oss.ingress.ngrok.enabled: true
-      deployment.oss.ingress.ngrok.url: "test.ngrok.io"
-      deployment.saas.enabled: false
+  - it: should have correct container configuration
     asserts:
-      - hasDocuments:
-          count: 1
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: openframe-frontend
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 3000
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].name
+          value: http
 
-  - it: should pass when saas with localhost enabled
-    set:
-      deployment.oss.enabled: false
-      deployment.saas.enabled: true
-      deployment.saas.ingress.localhost.enabled: true
+  - it: should have correct replica count
     asserts:
-      - hasDocuments:
-          count: 1
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should have correct selector labels
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels.app
+          value: openframe-frontend
+      - equal:
+          path: spec.template.metadata.labels.app
+          value: openframe-frontend

@@ -130,7 +130,7 @@ impl OpenFrameClientUpdateService {
     /// Execute the actual update process
     async fn execute_update(&self, message: &OpenFrameClientUpdateMessage, update_state: &mut UpdateState) -> Result<()> {
         // 1. Find the appropriate download configuration for current OS
-        let download_config = GithubDownloadService::find_config_for_current_os(&message.download_configurations)
+        let download_config = self.github_download_service.find_config_for_current_os(&message.download_configurations)
             .context("Failed to find download configuration for current OS")?;
 
         info!("Using download configuration for OS: {}", download_config.os);
@@ -163,7 +163,7 @@ impl OpenFrameClientUpdateService {
         update_state.set_phase(UpdatePhase::PreparingUpdater);
         self.update_state_service.save(update_state).await?;
 
-        let archive_path = match self.create_temp_archive(&binary_bytes, &download_config.agent_file_name).await {
+        let archive_path = match self.create_temp_archive(&binary_bytes, &download_config.target_file_name).await {
             Ok(path) => path,
             Err(e) => {
                 error!("Failed to create archive: {:#}", e);

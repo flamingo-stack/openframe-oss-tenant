@@ -1,4 +1,3 @@
-{{- include "chart.validate" . -}}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -14,20 +13,8 @@ spec:
       targetRevision: {{ .Values.deployment.oss.repository.branch }}
       path: "{{ .Values.deployment.oss.repository.baseDir }}/{{ .Values.deployment.oss.repository.appsDir }}"
       helm:
-        valueFiles:
-          - "values-{{ .Values.environment }}.yaml"
         values: |
           {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
-    {{- if .Values.deployment.saas.enabled }}
-    - repoURL: {{ .Values.deployment.saas.repository.URL }}
-      targetRevision: {{ .Values.deployment.saas.repository.branch }}
-      path: "{{ .Values.deployment.saas.repository.baseDir }}/{{ .Values.deployment.saas.repository.appsDir }}"
-      helm:
-        valueFiles:
-          - "values-{{ .Values.environment }}.yaml"
-        values: |
-          {{ omit .Values "argo-cd" | toYaml | nindent 10 }}
-    {{- end }}
 
   destination:
     name: in-cluster

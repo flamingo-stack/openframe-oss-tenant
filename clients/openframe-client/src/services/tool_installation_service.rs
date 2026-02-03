@@ -142,92 +142,99 @@ impl ToolInstallationService {
             .await
             .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
 
-        let file_path = self.directory_manager.get_agent_path(tool_agent_id);
-        
-        // Check if agent file already exists
-        if file_path.exists() {
-            info!("Agent file for tool {} already exists at {}, skipping download", 
-                  tool_agent_id, file_path.display());
-        } else {
-            // Download main tool agent file
-            let tool_agent_file_bytes = if let Some(ref download_configs) = tool_installation_message.download_configurations {
-                // Use GithubDownloadService with download configurations
-                info!("Using download configurations to download tool agent");
-                let download_config = GithubDownloadService::find_config_for_current_os(download_configs)
-                    .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
-                
+        let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
+        let executable_path = match &tool_installation_message.download_configurations {
+            Some(configs) => {
+                let config = self.github_download_service.find_config_for_current_os(configs)
+                    .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
                 self.github_download_service
-                    .download_and_extract(download_config)
+                    .download_and_save(config, &tool_folder_path, &default_agent_path)
                     .await
-                    .with_context(|| format!("Failed to download and extract tool agent for: {}", tool_agent_id))?
-            } else {
-                // Fall back to legacy method (Artifactory)
-                info!("Using legacy method to download tool agent");
-                self.tool_agent_file_client
-                    .get_tool_agent_file(tool_agent_id.clone())
-                    .await
-                    .with_context(|| format!("Failed to download tool agent file for: {}", tool_agent_id))?
-            };
-
-            // Save directly and set permissions (always executable)
-            File::create(&file_path).await?.write_all(&tool_agent_file_bytes).await?;
-
-            // Set file permissions to executable
-            self.set_executable_permissions(&file_path).await
-                .with_context(|| format!("Failed to set executable permissions for {}", file_path.display()))?;
-            
-            info!("Agent file for tool {} downloaded and saved to {}", tool_agent_id, file_path.display());
-        }
+                    .with_context(|| format!("Failed to download tool agent: {}", tool_agent_id))?
+            }
+            None => {
+                self.download_from_artifactory(tool_agent_id, &default_agent_path).await?;
+                None
+            }
+        };
+        let file_path = self.directory_manager.get_tool_executable_path(tool_agent_id, executable_path.as_deref());
 
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
             for asset in assets {
                 // Use the executable field from the asset
                 let is_executable = asset.executable;
-                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &asset.local_filename, is_executable);
+                let local_filename_config = asset.local_filename_configuration.iter()
+                    .find(|c| c.matches_current_os())
+                    .with_context(|| format!("No local filename configuration for current OS for asset: {}", asset.id))?;
+                let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &local_filename_config.filename, is_executable);
                 
-                // Check if asset file already exists
-                if asset_path.exists() {
-                    info!("Asset {} for tool {} already exists at {}, skipping download", 
+                // Download and save asset if it doesn't already exist
+                if !asset_path.exists() {
+                    let asset_bytes = match asset.source {
+                        AssetSource::Artifactory => {
+                            info!("Downloading artifactory asset: {}", asset.id);
+                            self.tool_agent_file_client
+                                .get_tool_agent_file(asset.id.clone())
+                                .await
+                                .with_context(|| format!("Failed to download artifactory asset: {}", asset.id))?
+                        },
+                        AssetSource::ToolApi => {
+                            let path = asset.path.as_deref()
+                                .with_context(|| format!("No uri path for tool {} asset {}", tool_agent_id, asset.id))?;
+                            info!("Downloading tool API asset: {} with original path: {}", asset.id, path);
+
+                            // Resolve URL parameters in the path
+                            let resolved_path = self.url_params_resolver.process(path)
+                                .with_context(|| format!("Failed to resolve URL parameters for asset: {}", asset.id))?;
+                            info!("Resolved path: {}", resolved_path);
+
+                            let tool_id = tool_installation_message.tool_id.clone();
+                            self.tool_api_client
+                                .get_tool_asset(tool_id, resolved_path)
+                                .await
+                                .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
+                        },
+                        AssetSource::Github => {
+                            let download_configs = asset.download_configurations.as_ref()
+                                .with_context(|| format!("No download configurations for Github asset: {}", asset.id))?;
+                            let config = self.github_download_service.find_config_for_current_os(download_configs)
+                                .with_context(|| format!("Failed to find download configuration for current OS: {}", asset.id))?;
+                            info!("Downloading Github asset: {} from {}", asset.id, config.link);
+
+                            self.github_download_service
+                                .download_and_extract(config)
+                                .await
+                                .with_context(|| format!("Failed to download and extract Github asset: {}", asset.id))?
+                        }
+                    };
+
+                    File::create(&asset_path).await?.write_all(&asset_bytes).await?;
+
+                    // Set file permissions to executable only for executable assets
+                    if is_executable {
+                        self.set_executable_permissions(&asset_path).await
+                            .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
+                    }
+
+                    info!("Asset {} saved to: {}", asset.id, asset_path.display());
+                } else {
+                    info!("Asset {} for tool {} already exists at {}, skipping download",
                           asset.id, tool_agent_id, asset_path.display());
-                    continue;
                 }
 
-                let asset_bytes = match asset.source {
-                    AssetSource::Artifactory => {
-                        info!("Downloading artifactory asset: {}", asset.id);
-                        self.tool_agent_file_client
-                            .get_tool_agent_file(asset.id.clone())
-                            .await
-                            .with_context(|| format!("Failed to download artifactory asset: {}", asset.id))?
-                    },
-                    AssetSource::ToolApi => {
-                        let path = asset.path.as_deref()
-                            .with_context(|| format!("No uri path for tool {} asset {}", tool_agent_id, asset.id))?;
-                        info!("Downloading tool API asset: {} with original path: {}", asset.id, path);
-                        
-                        // Resolve URL parameters in the path
-                        let resolved_path = self.url_params_resolver.process(path)
-                            .with_context(|| format!("Failed to resolve URL parameters for asset: {}", asset.id))?;
-                        info!("Resolved path: {}", resolved_path);
-                        
-                        let tool_id = tool_installation_message.tool_id.clone();
-                        self.tool_api_client
-                            .get_tool_asset(tool_id, resolved_path)
-                            .await
-                            .with_context(|| format!("Failed to download tool API asset: {}", asset.id))?
-                    }
-                };
-                
-                File::create(&asset_path).await?.write_all(&asset_bytes).await?;
-                
-                // Set file permissions to executable only for executable assets
+                // Publish installed asset message only for executable assets with version (always, even if already downloaded)
                 if is_executable {
-                    self.set_executable_permissions(&asset_path).await
-                        .with_context(|| format!("Failed to set executable permissions for asset {}", asset_path.display()))?;
+                    if let Some(ref version) = asset.version {
+                        info!("Publishing installed asset message for: {} v{}", asset.id, version);
+                        let machine_id = self.config_service.get_machine_id().await
+                            .with_context(|| format!("Failed to get machine_id for asset publish: {}", asset.id))?;
+                        self.installed_agent_publisher
+                            .publish(machine_id, asset.id.clone(), version.clone())
+                            .await
+                            .with_context(|| format!("Failed to publish installed asset message for {}", asset.id))?;
+                    }
                 }
-                
-                info!("Asset {} saved to: {}", asset.id, asset_path.display());
             }
         } else {
             info!("No assets to download for tool: {}", tool_agent_id);
@@ -282,6 +289,7 @@ impl ToolInstallationService {
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             status: ToolStatus::Installed,
+            executable_path,
         };
 
         self.installed_tools_service.save(installed_tool.clone()).await
@@ -319,15 +327,29 @@ impl ToolInstallationService {
         Ok(())
     }
 
-    /// Sets executable permissions for a file on both Unix and Windows platforms
-    async fn set_executable_permissions(&self, file_path: &Path) -> Result<()> {
+    async fn download_from_artifactory(&self, tool_agent_id: &str, path: &Path) -> Result<()> {
+        if path.exists() {
+            info!("Agent already exists at {}, skipping", path.display());
+            return Ok(());
+        }
+        info!("Downloading from Artifactory: {}", tool_agent_id);
+        let bytes = self.tool_agent_file_client
+            .get_tool_agent_file(tool_agent_id.to_string())
+            .await
+            .with_context(|| format!("Failed to download: {}", tool_agent_id))?;
+        File::create(path).await?.write_all(&bytes).await?;
+        self.set_executable_permissions(path).await?;
+        info!("Saved to {}", path.display());
+        Ok(())
+    }
+
+    async fn set_executable_permissions(&self, path: &Path) -> Result<()> {
         #[cfg(target_family = "unix")]
         {
-            let mut perms = fs::metadata(file_path).await?.permissions();
+            let mut perms = fs::metadata(path).await?.permissions();
             perms.set_mode(0o755);
-            fs::set_permissions(file_path, perms).await?;
+            fs::set_permissions(path, perms).await?;
         }
-
         Ok(())
     }
 }

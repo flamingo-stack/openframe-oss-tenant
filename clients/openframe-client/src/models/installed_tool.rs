@@ -26,6 +26,9 @@ pub struct InstalledTool {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uninstallation_command_args: Option<Vec<String>>,
     pub status: ToolStatus,
+    /// Path to executable relative to tool folder
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub executable_path: Option<String>,
 }
 
 impl Default for InstalledTool {
@@ -40,6 +43,7 @@ impl Default for InstalledTool {
             status: ToolStatus::default(),
             tool_agent_id_command_args: Vec::new(),
             uninstallation_command_args: None,
+            executable_path: None,
         }
     }
 }

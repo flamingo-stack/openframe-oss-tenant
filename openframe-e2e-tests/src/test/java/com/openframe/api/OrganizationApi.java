@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Map;
 
 import static com.openframe.api.graphql.OrganizationQueries.*;
+import static com.openframe.config.ApiConfig.GRAPHQL;
 import static io.restassured.RestAssured.given;
 
 public class OrganizationApi {
 
-    private static final String GRAPHQL = "api/graphql";
     private static final String ORGANIZATIONS = "api/organizations";
 
     public static List<String> getOrganizationNames() {
