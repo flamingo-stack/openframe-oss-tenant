@@ -229,6 +229,18 @@ class TacticalApiClient {
     return this.get(path)
   }
 
+  async getScheduledTasksByScript(scriptId: string): Promise<ApiResponse<any[]>> {
+    return this.get(`/tasks/?script=${scriptId}`)
+  }
+
+  async getScheduledTask(taskId: string): Promise<ApiResponse<any>> {
+    return this.get(`/tasks/${taskId}/`)
+  }
+
+  async deleteScheduledTask(taskId: string): Promise<ApiResponse<any>> {
+    return this.delete(`/tasks/${taskId}/`)
+  }
+
   async createScheduledTask(agentId: string, taskData: {
     actions: Array<{
       type: 'script'
