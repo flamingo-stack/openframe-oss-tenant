@@ -66,11 +66,8 @@ export default function Mingo() {
     createDialog,
     sendMessage,
     approvals: pendingApprovals,
-    handleApprove,
-    handleReject,
     processChunk,
     isCreatingDialog,
-    isSendingMessage,
     isTyping,
     assistantType
   } = useMingoChat(activeDialogId)
@@ -111,7 +108,7 @@ export default function Mingo() {
     }
   }, [router])
 
-  // Dialog selection with proper URL sync
+  // Dialog selection with proper URL sync - Allow switching during streaming
   const handleDialogSelect = useCallback(async (dialogId: string) => {
     if (dialogId === activeDialogId) return
 
@@ -129,7 +126,7 @@ export default function Mingo() {
     selectDialog(dialogId)
   }, [activeDialogId, router, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog])
 
-  // URL synchronization - simplified to prevent conflicts
+  // URL synchronization - prevent race conditions during streaming
   useEffect(() => {
     const urlDialogId = searchParams.get('dialogId')
     
@@ -146,7 +143,7 @@ export default function Mingo() {
         setActiveDialogId(null)
       }
     }
-  }, [searchParams, activeDialogId, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog])
+  }, [searchParams]) // Removed activeDialogId from dependencies to prevent race conditions
 
   // Create new chat
   const handleNewChat = useCallback(async () => {
@@ -253,7 +250,7 @@ export default function Mingo() {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
-                  sending={isSendingMessage || isTyping}
+                  sending={isTyping}
                   disabled={isCreatingDialog || isSelectingDialog}
                   autoFocus={false}
                   className="bg-ods-card rounded-lg"

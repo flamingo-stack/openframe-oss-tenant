@@ -20,7 +20,6 @@ interface MingoMessagesStore {
   isLoadingDialog: boolean
   isLoadingMessages: boolean
   isCreatingDialog: boolean
-  isSendingMessage: boolean
   
   // Error states
   dialogError: string | null
@@ -63,7 +62,6 @@ interface MingoMessagesStore {
   setLoadingDialog: (loading: boolean) => void
   setLoadingMessages: (loading: boolean) => void
   setCreatingDialog: (creating: boolean) => void
-  setSendingMessage: (sending: boolean) => void
   
   // Error States
   setDialogError: (error: string | null) => void
@@ -87,7 +85,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       isLoadingDialog: false,
       isLoadingMessages: false,
       isCreatingDialog: false,
-      isSendingMessage: false,
       
       dialogError: null,
       messagesError: null,
@@ -292,7 +289,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           isLoadingDialog: false,
           isLoadingMessages: false,
           isCreatingDialog: false,
-          isSendingMessage: false,
           dialogError: null,
           messagesError: null,
           hasMoreMessages: false,
@@ -312,10 +308,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       
       setCreatingDialog: (creating: boolean) => {
         set({ isCreatingDialog: creating })
-      },
-      
-      setSendingMessage: (sending: boolean) => {
-        set({ isSendingMessage: sending })
       },
       
       // Error States

@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import {
   useNatsDialogSubscription,
-  useChunkCatchup,
   buildNatsWsUrl,
   type NatsMessageType,
   type ChunkData,
 } from '@flamingo-stack/openframe-frontend-core'
+import { useMingoChunkCatchup } from './use-mingo-chunk-catchup'
 import { runtimeEnv } from '@/src/lib/runtime-config'
 import { STORAGE_KEYS } from '../../tickets/constants'
 import { useMingoMessagesStore } from '../stores/mingo-messages-store'
@@ -216,10 +216,9 @@ export function DialogSubscription({
   // Chunk catchup for this specific dialog
   const { 
     catchUpChunks, 
-    processChunk, 
     resetChunkTracking,
     startInitialBuffering
-  } = useChunkCatchup({
+  } = useMingoChunkCatchup({
     dialogId,
     onChunkReceived: (chunk, messageType) => {
       onChunkReceived(dialogId, chunk, messageType)
@@ -246,9 +245,8 @@ export function DialogSubscription({
   
   // Handle NATS events
   const handleNatsEvent = useCallback((payload: unknown, messageType: NatsMessageType) => {
-    const processed = processChunk(payload as ChunkData, messageType as 'message' | 'admin-message')
-    if (!processed) return
-  }, [processChunk])
+    onChunkReceived(dialogId, payload as ChunkData, messageType)
+  }, [dialogId, onChunkReceived])
   
   // Handle subscription success
   const handleSubscribed = useCallback(async () => {
@@ -264,12 +262,8 @@ export function DialogSubscription({
     dialogId,
     topics: MINGO_TOPICS, // Subscribe to both message and admin-message topics
     onEvent: handleNatsEvent,
-    onConnect: () => {
-      console.log(`[MingoRealtimeSubscription] Connected to dialog ${dialogId}`)
-    },
-    onDisconnect: () => {
-      console.log(`[MingoRealtimeSubscription] Disconnected from dialog ${dialogId}`)
-    },
+    onConnect: () => {},
+    onDisconnect: () => {},
     onSubscribed: handleSubscribed,
     getNatsWsUrl,
     clientConfig,

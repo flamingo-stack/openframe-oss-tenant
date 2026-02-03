@@ -1,10 +1,9 @@
 'use client'
 
-import { useCallback, useState, useMemo, useRef } from 'react'
+import { useCallback, useState, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { 
   useRealtimeChunkProcessor,
-  createMessageSegmentAccumulator,
   type MessageSegment,
   type ChunkData,
   type NatsMessageType,
@@ -12,8 +11,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { useMingoMessagesStore } from '../stores/mingo-messages-store'
 import { MingoApiService } from '../services/mingo-api-service'
-import { CHAT_TYPE, ASSISTANT_CONFIG } from '../../tickets/constants'
-import type { Message, CoreMessage } from '../types/message.types'
+import type { CoreMessage } from '../types/message.types'
 
 interface ProcessedMessage {
   id: string
@@ -43,7 +41,6 @@ interface UseMingoChat {
   
   // State
   isCreatingDialog: boolean
-  isSendingMessage: boolean
   isTyping: boolean
   assistantType: 'mingo'
 }
@@ -53,37 +50,28 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   const queryClient = useQueryClient()
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, any>>({})
   
-  // Message segment accumulator for real-time processing (like openframe-chat)
-  const segmentAccumulator = useRef(
-    createMessageSegmentAccumulator({
-      onApprove: undefined, // Will be set below after handlers are defined
-      onReject: undefined
-    })
-  ).current
   
   // Store integration
   const {
     messagesByDialog,
+    typingStates,
     getMessages,
     addMessage,
     updateMessage,
     setStreamingMessage,
     getStreamingMessage,
-    updateStreamingMessageSegments,
     getTyping,
     setTyping,
     removeWelcomeMessages,
     isCreatingDialog,
-    isSendingMessage,
     setCreatingDialog,
-    setSendingMessage
   } = useMingoMessagesStore()
   
-  // Get typing state
+  // Get typing state - recompute when typingStates Map changes
   const isTyping = useMemo(() => {
     if (!dialogId) return false
     return getTyping(dialogId)
-  }, [dialogId, getTyping])
+  }, [dialogId, typingStates, getTyping])
   
   // API mutations
   const createDialogMutation = MingoApiService.createDialogMutation()
@@ -118,11 +106,6 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     })
   }, [rejectRequestMutation])
   
-  // Update segment accumulator with approval handlers
-  segmentAccumulator.setCallbacks({
-    onApprove: handleApprove,
-    onReject: handleReject
-  })
   
   // Helper functions for streaming message management (like openframe-chat)
   const ensureAssistantMessage = useCallback(() => {
@@ -149,11 +132,8 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     
     const currentStreaming = getStreamingMessage(dialogId)
     if (!currentStreaming) {
-      console.log('[MINGO] No streaming message found for dialog:', dialogId)
       return
     }
-    
-    console.log('[MINGO] Updating streaming message with', segments.length, 'segments')
     
     // Update the streaming message with segments directly (CoreMessage format)
     const updatedMessage: CoreMessage = {
@@ -166,33 +146,96 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     updateMessage(dialogId, currentStreaming.id, updatedMessage)
   }, [dialogId, getStreamingMessage, setStreamingMessage, updateMessage])
   
+  // Add welcome message for empty dialogs
+  const addWelcomeMessage = useCallback(() => {
+    if (!dialogId) return
+    
+    const currentMessages = getMessages(dialogId)
+    
+    // Only add welcome if dialog is completely empty
+    if (currentMessages.length === 0) {
+      const welcomeMessage: CoreMessage = {
+        id: `welcome-${dialogId}`,
+        role: 'assistant',
+        name: 'Mingo',
+        timestamp: new Date(),
+        content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
+        assistantType: 'mingo'
+      }
+      
+      addMessage(dialogId, welcomeMessage)
+    }
+  }, [dialogId, getMessages, addMessage])
+
+  // Add error message (same pattern as openframe-chat)
+  const addErrorMessage = useCallback((errorText: string) => {
+    if (!dialogId) return
+    
+    const errorMessage: CoreMessage = {
+      id: `error-${Date.now()}`,
+      role: 'error',
+      name: 'Mingo',
+      timestamp: new Date(),
+      content: errorText,
+    }
+    
+    const currentMessages = getMessages(dialogId)
+    const lastMessage = currentMessages[currentMessages.length - 1]
+    
+    // Replace empty assistant message with error, or add new error message
+    if (lastMessage?.role === 'assistant' && 
+        (lastMessage.content === '' || 
+         (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))) {
+      // Replace empty assistant message with error
+      updateMessage(dialogId, lastMessage.id, errorMessage)
+    } else {
+      // Add new error message
+      addMessage(dialogId, errorMessage)
+    }
+  }, [dialogId, getMessages, updateMessage, addMessage])
+  
+  // Add welcome message effect - moved out of render
+  useEffect(() => {
+    if (dialogId) {
+      addWelcomeMessage()
+    }
+  }, [dialogId, messagesByDialog, addWelcomeMessage])
+
   // Get messages for current dialog (already in CoreMessage format)
   const messages = useMemo((): ProcessedMessage[] => {
     if (!dialogId) return []
-    
-    const coreMessages = getMessages(dialogId)
-    console.log('[MINGO] Retrieved core messages:', coreMessages.length)
+
+    const currentMessages = getMessages(dialogId)
     
     // Convert CoreMessage to ProcessedMessage format for interface compatibility
-    return coreMessages.map(msg => ({
-      id: msg.id,
-      content: msg.content,
-      role: msg.role,
-      name: msg.name || 'Unknown',
-      assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
-      timestamp: msg.timestamp || new Date()
-    }))
-  }, [dialogId, messagesByDialog])
+    return currentMessages.map(msg => {
+      let filteredContent = msg.content
+      
+      // Filter out pending approval requests from message display (they appear in separate section)
+      if (Array.isArray(msg.content)) {
+        filteredContent = (msg.content as MessageSegment[]).filter(segment => 
+          !(segment.type === 'approval_request' && segment.status === 'pending')
+        )
+      }
+      
+      return {
+        id: msg.id,
+        content: filteredContent,
+        role: msg.role,
+        name: msg.name || 'Unknown',
+        assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
+        timestamp: msg.timestamp || new Date()
+      }
+    })
+  }, [dialogId, messagesByDialog, getMessages])
   
   // Real-time processing callbacks (exact same approach as openframe-chat)
   const realtimeCallbacks = useMemo(() => ({
     onStreamStart: () => {
-      console.log('[MINGO] Stream started for dialog:', dialogId)
       if (!dialogId) return
       
       ensureAssistantMessage()
       setTyping(dialogId, true)
-      segmentAccumulator.resetSegments()
     },
     
     onStreamEnd: () => {
@@ -204,32 +247,8 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     onSegmentsUpdate: (segments: MessageSegment[]) => {
       if (!dialogId) return
       
-      console.log('[MINGO] Segments update:', segments.length, 'segments for dialog:', dialogId)
-      
-      // Use the exact same approach as openframe-chat
       ensureAssistantMessage()
-      
-      // Reset accumulator and process all segments
-      segmentAccumulator.reset()
-      segments.forEach(segment => {
-        if (segment.type === 'text' && segment.text) {
-          segmentAccumulator.appendText(segment.text)
-        } else if (segment.type === 'tool_execution') {
-          segmentAccumulator.addToolExecution(segment)
-        } else if (segment.type === 'approval_request') {
-          const { data, status } = segment
-          segmentAccumulator.addApprovalRequest(
-            data.requestId || '',
-            data.command,
-            data.explanation,
-            data.approvalType || '',
-            status
-          )
-        }
-      })
-      
-      // Update streaming message with accumulated segments
-      updateStreamingMessageWithSegments(segmentAccumulator.getSegments())
+      updateStreamingMessageWithSegments(segments)
     },
     
     onError: (error: string) => {
@@ -238,16 +257,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       console.error('[MingoChat] Stream error:', error)
       setTyping(dialogId, false)
       setStreamingMessage(dialogId, null)
-      segmentAccumulator.resetSegments()
-      
-      toast({
-        title: "Connection Error",
-        description: error,
-        variant: "destructive",
-        duration: 5000
-      })
+      addErrorMessage(error)
     }
-  }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageWithSegments, segmentAccumulator, toast])
+  }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageWithSegments, addErrorMessage])
   
   // Real-time processor
   const { processChunk } = useRealtimeChunkProcessor({
@@ -306,10 +318,11 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   // Send message
   const sendMessage = useCallback(async (content: string): Promise<boolean> => {
     if (!dialogId || !content.trim()) return false
-    if (isSendingMessage) return false
+    if (isTyping) return false // Use isTyping instead of isSendingMessage
     
     try {
-      setSendingMessage(true)
+      // Set typing indicator for this dialog (covers both sending + assistant response)
+      setTyping(dialogId, true)
       
       // Remove welcome messages
       removeWelcomeMessages(dialogId)
@@ -328,16 +341,12 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       // Send message via API
       await sendMessageMutation.mutateAsync({ dialogId, content: content.trim() })
       
-      toast({
-        title: "Message Sent",
-        description: "Your message has been sent successfully",
-        variant: "success",
-        duration: 2000
-      })
-      
       return true
     } catch (error) {
       console.error('[MingoChat] Failed to send message:', error)
+      
+      // Clear typing on error
+      setTyping(dialogId, false)
       
       toast({
         title: "Send Failed",
@@ -347,10 +356,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       })
       
       return false
-    } finally {
-      setSendingMessage(false)
     }
-  }, [dialogId, isSendingMessage, setSendingMessage, removeWelcomeMessages, addMessage, sendMessageMutation, toast])
+    // Note: Don't clear typing here - it will be cleared when assistant finishes responding
+  }, [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast])
   
   
   return {
@@ -372,7 +380,6 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     
     // State
     isCreatingDialog,
-    isSendingMessage,
     isTyping,
     assistantType: 'mingo' as const
   }
