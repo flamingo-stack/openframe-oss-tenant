@@ -13,7 +13,7 @@ const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip'
  * Build the binary download URL for a given version and asset
  */
 export function buildBinaryUrl(version: string, assetName: string): string {
-  if (version === 'latest' || !version) {
+  if (!version) {
     return `${RELEASES_BASE_URL}/latest/download/${assetName}`
   }
   return `${RELEASES_BASE_URL}/download/${version}/${assetName}`
