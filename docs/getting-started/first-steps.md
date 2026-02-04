@@ -1,256 +1,309 @@
-# First Steps with OpenFrame
+# First Steps Guide
 
-Congratulations on successfully setting up OpenFrame! This guide will walk you through your first hour with the platform, helping you understand its key features and capabilities.
+Now that OpenFrame is running, let's configure the essential settings and explore key features. This guide walks you through the first 5 tasks every OpenFrame administrator should complete.
 
-## Initial Access
+> **Prerequisites**  
+> ✅ Completed the [Quick Start Guide](quick-start.md) with OpenFrame running at http://localhost:8080
 
-### Accessing the Dashboard
+## First 5 Essential Tasks
 
-1. **Open your browser** and navigate to: http://localhost:8080
-2. **Login** using the default credentials (if authentication is enabled)
-3. **Explore the main dashboard** - your central hub for all operations
+### 1. Complete Organization Setup
 
-### Key Interface Elements
+**Why**: Organization details are used throughout OpenFrame for branding, user management, and multi-tenant operations.
 
-- **Navigation Bar**: Quick access to major sections
-- **Dashboard Widgets**: Real-time metrics and status indicators  
-- **Service Status Panel**: Monitor all integrated services
-- **Quick Actions**: Common tasks and shortcuts
+#### Configure Organization Details
 
-## Understanding the Architecture
+1. **Navigate to Organization Settings**:
+   - Login to http://localhost:8080
+   - Go to **Organizations** in the left sidebar
+   - Click your organization name
 
-### Core Components Overview
+2. **Complete Organization Profile**:
 
-OpenFrame consists of several interconnected services:
+| Field | Purpose | Example |
+|-------|---------|---------|
+| **Name** | Display name | "Acme IT Services" |
+| **Domain** | Email domain for users | "acme-it.com" |
+| **Address** | Business address | Full address |
+| **Contact Information** | Support details | Phone, email |
 
-1. **Gateway Service** (Port 8080) - Your main entry point
-2. **API Service** - GraphQL and REST endpoints
-3. **Client Service** - Agent management
-4. **Management Service** - Administrative functions
-5. **Stream Service** - Real-time data processing
-6. **Config Service** (Port 8888) - Configuration management
-7. **UI Service** - Vue.js frontend application
+3. **Save Changes**: Click "Save" to persist your configuration
 
-### Data Flow
+#### Set Organization Preferences
+
+- **Time Zone**: Configure for accurate scheduling and logging
+- **Branding**: Upload logo and customize colors
+- **Default Settings**: Configure user defaults and permissions
+
+### 2. Configure User Management & Invitations
+
+**Why**: Proper user setup ensures secure access and appropriate permissions for your team.
+
+#### Invite Team Members
+
+1. **Go to Settings** → **Company and Users** → **Users**
+
+2. **Click "Add Users"**:
+   - **Email**: Enter team member email
+   - **Role**: Choose appropriate role:
+     - **Admin**: Full system access
+     - **User**: Standard access
+     - **Viewer**: Read-only access
+
+3. **Send Invitations**: Users will receive email invites
+
+#### Configure SSO (Optional)
+
+For enterprise environments:
+
+1. **Go to Settings** → **SSO Configuration**
+2. **Choose Provider**:
+   - **Azure AD/Entra ID**
+   - **Google Workspace**  
+   - **Generic SAML**
+
+3. **Configure Settings** based on your identity provider
+
+```mermaid
+flowchart LR
+    A[User Login] --> B{SSO Enabled?}
+    B -->|Yes| C[External IdP]
+    B -->|No| D[Local Auth]
+    C --> E[OpenFrame Dashboard]
+    D --> E
+    
+    style C fill:#FFC008
+    style E fill:#e8f5e8
 ```
-User Request → Gateway → Service → Database → Response
-```
 
-## Exploring Key Features
+### 3. Generate API Keys for External Access
 
-### 1. Service Management
+**Why**: API keys enable integration with external tools, scripts, and monitoring systems.
 
-**View Service Status**:
-- Navigate to the Services section
-- Check health status of all components
-- Review performance metrics
+#### Create Your First API Key
 
-**Service Controls**:
-- Start/stop individual services
-- View service logs
-- Monitor resource usage
+1. **Navigate to API Keys**:
+   - Settings → **API Keys**
+   - Click **"Create API Key"**
 
-### 2. API Exploration
+2. **Configure API Key**:
 
-**GraphQL Playground**:
-1. Visit: http://localhost:8080/graphql
-2. Explore available queries and mutations
-3. Try sample queries:
+| Setting | Recommendation | Purpose |
+|---------|---------------|---------|
+| **Name** | "Development Testing" | Identify key purpose |
+| **Scope** | Start with "Read Only" | Limit initial permissions |
+| **Expiration** | 90 days | Security best practice |
 
-```graphql
-query {
-  systemInfo {
-    version
-    status
-    services {
-      name
-      status
-      port
-    }
-  }
-}
-```
+3. **Save and Copy Key**: 
+   - ⚠️ **Important**: Copy the key immediately - you won't see it again
+   - Store securely (password manager recommended)
 
-**REST Endpoints**:
-- Authentication: `/oauth/token`
-- Health checks: `/actuator/health`
-- Service discovery: `/api/services`
+#### Test API Access
 
-### 3. Integrated Tools
-
-OpenFrame includes several integrated tools:
-
-**Currently Available**:
-- **MeshCentral** - Remote management platform
-- **Tactical RMM** - IT management suite  
-- **Fleet MDM** - Mobile device management
-- **Authentik** - Identity provider
-
-**Accessing Tools**:
-1. From the main dashboard, click on "Integrated Tools"
-2. Select the tool you want to use
-3. Tools open in embedded views or new tabs
-
-### 4. Agent Management
-
-**Understanding Agents**:
-- Cross-platform Rust agents for system monitoring
-- Automatic registration and management
-- Real-time metrics collection
-
-**Agent Operations**:
-1. View registered agents in the Client section
-2. Monitor agent health and connectivity
-3. Deploy configuration updates
-4. Review collected metrics
-
-## Common First Tasks
-
-### 1. Configure Your Environment
-
-**Update Configuration**:
-1. Access the Config Service at http://localhost:8888
-2. Review default settings
-3. Customize for your environment
-
-**Environment Variables**:
 ```bash
-# Key environment variables to consider
-SPRING_PROFILES_ACTIVE=dev
-SERVER_PORT=8080
-DATABASE_URL=mongodb://localhost:27017/openframe
+# Test with your API key
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     http://localhost:8080/api/v1/devices
+
+# Expected: JSON response with device list (empty initially)
 ```
 
-### 2. Set Up Monitoring
+### 4. Explore Device Management
 
-**Dashboard Setup**:
-1. Navigate to Monitoring section
-2. Configure alert thresholds
-3. Set up notification channels
+**Why**: Understanding device management is central to OpenFrame's MSP capabilities.
 
-**Grafana Access** (if enabled):
-- URL: http://localhost:3000
-- Default credentials: admin/admin
-- Pre-configured OpenFrame dashboards
+#### Device Management Interface
 
-### 3. Test API Integration
+1. **Navigate to Devices**: Click **"Devices"** in the left sidebar
 
-**Using curl**:
-```bash
-# Get system status
-curl -X GET http://localhost:8080/api/system/status
+2. **Explore Views**:
+   - **Grid View**: Visual overview of all devices
+   - **Table View**: Detailed list with sortable columns
+   - **Filters**: Filter by status, type, organization
 
-# Test authentication
-curl -X POST http://localhost:8080/oauth/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=your_client_id&client_secret=your_secret"
+#### Add Test Device (Simulation)
+
+For testing purposes, you can simulate device registration:
+
+1. **Device Registration**: Go to **Devices** → **"New Device"**
+
+2. **Generate Registration Secret**:
+   ```bash
+   # In OpenFrame, this would be done through the UI
+   # For testing, use the following command:
+   curl -X POST http://localhost:8080/api/v1/agent/registration-secret \
+        -H "Authorization: Bearer YOUR_API_KEY" \
+        -H "Content-Type: application/json"
+   ```
+
+3. **Device Types Supported**:
+   - **Windows Desktops/Servers**
+   - **macOS Workstations** 
+   - **Linux Servers**
+   - **Network Devices** (via SNMP)
+
+### 5. Set Up Basic Monitoring & Alerting
+
+**Why**: Proactive monitoring prevents issues and ensures optimal performance.
+
+#### Configure Monitoring Preferences
+
+1. **Go to Settings** → **Monitoring**:
+   - **Alert Thresholds**: CPU, Memory, Disk usage limits
+   - **Notification Channels**: Email, Slack, webhook endpoints
+   - **Monitoring Intervals**: Balance between accuracy and performance
+
+#### Dashboard Customization
+
+1. **Dashboard Widgets**:
+   - **Device Status Overview**: Online/offline summary
+   - **Recent Alerts**: Latest system alerts
+   - **Performance Metrics**: System health indicators
+   - **Activity Timeline**: Recent user and system actions
+
+2. **Real-Time Updates**: Dashboard refreshes automatically via WebSocket
+
+```mermaid
+graph TD
+    A[Devices] --> B[Monitoring Agent]
+    B --> C[Kafka Events]
+    C --> D[Stream Processing]
+    D --> E[Real-time Dashboard]
+    
+    F[Alert Thresholds] --> G[Alert Engine]
+    D --> G
+    G --> H[Notifications]
+    
+    style C fill:#ff7043
+    style E fill:#FFC008
 ```
 
-**Using GraphQL**:
+## Essential Configuration Options
+
+### Application Settings
+
+| Category | Key Settings | Impact |
+|----------|--------------|--------|
+| **Security** | JWT expiration, password policy | User authentication |
+| **Performance** | Cache settings, connection pools | System responsiveness |
+| **Integration** | External tool connections | Feature availability |
+| **Logging** | Log levels, retention | Troubleshooting capability |
+
+### Database Configuration
+
+For development, OpenFrame uses local databases. In production, configure external instances:
+
 ```bash
-# Test GraphQL endpoint
-curl -X POST http://localhost:8080/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ systemInfo { version status } }"}'
+# Example production environment variables
+MONGODB_URI=mongodb://production-mongo:27017/openframe
+REDIS_URL=redis://production-redis:6379
+KAFKA_BOOTSTRAP_SERVERS=prod-kafka1:9092,prod-kafka2:9092
 ```
 
-## Development Workflow
+### Tool Integrations Setup
 
-### 1. Making Your First Change
+OpenFrame integrates with several MSP tools. Configure these for enhanced functionality:
 
-**Frontend Changes**:
-1. Navigate to `openframe/services/openframe-frontend`
-2. Run `npm run dev` for development mode
-3. Make changes and see live updates
+#### Tactical RMM Integration
 
-**Backend Changes**:
-1. Open your preferred Java IDE
-2. Import the Maven project
-3. Make changes and use Spring Boot DevTools for hot reload
+1. **Start Tactical RMM** (if using local development):
+   ```bash
+   cd integrated-tools/tactical-rmm
+   docker compose up -d
+   ```
 
-### 2. Testing Changes
+2. **Configure in OpenFrame**:
+   - Settings → **Integrations** → **Tactical RMM**
+   - URL: `http://localhost:8001`
+   - API Token: (generated from Tactical RMM)
 
-**Run Tests**:
+#### MeshCentral Integration
+
+1. **Start MeshCentral**:
+   ```bash
+   cd integrated-tools/meshcentral
+   docker compose up -d
+   ```
+
+2. **Configure Remote Access**:
+   - Settings → **Integrations** → **MeshCentral**
+   - URL: `https://localhost:443`
+   - Login credentials: (created during setup)
+
+## Verification Checklist
+
+Confirm you've completed these essential steps:
+
+- [ ] **Organization configured** with complete details
+- [ ] **Team members invited** with appropriate roles
+- [ ] **API key created** and tested
+- [ ] **Device management explored** and understood
+- [ ] **Basic monitoring configured** with alerts
+
+## Where to Get Help
+
+### Built-in Resources
+
+- **GraphQL Explorer**: http://localhost:8080/graphql - Interactive API exploration
+- **Health Checks**: http://localhost:8080/actuator/health - System status
+- **Documentation**: Built-in help sections within each UI area
+
+### Community Support
+
+- **OpenMSP Slack Community**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **OpenFrame Website**: https://openframe.ai
+- **Flamingo Platform**: https://flamingo.run
+
+### Troubleshooting Tips
+
+#### Common First-Time Issues
+
+1. **Cannot create users**: Check organization domain configuration
+2. **API keys not working**: Verify key scope and expiration
+3. **Devices not appearing**: Check agent installation and network connectivity
+4. **Alerts not firing**: Verify notification channel configuration
+
+#### Performance Optimization
+
 ```bash
-# Backend tests
-mvn test
+# Check system resource usage
+docker stats
 
-# Frontend tests  
-cd openframe/services/openframe-frontend
-npm run test
+# Monitor Java services
+docker logs openframe-api
+docker logs openframe-gateway
 
-# Rust agent tests
-cd client
-cargo test
+# Check database performance
+docker logs mongodb
 ```
 
 ## Next Steps
 
-### Immediate Actions (Next 30 minutes)
-1. **Explore the API documentation**: [API Overview](../api/overview.md)
-2. **Review architecture details**: [Architecture Overview](../development/architecture/overview.md)
-3. **Set up your development environment**: [Development Setup](../development/setup/environment.md)
+🎉 **Great work!** You've configured the essential OpenFrame settings.
 
-### Short-term Goals (Next few hours)
-1. **Deploy additional integrated tools**
-2. **Configure monitoring and alerting**
-3. **Set up your first custom integration**
-4. **Explore the client agent capabilities**
+### Recommended Learning Path
 
-### Learning Resources
-- **[Development Guide](../development/README.md)** - Comprehensive development documentation
-- **[API Reference](../api/README.md)** - Complete API documentation
-- **[Deployment Guide](../deployment/README.md)** - Production deployment information
-- **[Operations Manual](../operations/README.md)** - Operational procedures
+> **Continue Your Journey**
+> 
+> 1. **Development Environment**: Set up [development environment](../development/setup/environment.md) for customization
+> 2. **Architecture Deep Dive**: Understand [OpenFrame architecture](../development/architecture/overview.md)
+> 3. **API Integration**: Learn [API usage](../development/testing/overview.md) for custom integrations
+> 4. **Production Deployment**: Plan your [deployment strategy](../development/contributing/guidelines.md)
 
-## Getting Help
+### Advanced Features to Explore
 
-### Documentation
-- **Search this documentation** using your browser's search function
-- **Check the troubleshooting guides** for common issues
-- **Review the FAQ** for frequently asked questions
+- **AI Integration**: Configure Mingo AI and Fae assistants
+- **Custom Dashboards**: Create role-specific dashboards
+- **Automation Rules**: Set up automated responses to common issues
+- **Compliance Reporting**: Generate compliance and audit reports
+- **Multi-Tenant Management**: Configure additional tenants (enterprise feature)
 
-### Community
-- **GitHub Issues**: Report bugs and request features
-- **Discussion Forums**: Ask questions and share knowledge
-- **Community Chat**: Real-time help and discussion
+### Video Resources
 
-### Troubleshooting
+Learn more about OpenFrame's enhanced developer experience:
 
-**Common First-Time Issues**:
-1. **Port conflicts**: Ensure required ports are available
-2. **Permission issues**: Check file and directory permissions
-3. **Service startup failures**: Review logs for specific error messages
-4. **Authentication problems**: Verify credentials and token configuration
+[![OpenFrame v0.3.7 - Enhanced Developer Experience](https://img.youtube.com/vi/O8hbBO5Mym8/maxresdefault.jpg)](https://www.youtube.com/watch?v=O8hbBO5Mym8)
 
-**Getting Logs**:
-```bash
-# Service logs
-docker-compose logs -f [service-name]
+---
 
-# Application logs
-tail -f logs/openframe.log
-
-# System logs
-journalctl -f -u openframe
-```
-
-**Quick Health Check**:
-```bash
-# Check all services
-curl http://localhost:8080/actuator/health
-
-# Check specific service
-curl http://localhost:8080/api/services/health
-```
-
-## Congratulations!
-
-You've completed your first steps with OpenFrame. You should now have:
-- ✅ A running OpenFrame installation
-- ✅ Understanding of core components
-- ✅ Experience with the main interface
-- ✅ Knowledge of key features and capabilities
-- ✅ Direction for next steps
-
-Ready to dive deeper? Continue with the [Development Guide](../development/README.md) or explore specific areas that interest you most.
+**First steps complete!** Your OpenFrame installation is now properly configured and ready for production use or further development.

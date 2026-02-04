@@ -1,167 +1,309 @@
-# Prerequisites
+# Prerequisites Guide
 
-Before setting up OpenFrame, ensure your system meets the following requirements:
+Before installing OpenFrame, ensure your environment meets the requirements for development, testing, or production deployment.
 
 ## System Requirements
 
-### Minimum Hardware
-- **CPU**: 4 cores (2.4 GHz or higher)
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **Storage**: 50 GB available disk space
-- **Network**: Stable internet connection for downloading dependencies
+### Minimum Hardware Requirements
 
-### Recommended Hardware (Production)
-- **CPU**: 8+ cores (3.0 GHz or higher)
-- **RAM**: 32 GB or more
-- **Storage**: 200 GB+ SSD storage
-- **Network**: High-bandwidth connection (1 Gbps+)
+| Component | Development | Production |
+|-----------|-------------|------------|
+| **CPU** | 4 cores (Intel/AMD x64) | 8+ cores |
+| **Memory** | 8 GB RAM | 16+ GB RAM |
+| **Storage** | 20 GB free space | 100+ GB SSD |
+| **Network** | Broadband internet | High-speed internet |
 
-## Development Environment
+### Supported Operating Systems
 
-### Required Software
+| OS | Development | Production |
+|----|-----------:|----------:|
+| **macOS** | ✅ 10.15+ | ✅ Server deployment |
+| **Linux** | ✅ Ubuntu 20.04+, CentOS 8+ | ✅ Preferred for production |
+| **Windows** | ✅ Windows 10/11 | ⚠️ Limited support |
 
-#### Java Development
-- **OpenJDK 21.0.1+** - Required for Spring Boot services
-- **Maven 3.9.6+** - Build and dependency management
-- **IDE**: IntelliJ IDEA, Eclipse, or VSCode with Java extensions
+## Required Software & Versions
 
-#### Frontend Development  
-- **Node.js 18+** with npm - Required for Vue.js frontend
-- **Modern Browser** - Chrome, Firefox, Safari, or Edge (latest versions)
+### Core Development Tools
 
-#### Rust Development (for client agent)
-- **Rust 1.70+** with Cargo - Cross-platform agent development
-- **Platform-specific tools**:
-  - Windows: Visual Studio Build Tools or Visual Studio
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC and essential build tools
+| Tool | Version | Purpose | Installation Check |
+|------|---------|---------|-------------------|
+| **Java JDK** | 21+ | Backend services | `java --version` |
+| **Maven** | 3.9+ | Java build system | `mvn --version` |
+| **Node.js** | 18+ | Frontend development | `node --version` |
+| **npm** | 9+ | Package management | `npm --version` |
+| **Docker** | 24.0+ | Containerization | `docker --version` |
+| **Docker Compose** | 2.20+ | Multi-container orchestration | `docker compose version` |
 
-#### Containerization
-- **Docker 24.0+** - Container runtime
-- **Docker Compose 2.23+** - Multi-container orchestration
+### Optional Development Tools
 
-#### Version Control
-- **Git 2.42+** - Source code management
+| Tool | Version | Purpose | Required For |
+|------|---------|---------|--------------|
+| **Rust** | 1.70+ | System agent development | Client modifications |
+| **Kubernetes** | 1.28+ | Production deployment | Kubernetes deployment |
+| **Helm** | 3.12+ | Kubernetes package management | Kubernetes deployment |
 
-### Optional Tools
+### Development Environment Setup
 
-#### Production Deployment
-- **Kubernetes 1.28+** - Container orchestration (for production)
-- **kubectl** - Kubernetes command-line tool
-- **Helm 3.0+** - Kubernetes package manager
+#### macOS Installation
 
-#### Development Tools
-- **Postman** or **Insomnia** - API testing
-- **MongoDB Compass** - Database GUI (optional)
-- **Redis CLI** - Cache inspection (optional)
+```bash
+# Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-## Authentication Requirements
+# Install Java 21
+brew install openjdk@21
+echo 'export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"' >> ~/.zshrc
+
+# Install Maven
+brew install maven
+
+# Install Node.js
+brew install node
+
+# Install Docker Desktop
+brew install --cask docker
+
+# Verify installations
+java --version && mvn --version && node --version && docker --version
+```
+
+#### Linux (Ubuntu/Debian) Installation
+
+```bash
+# Update package index
+sudo apt update
+
+# Install Java 21
+sudo apt install -y openjdk-21-jdk
+
+# Install Maven
+sudo apt install -y maven
+
+# Install Node.js 18+
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install Docker
+sudo apt install -y docker.io docker-compose-plugin
+sudo usermod -aG docker `$USER`
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Verify installations
+java --version && mvn --version && node --version && docker --version
+```
+
+#### Windows Installation
+
+```powershell
+# Install using Chocolatey (recommended package manager for Windows)
+# First install Chocolatey: https://chocolatey.org/install
+
+# Install Java 21
+choco install openjdk21
+
+# Install Maven
+choco install maven
+
+# Install Node.js
+choco install nodejs
+
+# Install Docker Desktop
+choco install docker-desktop
+
+# Verify installations
+java --version; mvn --version; node --version; docker --version
+```
+
+## Account & Access Requirements
 
 ### GitHub Access
-You'll need a **GitHub Personal Access Token (Classic)** with the following permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to GitHub packages
-- `write:packages` - Write access to GitHub packages
 
-#### Creating a GitHub Token
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions listed above
-4. Set an appropriate expiration date
-5. Copy the generated token securely
+OpenFrame development requires access to private repositories. Ensure you have:
 
-## Network Configuration
+| Requirement | Description | How to Verify |
+|-------------|-------------|---------------|
+| **GitHub Account** | Active GitHub account | Visit https://github.com |
+| **Repository Access** | Access to flamingo-stack/openframe-oss-tenant | Check repository visibility |
+| **Personal Access Token** | Token with repo access | Required for private dependencies |
 
-### Required Ports
-Ensure the following ports are available:
+#### Creating GitHub Personal Access Token
 
-#### Development Environment
-- `8080` - Main application UI
-- `8888` - Configuration server
-- `5432` - PostgreSQL (if using)
-- `27017` - MongoDB
-- `6379` - Redis
-- `9092` - Kafka
-- `8086` - InfluxDB (if using)
+1. Go to GitHub → Settings → Developer settings → Personal access tokens
+2. Generate new token (classic)
+3. Select scopes: `repo`, `workflow`, `read:packages`
+4. Copy token securely (you won't see it again)
 
-#### Production Environment
-- `80/443` - HTTP/HTTPS traffic
-- `6443` - Kubernetes API server
-- Additional ports based on your specific configuration
+### Optional Cloud Accounts
 
-### Firewall Considerations
-- Allow outbound connections to GitHub for package downloads
-- Allow inbound connections on the specified ports
-- Consider corporate firewall/proxy settings
+| Service | Purpose | When Needed |
+|---------|---------|-------------|
+| **AWS Account** | Cloud deployment | Production/staging deployment |
+| **Azure Account** | SSO integration | Azure AD authentication |
+| **Google Cloud** | SSO integration | Google Workspace authentication |
 
-## Platform-Specific Notes
+## Environment Variables
 
-### Windows
-- Enable WSL2 for better Docker performance
-- Consider using Git Bash or PowerShell Core
-- Ensure Windows Defender exclusions for development directories
+Create a `.env` file in your project root with the following variables:
 
-### macOS
-- Install Homebrew for easier package management
-- Ensure Xcode Command Line Tools are installed
-- Consider using Docker Desktop for Mac
+```bash
+# GitHub Authentication (Required)
+GITHUB_TOKEN=your_github_personal_access_token
 
-### Linux
-- Ensure your user is in the `docker` group
-- Install development packages: `build-essential`, `curl`, `git`
-- Consider using your distribution's package manager for tool installation
+# Database Configuration (Development)
+MONGODB_URI=mongodb://localhost:27017/openframe
+REDIS_URL=redis://localhost:6379
 
-## Verification Steps
+# Kafka Configuration (Development)
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
-After installing the prerequisites, verify your setup:
+# Security (Development)
+JWT_SECRET=your-development-jwt-secret-minimum-32-chars
+ENCRYPTION_KEY=your-development-encryption-key-32-chars
+
+# Optional: External Tool Integration
+TACTICAL_RMM_URL=http://localhost:8001
+FLEETDM_URL=http://localhost:8080
+```
+
+> **⚠️ Security Note**: Never commit real credentials to version control. Use development values locally and proper secrets management in production.
+
+## Verification Commands
+
+Run these commands to verify your environment is correctly configured:
+
+### Basic Environment Check
 
 ```bash
 # Check Java version
-java -version
+java --version
+# Expected: openjdk 21.x.x
 
 # Check Maven version
-mvn -version
+mvn --version
+# Expected: Apache Maven 3.9.x
 
-# Check Node.js and npm versions
+# Check Node.js version
 node --version
-npm --version
+# Expected: v18.x.x or higher
 
-# Check Rust version (if applicable)
-rustc --version
-cargo --version
+# Check npm version
+npm --version
+# Expected: 9.x.x or higher
 
 # Check Docker version
 docker --version
-docker-compose --version
+# Expected: Docker version 24.0.x
 
-# Check Git version
-git --version
+# Check Docker Compose version
+docker compose version
+# Expected: Docker Compose version v2.20.x
+```
+
+### Docker Environment Check
+
+```bash
+# Test Docker functionality
+docker run --rm hello-world
+# Expected: "Hello from Docker!" message
+
+# Check Docker daemon is running
+docker info
+# Expected: Server information displayed
+
+# Verify Docker Compose functionality
+docker compose --version
+# Expected: Version information displayed
+```
+
+### Network Connectivity Check
+
+```bash
+# Test internet connectivity
+ping -c 4 github.com
+
+# Test Docker Hub connectivity
+docker pull alpine:latest
+
+# Test Maven Central connectivity
+mvn help:evaluate -Dexpression=maven.version -q -DforceStdout
+```
+
+## Troubleshooting Common Issues
+
+### Java Version Issues
+
+**Problem**: Wrong Java version or `JAVA_HOME` not set
+
+```bash
+# Check current Java version
+java --version
+
+# Set JAVA_HOME (macOS/Linux)
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)  # macOS
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk   # Linux
+
+# Add to shell profile for persistence
+echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 21)' >> ~/.zshrc  # macOS
+echo 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk' >> ~/.bashrc   # Linux
+```
+
+### Docker Permission Issues (Linux)
+
+**Problem**: Permission denied when running Docker commands
+
+```bash
+# Add user to docker group
+sudo usermod -aG docker `$USER`
+
+# Restart or log out/in to apply changes
+# Or temporarily apply group membership
+newgrp docker
+
+# Test Docker access
+docker run --rm hello-world
+```
+
+### Node.js Version Issues
+
+**Problem**: Node.js version too old
+
+```bash
+# Using Node Version Manager (nvm)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 18
+nvm use 18
+nvm alias default 18
+```
+
+### Maven Download Issues
+
+**Problem**: Dependencies fail to download
+
+```bash
+# Clear Maven cache
+rm -rf ~/.m2/repository
+
+# Verify Maven settings
+cat ~/.m2/settings.xml
+
+# Test Maven connectivity
+mvn dependency:resolve -f pom.xml
 ```
 
 ## Next Steps
 
-Once all prerequisites are met, proceed to:
-1. [Quick Start Guide](quick-start.md) for a rapid setup
-2. [Introduction](introduction.md) for a detailed overview
-3. [Development Setup](../development/setup/environment.md) for development environment configuration
+Once you've verified all prerequisites are met:
 
-## Troubleshooting
+✅ **Environment Ready**: All tools installed and verified  
+✅ **Accounts Configured**: GitHub token and access confirmed  
+✅ **Network Connectivity**: All required services accessible  
 
-### Common Issues
+> **Continue to Quick Start**
+> 
+> Your environment is ready! Proceed to the [Quick Start Guide](quick-start.md) to get OpenFrame running in under 5 minutes.
 
-#### Java Installation Issues
-- Ensure JAVA_HOME is properly set
-- Verify PATH includes Java binaries
-- Use `alternatives` (Linux) or `java_home` (macOS) for version management
+---
 
-#### Docker Issues
-- Ensure Docker daemon is running
-- Check Docker Desktop settings on Windows/macOS
-- Verify user permissions on Linux
-
-#### Network Issues
-- Check corporate proxy settings
-- Verify firewall configuration
-- Test connectivity to GitHub and other required services
-
-If you encounter issues not covered here, see our [Troubleshooting Guide](../operations/troubleshooting/common-issues.md).
+**Having Issues?** Join our community for help:
+- **OpenMSP Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
