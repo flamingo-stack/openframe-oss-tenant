@@ -9,6 +9,7 @@ import {
   processHistoricalMessages,
   useNatsDialogSubscription,
   buildNatsWsUrl,
+  extractIncompleteMessageState,
   type NatsMessageType,
   type Message,
   type MessageSegment
@@ -45,6 +46,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     resolve: () => void
     reject: (error: Error) => void
   } | null>(null)
+  const escalatedApprovalsRef = useRef<Map<string, { command: string; explanation?: string; approvalType: string }>>(new Map())
   
   const { debugMode } = useDebugMode()
   const { quickActions } = useChatConfig()
@@ -123,10 +125,76 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       approvalsRef.current.handleEscalatedApproval(requestId, data)
     },
     onEscalatedApprovalResult: (requestId: string, approved: boolean, data: { command: string; explanation?: string; approvalType: string }) => {
-      const segment = approvalsRef.current.handleEscalatedApprovalResult(requestId, approved, data)
-      messagesRef.current.addToolSegmentToCurrentMessage(segment)
+      approvalsRef.current.handleEscalatedApprovalResult(requestId, approved, data)
     }
   }), [onMetadataUpdate])
+
+  const incompleteState = useMemo(() => {
+    if (!isResumedDialog) return undefined
+    
+    const currentMessages = messages.messages
+    const assistantSegments: MessageSegment[] = []
+    let lastAssistantId = ''
+    let lastAssistantTimestamp = new Date()
+    
+    for (let i = currentMessages.length - 1; i >= 0; i--) {
+      const msg = currentMessages[i]
+      if (msg.role === 'assistant') {
+        if (!lastAssistantId) {
+          lastAssistantId = msg.id
+          lastAssistantTimestamp = msg.timestamp || new Date()
+        }
+        
+        if (Array.isArray(msg.content)) {
+          assistantSegments.unshift(...msg.content)
+        } else if (typeof msg.content === 'string' && msg.content) {
+          assistantSegments.unshift({
+            type: 'text',
+            text: msg.content,
+            id: `${msg.id}-text`
+          } as MessageSegment)
+        }
+      } else {
+        break
+      }
+    }
+    
+    if (assistantSegments.length > 0 && lastAssistantId) {
+      const completeAssistantMessage = {
+        id: lastAssistantId,
+        role: 'assistant' as const,
+        content: assistantSegments,
+        name: 'Fae',
+        timestamp: lastAssistantTimestamp
+      }
+      
+      return extractIncompleteMessageState(completeAssistantMessage)
+    }
+    
+    return undefined
+  }, [messages.messages, isResumedDialog])
+
+  useEffect(() => {
+    if (!isResumedDialog || !incompleteState) return
+    
+    const hasIncompleteContent = 
+      (incompleteState.existingSegments && incompleteState.existingSegments.length > 0) ||
+      (incompleteState.pendingApprovals && incompleteState.pendingApprovals.size > 0) ||
+      (incompleteState.executingTools && incompleteState.executingTools.size > 0)
+    
+    if (hasIncompleteContent && !isTyping) {
+      setIsTyping(true)
+    }
+  }, [isResumedDialog, incompleteState, isTyping])
+
+  const enhancedInitialState = useMemo(() => {
+    if (!incompleteState && escalatedApprovalsRef.current.size === 0) return undefined
+    
+    return {
+      ...incompleteState,
+      escalatedApprovals: escalatedApprovalsRef.current.size > 0 ? escalatedApprovalsRef.current : undefined
+    }
+  }, [incompleteState, isResumedDialog])
 
   const { 
     processChunk: processRealtimeChunk, 
@@ -134,7 +202,8 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
     displayApprovalTypes: ['CLIENT'],
-    approvalStatuses: approvals.approvalStatuses
+    approvalStatuses: approvals.approvalStatuses,
+    initialState: enhancedInitialState
   })
 
   const handleRealtimeEvent = useCallback((chunk: any) => {
@@ -318,6 +387,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     setNatsDialogId(null)
     setIsResumedDialog(false)
     hasCaughtUp.current = false
+    escalatedApprovalsRef.current.clear()
     approvals.clearApprovals()
     resetChunkTracking()
     resetChunkProcessor()
@@ -343,18 +413,20 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       if (!messagesConnection || !messagesConnection.edges) {
         throw new Error('Failed to load dialog history')
       }
-      
-      const historicalMessages = processHistoricalMessages(
+
+      const result = processHistoricalMessages(
         messagesConnection.edges.map(edge => edge.node),
         {
           onApprove: approvals.handleApproveRequest,
           onReject: approvals.handleRejectRequest,
           approvalStatuses: approvals.approvalStatuses,
-          assistantAvatar: faeAvatar
+          assistantAvatar: faeAvatar,
+          displayApprovalTypes: ['CLIENT']
         }
       )
-      
-      historicalMessages.forEach(msg => messages.addMessage(msg))
+
+      escalatedApprovalsRef.current = result.escalatedApprovals
+      result.messages.forEach((msg: Message) => messages.addMessage(msg))
       
       setNatsDialogId(dialogId)
       natsDialogIdRef.current = dialogId

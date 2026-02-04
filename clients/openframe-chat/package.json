@@ -13,7 +13,7 @@
     "icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.20",
+    "@flamingo-stack/openframe-frontend-core": "0.0.25",
     "@tauri-apps/api": "^2.0.0",
     "graphql": "^16.12.0",
     "graphql-request": "^7.4.0",
