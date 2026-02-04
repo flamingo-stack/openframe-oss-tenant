@@ -23,7 +23,7 @@ const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz'
 const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip'
 
 const buildBinaryUrl = (version: string, assetName: string) => {
-  if (version === 'latest' || !version) {
+  if (!version) {
     return `${RELEASES_BASE_URL}/latest/download/${assetName}`
   }
 
