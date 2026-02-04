@@ -9,7 +9,7 @@ import {
   ScriptInfoSection,
   SelectableDeviceCard,
   useSmUp,
-  type ScriptArgument,
+  type ScriptArgument
 } from '@flamingo-stack/openframe-frontend-core'
 import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import {
@@ -31,6 +31,7 @@ import { z } from 'zod'
 import { getDeviceOperatingSystem } from '../../devices/utils/device-status'
 import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
 import { useRunScriptData } from '../hooks/use-run-script-data'
+import { ScheduleScriptLoader } from './schedule-script-loader'
 
 interface ScheduleScriptViewProps {
   scriptId: string
@@ -293,7 +294,7 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
   ], [handleSubmit, onSubmit, onFormError, selectedCount, isSubmitting])
 
   if (isLoadingScript) {
-    return <ListLoader />
+    return <ScheduleScriptLoader />
   }
 
   if (scriptError) {

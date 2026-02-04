@@ -1,7 +1,7 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tacticalApiClient } from '@lib/tactical-api-client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 // ============ Types ============
 
@@ -46,11 +46,19 @@ export const scheduledTasksQueryKeys = {
 // ============ API Functions ============
 
 async function fetchScheduledTasksByScript(scriptId: string): Promise<ScheduledTask[]> {
-  const res = await tacticalApiClient.getScheduledTasksByScript(scriptId)
+  const res = await tacticalApiClient.getScheduledTasks()
+
   if (!res.ok) {
     throw new Error(res.error || `Failed to load scheduled tasks (${res.status})`)
   }
-  return res.data || []
+
+  const allTasks: ScheduledTask[] = res.data || []
+  const scriptIdNum = parseInt(scriptId, 10)
+
+  // Filter tasks that have at least one action referencing this script
+  return allTasks.filter((task) =>
+    task.actions.some((action) => action.type === 'script' && action.script === scriptIdNum)
+  )
 }
 
 async function deleteScheduledTaskApi(taskId: string): Promise<void> {
