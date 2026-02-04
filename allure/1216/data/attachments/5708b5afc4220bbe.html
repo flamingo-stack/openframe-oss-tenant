@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6983474e2d2e8f5e9dc6c1ae</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Johnsie Hermiston II&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(361) 602-0697&quot;,
+                &quot;email&quot;: &quot;mirtha.ward@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;005 Jacobs Pass&quot;,
+            &quot;street2&quot;: &quot;Apt. 913&quot;,
+            &quot;city&quot;: &quot;West Cristin&quot;,
+            &quot;state&quot;: &quot;Vermont&quot;,
+            &quot;postalCode&quot;: &quot;47402&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;72057 Manuel Locks&quot;,
+            &quot;street2&quot;: &quot;Suite 339&quot;,
+            &quot;city&quot;: &quot;Zemlakmouth&quot;,
+            &quot;state&quot;: &quot;Montana&quot;,
+            &quot;postalCode&quot;: &quot;44787&quot;,
+            &quot;country&quot;: &quot;Lebanon&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        4
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        4
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMzhhYWI3NWMtMGM0NC00ZDQ4LTk0OGUtYTZkM2RhMzlmZTcwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyOWE0YTljMS03Nzc0LTQ3Y2EtODQxOS0yY2E0NzAxODA2MGEiLCJzdWIiOiJsYXZvbmRhLnRvd25lQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMjExMTQ5LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8yOWE0YTljMS03Nzc0LTQ3Y2EtODQxOS0yY2E0NzAxODA2MGEiLCJleHAiOjE3NzAyMTIwNDksImlhdCI6MTc3MDIxMTE0OSwidXNlcklkIjoiMjJlYzJlYjktNDY5OC00NjQzLWFlZTAtMmIzY2MxMzNjMTJlIiwianRpIjoiZGJjODI3NmYtZWJlZC00ZjU1LWI4MjMtZDgyOWFiNDRmZDBjIn0.U6al3jj_-EthwASaJqJodsA1U-gimdtyXUPZPouETo3waB1zApw1im0WssFzsBN9mbhrc1cIksvYgyJnm1Y3_5oFQGDA1j9INaayh-cNxrCUcyw-4ZHZACd5Ck3gvMSKwUUYnoxctVJc2yMypjM0tewZaxD6hYJC-MrftuqUKIBMPiY9SX5sOq8GjWkXB8he1wdm4Du-G3_CkCyj1fEkXJSeecT8m7cJtCOWx7v0rGAs23gt_VyEGuKqcUAB6NUHMACkVNNH2UYoG0pUGrMZlYVEpvj3KFfVI2ODHzhqmXsP7NUW7j-MUrdpOb3kUDq-LHGfd20pz3n0IATcr3q6yw</div>
+        <div>refresh_token: PbWxhCqmZF_aQonj9xa_E0GqWuyRP_5srzzbHiCw-70J-fmcK7st1VevakH52ulzUKyAsWwn8sHhs3z074HHoT3IvAVx_k5o9W2W4QiZleNL4NZYQwskibdIydoLmf9N</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6983474e2d2e8f5e9dc6c1ae&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMzhhYWI3NWMtMGM0NC00ZDQ4LTk0OGUtYTZkM2RhMzlmZTcwIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyOWE0YTljMS03Nzc0LTQ3Y2EtODQxOS0yY2E0NzAxODA2MGEiLCJzdWIiOiJsYXZvbmRhLnRvd25lQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMjExMTQ5LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8yOWE0YTljMS03Nzc0LTQ3Y2EtODQxOS0yY2E0NzAxODA2MGEiLCJleHAiOjE3NzAyMTIwNDksImlhdCI6MTc3MDIxMTE0OSwidXNlcklkIjoiMjJlYzJlYjktNDY5OC00NjQzLWFlZTAtMmIzY2MxMzNjMTJlIiwianRpIjoiZGJjODI3NmYtZWJlZC00ZjU1LWI4MjMtZDgyOWFiNDRmZDBjIn0.U6al3jj_-EthwASaJqJodsA1U-gimdtyXUPZPouETo3waB1zApw1im0WssFzsBN9mbhrc1cIksvYgyJnm1Y3_5oFQGDA1j9INaayh-cNxrCUcyw-4ZHZACd5Ck3gvMSKwUUYnoxctVJc2yMypjM0tewZaxD6hYJC-MrftuqUKIBMPiY9SX5sOq8GjWkXB8he1wdm4Du-G3_CkCyj1fEkXJSeecT8m7cJtCOWx7v0rGAs23gt_VyEGuKqcUAB6NUHMACkVNNH2UYoG0pUGrMZlYVEpvj3KFfVI2ODHzhqmXsP7NUW7j-MUrdpOb3kUDq-LHGfd20pz3n0IATcr3q6yw&#39; -b &#39;refresh_token=PbWxhCqmZF_aQonj9xa_E0GqWuyRP_5srzzbHiCw-70J-fmcK7st1VevakH52ulzUKyAsWwn8sHhs3z074HHoT3IvAVx_k5o9W2W4QiZleNL4NZYQwskibdIydoLmf9N&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Johnsie Hermiston II&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(361) 602-0697&quot;,
+                &quot;email&quot;: &quot;mirtha.ward@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;005 Jacobs Pass&quot;,
+            &quot;street2&quot;: &quot;Apt. 913&quot;,
+            &quot;city&quot;: &quot;West Cristin&quot;,
+            &quot;state&quot;: &quot;Vermont&quot;,
+            &quot;postalCode&quot;: &quot;47402&quot;,
+            &quot;country&quot;: &quot;Democratic People&#39;s Republic of Korea&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;72057 Manuel Locks&quot;,
+            &quot;street2&quot;: &quot;Suite 339&quot;,
+            &quot;city&quot;: &quot;Zemlakmouth&quot;,
+            &quot;state&quot;: &quot;Montana&quot;,
+            &quot;postalCode&quot;: &quot;44787&quot;,
+            &quot;country&quot;: &quot;Lebanon&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        4
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        4
+    ]
+}&#39;
+</div>
