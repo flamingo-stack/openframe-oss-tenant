@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Wendie McClure&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(860) 904-1977 x6317&quot;,
+                &quot;email&quot;: &quot;thora.osinski@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;3661 Emile Street&quot;,
+            &quot;street2&quot;: &quot;Apt. 900&quot;,
+            &quot;city&quot;: &quot;Port Evangelineberg&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;15777&quot;,
+            &quot;country&quot;: &quot;British Indian Ocean Territory (Chagos Archipelago)&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        4
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        4
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYTQ2ZmQ2YTktYjQ1Ny00NmQyLThjZjktYWMzNjMxYWMxODg2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjYmFkNTNiNy1hNGI1LTQ0MTgtOTZmYS1jODAxMjk4NTZjMmMiLCJzdWIiOiJlbGxhbWFlLndlaG5lckB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDIxNTA2Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvY2JhZDUzYjctYTRiNS00NDE4LTk2ZmEtYzgwMTI5ODU2YzJjIiwiZXhwIjoxNzcwMjE1OTYzLCJpYXQiOjE3NzAyMTUwNjMsInVzZXJJZCI6IjdiNjc5NjNjLTkwZTYtNDYzZC04MWY0LTJlNjQ1NjE1Zjc1YyIsImp0aSI6ImE1ZDk2MGVkLTU5MTYtNDQyMi1hOGUwLTQwYWMzNTJhM2MwNSJ9.kUWUeOfawyTGMi5r5u9Fs5G-HkcPzxFx7ozNT_eKoTsEMTOXV_Mx36DCvpxTk9OXGK_L0PLa0I3slGRzNPlsixYec6Ywd0B7L4ILkutdzcESPlx1uEjFZT8HIQaUOKsVJjWjwRdjT2i5bxWqeb7LtMcppmqK_f_Hv_2uCCPNYXf1_Gy0kvIiw6jb0s2ii6czOekTY7t4LCjZ46L5tJaazDoFcqLpYU0FW1yvLgdPcti4YaDW-pjo_PYoY3NFxiL2oMPA7l9fZcMuIRFZ2ZVlv8JVRzq_e1cd5w7-YkeJPa51dxdBGQHCcuVD8Ji6Px3rbpaZ3agF0jJ9MiqGJFAZhg</div>
+        <div>refresh_token: du0qhlItXNAwWfaR_R7djIn2akYWBCt1O8XU02yBQuIv1riBeweZNMckdYlkZJngAmEamzDfcDyi9k_eDlthEkln-LAnzd_c2btOM5cSBcmbgwH9yNUqhNsarOKIdCe_</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYTQ2ZmQ2YTktYjQ1Ny00NmQyLThjZjktYWMzNjMxYWMxODg2IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjYmFkNTNiNy1hNGI1LTQ0MTgtOTZmYS1jODAxMjk4NTZjMmMiLCJzdWIiOiJlbGxhbWFlLndlaG5lckB5YWhvby5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDIxNTA2Mywicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvY2JhZDUzYjctYTRiNS00NDE4LTk2ZmEtYzgwMTI5ODU2YzJjIiwiZXhwIjoxNzcwMjE1OTYzLCJpYXQiOjE3NzAyMTUwNjMsInVzZXJJZCI6IjdiNjc5NjNjLTkwZTYtNDYzZC04MWY0LTJlNjQ1NjE1Zjc1YyIsImp0aSI6ImE1ZDk2MGVkLTU5MTYtNDQyMi1hOGUwLTQwYWMzNTJhM2MwNSJ9.kUWUeOfawyTGMi5r5u9Fs5G-HkcPzxFx7ozNT_eKoTsEMTOXV_Mx36DCvpxTk9OXGK_L0PLa0I3slGRzNPlsixYec6Ywd0B7L4ILkutdzcESPlx1uEjFZT8HIQaUOKsVJjWjwRdjT2i5bxWqeb7LtMcppmqK_f_Hv_2uCCPNYXf1_Gy0kvIiw6jb0s2ii6czOekTY7t4LCjZ46L5tJaazDoFcqLpYU0FW1yvLgdPcti4YaDW-pjo_PYoY3NFxiL2oMPA7l9fZcMuIRFZ2ZVlv8JVRzq_e1cd5w7-YkeJPa51dxdBGQHCcuVD8Ji6Px3rbpaZ3agF0jJ9MiqGJFAZhg&#39; -b &#39;refresh_token=du0qhlItXNAwWfaR_R7djIn2akYWBCt1O8XU02yBQuIv1riBeweZNMckdYlkZJngAmEamzDfcDyi9k_eDlthEkln-LAnzd_c2btOM5cSBcmbgwH9yNUqhNsarOKIdCe_&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Wendie McClure&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(860) 904-1977 x6317&quot;,
+                &quot;email&quot;: &quot;thora.osinski@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;3661 Emile Street&quot;,
+            &quot;street2&quot;: &quot;Apt. 900&quot;,
+            &quot;city&quot;: &quot;Port Evangelineberg&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;15777&quot;,
+            &quot;country&quot;: &quot;British Indian Ocean Territory (Chagos Archipelago)&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        4
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        4
+    ]
+}&#39;
+</div>
