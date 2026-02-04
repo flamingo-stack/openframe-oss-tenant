@@ -1,97 +1,293 @@
 # Contributing to OpenFrame
 
-Thank you for your interest in contributing to the OpenFrame project! We encourage both small and large contributions and appreciate your help in improving our platform.
+Thank you for your interest in contributing to OpenFrame! This guide will help you get started with contributing to the open-source, multi-tenant implementation of Flamingo's unified MSP platform.
 
-## Table of Contents
-1. Getting Started  
-2. Development Environment  
-3. Code Standards and Practices  
-4. Pull Requests  
-5. Issue Tracking  
-6. Communication  
-7. Contributor License Agreement (CLA)  
-8. Code of Conduct  
+## 🤝 Code of Conduct
 
---------------------------------------------------------------------------------
-## 1. Getting Started
+By participating in this project, you agree to abide by our community standards:
 
-- Ensure you have the prerequisites installed:
-  - Java 21, Maven 3.9+, Docker & Docker Compose, Git 2.42+
-  - (Optional) Node.js + npm (for the front-end build)
+- **Be respectful** - Treat everyone with respect and kindness
+- **Be inclusive** - Welcome people of all backgrounds and skill levels
+- **Be constructive** - Focus on helping and improving the project
+- **Be patient** - Remember that everyone is learning
 
-- Fork the repository in GitHub, then clone your fork locally:  ```bash
-  git clone https://github.com/YOUR-USERNAME/openframe.git
-  cd openframe  ```
+## 🚀 Getting Started
 
---------------------------------------------------------------------------------
-## 2. Development Environment
+### Prerequisites
 
-Below are brief steps for a standard dev environment:
+Before contributing, ensure you have the required development environment:
 
-1. Run Maven to build the backend libraries and services:   ```bash
-   mvn clean install   ```
-2. For the front-end (if you plan to make UI changes):   ```bash
-   cd services/openframe-frontend
+- **Java**: OpenJDK 21.0.1+
+- **Node.js**: 18+ with npm
+- **Rust**: 1.70+ with Cargo  
+- **Docker**: 24.0+ with Docker Compose
+- **Git**: 2.42+
+- **GitHub Account**: For authentication to GitHub Packages
+
+### Development Setup
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/openframe-oss-tenant.git
+   cd openframe-oss-tenant
+   ```
+
+3. **Set up GitHub authentication** (required for dependencies):
+   ```bash
+   export GITHUB_ACTOR=your-github-username
+   export GITHUB_TOKEN=your-github-token
+   ```
+
+4. **Install dependencies and build**:
+   ```bash
+   # Backend services
+   mvn clean install
+   
+   # Frontend
+   cd openframe/services/openframe-frontend
    npm install
-   npm run serve   ```
-3. Optionally launch the entire stack using Docker Compose:   ```bash
-   ./scripts/build-and-run.sh   ```
+   
+   # Rust client agent  
+   cd ../../client
+   cargo build
+   ```
 
-Refer to [docs/deployment.md](docs/deployment.md) for more specific setup details.
+5. **Run tests** to ensure everything works:
+   ```bash
+   # Java tests
+   mvn test
+   
+   # Frontend tests
+   cd openframe/services/openframe-frontend
+   npm run type-check
+   
+   # Rust tests
+   cd ../../client  
+   cargo test
+   ```
 
---------------------------------------------------------------------------------
-## 3. Code Standards and Practices
+For detailed setup instructions, see the [Development Environment Guide](docs/development/setup/environment.md).
 
-- Code style:
-  - Use standard Java conventions, or the project’s .editorconfig / style plugin.
-  - For JavaScript/TypeScript front-end, follow Prettier/ESLint settings if available.
+## 📋 How to Contribute
 
-- Testing:
-  - Write unit and integration tests where possible.
-  - Keep test coverage above the project threshold.
-  - For Java, we use JUnit or Testcontainers. For front-end, consider Jest or Cypress.
+### Reporting Issues
 
-- Commits:
-  - Use descriptive commit messages (e.g. “Fix login bug with JWT tokens”).
-  - Group related changes into a single commit; separate unrelated changes.
+Before creating an issue, please:
 
---------------------------------------------------------------------------------
-## 4. Pull Requests
+1. **Check existing issues** to avoid duplicates
+2. **Use our Slack community** at [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for questions and discussions
+3. **Provide detailed information** including:
+   - OpenFrame version
+   - Operating system and version
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Relevant logs or error messages
 
-- Ensure all commits are rebased or squashed appropriately.
-- Include a clear description with:
-  - What problem you are addressing / what feature you are implementing
-  - How you tested it
-  - Any potential impacts on existing features
-- Reference the related issue if applicable (e.g., “Fixes #123”).
-- Make sure your PR passes all checks (CI, code style, test coverage).
+**Note**: We don't use GitHub Issues or GitHub Discussions. All project coordination happens in our OpenMSP Slack community.
 
---------------------------------------------------------------------------------
-## 5. Issue Tracking
+### Submitting Changes
 
-- Issues are tracked on the GitHub Issues page.
-- If you find a bug, please create a new issue with:
-  - Steps to reproduce
-  - Expected vs. actual results
-  - Environment details (OS, Java version, etc.)
-- For enhancements, provide a clear vision of what you’re proposing.
+#### 1. Create a Branch
 
---------------------------------------------------------------------------------
-## 6. Communication
+```bash
+# Create and switch to a new branch
+git checkout -b feature/your-feature-name
 
-- Join our official Slack/Discord for real-time discussions (links TBD).
-- Use the GitHub Discussion board for longer-form conversations.
-- Follow openframe.org blog or our social accounts for updates.
+# Or for bug fixes
+git checkout -b fix/issue-description
+```
 
---------------------------------------------------------------------------------
-## 7. Contributor License Agreement (CLA)
+#### 2. Make Your Changes
 
-By contributing to OpenFrame, you confirm that any code, documentation, or other output you submit is your own and that you have the right to share it under the license of this project. If a formal CLA is in place, please sign it before submitting a PR.
+- **Follow our coding standards** (see [Code Style Guide](docs/development/contributing/code-style.md))
+- **Write clear commit messages** following conventional commits
+- **Add tests** for new functionality
+- **Update documentation** as needed
 
---------------------------------------------------------------------------------
-## 8. Code of Conduct
+#### 3. Test Your Changes
 
-This project follows a standard Code of Conduct; please respect each other. Be kind, patient, and inclusive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for more details.
+```bash
+# Run all tests
+mvn clean test                                    # Backend
+cd openframe/services/openframe-frontend && npm test  # Frontend  
+cd client && cargo test                          # Rust agent
+```
 
---------------------------------------------------------------------------------
-Thank you again for your contribution! Your input and ideas help improve OpenFrame for everyone. If you have any questions, feel free to reach out via GitHub issues or our community channels.
+#### 4. Submit a Pull Request
+
+1. **Push your branch** to your fork:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+2. **Create a Pull Request** on GitHub with:
+   - Clear title and description
+   - Reference to any related issues
+   - Screenshots/videos if applicable
+   - Testing instructions
+
+3. **Respond to feedback** promptly and make requested changes
+
+## 📝 Development Guidelines
+
+### Code Style
+
+We maintain consistent code style across the project:
+
+- **Java**: Google Java Style Guide with 4-space indentation
+- **TypeScript/JavaScript**: Prettier with 2-space indentation  
+- **Rust**: Standard `rustfmt` formatting
+- **Documentation**: Clear, concise markdown with proper headers
+
+See our [Code Style Guide](docs/development/contributing/code-style.md) for detailed standards.
+
+### Commit Messages
+
+Use conventional commit format:
+
+```bash
+feat: add user authentication to API service
+fix: resolve memory leak in stream processor  
+docs: update installation instructions
+test: add integration tests for gateway service
+refactor: optimize database query performance
+```
+
+### Branch Naming
+
+- `feature/feature-name` - New features
+- `fix/issue-description` - Bug fixes
+- `docs/documentation-update` - Documentation changes
+- `test/test-description` - Test additions/improvements
+- `refactor/refactor-description` - Code refactoring
+
+### Testing Requirements
+
+All contributions must include appropriate tests:
+
+- **Unit tests** for business logic
+- **Integration tests** for service interactions
+- **End-to-end tests** for critical user flows
+- **Performance tests** for scalability features
+
+## 🏗️ Project Architecture
+
+Understanding the project structure helps with contributions:
+
+### Repository Structure
+
+```
+openframe-oss-tenant/
+├── openframe/
+│   ├── services/           # Runtime Spring Boot services
+│   │   ├── openframe-api-service/
+│   │   ├── openframe-gateway/  
+│   │   ├── openframe-authorization-server/
+│   │   └── ...
+│   └── client/            # Rust system agent
+├── openframe-oss-lib/     # Shared core libraries  
+├── docs/                  # Documentation
+└── cli/                   # CLI tools (external repo)
+```
+
+### Key Components
+
+- **API Layer**: GraphQL and REST APIs with Spring Boot
+- **Gateway Layer**: Security, routing, and WebSocket handling
+- **Stream Layer**: Kafka-based event processing
+- **Data Layer**: MongoDB, Cassandra, Redis, and Apache Pinot
+- **Client Layer**: Rust agent for system monitoring
+
+For detailed architecture information, see [Architecture Overview](docs/development/architecture/overview.md).
+
+## 🛠️ Development Workflows
+
+### Adding a New Feature
+
+1. **Discuss in Slack** - Validate the feature idea with maintainers
+2. **Create detailed design** - Document the approach and impact
+3. **Implement incrementally** - Break large features into smaller PRs
+4. **Add comprehensive tests** - Unit, integration, and e2e as needed
+5. **Update documentation** - Keep docs current with changes
+
+### Fixing Bugs
+
+1. **Reproduce the issue** - Create a failing test case
+2. **Identify root cause** - Debug thoroughly before fixing
+3. **Implement minimal fix** - Address the specific issue without over-engineering
+4. **Add regression tests** - Prevent the issue from recurring
+5. **Verify across services** - Ensure no unintended side effects
+
+### Improving Documentation
+
+1. **Identify gaps** - Look for missing or outdated content
+2. **Follow structure** - Use existing patterns and organization
+3. **Include examples** - Provide practical code samples
+4. **Test instructions** - Verify all steps work as documented
+5. **Review for clarity** - Ensure content is accessible to new contributors
+
+## 🔍 Review Process
+
+### What We Look For
+
+- **Code quality** - Readable, maintainable, and well-structured
+- **Test coverage** - Adequate testing of new functionality
+- **Documentation** - Clear explanations and updated guides  
+- **Performance** - Efficient algorithms and resource usage
+- **Security** - Proper authentication, authorization, and data handling
+- **Compatibility** - Works across supported platforms and versions
+
+### Review Timeline
+
+- **Initial response**: Within 2 business days
+- **Detailed review**: Within 1 week for most PRs
+- **Follow-up responses**: Within 2 business days
+
+Complex features may require additional review cycles. We appreciate your patience as we maintain high quality standards.
+
+## 🏷️ Issue Labels
+
+We use labels to categorize and prioritize work:
+
+- **Type**: `bug`, `feature`, `documentation`, `performance`
+- **Priority**: `critical`, `high`, `medium`, `low`
+- **Component**: `api`, `gateway`, `stream`, `client`, `frontend`
+- **Status**: `needs-review`, `in-progress`, `blocked`, `ready-to-merge`
+- **Experience**: `good-first-issue`, `help-wanted`
+
+## 🌟 Recognition
+
+We value all contributions and recognize contributors through:
+
+- **Contributors Graph** - GitHub automatically tracks all contributors
+- **Release Notes** - Major contributors mentioned in release announcements
+- **Slack Shoutouts** - Regular recognition in our community
+- **Maintainer Nominations** - Outstanding contributors may become maintainers
+
+## 📞 Getting Help
+
+Need assistance with contributing?
+
+- **💬 Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **📚 Documentation**: [Development Guides](docs/development/README.md)
+- **🔧 Setup Issues**: [Environment Setup Guide](docs/development/setup/environment.md)
+- **❓ General Questions**: Ask in our #contributors Slack channel
+
+## 📜 Legal
+
+By contributing to OpenFrame, you agree that:
+
+- Your contributions will be licensed under the [Flamingo AI Unified License v1.0](LICENSE.md)
+- You have the right to submit your contributions
+- Your contributions are your original work or properly attributed
+
+## 🙏 Thank You
+
+Thank you for contributing to OpenFrame! Every contribution, whether it's code, documentation, bug reports, or community support, helps make OpenFrame better for MSPs and IT teams worldwide.
+
+Together, we're building the future of unified, AI-powered MSP platforms! 🚀
+
+---
+
+*For questions about this contributing guide, reach out in our [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA).*
