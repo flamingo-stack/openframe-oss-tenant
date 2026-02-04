@@ -58,4 +58,7 @@ export const runtimeEnv = {
   featureSSOAllowDomain(): boolean {
     return (getEnvVar('NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST') || 'true') === 'true'
   },
+  featureScriptSchedule(): boolean {
+    return (getEnvVar('NEXT_PUBLIC_FEATURE_SCRIPT_SCHEDULE') || 'false') === 'true'
+  },
 }
