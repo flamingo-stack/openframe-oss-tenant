@@ -1,167 +1,227 @@
 # Prerequisites
 
-Before setting up OpenFrame, ensure your system meets the following requirements:
+Before installing and running OpenFrame, ensure your environment meets the following requirements. This guide covers system requirements, required software, and account setup needed for a successful OpenFrame deployment.
 
 ## System Requirements
 
-### Minimum Hardware
-- **CPU**: 4 cores (2.4 GHz or higher)
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **Storage**: 50 GB available disk space
-- **Network**: Stable internet connection for downloading dependencies
+### Minimum Requirements
 
-### Recommended Hardware (Production)
-- **CPU**: 8+ cores (3.0 GHz or higher)
-- **RAM**: 32 GB or more
-- **Storage**: 200 GB+ SSD storage
-- **Network**: High-bandwidth connection (1 Gbps+)
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| **CPU** | 4 cores | 8 cores |
+| **RAM** | 8 GB | 16 GB |
+| **Storage** | 50 GB SSD | 100 GB SSD |
+| **Network** | 1 Gbps | 10 Gbps |
 
-## Development Environment
+### Supported Operating Systems
 
-### Required Software
+| OS | Versions | Notes |
+|----|----------|-------|
+| **Linux** | Ubuntu 20.04+, RHEL 8+, CentOS 8+ | Primary development platform |
+| **macOS** | macOS 11+ (Big Sur) | Full development support |
+| **Windows** | Windows 10/11, Windows Server 2019+ | PowerShell 7+ required |
 
-#### Java Development
-- **OpenJDK 21.0.1+** - Required for Spring Boot services
-- **Maven 3.9.6+** - Build and dependency management
-- **IDE**: IntelliJ IDEA, Eclipse, or VSCode with Java extensions
+## Required Software
 
-#### Frontend Development  
-- **Node.js 18+** with npm - Required for Vue.js frontend
-- **Modern Browser** - Chrome, Firefox, Safari, or Edge (latest versions)
+### Core Dependencies
 
-#### Rust Development (for client agent)
-- **Rust 1.70+** with Cargo - Cross-platform agent development
-- **Platform-specific tools**:
-  - Windows: Visual Studio Build Tools or Visual Studio
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC and essential build tools
+| Software | Version | Purpose | Installation |
+|----------|---------|---------|-------------|
+| **Java JDK** | 21+ | Backend services | `sdk install java 21.0.1-oracle` |
+| **Maven** | 3.9+ | Java build tool | `brew install maven` |
+| **Node.js** | 18+ | Frontend build | `nvm install 18` |
+| **Docker** | 24+ | Containerization | [docker.com](https://docker.com) |
+| **Docker Compose** | 2.0+ | Multi-container orchestration | Included with Docker |
 
-#### Containerization
-- **Docker 24.0+** - Container runtime
-- **Docker Compose 2.23+** - Multi-container orchestration
+### Database Requirements
 
-#### Version Control
-- **Git 2.42+** - Source code management
+| Database | Version | Purpose | Deployment |
+|----------|---------|---------|-----------|
+| **MongoDB** | 7.x | Primary data store | Docker Compose |
+| **Cassandra** | 4.x | Analytics data | Docker Compose |
+| **Redis** | 7.x | Caching & sessions | Docker Compose |
+| **Apache Pinot** | 1.2.0+ | Real-time analytics | Docker Compose |
 
-### Optional Tools
+### Message Brokers
 
-#### Production Deployment
-- **Kubernetes 1.28+** - Container orchestration (for production)
-- **kubectl** - Kubernetes command-line tool
-- **Helm 3.0+** - Kubernetes package manager
+| Service | Version | Purpose | Notes |
+|---------|---------|---------|-------|
+| **Apache Kafka** | 3.6.0+ | Event streaming | Auto-configured |
+| **NATS** | 2.x | Real-time messaging | For client agents |
 
-#### Development Tools
-- **Postman** or **Insomnia** - API testing
-- **MongoDB Compass** - Database GUI (optional)
-- **Redis CLI** - Cache inspection (optional)
+### Development Tools (Optional)
 
-## Authentication Requirements
+| Tool | Purpose | Installation |
+|------|---------|-------------|
+| **IntelliJ IDEA** | Java development | [jetbrains.com](https://jetbrains.com) |
+| **VS Code** | Frontend development | [code.visualstudio.com](https://code.visualstudio.com) |
+| **Rust** | Client agent development | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
 
-### GitHub Access
-You'll need a **GitHub Personal Access Token (Classic)** with the following permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to GitHub packages
-- `write:packages` - Write access to GitHub packages
+## Environment Variables
 
-#### Creating a GitHub Token
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions listed above
-4. Set an appropriate expiration date
-5. Copy the generated token securely
+Set these environment variables before starting OpenFrame:
 
-## Network Configuration
-
-### Required Ports
-Ensure the following ports are available:
-
-#### Development Environment
-- `8080` - Main application UI
-- `8888` - Configuration server
-- `5432` - PostgreSQL (if using)
-- `27017` - MongoDB
-- `6379` - Redis
-- `9092` - Kafka
-- `8086` - InfluxDB (if using)
-
-#### Production Environment
-- `80/443` - HTTP/HTTPS traffic
-- `6443` - Kubernetes API server
-- Additional ports based on your specific configuration
-
-### Firewall Considerations
-- Allow outbound connections to GitHub for package downloads
-- Allow inbound connections on the specified ports
-- Consider corporate firewall/proxy settings
-
-## Platform-Specific Notes
-
-### Windows
-- Enable WSL2 for better Docker performance
-- Consider using Git Bash or PowerShell Core
-- Ensure Windows Defender exclusions for development directories
-
-### macOS
-- Install Homebrew for easier package management
-- Ensure Xcode Command Line Tools are installed
-- Consider using Docker Desktop for Mac
-
-### Linux
-- Ensure your user is in the `docker` group
-- Install development packages: `build-essential`, `curl`, `git`
-- Consider using your distribution's package manager for tool installation
-
-## Verification Steps
-
-After installing the prerequisites, verify your setup:
+### Essential Variables
 
 ```bash
-# Check Java version
-java -version
+# Database Configuration
+export MONGO_HOST=localhost
+export MONGO_PORT=27017
+export CASSANDRA_HOST=localhost
+export CASSANDRA_PORT=9042
+export REDIS_HOST=localhost
+export REDIS_PORT=6379
 
-# Check Maven version
-mvn -version
+# Kafka Configuration
+export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
-# Check Node.js and npm versions
-node --version
-npm --version
+# Application Configuration
+export OPENFRAME_ENV=development
+export LOG_LEVEL=INFO
 
-# Check Rust version (if applicable)
-rustc --version
-cargo --version
+# Security
+export JWT_SECRET_KEY="your-super-secure-secret-key-here"
+export ENCRYPTION_KEY="your-aes-256-encryption-key-here"
+```
 
-# Check Docker version
-docker --version
-docker-compose --version
+### Platform-Specific Setup
 
-# Check Git version
-git --version
+#### macOS
+```bash
+echo 'export JAVA_HOME=$(/usr/libexec/java_home)' >> ~/.zshrc
+echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+#### Linux
+```bash
+echo 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk' >> ~/.bashrc
+echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Windows (PowerShell)
+```powershell
+[Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Java\jdk-21", "User")
+[Environment]::SetEnvironmentVariable("PATH", "$env:PATH;C:\Program Files\nodejs", "User")
+```
+
+## Account Requirements
+
+### Required Accounts
+
+| Service | Purpose | Required For |
+|---------|---------|-------------|
+| **Docker Hub** | Container images | All deployments |
+| **GitHub** | Source code access | Development |
+
+### Optional but Recommended
+
+| Service | Purpose | When Needed |
+|---------|---------|-------------|
+| **Google Cloud** | OAuth provider setup | SSO integration |
+| **Microsoft Azure** | OAuth provider setup | SSO integration |
+| **HubSpot** | Email notifications | Production deployment |
+| **OpenMSP Slack** | Community support | Getting help |
+
+## Port Requirements
+
+Ensure these ports are available on your system:
+
+### Core Services
+
+| Service | Port | Protocol | Purpose |
+|---------|------|----------|---------|
+| **Gateway** | 8080 | HTTP/WebSocket | Main entry point |
+| **API Service** | 8081 | HTTP | Internal API |
+| **Frontend** | 3000 | HTTP | Development UI |
+| **Authorization** | 8082 | HTTP | OAuth/OIDC |
+
+### Data Services
+
+| Service | Port | Protocol | Purpose |
+|---------|------|----------|---------|
+| **MongoDB** | 27017 | TCP | Document storage |
+| **Cassandra** | 9042 | TCP | Analytics data |
+| **Redis** | 6379 | TCP | Caching |
+| **Kafka** | 9092 | TCP | Event streaming |
+| **Pinot** | 9000 | HTTP | Query interface |
+
+## Verification Commands
+
+Run these commands to verify your environment is ready:
+
+### Java & Build Tools
+```bash
+java -version                    # Should show Java 21+
+mvn -version                     # Should show Maven 3.9+
+node -v                          # Should show Node 18+
+npm -v                           # Should show npm 9+
+```
+
+### Docker Environment
+```bash
+docker --version                 # Should show Docker 24+
+docker-compose --version         # Should show Compose 2.0+
+docker run hello-world           # Should complete successfully
+```
+
+### Network Connectivity
+```bash
+# Test port availability
+netstat -tuln | grep :8080       # Should be empty (port available)
+netstat -tuln | grep :27017      # Should be empty (port available)
+netstat -tuln | grep :9092       # Should be empty (port available)
+```
+
+### Memory and Storage
+```bash
+# Linux/macOS
+free -h                          # Check available memory
+df -h                           # Check disk space
+
+# Windows PowerShell
+Get-WmiObject -Class Win32_ComputerSystem | Select-Object TotalPhysicalMemory
+Get-WmiObject -Class Win32_LogicalDisk | Select-Object Size,FreeSpace
+```
+
+## Common Issues & Solutions
+
+### Java Version Issues
+```bash
+# If wrong Java version is active
+sdk list java
+sdk use java 21.0.1-oracle
+```
+
+### Docker Permission Issues (Linux)
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+# Logout and login again
+```
+
+### Port Conflicts
+```bash
+# Find process using port 8080
+lsof -i :8080
+# Kill process if needed
+kill -9 <PID>
+```
+
+### Memory Issues
+```bash
+# Increase Docker memory limit (Docker Desktop)
+# Go to Docker Desktop > Settings > Resources > Memory
+# Increase to at least 8GB
 ```
 
 ## Next Steps
 
-Once all prerequisites are met, proceed to:
-1. [Quick Start Guide](quick-start.md) for a rapid setup
-2. [Introduction](introduction.md) for a detailed overview
-3. [Development Setup](../development/setup/environment.md) for development environment configuration
+Once all prerequisites are met:
 
-## Troubleshooting
+1. **Quick Start**: Jump to [Quick Start Guide](quick-start.md) for 5-minute setup
+2. **Development**: Set up [Development Environment](../development/setup/environment.md) for contributing
+3. **Architecture**: Review [Architecture Overview](../development/architecture/overview.md) for deeper understanding
 
-### Common Issues
-
-#### Java Installation Issues
-- Ensure JAVA_HOME is properly set
-- Verify PATH includes Java binaries
-- Use `alternatives` (Linux) or `java_home` (macOS) for version management
-
-#### Docker Issues
-- Ensure Docker daemon is running
-- Check Docker Desktop settings on Windows/macOS
-- Verify user permissions on Linux
-
-#### Network Issues
-- Check corporate proxy settings
-- Verify firewall configuration
-- Test connectivity to GitHub and other required services
-
-If you encounter issues not covered here, see our [Troubleshooting Guide](../operations/troubleshooting/common-issues.md).
+> **Tip**: Join our [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for help with any setup issues!

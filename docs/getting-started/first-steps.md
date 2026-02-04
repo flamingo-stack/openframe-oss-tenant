@@ -1,256 +1,323 @@
 # First Steps with OpenFrame
 
-Congratulations on successfully setting up OpenFrame! This guide will walk you through your first hour with the platform, helping you understand its key features and capabilities.
+Welcome to OpenFrame! Now that you have the platform running, let's explore the key features and get you productive with essential MSP operations. This guide covers the first 5 things you should do after installation.
 
-## Initial Access
+> **Prerequisites**: Completed [Quick Start Guide](quick-start.md) with OpenFrame running at `http://localhost:3000`
 
-### Accessing the Dashboard
+## Step 1: Complete Initial Configuration
 
-1. **Open your browser** and navigate to: http://localhost:8080
-2. **Login** using the default credentials (if authentication is enabled)
-3. **Explore the main dashboard** - your central hub for all operations
+### Set Up Your Organization Profile
 
-### Key Interface Elements
+1. **Navigate to Settings** → **Company & Users**
+2. **Complete your organization information**:
+   - Company name and description
+   - Contact information
+   - Business address
+   - Primary contact person
 
-- **Navigation Bar**: Quick access to major sections
-- **Dashboard Widgets**: Real-time metrics and status indicators  
-- **Service Status Panel**: Monitor all integrated services
-- **Quick Actions**: Common tasks and shortcuts
+3. **Configure basic settings**:
+   - Timezone and locale
+   - Default notification preferences
+   - Logo upload (optional)
 
-## Understanding the Architecture
+### Create Additional Users
 
-### Core Components Overview
-
-OpenFrame consists of several interconnected services:
-
-1. **Gateway Service** (Port 8080) - Your main entry point
-2. **API Service** - GraphQL and REST endpoints
-3. **Client Service** - Agent management
-4. **Management Service** - Administrative functions
-5. **Stream Service** - Real-time data processing
-6. **Config Service** (Port 8888) - Configuration management
-7. **UI Service** - Vue.js frontend application
-
-### Data Flow
-```
-User Request → Gateway → Service → Database → Response
-```
-
-## Exploring Key Features
-
-### 1. Service Management
-
-**View Service Status**:
-- Navigate to the Services section
-- Check health status of all components
-- Review performance metrics
-
-**Service Controls**:
-- Start/stop individual services
-- View service logs
-- Monitor resource usage
-
-### 2. API Exploration
-
-**GraphQL Playground**:
-1. Visit: http://localhost:8080/graphql
-2. Explore available queries and mutations
-3. Try sample queries:
-
-```graphql
-query {
-  systemInfo {
-    version
-    status
-    services {
-      name
-      status
-      port
-    }
-  }
-}
-```
-
-**REST Endpoints**:
-- Authentication: `/oauth/token`
-- Health checks: `/actuator/health`
-- Service discovery: `/api/services`
-
-### 3. Integrated Tools
-
-OpenFrame includes several integrated tools:
-
-**Currently Available**:
-- **MeshCentral** - Remote management platform
-- **Tactical RMM** - IT management suite  
-- **Fleet MDM** - Mobile device management
-- **Authentik** - Identity provider
-
-**Accessing Tools**:
-1. From the main dashboard, click on "Integrated Tools"
-2. Select the tool you want to use
-3. Tools open in embedded views or new tabs
-
-### 4. Agent Management
-
-**Understanding Agents**:
-- Cross-platform Rust agents for system monitoring
-- Automatic registration and management
-- Real-time metrics collection
-
-**Agent Operations**:
-1. View registered agents in the Client section
-2. Monitor agent health and connectivity
-3. Deploy configuration updates
-4. Review collected metrics
-
-## Common First Tasks
-
-### 1. Configure Your Environment
-
-**Update Configuration**:
-1. Access the Config Service at http://localhost:8888
-2. Review default settings
-3. Customize for your environment
-
-**Environment Variables**:
 ```bash
-# Key environment variables to consider
-SPRING_PROFILES_ACTIVE=dev
-SERVER_PORT=8080
-DATABASE_URL=mongodb://localhost:27017/openframe
-```
-
-### 2. Set Up Monitoring
-
-**Dashboard Setup**:
-1. Navigate to Monitoring section
-2. Configure alert thresholds
-3. Set up notification channels
-
-**Grafana Access** (if enabled):
-- URL: http://localhost:3000
-- Default credentials: admin/admin
-- Pre-configured OpenFrame dashboards
-
-### 3. Test API Integration
-
-**Using curl**:
-```bash
-# Get system status
-curl -X GET http://localhost:8080/api/system/status
-
-# Test authentication
-curl -X POST http://localhost:8080/oauth/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=your_client_id&client_secret=your_secret"
-```
-
-**Using GraphQL**:
-```bash
-# Test GraphQL endpoint
-curl -X POST http://localhost:8080/graphql \
+# Add team members via API
+curl -X POST http://localhost:8080/invitations \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ systemInfo { version status } }"}'
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "email": "technician@yourmsp.com",
+    "role": "TECHNICIAN",
+    "organizationId": "your-org-id"
+  }'
 ```
 
-## Development Workflow
+Or use the UI: **Settings** → **Users** → **Invite User**
 
-### 1. Making Your First Change
+## Step 2: Set Up Device Agent Registration
 
-**Frontend Changes**:
-1. Navigate to `openframe/services/openframe-frontend`
-2. Run `npm run dev` for development mode
-3. Make changes and see live updates
+### Generate Agent Registration Secret
 
-**Backend Changes**:
-1. Open your preferred Java IDE
-2. Import the Maven project
-3. Make changes and use Spring Boot DevTools for hot reload
+1. Go to **Settings** → **Architecture** → **Agent Registration**
+2. Click **Generate New Secret**
+3. Copy the registration secret - you'll need this for device enrollment
 
-### 2. Testing Changes
+### Install OpenFrame Client on Test Device
 
-**Run Tests**:
+#### Windows
+```powershell
+# Download and install OpenFrame client
+Invoke-WebRequest -Uri "https://releases.openframe.ai/latest/windows/openframe-client.msi" -OutFile "openframe-client.msi"
+Start-Process msiexec.exe -Wait -ArgumentList '/I openframe-client.msi /quiet'
+
+# Configure with registration secret
+Set-Content -Path "C:\Program Files\OpenFrame\config.yml" -Value @"
+server:
+  url: "http://your-openframe-server:8080"
+  registration_secret: "YOUR_REGISTRATION_SECRET"
+"@
+```
+
+#### macOS
 ```bash
-# Backend tests
-mvn test
+# Install via Homebrew
+brew tap flamingo-stack/openframe
+brew install openframe-client
 
-# Frontend tests  
-cd openframe/services/openframe-frontend
-npm run test
-
-# Rust agent tests
-cd client
-cargo test
+# Configure
+sudo openframe-client configure \
+  --server-url "http://your-openframe-server:8080" \
+  --registration-secret "YOUR_REGISTRATION_SECRET"
 ```
 
-## Next Steps
-
-### Immediate Actions (Next 30 minutes)
-1. **Explore the API documentation**: [API Overview](../api/overview.md)
-2. **Review architecture details**: [Architecture Overview](../development/architecture/overview.md)
-3. **Set up your development environment**: [Development Setup](../development/setup/environment.md)
-
-### Short-term Goals (Next few hours)
-1. **Deploy additional integrated tools**
-2. **Configure monitoring and alerting**
-3. **Set up your first custom integration**
-4. **Explore the client agent capabilities**
-
-### Learning Resources
-- **[Development Guide](../development/README.md)** - Comprehensive development documentation
-- **[API Reference](../api/README.md)** - Complete API documentation
-- **[Deployment Guide](../deployment/README.md)** - Production deployment information
-- **[Operations Manual](../operations/README.md)** - Operational procedures
-
-## Getting Help
-
-### Documentation
-- **Search this documentation** using your browser's search function
-- **Check the troubleshooting guides** for common issues
-- **Review the FAQ** for frequently asked questions
-
-### Community
-- **GitHub Issues**: Report bugs and request features
-- **Discussion Forums**: Ask questions and share knowledge
-- **Community Chat**: Real-time help and discussion
-
-### Troubleshooting
-
-**Common First-Time Issues**:
-1. **Port conflicts**: Ensure required ports are available
-2. **Permission issues**: Check file and directory permissions
-3. **Service startup failures**: Review logs for specific error messages
-4. **Authentication problems**: Verify credentials and token configuration
-
-**Getting Logs**:
+#### Linux
 ```bash
-# Service logs
-docker-compose logs -f [service-name]
+# Download and install
+curl -LO https://releases.openframe.ai/latest/linux/openframe-client.deb
+sudo dpkg -i openframe-client.deb
 
-# Application logs
-tail -f logs/openframe.log
-
-# System logs
-journalctl -f -u openframe
+# Configure
+sudo openframe-client configure \
+  --server-url "http://your-openframe-server:8080" \
+  --registration-secret "YOUR_REGISTRATION_SECRET"
 ```
 
-**Quick Health Check**:
+### Verify Device Registration
+
+1. **Go to Devices** in the OpenFrame UI
+2. **Confirm your device appears** in the device list
+3. **Check device status** - should show as "Online"
+
+## Step 3: Explore the Dashboard
+
+### Understanding Dashboard Widgets
+
+The OpenFrame dashboard provides real-time insights:
+
+```mermaid
+graph TD
+    Dashboard[OpenFrame Dashboard]
+    
+    Dashboard --> Devices[Device Overview]
+    Dashboard --> Alerts[Alert Summary]  
+    Dashboard --> Health[System Health]
+    Dashboard --> Usage[Resource Usage]
+    
+    Devices --> Online[Online Devices]
+    Devices --> Offline[Offline Devices]
+    Devices --> Issues[Devices with Issues]
+    
+    Alerts --> Critical[Critical Alerts]
+    Alerts --> Warnings[Warning Alerts]
+    Alerts --> Recent[Recent Activity]
+    
+    Health --> Services[Service Status]
+    Health --> Performance[Performance Metrics]
+    Health --> Uptime[System Uptime]
+```
+
+### Key Metrics to Monitor
+
+| Widget | Purpose | What to Watch |
+|--------|---------|---------------|
+| **Device Status** | Fleet health overview | Offline devices, failed checks |
+| **Recent Alerts** | Immediate attention items | Critical and high-priority alerts |
+| **Performance** | System resource usage | CPU, memory, storage trends |
+| **Event Stream** | Real-time activity | Successful/failed operations |
+
+### Customize Your Dashboard
+
+1. **Click the gear icon** on any widget
+2. **Adjust time ranges** (1h, 24h, 7d, 30d)
+3. **Filter by organization** or device group
+4. **Rearrange widgets** by dragging
+
+## Step 4: Configure Essential Integrations
+
+### Set Up Tactical RMM Integration
+
+OpenFrame integrates seamlessly with Tactical RMM for enhanced device management:
+
+1. **Go to Settings** → **Integrations** → **Tactical RMM**
+2. **Enter connection details**:
+   ```yaml
+   Server URL: https://your-tactical-rmm.com
+   API Key: your-tactical-api-key
+   Organization: your-tactical-org-id
+   ```
+3. **Test the connection**
+4. **Enable agent synchronization**
+
+### Configure MeshCentral for Remote Access
+
+1. **Navigate to Settings** → **Integrations** → **MeshCentral**
+2. **Configure connection**:
+   ```yaml
+   Server URL: https://your-meshcentral.com
+   Username: your-mesh-username
+   Password: your-mesh-password
+   ```
+3. **Enable remote desktop features**
+
+### Set Up SSO (Optional but Recommended)
+
+#### Google SSO
+1. **Go to Settings** → **SSO Configuration**
+2. **Choose Google** as provider
+3. **Enter OAuth credentials**:
+   - Client ID from Google Cloud Console
+   - Client Secret
+   - Allowed domains
+4. **Test SSO login**
+
+#### Microsoft Azure SSO
+1. **Select Microsoft** as provider
+2. **Configure Azure AD**:
+   - Tenant ID
+   - Application (client) ID  
+   - Client secret
+3. **Set up user mappings**
+
+## Step 5: Explore Core Features
+
+### Device Management
+
+#### View Device Details
+1. **Click on any device** in the Devices list
+2. **Explore the tabs**:
+   - **Overview**: Basic system info and status
+   - **Hardware**: CPU, RAM, storage details
+   - **Software**: Installed applications and updates
+   - **Logs**: Recent system and application logs
+   - **Remote**: Remote desktop and file management
+
+#### Device Actions
 ```bash
-# Check all services
-curl http://localhost:8080/actuator/health
-
-# Check specific service
-curl http://localhost:8080/api/services/health
+# Via OpenFrame UI - Device Actions menu:
+- Restart device
+- Run PowerShell/Bash script
+- Install software
+- Configure policies
+- Access file manager
+- Start remote session
 ```
 
-## Congratulations!
+### Event and Log Management
 
-You've completed your first steps with OpenFrame. You should now have:
-- ✅ A running OpenFrame installation
-- ✅ Understanding of core components
-- ✅ Experience with the main interface
-- ✅ Knowledge of key features and capabilities
-- ✅ Direction for next steps
+#### View System Logs
+1. **Navigate to Logs** in the main menu
+2. **Filter logs by**:
+   - Device or organization
+   - Time range
+   - Severity level (Info, Warning, Error)
+   - Source application
 
-Ready to dive deeper? Continue with the [Development Guide](../development/README.md) or explore specific areas that interest you most.
+#### Set Up Log Alerts
+```bash
+# Configure alert rules for critical events
+1. Go to Settings → Alerts
+2. Create new alert rule:
+   - Name: "Critical System Errors"
+   - Condition: severity = "ERROR" 
+   - Actions: Email notification
+3. Test and activate
+```
+
+### Script Management
+
+#### Create Your First Script
+1. **Go to Scripts** in the main menu
+2. **Click "New Script"**
+3. **Configure script details**:
+   ```powershell
+   # Example: System Health Check
+   Name: "Windows Health Check"
+   Type: "PowerShell"
+   Content:
+   Get-ComputerInfo | Select-Object WindowsVersion, TotalPhysicalMemory
+   Get-Disk | Select-Object FriendlyName, Size, FreeSpace
+   Get-Service | Where-Object Status -eq "Stopped" | Select-Object Name, Status
+   ```
+4. **Test on a device**
+5. **Schedule for regular execution**
+
+### User and Permission Management
+
+#### Set Up Role-Based Access
+1. **Go to Settings** → **Users**
+2. **Define roles**:
+   - **Admin**: Full platform access
+   - **Technician**: Device management only
+   - **Viewer**: Read-only access
+3. **Assign users to appropriate roles**
+
+## Essential Configuration Checklist
+
+Mark off these items as you complete them:
+
+- [ ] **Organization profile completed**
+- [ ] **At least one additional user invited**
+- [ ] **Agent registration secret generated**
+- [ ] **First device successfully registered**
+- [ ] **Dashboard customized for your needs**
+- [ ] **Primary integration configured (Tactical RMM or MeshCentral)**
+- [ ] **SSO set up (if using multiple users)**
+- [ ] **First script created and tested**
+- [ ] **Alert rules configured for critical events**
+- [ ] **User roles and permissions defined**
+
+## Common First-Step Questions
+
+### "How do I add more devices?"
+
+Use the same registration secret on each device, or generate device-specific secrets:
+
+```bash
+# Generate device-specific secret
+curl -X POST http://localhost:8080/agent/registration-secret \
+  -H "Content-Type: application/json" \
+  -d '{"deviceName": "office-workstation-01"}'
+```
+
+### "Can I import existing device inventory?"
+
+Yes! Use the bulk import feature:
+
+1. **Go to Devices** → **Import**
+2. **Download the CSV template**
+3. **Fill in device details**
+4. **Upload and map fields**
+
+### "How do I set up automated monitoring?"
+
+Configure monitoring policies:
+
+1. **Settings** → **Policies** → **Create New**
+2. **Define checks**: Disk space, CPU usage, service status
+3. **Set thresholds** and response actions
+4. **Apply to device groups**
+
+## Where to Get Help
+
+When you need assistance:
+
+- **Documentation**: Continue to development guides for advanced topics
+- **Community**: Join [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Video Guides**: Check our [YouTube channel](https://youtube.com/openframe)
+
+[![OpenFrame Preview Webinar](https://img.youtube.com/vi/bINdW0CQbvY/maxresdefault.jpg)](https://www.youtube.com/watch?v=bINdW0CQbvY)
+
+## What's Next?
+
+You're now ready to use OpenFrame for daily MSP operations! Consider these advanced topics:
+
+- **Development Setup**: If you want to customize or contribute
+- **Production Deployment**: Scale OpenFrame for your MSP
+- **Advanced Integrations**: Connect additional tools and services
+- **AI Configuration**: Set up Mingo AI for automated ticket triage
+
+---
+
+**🎯 You've completed the essentials!** OpenFrame is now configured for your MSP operations. Start managing devices, running scripts, and exploring the unified platform experience.

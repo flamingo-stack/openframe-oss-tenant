@@ -1,212 +1,495 @@
 # Architecture Overview
 
-This document outlines the architecture of OpenFrame's Java Spring Boot backend and Vue.js frontend.
+OpenFrame is built as a distributed, microservices-based platform designed for scalability, maintainability, and extensibility. This document provides a comprehensive overview of the system architecture, core components, and design decisions.
 
-## System Architecture
+## High-Level Architecture
 
 ```mermaid
-graph TB
-    subgraph Frontend
-        UI[Vue.js UI]
-        Store[Vuex Store]
-        Router[Vue Router]
+flowchart TD
+    subgraph "Client Layer"
+        Browser[Web Browser]
+        Desktop[Desktop Apps]
+        Mobile[Mobile Apps]
+        API_Client[API Clients]
     end
-
-    subgraph Backend
-        Gateway[Spring Cloud Gateway]
-        Auth[Spring Security]
-        API[Spring Boot API]
-        Stream[Spring Kafka]
-        Data[Spring Data]
+    
+    subgraph "Gateway Layer"
+        Gateway[API Gateway Service]
+        LB[Load Balancer]
     end
-
-    subgraph Data Layer
+    
+    subgraph "Service Layer"
+        API[API Service]
+        Auth[Authorization Server]
+        Client[Client Service]
+        Management[Management Service]
+        Stream[Stream Processing]
+        External[External API Service]
+    end
+    
+    subgraph "Data Layer"
         MongoDB[(MongoDB)]
         Cassandra[(Cassandra)]
         Redis[(Redis)]
+        Kafka[Apache Kafka]
+        Pinot[(Apache Pinot)]
     end
-
-    UI --> Gateway
+    
+    subgraph "Integration Layer"
+        TacticalRMM[Tactical RMM]
+        MeshCentral[MeshCentral]
+        FleetDM[Fleet MDM]
+        Authentik[Authentik SSO]
+    end
+    
+    Browser --> LB
+    Desktop --> LB
+    Mobile --> LB
+    API_Client --> LB
+    
+    LB --> Gateway
+    Gateway --> API
     Gateway --> Auth
-    Auth --> API
-    API --> Stream
-    API --> Data
-    Data --> MongoDB
-    Data --> Cassandra
-    Stream --> Redis
+    Gateway --> Client
+    Gateway --> External
+    
+    API --> MongoDB
+    API --> Redis
+    Client --> MongoDB
+    Management --> MongoDB
+    
+    Stream --> Kafka
+    Kafka --> Cassandra
+    Kafka --> Pinot
+    
+    API --> TacticalRMM
+    API --> MeshCentral
+    API --> FleetDM
+    Auth --> Authentik
 ```
 
-## Component Architecture
+## Core Components
 
-### Frontend Architecture
+### API Gateway Service
+
+**Purpose**: Single entry point for all client communications
+
+**Responsibilities**:
+- Request routing and load balancing
+- Authentication and authorization
+- Rate limiting and throttling
+- CORS policy enforcement
+- WebSocket connection management
+- API versioning and documentation
+
+**Technology Stack**:
+- Spring Cloud Gateway
+- JWT token validation
+- Redis for rate limiting
+- WebSocket proxy support
+
+### API Service Core
+
+**Purpose**: Primary business logic and data access layer
+
+**Key Features**:
+- GraphQL API for flexible data querying
+- REST endpoints for standard operations
+- Multi-tenant data isolation
+- Real-time subscriptions
+- Batch data loading (N+1 prevention)
+
+**Architecture Pattern**:
+```mermaid
+flowchart TD
+    GraphQL[GraphQL Layer] --> DataFetcher[Data Fetchers]
+    REST[REST Controllers] --> Service[Service Layer]
+    DataFetcher --> Service
+    Service --> Repository[Repository Layer]
+    Repository --> MongoDB[(MongoDB)]
+    Repository --> Cache[(Redis Cache)]
+    
+    DataFetcher --> DataLoader[Data Loaders]
+    DataLoader --> BatchService[Batch Services]
+```
+
+### Authorization Server
+
+**Purpose**: OAuth 2.1 / OpenID Connect identity provider
+
+**Features**:
+- Multi-tenant SSO support
+- Google and Microsoft integration
+- JWT token issuance and validation
+- User invitation and onboarding
+- Session management
+
+**Security Model**:
+- RSA key pairs per tenant
+- HTTP-only cookies for web clients
+- Bearer tokens for API clients
+- Refresh token rotation
+
+### Client Service
+
+**Purpose**: Device agent management and coordination
+
+**Capabilities**:
+- Agent registration and authentication
+- Heartbeat monitoring
+- Tool agent lifecycle management
+- Remote command execution
+- File system operations
+
+### Stream Processing Service
+
+**Purpose**: Real-time event processing and data enrichment
+
+**Data Flow**:
+```mermaid
+flowchart LR
+    Sources[Data Sources] --> Kafka[Kafka Topics]
+    Kafka --> Processors[Stream Processors]
+    Processors --> Enrichment[Data Enrichment]
+    Enrichment --> Cassandra[(Cassandra)]
+    Enrichment --> Pinot[(Pinot)]
+    Enrichment --> Alerts[Alert Engine]
+```
+
+**Processing Types**:
+- Device telemetry aggregation
+- Log event correlation
+- Security event detection
+- Performance metric calculation
+- Compliance monitoring
+
+## Data Architecture
+
+### Database Selection Strategy
+
+| Database | Use Case | Rationale |
+|----------|----------|-----------|
+| **MongoDB** | Transactional data | Document flexibility, ACID compliance |
+| **Cassandra** | Time-series data | High write throughput, time-based partitioning |
+| **Redis** | Caching & sessions | Low latency, pub/sub capabilities |
+| **Apache Pinot** | Analytics queries | Real-time OLAP, sub-second query response |
+
+### Data Flow Patterns
+
+#### Transactional Operations
 
 ```mermaid
-graph TD
-    A[Vue.js Application] --> B[Vue Router]
-    A --> C[Vuex Store]
-    A --> D[UI Components]
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant API
+    participant MongoDB
+    participant Cache
     
-    B --> E[Route Components]
-    C --> F[State Management]
-    D --> G[Reusable Components]
-    
-    E --> H[Views]
-    F --> I[Modules]
-    G --> J[Base Components]
+    Client->>Gateway: GraphQL Mutation
+    Gateway->>API: Authenticated Request
+    API->>MongoDB: Write Transaction
+    MongoDB-->>API: Success
+    API->>Cache: Invalidate Cache
+    API-->>Gateway: Response
+    Gateway-->>Client: Result
 ```
 
-Key Components:
-- **Vue.js**: Core frontend framework
-- **Vuex**: State management
-- **Vue Router**: Navigation and routing
-- **Vue Test Utils**: Component testing
-- **Playwright**: E2E testing
-
-### Backend Architecture
+#### Analytics Pipeline
 
 ```mermaid
-graph TD
-    A[Spring Boot Application] --> B[Controllers]
-    A --> C[Services]
-    A --> D[Repositories]
-    A --> E[Models]
+sequenceDiagram
+    participant Source
+    participant Kafka
+    participant Stream
+    participant Cassandra
+    participant Pinot
+    participant API
     
-    B --> F[REST Endpoints]
-    C --> G[Business Logic]
-    D --> H[Data Access]
-    E --> I[Domain Models]
-    
-    F --> J[API Layer]
-    G --> K[Service Layer]
-    H --> L[Data Layer]
+    Source->>Kafka: Raw Events
+    Stream->>Kafka: Consume Events
+    Stream->>Stream: Enrich & Transform
+    Stream->>Cassandra: Store Time-Series
+    Stream->>Pinot: Real-time Indexing
+    API->>Pinot: Analytics Query
+    Pinot-->>API: Aggregated Results
 ```
 
-Key Components:
-- **Spring Boot**: Core application framework
-- **Spring Security**: Authentication and authorization
-- **Spring Data**: Data access layer
-- **Spring Kafka**: Event streaming
-- **Spring Cloud Gateway**: API gateway
+## Security Architecture
 
-## Development Patterns
+### Authentication Flow
 
-### 1. Clean Architecture
+```mermaid
+flowchart TD
+    User[User Login] --> Auth[Authorization Server]
+    Auth --> Provider{SSO Provider?}
+    Provider -->|Yes| Google[Google OAuth]
+    Provider -->|Yes| Microsoft[Microsoft OAuth]
+    Provider -->|No| Local[Local Authentication]
+    
+    Google --> Validate[Validate Tokens]
+    Microsoft --> Validate
+    Local --> Validate
+    
+    Validate --> JWT[Generate JWT]
+    JWT --> Cookie[Set HTTP-Only Cookie]
+    Cookie --> Gateway[Gateway Validates]
+    Gateway --> Services[Internal Services]
+```
+
+### Authorization Model
+
+```mermaid
+classDiagram
+    class User {
+        +id: String
+        +email: String
+        +roles: List~Role~
+        +organizationId: String
+    }
+    
+    class Role {
+        +name: String
+        +permissions: List~Permission~
+    }
+    
+    class Permission {
+        +resource: String
+        +action: String
+        +scope: String
+    }
+    
+    class Organization {
+        +id: String
+        +name: String
+        +users: List~User~
+    }
+    
+    User ||--o{ Role : has
+    Role ||--o{ Permission : contains
+    Organization ||--o{ User : contains
+```
+
+### Multi-Tenant Isolation
+
+- **Data Isolation**: Organization-based partitioning in MongoDB
+- **Service Isolation**: Tenant context propagation via JWT claims
+- **Cache Isolation**: Redis key prefixing by tenant ID
+- **Stream Isolation**: Kafka topic partitioning by organization
+
+## Component Integration Patterns
+
+### Service-to-Service Communication
+
+#### Synchronous Communication
+```java
+// REST Client with Circuit Breaker
+@FeignClient(name = "management-service")
+public interface ManagementClient {
+    @GetMapping("/api/organizations/{id}")
+    Organization getOrganization(@PathVariable String id);
+}
+```
+
+#### Asynchronous Communication
+```java
+// Kafka Event Publishing
+@EventListener
+public void handleDeviceEvent(DeviceStatusChangedEvent event) {
+    kafkaTemplate.send("device-events", event.getDeviceId(), event);
+}
+```
+
+### Data Access Patterns
+
+#### Repository Pattern with Caching
 
 ```java
-// Domain Layer
-public class Device {
-    private final String id;
-    private final String name;
-    private final DeviceStatus status;
-    
-    // Constructor, getters, etc.
-}
-
-// Application Layer
 @Service
-@RequiredArgsConstructor
 public class DeviceService {
-    private final DeviceRepository deviceRepository;
     
-    public Device createDevice(CreateDeviceCommand command) {
-        Device device = new Device(command.getName(), command.getType());
-        return deviceRepository.save(device);
+    @Autowired
+    private DeviceRepository repository;
+    
+    @Autowired
+    private RedisTemplate<String, Device> cache;
+    
+    @Cacheable(value = "devices", key = "#deviceId")
+    public Device getDevice(String deviceId) {
+        return repository.findById(deviceId)
+            .orElseThrow(() -> new DeviceNotFoundException(deviceId));
     }
-}
-
-// Infrastructure Layer
-@Repository
-public interface DeviceRepository extends MongoRepository<Device, String> {
-    Optional<Device> findByDeviceId(String deviceId);
 }
 ```
 
-### 2. Repository Pattern
+#### Event Sourcing for Audit Trail
 
 ```java
-// Repository Interface
-public interface DeviceRepository {
-    Optional<Device> findById(String id);
-    List<Device> findByStatus(DeviceStatus status);
-    Device save(Device device);
+@EventHandler
+public void on(DeviceRegisteredEvent event) {
+    Device device = new Device(event.getDeviceId());
+    device.setOrganizationId(event.getOrganizationId());
+    device.setStatus(DeviceStatus.REGISTERED);
+    deviceRepository.save(device);
 }
+```
 
-// Implementation
-@Repository
-public class MongoDeviceRepository implements DeviceRepository {
-    private final MongoTemplate mongoTemplate;
+## Key Design Decisions
+
+### Microservices vs Modular Monolith
+
+**Decision**: Microservices architecture with shared libraries
+
+**Rationale**:
+- Independent deployment and scaling
+- Technology diversity (Java backend, Rust agents, Vue frontend)
+- Team autonomy and ownership
+- Fault isolation
+
+**Trade-offs**:
+- Increased operational complexity
+- Network latency between services
+- Distributed transaction challenges
+
+### Database Per Service
+
+**Decision**: Each service owns its data with selective sharing
+
+**Implementation**:
+- API Service: MongoDB for business entities
+- Stream Service: Cassandra for time-series data
+- Gateway: Redis for sessions and rate limiting
+- Analytics: Pinot for real-time queries
+
+### Event-Driven Architecture
+
+**Decision**: Kafka-based event streaming for loose coupling
+
+**Benefits**:
+- Asynchronous processing
+- Event replay capability
+- Scalable data pipeline
+- Real-time analytics
+
+## Performance and Scalability
+
+### Caching Strategy
+
+```mermaid
+flowchart TD
+    Client[Client Request] --> CDN[CDN Cache]
+    CDN --> Gateway[Gateway Cache]
+    Gateway --> Redis[Redis Cache]
+    Redis --> Service[Service Layer]
+    Service --> DB[(Database)]
     
-    @Override
-    public Optional<Device> findById(String id) {
-        return Optional.ofNullable(
-            mongoTemplate.findById(id, Device.class)
-        );
+    CDN -.->|Cache Miss| Gateway
+    Gateway -.->|Cache Miss| Redis
+    Redis -.->|Cache Miss| Service
+    Service -.->|Cache Miss| DB
+```
+
+### Horizontal Scaling
+
+| Component | Scaling Strategy | Metrics |
+|-----------|-----------------|---------|
+| **Gateway** | Load balancer + instances | Request rate, response time |
+| **API Service** | Stateless replicas | CPU, memory utilization |
+| **Stream Processing** | Kafka partitions | Message throughput, lag |
+| **Database** | Read replicas, sharding | Connection count, query time |
+
+### Performance Optimization Techniques
+
+1. **GraphQL DataLoaders**: Batch database queries to prevent N+1 problems
+2. **Connection Pooling**: Optimized database connection management
+3. **Lazy Loading**: Load data only when needed
+4. **Pagination**: Cursor-based pagination for large datasets
+5. **Compression**: Gzip compression for API responses
+
+## Monitoring and Observability
+
+### Metrics Collection
+
+```mermaid
+flowchart LR
+    Services[OpenFrame Services] --> Prometheus[Prometheus]
+    Prometheus --> Grafana[Grafana Dashboards]
+    
+    Services --> Logs[Application Logs]
+    Logs --> Loki[Grafana Loki]
+    Loki --> Grafana
+    
+    Services --> Traces[Distributed Traces]
+    Traces --> Jaeger[Jaeger Tracing]
+    Jaeger --> Grafana
+```
+
+### Health Checks
+
+```java
+@Component
+@RestController
+public class HealthController {
+    
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        Map<String, String> status = new HashMap<>();
+        status.put("status", "UP");
+        status.put("database", databaseHealth());
+        status.put("cache", cacheHealth());
+        return ResponseEntity.ok(status);
     }
 }
 ```
 
-## Project Structure
+## Extension Points
 
+### Plugin Architecture
+
+OpenFrame supports extensions through:
+
+1. **Custom Processors**: Implement event processing logic
+2. **Data Mappers**: Transform external data formats
+3. **Authentication Providers**: Add new SSO integrations
+4. **Tool Integrations**: Connect additional MSP tools
+
+### Configuration Management
+
+```yaml
+# application.yml - Extension Configuration
+openframe:
+  extensions:
+    processors:
+      - name: "custom-alert-processor"
+        class: "com.mycompany.CustomAlertProcessor"
+        enabled: true
+    integrations:
+      - name: "my-rmm-tool"
+        type: "rmm"
+        config:
+          apiUrl: "${MY_RMM_API_URL}"
+          apiKey: "${MY_RMM_API_KEY}"
 ```
-openframe/
-├── services/
-│   ├── openframe-api/
-│   │   ├── src/
-│   │   │   ├── main/
-│   │   │   │   └── java/
-│   │   │   │       └── com/openframe/
-│   │   │   │           ├── controller/
-│   │   │   │           ├── service/
-│   │   │   │           ├── repository/
-│   │   │   │           └── model/
-│   │   │   └── test/
-│   │   └── pom.xml
-│   └── openframe-frontend/
-│       ├── src/
-│       │   ├── components/
-│       │   ├── views/
-│       │   ├── store/
-│       │   └── router/
-│       └── package.json
-└── libraries/
-    ├── openframe-data/
-    └── openframe-security/
-```
 
-## Technology Stack
+## Future Architecture Considerations
 
-### Backend
-- **Framework**: Spring Boot 3.2.x
-- **Language**: Java 21
-- **Build Tool**: Maven 3.9.6+
-- **Database**: MongoDB, Cassandra
-- **Cache**: Redis
-- **Message Broker**: Apache Kafka
-- **API Gateway**: Spring Cloud Gateway
-- **Security**: Spring Security with OAuth 2.0
-- **Testing**: JUnit 5, Mockito, TestContainers
+### Planned Enhancements
 
-### Frontend
-- **Framework**: Vue.js 3
-- **Language**: TypeScript
-- **Build Tool**: Vite
-- **State Management**: Vuex
-- **Routing**: Vue Router
-- **UI Framework**: Vuetify
-- **Testing**: Vue Test Utils, Playwright
-- **Package Manager**: npm
+1. **Service Mesh**: Istio integration for advanced traffic management
+2. **Event Store**: Dedicated event sourcing database
+3. **CQRS Implementation**: Separate read/write models for better performance
+4. **API Gateway Evolution**: Move to envoy-based gateway
+5. **Multi-Region Support**: Geographic distribution for global MSPs
 
-### Infrastructure
-- **Container Orchestration**: Kubernetes
-- **Service Mesh**: Istio
-- **Monitoring**: Prometheus, Grafana
-- **Logging**: Loki
-- **CI/CD**: GitHub Actions
+### Technology Evolution
 
-## Next Steps
+| Current | Future | Timeline |
+|---------|--------|----------|
+| Spring Boot 3.3 | Spring Boot 4.x | 2025 |
+| Vue 3 | Vue 4 | 2025 |
+| Kafka | Event Store + Kafka | 2024 |
+| MongoDB 7.x | MongoDB 8.x | 2024 |
 
-- [Development Setup](setup.md) - Set up your environment
-- [API Documentation](../api/overview.md) - Learn about the API
-- [Contributing](contributing.md) - Learn how to contribute
-- [Testing](testing.md) - Learn about testing
-- [Code Style](code-style.md) - Follow coding standards 
+---
+
+This architecture enables OpenFrame to scale from single-tenant deployments to large multi-tenant SaaS platforms while maintaining performance, security, and maintainability.
