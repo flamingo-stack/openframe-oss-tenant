@@ -1,0 +1,34 @@
+{
+    "generation_info": {
+        "timestamp": "2026-02-04T22:58:10.416150",
+        "main_model": "gpt-5.2-chat-latest",
+        "generator_version": "1.0.1",
+        "repo_path": "/home/runner/work/openframe-oss-tenant/openframe-oss-tenant",
+        "commit_id": null
+    },
+    "statistics": {
+        "total_components": 8050,
+        "leaf_nodes": 666,
+        "max_depth": 3
+    },
+    "files_generated": [
+        "overview.md",
+        "module_tree.json",
+        "first_module_tree.json",
+        "data-kafka (kafka infra+retry).md",
+        "core-utils.md",
+        "idp-configuration.md",
+        "Processors.md",
+        "sdk-integrations (fleetmdm+tacticalrmm).md",
+        "security-core + oauth-bff.md",
+        "data-mongo (documents+repositories).md",
+        "management-service-core (initializers+schedulers+tool management).md",
+        "data-redis (caching).md",
+        "external-api-service-core (public REST api).md",
+        "Supported Models Service.md",
+        "gateway-service-core (routing+security+ws proxy).md",
+        "api-lib (shared api contracts + mappers).md",
+        "config-server-core.md",
+        "openframe-chat-client (chat runtime services).md"
+    ]
+}
