@@ -1,0 +1,44 @@
+{
+    "generation_info": {
+        "timestamp": "2026-02-04T21:00:54.050777",
+        "main_model": "gpt-5.2-chat-latest",
+        "generator_version": "1.0.1",
+        "repo_path": "/home/runner/work/openframe-oss-tenant/openframe-oss-tenant",
+        "commit_id": null
+    },
+    "statistics": {
+        "total_components": 8050,
+        "leaf_nodes": 666,
+        "max_depth": 3
+    },
+    "files_generated": [
+        "overview.md",
+        "module_tree.json",
+        "first_module_tree.json",
+        "redis-cache-layer.md",
+        "redis-configuration.md",
+        "config-core-lib.md",
+        "client-core-lib.md",
+        "gateway-api-key-and-rate-limiting.md",
+        "openframe-api-service-core-lib.md",
+        "api-clients.md",
+        "authorization-service-core-lib.md",
+        "redis-key-management.md",
+        "extension-points.md",
+        "openframe-api-lib-dtos-and-mappers.md",
+        "management-service-core-lib.md",
+        "data-access-and-model-core.md",
+        "auth.md",
+        "mongo-persistence-layer.md",
+        "security-core-and-oauth-bff.md",
+        "core-shared-utilities.md",
+        "cache-configuration.md",
+        "stream-service-core-lib.md",
+        "shared-services.md",
+        "kafka-integration-lib.md",
+        "idp-configuration-scheduler-lib.md",
+        "external-api-service-core-lib.md",
+        "frontend-web-app-core-integrations.md",
+        "gateway-service-core-lib.md"
+    ]
+}
