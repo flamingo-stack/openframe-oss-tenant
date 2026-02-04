@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, useMemo, useEffect } from 'react'
+import { useCallback, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { 
   useRealtimeChunkProcessor,
@@ -35,7 +35,7 @@ interface UseMingoChat {
   // Approval system
   approvals: MessageSegment[]
   
-  // Real-time processing - now dialog-specific
+  // Real-time processing
   processChunk: (targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => void
   
   // State
@@ -57,8 +57,6 @@ export function useMingoChat(
   const { toast } = useToast()
   const queryClient = useQueryClient()
   
-  
-  // Store integration
   const {
     messagesByDialog,
     typingStates,
@@ -76,13 +74,11 @@ export function useMingoChat(
     setCreatingDialog,
   } = useMingoMessagesStore()
   
-  // Get typing state - recompute when typingStates Map changes
   const isTyping = useMemo(() => {
     if (!dialogId) return false
     return getTyping(dialogId)
   }, [dialogId, typingStates, getTyping])
   
-  // API mutations
   const createDialogMutation = MingoApiService.createDialogMutation()
   const sendMessageMutation = MingoApiService.sendMessageMutation()
   
@@ -96,8 +92,6 @@ export function useMingoChat(
     }
   }, [dialogId, approvalHandlers, getOrCreateAccumulator])
   
-  
-  // Helper functions for streaming message management (like openframe-chat)
   const ensureAssistantMessage = useCallback((targetDialogId?: string) => {
     const effectiveDialogId = targetDialogId || dialogId
     if (!effectiveDialogId) return
@@ -127,7 +121,6 @@ export function useMingoChat(
       return
     }
     
-    // Use the store's accumulator-based method to process segments
     updateStreamingMessageSegments(effectiveDialogId, segments)
   }, [dialogId, getStreamingMessage, updateStreamingMessageSegments])
   
@@ -137,7 +130,6 @@ export function useMingoChat(
     
     const currentMessages = getMessages(dialogId)
     
-    // Only add welcome if dialog is completely empty
     if (currentMessages.length === 0) {
       const welcomeMessage: CoreMessage = {
         id: `welcome-${dialogId}`,
@@ -152,7 +144,6 @@ export function useMingoChat(
     }
   }, [dialogId, getMessages, addMessage])
 
-  // Add error message (same pattern as openframe-chat)
   const addErrorMessage = useCallback((errorText: string, targetDialogId?: string) => {
     const effectiveDialogId = targetDialogId || dialogId
     if (!effectiveDialogId) return
@@ -168,41 +159,32 @@ export function useMingoChat(
     const currentMessages = getMessages(effectiveDialogId)
     const lastMessage = currentMessages[currentMessages.length - 1]
     
-    // Replace empty assistant message with error, or add new error message
     if (lastMessage?.role === 'assistant' && 
         (lastMessage.content === '' || 
          (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))) {
-      // Replace empty assistant message with error
       updateMessage(effectiveDialogId, lastMessage.id, errorMessage)
     } else {
-      // Add new error message
       addMessage(effectiveDialogId, errorMessage)
     }
   }, [dialogId, getMessages, updateMessage, addMessage])
   
-  // Add welcome message effect - moved out of render
   useEffect(() => {
     if (dialogId) {
       addWelcomeMessage()
     }
   }, [dialogId, messagesByDialog, addWelcomeMessage])
 
-  // Get messages for current dialog with proper approval extraction (same pattern as tickets)
   const messages = useMemo((): ProcessedMessage[] => {
     if (!dialogId) return []
 
     const currentMessages = getMessages(dialogId)
-    
-    // First, filter out special pending-approvals messages (they contain approval segments)
     const filteredMessages = currentMessages.filter(msg => 
       !msg.id.startsWith('pending-approvals-')
     )
     
-    // Convert CoreMessage to ProcessedMessage format for interface compatibility
     return filteredMessages.map(msg => {
       let filteredContent = msg.content
       
-      // Filter out pending approval requests from regular message display
       if (Array.isArray(msg.content)) {
         filteredContent = (msg.content as MessageSegment[]).filter(segment => 
           !(segment.type === 'approval_request' && segment.status === 'pending')
@@ -225,13 +207,10 @@ export function useMingoChat(
     if (!dialogId) return undefined
     
     const currentMessages = getMessages(dialogId)
-    
-    // Find all consecutive assistant messages from the end
     const assistantSegments: MessageSegment[] = []
     let lastAssistantId = ''
     let lastAssistantTimestamp = new Date()
     
-    // Iterate backwards to collect all assistant message segments
     for (let i = currentMessages.length - 1; i >= 0; i--) {
       const msg = currentMessages[i]
       if (msg.role === 'assistant') {
@@ -240,7 +219,6 @@ export function useMingoChat(
           lastAssistantTimestamp = msg.timestamp || new Date()
         }
         
-        // Add segments from this assistant message
         if (Array.isArray(msg.content)) {
           assistantSegments.unshift(...msg.content)
         } else if (typeof msg.content === 'string' && msg.content) {
@@ -251,12 +229,10 @@ export function useMingoChat(
           } as MessageSegment)
         }
       } else {
-        // Stop when we hit a non-assistant message
         break
       }
     }
     
-    // Create complete assistant message for state extraction
     if (assistantSegments.length > 0 && lastAssistantId) {
       const completeAssistantMessage = {
         id: lastAssistantId,
@@ -272,7 +248,7 @@ export function useMingoChat(
     return undefined
   }, [dialogId, messagesByDialog, getMessages])
 
-  // Real-time processing callbacks (exact same approach as openframe-chat)
+  // Real-time processing callbacks
   const realtimeCallbacks = useMemo(() => ({
     onStreamStart: () => {
       if (!dialogId) return
@@ -303,19 +279,14 @@ export function useMingoChat(
       setStreamingMessage(dialogId, null)
       addErrorMessage(error, dialogId)
     },
-    
-    // Add approval handlers for real-time processing
     onApprove: approvalHandlers?.handleApprove,
     onReject: approvalHandlers?.handleReject
   }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageWithSegments, addErrorMessage, approvalHandlers])
   
-  console.log({incompleteState})
-
   // Restore typing state from incomplete messages on dialog load
   useEffect(() => {
     if (!dialogId || !incompleteState) return
     
-    // If we have incomplete state, restore typing indicator
     const hasIncompleteContent = 
       (incompleteState.existingSegments && incompleteState.existingSegments.length > 0) ||
       (incompleteState.pendingApprovals && incompleteState.pendingApprovals.size > 0) ||
@@ -326,7 +297,6 @@ export function useMingoChat(
     }
   }, [dialogId, incompleteState, getTyping, setTyping])
 
-  // Real-time processor for active dialog (fallback)
   const { processChunk: baseProcessChunk } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
@@ -334,17 +304,13 @@ export function useMingoChat(
     initialState: incompleteState
   })
   
-  // Dialog-specific chunk processor that only processes for target dialog
   const processChunk = useCallback((targetDialogId: string, chunk: ChunkData, _messageType: NatsMessageType) => {
-    // Only process if the target dialog matches the current active dialog
-    // This ensures chunks are only processed for their intended dialog
     if (targetDialogId === dialogId) {
       baseProcessChunk(chunk)
     }
-    // If targetDialogId !== dialogId, ignore the chunk (it's from a background dialog)
   }, [dialogId, baseProcessChunk])
   
-  // Extract pending approvals from messages (both special pending-approvals- messages and regular assistant messages)
+  // Extract pending approvals from messages
   const approvals = useMemo(() => {
     if (!dialogId) return []
 
@@ -364,7 +330,6 @@ export function useMingoChat(
     return pendingApprovalSegments
   }, [dialogId, messagesByDialog, getMessages])
   
-  // Create dialog
   const createDialog = useCallback(async (): Promise<string | null> => {
     if (isCreatingDialog) return null
     
@@ -380,7 +345,6 @@ export function useMingoChat(
         duration: 3000
       })
       
-      // Invalidate dialogs query to refresh the sidebar
       queryClient.invalidateQueries({ queryKey: ['mingo-dialogs'] })
       
       return result.id
@@ -392,19 +356,14 @@ export function useMingoChat(
     }
   }, [isCreatingDialog, setCreatingDialog, createDialogMutation, toast, queryClient])
   
-  // Send message
   const sendMessage = useCallback(async (content: string): Promise<boolean> => {
     if (!dialogId || !content.trim()) return false
-    if (isTyping) return false // Use isTyping instead of isSendingMessage
+    if (isTyping) return false
     
     try {
-      // Set typing indicator for this dialog (covers both sending + assistant response)
       setTyping(dialogId, true)
-      
-      // Remove welcome messages
       removeWelcomeMessages(dialogId)
       
-      // Create optimistic user message in CoreMessage format
       const optimisticMessage: CoreMessage = {
         id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         role: 'user',
@@ -414,15 +373,12 @@ export function useMingoChat(
       }
       
       addMessage(dialogId, optimisticMessage)
-      
-      // Send message via API
       await sendMessageMutation.mutateAsync({ dialogId, content: content.trim() })
       
       return true
     } catch (error) {
       console.error('[MingoChat] Failed to send message:', error)
       
-      // Clear typing on error
       setTyping(dialogId, false)
       
       toast({
@@ -434,14 +390,13 @@ export function useMingoChat(
       
       return false
     }
-    // Note: Don't clear typing here - it will be cleared when assistant finishes responding
   }, [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast])
   
   
   return {
     // Messages
     messages,
-    isLoading: false, // TODO: Add proper loading state from GraphQL queries
+    isLoading: false,
     
     // Actions
     createDialog,

@@ -1,7 +1,6 @@
 import type { ChatType, OwnerType } from '../../tickets/constants'
 import type { MessageContent, AssistantType } from '@flamingo-stack/openframe-frontend-core'
 
-// GraphQL Message format (for historical/stored messages)
 export interface GraphQLMessage {
   id: string
   dialogId: string
@@ -15,7 +14,6 @@ export interface GraphQLMessage {
   messageData: any
 }
 
-// Core library Message format (for real-time/display messages)
 export interface CoreMessage {
   id: string
   role: 'user' | 'assistant' | 'error'
@@ -26,7 +24,6 @@ export interface CoreMessage {
   avatar?: string | null
 }
 
-// Store only uses CoreMessage format
 export type Message = CoreMessage
 
 export interface MessageConnection {
@@ -58,7 +55,6 @@ export interface MessagePage {
   }
 }
 
-// Helper type guards for GraphQL processing
 export function isGraphQLMessage(message: any): message is GraphQLMessage {
   return 'messageData' in message
 }

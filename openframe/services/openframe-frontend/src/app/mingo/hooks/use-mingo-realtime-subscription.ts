@@ -12,7 +12,6 @@ import { runtimeEnv } from '@/src/lib/runtime-config'
 import { STORAGE_KEYS } from '../../tickets/constants'
 import { useMingoMessagesStore } from '../stores/mingo-messages-store'
 
-// Multi-topic support for both message types
 const MINGO_TOPICS: NatsMessageType[] = ['admin-message'] as const
 
 interface UseMingoRealtimeSubscriptionOptions {
@@ -59,35 +58,27 @@ export function useMingoRealtimeSubscription(
 ): UseMingoRealtimeSubscription {
   const { onChunkReceived } = options
   
-  // State
   const [subscribedDialogs, setSubscribedDialogs] = useState<Set<string>>(new Set())
   const [dialogStates, setDialogStates] = useState<Map<string, DialogSubscriptionState>>(new Map())
   const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
-  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(getApiBaseUrl)
   
-  // Refs for stable callbacks
   const onChunkReceivedRef = useRef(onChunkReceived)
   const catchupRefs = useRef<Map<string, any>>(new Map())
   
-  // Auth setup
   const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver()
   const [token, setToken] = useState<string | null>(
     isDevTicketEnabled ? getAccessToken() : null
   )
   
-  // Store integration
   const { 
-    activeDialogId: storeActiveDialogId, 
-    incrementUnread, 
+    activeDialogId: storeActiveDialogId,
     resetUnread 
   } = useMingoMessagesStore()
   
-  // Update refs
   useEffect(() => {
     onChunkReceivedRef.current = onChunkReceived
   }, [onChunkReceived])
   
-  // Listen for token changes
   useEffect(() => {
     if (!isDevTicketEnabled) return
     
@@ -100,23 +91,6 @@ export function useMingoRealtimeSubscription(
     return () => window.removeEventListener('storage', handler)
   }, [isDevTicketEnabled])
   
-  // Update API base URL
-  useEffect(() => {
-    setApiBaseUrl(getApiBaseUrl())
-  }, [])
-  
-  // NATS WebSocket URL generator
-  const getNatsWsUrl = useMemo(() => {
-    return (): string | null => {
-      if (!apiBaseUrl) return null
-      if (isDevTicketEnabled && !token) return null
-      return buildNatsWsUrl(apiBaseUrl, {
-        token: token || undefined,
-        includeAuthParam: isDevTicketEnabled,
-      })
-    }
-  }, [apiBaseUrl, token, isDevTicketEnabled])
-  
   // NATS client configuration
   const clientConfig = useMemo(() => ({
     name: 'openframe-frontend-mingo',
@@ -124,7 +98,6 @@ export function useMingoRealtimeSubscription(
     pass: '',
   }), [])
   
-  // Get dialog state
   const getSubscriptionState = useCallback((dialogId: string): DialogSubscriptionState => {
     return dialogStates.get(dialogId) || {
       isSubscribed: false,
@@ -133,7 +106,6 @@ export function useMingoRealtimeSubscription(
     }
   }, [dialogStates])
   
-  // Subscribe to dialog
   const subscribeToDialog = useCallback((dialogId: string) => {
     if (subscribedDialogs.has(dialogId)) return
     
@@ -148,13 +120,11 @@ export function useMingoRealtimeSubscription(
       return newMap
     })
     
-    // Reset unread count when subscribing (usually means switching to this dialog)
     if (dialogId === activeDialogId) {
       resetUnread(dialogId)
     }
   }, [subscribedDialogs, activeDialogId, resetUnread])
   
-  // Unsubscribe from dialog
   const unsubscribeFromDialog = useCallback((dialogId: string) => {
     setSubscribedDialogs(prev => {
       const newSet = new Set(prev)
@@ -168,19 +138,14 @@ export function useMingoRealtimeSubscription(
       return newMap
     })
     
-    // Clean up catchup ref
     catchupRefs.current.delete(dialogId)
   }, [])
   
-  // Auto-subscribe to active dialog
   useEffect(() => {
     if (activeDialogId && !subscribedDialogs.has(activeDialogId)) {
       subscribeToDialog(activeDialogId)
     }
   }, [activeDialogId, subscribedDialogs, subscribeToDialog])
-  
-  // Create subscriptions for each subscribed dialog
-  const dialogArray = Array.from(subscribedDialogs)
   
   return {
     subscribeToDialog,
@@ -203,7 +168,6 @@ interface DialogSubscriptionProps {
 
 export function DialogSubscription({
   dialogId,
-  isActive,
   processChunk
 }: DialogSubscriptionProps) {
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl)
@@ -213,7 +177,6 @@ export function DialogSubscription({
     isDevTicketEnabled ? getAccessToken() : null
   )
   
-  // Chunk catchup for this specific dialog
   const { 
     catchUpChunks, 
     resetChunkTracking,
@@ -244,7 +207,6 @@ export function DialogSubscription({
     pass: '',
   }), [dialogId])
   
-  // CRITICAL: Start buffering BEFORE NATS subscription setup
   useEffect(() => {
     resetChunkTracking()
     startInitialBuffering()
@@ -255,13 +217,10 @@ export function DialogSubscription({
     }
   }, [dialogId, resetChunkTracking, startInitialBuffering])
 
-  // Handle NATS events - route through core hook for proper buffering
   const handleNatsEvent = useCallback((payload: unknown, messageType: NatsMessageType) => {
-    // Route NATS chunks through core hook's processChunk (respects buffering)
     coreProcessChunk(payload as ChunkData, messageType)
   }, [coreProcessChunk])
   
-  // Handle subscription success (buffering already active)
   const handleSubscribed = useCallback(async () => {
     if (!hasCaughtUp) {
       setHasCaughtUp(true)
@@ -269,11 +228,10 @@ export function DialogSubscription({
     }
   }, [hasCaughtUp, catchUpChunks])
   
-  // NATS subscription (chunks now get buffered from the start)
   useNatsDialogSubscription({
     enabled: true,
     dialogId,
-    topics: MINGO_TOPICS, // Subscribe to both message and admin-message topics
+    topics: MINGO_TOPICS,
     onEvent: handleNatsEvent,
     onConnect: () => {},
     onDisconnect: () => {},
@@ -282,5 +240,5 @@ export function DialogSubscription({
     clientConfig,
   })
   
-  return null // This is a logical component with no UI
+  return null
 }

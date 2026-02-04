@@ -48,7 +48,7 @@ export function useMingoChunkCatchup({ dialogId, onChunkReceived }: UseMingoChun
   const options = useMemo<CoreChunkCatchupOptions>(() => ({
     dialogId,
     onChunkReceived,
-    chatTypes: [CHAT_TYPE.ADMIN], // Mingo uses ADMIN chat type
+    chatTypes: [CHAT_TYPE.ADMIN],
     fetchChunks,
   }), [dialogId, onChunkReceived, fetchChunks])
 

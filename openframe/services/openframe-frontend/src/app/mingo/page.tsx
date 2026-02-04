@@ -23,22 +23,18 @@ import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection'
 import { useMingoChat } from './hooks/use-mingo-chat'
 import { useMingoRealtimeSubscription, DialogSubscription } from './hooks/use-mingo-realtime-subscription'
 import { useMingoMessagesStore } from './stores/mingo-messages-store'
-import type { Message } from './types'
 
 export default function Mingo() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // Store integration
   const {
     activeDialogId,
     setActiveDialogId,
     resetUnread,
     incrementUnread,
-    getTyping
   } = useMingoMessagesStore()
 
-  // Keep existing dialog hooks for backward compatibility
   const {
     isCreatingDialog: legacyCreatingDialog,
     resetDialog
@@ -63,7 +59,6 @@ export default function Mingo() {
     approvalStatuses
   } = useMingoDialogSelection()
 
-  // Unified chat functionality
   const {
     messages: processedMessages,
     createDialog,
@@ -79,24 +74,19 @@ export default function Mingo() {
     approvalStatuses
   })
 
-  // Realtime subscription management
   const {
     subscribeToDialog,
     subscribedDialogs
   } = useMingoRealtimeSubscription(activeDialogId)
 
-  // Create dialog-specific chunk processor with unread count handling
   const createDialogChunkProcessor = useCallback((targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
-    // Handle unread count updates for background dialogs
     if (targetDialogId !== activeDialogId) {
       incrementUnread(targetDialogId)
     }
     
-    // Process chunk with dialog-specific isolation
     processChunk(targetDialogId, chunk, messageType)
   }, [activeDialogId, incrementUnread, processChunk])
 
-  // Escape key handler for closing dialogs
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && activeDialogId) {
@@ -110,7 +100,6 @@ export default function Mingo() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [activeDialogId, router])
 
-  // Redirect non-SaaS users
   useEffect(() => {
     if (!isSaasTenantMode()) {
       router.replace('/dashboard')
@@ -118,44 +107,35 @@ export default function Mingo() {
     }
   }, [router])
 
-  // Dialog selection with proper URL sync - Allow switching during streaming
   const handleDialogSelect = useCallback(async (dialogId: string) => {
     if (dialogId === activeDialogId) return
 
-    // Update URL first to prevent conflicts
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('dialogId', dialogId)
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
     
-    // Then update stores and subscriptions
     setActiveDialogId(dialogId)
     resetUnread(dialogId)
     subscribeToDialog(dialogId)
     
-    // Finally trigger the dialog selection query
     selectDialog(dialogId)
   }, [activeDialogId, router, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog])
 
-  // URL synchronization - prevent race conditions during streaming
   useEffect(() => {
     const urlDialogId = searchParams.get('dialogId')
     
-    // Only sync when URL and store are out of sync
     if (urlDialogId !== activeDialogId) {
       if (urlDialogId) {
-        // URL has dialogId, but store doesn't match - update store
         setActiveDialogId(urlDialogId)
         resetUnread(urlDialogId)
         subscribeToDialog(urlDialogId)
         selectDialog(urlDialogId)
       } else {
-        // URL has no dialogId - clear store
         setActiveDialogId(null)
       }
     }
-  }, [searchParams]) // Removed activeDialogId from dependencies to prevent race conditions
+  }, [searchParams])
 
-  // Create new chat
   const handleNewChat = useCallback(async () => {
     resetDialog()
     const newDialogId = await createDialog()
@@ -164,7 +144,6 @@ export default function Mingo() {
     }
   }, [resetDialog, createDialog, handleDialogSelect])
 
-  // Send message with simplified logic
   const handleSendMessage = useCallback(async (message: string) => {
     if (!activeDialogId || !message.trim()) return
     

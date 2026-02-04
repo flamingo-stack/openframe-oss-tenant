@@ -125,7 +125,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           const newMap = new Map(state.messagesByDialog)
           const currentMessages = newMap.get(dialogId) || []
           
-          // Check if message already exists and update, otherwise append
           const existingIndex = currentMessages.findIndex(msg => msg.id === message.id)
           if (existingIndex !== -1) {
             const updatedMessages = [...currentMessages]
@@ -165,7 +164,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         })
       },
       
-      // Update approval status in message content (like openframe-chat pattern)
       updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => {
         set(state => {
           const newMap = new Map(state.messagesByDialog)
@@ -194,7 +192,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         return state.messagesByDialog.get(dialogId) || []
       },
       
-      // Real-time State Management
       setTyping: (dialogId: string, typing: boolean) => {
         set(state => {
           const newMap = new Map(state.typingStates)
@@ -210,7 +207,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       
       incrementUnread: (dialogId: string) => {
         set(state => {
-          // Only increment if not the active dialog
           if (state.activeDialogId === dialogId) return state
           
           const newMap = new Map(state.unreadCounts)
@@ -233,7 +229,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         return state.unreadCounts.get(dialogId) || 0
       },
       
-      // Streaming Messages
       setStreamingMessage: (dialogId: string, message: Message | null) => {
         set(state => {
           const newMap = new Map(state.streamingMessages)
@@ -252,14 +247,13 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           const currentStreaming = state.streamingMessages.get(dialogId)
           if (!currentStreaming) return state
           
-          // Get or create accumulator for this dialog
           const accumulator = state.segmentAccumulators.get(dialogId)
           if (!accumulator) {
             console.warn('[MingoStore] No accumulator found for dialog:', dialogId)
             return state
           }
           
-          // Process segments through accumulator (like openframe-chat does)
+          // Process segments through accumulator
           accumulator.reset()
           segments.forEach(segment => {
             if (segment.type === 'text' && segment.text) {
@@ -278,16 +272,12 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
             }
           })
           
-          // Get processed segments from accumulator
           const processedSegments = accumulator.getSegments()
-          
-          // Update the streaming message content with processed segments
           const updatedMessage = {
             ...currentStreaming,
             content: processedSegments
           }
           
-          // Update both streaming and main message collections
           const newStreamingMap = new Map(state.streamingMessages)
           newStreamingMap.set(dialogId, updatedMessage)
           
@@ -308,20 +298,17 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         })
       },
       
-      // Segment Accumulators
       getOrCreateAccumulator: (dialogId: string, approvalHandlers?: { onApprove?: (requestId?: string) => void; onReject?: (requestId?: string) => void }) => {
         const state = get()
         const existing = state.segmentAccumulators.get(dialogId)
         
         if (existing) {
-          // Update callbacks if provided
           if (approvalHandlers) {
             existing.setCallbacks(approvalHandlers)
           }
           return existing
         }
         
-        // Create new accumulator
         const accumulator = createMessageSegmentAccumulator(approvalHandlers)
         
         set(state => {
@@ -350,10 +337,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           return
         }
         
-        // Update approval status in accumulator
         const updatedSegments = accumulator.updateApprovalStatus(requestId, status)
-        
-        // Find the streaming message and update it with the new segments
         const currentStreaming = state.streamingMessages.get(dialogId)
         if (currentStreaming && Array.isArray(currentStreaming.content)) {
           const updatedMessage = {
@@ -361,7 +345,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
             content: updatedSegments
           }
           
-          // Update both streaming and main message collections
           set(state => {
             const newStreamingMap = new Map(state.streamingMessages)
             newStreamingMap.set(dialogId, updatedMessage)
@@ -384,7 +367,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         }
       },
       
-      // Utility Actions
       removeWelcomeMessages: (dialogId: string) => {
         set(state => {
           const newMap = new Map(state.messagesByDialog)
@@ -439,7 +421,6 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         })
       },
       
-      // Loading States
       setLoadingDialog: (loading: boolean) => {
         set({ isLoadingDialog: loading })
       },

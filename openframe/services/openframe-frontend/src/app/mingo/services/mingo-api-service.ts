@@ -101,14 +101,7 @@ export class MingoApiService {
 
         return response.data
       },
-      onSuccess: () => {
-        toast({
-          title: "Request Approved",
-          description: "The approval request has been approved successfully",
-          variant: "success",
-          duration: 3000
-        })
-      },
+      onSuccess: () => {},
       onError: (error) => {
         const errorMessage = error instanceof Error ? error.message : 'Failed to approve request'
         toast({
@@ -140,14 +133,7 @@ export class MingoApiService {
 
         return response.data
       },
-      onSuccess: () => {
-        toast({
-          title: "Request Rejected",
-          description: "The approval request has been rejected",
-          variant: "success",
-          duration: 3000
-        })
-      },
+      onSuccess: () => {},
       onError: (error) => {
         const errorMessage = error instanceof Error ? error.message : 'Failed to reject request'
         toast({
