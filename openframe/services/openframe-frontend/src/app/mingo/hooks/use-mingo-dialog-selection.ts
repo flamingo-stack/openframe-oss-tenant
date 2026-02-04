@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query'
 import { 
   processHistoricalMessagesWithErrors,

@@ -17,7 +17,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core'
 import { Button } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { DetailLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { DetailLoader, ProcessedMessage } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription'
@@ -288,7 +288,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     })
 
     const pendingApprovalSegments: MessageSegment[] = []
-    const filteredMessages = processed.filter((msg: HistoricalMessage) => {
+    const filteredMessages = processed.filter((msg: ProcessedMessage) => {
       if (msg.id.startsWith('pending-approvals-') && Array.isArray(msg.content)) {
         msg.content.forEach((segment: MessageSegment) => {
           if (segment.type === 'approval_request' && segment.status === 'pending') {
@@ -300,7 +300,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       return true
     })
 
-    const processedMessages = filteredMessages.map((msg: HistoricalMessage) => ({
+    const processedMessages = filteredMessages.map((msg: ProcessedMessage) => ({
       id: msg.id,
       content: msg.content as string | MessageSegment[],
       role: msg.role as 'user' | 'assistant' | 'error',
