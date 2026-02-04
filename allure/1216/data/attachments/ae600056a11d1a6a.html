@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Latrisha Hettinger&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(843) 361-7425&quot;,
+                &quot;email&quot;: &quot;ghislaine.stark@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;97367 O&#39;Connell Harbors&quot;,
+            &quot;street2&quot;: &quot;Suite 816&quot;,
+            &quot;city&quot;: &quot;Millerchester&quot;,
+            &quot;state&quot;: &quot;North Dakota&quot;,
+            &quot;postalCode&quot;: &quot;63556&quot;,
+            &quot;country&quot;: &quot;Lao People&#39;s Democratic Republic&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        4
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        4
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNGY2NGNkZDYtNjhkYi00YWMxLTg1YmYtOTIyYTlhYmU2MzNmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyN2I0ZTkxNC0wMzk2LTQ3YjAtYjA4Zi1iM2NlMjA0OGM1YWUiLCJzdWIiOiJpcmEuYnJhdW5AeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAyMzUzNDYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzI3YjRlOTE0LTAzOTYtNDdiMC1iMDhmLWIzY2UyMDQ4YzVhZSIsImV4cCI6MTc3MDIzNjI0NiwiaWF0IjoxNzcwMjM1MzQ2LCJ1c2VySWQiOiIwMWJkNTcyZC1mNmYxLTRkNzktYmMzZC04YTY1MzcxZDFkOWYiLCJqdGkiOiI1ZWUzZDU1Yi1jZDgyLTRlNjctYjA0Yy1hMTNlNWY1MzA4ZjMifQ.weRm9Ngqqfu7u2-ARs5MIxQrbhRYdPHZB_76EZrBQwlCzuZgnWxjops1c3oXuX5Os48eMpZih3ZSp6vQTWSAG2UGDi8QPmi2s4Ui3dhCbQ_4KpgBmyLAfuZbVyJhm8Da2xK1XN95eqUvjJa3UCkRzIgXa2JUWLu6X0BMcqR3yv6nGhV5Oo1b9QkTVDpGwqM5eV5AFVgZCBtPF6d1OKLZFz1pMZu0t6vs_O4Q3zA4zxM45TsNqcVl-hq57DR8i5iA5fQ_38rRz-ssr0RVq_IQVwoptY-T1o1kEekLAvIc2ZUJzrdxJs6AojItSH-v3PlgGf9lmMAw6-dA4BpQmXDMJQ</div>
+        <div>refresh_token: yJAbLvR8eMGXT-Duj7oZbK4MCK1oV1Yjr0oLcL6pp3C5slwhh1w0a-5CqXm3vZ9cuHDczSJpt6qb_isnSJG4jXUN2DrghQRi3YRMzkC4dKFGZYRfPxLm5pj-GO3Z4wJ_</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNGY2NGNkZDYtNjhkYi00YWMxLTg1YmYtOTIyYTlhYmU2MzNmIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIyN2I0ZTkxNC0wMzk2LTQ3YjAtYjA4Zi1iM2NlMjA0OGM1YWUiLCJzdWIiOiJpcmEuYnJhdW5AeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAyMzUzNDYsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzI3YjRlOTE0LTAzOTYtNDdiMC1iMDhmLWIzY2UyMDQ4YzVhZSIsImV4cCI6MTc3MDIzNjI0NiwiaWF0IjoxNzcwMjM1MzQ2LCJ1c2VySWQiOiIwMWJkNTcyZC1mNmYxLTRkNzktYmMzZC04YTY1MzcxZDFkOWYiLCJqdGkiOiI1ZWUzZDU1Yi1jZDgyLTRlNjctYjA0Yy1hMTNlNWY1MzA4ZjMifQ.weRm9Ngqqfu7u2-ARs5MIxQrbhRYdPHZB_76EZrBQwlCzuZgnWxjops1c3oXuX5Os48eMpZih3ZSp6vQTWSAG2UGDi8QPmi2s4Ui3dhCbQ_4KpgBmyLAfuZbVyJhm8Da2xK1XN95eqUvjJa3UCkRzIgXa2JUWLu6X0BMcqR3yv6nGhV5Oo1b9QkTVDpGwqM5eV5AFVgZCBtPF6d1OKLZFz1pMZu0t6vs_O4Q3zA4zxM45TsNqcVl-hq57DR8i5iA5fQ_38rRz-ssr0RVq_IQVwoptY-T1o1kEekLAvIc2ZUJzrdxJs6AojItSH-v3PlgGf9lmMAw6-dA4BpQmXDMJQ&#39; -b &#39;refresh_token=yJAbLvR8eMGXT-Duj7oZbK4MCK1oV1Yjr0oLcL6pp3C5slwhh1w0a-5CqXm3vZ9cuHDczSJpt6qb_isnSJG4jXUN2DrghQRi3YRMzkC4dKFGZYRfPxLm5pj-GO3Z4wJ_&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Latrisha Hettinger&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(843) 361-7425&quot;,
+                &quot;email&quot;: &quot;ghislaine.stark@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;97367 O&#39;Connell Harbors&quot;,
+            &quot;street2&quot;: &quot;Suite 816&quot;,
+            &quot;city&quot;: &quot;Millerchester&quot;,
+            &quot;state&quot;: &quot;North Dakota&quot;,
+            &quot;postalCode&quot;: &quot;63556&quot;,
+            &quot;country&quot;: &quot;Lao People&#39;s Democratic Republic&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        4
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        4
+    ]
+}&#39;
+</div>
