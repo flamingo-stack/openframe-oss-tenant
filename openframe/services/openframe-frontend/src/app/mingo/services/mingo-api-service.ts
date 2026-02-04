@@ -44,7 +44,7 @@ export class MingoApiService {
   static createDialogMutation() {
     return useMutation({
       mutationFn: async (): Promise<CreateDialogResponse> => {
-        const response = await apiClient.post<CreateDialogResponse>('/chat/api/v2/dialogs', {
+        const response = await apiClient.post<CreateDialogResponse>('/chat/api/v1/dialogs', {
           agentType: 'ADMIN'
         } as CreateDialogRequest)
 
@@ -67,7 +67,7 @@ export class MingoApiService {
   static sendMessageMutation() {
     return useMutation({
       mutationFn: async ({ dialogId, content }: { dialogId: string; content: string }) => {
-        const response = await apiClient.post('/chat/api/v2/messages', {
+        const response = await apiClient.post('/chat/api/v1/messages', {
           dialogId,
           content,
           chatType: 'ADMIN_AI_CHAT'

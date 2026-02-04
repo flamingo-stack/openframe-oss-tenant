@@ -217,7 +217,8 @@ export function DialogSubscription({
   const { 
     catchUpChunks, 
     resetChunkTracking,
-    startInitialBuffering
+    startInitialBuffering,
+    processChunk: coreProcessChunk
   } = useMingoChunkCatchup({
     dialogId,
     onChunkReceived: (chunk, messageType) => {
@@ -243,12 +244,24 @@ export function DialogSubscription({
     pass: '',
   }), [dialogId])
   
-  // Handle NATS events - now with dialog-specific processing
+  // CRITICAL: Start buffering BEFORE NATS subscription setup
+  useEffect(() => {
+    resetChunkTracking()
+    startInitialBuffering()
+    setHasCaughtUp(false)
+    
+    return () => {
+      resetChunkTracking()
+    }
+  }, [dialogId, resetChunkTracking, startInitialBuffering])
+
+  // Handle NATS events - route through core hook for proper buffering
   const handleNatsEvent = useCallback((payload: unknown, messageType: NatsMessageType) => {
-    processChunk(dialogId, payload as ChunkData, messageType)
-  }, [dialogId, processChunk])
+    // Route NATS chunks through core hook's processChunk (respects buffering)
+    coreProcessChunk(payload as ChunkData, messageType)
+  }, [coreProcessChunk])
   
-  // Handle subscription success
+  // Handle subscription success (buffering already active)
   const handleSubscribed = useCallback(async () => {
     if (!hasCaughtUp) {
       setHasCaughtUp(true)
@@ -256,7 +269,7 @@ export function DialogSubscription({
     }
   }, [hasCaughtUp, catchUpChunks])
   
-  // NATS subscription
+  // NATS subscription (chunks now get buffered from the start)
   useNatsDialogSubscription({
     enabled: true,
     dialogId,
@@ -268,17 +281,6 @@ export function DialogSubscription({
     getNatsWsUrl,
     clientConfig,
   })
-  
-  // Reset state when dialog changes
-  useEffect(() => {
-    resetChunkTracking()
-    startInitialBuffering()
-    setHasCaughtUp(false)
-    
-    return () => {
-      resetChunkTracking()
-    }
-  }, [dialogId, resetChunkTracking, startInitialBuffering])
   
   return null // This is a logical component with no UI
 }

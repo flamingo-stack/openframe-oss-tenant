@@ -226,6 +226,8 @@ export function useMingoDialogSelection() {
           Object.entries(approvalStatuses).map(([k, v]) => [k, v as any])
         )
       })
+
+      console.log({coreMessages})
       
       // Load messages when GraphQL data is fresh (not just approval status changes)
       if (messagesQuery.isFetched && coreMessages.length > 0) {

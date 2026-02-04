@@ -4,6 +4,7 @@ import { useCallback, useState, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { 
   useRealtimeChunkProcessor,
+  extractIncompleteMessageState,
   type MessageSegment,
   type ChunkData,
   type NatsMessageType,
@@ -219,6 +220,58 @@ export function useMingoChat(
     })
   }, [dialogId, messagesByDialog, getMessages])
   
+  // Extract incomplete state from complete last assistant message
+  const incompleteState = useMemo(() => {
+    if (!dialogId) return undefined
+    
+    const currentMessages = getMessages(dialogId)
+    
+    // Find all consecutive assistant messages from the end
+    const assistantSegments: MessageSegment[] = []
+    let lastAssistantId = ''
+    let lastAssistantTimestamp = new Date()
+    
+    // Iterate backwards to collect all assistant message segments
+    for (let i = currentMessages.length - 1; i >= 0; i--) {
+      const msg = currentMessages[i]
+      if (msg.role === 'assistant') {
+        if (!lastAssistantId) {
+          lastAssistantId = msg.id
+          lastAssistantTimestamp = msg.timestamp || new Date()
+        }
+        
+        // Add segments from this assistant message
+        if (Array.isArray(msg.content)) {
+          assistantSegments.unshift(...msg.content)
+        } else if (typeof msg.content === 'string' && msg.content) {
+          assistantSegments.unshift({
+            type: 'text',
+            text: msg.content,
+            id: `${msg.id}-text`
+          } as MessageSegment)
+        }
+      } else {
+        // Stop when we hit a non-assistant message
+        break
+      }
+    }
+    
+    // Create complete assistant message for state extraction
+    if (assistantSegments.length > 0 && lastAssistantId) {
+      const completeAssistantMessage = {
+        id: lastAssistantId,
+        role: 'assistant' as const,
+        content: assistantSegments,
+        name: 'Mingo',
+        timestamp: lastAssistantTimestamp
+      }
+      
+      return extractIncompleteMessageState(completeAssistantMessage)
+    }
+    
+    return undefined
+  }, [dialogId, messagesByDialog, getMessages])
+
   // Real-time processing callbacks (exact same approach as openframe-chat)
   const realtimeCallbacks = useMemo(() => ({
     onStreamStart: () => {
@@ -237,6 +290,7 @@ export function useMingoChat(
     onSegmentsUpdate: (segments: MessageSegment[]) => {
       if (!dialogId) return
       
+      setTyping(dialogId, true)
       ensureAssistantMessage(dialogId)
       updateStreamingMessageWithSegments(segments, dialogId)
     },
@@ -255,11 +309,29 @@ export function useMingoChat(
     onReject: approvalHandlers?.handleReject
   }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageWithSegments, addErrorMessage, approvalHandlers])
   
+  console.log({incompleteState})
+
+  // Restore typing state from incomplete messages on dialog load
+  useEffect(() => {
+    if (!dialogId || !incompleteState) return
+    
+    // If we have incomplete state, restore typing indicator
+    const hasIncompleteContent = 
+      (incompleteState.existingSegments && incompleteState.existingSegments.length > 0) ||
+      (incompleteState.pendingApprovals && incompleteState.pendingApprovals.size > 0) ||
+      (incompleteState.executingTools && incompleteState.executingTools.size > 0)
+    
+    if (hasIncompleteContent && !getTyping(dialogId)) {
+      setTyping(dialogId, true)
+    }
+  }, [dialogId, incompleteState, getTyping, setTyping])
+
   // Real-time processor for active dialog (fallback)
   const { processChunk: baseProcessChunk } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
-    approvalStatuses: approvalHandlers?.approvalStatuses || {}
+    approvalStatuses: approvalHandlers?.approvalStatuses || {},
+    initialState: incompleteState
   })
   
   // Dialog-specific chunk processor that only processes for target dialog
