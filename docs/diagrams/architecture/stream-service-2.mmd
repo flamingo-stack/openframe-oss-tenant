@@ -1,0 +1,7 @@
+flowchart LR
+    Input["Deserialized Message"] --> Validate["isValidMessage"]
+    Validate --> Transform["transform()"]
+    Transform --> Route["OperationType"]
+    Route --> Create["CREATE"]
+    Route --> Update["UPDATE"]
+    Route --> Read["READ"]

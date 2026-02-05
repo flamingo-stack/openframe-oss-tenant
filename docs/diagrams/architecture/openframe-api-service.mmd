@@ -1,0 +1,29 @@
+flowchart TD
+    Client["Frontend / External Clients"] -->|"REST / GraphQL"| ApiService["OpenFrame API Service"]
+
+    ApiService --> AuthService["Authorization Server"]
+    ApiService --> DataMongo["Mongo Data Layer"]
+    ApiService --> DataStreams["Kafka / Stream Service"]
+    ApiService --> Gateway["Gateway Service"]
+
+    subgraph api_layer["API Layer"]
+        Controllers["REST Controllers"]
+        DataFetchers["GraphQL DataFetchers"]
+    end
+
+    subgraph service_layer["Service Layer"]
+        DomainServices["Business Services"]
+        Processors["Post-Processors"]
+    end
+
+    subgraph graphql_layer["GraphQL Infrastructure"]
+        DataLoaders["DGS DataLoaders"]
+        Scalars["Custom Scalars"]
+    end
+
+    ApiService --> Controllers
+    ApiService --> DataFetchers
+    DataFetchers --> DataLoaders
+    Controllers --> DomainServices
+    DataFetchers --> DomainServices
+    DomainServices --> Processors

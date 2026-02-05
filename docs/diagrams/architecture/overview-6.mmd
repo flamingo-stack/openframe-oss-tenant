@@ -1,0 +1,8 @@
+flowchart TD
+    Tools["Integrated Tools"] --> KafkaIn["Inbound Kafka"]
+    KafkaIn --> Stream["Stream Service"]
+
+    Stream --> Enrich["Enrichment"]
+    Enrich --> KafkaOut["Outbound Kafka"]
+    Enrich --> Cassandra["Cassandra"]
+    KafkaOut --> Pinot["Apache Pinot"]

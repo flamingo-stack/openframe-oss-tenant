@@ -1,0 +1,16 @@
+flowchart LR
+    Client[External Client or UI]
+    Gateway[Gateway Service]
+    ExternalApi[External API Service]
+    DevicesModule[Devices Module]
+    DataMongo[Mongo Data Layer]
+    DataPinot[Pinot Analytics]
+    Stream[Stream Service]
+
+    Client --> Gateway
+    Gateway --> ExternalApi
+    ExternalApi --> DevicesModule
+    DevicesModule --> DataMongo
+    DevicesModule --> DataPinot
+    Stream --> DataMongo
+    Stream --> DataPinot

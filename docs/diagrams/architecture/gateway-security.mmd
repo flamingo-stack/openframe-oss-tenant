@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> Origin["Origin Sanitizer"]
+    Origin --> AuthHeader["Authorization Header Resolver"]
+    AuthHeader --> JwtAuth["JWT Authentication"]
+    JwtAuth --> Authz["Path Authorization"]
+    Authz --> Forward["Forward to Downstream"]

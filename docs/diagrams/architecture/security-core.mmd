@@ -1,0 +1,12 @@
+flowchart TD
+    AppService["Application Service"] -->|"imports"| SecurityCore["security-core"]
+
+    SecurityCore --> JwtSecurityConfig["JWT Security Configuration"]
+    SecurityCore --> JwtConfig["JWT Configuration Properties"]
+    SecurityCore --> PKCEUtils["PKCE Utilities"]
+    SecurityCore --> SecurityConstants["OAuth Security Constants"]
+
+    JwtSecurityConfig -->|"creates"| JwtEncoder["JwtEncoder"]
+    JwtSecurityConfig -->|"creates"| JwtDecoder["JwtDecoder"]
+
+    JwtConfig -->|"loads"| RSAKeys["RSA Key Material"]

@@ -1,0 +1,16 @@
+flowchart LR
+    Request[Device Filter Request]
+    Criteria[DeviceFilterCriteria]
+    QueryBuilder[Query Builder]
+    MongoQuery[Mongo Query]
+    PinotQuery[Pinot Query]
+    Aggregation[Result Aggregation]
+    Response[DevicesResponse]
+
+    Request --> Criteria
+    Criteria --> QueryBuilder
+    QueryBuilder --> MongoQuery
+    QueryBuilder --> PinotQuery
+    MongoQuery --> Aggregation
+    PinotQuery --> Aggregation
+    Aggregation --> Response

@@ -1,0 +1,18 @@
+flowchart TD
+    Browser["User Browser"] --> Gateway["Gateway Service"]
+    Gateway --> AuthServer["Authorization Server"]
+
+    AuthServer --> TenantContext["Tenant Context Filter"]
+    AuthServer --> OAuth2["Spring Authorization Server"]
+
+    OAuth2 --> KeyService["Tenant Key Service"]
+    OAuth2 --> AuthzService["Mongo Authorization Service"]
+    OAuth2 --> ClientRepo["Registered Client Repository"]
+
+    AuthServer --> UserSvc["User Service"]
+    AuthServer --> SSO["SSO Services"]
+
+    KeyService --> MongoKeys[("Tenant Keys - MongoDB")]
+    AuthzService --> MongoAuth[("OAuth2 Authorizations")]
+    ClientRepo --> MongoClients[("OAuth Clients")]
+    UserSvc --> MongoUsers[("Users & Tenants")]

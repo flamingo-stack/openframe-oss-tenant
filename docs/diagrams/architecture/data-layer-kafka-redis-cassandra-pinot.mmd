@@ -1,0 +1,11 @@
+flowchart TD
+    Mongo[(MongoDB)] -->|"Entity Change Events"| Aspect["MachineTagEventAspect"]
+    Aspect --> Service["MachineTagEventService"]
+    Service --> Kafka[(Kafka Topics)]
+
+    Kafka --> StreamService["Stream Service"]
+    StreamService --> Pinot[(Apache Pinot)]
+
+    Redis[(Redis Cache)] --> API["API / External API"]
+    Pinot --> API
+    Cassandra[(Cassandra)] --> API

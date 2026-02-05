@@ -1,0 +1,11 @@
+flowchart LR
+    Client["Agent / UI"] --> Gateway["Gateway Service"]
+    Gateway --> ToolWs["Tool WebSocket"]
+    Gateway --> Nats["NATS WS"]
+
+    subgraph Filters["Gateway Filters"]
+        ToolApiFilter["Tool API WS Filter"]
+        ToolAgentFilter["Tool Agent WS Filter"]
+    end
+
+    Gateway --> Filters

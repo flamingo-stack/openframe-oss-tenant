@@ -1,0 +1,4 @@
+flowchart LR
+    T["Tenant Context"] --> Cfg["OssTenantKafkaAutoConfiguration"]
+    Cfg --> Prod["Kafka Producer"]
+    Prod -->|"Tenant Headers"| Topic["Tenant-Scoped Topic"]

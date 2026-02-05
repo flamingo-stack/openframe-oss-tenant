@@ -1,0 +1,14 @@
+flowchart TD
+    App["Management Application"] --> Init["Startup Initializers"]
+    App --> Schedulers["Distributed Schedulers"]
+    App --> Controllers["Management Controllers"]
+
+    Init --> Pinot["Pinot Config Initializer"]
+    Init --> Nats["NATS Stream Initializer"]
+    Init --> Agents["Agent & Client Initializers"]
+    Init --> DebeziumInit["Debezium Connector Init"]
+
+    Controllers --> Tools["Integrated Tool Controller"]
+
+    Schedulers --> DebeziumHC["Debezium Health Check"]
+    Schedulers --> ApiKeyStats["API Key Stats Sync"]

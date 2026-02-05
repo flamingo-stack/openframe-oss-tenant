@@ -1,0 +1,11 @@
+flowchart TD
+    CoreUtils["core-shared-utils"]
+
+    ApiService["openframe-api-service"] --> CoreUtils
+    AuthService["authorization-server"] --> CoreUtils
+    GatewayService["gateway-service"] --> CoreUtils
+    ExternalApi["external-api-service"] --> CoreUtils
+    ClientService["client-service"] --> CoreUtils
+    StreamService["stream-service"] --> CoreUtils
+    ManagementService["management-service"] --> CoreUtils
+    DataLayer["data-layer-* modules"] --> CoreUtils

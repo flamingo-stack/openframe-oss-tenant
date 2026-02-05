@@ -1,0 +1,13 @@
+flowchart TD
+    ApiService["API Services"] --> Repositories["Mongo Repositories"]
+    Repositories --> Documents["Mongo Documents"]
+    Repositories --> MongoTemplate["MongoTemplate"]
+    MongoTemplate --> MongoDB[("MongoDB")]
+
+    subgraph Config["Mongo Configuration"]
+        MongoConfig["MongoConfig"]
+        IndexConfig["MongoIndexConfig"]
+    end
+
+    MongoConfig --> Repositories
+    IndexConfig --> MongoDB

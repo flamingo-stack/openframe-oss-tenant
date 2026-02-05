@@ -1,0 +1,10 @@
+flowchart TD
+    Browser["User Browser"] --> Gateway["Gateway"]
+    Gateway --> Authz["Authorization Server"]
+
+    Authz --> TenantCtx["Tenant Context"]
+    Authz --> OAuth["Spring Authorization Server"]
+
+    OAuth --> Keys["Tenant Key Service"]
+    OAuth --> Tokens["Mongo OAuth Tokens"]
+    OAuth --> Clients["OAuth Clients"]

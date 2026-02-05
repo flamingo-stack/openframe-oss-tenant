@@ -1,0 +1,28 @@
+flowchart TD
+    Browser["Frontend / UI"] --> Gateway["Gateway Service"]
+    Agent["OpenFrame Agent"] --> Gateway
+    Partner["External Integrations"] --> Gateway
+
+    Gateway --> Authz["Authorization Server"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientSvc["Client Service"]
+
+    Api --> Mongo["MongoDB"]
+    Api --> Redis["Redis"]
+    Api --> Pinot["Apache Pinot"]
+
+    ExternalApi --> Pinot
+    ExternalApi --> Mongo
+
+    ClientSvc --> Nats["NATS / JetStream"]
+
+    Stream["Stream Service"] --> Kafka["Kafka"]
+    Kafka --> Stream
+    Stream --> Pinot
+    Stream --> Cassandra["Cassandra"]
+
+    Management["Management Service"] --> Mongo
+    Management --> Kafka
+    Management --> Pinot
+    Management --> Nats

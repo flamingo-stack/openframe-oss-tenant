@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Agent
+    participant Gateway
+    participant Tool as "Integrated Tool"
+
+    Agent->>Gateway: WS Connect /ws/tools/agent/{toolId}
+    Gateway->>Gateway: Resolve Tool WS URL
+    Gateway->>Tool: Proxy WebSocket Frames
+    Tool-->>Gateway: Frames
+    Gateway-->>Agent: Frames

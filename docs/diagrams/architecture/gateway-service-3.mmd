@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant ExternalApi as "External API Service"
+
+    Client->>Gateway: Request with X-API-Key
+    Gateway->>Gateway: Validate API Key
+    Gateway->>Gateway: Check Rate Limits
+    Gateway->>ExternalApi: Forward Request with User Context Headers
+    ExternalApi-->>Gateway: Response
+    Gateway-->>Client: Response with Rate Limit Headers

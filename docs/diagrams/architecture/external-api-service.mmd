@@ -1,0 +1,15 @@
+flowchart TD
+    Client[External Client] -->|"X-API-Key"| Gateway[Gateway Service]
+    Gateway --> ExternalApi[External API Service]
+
+    ExternalApi --> Controllers[REST Controllers]
+    Controllers --> Mappers[DTO Mappers]
+    Mappers --> CoreServices[Core API Services]
+
+    CoreServices --> Mongo[(MongoDB)]
+    CoreServices --> Pinot[(Apache Pinot)]
+    CoreServices --> Kafka[(Kafka)]
+
+    subgraph security[Security]
+        Gateway -->|"API Key Validation"| ExternalApi
+    end

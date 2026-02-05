@@ -1,0 +1,18 @@
+flowchart TD
+    Agent[Client Agent]
+    Tool[Integrated Tool]
+    Stream[Stream Service]
+    Mongo[Mongo Device Documents]
+    Pinot[Pinot Device Analytics]
+    ExternalApi[External API Service]
+    DevicesModule[Devices Module]
+    Consumer[UI or External Consumer]
+
+    Agent --> Stream
+    Tool --> Stream
+    Stream --> Mongo
+    Stream --> Pinot
+    Mongo --> DevicesModule
+    Pinot --> DevicesModule
+    DevicesModule --> ExternalApi
+    ExternalApi --> Consumer
