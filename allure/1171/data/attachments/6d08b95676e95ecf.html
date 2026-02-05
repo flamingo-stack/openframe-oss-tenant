@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Garnett Zemlak&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(970) 269-4100&quot;,
+                &quot;email&quot;: &quot;elmo.morar@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;088 Carroll Canyon&quot;,
+            &quot;street2&quot;: &quot;Apt. 523&quot;,
+            &quot;city&quot;: &quot;Violetafort&quot;,
+            &quot;state&quot;: &quot;Utah&quot;,
+            &quot;postalCode&quot;: &quot;31324&quot;,
+            &quot;country&quot;: &quot;Sweden&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        5
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        5
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMzQyZDhkNWQtYWMzMS00M2M4LWI4ZmMtNTgxYTZlMmY0NjBjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmZGQ2NDgxZS1kODJhLTQ4NDItYWVlNy01YzIwZTQ5MTkxZDYiLCJzdWIiOiJlbGxzd29ydGgucm93ZUBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDMxNDg2MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZmRkNjQ4MWUtZDgyYS00ODQyLWFlZTctNWMyMGU0OTE5MWQ2IiwiZXhwIjoxNzcwMzE1NzYxLCJpYXQiOjE3NzAzMTQ4NjEsInVzZXJJZCI6Ijg0OGViYzU0LWVlMWYtNDE3MS1hNWUxLTAyMjlkODhlZGM5ZCIsImp0aSI6ImM0MTA0ZjBlLTlhN2YtNDAwNC05ZjIyLTUxMGZjZDA5NTU2MyJ9.RYo_oUTtqwxc9NNTwohB4ROihcQKJnczH2aR62ffpNdwSec1-Za6oScXCa6Q6iqS_1NcN1JchCocQ9Vz5EpcJd1lQ5EXka0WTV-xcXQmzxIGJlUpnDH3oRRqX7Ek6P6uGW31loZbSKQJ8Fn5WCw82KsPhFTHxvwN5qbkt41UKN7SrEEr2Byc3tuB81UooOMHGl6A-kdtmBJ5-p_ViaQpLLzYGJ-cGQUjfrMQdnos8GHClvEKTPjrmG8MP9SoijOpfiPVnlkRVFCJ-WxOZWUrocTxg4NlnGfKIJvDX6oBSZdtqRPaH0ub0bggE4WDOvDaoeRaF50VlLjFf3FADQWHMA</div>
+        <div>refresh_token: zegaIarsJjYnAMsYsklqlP707to7DvMJBeALINqlA4W7eEYy92U0n7-Ak5qLdGTyOB05zorlmMKqxUzb_ArGH15qoRZi6-Xc7CMlnz9SSBVnqekZlls_btZtMvRg6nOx</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMzQyZDhkNWQtYWMzMS00M2M4LWI4ZmMtNTgxYTZlMmY0NjBjIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJmZGQ2NDgxZS1kODJhLTQ4NDItYWVlNy01YzIwZTQ5MTkxZDYiLCJzdWIiOiJlbGxzd29ydGgucm93ZUBnbWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDMxNDg2MSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvZmRkNjQ4MWUtZDgyYS00ODQyLWFlZTctNWMyMGU0OTE5MWQ2IiwiZXhwIjoxNzcwMzE1NzYxLCJpYXQiOjE3NzAzMTQ4NjEsInVzZXJJZCI6Ijg0OGViYzU0LWVlMWYtNDE3MS1hNWUxLTAyMjlkODhlZGM5ZCIsImp0aSI6ImM0MTA0ZjBlLTlhN2YtNDAwNC05ZjIyLTUxMGZjZDA5NTU2MyJ9.RYo_oUTtqwxc9NNTwohB4ROihcQKJnczH2aR62ffpNdwSec1-Za6oScXCa6Q6iqS_1NcN1JchCocQ9Vz5EpcJd1lQ5EXka0WTV-xcXQmzxIGJlUpnDH3oRRqX7Ek6P6uGW31loZbSKQJ8Fn5WCw82KsPhFTHxvwN5qbkt41UKN7SrEEr2Byc3tuB81UooOMHGl6A-kdtmBJ5-p_ViaQpLLzYGJ-cGQUjfrMQdnos8GHClvEKTPjrmG8MP9SoijOpfiPVnlkRVFCJ-WxOZWUrocTxg4NlnGfKIJvDX6oBSZdtqRPaH0ub0bggE4WDOvDaoeRaF50VlLjFf3FADQWHMA&#39; -b &#39;refresh_token=zegaIarsJjYnAMsYsklqlP707to7DvMJBeALINqlA4W7eEYy92U0n7-Ak5qLdGTyOB05zorlmMKqxUzb_ArGH15qoRZi6-Xc7CMlnz9SSBVnqekZlls_btZtMvRg6nOx&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Garnett Zemlak&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(970) 269-4100&quot;,
+                &quot;email&quot;: &quot;elmo.morar@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;088 Carroll Canyon&quot;,
+            &quot;street2&quot;: &quot;Apt. 523&quot;,
+            &quot;city&quot;: &quot;Violetafort&quot;,
+            &quot;state&quot;: &quot;Utah&quot;,
+            &quot;postalCode&quot;: &quot;31324&quot;,
+            &quot;country&quot;: &quot;Sweden&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        5
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        5
+    ]
+}&#39;
+</div>
