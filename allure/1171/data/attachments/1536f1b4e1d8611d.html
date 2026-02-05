@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6984f72ecf45b00adb9e6e05</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Asley Farrell&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(443) 678-6610 x0476&quot;,
+                &quot;email&quot;: &quot;chance.davis@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;2793 Pouros Stravenue&quot;,
+            &quot;street2&quot;: &quot;Apt. 150&quot;,
+            &quot;city&quot;: &quot;South Carmelina&quot;,
+            &quot;state&quot;: &quot;Montana&quot;,
+            &quot;postalCode&quot;: &quot;56760&quot;,
+            &quot;country&quot;: &quot;Lebanon&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5847 Feeney Summit&quot;,
+            &quot;street2&quot;: &quot;Apt. 768&quot;,
+            &quot;city&quot;: &quot;Luzside&quot;,
+            &quot;state&quot;: &quot;Hawaii&quot;,
+            &quot;postalCode&quot;: &quot;46510&quot;,
+            &quot;country&quot;: &quot;Czech Republic&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        5
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        5
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMDJkZDk2MjktMDZjNi00YjdjLTk5NDEtMWEyZTY5Mzk1OGNiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1NDBlYzJmYS1mMDYyLTRiNDgtODJmOC03YzRjMjc0Y2IyZTQiLCJzdWIiOiJlcmljay5oaWxsQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMjE3MDksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzU0MGVjMmZhLWYwNjItNGI0OC04MmY4LTdjNGMyNzRjYjJlNCIsImV4cCI6MTc3MDMyMjYwOSwiaWF0IjoxNzcwMzIxNzA5LCJ1c2VySWQiOiJjM2M0YzYyMi0yODcyLTQyZDgtYmYzOS1jNDQ3YWQzODQ0NDAiLCJqdGkiOiJiMDYzZDJhNy02MmNjLTQ5ZmQtOWE0MS1jMWE4MGU3OGE3YWUifQ.PtJogIaB3cfqpjBFr4Is1QyE7AC6YyOKnsOLaN5VV55J4Y-Qg-au0PUp2PXS3BmMF3gGx0DuDBcyxXEbFgYpduJevN5TUR_B2AFEA-2YNzKg-sUhIM6FoPP3AZeV3PRhGvyDQlUYTdSx61rB_q1rSGwqOb5Lvk9AKyITbvvDFw_W_rqFbpalCEzMag-SIifqNkVSy4fimMaloFZ3i8QF4wK8th5YyfhbOfirbjhO1yv285MRYPrjY49DiKk1f2_FXB3eosY-FtHKe1zcuU0yON8RyMKvX6NY-6CGbamSZMr2jnM34w26NsnN0Rc8U3IGJBoqhIYwDD7vdHwFyWmxTA</div>
+        <div>refresh_token: pBWsUGHqOBMXImT4QuVAmchfOjXm5IAT0Xne43_pBSk8eTsGhM8jLFN8TbBtB38pgPGeqZP8c5YHPMzSrm8NE33ahVSS7455zYl9Y_afPNOzwNVd691h0jPyufVw4fXw</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6984f72ecf45b00adb9e6e05&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMDJkZDk2MjktMDZjNi00YjdjLTk5NDEtMWEyZTY5Mzk1OGNiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1NDBlYzJmYS1mMDYyLTRiNDgtODJmOC03YzRjMjc0Y2IyZTQiLCJzdWIiOiJlcmljay5oaWxsQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMjE3MDksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzU0MGVjMmZhLWYwNjItNGI0OC04MmY4LTdjNGMyNzRjYjJlNCIsImV4cCI6MTc3MDMyMjYwOSwiaWF0IjoxNzcwMzIxNzA5LCJ1c2VySWQiOiJjM2M0YzYyMi0yODcyLTQyZDgtYmYzOS1jNDQ3YWQzODQ0NDAiLCJqdGkiOiJiMDYzZDJhNy02MmNjLTQ5ZmQtOWE0MS1jMWE4MGU3OGE3YWUifQ.PtJogIaB3cfqpjBFr4Is1QyE7AC6YyOKnsOLaN5VV55J4Y-Qg-au0PUp2PXS3BmMF3gGx0DuDBcyxXEbFgYpduJevN5TUR_B2AFEA-2YNzKg-sUhIM6FoPP3AZeV3PRhGvyDQlUYTdSx61rB_q1rSGwqOb5Lvk9AKyITbvvDFw_W_rqFbpalCEzMag-SIifqNkVSy4fimMaloFZ3i8QF4wK8th5YyfhbOfirbjhO1yv285MRYPrjY49DiKk1f2_FXB3eosY-FtHKe1zcuU0yON8RyMKvX6NY-6CGbamSZMr2jnM34w26NsnN0Rc8U3IGJBoqhIYwDD7vdHwFyWmxTA&#39; -b &#39;refresh_token=pBWsUGHqOBMXImT4QuVAmchfOjXm5IAT0Xne43_pBSk8eTsGhM8jLFN8TbBtB38pgPGeqZP8c5YHPMzSrm8NE33ahVSS7455zYl9Y_afPNOzwNVd691h0jPyufVw4fXw&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Asley Farrell&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(443) 678-6610 x0476&quot;,
+                &quot;email&quot;: &quot;chance.davis@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;2793 Pouros Stravenue&quot;,
+            &quot;street2&quot;: &quot;Apt. 150&quot;,
+            &quot;city&quot;: &quot;South Carmelina&quot;,
+            &quot;state&quot;: &quot;Montana&quot;,
+            &quot;postalCode&quot;: &quot;56760&quot;,
+            &quot;country&quot;: &quot;Lebanon&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5847 Feeney Summit&quot;,
+            &quot;street2&quot;: &quot;Apt. 768&quot;,
+            &quot;city&quot;: &quot;Luzside&quot;,
+            &quot;state&quot;: &quot;Hawaii&quot;,
+            &quot;postalCode&quot;: &quot;46510&quot;,
+            &quot;country&quot;: &quot;Czech Republic&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        5
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        5
+    ]
+}&#39;
+</div>

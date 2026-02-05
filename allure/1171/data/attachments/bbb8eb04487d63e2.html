@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;aaron.lakin@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMDJkZDk2MjktMDZjNi00YjdjLTk5NDEtMWEyZTY5Mzk1OGNiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1NDBlYzJmYS1mMDYyLTRiNDgtODJmOC03YzRjMjc0Y2IyZTQiLCJzdWIiOiJlcmljay5oaWxsQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMjE3MDksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzU0MGVjMmZhLWYwNjItNGI0OC04MmY4LTdjNGMyNzRjYjJlNCIsImV4cCI6MTc3MDMyMjYwOSwiaWF0IjoxNzcwMzIxNzA5LCJ1c2VySWQiOiJjM2M0YzYyMi0yODcyLTQyZDgtYmYzOS1jNDQ3YWQzODQ0NDAiLCJqdGkiOiJiMDYzZDJhNy02MmNjLTQ5ZmQtOWE0MS1jMWE4MGU3OGE3YWUifQ.PtJogIaB3cfqpjBFr4Is1QyE7AC6YyOKnsOLaN5VV55J4Y-Qg-au0PUp2PXS3BmMF3gGx0DuDBcyxXEbFgYpduJevN5TUR_B2AFEA-2YNzKg-sUhIM6FoPP3AZeV3PRhGvyDQlUYTdSx61rB_q1rSGwqOb5Lvk9AKyITbvvDFw_W_rqFbpalCEzMag-SIifqNkVSy4fimMaloFZ3i8QF4wK8th5YyfhbOfirbjhO1yv285MRYPrjY49DiKk1f2_FXB3eosY-FtHKe1zcuU0yON8RyMKvX6NY-6CGbamSZMr2jnM34w26NsnN0Rc8U3IGJBoqhIYwDD7vdHwFyWmxTA</div>
+        <div>refresh_token: pBWsUGHqOBMXImT4QuVAmchfOjXm5IAT0Xne43_pBSk8eTsGhM8jLFN8TbBtB38pgPGeqZP8c5YHPMzSrm8NE33ahVSS7455zYl9Y_afPNOzwNVd691h0jPyufVw4fXw</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMDJkZDk2MjktMDZjNi00YjdjLTk5NDEtMWEyZTY5Mzk1OGNiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI1NDBlYzJmYS1mMDYyLTRiNDgtODJmOC03YzRjMjc0Y2IyZTQiLCJzdWIiOiJlcmljay5oaWxsQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMjE3MDksInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzU0MGVjMmZhLWYwNjItNGI0OC04MmY4LTdjNGMyNzRjYjJlNCIsImV4cCI6MTc3MDMyMjYwOSwiaWF0IjoxNzcwMzIxNzA5LCJ1c2VySWQiOiJjM2M0YzYyMi0yODcyLTQyZDgtYmYzOS1jNDQ3YWQzODQ0NDAiLCJqdGkiOiJiMDYzZDJhNy02MmNjLTQ5ZmQtOWE0MS1jMWE4MGU3OGE3YWUifQ.PtJogIaB3cfqpjBFr4Is1QyE7AC6YyOKnsOLaN5VV55J4Y-Qg-au0PUp2PXS3BmMF3gGx0DuDBcyxXEbFgYpduJevN5TUR_B2AFEA-2YNzKg-sUhIM6FoPP3AZeV3PRhGvyDQlUYTdSx61rB_q1rSGwqOb5Lvk9AKyITbvvDFw_W_rqFbpalCEzMag-SIifqNkVSy4fimMaloFZ3i8QF4wK8th5YyfhbOfirbjhO1yv285MRYPrjY49DiKk1f2_FXB3eosY-FtHKe1zcuU0yON8RyMKvX6NY-6CGbamSZMr2jnM34w26NsnN0Rc8U3IGJBoqhIYwDD7vdHwFyWmxTA&#39; -b &#39;refresh_token=pBWsUGHqOBMXImT4QuVAmchfOjXm5IAT0Xne43_pBSk8eTsGhM8jLFN8TbBtB38pgPGeqZP8c5YHPMzSrm8NE33ahVSS7455zYl9Y_afPNOzwNVd691h0jPyufVw4fXw&#39; -d &#39;{
+    &quot;email&quot;: &quot;aaron.lakin@hotmail.com&quot;
+}&#39;
+</div>
