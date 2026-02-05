@@ -1,0 +1,46 @@
+{
+    "generation_info": {
+        "timestamp": "2026-02-05T03:52:58.743530",
+        "main_model": "gpt-5.2-chat-latest",
+        "generator_version": "1.0.1",
+        "repo_path": "/home/runner/work/openframe-oss-tenant/openframe-oss-tenant",
+        "commit_id": null
+    },
+    "statistics": {
+        "total_components": 8048,
+        "leaf_nodes": 664,
+        "max_depth": 3
+    },
+    "files_generated": [
+        "overview.md",
+        "module_tree.json",
+        "first_module_tree.json",
+        "vendor_sdks_fleetmdm_and_tacticalrmm.md",
+        "openframe_client_core.md",
+        "tenant_frontend_application.md",
+        "authorization_service_core.md",
+        "openframe_client_service.md",
+        "management_service.md",
+        "smtp_email_service.md",
+        "shared_security_jwt_oauth.md",
+        "external_api_service_core_dtos.md",
+        "tenant_frontend_api_clients.md",
+        "security_oauth_bff_and_redirects.md",
+        "mongo_repositories.md",
+        "security_oauth_forwarded_headers.md",
+        "data_layer_core_cassandra_pinot_nats_models.md",
+        "notifications_mail.md",
+        "management_service_core_config.md",
+        "openframe_api_service.md",
+        "openframe_api_lib_core_dtos_and_services.md",
+        "config_server_core.md",
+        "management_service_core.md",
+        "openframe_api_service_core_graphql_rest_and_security.md",
+        "data_layer_mongo_documents_and_repositories.md",
+        "shared_core_utils_and_validation.md",
+        "hubspot_api_email_service.md",
+        "organization_dtos.md",
+        "data_redis_cache.md",
+        "external_api_service_core.md"
+    ]
+}
