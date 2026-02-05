@@ -7,8 +7,9 @@ import {
   Table,
   type TableColumn
 } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useApiParams, useBatchImages, useCursorPaginationState, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { useApiParams, useCursorPaginationState, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { featureFlags } from '@lib/feature-flags'
+import { getFullImageUrl } from '@lib/image-url'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useOrganizations } from '../hooks/use-organizations'
@@ -25,20 +26,18 @@ interface UIOrganizationEntry {
   imageUrl?: string | null
 }
 
-function OrganizationNameCell({ org, fetchedImageUrls }: {
+function OrganizationNameCell({ org }: {
   org: UIOrganizationEntry;
-  fetchedImageUrls: Record<string, string | undefined>;
 }) {
-  const fetchedImageUrl = org.imageUrl ? fetchedImageUrls[org.imageUrl] : undefined
+  const fullImageUrl = getFullImageUrl(org.imageUrl)
 
   return (
     <div className="flex items-center gap-3">
       {featureFlags.organizationImages.displayEnabled() && (
         <OrganizationIcon
-          imageUrl={fetchedImageUrl}
+          imageUrl={fullImageUrl}
           organizationName={org.name}
           size="md"
-          preFetched={true}
         />
       )}
       <div className="flex flex-col justify-center shrink-0 min-w-0">
@@ -108,13 +107,6 @@ export function OrganizationsTable() {
     onSearchChange: (search) => searchOrganizations(search)
   })
 
-  const imageUrls = useMemo(() =>
-    featureFlags.organizationImages.displayEnabled()
-      ? organizations.map(org => org.imageUrl).filter(Boolean)
-      : [],
-    [organizations]
-  )
-  const fetchedImageUrls = useBatchImages(imageUrls)
 
   const transformed: UIOrganizationEntry[] = useMemo(() => {
     const toMoney = (n: number) => `$${n.toLocaleString()}`
@@ -169,7 +161,7 @@ export function OrganizationsTable() {
       key: 'name',
       label: 'Name',
       width: 'w-2/5',
-      renderCell: (org) => <OrganizationNameCell org={org} fetchedImageUrls={fetchedImageUrls} />
+      renderCell: (org) => <OrganizationNameCell org={org} />
     },
     {
       key: 'tier',
@@ -205,7 +197,7 @@ export function OrganizationsTable() {
         )
       }
     }
-  ], [fetchedImageUrls])
+  ], [])
 
   // Refetch when filters change
   const initialFilterLoadDone = useRef(false)

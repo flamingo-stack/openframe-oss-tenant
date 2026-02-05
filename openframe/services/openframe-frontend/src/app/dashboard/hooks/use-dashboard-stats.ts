@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
 import { apiClient } from '@lib/api-client'
+import { useEffect, useState } from 'react'
+import { DEFAULT_DASHBOARD_STATUSES } from '../../devices/constants/device-statuses'
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
-import { DEFAULT_VISIBLE_STATUSES } from '../../devices/constants/device-statuses'
 import type { GraphQLResponse } from '../../devices/types/device.types'
 import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries'
 import { GET_DIALOG_STATISTICS_QUERY } from '../../tickets/queries/dialogs-queries'
@@ -28,7 +28,7 @@ export function useDevicesOverview() {
 
         const devRes: { ok: boolean, status: number, error?: string, data?: GraphQLResponse<DeviceFiltersResponse> } = await apiClient.post<GraphQLResponse<DeviceFiltersResponse>>('/api/graphql', {
           query: GET_DEVICE_FILTERS_QUERY,
-          variables: { filter: { statuses: [...DEFAULT_VISIBLE_STATUSES] } }
+          variables: { filter: { statuses: [...DEFAULT_DASHBOARD_STATUSES] } }
         })
 
         if (!devRes.ok) {

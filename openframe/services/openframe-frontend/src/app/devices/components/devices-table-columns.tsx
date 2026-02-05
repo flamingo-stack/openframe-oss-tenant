@@ -3,6 +3,7 @@ import { OSTypeBadge, OrganizationIcon } from "@flamingo-stack/openframe-fronten
 import { StatusTag, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui"
 import { featureFlags } from '@lib/feature-flags'
 import { deduplicateFilterOptions } from '@lib/filter-utils'
+import { getFullImageUrl } from '@lib/image-url'
 import React from 'react'
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
 import { type Device } from '../types/device.types'
@@ -22,20 +23,18 @@ export function getDeviceTableRowActions(onRefresh?: () => void): ((device: Devi
   return DeviceRowActions
 }
 
-function OrganizationCell({ device, fetchedImageUrls }: {
+function OrganizationCell({ device }: {
   device: Device;
-  fetchedImageUrls: Record<string, string | undefined>;
 }) {
-  const fetchedImageUrl = device.organizationImageUrl ? fetchedImageUrls[device.organizationImageUrl] : undefined
+  const fullImageUrl = getFullImageUrl(device.organizationImageUrl)
 
   return (
     <div className="flex items-center gap-3">
       {featureFlags.organizationImages.displayEnabled() && (
         <OrganizationIcon
-          imageUrl={fetchedImageUrl}
+          imageUrl={fullImageUrl}
           organizationName={device.organization || 'Organization'}
           size="sm"
-          preFetched={true}
         />
       )}
       <div className="flex flex-col justify-center flex-1 min-w-0">
@@ -47,7 +46,7 @@ function OrganizationCell({ device, fetchedImageUrls }: {
   )
 }
 
-export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Record<string, string | undefined> = {}): TableColumn<Device>[] {
+export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[] {
   return [
     {
       key: 'device',
@@ -153,7 +152,7 @@ export function getDeviceTableColumns(deviceFilters?: any, fetchedImageUrls: Rec
           value: org.value
         })) || []
       ),
-      renderCell: (device) => <OrganizationCell device={device} fetchedImageUrls={fetchedImageUrls} />
+      renderCell: (device) => <OrganizationCell device={device} />
     }
   ]
 }

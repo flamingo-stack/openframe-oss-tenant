@@ -7,8 +7,7 @@ import {
   ListPageLayout,
   Table
 } from "@flamingo-stack/openframe-frontend-core/components/ui"
-import { useApiParams, useBatchImages, useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
-import { featureFlags } from '@lib/feature-flags'
+import { useApiParams, useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { useRouter } from "next/navigation"
 import { useCallback, useMemo } from "react"
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses'
@@ -60,15 +59,7 @@ export function DevicesView() {
     onSearchChange: (search) => searchDevices(search)
   })
 
-  const organizationImageUrls = useMemo(() =>
-    featureFlags.organizationImages.displayEnabled()
-      ? devices.map(device => device.organizationImageUrl).filter(Boolean)
-      : [],
-    [devices]
-  )
-  const fetchedImageUrls = useBatchImages(organizationImageUrls)
-
-  const columns = useMemo(() => getDeviceTableColumns(deviceFilters, fetchedImageUrls), [deviceFilters, fetchedImageUrls])
+  const columns = useMemo(() => getDeviceTableColumns(deviceFilters), [deviceFilters])
 
   // Refresh callback for after archive/delete actions
   const refreshDevices = useCallback(() => {
