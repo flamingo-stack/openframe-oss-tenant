@@ -1,188 +1,323 @@
-# Development Guide
+# Development Documentation
 
-Welcome to the OpenFrame development documentation! This comprehensive guide covers everything you need to know to contribute to and extend the OpenFrame platform.
+Welcome to the **OpenFrame Development Guide**. This section provides comprehensive documentation for developers working on the OpenFrame platform, from initial setup to advanced contribution workflows.
 
-## Quick Start for Developers
+## Quick Navigation
 
-### New to OpenFrame?
-1. **[Prerequisites](../getting-started/prerequisites.md)** - Ensure your system is ready
-2. **[Environment Setup](setup/environment.md)** - Configure your development environment
-3. **[Architecture Overview](architecture/overview.md)** - Understand the system design
-4. **[First Steps](../getting-started/first-steps.md)** - Get familiar with the platform
+### 🚀 **Getting Started**
+| Guide | Purpose | Time Required |
+|-------|---------|---------------|
+| **[Environment Setup](setup/environment.md)** | Configure IDE, tools, and extensions | 30 minutes |
+| **[Local Development](setup/local-development.md)** | Advanced development workflows | 45 minutes |
 
-### Ready to Code?
-1. **[Contributing Guidelines](contributing/guidelines.md)** - How to contribute effectively
-2. **[Code Style Guide](contributing/code-style.md)** - Coding standards and practices
-3. **[Development Tools](tools/scripts.md)** - Essential development scripts and tools
-4. **[Testing Guide](testing/overview.md)** - Testing strategies and practices
+### 🏗️ **Architecture & Design**
+| Guide | Purpose | Time Required |
+|-------|---------|---------------|
+| **[Architecture Overview](architecture/overview.md)** | System design and component relationships | 20 minutes |
 
-## Development Sections
+### 🧪 **Testing & Quality**
+| Guide | Purpose | Time Required |
+|-------|---------|---------------|
+| **[Testing Overview](testing/overview.md)** | Test strategy, running tests, writing tests | 30 minutes |
 
-### 🏗️ Environment & Setup
-- **[Environment Setup](setup/environment.md)** - Complete development environment configuration
-- **[Local Development](setup/local-development.md)** - Running OpenFrame locally
-- **[Development Tools](setup/tools.md)** - Required tools and utilities
+### 🤝 **Contributing**
+| Guide | Purpose | Time Required |
+|-------|---------|---------------|
+| **[Contributing Guidelines](contributing/guidelines.md)** | Code style, PR process, review standards | 15 minutes |
 
-### 🏛️ Architecture & Design
-- **[System Overview](architecture/overview.md)** - High-level architecture and design principles
-- **[Microservices Architecture](architecture/microservices.md)** - Service design and communication
-- **[Data Flow](architecture/data-flow.md)** - Data pipeline and processing architecture
-- **[Security Architecture](architecture/security.md)** - Security design and implementation
-- **[Integration Patterns](architecture/integration.md)** - Tool integration and API patterns
+---
 
-### 🖥️ Frontend Development
-- **[Vue.js Setup](frontend/vue-setup.md)** - Frontend development environment
-- **[Component Development](frontend/components.md)** - Building and organizing Vue components
-- **[State Management](frontend/state-management.md)** - Pinia/Vuex patterns and best practices
-- **[UI/UX Guidelines](frontend/ui-guidelines.md)** - Design system and user experience
+## Development Workflow Overview
 
-### ⚙️ Backend Development
-- **[Spring Boot Development](backend/spring-boot.md)** - Java backend development guide
-- **[GraphQL Implementation](backend/graphql.md)** - GraphQL schema and resolver development
-- **[Microservices Development](backend/microservices.md)** - Building and deploying services
-- **[Data Access Patterns](backend/data-access.md)** - Database integration and patterns
+OpenFrame follows a **microservices development model** with clear separation between frontend, backend services, and shared libraries.
 
-### 🦀 Client Agent Development
-- **[Rust Development](client-agent/rust-development.md)** - Cross-platform agent development
-- **[Cross-Platform Considerations](client-agent/cross-platform.md)** - Platform-specific development
-- **[Service Integration](client-agent/service-integration.md)** - Integrating with OpenFrame services
-
-### 🧪 Testing & Quality
-- **[Testing Overview](testing/overview.md)** - Testing strategy and framework
-- **[Backend Testing](testing/backend-testing.md)** - Java/Spring testing patterns
-- **[Frontend Testing](testing/frontend-testing.md)** - Vue.js testing strategies
-- **[Integration Testing](testing/integration-testing.md)** - End-to-end testing approaches
-
-### 🤝 Contributing & Collaboration
-- **[Contributing Guidelines](contributing/guidelines.md)** - How to contribute to OpenFrame
-- **[Code Style Guide](contributing/code-style.md)** - Coding standards and formatting
-- **[Pull Request Process](contributing/pull-requests.md)** - PR workflow and review process
-- **[Issue Templates](contributing/issue-templates.md)** - Bug reports and feature requests
-
-### 🛠️ Development Tools
-- **[Development Scripts](tools/scripts.md)** - Essential development and deployment scripts
-- **[Build System](tools/build-system.md)** - Maven, npm, and Cargo build processes
-- **[IDE Setup](tools/ide-setup.md)** - Configuring your development environment
+```mermaid
+flowchart TD
+    A[Developer Setup] --> B[Local Development]
+    B --> C[Feature Development]
+    C --> D[Testing]
+    D --> E[Code Review]
+    E --> F[Integration]
+    
+    B --> G[Frontend Development]
+    B --> H[Backend Services]
+    B --> I[Shared Libraries]
+    
+    G --> J[Vue.js + TypeScript]
+    H --> K[Java + Spring Boot]
+    I --> L[API Libraries + Data Layer]
+```
 
 ## Technology Stack
 
-### Backend Technologies
-- **Java 21** with **Spring Boot 3.3.0**
-- **Spring Cloud 2023.0.3** for microservices
-- **Netflix DGS Framework 7.0.0** for GraphQL
-- **Spring Security** with OAuth 2.0/OpenID Connect
-- **MongoDB 7.x**, **Cassandra 4.x**, **Apache Pinot 1.2.0**
-- **Apache Kafka 3.6.0** for event streaming
+### Backend Development
+- **Runtime**: Java 21 with Spring Boot 3.3.0
+- **Framework**: Spring Cloud 2023.0.3 for microservices
+- **API Layer**: GraphQL (Netflix DGS 7.0.0) + RESTful services
+- **Security**: JWT with OAuth2, Spring Security
+- **Data**: MongoDB, Cassandra, Apache Pinot, Redis
+- **Messaging**: Apache Kafka 3.6.0
+- **Build**: Apache Maven 3.9+
+- **Testing**: JUnit 5, Testcontainers, MockWebServer
 
-### Frontend Technologies
-- **Vue 3** with Composition API and **TypeScript**
-- **PrimeVue 3.45.0** component library
-- **Apollo Client** for GraphQL
-- **Pinia** for state management
-- **Vite 5.0.10** for building
+### Frontend Development
+- **Framework**: Vue 3 with Composition API and `<script setup>` syntax
+- **Language**: TypeScript with strict type checking
+- **UI Library**: PrimeVue 3.45.0 + custom design system
+- **State Management**: Pinia for reactive state
+- **Data Fetching**: Apollo Client for GraphQL
+- **Build System**: Vite 5.0.10 with hot module replacement
+- **Testing**: Vitest + Vue Testing Library
 
-### Agent Technologies
-- **Rust 1.70+** with **Tokio** async runtime
-- **Cross-platform support** (Windows, macOS, Linux)
-- **Velopack** for auto-updates
+### DevOps & Infrastructure
+- **Containers**: Docker and Docker Compose
+- **Orchestration**: Kubernetes 1.28+ with Helm charts
+- **Service Mesh**: Istio 1.20 for traffic management
+- **Monitoring**: Prometheus, Grafana, Loki
+- **CI/CD**: GitHub Actions (OpenFrame CLI handles deployments)
 
-## Development Workflow
+## Project Structure
 
-### 1. Planning Phase
-- Review requirements and create technical design
-- Break down work into manageable tasks
-- Identify dependencies and integration points
+```text
+openframe-oss-tenant/
+├── openframe/                          # Java services and libraries
+│   ├── services/                       # Microservices
+│   │   ├── openframe-gateway/          # API Gateway
+│   │   ├── openframe-api/              # GraphQL/REST API
+│   │   ├── openframe-authorization-server/ # OAuth2 provider
+│   │   ├── openframe-client/           # Agent management
+│   │   ├── openframe-management/       # Platform automation
+│   │   ├── openframe-stream/           # Event processing
+│   │   ├── openframe-config/           # Configuration server
+│   │   ├── openframe-external-api/     # Public APIs
+│   │   └── openframe-frontend/         # Vue.js frontend
+│   └── libs/                           # Shared libraries
+│       ├── openframe-core/             # Core utilities
+│       ├── openframe-data/             # Data layer
+│       ├── openframe-security/         # JWT and OAuth
+│       └── api-library/                # API DTOs and services
+├── clients/                            # Client agents and tools
+│   ├── openframe-client/               # Rust system agent
+│   └── openframe-chat/                 # Chat interface (Tauri)
+├── manifests/                          # Kubernetes Helm charts
+├── integrated-tools/                   # External tool configurations
+├── scripts/                            # Development and deployment scripts
+└── docs/                               # Documentation (this folder)
+```
 
-### 2. Development Phase
-- Follow coding standards and best practices
-- Write comprehensive tests
-- Document new features and changes
-- Regular commits with clear messages
+## Development Environment Types
 
-### 3. Testing Phase
-- Unit tests for individual components
-- Integration tests for service interactions
-- End-to-end tests for user workflows
-- Performance testing for critical paths
+### Local Development (Recommended)
+**Best for**: Day-to-day feature development, debugging, testing
 
-### 4. Review Phase
-- Code review by team members
-- Security review for sensitive changes
-- Documentation review and updates
-- Integration testing in staging environment
+**Setup**: All services run locally with Docker Compose for databases
+**Advantages**: 
+- Fast feedback loops with hot reload
+- Easy debugging with IDE integration
+- Complete control over all components
 
-### 5. Deployment Phase
-- Gradual rollout with monitoring
-- Performance monitoring and alerting
-- User feedback collection and analysis
-- Post-deployment validation
+### Containerized Development
+**Best for**: Testing deployment configurations, integration testing
 
-## Development Standards
+**Setup**: All services run in Docker containers
+**Advantages**:
+- Production-like environment
+- Consistent across team members
+- Easy to reset to clean state
 
-### Code Quality
-- **Test Coverage**: Minimum 80% code coverage
-- **Code Review**: All changes require peer review
-- **Security**: Security-first development approach
-- **Performance**: Consider performance implications
-- **Documentation**: Code must be well-documented
+### Hybrid Development  
+**Best for**: Working on specific services while using stable versions of others
 
-### Git Workflow
-- **Feature Branches**: Use feature branches for development
-- **Commit Messages**: Clear, descriptive commit messages
-- **Pull Requests**: Use PRs for all changes
-- **Code Review**: Mandatory code review process
+**Setup**: Key service running locally, others in containers
+**Advantages**:
+- Focus development effort where needed
+- Stable integration points
+- Reduced resource usage
 
-### Communication
-- **Documentation**: Keep documentation up-to-date
-- **Issues**: Use GitHub issues for tracking
-- **Discussions**: Use team channels for coordination
-- **Knowledge Sharing**: Regular tech talks and demos
+## Common Development Tasks
+
+### Starting Development Environment
+
+```bash
+# Full local development
+./scripts/run-mac.sh --silent
+
+# Frontend only (with backend services in containers)
+cd openframe/services/openframe-frontend
+npm run dev
+
+# Specific service development
+cd openframe/services/openframe-api
+mvn spring-boot:run -Dspring-boot.run.profiles=development
+```
+
+### Building and Testing
+
+```bash
+# Build all Java components
+mvn clean install
+
+# Run all tests
+mvn test
+
+# Build specific service
+cd openframe/services/openframe-api
+mvn clean install
+
+# Frontend testing
+cd openframe/services/openframe-frontend
+npm test
+npm run type-check
+```
+
+### Database Operations
+
+```bash
+# Start databases only
+docker compose up -d mongodb kafka redis cassandra pinot
+
+# Reset databases (clean state)
+docker compose down
+docker volume prune -f
+docker compose up -d
+
+# View logs
+docker compose logs mongodb
+```
+
+## IDE Configuration
+
+### IntelliJ IDEA (Recommended for Java)
+
+**Required Plugins:**
+- Spring Boot  
+- Lombok
+- GraphQL
+- Docker
+- Kubernetes
+
+**Recommended Settings:**
+```text
+File → Settings → Build, Execution, Deployment → Compiler → Annotation Processors
+☑ Enable annotation processing
+
+File → Settings → Editor → Code Style → Java
+☑ Use tab character: false
+Tab size: 4, Indent: 4, Continuation indent: 8
+```
+
+### Visual Studio Code (Great for Frontend)
+
+**Required Extensions:**
+- Vetur or Volar (Vue.js)
+- TypeScript and JavaScript Language Features
+- GraphQL: Language Feature Support
+- Docker
+- Extension Pack for Java (if doing backend work)
+
+**Recommended Settings (`.vscode/settings.json`):**
+```json
+{
+  "typescript.preferences.quoteStyle": "single",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "vetur.validation.template": false,
+  "vetur.validation.script": false,
+  "vetur.validation.style": false
+}
+```
+
+## Development Best Practices
+
+### Code Organization
+- **Single Responsibility**: Each service has a clear, focused purpose
+- **API-First Design**: Define APIs before implementation
+- **Configuration Externalization**: Use Spring Cloud Config for environment-specific settings
+- **Dependency Injection**: Leverage Spring's DI container extensively
+
+### Security Considerations
+- **Never commit secrets**: Use environment variables and Spring profiles
+- **JWT Best Practices**: HTTP-only cookies, proper expiration times
+- **API Security**: All endpoints protected by Gateway authentication
+- **Data Validation**: Validate input at service boundaries
+
+### Performance Guidelines
+- **Database Indexing**: Ensure proper MongoDB and Cassandra indexes
+- **Caching Strategy**: Use Redis appropriately for session and frequently accessed data
+- **Event Processing**: Design Kafka consumers for high throughput
+- **Frontend Optimization**: Lazy loading, code splitting, component optimization
+
+### Testing Strategy
+- **Unit Tests**: 80%+ coverage for service logic
+- **Integration Tests**: Test service interactions and database operations
+- **E2E Tests**: Critical user journeys through the complete stack
+- **Performance Tests**: Load testing for APIs and event processing
+
+## Troubleshooting Development Issues
+
+### Common Build Issues
+
+**Maven dependency conflicts:**
+```bash
+mvn dependency:tree -Dverbose
+mvn clean install -U  # Force update dependencies
+```
+
+**Frontend compilation errors:**
+```bash
+cd openframe/services/openframe-frontend
+rm -rf node_modules package-lock.json
+npm install
+npm run type-check
+```
+
+### Runtime Issues
+
+**Service won't start:**
+- Check if required ports are available
+- Verify database services are running and ready
+- Review application logs for configuration errors
+
+**Database connection issues:**
+```bash
+# Test database connectivity
+docker compose ps
+docker compose logs mongodb
+
+# Reset database state
+docker compose restart mongodb
+```
+
+**Memory issues:**
+- Increase Docker Desktop memory allocation
+- Configure JVM heap sizes appropriately
+- Monitor system resource usage
 
 ## Getting Help
 
 ### Internal Resources
-- **[Troubleshooting Guide](../operations/troubleshooting/common-issues.md)** - Common development issues
-- **[FAQ](../reference/faq.md)** - Frequently asked questions
-- **[Architecture Diagrams](../diagrams/README.md)** - Visual system overview
-
-### External Resources
-- **Spring Boot Documentation**: https://spring.io/projects/spring-boot
-- **Vue.js Documentation**: https://vuejs.org/guide/
-- **Rust Documentation**: https://doc.rust-lang.org/
-- **GraphQL Documentation**: https://graphql.org/learn/
+1. **Architecture Documentation**: Understand system design decisions
+2. **Code Comments**: Inline documentation for complex logic
+3. **Test Examples**: Reference existing tests for patterns
+4. **Configuration Examples**: Sample configurations in `/config` directories
 
 ### Community Support
-- **GitHub Issues**: Report bugs and request features
-- **Team Chat**: Internal communication channels
-- **Code Review**: Peer support and knowledge sharing
+**OpenMSP Slack Community**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+
+- `#development` - Development questions and discussions
+- `#support` - Technical help and troubleshooting
+- `#architecture` - Design decisions and system architecture
+
+> **Important**: We don't use GitHub Issues. All development support happens in our Slack community.
+
+---
 
 ## Next Steps
 
-Choose your path based on your role and interests:
+1. **New to OpenFrame development?** Start with [Environment Setup](setup/environment.md)
+2. **Want to understand the system?** Read [Architecture Overview](architecture/overview.md)  
+3. **Ready to contribute?** Check [Contributing Guidelines](contributing/guidelines.md)
+4. **Need to run tests?** See [Testing Overview](testing/overview.md)
 
-**🆕 New Contributors**:
-1. Start with [Environment Setup](setup/environment.md)
-2. Review [Contributing Guidelines](contributing/guidelines.md)
-3. Pick a "good first issue" from our issue tracker
-
-**🔧 Backend Developers**:
-1. Explore [Spring Boot Development](backend/spring-boot.md)
-2. Learn our [GraphQL Implementation](backend/graphql.md)
-3. Understand [Microservices Architecture](architecture/microservices.md)
-
-**🎨 Frontend Developers**:
-1. Get started with [Vue.js Setup](frontend/vue-setup.md)
-2. Learn our [Component Development](frontend/components.md) patterns
-3. Master [State Management](frontend/state-management.md)
-
-**🦀 Systems Developers**:
-1. Dive into [Rust Development](client-agent/rust-development.md)
-2. Understand [Cross-Platform Considerations](client-agent/cross-platform.md)
-3. Learn [Service Integration](client-agent/service-integration.md) patterns
-
-**🏗️ DevOps Engineers**:
-1. Review [Development Tools](tools/scripts.md)
-2. Understand [Build System](tools/build-system.md)
-3. Explore [Deployment Guide](../deployment/README.md)
-
-Welcome to the OpenFrame development community! 🚀
+Happy coding! 🚀

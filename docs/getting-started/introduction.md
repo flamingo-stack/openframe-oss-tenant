@@ -1,133 +1,183 @@
-# Introduction to OpenFrame
+# OpenFrame Introduction
 
-OpenFrame is a distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. Built with Java Spring Boot and Vue.js, it simplifies IT and security operations through a single, cohesive platform.
+Welcome to **OpenFrame** - the unified AI-powered MSP platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation.
+
+[![OpenFrame v0.3.7 - Enhanced Developer Experience](https://img.youtube.com/vi/O8hbBO5Mym8/maxresdefault.jpg)](https://www.youtube.com/watch?v=O8hbBO5Mym8)
 
 ## What is OpenFrame?
 
-OpenFrame is an enterprise-grade platform that combines powerful microservices architecture with modern web technologies to provide:
+OpenFrame is a comprehensive **multi-tenant MSP (Managed Service Provider) platform** that serves as the foundation for the Flamingo AI ecosystem. It provides a complete, production-grade backend stack that integrates multiple MSP tools into a single AI-driven interface, automating IT support operations across the entire technology stack.
 
-- Real-time data processing and analytics
-- Unified API access through GraphQL
-- Automated deployment and monitoring
-- AI-powered insights and anomaly detection
-- Enterprise-grade security controls
-- High-performance event streaming
+```mermaid
+graph TD
+    A[OpenFrame Platform] --> B[AI Automation]
+    A --> C[Multi-Tenant Architecture]
+    A --> D[Open Source Integration]
+    A --> E[Unified Dashboard]
+    
+    B --> F[Mingo AI for Technicians]
+    B --> G[Fae AI for Clients]
+    C --> H[Tenant Isolation]
+    C --> I[Scalable Infrastructure]
+    D --> J[Replace Proprietary Tools]
+    D --> K[Cost Reduction]
+    E --> L[Device Management]
+    E --> M[Log Analysis]
+    E --> N[User Management]
+```
 
 ## Key Features
 
-### 1. Unified Dashboard
-- Modern Vue.js-based interface
-- Real-time data visualization
-- Customizable dashboards
-- Role-based access control
+### 🤖 **AI-Powered Automation**
+- **Mingo AI**: Intelligent assistant for IT technicians
+- **Fae AI**: Client-facing support automation
+- **Smart Alerting**: AI-driven incident detection and response
+- **Automated Remediation**: Self-healing infrastructure capabilities
 
-### 2. Smart Automation
-- Automated deployment pipelines
-- Self-healing capabilities
-- Predictive maintenance
-- Workflow automation
+### 🏢 **Multi-Tenant Architecture** 
+- **Strict tenant isolation** at identity, data, and messaging layers
+- **Horizontal scalability** for growing MSP businesses
+- **Per-tenant OAuth2/OIDC** with custom branding support
+- **Independent configuration** per tenant organization
 
-### 3. AI-Powered Insights
-- Real-time anomaly detection
-- Predictive analytics
-- AI assistants ("copilots")
-- Automated decision making
+### 🔧 **Unified Tool Integration**
+- **Device Management**: Fleet MDM, Tactical RMM, MeshCentral
+- **Identity & Access**: SSO with Google, Microsoft, custom OIDC providers
+- **Monitoring & Analytics**: Apache Pinot, Kafka streaming, real-time dashboards
+- **Security**: JWT-based authentication, API key management, role-based access
 
-### 4. Enterprise Security
-- OAuth 2.0 authentication
-- Role-based access control
-- End-to-end encryption
-- Audit logging
+### 📊 **Real-Time Data Processing**
+- **Event-driven architecture** using Apache Kafka
+- **Stream processing** for live data enrichment
+- **Analytics-first design** with Apache Pinot and Cassandra
+- **WebSocket support** for real-time UI updates
 
-### 5. High Performance
-- Handles 100,000 events/second
-- Sub-500ms latency
-- Scalable microservices
-- Distributed architecture
+### 🛡️ **Enterprise Security**
+- **Gateway-first security model** with JWT validation
+- **API key authentication** for external integrations
+- **Multi-issuer OAuth2** support for complex tenant scenarios
+- **AES-256 encryption** for sensitive data
 
-## Technology Stack
+## Target Audience
 
-### Backend
-- **Core Runtime**: Spring Boot 3.3.0, OpenJDK 21, Spring Cloud 2023.0.3
-- **API Layer**: Netflix DGS Framework 7.0.0 (GraphQL)
-- **Gateway**: Spring Cloud Gateway with WebFlux
-- **Security**: Spring Security with OAuth 2.0/OpenID Connect
-- **Data Storage**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0
-- **Event Streaming**: Apache Kafka 3.6.0
-- **Stream Processing**: OpenFrame Stream Service with Kafka integration
-- **Caching**: Redis
-- **System Agent**: Rust-based cross-platform agent with Tokio runtime
+### MSP Owners & Operators
+- **Reduce vendor costs** by replacing expensive proprietary tools
+- **Increase margins** through automation and efficiency gains
+- **Scale operations** without proportional staff increases
+- **Improve client satisfaction** with AI-powered support
 
-### Frontend
-- **Framework**: Vue 3 with Composition API and TypeScript
-- **State Management**: Pinia
-- **Routing**: Vue Router 4
-- **UI Framework**: PrimeVue 3.45.0
-- **GraphQL Client**: Apollo Client
-- **Build Tool**: Vite 5.0.10
+### IT Professionals & Technicians
+- **Streamline workflows** with unified dashboard and AI assistance
+- **Reduce manual tasks** through intelligent automation
+- **Focus on high-value work** while AI handles routine operations
+- **Access comprehensive device and log management** in one platform
+
+### Developers & System Integrators
+- **Extend platform functionality** through open APIs and SDKs
+- **Integrate existing tools** using standard protocols
+- **Build custom workflows** with event-driven architecture
+- **Deploy on-premises or cloud** with Kubernetes support
+
+## Technology Stack Overview
+
+### Backend Services (Java 21 + Spring Boot)
+- **API Gateway**: Security enforcement and routing
+- **GraphQL API**: Rich data queries and mutations
+- **OAuth2 Server**: Multi-tenant identity provider
+- **Stream Processing**: Real-time event handling
+- **Management Service**: Platform automation and maintenance
+
+### Frontend (TypeScript + Vue 3)
+- **Modern UI**: PrimeVue components with custom design system
+- **Real-time Updates**: WebSocket connections for live data
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Progressive Web App**: Offline capability and native feel
+
+### Data Layer
+- **MongoDB**: Primary document storage
+- **Apache Kafka**: Event streaming and messaging
+- **Apache Pinot**: Real-time analytics
+- **Cassandra**: Time-series data and logs
+- **Redis**: Caching and session management
 
 ### Infrastructure
-- **Container Orchestration**: Kubernetes
-- **Service Mesh**: Istio
-- **Monitoring**: Prometheus, Grafana
-- **Logging**: Loki
-- **CI/CD**: GitHub Actions
+- **Docker**: Containerized deployments
+- **Kubernetes**: Container orchestration with Helm charts
+- **Istio**: Service mesh for traffic management
+- **Prometheus & Grafana**: Monitoring and observability
 
-## System Architecture
+## Platform Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **Cost Reduction** | Replace multiple expensive SaaS tools with single open-source platform |
+| **AI Enhancement** | Intelligent automation reduces manual work and improves accuracy |
+| **Vendor Independence** | No lock-in to proprietary systems or pricing models |
+| **Scalability** | Grows with your business from single tenant to enterprise scale |
+| **Customization** | Open source allows modification to fit specific needs |
+| **Integration** | Unified API and event system connects all your existing tools |
+
+## Use Cases
+
+### 🏢 **MSP Operations**
+- **Client Management**: Multi-tenant isolation with per-client branding
+- **Device Monitoring**: Unified view across all client endpoints
+- **Incident Response**: AI-powered alert triage and automated remediation
+- **Reporting**: Real-time dashboards and historical analytics
+
+### 🔧 **IT Infrastructure**
+- **Asset Management**: Complete device lifecycle tracking
+- **Log Analysis**: Centralized log collection and AI-powered insights
+- **Security Monitoring**: Real-time threat detection and response
+- **Compliance Reporting**: Automated compliance checks and documentation
+
+### 👥 **Team Collaboration**  
+- **Unified Dashboard**: Single pane of glass for all operations
+- **Role-Based Access**: Granular permissions and access control
+- **Communication**: Integrated chat and notification systems
+- **Knowledge Base**: AI-powered documentation and troubleshooting
+
+## Architecture Highlights
 
 ```mermaid
-graph TB
-    subgraph Frontend
-        UI[Vue.js UI]
-        Store[Vuex Store]
-        Router[Vue Router]
-    end
-
-    subgraph Backend
-        Gateway[Spring Cloud Gateway]
-        Auth[Spring Security]
-        API[Spring Boot API]
-        Stream[Spring Kafka]
-        Data[Spring Data]
-    end
-
-    subgraph Data Layer
-        MongoDB[(MongoDB)]
-        Cassandra[(Cassandra)]
-        Pinot[(Apache Pinot)]
-        Redis[(Redis)]
-    end
-
-    UI --> Gateway
-    Gateway --> Auth
-    Auth --> API
-    API --> Stream
-    API --> Data
-    Data --> MongoDB
-    Data --> Cassandra
-    Data --> Pinot
-    Stream --> Redis
+flowchart TD
+    Browser[Browser/Client] --> Gateway[API Gateway]
+    Gateway --> Auth[OAuth2 Server]
+    Gateway --> API[GraphQL API]
+    Gateway --> Client[Client Service]
+    
+    API --> Data[(Data Layer)]
+    Client --> Stream[Stream Processing]
+    Stream --> Analytics[(Analytics)]
+    
+    Data --> MongoDB[(MongoDB)]
+    Data --> Redis[(Redis)]
+    Analytics --> Pinot[(Apache Pinot)]
+    Analytics --> Cassandra[(Cassandra)]
+    
+    Stream --> Kafka[Apache Kafka]
 ```
 
-## Getting Started
+## Getting Started Journey
 
-To get started with OpenFrame:
+Ready to explore OpenFrame? Here's your next steps:
 
-1. Review the [Development Setup Guide](../development/setup.md)
-2. Follow the [Architecture Overview](../development/architecture.md)
-3. Explore the [API Documentation](../api/overview.md)
+1. **[Prerequisites](prerequisites.md)** - Ensure your environment is ready
+2. **[Quick Start](quick-start.md)** - Get OpenFrame running in 5 minutes  
+3. **[First Steps](first-steps.md)** - Explore key features and capabilities
+4. **[Development Setup](../development/setup/environment.md)** - Set up for development work
 
-## Support
+## Community & Support
 
-For additional support and resources:
+OpenFrame is built by the team at **Flamingo** (https://flamingo.run) and powered by the **OpenMSP community** (https://www.openmsp.ai/).
 
-- Visit our [GitHub repository](https://github.com/flamingo-stack/openframe-oss-tenant)
-- Join our community discussions
-- Contact our support team
+- **Slack Community**: Join our OpenMSP Slack for support and discussions
+- **Documentation**: Comprehensive guides and API references
+- **GitHub**: Open source repositories and issue tracking
+- **Video Tutorials**: Step-by-step walkthrough videos
 
-## Next Steps
+> **Important**: We don't use GitHub Issues or GitHub Discussions. All support and community interaction happens in our OpenMSP Slack community: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
 
-- [Development Setup](../development/setup.md)
-- [Architecture Overview](../development/architecture.md)
-- [API Documentation](../api/overview.md)
-- [Contributing Guidelines](../development/contributing.md) 
+---
+
+**Next**: Ready to check your system requirements? Continue to [Prerequisites](prerequisites.md) →
