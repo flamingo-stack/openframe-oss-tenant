@@ -1,256 +1,352 @@
 # First Steps with OpenFrame
 
-Congratulations on successfully setting up OpenFrame! This guide will walk you through your first hour with the platform, helping you understand its key features and capabilities.
+Now that OpenFrame is installed and running, this guide will walk you through the essential first steps to configure and start using the platform effectively.
 
-## Initial Access
+[![OpenFrame v0.3.7 - Enhanced Developer Experience](https://img.youtube.com/vi/O8hbBO5Mym8/maxresdefault.jpg)](https://www.youtube.com/watch?v=O8hbBO5Mym8)
 
-### Accessing the Dashboard
+## Overview of First 5 Steps
 
-1. **Open your browser** and navigate to: http://localhost:8080
-2. **Login** using the default credentials (if authentication is enabled)
-3. **Explore the main dashboard** - your central hub for all operations
+After completing the quick start, here are the most important initial tasks:
 
-### Key Interface Elements
+1. **Complete Tenant Configuration** - Finalize your organizational setup
+2. **Configure Authentication** - Set up SSO or user management  
+3. **Add Your First Devices** - Connect systems for monitoring
+4. **Explore Core Features** - Navigate the main platform areas
+5. **Set Up Integration Tools** - Connect FleetDM, Tactical RMM, or others
 
-- **Navigation Bar**: Quick access to major sections
-- **Dashboard Widgets**: Real-time metrics and status indicators  
-- **Service Status Panel**: Monitor all integrated services
-- **Quick Actions**: Common tasks and shortcuts
+## Step 1: Complete Tenant Configuration
 
-## Understanding the Architecture
+### Access Your Dashboard
 
-### Core Components Overview
+1. Navigate to http://localhost:3000
+2. Log in with your registered credentials
+3. You should see the main dashboard
 
-OpenFrame consists of several interconnected services:
+### Configure Organization Details
 
-1. **Gateway Service** (Port 8080) - Your main entry point
-2. **API Service** - GraphQL and REST endpoints
-3. **Client Service** - Agent management
-4. **Management Service** - Administrative functions
-5. **Stream Service** - Real-time data processing
-6. **Config Service** (Port 8888) - Configuration management
-7. **UI Service** - Vue.js frontend application
+1. Go to **Settings** → **Company and Users**
+2. Update your organization information:
+   ```
+   Organization Name: Your MSP Name
+   Contact Email: admin@yourmsp.com
+   Phone: +1-555-123-4567
+   Address: Complete business address
+   ```
+3. Set business hours and timezone
+4. Save the configuration
 
-### Data Flow
-```
-User Request → Gateway → Service → Database → Response
-```
+### Set Up Your Profile
 
-## Exploring Key Features
+1. Click your user avatar → **Profile Settings**
+2. Complete your profile:
+   - Full Name
+   - Job Title
+   - Contact Information
+   - Preferences (timezone, notifications)
 
-### 1. Service Management
+## Step 2: Configure Authentication
 
-**View Service Status**:
-- Navigate to the Services section
-- Check health status of all components
-- Review performance metrics
+### Basic Authentication
 
-**Service Controls**:
-- Start/stop individual services
-- View service logs
-- Monitor resource usage
+For getting started, the built-in authentication works fine. For production, consider SSO.
 
-### 2. API Exploration
+### Enable SSO (Optional but Recommended)
 
-**GraphQL Playground**:
-1. Visit: http://localhost:8080/graphql
-2. Explore available queries and mutations
-3. Try sample queries:
+1. Navigate to **Settings** → **SSO Configuration**
+2. Choose your provider:
 
-```graphql
-query {
-  systemInfo {
-    version
-    status
-    services {
-      name
-      status
-      port
-    }
-  }
-}
-```
-
-**REST Endpoints**:
-- Authentication: `/oauth/token`
-- Health checks: `/actuator/health`
-- Service discovery: `/api/services`
-
-### 3. Integrated Tools
-
-OpenFrame includes several integrated tools:
-
-**Currently Available**:
-- **MeshCentral** - Remote management platform
-- **Tactical RMM** - IT management suite  
-- **Fleet MDM** - Mobile device management
-- **Authentik** - Identity provider
-
-**Accessing Tools**:
-1. From the main dashboard, click on "Integrated Tools"
-2. Select the tool you want to use
-3. Tools open in embedded views or new tabs
-
-### 4. Agent Management
-
-**Understanding Agents**:
-- Cross-platform Rust agents for system monitoring
-- Automatic registration and management
-- Real-time metrics collection
-
-**Agent Operations**:
-1. View registered agents in the Client section
-2. Monitor agent health and connectivity
-3. Deploy configuration updates
-4. Review collected metrics
-
-## Common First Tasks
-
-### 1. Configure Your Environment
-
-**Update Configuration**:
-1. Access the Config Service at http://localhost:8888
-2. Review default settings
-3. Customize for your environment
-
-**Environment Variables**:
+#### Google SSO Setup
 ```bash
-# Key environment variables to consider
-SPRING_PROFILES_ACTIVE=dev
-SERVER_PORT=8080
-DATABASE_URL=mongodb://localhost:27017/openframe
+# Set environment variables
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
-### 2. Set Up Monitoring
+Configure in UI:
+- Provider: Google
+- Client ID: (from Google Cloud Console)
+- Client Secret: (from Google Cloud Console)
+- Allowed Domains: yourdomain.com
 
-**Dashboard Setup**:
-1. Navigate to Monitoring section
-2. Configure alert thresholds
-3. Set up notification channels
-
-**Grafana Access** (if enabled):
-- URL: http://localhost:3000
-- Default credentials: admin/admin
-- Pre-configured OpenFrame dashboards
-
-### 3. Test API Integration
-
-**Using curl**:
+#### Microsoft SSO Setup
 ```bash
-# Get system status
-curl -X GET http://localhost:8080/api/system/status
-
-# Test authentication
-curl -X POST http://localhost:8080/oauth/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=your_client_id&client_secret=your_secret"
+# Set environment variables  
+MICROSOFT_CLIENT_ID=your-azure-app-id
+MICROSOFT_CLIENT_SECRET=your-azure-app-secret
+MICROSOFT_TENANT_ID=your-azure-tenant-id
 ```
 
-**Using GraphQL**:
+### Invite Team Members
+
+1. Go to **Settings** → **Company and Users**
+2. Click **Invite User**
+3. Enter email addresses and select roles:
+   - **Admin**: Full platform access
+   - **Technician**: Device management and tickets
+   - **Read-Only**: View-only access
+
+## Step 3: Add Your First Devices
+
+### Option A: Use OpenFrame CLI (Recommended)
+
+Install the OpenFrame CLI from [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli):
+
 ```bash
-# Test GraphQL endpoint
-curl -X POST http://localhost:8080/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ systemInfo { version status } }"}'
+# Install CLI
+curl -fsSL https://raw.githubusercontent.com/flamingo-stack/openframe-cli/main/install.sh | bash
+
+# Verify installation
+openframe-cli --version
 ```
 
-## Development Workflow
+Register a device:
 
-### 1. Making Your First Change
-
-**Frontend Changes**:
-1. Navigate to `openframe/services/openframe-frontend`
-2. Run `npm run dev` for development mode
-3. Make changes and see live updates
-
-**Backend Changes**:
-1. Open your preferred Java IDE
-2. Import the Maven project
-3. Make changes and use Spring Boot DevTools for hot reload
-
-### 2. Testing Changes
-
-**Run Tests**:
 ```bash
-# Backend tests
-mvn test
+# Generate agent registration secret
+openframe-cli agent create-secret --name "production-servers"
 
-# Frontend tests  
-cd openframe/services/openframe-frontend
-npm run test
-
-# Rust agent tests
-cd client
-cargo test
+# Install agent on target machine
+openframe-cli agent install \
+  --secret "your-registration-secret" \
+  --server-url "http://your-openframe-server.com:8080"
 ```
+
+### Option B: Manual Agent Deployment
+
+1. Download the OpenFrame agent for your platform
+2. Install on target systems:
+
+```bash
+# Linux/macOS
+sudo ./openframe-agent install --secret YOUR_SECRET
+
+# Windows (Admin PowerShell)
+.\openframe-agent.exe install --secret YOUR_SECRET
+```
+
+### Option C: Integrate Existing Tools
+
+If you already have FleetDM or Tactical RMM:
+
+1. Go to **Settings** → **Integrations**
+2. Add your tool configurations:
+
+#### FleetDM Integration
+```
+Fleet Server URL: https://your-fleet.company.com
+API Token: your-fleet-api-token
+Organization: Default (or specific org)
+```
+
+#### Tactical RMM Integration  
+```
+Tactical RMM URL: https://your-rmm.company.com
+Username: admin@company.com
+API Key: your-api-key
+```
+
+## Step 4: Explore Core Features
+
+### Dashboard Overview
+
+The main dashboard shows:
+- **Device Count**: Total managed devices
+- **Recent Alerts**: Critical issues requiring attention
+- **Log Activity**: Recent system events
+- **Organization Status**: Health metrics
+
+### Device Management
+
+1. Navigate to **Devices**
+2. Explore the device list with:
+   - Device status indicators
+   - OS type and version
+   - Last seen timestamps
+   - Installed agents
+
+3. Click on a device to see:
+   - **Overview**: Basic system information
+   - **Hardware**: CPU, memory, disk details
+   - **Software**: Installed applications
+   - **Logs**: Device-specific events
+   - **Remote Access**: Connect via MeshCentral
+   - **File Manager**: Browse files remotely
+
+### Log Management
+
+1. Go to **Logs**
+2. Use filters to find specific events:
+   - Time range
+   - Severity level
+   - Device type
+   - Event source
+
+3. Click on log entries for detailed information
+4. Set up log alerts for critical events
+
+### AI Assistant (Mingo)
+
+1. Navigate to **Mingo** (AI Assistant)
+2. Start a conversation about your infrastructure:
+   ```
+   "Show me devices with high CPU usage"
+   "What security alerts do I have?"
+   "Help me troubleshoot network connectivity"
+   ```
+
+3. Mingo can:
+   - Answer questions about your infrastructure
+   - Suggest troubleshooting steps
+   - Execute approved automated tasks
+   - Generate reports and summaries
+
+## Step 5: Set Up Integration Tools
+
+### Configure External Tools
+
+Based on your existing setup, configure integrations:
+
+#### For FleetDM Users
+1. **Settings** → **Integrations** → **FleetDM**
+2. Enter your Fleet server details
+3. Test connection
+4. Import existing hosts
+5. Configure query sync
+
+#### For Tactical RMM Users
+1. **Settings** → **Integrations** → **Tactical RMM** 
+2. Add API credentials
+3. Test connectivity
+4. Sync agents and clients
+5. Configure script sync
+
+#### For New Deployments
+Consider deploying integrated tools:
+
+```bash
+# Deploy FleetDM
+cd integrated-tools/fleetmdm
+docker-compose up -d
+
+# Deploy Tactical RMM  
+cd integrated-tools/tactical-rmm
+docker-compose up -d
+
+# Deploy MeshCentral
+cd integrated-tools/meshcentral  
+docker-compose up -d
+```
+
+### Verify Integration Status
+
+1. Go to **Settings** → **Architecture**
+2. Check that all integrations show "Connected" status
+3. Verify data is syncing correctly
+
+## Common Initial Configuration Tasks
+
+### Set Up Alerting
+
+1. **Settings** → **Notifications**
+2. Configure alert destinations:
+   - Email notifications
+   - Slack webhooks
+   - Microsoft Teams
+   - SMS (via third-party)
+
+### Configure Policies
+
+1. **Policies and Queries**
+2. Set up monitoring policies:
+   - CPU usage thresholds
+   - Disk space alerts  
+   - Security compliance checks
+   - Update status monitoring
+
+### Create Scripts
+
+1. **Scripts** section
+2. Add commonly used scripts:
+   - System health checks
+   - Update installations
+   - Security scans
+   - Maintenance tasks
+
+## Verification Checklist
+
+After completing first steps, verify:
+
+- [ ] Organization details are complete
+- [ ] Authentication is configured (SSO if desired)  
+- [ ] At least one device is connected and reporting
+- [ ] Dashboard shows current data
+- [ ] Logs are being received
+- [ ] Mingo AI is responsive
+- [ ] External integrations are connected (if applicable)
+- [ ] Team members are invited and have access
+- [ ] Basic alerts are configured
+
+## Common Issues and Solutions
+
+### Devices Not Appearing
+
+Check agent connectivity:
+
+```bash
+# Verify agent status
+systemctl status openframe-agent  # Linux
+Get-Service OpenFrameAgent        # Windows
+```
+
+Check firewall settings:
+```bash
+# Allow OpenFrame client port
+ufw allow 8083/tcp
+```
+
+### Authentication Problems
+
+Reset user passwords or check SSO configuration in Settings.
+
+### Integration Failures
+
+Verify API credentials and network connectivity to external tools.
+
+### Performance Issues
+
+Monitor resource usage and consider increasing allocated memory for Java services.
 
 ## Next Steps
 
-### Immediate Actions (Next 30 minutes)
-1. **Explore the API documentation**: [API Overview](../api/overview.md)
-2. **Review architecture details**: [Architecture Overview](../development/architecture/overview.md)
-3. **Set up your development environment**: [Development Setup](../development/setup/environment.md)
+Now that you've completed the initial setup:
 
-### Short-term Goals (Next few hours)
-1. **Deploy additional integrated tools**
-2. **Configure monitoring and alerting**
-3. **Set up your first custom integration**
-4. **Explore the client agent capabilities**
+### For Daily Operations
+- Learn keyboard shortcuts and navigation tips
+- Set up custom dashboards
+- Configure automated reports
+- Train team members on the interface
 
-### Learning Resources
-- **[Development Guide](../development/README.md)** - Comprehensive development documentation
-- **[API Reference](../api/README.md)** - Complete API documentation
-- **[Deployment Guide](../deployment/README.md)** - Production deployment information
-- **[Operations Manual](../operations/README.md)** - Operational procedures
+### For Advanced Configuration  
+- Set up high availability deployment
+- Configure advanced security policies
+- Integrate custom tools and scripts
+- Set up comprehensive monitoring
+
+### For Development
+- Explore the [Development Guides](../development/setup/environment.md)
+- Contribute to the open-source project
+- Build custom integrations
+- Extend Mingo AI capabilities
 
 ## Getting Help
 
-### Documentation
-- **Search this documentation** using your browser's search function
-- **Check the troubleshooting guides** for common issues
-- **Review the FAQ** for frequently asked questions
+As you explore OpenFrame:
 
-### Community
-- **GitHub Issues**: Report bugs and request features
-- **Discussion Forums**: Ask questions and share knowledge
-- **Community Chat**: Real-time help and discussion
+- **Built-in Help**: Click the `?` icon in any section
+- **Documentation**: Comprehensive guides for all features
+- **Community**: Active discussions in OpenMSP Slack
+- **Support**: Professional support available through Flamingo
 
-### Troubleshooting
+---
 
-**Common First-Time Issues**:
-1. **Port conflicts**: Ensure required ports are available
-2. **Permission issues**: Check file and directory permissions
-3. **Service startup failures**: Review logs for specific error messages
-4. **Authentication problems**: Verify credentials and token configuration
-
-**Getting Logs**:
-```bash
-# Service logs
-docker-compose logs -f [service-name]
-
-# Application logs
-tail -f logs/openframe.log
-
-# System logs
-journalctl -f -u openframe
-```
-
-**Quick Health Check**:
-```bash
-# Check all services
-curl http://localhost:8080/actuator/health
-
-# Check specific service
-curl http://localhost:8080/api/services/health
-```
-
-## Congratulations!
-
-You've completed your first steps with OpenFrame. You should now have:
-- ✅ A running OpenFrame installation
-- ✅ Understanding of core components
-- ✅ Experience with the main interface
-- ✅ Knowledge of key features and capabilities
-- ✅ Direction for next steps
-
-Ready to dive deeper? Continue with the [Development Guide](../development/README.md) or explore specific areas that interest you most.
+**Congratulations!** You've successfully configured OpenFrame and are ready to start managing your infrastructure efficiently. The platform will continue learning about your environment and providing increasingly valuable insights through Mingo AI.

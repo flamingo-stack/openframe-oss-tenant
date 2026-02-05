@@ -1,245 +1,698 @@
-# Contributing to OpenFrame
+# Contributing Guidelines
 
-Thank you for your interest in contributing to OpenFrame! This guide will help you get started with contributing to our Java Spring Boot backend and Vue.js frontend.
+Welcome to OpenFrame! We're excited that you're interested in contributing to the project. This guide will help you understand our development process, coding standards, and how to submit contributions effectively.
 
-## Development Setup
+## Getting Started
 
-1. Fork the repository
-2. Clone your fork
-3. Set up the development environment:
-   - [Backend Setup](setup.md#backend-setup)
-   - [Frontend Setup](setup.md#frontend-setup)
+### Before You Contribute
+
+1. **Join our community**: Connect with us on [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+2. **Read the documentation**: Familiarize yourself with the [Architecture Overview](../architecture/overview.md) and [Development Setup](../setup/environment.md)
+3. **Set up your development environment**: Follow the [Local Development Guide](../setup/local-development.md)
+4. **Understand our testing approach**: Review the [Testing Overview](../testing/overview.md)
+
+### Ways to Contribute
+
+- **Bug Reports**: Help us identify and fix issues
+- **Feature Requests**: Suggest new capabilities
+- **Code Contributions**: Submit bug fixes and new features
+- **Documentation**: Improve guides, tutorials, and API documentation
+- **Testing**: Add test coverage and improve test quality
+- **Community Support**: Help other users in Slack and GitHub discussions
 
 ## Development Workflow
 
-### 1. Create a Branch
+### 1. Issue Discovery and Planning
+
+#### Finding Work
+
+- **Good First Issues**: Look for issues labeled `good first issue`
+- **Help Wanted**: Issues labeled `help wanted` need community assistance
+- **Bug Reports**: Check issues labeled `bug` for problems to fix
+- **Feature Requests**: Issues labeled `enhancement` for new features
+
+#### Issue Discussion
+
+Before starting work on significant changes:
+
+1. **Comment on the issue** to express interest
+2. **Discuss your approach** with maintainers
+3. **Wait for approval** before starting implementation
+4. **Ask questions** if requirements are unclear
+
+### 2. Setting Up Your Development Environment
 
 ```bash
-# Create and switch to a new branch
+# Fork the repository on GitHub
+# Then clone your fork locally
+git clone https://github.com/YOUR_USERNAME/openframe-oss-tenant.git
+cd openframe-oss-tenant
+
+# Add upstream remote
+git remote add upstream https://github.com/flamingo-stack/openframe-oss-tenant.git
+
+# Install dependencies and start development environment
+./scripts/dev-setup.sh
+```
+
+### 3. Branch Naming and Git Workflow
+
+#### Branch Naming Conventions
+
+Use descriptive branch names with prefixes:
+
+```bash
+# Feature branches
+git checkout -b feature/add-device-bulk-import
+git checkout -b feature/improve-dashboard-performance
+
+# Bug fix branches  
+git checkout -b fix/resolve-device-status-sync-issue
+git checkout -b fix/correct-organization-deletion-bug
+
+# Documentation branches
+git checkout -b docs/update-api-documentation
+git checkout -b docs/add-deployment-guide
+
+# Refactoring branches
+git checkout -b refactor/extract-device-service-interface
+git checkout -b refactor/optimize-database-queries
+```
+
+#### Git Workflow
+
+```bash
+# 1. Create and switch to feature branch
 git checkout -b feature/your-feature-name
 
-# For bug fixes
-git checkout -b fix/your-fix-name
+# 2. Make your changes and commit frequently
+git add .
+git commit -m "feat: add initial device bulk import functionality"
+
+# 3. Keep your branch up to date
+git fetch upstream
+git rebase upstream/main
+
+# 4. Push your branch
+git push origin feature/your-feature-name
+
+# 5. Create Pull Request on GitHub
 ```
 
-### 2. Make Changes
+### 4. Code Style and Conventions
 
-#### Backend Changes
-- Follow Java code style guidelines
-- Write unit tests for new functionality
-- Update API documentation
-- Add appropriate logging
+#### Java Code Style
+
+OpenFrame follows the **Google Java Style Guide** with some custom rules:
 
 ```java
-// Example of good code style
-@Service
+// Good: Proper class structure
+@RestController
+@RequestMapping("/api/v1/devices")
 @RequiredArgsConstructor
 @Slf4j
-public class DeviceService {
-    private final DeviceRepository deviceRepository;
+public class DeviceController {
     
-    public Device createDevice(CreateDeviceCommand command) {
-        log.debug("Creating device: {}", command.getName());
-        Device device = new Device(command.getName(), command.getType());
-        return deviceRepository.save(device);
+    private final DeviceService deviceService;
+    private final DeviceMapper deviceMapper;
+    
+    @GetMapping
+    public ResponseEntity<PagedResponse<DeviceResponse>> getDevices(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String filter) {
+        
+        log.debug("Fetching devices: page={}, size={}, filter={}", page, size, filter);
+        
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Device> devices = deviceService.findDevices(pageRequest, filter);
+        
+        return ResponseEntity.ok(deviceMapper.toPagedResponse(devices));
     }
 }
 ```
 
-#### Frontend Changes
-- Follow Vue.js style guide
-- Write component tests
-- Update TypeScript types
-- Add appropriate comments
+#### Code Formatting
 
-```typescript
-// Example of good component style
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useDeviceStore } from '@/stores/device'
+- **Line Length**: Maximum 100 characters
+- **Indentation**: 4 spaces (no tabs)  
+- **Import Organization**: Group imports and remove unused ones
+- **JavaDoc**: Required for public methods and classes
 
-const deviceStore = useDeviceStore()
-const devices = ref<Device[]>([])
-
-onMounted(async () => {
-  devices.value = await deviceStore.fetchDevices()
-})
-</script>
-
-<template>
-  <div class="device-list">
-    <DeviceCard
-      v-for="device in devices"
-      :key="device.id"
-      :device="device"
-      @update="handleUpdate"
-    />
-  </div>
-</template>
-```
-
-### 3. Write Tests
-
-#### Backend Tests
 ```java
-@SpringBootTest
-class DeviceServiceTest {
-    @Autowired
-    private DeviceService deviceService;
+/**
+ * Creates a new device in the system.
+ * 
+ * @param request the device creation request containing device details
+ * @return the created device with generated ID and metadata
+ * @throws OrganizationNotFoundException if the specified organization doesn't exist
+ * @throws ValidationException if the request contains invalid data
+ */
+@PostMapping
+public ResponseEntity<DeviceResponse> createDevice(
+        @Valid @RequestBody CreateDeviceRequest request) {
+    Device device = deviceService.createDevice(request);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(deviceMapper.toResponse(device));
+}
+```
+
+#### TypeScript/React Code Style
+
+Follow **Airbnb JavaScript Style Guide** with TypeScript extensions:
+
+```typescript
+// Good: Proper component structure
+interface DeviceListProps {
+  organizationId: string;
+  onDeviceSelect?: (deviceId: string) => void;
+  showFilters?: boolean;
+}
+
+export const DeviceList: React.FC<DeviceListProps> = ({
+  organizationId,
+  onDeviceSelect,
+  showFilters = true,
+}) => {
+  const {
+    data: devices,
+    isLoading,
+    error,
+  } = useDevices({
+    organizationId,
+    enabled: !!organizationId,
+  });
+
+  const handleDeviceClick = useCallback(
+    (deviceId: string) => {
+      onDeviceSelect?.(deviceId);
+    },
+    [onDeviceSelect]
+  );
+
+  if (isLoading) {
+    return <DeviceListSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorAlert error={error} />;
+  }
+
+  return (
+    <div className="device-list" data-testid="device-list">
+      {showFilters && <DeviceFilters />}
+      <div className="device-grid">
+        {devices?.map((device) => (
+          <DeviceCard
+            key={device.id}
+            device={device}
+            onClick={() => handleDeviceClick(device.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+#### Rust Code Style
+
+Follow **Rust standard formatting** with `rustfmt`:
+
+```rust
+// Good: Proper error handling and structure
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeviceConfig {
+    pub name: String,
+    pub device_type: DeviceType,
+    pub heartbeat_interval: u64,
+}
+
+impl DeviceConfig {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let contents = fs::read_to_string(&path)
+            .with_context(|| format!("Failed to read config file: {:?}", path.as_ref()))?;
+            
+        let config: DeviceConfig = toml::from_str(&contents)
+            .context("Failed to parse TOML configuration")?;
+            
+        debug!("Loaded device config: {:?}", config);
+        Ok(config)
+    }
     
-    @MockBean
-    private DeviceRepository deviceRepository;
+    pub fn validate(&self) -> Result<()> {
+        if self.name.is_empty() {
+            anyhow::bail!("Device name cannot be empty");
+        }
+        
+        if self.heartbeat_interval < 10 {
+            anyhow::bail!("Heartbeat interval must be at least 10 seconds");
+        }
+        
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::NamedTempFile;
     
-    @Test
-    void shouldCreateDevice() {
-        // Arrange
-        CreateDeviceCommand command = new CreateDeviceCommand("Test Device", "workstation");
-        Device expectedDevice = new Device("1", command.getName(), command.getType());
-        when(deviceRepository.save(any(Device.class))).thenReturn(expectedDevice);
+    #[test]
+    fn test_device_config_validation() {
+        let config = DeviceConfig {
+            name: "test-device".to_string(),
+            device_type: DeviceType::Workstation,
+            heartbeat_interval: 30,
+        };
         
-        // Act
-        Device result = deviceService.createDevice(command);
+        assert!(config.validate().is_ok());
+    }
+    
+    #[test]
+    fn test_device_config_invalid_name() {
+        let config = DeviceConfig {
+            name: String::new(),
+            device_type: DeviceType::Server,
+            heartbeat_interval: 30,
+        };
         
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getName()).isEqualTo(command.getName());
-        verify(deviceRepository).save(any(Device.class));
+        assert!(config.validate().is_err());
     }
 }
 ```
 
-#### Frontend Tests
-```typescript
-import { mount } from '@vue/test-utils'
-import DeviceList from './DeviceList.vue'
+### 5. Commit Message Format
 
-describe('DeviceList', () => {
-  it('should display devices', () => {
-    const devices = [
-      { id: '1', name: 'Device 1', status: 'active' },
-      { id: '2', name: 'Device 2', status: 'inactive' }
-    ]
-    
-    const wrapper = mount(DeviceList, {
-      props: { devices }
-    })
-    
-    expect(wrapper.findAll('.device-item')).toHaveLength(2)
-    expect(wrapper.text()).toContain('Device 1')
-  })
-})
+OpenFrame uses **Conventional Commits** for clear, structured commit history:
+
+#### Commit Message Structure
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
 ```
 
-### 4. Commit Changes
+#### Commit Types
 
-Follow conventional commit format:
-```bash
-# Format
-<type>(<scope>): <description>
+| Type | Description | Example |
+|------|-------------|---------|
+| **feat** | New feature | `feat: add device bulk import functionality` |
+| **fix** | Bug fix | `fix: resolve device status sync issue` |
+| **docs** | Documentation | `docs: update API documentation` |
+| **style** | Formatting | `style: format Java code with Google style` |
+| **refactor** | Code refactoring | `refactor: extract device service interface` |
+| **test** | Adding tests | `test: add unit tests for device service` |
+| **chore** | Maintenance | `chore: update Maven dependencies` |
+| **perf** | Performance | `perf: optimize device query performance` |
+| **ci** | CI/CD changes | `ci: add automated test coverage reporting` |
 
-# Examples
-feat(device): add device creation endpoint
-fix(auth): resolve token refresh issue
-docs(api): update authentication documentation
-```
-
-Types:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `chore`: Maintenance tasks
-
-### 5. Push Changes
+#### Good Commit Messages
 
 ```bash
-git push origin feature/your-feature-name
+# Good examples
+git commit -m "feat(api): add GraphQL mutation for device creation"
+git commit -m "fix(frontend): resolve device list pagination bug"
+git commit -m "docs: add contributing guidelines"
+git commit -m "test(service): increase device service test coverage"
+git commit -m "refactor(data): optimize database query performance"
+
+# With body and footer
+git commit -m "feat(auth): implement SSO integration with Google
+
+Add OAuth2 integration with Google Identity Provider to support
+single sign-on for enterprise customers.
+
+Closes #123
+Breaking-change: Requires new environment variables for OAuth config"
 ```
 
-### 6. Create Pull Request
+#### Poor Commit Messages
 
-1. Go to GitHub and create a new pull request
-2. Fill in the PR template
-3. Link related issues
-4. Add screenshots for UI changes
-5. Request reviews from maintainers
+```bash
+# Avoid these
+git commit -m "fix stuff"
+git commit -m "update"  
+git commit -m "working on devices"
+git commit -m "forgot to add file"
+```
 
-## Code Review Process
+### 6. Pull Request Process
 
-1. Automated Checks
-   - Build passes
-   - Tests pass
-   - Code style compliance
-   - Coverage requirements met
+#### Creating a Pull Request
 
-2. Code Review
-   - Architecture review
-   - Code quality review
-   - Security review
-   - Performance review
+1. **Push your branch** to your fork
+2. **Create PR** from your fork to upstream `main`
+3. **Fill out PR template** completely
+4. **Link related issues** using `Closes #123` or `Fixes #456`
+5. **Request reviews** from relevant maintainers
 
-3. Merge Requirements
-   - All checks pass
-   - Required reviews completed
-   - No merge conflicts
-   - Documentation updated
+#### Pull Request Template
 
-## Testing Requirements
+```markdown
+## Description
+Brief description of changes made.
 
-### Backend
-- Unit test coverage > 80%
-- Integration tests for new endpoints
-- Performance tests for critical paths
-- Security tests for new features
+## Type of Change
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
 
-### Frontend
-- Component test coverage > 80%
-- E2E tests for critical user flows
-- Accessibility testing
-- Cross-browser testing
+## Related Issues
+Closes #123
+Fixes #456
 
-## Documentation
+## How Has This Been Tested?
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] E2E tests
+- [ ] Manual testing
 
-### Backend Documentation
-- Update API documentation
-- Add Javadoc comments
-- Update README if needed
-- Document configuration changes
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Self-review completed
+- [ ] Code is commented, particularly in hard-to-understand areas
+- [ ] Documentation updated
+- [ ] Tests added/updated
+- [ ] All tests pass
+- [ ] No new warnings introduced
+```
 
-### Frontend Documentation
-- Update component documentation
-- Add TypeScript type definitions
-- Update README if needed
-- Document new features
+#### PR Review Process
 
-## Community Guidelines
+```mermaid
+flowchart LR
+    PR[Pull Request Created] --> AutoTests[Automated Tests]
+    AutoTests --> CodeReview[Code Review]
+    CodeReview --> Changes{Changes Requested?}
+    Changes -->|Yes| Updates[Make Updates]
+    Updates --> CodeReview
+    Changes -->|No| Approval[Review Approval]
+    Approval --> Merge[Merge to Main]
+    
+    AutoTests -->|Fail| Fixes[Fix Issues]
+    Fixes --> AutoTests
+```
 
-1. Be respectful and professional
-2. Follow the code of conduct
-3. Help others learn
-4. Share knowledge
-5. Be patient with reviews
+#### Review Checklist
 
-## Getting Help
+**For Authors:**
+- [ ] Code is self-documenting with clear variable/method names
+- [ ] Complex logic is commented
+- [ ] Tests cover new functionality
+- [ ] No debugging code left behind
+- [ ] Performance impact considered
+- [ ] Security implications reviewed
 
-- Check existing documentation
-- Search closed issues
-- Ask in discussions
-- Join our community chat
+**For Reviewers:**
+- [ ] Code solves the stated problem
+- [ ] Implementation follows project patterns
+- [ ] Edge cases are handled
+- [ ] Error handling is appropriate
+- [ ] Tests are comprehensive
+- [ ] Documentation is updated
 
-## Recognition
+### 7. Testing Requirements
+
+All contributions must include appropriate tests:
+
+#### Test Coverage Requirements
+
+| Component | Minimum Coverage | Test Types Required |
+|-----------|-----------------|-------------------|
+| **New Features** | 80% | Unit + Integration |
+| **Bug Fixes** | 100% | Unit + Regression |
+| **API Changes** | 90% | Unit + Integration + Contract |
+| **UI Components** | 75% | Unit + Integration |
+
+#### Testing Checklist
+
+- [ ] **Unit tests** for business logic
+- [ ] **Integration tests** for API endpoints  
+- [ ] **E2E tests** for user workflows (when applicable)
+- [ ] **Contract tests** for API changes
+- [ ] **Performance tests** for performance-critical changes
+
+```bash
+# Run tests before submitting PR
+mvn test                                      # Backend tests
+cd openframe/services/openframe-frontend && npm test  # Frontend tests
+cargo test                                    # Rust tests (if applicable)
+```
+
+### 8. Documentation Requirements
+
+#### When Documentation is Required
+
+- **New features**: User-facing functionality needs documentation
+- **API changes**: Update API documentation and examples
+- **Configuration changes**: Update deployment and setup guides
+- **Breaking changes**: Migration guides and upgrade instructions
+
+#### Types of Documentation
+
+| Type | Location | When Required |
+|------|----------|---------------|
+| **Code Comments** | Inline | Complex logic, public APIs |
+| **API Documentation** | OpenAPI/GraphQL | API changes |
+| **User Guides** | `docs/` | New features |
+| **Developer Docs** | `docs/development/` | Architecture changes |
+| **README Updates** | Various | Project structure changes |
+
+#### Documentation Standards
+
+```java
+/**
+ * Service responsible for managing device lifecycle operations.
+ * 
+ * <p>This service handles device creation, updates, and deletion while ensuring
+ * proper tenant isolation and audit logging.
+ * 
+ * @author OpenFrame Team
+ * @since 1.0.0
+ */
+@Service
+@Transactional
+@RequiredArgsConstructor
+public class DeviceService {
+    
+    /**
+     * Creates a new device within the specified organization.
+     * 
+     * <p>The device will be created with a unique identifier and initial status
+     * of PENDING. An audit log entry will be created for tracking purposes.
+     * 
+     * @param request the device creation request containing required fields
+     * @return the created device with generated metadata
+     * @throws OrganizationNotFoundException when the organization doesn't exist
+     * @throws ValidationException when required fields are missing or invalid
+     * @throws SecurityException when user lacks permission to create devices
+     */
+    public Device createDevice(CreateDeviceRequest request) {
+        // Implementation
+    }
+}
+```
+
+## Code Quality Standards
+
+### Automated Quality Checks
+
+Every PR is automatically checked for:
+
+- **Test Coverage**: Minimum coverage thresholds
+- **Code Style**: Checkstyle for Java, ESLint for TypeScript
+- **Security**: OWASP dependency check and SAST
+- **Performance**: Build time and test execution time
+- **Documentation**: Required documentation presence
+
+### Quality Gates
+
+```yaml
+# Quality gates that must pass
+sonarqube:
+  coverage: ">= 80%"
+  duplicated_lines: "< 3%"
+  maintainability_rating: "A"
+  reliability_rating: "A"  
+  security_rating: "A"
+  
+checkstyle:
+  violations: "0"
+  
+tests:
+  success_rate: "100%"
+  max_duration: "10 minutes"
+```
+
+### Performance Standards
+
+- **Build time**: Should not increase by more than 10%
+- **Test execution**: New tests should complete in reasonable time
+- **API response time**: New endpoints should respond within SLA
+- **Memory usage**: No significant memory leaks
+
+## Community Standards
+
+### Code of Conduct
+
+OpenFrame follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/). Key principles:
+
+- **Be respectful**: Treat everyone with respect and kindness
+- **Be inclusive**: Welcome contributions from all backgrounds
+- **Be constructive**: Focus on helping and improving
+- **Be professional**: Maintain professional communication
+
+### Communication Channels
+
+| Channel | Purpose | Response Time |
+|---------|---------|---------------|
+| **GitHub Issues** | Bug reports, feature requests | 2-3 business days |
+| **GitHub Discussions** | Questions, ideas | 1-2 business days |
+| **Slack #general** | Community chat | Real-time |
+| **Slack #development** | Development questions | 4-8 hours |
+| **Slack #help** | User support | 2-4 hours |
+
+### Getting Help
+
+**Before Asking for Help:**
+1. Search existing issues and discussions
+2. Check the documentation
+3. Review recent commits for similar changes
+
+**When Asking for Help:**
+1. **Be specific**: Describe exactly what you're trying to do
+2. **Provide context**: Share relevant code, error messages, environment
+3. **Show effort**: Demonstrate what you've already tried
+4. **Be patient**: Allow time for community response
+
+## Release Process
+
+### Versioning Strategy
+
+OpenFrame uses **Semantic Versioning (SemVer)**:
+
+- **MAJOR** (1.0.0): Breaking changes
+- **MINOR** (0.1.0): New features, backward compatible
+- **PATCH** (0.0.1): Bug fixes, backward compatible
+
+### Release Cycle
+
+- **Major releases**: Every 6-12 months
+- **Minor releases**: Monthly
+- **Patch releases**: As needed for critical bugs
+- **Preview releases**: Weekly development builds
+
+### Contribution Recognition
 
 Contributors are recognized through:
-- GitHub profile badges
-- Contributor hall of fame
-- Release notes
-- Community highlights
 
-## Next Steps
+- **CONTRIBUTORS.md**: All contributors listed
+- **Release notes**: Significant contributions highlighted
+- **GitHub achievements**: Badges and recognition
+- **Community spotlight**: Featured in newsletters
 
-- [Development Setup](setup.md)
-- [Architecture](architecture.md)
-- [Testing](testing.md)
-- [Code Style](code-style.md) 
+## Advanced Contributing
+
+### Becoming a Maintainer
+
+Maintainers are trusted community members who:
+
+- Review and merge pull requests
+- Participate in architectural decisions
+- Mentor new contributors
+- Help with release management
+
+**Path to Maintainership:**
+1. Consistent quality contributions over 6+ months
+2. Demonstrated understanding of project architecture
+3. Active participation in code reviews
+4. Community involvement and mentoring
+5. Nomination by existing maintainers
+
+### Special Interest Groups (SIGs)
+
+Join specialized groups focused on specific areas:
+
+- **SIG-Security**: Security features and vulnerability management
+- **SIG-Performance**: Performance optimization and monitoring
+- **SIG-UI/UX**: Frontend and user experience improvements
+- **SIG-Integrations**: External tool integrations and APIs
+- **SIG-Documentation**: Documentation and learning resources
+
+## Troubleshooting Common Issues
+
+### Build Issues
+
+```bash
+# Clear caches and rebuild
+mvn clean install -U
+rm -rf ~/.m2/repository/com/openframe
+mvn clean install
+
+# Frontend build issues
+cd openframe/services/openframe-frontend
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
+
+### Test Issues
+
+```bash
+# Run specific failing test
+mvn test -Dtest="DeviceServiceTest#shouldCreateDevice"
+
+# Run tests with debug information
+mvn test -Dmaven.surefire.debug
+
+# Skip tests temporarily
+mvn install -DskipTests
+```
+
+### Git Issues
+
+```bash
+# Reset your branch to upstream
+git fetch upstream
+git reset --hard upstream/main
+
+# Fix commit message
+git commit --amend -m "new commit message"
+
+# Squash commits before PR
+git rebase -i HEAD~3
+```
+
+## Resources and References
+
+### Documentation
+
+- **[Architecture Overview](../architecture/overview.md)**: System design and patterns
+- **[Testing Guide](../testing/overview.md)**: Testing strategies and examples
+- **[Development Setup](../setup/environment.md)**: Environment configuration
+
+### External Resources
+
+- **[Conventional Commits](https://www.conventionalcommits.org/)**: Commit message format
+- **[Google Java Style](https://google.github.io/styleguide/javaguide.html)**: Java coding standards
+- **[Airbnb JavaScript Style](https://github.com/airbnb/javascript)**: TypeScript/React standards
+- **[Semantic Versioning](https://semver.org/)**: Versioning strategy
+
+### Community Links
+
+- **[OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)**: Real-time community support
+- **[GitHub Repository](https://github.com/flamingo-stack/openframe-oss-tenant)**: Source code and issues
+- **[Flamingo Website](https://flamingo.run)**: Company and product information
+
+---
+
+**Thank you for contributing to OpenFrame!** Your efforts help build a better platform for MSPs worldwide. If you have questions about these guidelines, please reach out in our Slack community.
