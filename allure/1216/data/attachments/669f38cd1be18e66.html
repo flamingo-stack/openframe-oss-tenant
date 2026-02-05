@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6984d71dcdedc11526ead915</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Johna Schaden&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(989) 901-9194&quot;,
+                &quot;email&quot;: &quot;vanessa.kessler@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;07349 Ezekiel Drives&quot;,
+            &quot;street2&quot;: &quot;Apt. 401&quot;,
+            &quot;city&quot;: &quot;Jacobiton&quot;,
+            &quot;state&quot;: &quot;Alaska&quot;,
+            &quot;postalCode&quot;: &quot;13719&quot;,
+            &quot;country&quot;: &quot;Gabon&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;760 Salvatore Fords&quot;,
+            &quot;street2&quot;: &quot;Apt. 252&quot;,
+            &quot;city&quot;: &quot;Coyview&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;77258&quot;,
+            &quot;country&quot;: &quot;Kazakhstan&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        5
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        5
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNjc1ZTFkMGItYWNjZi00MGFjLTk0YWYtYTMzMDhjMGYzZDcyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwNTI5YzBlZC1mMTAwLTQxNjEtYjIwNi00NmM2OWNiM2U2OGEiLCJzdWIiOiJidXN0ZXIucm9kcmlndWV6QGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMzEzNTAwLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8wNTI5YzBlZC1mMTAwLTQxNjEtYjIwNi00NmM2OWNiM2U2OGEiLCJleHAiOjE3NzAzMTQ0MDAsImlhdCI6MTc3MDMxMzUwMCwidXNlcklkIjoiMDdjZjFkM2MtMWY1NS00NjMyLWE3NTEtOTk4MTQxMzM5ZTQ4IiwianRpIjoiNDg0NzM5ODEtNzYzZi00ZjY0LWJlMmQtMzBiY2RkMzU4NDJhIn0.iobpfBkcYWoB0C7kKLIkuhKdNDJO5iYQfB4urt8vdvZ0Zianx3amPxzCMjGJ1JzWBGnwUPeIBe-tYTuxcI2L3bgUdQZxfuLd_qDOQtY1CQrh1-TotkHOfWkrT6WvZXPZW2GbNLpAdQ4YdAo0ezCfmEZK4TrMelSrebiVmLgP0jAcZxFN9sSyP0y24qZo2pFS3Qq-MJehJ7o2KGSas_bxZY0OV0XarJHjCAVqdO4Cz7B5KkddT61Ix7Tl5CmYZRCn7cGpsgBXC6J7EzRKZj4UD4Cl8Ur2AqYuqgo0Cvy17G-5L7Axc2GNdjnKGPbeFgaTQZNN8qTc7m6ZkUmCcG2hEw</div>
+        <div>refresh_token: NV4kI4m25bMhEp_yIFWDchg0yeHCsfBL4ihS-S9xUUV-61M6VhPCLvHGJA64KymHm-0L8IhuhAFLkI3bvWZV6NoMKf6_HHOEbl1t42d88PQMUYfk8vWNIyV-WdAgiyhj</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6984d71dcdedc11526ead915&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNjc1ZTFkMGItYWNjZi00MGFjLTk0YWYtYTMzMDhjMGYzZDcyIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIwNTI5YzBlZC1mMTAwLTQxNjEtYjIwNi00NmM2OWNiM2U2OGEiLCJzdWIiOiJidXN0ZXIucm9kcmlndWV6QGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwMzEzNTAwLCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy8wNTI5YzBlZC1mMTAwLTQxNjEtYjIwNi00NmM2OWNiM2U2OGEiLCJleHAiOjE3NzAzMTQ0MDAsImlhdCI6MTc3MDMxMzUwMCwidXNlcklkIjoiMDdjZjFkM2MtMWY1NS00NjMyLWE3NTEtOTk4MTQxMzM5ZTQ4IiwianRpIjoiNDg0NzM5ODEtNzYzZi00ZjY0LWJlMmQtMzBiY2RkMzU4NDJhIn0.iobpfBkcYWoB0C7kKLIkuhKdNDJO5iYQfB4urt8vdvZ0Zianx3amPxzCMjGJ1JzWBGnwUPeIBe-tYTuxcI2L3bgUdQZxfuLd_qDOQtY1CQrh1-TotkHOfWkrT6WvZXPZW2GbNLpAdQ4YdAo0ezCfmEZK4TrMelSrebiVmLgP0jAcZxFN9sSyP0y24qZo2pFS3Qq-MJehJ7o2KGSas_bxZY0OV0XarJHjCAVqdO4Cz7B5KkddT61Ix7Tl5CmYZRCn7cGpsgBXC6J7EzRKZj4UD4Cl8Ur2AqYuqgo0Cvy17G-5L7Axc2GNdjnKGPbeFgaTQZNN8qTc7m6ZkUmCcG2hEw&#39; -b &#39;refresh_token=NV4kI4m25bMhEp_yIFWDchg0yeHCsfBL4ihS-S9xUUV-61M6VhPCLvHGJA64KymHm-0L8IhuhAFLkI3bvWZV6NoMKf6_HHOEbl1t42d88PQMUYfk8vWNIyV-WdAgiyhj&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Johna Schaden&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(989) 901-9194&quot;,
+                &quot;email&quot;: &quot;vanessa.kessler@gmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;07349 Ezekiel Drives&quot;,
+            &quot;street2&quot;: &quot;Apt. 401&quot;,
+            &quot;city&quot;: &quot;Jacobiton&quot;,
+            &quot;state&quot;: &quot;Alaska&quot;,
+            &quot;postalCode&quot;: &quot;13719&quot;,
+            &quot;country&quot;: &quot;Gabon&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;760 Salvatore Fords&quot;,
+            &quot;street2&quot;: &quot;Apt. 252&quot;,
+            &quot;city&quot;: &quot;Coyview&quot;,
+            &quot;state&quot;: &quot;New Jersey&quot;,
+            &quot;postalCode&quot;: &quot;77258&quot;,
+            &quot;country&quot;: &quot;Kazakhstan&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        5
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        5
+    ]
+}&#39;
+</div>
