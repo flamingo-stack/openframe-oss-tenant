@@ -1,309 +1,190 @@
 # OpenFrame Documentation
 
-Welcome to the comprehensive OpenFrame documentation! This unified documentation hub provides everything you need to understand, develop, deploy, and operate the OpenFrame platform.
+Welcome to the comprehensive documentation for **OpenFrame**, the AI-powered MSP platform that unifies multiple tools into a single, intelligent interface.
 
-## 🚀 Quick Start Paths
+## 📚 Table of Contents
 
-### I'm New to OpenFrame
-**Get started in 15 minutes:**
-1. **[What is OpenFrame?](getting-started/introduction.md)** - Platform overview and capabilities
-2. **[Prerequisites](getting-started/prerequisites.md)** - System requirements and tools
-3. **[Quick Start Guide](getting-started/quick-start.md)** - Rapid 15-minute setup
-4. **[Your First Hour](getting-started/first-steps.md)** - Essential tasks and exploration
+### Getting Started
+Start here if you're new to OpenFrame:
 
-### I'm a Developer
-**Start building with OpenFrame:**
-1. **[Development Environment](development/setup/environment.md)** - Set up your dev environment
-2. **[Architecture Overview](development/architecture/overview.md)** - Understand the system design
-3. **[Contributing Guidelines](development/contributing/guidelines.md)** - How to contribute effectively
-4. **[API Documentation](api/README.md)** - Complete API reference
+- [Introduction](./getting-started/introduction.md) - What is OpenFrame and how it works
+- [Prerequisites](./getting-started/prerequisites.md) - System requirements and dependencies
+- [Quick Start](./getting-started/quick-start.md) - Get OpenFrame running in 5 minutes
+- [First Steps](./getting-started/first-steps.md) - Initial configuration and exploration
 
-### I'm a DevOps Engineer
-**Deploy and manage OpenFrame:**
-1. **[Deployment Overview](deployment/README.md)** - Deployment strategies and options
-2. **[Kubernetes Setup](deployment/kubernetes/cluster-setup.md)** - Production Kubernetes deployment
-3. **[Operations Manual](operations/README.md)** - Monitoring, maintenance, and troubleshooting
-4. **[Troubleshooting Guide](operations/troubleshooting/common-issues.md)** - Solve common issues
+### Development
+For contributors and developers:
 
-### I Need Quick Reference
-**Find specific information fast:**
-1. **[API Reference](reference/README.md)** - Complete technical reference
-2. **[Configuration Guide](reference/configuration/overview.md)** - All configuration options
-3. **[Service Documentation](reference/services/README.md)** - Individual service details
-4. **[System Diagrams](diagrams/README.md)** - Visual architecture overview
+- [Development Overview](./development/README.md) - Complete development guide and setup
+- [Environment Setup](./development/setup/environment.md) - Configure your development environment
+- [Local Development](./development/setup/local-development.md) - Run and debug OpenFrame locally
+- [Architecture Overview](./development/architecture/overview.md) - System architecture and design decisions
+- [Microservices](./development/architecture/microservices.md) - Service architecture details
+- [Data Flow](./development/architecture/data-flow.md) - How data moves through the system
+- [Integration Architecture](./development/architecture/integration.md) - External tool integrations
+- [Security Architecture](./development/architecture/security.md) - Security design and implementation
+- [Testing Overview](./development/testing/overview.md) - Testing strategies and best practices
+- [Contributing Guidelines](./development/contributing/guidelines.md) - How to contribute to the project
+- [Code Style](./development/contributing/code-style.md) - Coding standards and conventions
+- [Rust Development](./development/client-agent/rust-development.md) - Client agent development
+- [Tools & Scripts](./development/tools/scripts.md) - Development utilities and automation
 
-## 📚 Documentation Sections
+### Reference
+Technical reference documentation:
 
-### 🎯 Getting Started
-Perfect for newcomers and quick setup scenarios.
+- [Architecture Overview](./reference/architecture/overview.md) - High-level platform architecture
+- [OpenFrame API Service](./reference/architecture/openframe_api_service.md) - Core API service details
+- [OpenFrame Client Service](./reference/architecture/openframe_client_service.md) - Client service architecture
+- [Management Service](./reference/architecture/management_service.md) - Platform management service
+- [Authorization Service](./reference/architecture/authorization_service_core.md) - Authentication and authorization
+- [Data Layer](./reference/architecture/data_layer_mongo_documents_and_repositories.md) - Database architecture
+- [Security Components](./reference/architecture/shared_security_jwt_oauth.md) - Security implementation details
+- [Frontend Application](./reference/architecture/tenant_frontend_application.md) - Web application architecture
+- [External Integrations](./reference/architecture/vendor_sdks_fleetmdm_and_tacticalrmm.md) - Third-party integrations
 
-- **[Introduction](getting-started/introduction.md)** - What is OpenFrame and why use it?
-- **[Prerequisites](getting-started/prerequisites.md)** - System requirements and preparation
-- **[Quick Start](getting-started/quick-start.md)** - Get running in 15 minutes
-- **[First Steps](getting-started/first-steps.md)** - Your first hour with OpenFrame
+### CLI Tools
 
-### 👩‍💻 Development Guide
-Comprehensive resources for developers contributing to OpenFrame.
+The OpenFrame CLI tools are maintained in a separate repository:
+- **Repository**: [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli)
+- **Installation**: [Installation Guide](https://github.com/flamingo-stack/openframe-cli#installation)
+- **Documentation**: [CLI Documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs)
 
-- **[Development Overview](development/README.md)** - Complete development guide
-- **Setup & Environment**
-  - [Environment Setup](development/setup/environment.md)
-  - [Local Development](development/setup/local-development.md)
-  - [Development Tools](development/setup/tools.md)
-- **Architecture & Design**
-  - [System Overview](development/architecture/overview.md)
-  - [Microservices Architecture](development/architecture/microservices.md)
-  - [Data Flow](development/architecture/data-flow.md)
-  - [Security Architecture](development/architecture/security.md)
-  - [Integration Patterns](development/architecture/integration.md)
-- **Frontend Development**
-  - [Vue.js Setup](development/frontend/vue-setup.md)
-  - [Component Development](development/frontend/components.md)
-  - [State Management](development/frontend/state-management.md)
-- **Backend Development**
-  - [Spring Boot Development](development/backend/spring-boot.md)
-  - [GraphQL Implementation](development/backend/graphql.md)
-  - [Microservices Development](development/backend/microservices.md)
-  - [Data Access Patterns](development/backend/data-access.md)
-- **Client Agent Development**
-  - [Rust Development](development/client-agent/rust-development.md)
-  - [Cross-Platform Considerations](development/client-agent/cross-platform.md)
-  - [Service Integration](development/client-agent/service-integration.md)
-- **Testing & Quality**
-  - [Testing Overview](development/testing/overview.md)
-  - [Backend Testing](development/testing/backend-testing.md)
-  - [Frontend Testing](development/testing/frontend-testing.md)
-  - [Integration Testing](development/testing/integration-testing.md)
-- **Contributing & Collaboration**
-  - [Contributing Guidelines](development/contributing/guidelines.md)
-  - [Code Style Guide](development/contributing/code-style.md)
-  - [Pull Request Process](development/contributing/pull-requests.md)
-  - [Issue Templates](development/contributing/issue-templates.md)
-- **Development Tools**
-  - [Development Scripts](development/tools/scripts.md)
-  - [Build System](development/tools/build-system.md)
-  - [IDE Setup](development/tools/ide-setup.md)
+**Important**: CLI tools are NOT located in this repository. Always refer to the external repository for installation and usage instructions.
 
-### 🔌 API Documentation
-Complete API reference and integration guides.
+## 🏗️ Architecture Overview
 
-- **[API Overview](api/README.md)** - API architecture and principles
-- **Authentication**
-  - [Authentication Overview](api/authentication/overview.md)
-  - [OAuth 2.0 Implementation](api/authentication/oauth2.md)
-  - [JWT Token Management](api/authentication/jwt.md)
-  - [API Key Management](api/authentication/api-keys.md)
-  - [Google SSO](api/authentication/google-sso.md)
-- **GraphQL API**
-  - [GraphQL Overview](api/graphql/overview.md)
-  - [Schema Documentation](api/graphql/schema.md)
-  - [Queries](api/graphql/queries.md)
-  - [Mutations](api/graphql/mutations.md)
-  - [Subscriptions](api/graphql/subscriptions.md)
-- **REST API**
-  - [REST Overview](api/rest/overview.md)
-  - [Endpoints](api/rest/endpoints.md)
-  - [Integration Patterns](api/rest/integration.md)
-- **WebSocket API**
-  - [WebSocket Overview](api/websocket/overview.md)
-  - [Connection Handling](api/websocket/connection.md)
-  - [Message Formats](api/websocket/messages.md)
-- **Integrated Tools**
-  - [MeshCentral API](api/tools/meshcentral.md)
-  - [Tactical RMM API](api/tools/tactical-rmm.md)
-  - [Fleet MDM API](api/tools/fleet-mdm.md)
+OpenFrame is built as a distributed, multi-tenant platform with the following key components:
 
-### 🚀 Deployment & Infrastructure
-Production deployment guides and infrastructure management.
+```mermaid
+flowchart TD
+    Frontend[Tenant Frontend] --> Gateway[API Gateway]
+    Agents[OpenFrame Agents] --> Client[Client Service]
+    Tools[Integrated Tools] --> Gateway
+    
+    Gateway --> API[API Service]
+    Gateway --> Auth[Authorization Server]
+    
+    Client --> Kafka[Event Streaming]
+    Kafka --> Stream[Stream Processing]
+    Stream --> Analytics[Analytics Layer]
+    
+    API --> MongoDB[MongoDB]
+    API --> Analytics
+    
+    Management[Management Service] --> Analytics
+    Management --> Kafka
+    
+    subgraph "Analytics Layer"
+        Cassandra[Cassandra]
+        Pinot[Apache Pinot]
+        Redis[Redis Cache]
+    end
+    
+    subgraph "Core Services"
+        API
+        Auth
+        Client
+        Stream
+        Management
+    end
+```
 
-- **[Deployment Overview](deployment/README.md)** - Deployment strategies and architecture
-- **Local Deployment**
-  - [Docker Compose](deployment/local/docker-compose.md)
-  - [Kind (Local Kubernetes)](deployment/local/kind.md)
-  - [Local Troubleshooting](deployment/local/troubleshooting.md)
-- **Kubernetes Deployment**
-  - [Kubernetes Overview](deployment/kubernetes/overview.md)
-  - [Cluster Setup](deployment/kubernetes/cluster-setup.md)
-  - [Helm Charts](deployment/kubernetes/helm-charts.md)
-  - [Network Configuration](deployment/kubernetes/networking.md)
-  - [Storage Configuration](deployment/kubernetes/storage.md)
-  - [Monitoring Setup](deployment/kubernetes/monitoring.md)
-- **Cloud Deployment**
-  - [AWS Deployment](deployment/cloud/aws.md)
-  - [Azure Deployment](deployment/cloud/azure.md)
-  - [Google Cloud Deployment](deployment/cloud/gcp.md)
-  - [Cloud Best Practices](deployment/cloud/recommendations.md)
-- **Security Configuration**
-  - [TLS Certificates](deployment/security/tls-certificates.md)
-  - [Secret Management](deployment/security/secrets.md)
-  - [Network Policies](deployment/security/network-policies.md)
+### Key Design Principles
 
-### 🔧 Operations Manual
-Complete operational procedures for production environments.
+- **Multi-tenant Architecture**: Secure isolation between MSP tenants
+- **Event-Driven Design**: Kafka-based event streaming for scalability
+- **Microservices Pattern**: Independent, scalable service components
+- **API-First Approach**: GraphQL and REST APIs for all interactions
+- **Security-First**: JWT-based authentication with comprehensive authorization
 
-- **[Operations Overview](operations/README.md)** - Operational responsibilities and procedures
-- **Monitoring & Observability**
-  - [Monitoring Overview](operations/monitoring/overview.md)
-  - [Key Metrics](operations/monitoring/metrics.md)
-  - [Alerting Configuration](operations/monitoring/alerting.md)
-  - [Grafana Dashboards](operations/monitoring/dashboards.md)
-- **Logging & Analysis**
-  - [Logging Overview](operations/logging/overview.md)
-  - [Log Collection](operations/logging/collection.md)
-  - [Log Analysis](operations/logging/analysis.md)
-- **System Maintenance**
-  - [Update Procedures](operations/maintenance/updates.md)
-  - [Scaling Operations](operations/maintenance/scaling.md)
-  - [Cleanup Tasks](operations/maintenance/cleanup.md)
-- **Backup & Recovery**
-  - [Backup Strategy](operations/backup/strategy.md)
-  - [Backup Procedures](operations/backup/procedures.md)
-  - [Disaster Recovery](operations/backup/recovery.md)
-- **Security Operations**
-  - [Security Overview](operations/security/overview.md)
-  - [Incident Response](operations/security/incident-response.md)
-  - [Compliance Procedures](operations/security/compliance.md)
-- **Troubleshooting**
-  - [Common Issues](operations/troubleshooting/common-issues.md)
-  - [Performance Issues](operations/troubleshooting/performance.md)
-  - [Connectivity Issues](operations/troubleshooting/connectivity.md)
-  - [Debugging Procedures](operations/troubleshooting/debugging.md)
+## 🚀 Quick Navigation
 
-### 📖 Reference Documentation
-Technical reference for all OpenFrame components.
+### New Users
+1. Start with [Introduction](./getting-started/introduction.md) to understand OpenFrame
+2. Check [Prerequisites](./getting-started/prerequisites.md) to verify your environment
+3. Follow [Quick Start](./getting-started/quick-start.md) to get running
 
-- **[Reference Overview](reference/README.md)** - Complete technical reference
-- **Configuration**
-  - [Configuration Overview](reference/configuration/overview.md)
-  - [Service Configuration](reference/configuration/services.md)
-  - [Environment Variables](reference/configuration/environment.md)
-  - [Secret Configuration](reference/configuration/secrets.md)
-- **Libraries**
-  - [OpenFrame Data](reference/libraries/openframe-data.md)
-  - [OpenFrame JWT](reference/libraries/openframe-jwt.md)
-  - [API Library](reference/libraries/api-library.md)
-- **Services**
-  - [OpenFrame API](reference/services/openframe-api.md)
-  - [OpenFrame Gateway](reference/services/openframe-gateway.md)
-  - [OpenFrame Client](reference/services/openframe-client.md)
-  - [OpenFrame Stream](reference/services/openframe-stream.md)
-  - [OpenFrame Management](reference/services/openframe-management.md)
-  - [OpenFrame Config](reference/services/openframe-config.md)
-  - [OpenFrame Frontend](reference/services/openframe-frontend.md)
-- **Data Storage**
-  - [MongoDB Schemas](reference/data/mongodb.md)
-  - [Cassandra Schemas](reference/data/cassandra.md)
-  - [Redis Usage](reference/data/redis.md)
-  - [Kafka Topics](reference/data/kafka.md)
-- **Tool Integrations**
-  - [Tactical RMM](reference/tools/tactical-rmm.md)
-  - [MeshCentral](reference/tools/meshcentral.md)
-  - [Fleet MDM](reference/tools/fleet-mdm.md)
-  - [Authentik](reference/tools/authentik.md)
+### Developers
+1. Review [Architecture Overview](./development/architecture/overview.md) to understand the system
+2. Set up your [Development Environment](./development/setup/environment.md)
+3. Run OpenFrame [Locally](./development/setup/local-development.md) for development
 
-### 📊 Architecture & Diagrams
-Visual documentation and system architecture diagrams.
+### Operators
+1. Understand the [System Architecture](./reference/architecture/overview.md)
+2. Review security and deployment considerations
+3. Explore integration possibilities with your existing tools
 
-- **[Diagrams Overview](diagrams/README.md)** - Visual system documentation
-- **Architecture Diagrams**
-  - [System Overview](diagrams/architecture/system-overview.md)
-  - [Data Flow Diagrams](diagrams/architecture/data-flow.md)
-  - [Service Interactions](diagrams/architecture/service-interaction.md)
-  - [Security Model](diagrams/architecture/security-model.md)
-- **Deployment Diagrams**
-  - [Kubernetes Architecture](diagrams/deployment/kubernetes.md)
-  - [Network Topology](diagrams/deployment/network-topology.md)
-  - [Infrastructure Layout](diagrams/deployment/infrastructure.md)
-- **Integration Diagrams**
-  - [Tool Integration Patterns](diagrams/integration/tool-integration.md)
-  - [API Flow Diagrams](diagrams/integration/api-flows.md)
+## 🛠️ Technology Stack
 
-## 🎯 Popular Topics
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **Backend** | Java, Spring Boot | 21, 3.3 | Core services and APIs |
+| **Frontend** | Next.js, React, TypeScript | 15, 19, 5.8 | Web application |
+| **API** | GraphQL (Netflix DGS) | 7.0 | Unified data access |
+| **Security** | JWT, OAuth2, Spring Security | Latest | Authentication & authorization |
+| **Data** | MongoDB, Cassandra, Pinot | Latest | Multi-model data storage |
+| **Streaming** | Apache Kafka | 3.6 | Event processing |
+| **Cache** | Redis | Latest | High-performance caching |
+| **Agent** | Rust | 1.75+ | Cross-platform monitoring |
+| **Container** | Docker, Kubernetes | Latest | Orchestration and deployment |
 
-### Most Accessed Documentation
-1. **[Quick Start Guide](getting-started/quick-start.md)** - Get running in 15 minutes
-2. **[API Reference](reference/README.md)** - Complete API documentation
-3. **[Troubleshooting Guide](operations/troubleshooting/common-issues.md)** - Solve common issues
-4. **[Development Setup](development/setup/environment.md)** - Set up development environment
-5. **[Deployment Guide](deployment/kubernetes/cluster-setup.md)** - Production deployment
+## 📖 Documentation Standards
 
-### Recently Updated
-- **[Operations Manual](operations/README.md)** - Complete operational procedures
-- **[API Authentication](api/authentication/overview.md)** - Updated OAuth 2.0 flows
-- **[System Architecture](development/architecture/overview.md)** - Enhanced microservices documentation
-- **[Troubleshooting](operations/troubleshooting/common-issues.md)** - New common issues and solutions
+This documentation follows these conventions:
 
-## 🔧 Developer Resources
+- **Getting Started**: Step-by-step guides for new users
+- **Development**: Technical guides for contributors
+- **Reference**: Detailed technical specifications
+- **Examples**: Practical code examples and use cases
 
-### Essential Tools
-- **[Development Scripts](development/tools/scripts.md)** - Automated development tasks
-- **[API Testing](api/rest/integration.md)** - API testing strategies
-- **[Local Development](development/setup/local-development.md)** - Running OpenFrame locally
-- **[Code Style Guide](development/contributing/code-style.md)** - Coding standards
+### Content Types
 
-### Community Resources
-- **[Contributing Guide](development/contributing/guidelines.md)** - How to contribute
-- **[Issue Templates](development/contributing/issue-templates.md)** - Bug reports and features
-- **GitHub Repository**: https://github.com/flamingo-stack/openframe-oss-tenant
-- **Community Forum**: https://community.openframe.org
+- 🚀 **Quick Start**: Get up and running fast
+- 🏗️ **Architecture**: System design and patterns
+- 🔧 **Development**: Building and contributing
+- 📚 **Reference**: Technical specifications
+- 🛡️ **Security**: Security implementation details
+- 🔌 **Integration**: External tool connections
 
-## 🚨 Quick Help
+## 🤝 Community Resources
 
-### Need Immediate Help?
-- **Production Issues**: Start with [Common Issues](operations/troubleshooting/common-issues.md)
-- **API Problems**: Check [API Authentication](api/authentication/overview.md)
-- **Development Blocks**: See [Development Troubleshooting](development/setup/environment.md#troubleshooting)
-- **Deployment Failures**: Review [Deployment Troubleshooting](deployment/local/troubleshooting.md)
+### Getting Help
 
-### Emergency Contacts
-- **Critical Issues**: Use the escalation procedures in [Operations Manual](operations/README.md)
-- **Security Issues**: Follow [Incident Response](operations/security/incident-response.md)
-- **GitHub Issues**: https://github.com/flamingo-stack/openframe-oss-tenant/issues
+- **GitHub Issues**: [Report bugs and request features](https://github.com/flamingo-stack/openframe-oss-tenant/issues)
+- **OpenMSP Slack**: [Join the community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Documentation**: Browse these comprehensive guides
+- **Knowledge Base**: [flamingo.run/knowledge-base](https://www.flamingo.run/knowledge-base)
 
-## 📈 What's New
+### Contributing
 
-### Latest Features
-- **Enhanced Authentication**: OAuth 2.0 with JWT cookies
-- **Improved Monitoring**: Comprehensive Grafana dashboards
-- **Better Documentation**: Restructured and expanded documentation
-- **Advanced Security**: Enhanced security policies and procedures
+- **[Contributing Guide](../CONTRIBUTING.md)**: How to contribute to OpenFrame
+- **[Development Setup](./development/setup/environment.md)**: Get your dev environment ready
+- **[Code Guidelines](./development/contributing/code-style.md)**: Coding standards and practices
 
-### Coming Soon
-- **GraphQL Subscriptions**: Real-time data subscriptions
-- **Advanced Analytics**: Enhanced data processing capabilities
-- **Multi-tenant Support**: Enterprise multi-tenancy features
-- **Cloud Integration**: Native cloud provider integrations
+## 📋 Quick Links
 
-## 🤝 Contributing to Documentation
+### Project Information
+- **[Main README](../README.md)**: Project overview and quick start
+- **[License](../LICENSE.md)**: Flamingo AI Unified License v1.0
+- **[Contributing](../CONTRIBUTING.md)**: Contribution guidelines and process
 
-We welcome contributions to improve our documentation! Here's how you can help:
+### External Resources
+- **Website**: [flamingo.run](https://www.flamingo.run)
+- **Community**: [openmsp.ai](https://www.openmsp.ai/)
+- **GitHub**: [flamingo-stack](https://github.com/flamingo-stack)
+- **LinkedIn**: [OpenFrame](https://www.linkedin.com/showcase/openframemsp/about/)
 
-### Quick Contributions
-- **Fix typos or errors**: Create a pull request with corrections
-- **Add examples**: Contribute code examples and use cases
-- **Improve clarity**: Suggest improvements to existing content
-- **Report issues**: Use GitHub issues to report documentation problems
+## 🔄 Documentation Updates
 
-### Major Contributions
-- **New sections**: Propose new documentation sections
-- **Architecture changes**: Update diagrams and architecture docs
-- **Tutorial creation**: Create comprehensive tutorials
-- **Translation**: Help translate documentation
+This documentation is actively maintained and updated. If you find errors, outdated information, or areas for improvement:
 
-See our [Contributing Guidelines](development/contributing/guidelines.md) for detailed information.
-
-## 📊 Documentation Statistics
-
-- **Total Pages**: 80+ comprehensive documentation pages
-- **Quick Start Time**: 15 minutes from zero to running
-- **Coverage Areas**: 6 major documentation sections
-- **Last Updated**: Continuously updated with each release
-- **Maintenance**: Active community-driven maintenance
+1. **Create an issue**: Report documentation problems
+2. **Submit a PR**: Contribute improvements directly
+3. **Join discussions**: Suggest enhancements in the community
 
 ---
 
-**Welcome to OpenFrame!** 🚀 
+*Documentation generated by [OpenFrame Doc Orchestrator](https://github.com/flamingo-stack/openframe-oss-tenant)*
 
-This documentation is your comprehensive guide to mastering the OpenFrame platform. Whether you're just getting started or you're an experienced developer, you'll find the resources you need to be successful.
-
-*Found an issue with the documentation? [Report it here](https://github.com/flamingo-stack/openframe-oss-tenant/issues) or contribute a fix!*
+**Last Updated**: 2024  
+**Version**: OpenFrame OSS Tenant Platform

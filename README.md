@@ -1,132 +1,86 @@
 <div align="center">
   <picture>
-    <!-- Dark theme -->
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-openframe-full-dark-bg.png">
-    <!-- Light theme -->
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-openframe-full-light-bg.png">
-    <!-- Default / fallback -->
-    <img alt="OpenFrame Logo" src="docs/assets/logo-openframe-full-light-bg.png" width="400">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/flamingo-stack/openframe-oss-tenant/main/docs/assets/logo-openframe-full-dark-bg.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/flamingo-stack/openframe-oss-tenant/main/docs/assets/logo-openframe-full-light-bg.png">
+    <img alt="OpenFrame Logo" src="https://raw.githubusercontent.com/flamingo-stack/openframe-oss-tenant/main/docs/assets/logo-openframe-full-light-bg.png" width="400">
   </picture>
-
-  <p><b>A distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. We simplify IT and security operations through a single, cohesive platform.</b></p>
-
-  <p>
-    <a href="LICENSE.md">
-      <img alt="License"
-           src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white">
-    </a>
-    <a href="https://github.com/flamingo-stack/openframe-oss-tenant/releases">
-      <img alt="Release"
-           src="https://img.shields.io/github/v/release/flamingo-stack/openframe-oss-tenant?style=for-the-badge&color=%23FFC109&labelColor=white">
-    </a>
-    <a href="https://www.flamingo.run/knowledge-base">
-      <img alt="Docs"
-           src="https://img.shields.io/badge/DOCS-flamingo.run-%23FFC109?style=for-the-badge&labelColor=white">
-    </a>
-    <a href="https://www.openmsp.ai/">
-      <img alt="Community"
-           src="https://img.shields.io/badge/COMMUNITY-openmsp.ai-%23FFC109?style=for-the-badge&labelColor=white">
-    </a>
-  </p>
 </div>
 
----
+<p align="center">
+  <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white"></a>
+</p>
 
-## Quick Links
+# OpenFrame OSS Tenant Platform
 
-- [Quick Start](#quick-start)  
-- [Documentation](https://www.flamingo.run/knowledge-base)  
-- [Community](https://www.openmsp.ai/)  
-- [Security](#security)  
+**The core, multi-tenant OpenFrame platform** that powers Flamingo's AI-driven MSP stack. OpenFrame creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects, simplifying IT and security operations through a single, cohesive platform.
 
----
+[![OpenFrame Preview Webinar](https://img.youtube.com/vi/bINdW0CQbvY/maxresdefault.jpg)](https://www.youtube.com/watch?v=bINdW0CQbvY)
 
-## Highlights
+## What is OpenFrame?
 
-- **Unified Dashboard** - Single interface for managing all services and workflows  
-- **Smart Automation** - Automated deployment and monitoring capabilities  
-- **AI-Powered Insights** - Real-time anomaly detection and intelligent assistants  
-- **Enterprise Security** - Integrated security controls across all services  
-- **High Performance** - Handles 100,000+ events/second with sub-500ms latency  
-- **Scalable Architecture** - Built on proven microservices principles  
+OpenFrame is a **distributed platform** that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation. It integrates multiple MSP tools into a single AI-driven interface, automating IT support operations across the stack.
 
----
+### Core Components
 
-## Architecture
+- **Multi-tenant backend** with API, Auth, Gateway, Management, Stream, and Client services
+- **Shared OSS foundation** for security, data, streaming, DTOs, and utilities  
+- **Unified frontend** that consolidates devices, logs, tools, tickets, and AI (Mingo)
+- **Vendor-agnostic integration layer** for RMMs, MDMs, and infrastructure tools
+
+## Features
+
+### 🤖 AI-Native Operations
+- **Mingo AI**: Autonomous agent architecture for incident triage and alert management
+- **Intelligent Automation**: AI-powered technician assistance and client-facing automation (Fae)
+- **Approval Workflows**: Human-in-the-loop oversight for critical operations
+
+### 🔧 Unified Dashboard
+- **Single interface** for managing all services and workflows
+- **Real-time monitoring** with sub-500ms latency
+- **Smart automation** with automated deployment and monitoring capabilities
+- **Enterprise security** with integrated controls across all services
+
+### 🏢 Multi-Tenant Architecture
+- **Tenant isolation** with secure, isolated environments for each MSP
+- **SSO support** for Google, Microsoft, and custom identity providers
+- **Role-based access** with fine-grained permissions and user management
+- **Scalable design** built on proven microservices principles
+
+### 🔌 Vendor-Agnostic Integrations
+- **FleetDM**: Open-source device management and osquery integration
+- **Tactical RMM**: Python-based RMM for Windows/Linux management  
+- **MeshCentral**: Remote access and file management capabilities
+- **Authentik**: Identity and access management
+
+## Architecture Overview
 
 OpenFrame uses a modern microservices architecture with four key layers:
 
 ```mermaid
-flowchart TB
-    Client[Client Applications] --> LB[Load Balancer]
-    LB --> Gateway[API Gateway]
+flowchart TD
+    Browser["Tenant Frontend"] --> Gateway["API Gateway"]
+    Agents["OpenFrame Agents"] --> Client["Client Service"]
+    Tools["Integrated Tools"] --> Gateway
     
-    subgraph "Gateway Layer"
-        Gateway --> GraphQL[GraphQL Engine]
-        Gateway --> Auth[Auth Service]
+    Gateway --> API["API Service"]
+    Gateway --> Auth["Authorization Server"]
+    
+    Client --> Kafka["Event Streaming"]
+    Kafka --> Stream["Stream Processing"]
+    Stream --> Analytics["Analytics Layer"]
+    
+    API --> MongoDB["MongoDB"]
+    API --> Analytics
+    
+    Management["Management Service"] --> Analytics
+    Management --> Kafka
+    
+    subgraph "Analytics Layer"
+        Cassandra["Cassandra"]
+        Pinot["Apache Pinot"]  
+        Redis["Redis Cache"]
     end
-    
-    subgraph "Processing Layer"
-        Stream[Stream Processing] --> Kafka[Apache Kafka]
-        Kafka --> |Analytics| Pinot[Apache Pinot]
-        Kafka --> |Storage| Cassandra[Cassandra]
-    end
-    
-    subgraph "Data Layer"
-        GraphQL --> MongoDB[(MongoDB)]
-        GraphQL --> Cassandra
-        GraphQL --> Pinot
-        GraphQL --> Redis[(Redis Cache)]
-    end
-    
-    subgraph "Infrastructure Layer"
-        Loki       --> Grafana
-        Prometheus --> Grafana
-    end
-    
-    style Gateway fill:#FFC109,stroke:#1A1A1A,color:#FAFAFA
-    style Stream fill:#666666,stroke:#1A1A1A,color:#FAFAFA
-    style MongoDB fill:#212121,stroke:#1A1A1A,color:#FAFAFA
 ```
-
-## Quick Start
-
-Get OpenFrame running locally:
-
-### CLI Usage
-
-```bash
-# Linux
-./cli/openframe-linux-amd64 bootstrap
-./cli/openframe-linux-amd64 bootstrap --non-interactive --verbose
-
-# Windows
-./cli/openframe-windows-amd64.exe bootstrap
-./cli/openframe-windows-amd64.exe bootstrap --non-interactive --verbose
-
-# macOS
-./cli/openframe bootstrap
-./cli/openframe bootstrap --non-interactive --verbose
-```
-
-For detailed CLI documentation, installation, and all available commands, see [CLI Documentation](docs/cli/README.md).
-
-Once started, OpenFrame will be available at:
-- **UI Dashboard:** https://localhost
-
-
-## Screenshots
-
-### Dashboard Overview
-<img src="docs/assets/1.%20dashboard.png" alt="Dashboard Overview" width="100%">
-
-### Devices
-<img src="docs/assets/2.%20deviecs.png" alt="Devices" width="100%">
-
-### Policies & Compliance
-<img src="docs/assets/5.%20policies.png" alt="Policies & Compliance" width="100%">
-
-</div>
 
 ## Technology Stack
 
@@ -141,29 +95,19 @@ Once started, OpenFrame will be available at:
 | **Cache** | Redis | High-performance caching |
 | **Monitoring** | Prometheus + Grafana + Loki | Observability stack |
 
-## Roadmap
-
-- [x] Core microservices architecture
-- [x] GraphQL API with authentication  
-- [x] Real-time stream processing
-- [x] Cross-platform Rust agent
-- [x] Multi-tenant support *(Q2 2025)*
-- [x] **Advanced AI/ML integrations** *(Q3 2025)*
-- [ ] **Edge computing capabilities** *(Q4 2025)*
-- [ ] **Mobile companion app** *(2026)*
-
-## Development Setup
+## Quick Start
 
 ### Prerequisites
-- **Java:** OpenJDK 21.0.1+
-- **Node.js:** 18+ with npm
-- **Rust:** 1.70+ with Cargo
-- **Docker:** 24.0+ with Docker Compose
-- **Git:** 2.42+
+
+- **Java**: OpenJDK 21.0.1+
+- **Node.js**: 18+ with npm
+- **Rust**: 1.70+ with Cargo
+- **Docker**: 24.0+ with Docker Compose
+- **Git**: 2.42+
 
 ### Local Development
 
-> **Note:** This project depends on `openframe-oss-lib` (version defined in `pom.xml` as `<openframe.libs.version>`). Maven authentication via GitHub Packages is required - set `GITHUB_ACTOR` and `GITHUB_TOKEN` environment variables before building.
+> **Note**: This project depends on `openframe-oss-lib` (version defined in `pom.xml`). Maven authentication via GitHub Packages is required - set `GITHUB_ACTOR` and `GITHUB_TOKEN` environment variables before building.
 
 ```bash
 # Clone the repository
@@ -186,19 +130,91 @@ cd ../../client
 cargo build --release
 ```
 
-### Running Tests
+### CLI Bootstrap (Recommended)
+
+For the fastest setup, use the OpenFrame CLI tools:
+
 ```bash
-# Java tests
-mvn test
+# Linux
+./cli/openframe-linux-amd64 bootstrap --non-interactive --verbose
 
-# Frontend tests
-cd openframe/services/openframe-frontend
-npm run type-check
+# Windows  
+./cli/openframe-windows-amd64.exe bootstrap --non-interactive --verbose
 
-# Rust tests  
-cd client
-cargo test
+# macOS
+./cli/openframe bootstrap --non-interactive --verbose
 ```
+
+**CLI Documentation**: See the [OpenFrame CLI repository](https://github.com/flamingo-stack/openframe-cli) for installation and usage instructions.
+
+Once started, OpenFrame will be available at:
+- **UI Dashboard**: https://localhost
+
+## Runtime Services
+
+### Core Services
+
+- **API Service** (`openframe/services/openframe-api`) - Tenant-facing and internal APIs
+- **Authorization Server** (`openframe/services/openframe-authorization-server`) - OAuth2/OIDC with multi-tenant JWT
+- **Gateway Service** (`openframe/services/openframe-gateway`) - API gateway and edge security  
+- **Client Service** (`openframe/services/openframe-client`) - Secure ingress for agents
+- **Stream Processing** (`openframe/services/openframe-stream`) - Kafka consumers and processors
+- **Management Service** (`openframe/services/openframe-management`) - Platform control plane
+- **External API Service** (`openframe/services/openframe-external-api`) - Partner integrations
+
+### Shared Libraries
+
+- **Security**: JWT/OAuth, authentication, authorization
+- **Data**: MongoDB, Cassandra, Pinot, Redis abstractions
+- **Core Utilities**: Validation, configuration, common services
+- **Notifications**: Email and messaging services
+- **Vendor SDKs**: FleetDM, Tactical RMM integrations
+
+## Screenshots
+
+### Dashboard Overview
+<img src="docs/assets/1.%20dashboard.png" alt="Dashboard Overview" width="100%">
+
+### Device Management
+<img src="docs/assets/2.%20deviecs.png" alt="Device Management" width="100%">
+
+### Policies & Compliance
+<img src="docs/assets/5.%20policies.png" alt="Policies & Compliance" width="100%">
+
+## Performance
+
+- **High Performance**: Handles 100,000+ events/second
+- **Low Latency**: Sub-500ms response times
+- **Scalable**: Microservices architecture for independent scaling
+- **Multi-tenant**: Efficient resource utilization with tenant isolation
+
+## Security
+
+OpenFrame implements enterprise-grade security:
+
+- **Authentication**: OAuth 2.0 + JWT with cookie security
+- **Encryption**: AES-256 for data at rest, TLS for data in transit
+- **Audit Logging**: Comprehensive activity tracking
+- **Multi-tenant Isolation**: Secure boundaries between tenants
+- **Rate Limiting**: Circuit breakers and request throttling
+- **Real-time Monitoring**: Security event detection and alerting
+
+## Documentation
+
+📚 See the [Documentation](./docs/README.md) for comprehensive guides:
+
+- **[Getting Started](./docs/getting-started/introduction.md)** - Introduction and quick start
+- **[Development](./docs/development/README.md)** - Development setup and architecture
+- **[Reference](./docs/reference/architecture/overview.md)** - Technical reference documentation
+
+### CLI Tools
+
+The OpenFrame CLI tools are maintained in a separate repository:
+- **Repository**: [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli)
+- **Installation**: [Installation Guide](https://github.com/flamingo-stack/openframe-cli#installation)
+- **Documentation**: [CLI Documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs)
+
+**Note**: CLI tools are NOT located in this repository. Always refer to the external repository for installation and usage.
 
 ## Contributing
 
@@ -211,80 +227,21 @@ We love contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for 
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## Documentation
+## Community
 
-| Guide | Description |
-|-------|-------------|
-| [Getting Started](docs/getting-started/introduction.md) | Quick start guide and basic concepts |
-| [Architecture](docs/development/architecture/overview.md) | System design and components |
-| [Development Setup](docs/development/setup/environment.md) | Local development environment |
-| [API Reference](docs/api/README.md) | GraphQL schema and endpoints |
-| [Deployment](docs/deployment/README.md) | Production deployment guide |
-| [Operations](docs/operations/README.md) | Monitoring and maintenance |
+Join the OpenMSP community for support and discussions:
 
-## FAQ
-
-<details>
-<summary><strong>How does OpenFrame compare to other platforms?</strong></summary>
-
-OpenFrame uniquely combines data processing, API management, and AI capabilities in a single unified platform, while most alternatives focus on just one area.
-</details>
-
-<details>
-<summary><strong>What's the minimum hardware requirement?</strong></summary>
-
-For development: 8GB RAM, 4 CPU cores, 20GB storage. For production: 16GB RAM, 8 CPU cores, 100GB storage minimum.
-</details>
-
-<details>
-<summary><strong>Can I use OpenFrame with existing infrastructure?</strong></summary>
-
-Yes! OpenFrame is designed to integrate with existing systems through its flexible API layer and standard protocols.
-</details>
-
-<details>
-<summary><strong>Is there commercial support available?</strong></summary>
-
-Yes, enterprise support is available through [Flamingo](https://www.flamingo.run). Contact us for details.
-</details>
-
-## Security
-
-OpenFrame takes security seriously. We implement:
-
-- **OAuth 2.0 + JWT** authentication
-- **AES-256** encryption for data at rest
-- **Comprehensive** audit logging
-- **Multi-tenant** isolation
-- **Rate limiting** and circuit breakers
-- **Real-time** security monitoring
-
-Found a security issue? Please email security@flamingo.run instead of opening a public issue.
+- **Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Website**: [flamingo.run](https://www.flamingo.run)
+- **Knowledge Base**: [flamingo.run/knowledge-base](https://www.flamingo.run/knowledge-base)
+- **LinkedIn**: [OpenFrame on LinkedIn](https://www.linkedin.com/showcase/openframemsp/about/)
 
 ## License
 
-This project is licensed under the [The Flamingo AI Unified License v1.0](LICENSE.md).
-
-## Acknowledgments
-
-- Thanks to all our [contributors](https://github.com/flamingo-stack/openframe-oss-tenant/graphs/contributors)
-- Built with amazing open-source projects: Spring Boot, Apache Kafka, and many more
-- Special thanks to the broader open-source community
+This project is licensed under the [Flamingo AI Unified License v1.0](LICENSE.md).
 
 ---
 
 <div align="center">
-  <table border="0" cellspacing="0" cellpadding="0">
-    <tr>
-      <td align="center">
-        Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
-      </td>
-      <td align="center">
-        <a href="https://www.flamingo.run">Website</a> • 
-        <a href="https://www.flamingo.run/knowledge-base">Knowledge Base</a> • 
-        <a href="https://www.linkedin.com/showcase/openframemsp/about/">LinkedIn</a> • 
-        <a href="https://www.openmsp.ai/">Community</a>
-      </td>
-    </tr>
-  </table>
+  Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
 </div>
