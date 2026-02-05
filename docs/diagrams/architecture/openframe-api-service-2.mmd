@@ -1,7 +1,0 @@
-flowchart LR
-    Query["GraphQL Query"] --> Fetcher["DataFetcher"]
-    Fetcher --> Service["Domain Service"]
-    Service --> Repository["Data Repository"]
-    Repository --> Service
-    Service --> Fetcher
-    Fetcher --> Connection["GraphQL Connection / Edge"]

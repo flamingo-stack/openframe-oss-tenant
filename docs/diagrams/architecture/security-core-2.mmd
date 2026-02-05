@@ -1,5 +1,0 @@
-flowchart LR
-    Config["Application Properties"] --> JwtConfig
-    JwtConfig -->|"loadPublicKey()"| PublicKey["RSAPublicKey"]
-    JwtConfig -->|"loadPrivateKey()"| PrivateKey["RSAPrivateKey"]
-    JwtConfig --> JwtSecurityConfig

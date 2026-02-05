@@ -1,4 +1,0 @@
-flowchart LR
-    Request -->|"cursor + limit"| Service
-    Service --> Response[Response + PageInfo]
-    Response -->|"endCursor"| NextRequest

@@ -1,7 +1,0 @@
-flowchart TD
-    Partner["External Client"] --> Gateway["Gateway"]
-    Gateway --> ExternalApi["External API Service"]
-
-    ExternalApi --> Core["Core Services"]
-    Core --> Mongo["MongoDB"]
-    Core --> Pinot["Apache Pinot"]

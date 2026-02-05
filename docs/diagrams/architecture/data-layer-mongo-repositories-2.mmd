@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant Api as API Service
-    participant Repo as CustomMachineRepositoryImpl
-    participant Mongo as MongoDB
-
-    Api->>Repo: findDevices(filter, tenantId)
-    Repo->>Mongo: aggregation query
-    Mongo-->>Repo: device documents
-    Repo-->>Api: filtered result set

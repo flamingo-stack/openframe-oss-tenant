@@ -1,6 +1,0 @@
-flowchart TD
-    A["Application Service"] --> B["MachineTagEventServiceImpl"]
-    B --> C["Kafka Producer"]
-    C --> D["Kafka Topics"]
-    D --> E["Stream Service"]
-    D --> F["Analytics Consumers"]

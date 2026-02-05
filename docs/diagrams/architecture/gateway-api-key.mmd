@@ -1,5 +1,0 @@
-flowchart TD
-    Client["External Client"] --> Gateway["Gateway Service"]
-    Gateway --> ApiKeyFilter["API Key Filter"]
-    ApiKeyFilter --> RateLimit["Rate Limit Service"]
-    ApiKeyFilter --> ExternalApi["External API Service"]

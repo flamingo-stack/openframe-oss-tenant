@@ -1,9 +1,0 @@
-flowchart TD
-    ApiServices["API and Service Layers"] --> Repositories["Mongo Repositories"]
-    Repositories --> Documents["Mongo Documents"]
-    Documents --> MongoDB[(MongoDB)]
-
-    subgraph DataLayer["Data Layer"]
-        Documents
-        Repositories
-    end

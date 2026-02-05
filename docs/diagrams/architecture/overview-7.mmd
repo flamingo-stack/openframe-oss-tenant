@@ -1,7 +1,0 @@
-flowchart TD
-    Management["Management Service"] --> Init["Startup Initializers"]
-    Management --> Schedulers["Schedulers"]
-
-    Init --> Pinot["Pinot"]
-    Init --> Nats["NATS"]
-    Init --> Debezium["Debezium"]
