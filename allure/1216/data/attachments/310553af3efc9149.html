@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;margaretta.goodwin@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMDViNjAxNmEtYmI5OC00NzdlLThkMGMtYmY1NGEwNDVkYmY3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2YjcwMGMwOC01ZjFlLTRjOWItYWYzYy0wYzRiNjBhNGMxM2QiLCJzdWIiOiJqYW1leS5ncmVlbmhvbHRAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMjY5MTEsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzZiNzAwYzA4LTVmMWUtNGM5Yi1hZjNjLTBjNGI2MGE0YzEzZCIsImV4cCI6MTc3MDMyNzgxMSwiaWF0IjoxNzcwMzI2OTExLCJ1c2VySWQiOiJjNGYwNTA5NC01Yjg5LTQ3MzAtOTU2MS1kYTg2NWMzZTRkYjUiLCJqdGkiOiI1N2U4ZmZmYy1kZjMwLTQ1ZDItYWNlZS00OTA0MDQ3NTJiNGEifQ.PbX0ROMRNewAHGj4OBBA-KvZpaggxQX3NZ62Ntk7cRPieXrCv8omKMySJJJ94MxS1am4lQjQUA_1QVueXEF_42wTX0l6afTekVnMtWev2FpI8G1NBadCQpfIV2Zq0I_FNoIee8opSU_YcCZR1zpgPVEd887oaO6NLHM3Up0bokzYvGL_slGPhUAzw0LBDtZV1o00kj5wsBXmqNTpwL96hThJhOtVgXLeGOkHJSriGnrP46vIqvInlR4jqnW8Cp9JFsCpkZiwh-9vYXwGneijvYyrn8NxKdEX4HniH4UlaWIClZ5udE6eHMJgS8EpltURMOcM3hMnKZqpENPWzlXiCQ</div>
+        <div>refresh_token: X0A1BbukR2Olm8jr0b4g7KelGLsZCrNhfVCYwy7ZumOnNn8VZE5KV_Gzf66M6VAXeGjC9S87IZDtN65wbklzb4UtPomtReFyZ9GFj7cMzEeRnj_9k6qLrneap36go_5o</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMDViNjAxNmEtYmI5OC00NzdlLThkMGMtYmY1NGEwNDVkYmY3IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI2YjcwMGMwOC01ZjFlLTRjOWItYWYzYy0wYzRiNjBhNGMxM2QiLCJzdWIiOiJqYW1leS5ncmVlbmhvbHRAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMjY5MTEsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzZiNzAwYzA4LTVmMWUtNGM5Yi1hZjNjLTBjNGI2MGE0YzEzZCIsImV4cCI6MTc3MDMyNzgxMSwiaWF0IjoxNzcwMzI2OTExLCJ1c2VySWQiOiJjNGYwNTA5NC01Yjg5LTQ3MzAtOTU2MS1kYTg2NWMzZTRkYjUiLCJqdGkiOiI1N2U4ZmZmYy1kZjMwLTQ1ZDItYWNlZS00OTA0MDQ3NTJiNGEifQ.PbX0ROMRNewAHGj4OBBA-KvZpaggxQX3NZ62Ntk7cRPieXrCv8omKMySJJJ94MxS1am4lQjQUA_1QVueXEF_42wTX0l6afTekVnMtWev2FpI8G1NBadCQpfIV2Zq0I_FNoIee8opSU_YcCZR1zpgPVEd887oaO6NLHM3Up0bokzYvGL_slGPhUAzw0LBDtZV1o00kj5wsBXmqNTpwL96hThJhOtVgXLeGOkHJSriGnrP46vIqvInlR4jqnW8Cp9JFsCpkZiwh-9vYXwGneijvYyrn8NxKdEX4HniH4UlaWIClZ5udE6eHMJgS8EpltURMOcM3hMnKZqpENPWzlXiCQ&#39; -b &#39;refresh_token=X0A1BbukR2Olm8jr0b4g7KelGLsZCrNhfVCYwy7ZumOnNn8VZE5KV_Gzf66M6VAXeGjC9S87IZDtN65wbklzb4UtPomtReFyZ9GFj7cMzEeRnj_9k6qLrneap36go_5o&#39; -d &#39;{
+    &quot;email&quot;: &quot;margaretta.goodwin@hotmail.com&quot;
+}&#39;
+</div>
