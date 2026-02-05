@@ -1,188 +1,279 @@
-# Development Guide
+# Development Documentation
 
-Welcome to the OpenFrame development documentation! This comprehensive guide covers everything you need to know to contribute to and extend the OpenFrame platform.
+Welcome to the OpenFrame development documentation! This section provides comprehensive guides for contributing to, extending, and customizing the OpenFrame platform.
 
-## Quick Start for Developers
+## 📖 Documentation Structure
 
-### New to OpenFrame?
-1. **[Prerequisites](../getting-started/prerequisites.md)** - Ensure your system is ready
-2. **[Environment Setup](setup/environment.md)** - Configure your development environment
-3. **[Architecture Overview](architecture/overview.md)** - Understand the system design
-4. **[First Steps](../getting-started/first-steps.md)** - Get familiar with the platform
+The development documentation is organized into logical sections to help you find what you need quickly:
 
-### Ready to Code?
-1. **[Contributing Guidelines](contributing/guidelines.md)** - How to contribute effectively
-2. **[Code Style Guide](contributing/code-style.md)** - Coding standards and practices
-3. **[Development Tools](tools/scripts.md)** - Essential development scripts and tools
-4. **[Testing Guide](testing/overview.md)** - Testing strategies and practices
+```mermaid
+graph TD
+    A[Development Documentation] --> B[Setup Guides]
+    A --> C[Architecture]
+    A --> D[Testing]
+    A --> E[Contributing]
+    
+    B --> B1[Environment Setup]
+    B --> B2[Local Development]
+    B --> B3[IDE Configuration]
+    
+    C --> C1[System Overview]
+    C2[Service Architecture]
+    C --> C3[Data Flow]
+    C --> C4[Security Model]
+    
+    D --> D1[Testing Strategy]
+    D --> D2[Unit Tests]
+    D --> D3[Integration Tests]
+    
+    E --> E1[Contribution Guidelines]
+    E --> E2[Code Standards]
+    E --> E3[Review Process]
+```
 
-## Development Sections
+## 🚀 Quick Navigation
 
-### 🏗️ Environment & Setup
-- **[Environment Setup](setup/environment.md)** - Complete development environment configuration
-- **[Local Development](setup/local-development.md)** - Running OpenFrame locally
-- **[Development Tools](setup/tools.md)** - Required tools and utilities
+### Setup & Getting Started
 
-### 🏛️ Architecture & Design
-- **[System Overview](architecture/overview.md)** - High-level architecture and design principles
-- **[Microservices Architecture](architecture/microservices.md)** - Service design and communication
-- **[Data Flow](architecture/data-flow.md)** - Data pipeline and processing architecture
-- **[Security Architecture](architecture/security.md)** - Security design and implementation
-- **[Integration Patterns](architecture/integration.md)** - Tool integration and API patterns
+| Guide | Description | Time to Complete |
+|-------|-------------|------------------|
+| **[Environment Setup](setup/environment.md)** | IDE, tools, and development environment | 15 minutes |
+| **[Local Development](setup/local-development.md)** | Running services locally, debugging | 20 minutes |
 
-### 🖥️ Frontend Development
-- **[Vue.js Setup](frontend/vue-setup.md)** - Frontend development environment
-- **[Component Development](frontend/components.md)** - Building and organizing Vue components
-- **[State Management](frontend/state-management.md)** - Pinia/Vuex patterns and best practices
-- **[UI/UX Guidelines](frontend/ui-guidelines.md)** - Design system and user experience
+### Architecture & Design
 
-### ⚙️ Backend Development
-- **[Spring Boot Development](backend/spring-boot.md)** - Java backend development guide
-- **[GraphQL Implementation](backend/graphql.md)** - GraphQL schema and resolver development
-- **[Microservices Development](backend/microservices.md)** - Building and deploying services
-- **[Data Access Patterns](backend/data-access.md)** - Database integration and patterns
+| Document | Focus Area | Audience |
+|----------|------------|----------|
+| **[Architecture Overview](architecture/overview.md)** | High-level system design | All developers |
 
-### 🦀 Client Agent Development
-- **[Rust Development](client-agent/rust-development.md)** - Cross-platform agent development
-- **[Cross-Platform Considerations](client-agent/cross-platform.md)** - Platform-specific development
-- **[Service Integration](client-agent/service-integration.md)** - Integrating with OpenFrame services
+### Testing & Quality
 
-### 🧪 Testing & Quality
-- **[Testing Overview](testing/overview.md)** - Testing strategy and framework
-- **[Backend Testing](testing/backend-testing.md)** - Java/Spring testing patterns
-- **[Frontend Testing](testing/frontend-testing.md)** - Vue.js testing strategies
-- **[Integration Testing](testing/integration-testing.md)** - End-to-end testing approaches
+| Resource | Coverage | Best For |
+|----------|----------|----------|
+| **[Testing Overview](testing/overview.md)** | Testing strategy and execution | All developers |
 
-### 🤝 Contributing & Collaboration
-- **[Contributing Guidelines](contributing/guidelines.md)** - How to contribute to OpenFrame
-- **[Code Style Guide](contributing/code-style.md)** - Coding standards and formatting
-- **[Pull Request Process](contributing/pull-requests.md)** - PR workflow and review process
-- **[Issue Templates](contributing/issue-templates.md)** - Bug reports and feature requests
+### Contributing
 
-### 🛠️ Development Tools
-- **[Development Scripts](tools/scripts.md)** - Essential development and deployment scripts
-- **[Build System](tools/build-system.md)** - Maven, npm, and Cargo build processes
-- **[IDE Setup](tools/ide-setup.md)** - Configuring your development environment
+| Guide | Purpose | Required Reading |
+|-------|---------|------------------|
+| **[Contributing Guidelines](contributing/guidelines.md)** | Code style, PR process, standards | Before first contribution |
 
-## Technology Stack
+## 🏗️ Development Workflow
 
-### Backend Technologies
-- **Java 21** with **Spring Boot 3.3.0**
-- **Spring Cloud 2023.0.3** for microservices
-- **Netflix DGS Framework 7.0.0** for GraphQL
-- **Spring Security** with OAuth 2.0/OpenID Connect
-- **MongoDB 7.x**, **Cassandra 4.x**, **Apache Pinot 1.2.0**
-- **Apache Kafka 3.6.0** for event streaming
+### Typical Development Process
 
-### Frontend Technologies
-- **Vue 3** with Composition API and **TypeScript**
-- **PrimeVue 3.45.0** component library
-- **Apollo Client** for GraphQL
-- **Pinia** for state management
-- **Vite 5.0.10** for building
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant Local as Local Environment
+    participant Tests as Test Suite
+    participant PR as Pull Request
+    participant Review as Code Review
+    participant Deploy as Deployment
+    
+    Dev->>Local: Clone & setup environment
+    Dev->>Local: Make code changes
+    Dev->>Tests: Run tests locally
+    Tests-->>Dev: Tests pass ✅
+    Dev->>PR: Create pull request
+    PR->>Review: Automated checks
+    Review->>Dev: Feedback & approval
+    Dev->>Deploy: Merge to main
+```
 
-### Agent Technologies
-- **Rust 1.70+** with **Tokio** async runtime
-- **Cross-platform support** (Windows, macOS, Linux)
-- **Velopack** for auto-updates
+### Essential Commands
 
-## Development Workflow
+```bash
+# Environment setup
+./scripts/setup-dev-env.sh
 
-### 1. Planning Phase
-- Review requirements and create technical design
-- Break down work into manageable tasks
-- Identify dependencies and integration points
+# Build entire project
+mvn clean install
 
-### 2. Development Phase
-- Follow coding standards and best practices
-- Write comprehensive tests
-- Document new features and changes
-- Regular commits with clear messages
+# Run tests
+mvn test
 
-### 3. Testing Phase
-- Unit tests for individual components
-- Integration tests for service interactions
-- End-to-end tests for user workflows
-- Performance testing for critical paths
+# Start development stack
+./scripts/run-mac.sh --dev    # macOS
+./scripts/run-linux.sh --dev  # Linux
 
-### 4. Review Phase
-- Code review by team members
-- Security review for sensitive changes
-- Documentation review and updates
-- Integration testing in staging environment
+# Frontend development
+cd openframe/services/openframe-frontend
+npm run dev
+```
 
-### 5. Deployment Phase
-- Gradual rollout with monitoring
-- Performance monitoring and alerting
-- User feedback collection and analysis
-- Post-deployment validation
+## 🛠️ Development Environment
 
-## Development Standards
+### Required Tools
 
-### Code Quality
-- **Test Coverage**: Minimum 80% code coverage
-- **Code Review**: All changes require peer review
-- **Security**: Security-first development approach
-- **Performance**: Consider performance implications
-- **Documentation**: Code must be well-documented
+- **Java 21** - Primary backend language
+- **Node.js 20+** - Frontend development
+- **Rust** - Client agent development
+- **Docker** - Containerization and dependencies
+- **Maven** - Java build tool
+- **npm** - Frontend package management
+
+### Recommended IDE Setup
+
+#### IntelliJ IDEA (Java Development)
+- Install Spring Boot plugin
+- Configure Java 21 as project SDK
+- Enable Maven auto-import
+- Install Docker integration
+
+#### VS Code (Frontend & General)
+- TypeScript support
+- Tailwind CSS IntelliSense
+- Docker extension
+- REST Client for API testing
+
+## 📂 Repository Structure
+
+Understanding the codebase organization:
+
+```text
+openframe-oss-tenant/
+├── openframe-oss-lib/              # Reusable core libraries
+│   ├── openframe-api-service-core  # GraphQL/REST API core
+│   ├── openframe-data-mongo        # MongoDB data layer
+│   ├── openframe-gateway-service-core # API Gateway core
+│   ├── openframe-security-core     # JWT/OAuth security
+│   └── ...                         # Other core libraries
+├── openframe/services/             # Deployable applications
+│   ├── openframe-api/              # Main API service
+│   ├── openframe-gateway/          # API Gateway
+│   ├── openframe-frontend/         # Next.js frontend
+│   └── ...                         # Other services
+├── clients/                        # Client applications
+│   ├── openframe-chat/             # AI chat client
+│   └── openframe-client/           # System agent (Rust)
+├── scripts/                        # Development scripts
+└── docs/                          # Documentation
+```
+
+## 🧪 Development Practices
+
+### Code Quality Standards
+
+- **Java**: Follow Spring Boot best practices, use Lombok judiciously
+- **TypeScript**: Strict type checking, consistent naming conventions  
+- **Rust**: Follow Rust idioms, comprehensive error handling
+- **Testing**: Maintain >80% code coverage, write meaningful tests
+- **Documentation**: Document public APIs and complex business logic
 
 ### Git Workflow
-- **Feature Branches**: Use feature branches for development
-- **Commit Messages**: Clear, descriptive commit messages
-- **Pull Requests**: Use PRs for all changes
-- **Code Review**: Mandatory code review process
 
-### Communication
-- **Documentation**: Keep documentation up-to-date
-- **Issues**: Use GitHub issues for tracking
-- **Discussions**: Use team channels for coordination
-- **Knowledge Sharing**: Regular tech talks and demos
+1. **Branch Naming**
+   ```text
+   feature/short-description
+   bugfix/issue-number-description
+   hotfix/critical-fix-description
+   ```
 
-## Getting Help
+2. **Commit Messages**
+   ```text
+   feat: add device registration endpoint
+   fix: resolve JWT token expiration issue
+   docs: update API documentation
+   test: add integration tests for user service
+   ```
 
-### Internal Resources
-- **[Troubleshooting Guide](../operations/troubleshooting/common-issues.md)** - Common development issues
-- **[FAQ](../reference/faq.md)** - Frequently asked questions
-- **[Architecture Diagrams](../diagrams/README.md)** - Visual system overview
+3. **Pull Request Process**
+   - Create PR against `main` branch
+   - Ensure all tests pass
+   - Request review from appropriate team members
+   - Address feedback and update PR
 
-### External Resources
-- **Spring Boot Documentation**: https://spring.io/projects/spring-boot
-- **Vue.js Documentation**: https://vuejs.org/guide/
-- **Rust Documentation**: https://doc.rust-lang.org/
-- **GraphQL Documentation**: https://graphql.org/learn/
+### Testing Strategy
 
-### Community Support
-- **GitHub Issues**: Report bugs and request features
-- **Team Chat**: Internal communication channels
-- **Code Review**: Peer support and knowledge sharing
+| Test Type | Coverage | Tools | When to Run |
+|-----------|----------|-------|-------------|
+| **Unit** | Individual methods/classes | JUnit 5, Jest | Every commit |
+| **Integration** | Service interactions | Spring Test, Testcontainers | Before PR |
+| **E2E** | Full user workflows | REST Assured, Playwright | Before release |
+| **Performance** | Load and stress testing | JMeter, k6 | Release cycles |
 
-## Next Steps
+## 🔧 Common Development Tasks
 
-Choose your path based on your role and interests:
+### Adding a New REST Endpoint
 
-**🆕 New Contributors**:
-1. Start with [Environment Setup](setup/environment.md)
-2. Review [Contributing Guidelines](contributing/guidelines.md)
-3. Pick a "good first issue" from our issue tracker
+1. **Create DTO classes** in the appropriate service core module
+2. **Implement controller** with proper validation and security
+3. **Add service layer logic** with business rules
+4. **Write unit tests** for all components
+5. **Update API documentation** with OpenAPI annotations
 
-**🔧 Backend Developers**:
-1. Explore [Spring Boot Development](backend/spring-boot.md)
-2. Learn our [GraphQL Implementation](backend/graphql.md)
-3. Understand [Microservices Architecture](architecture/microservices.md)
+### Adding a New GraphQL Query
 
-**🎨 Frontend Developers**:
-1. Get started with [Vue.js Setup](frontend/vue-setup.md)
-2. Learn our [Component Development](frontend/components.md) patterns
-3. Master [State Management](frontend/state-management.md)
+1. **Define schema** in `schema.graphqls` files
+2. **Implement DataFetcher** in the appropriate service
+3. **Add data loader** for efficient batching if needed
+4. **Write integration tests** with GraphQL test framework
+5. **Update frontend queries** if client changes required
 
-**🦀 Systems Developers**:
-1. Dive into [Rust Development](client-agent/rust-development.md)
-2. Understand [Cross-Platform Considerations](client-agent/cross-platform.md)
-3. Learn [Service Integration](client-agent/service-integration.md) patterns
+### Creating a New Microservice
 
-**🏗️ DevOps Engineers**:
-1. Review [Development Tools](tools/scripts.md)
-2. Understand [Build System](tools/build-system.md)
-3. Explore [Deployment Guide](../deployment/README.md)
+1. **Use service template** from existing services as a starting point
+2. **Configure Maven dependencies** and parent POM structure
+3. **Implement core functionality** following established patterns
+4. **Add health checks** and monitoring endpoints
+5. **Create Docker configuration** for containerization
+6. **Write comprehensive tests** including integration tests
 
-Welcome to the OpenFrame development community! 🚀
+## 📚 Additional Resources
+
+### Architecture Deep Dives
+- Service interaction patterns
+- Database design principles
+- Security implementation details
+- Event-driven architecture with Kafka
+
+### API Documentation
+- GraphQL schema reference
+- REST endpoint documentation
+- Authentication flow diagrams
+- Rate limiting and throttling
+
+### Deployment Guides
+- Docker containerization
+- Kubernetes manifests
+- Environment configuration
+- Monitoring and logging setup
+
+## 🤝 Community & Support
+
+### Getting Help
+
+1. **Documentation First**: Search this documentation for answers
+2. **OpenMSP Slack**: Join the [#openframe-dev](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) channel
+3. **Code Reviews**: Learn from PR discussions and feedback
+4. **Team Knowledge**: Reach out to experienced contributors
+
+### Contributing Back
+
+- **Bug Reports**: Report issues with detailed reproduction steps
+- **Feature Requests**: Propose new features with use cases
+- **Code Contributions**: Submit PRs following our guidelines
+- **Documentation**: Help improve and expand documentation
+
+### Community Guidelines
+
+- **Be Respectful**: Treat all contributors with respect and professionalism
+- **Be Helpful**: Share knowledge and assist others when possible
+- **Be Collaborative**: Work together towards shared goals
+- **Be Open**: Embrace feedback and different perspectives
+
+## 🎯 Next Steps
+
+Ready to start developing? Here's your recommended path:
+
+1. **Environment Setup**: Follow the [Environment Setup](setup/environment.md) guide
+2. **Local Development**: Get the stack running with [Local Development](setup/local-development.md)
+3. **Architecture Understanding**: Review [Architecture Overview](architecture/overview.md)
+4. **First Contribution**: Read [Contributing Guidelines](contributing/guidelines.md)
+
+Happy coding! 🚀
+
+---
+
+**Need help?** Join the OpenMSP Slack community at [https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)

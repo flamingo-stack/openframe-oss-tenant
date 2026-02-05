@@ -1,133 +1,140 @@
-# Introduction to OpenFrame
+# OpenFrame Introduction
 
-OpenFrame is a distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. Built with Java Spring Boot and Vue.js, it simplifies IT and security operations through a single, cohesive platform.
+Welcome to **OpenFrame** - the unified AI-powered MSP platform that replaces expensive proprietary software with intelligent open-source alternatives enhanced by automation.
 
 ## What is OpenFrame?
 
-OpenFrame is an enterprise-grade platform that combines powerful microservices architecture with modern web technologies to provide:
+OpenFrame is Flamingo's comprehensive MSP (Managed Service Provider) platform that combines:
 
-- Real-time data processing and analytics
-- Unified API access through GraphQL
-- Automated deployment and monitoring
-- AI-powered insights and anomaly detection
-- Enterprise-grade security controls
-- High-performance event streaming
+- **Unified Management**: Single interface for multiple MSP tools (Tactical RMM, Fleet MDM, MeshCentral, and more)
+- **AI Automation**: Mingo AI for technicians and Fae AI for clients
+- **Open Source First**: Built on proven open-source technologies, no vendor lock-in
+- **Multi-Tenant Architecture**: Secure, scalable infrastructure supporting multiple organizations
+
+[![OpenFrame Product Walkthrough (Beta Access)](https://img.youtube.com/vi/awc-yAnkhIo/maxresdefault.jpg)](https://www.youtube.com/watch?v=awc-yAnkhIo)
 
 ## Key Features
 
-### 1. Unified Dashboard
-- Modern Vue.js-based interface
-- Real-time data visualization
-- Customizable dashboards
-- Role-based access control
+```mermaid
+graph TD
+    A[OpenFrame Platform] --> B[Device Management]
+    A --> C[AI Automation]
+    A --> D[Unified Auth]
+    A --> E[Real-time Monitoring]
+    
+    B --> B1[Remote Desktop]
+    B --> B2[File Management]
+    B --> B3[Script Execution]
+    
+    C --> C1[Mingo AI Assistant]
+    C --> C2[Automated Triage]
+    C --> C3[Smart Alerts]
+    
+    D --> D1[SSO Integration]
+    D --> D2[Multi-tenant]
+    D --> D3[Role-based Access]
+    
+    E --> E1[Log Aggregation]
+    E --> E2[Event Streams]
+    E --> E3[Health Monitoring]
+```
 
-### 2. Smart Automation
-- Automated deployment pipelines
-- Self-healing capabilities
-- Predictive maintenance
-- Workflow automation
+### Core Capabilities
 
-### 3. AI-Powered Insights
-- Real-time anomaly detection
-- Predictive analytics
-- AI assistants ("copilots")
-- Automated decision making
+| Feature | Description | Benefits |
+|---------|-------------|----------|
+| **Device Management** | Unified dashboard for all endpoints | Single pane of glass, reduced complexity |
+| **AI-Powered Automation** | Mingo AI for technicians, automated incident triage | Faster response times, reduced manual work |
+| **Open Source Integration** | Built on Tactical RMM, Fleet MDM, MeshCentral | No licensing fees, community-driven |
+| **Multi-Tenant Architecture** | Secure isolation between organizations | Scalable, enterprise-ready |
+| **Real-time Processing** | Kafka-based event streaming | Instant notifications, live updates |
 
-### 4. Enterprise Security
-- OAuth 2.0 authentication
-- Role-based access control
-- End-to-end encryption
-- Audit logging
+## Target Audience
 
-### 5. High Performance
-- Handles 100,000 events/second
-- Sub-500ms latency
-- Scalable microservices
-- Distributed architecture
+OpenFrame is designed for:
+
+- **MSPs**: Managed Service Providers looking to modernize their stack
+- **IT Teams**: Internal IT teams managing multiple locations
+- **DevOps Engineers**: Teams seeking open-source automation tools  
+- **System Administrators**: Professionals managing diverse environments
 
 ## Technology Stack
 
-### Backend
-- **Core Runtime**: Spring Boot 3.3.0, OpenJDK 21, Spring Cloud 2023.0.3
-- **API Layer**: Netflix DGS Framework 7.0.0 (GraphQL)
-- **Gateway**: Spring Cloud Gateway with WebFlux
-- **Security**: Spring Security with OAuth 2.0/OpenID Connect
-- **Data Storage**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0
-- **Event Streaming**: Apache Kafka 3.6.0
-- **Stream Processing**: OpenFrame Stream Service with Kafka integration
-- **Caching**: Redis
-- **System Agent**: Rust-based cross-platform agent with Tokio runtime
+### Backend Services
+- **Java 21** with Spring Boot 3.3.0
+- **GraphQL** (Netflix DGS 7.0.0) + REST APIs
+- **MongoDB 7.x** for data persistence
+- **Apache Kafka 3.6.0** for event streaming
+- **JWT Security** with OAuth2/OpenID Connect
 
-### Frontend
-- **Framework**: Vue 3 with Composition API and TypeScript
-- **State Management**: Pinia
-- **Routing**: Vue Router 4
-- **UI Framework**: PrimeVue 3.45.0
-- **GraphQL Client**: Apollo Client
-- **Build Tool**: Vite 5.0.10
+### Frontend & Client
+- **Next.js 16** with React 19 and TypeScript
+- **Rust Client** for cross-platform system agents
+- **Vue.js** alternative frontend available
 
 ### Infrastructure
-- **Container Orchestration**: Kubernetes
-- **Service Mesh**: Istio
-- **Monitoring**: Prometheus, Grafana
-- **Logging**: Loki
-- **CI/CD**: GitHub Actions
+- **Kubernetes 1.28+** for orchestration
+- **Docker** containerization
+- **Prometheus + Grafana** for monitoring
 
-## System Architecture
+## Architecture Overview
 
 ```mermaid
-graph TB
-    subgraph Frontend
-        UI[Vue.js UI]
-        Store[Vuex Store]
-        Router[Vue Router]
-    end
-
-    subgraph Backend
-        Gateway[Spring Cloud Gateway]
-        Auth[Spring Security]
-        API[Spring Boot API]
-        Stream[Spring Kafka]
-        Data[Spring Data]
-    end
-
-    subgraph Data Layer
-        MongoDB[(MongoDB)]
-        Cassandra[(Cassandra)]
-        Pinot[(Apache Pinot)]
-        Redis[(Redis)]
-    end
-
-    UI --> Gateway
-    Gateway --> Auth
-    Auth --> API
-    API --> Stream
-    API --> Data
-    Data --> MongoDB
-    Data --> Cassandra
-    Data --> Pinot
-    Stream --> Redis
+sequenceDiagram
+    participant User as User/Client
+    participant Gateway as OpenFrame Gateway
+    participant API as API Service
+    participant Auth as Authorization Server
+    participant Stream as Stream Service
+    participant DB as MongoDB
+    participant Kafka as Kafka Cluster
+    
+    User->>Gateway: Request + JWT
+    Gateway->>Auth: Validate Token
+    Auth-->>Gateway: Token Valid
+    Gateway->>API: Authorized Request
+    API->>DB: Query Data
+    API->>Kafka: Publish Event
+    Kafka->>Stream: Process Event
+    API-->>Gateway: Response
+    Gateway-->>User: Formatted Response
 ```
 
-## Getting Started
+## Why Choose OpenFrame?
 
-To get started with OpenFrame:
+### ✅ Benefits
 
-1. Review the [Development Setup Guide](../development/setup.md)
-2. Follow the [Architecture Overview](../development/architecture.md)
-3. Explore the [API Documentation](../api/overview.md)
+- **Cost Reduction**: Replace expensive proprietary tools with open-source alternatives
+- **AI Enhancement**: Built-in AI automation reduces manual intervention
+- **Vendor Independence**: No lock-in to proprietary platforms
+- **Unified Experience**: Single interface for all MSP operations
+- **Scalable Architecture**: Microservices design grows with your needs
 
-## Support
+### 🎯 Business Impact
 
-For additional support and resources:
+- **50% reduction** in tool licensing costs
+- **30% faster** incident response with AI triage
+- **90% less** context switching between tools
+- **Enterprise-grade** security and compliance
 
-- Visit our [GitHub repository](https://github.com/flamingo-stack/openframe-oss-tenant)
-- Join our community discussions
-- Contact our support team
+## Getting Started Path
+
+Ready to explore OpenFrame? Follow this learning path:
+
+1. **[Prerequisites](prerequisites.md)** - Ensure your environment is ready
+2. **[Quick Start](quick-start.md)** - Get OpenFrame running in 5 minutes
+3. **[First Steps](first-steps.md)** - Explore key features and initial setup
+
+## Community & Support
+
+Join the OpenMSP community:
+
+- **Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Website**: [flamingo.run](https://flamingo.run)
+- **OpenFrame Platform**: [openframe.ai](https://openframe.ai)
+
+> **Note**: We don't use GitHub Issues. All discussions, support, and feature requests happen in our OpenMSP Slack community.
 
 ## Next Steps
 
-- [Development Setup](../development/setup.md)
-- [Architecture Overview](../development/architecture.md)
-- [API Documentation](../api/overview.md)
-- [Contributing Guidelines](../development/contributing.md) 
+Ready to get started? Begin with our [Prerequisites Guide](prerequisites.md) to prepare your development environment.

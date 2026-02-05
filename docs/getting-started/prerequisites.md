@@ -1,167 +1,344 @@
 # Prerequisites
 
-Before setting up OpenFrame, ensure your system meets the following requirements:
+Before setting up OpenFrame, ensure your development environment meets these requirements.
 
 ## System Requirements
 
-### Minimum Hardware
-- **CPU**: 4 cores (2.4 GHz or higher)
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **Storage**: 50 GB available disk space
-- **Network**: Stable internet connection for downloading dependencies
+### Hardware Requirements
 
-### Recommended Hardware (Production)
-- **CPU**: 8+ cores (3.0 GHz or higher)
-- **RAM**: 32 GB or more
-- **Storage**: 200 GB+ SSD storage
-- **Network**: High-bandwidth connection (1 Gbps+)
+| Component | Minimum | Recommended | Notes |
+|-----------|---------|-------------|-------|
+| **CPU** | 4 cores | 8+ cores | More cores improve compilation speed |
+| **RAM** | 8 GB | 16+ GB | Multiple services require significant memory |
+| **Storage** | 20 GB | 50+ GB | Includes dependencies, containers, and data |
+| **Network** | Stable internet | High bandwidth | For downloading dependencies |
 
-## Development Environment
+### Operating System Support
 
-### Required Software
+OpenFrame supports development on:
 
-#### Java Development
-- **OpenJDK 21.0.1+** - Required for Spring Boot services
-- **Maven 3.9.6+** - Build and dependency management
-- **IDE**: IntelliJ IDEA, Eclipse, or VSCode with Java extensions
+- **macOS** 12.0+ (Intel and Apple Silicon)
+- **Linux** (Ubuntu 20.04+, RHEL 8+, or equivalent)
+- **Windows** 10/11 with WSL2
 
-#### Frontend Development  
-- **Node.js 18+** with npm - Required for Vue.js frontend
-- **Modern Browser** - Chrome, Firefox, Safari, or Edge (latest versions)
+## Required Software
 
-#### Rust Development (for client agent)
-- **Rust 1.70+** with Cargo - Cross-platform agent development
-- **Platform-specific tools**:
-  - Windows: Visual Studio Build Tools or Visual Studio
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC and essential build tools
+### Core Development Tools
 
-#### Containerization
-- **Docker 24.0+** - Container runtime
-- **Docker Compose 2.23+** - Multi-container orchestration
+#### Java Development Kit (JDK)
 
-#### Version Control
-- **Git 2.42+** - Source code management
+```bash
+# Install Java 21 (required)
+# macOS with Homebrew
+brew install openjdk@21
 
-### Optional Tools
+# Ubuntu/Debian
+sudo apt update && sudo apt install openjdk-21-jdk
 
-#### Production Deployment
-- **Kubernetes 1.28+** - Container orchestration (for production)
-- **kubectl** - Kubernetes command-line tool
-- **Helm 3.0+** - Kubernetes package manager
+# Verify installation
+java --version
+# Expected: openjdk 21.0.x
+```
 
-#### Development Tools
-- **Postman** or **Insomnia** - API testing
-- **MongoDB Compass** - Database GUI (optional)
-- **Redis CLI** - Cache inspection (optional)
+#### Maven
 
-## Authentication Requirements
+```bash
+# macOS with Homebrew
+brew install maven
 
-### GitHub Access
-You'll need a **GitHub Personal Access Token (Classic)** with the following permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to GitHub packages
-- `write:packages` - Write access to GitHub packages
+# Ubuntu/Debian
+sudo apt install maven
 
-#### Creating a GitHub Token
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions listed above
-4. Set an appropriate expiration date
-5. Copy the generated token securely
+# Windows (download from Apache Maven)
+# https://maven.apache.org/download.cgi
 
-## Network Configuration
+# Verify installation
+mvn --version
+# Expected: Apache Maven 3.8+
+```
 
-### Required Ports
-Ensure the following ports are available:
+#### Node.js & npm
 
-#### Development Environment
-- `8080` - Main application UI
-- `8888` - Configuration server
-- `5432` - PostgreSQL (if using)
-- `27017` - MongoDB
-- `6379` - Redis
-- `9092` - Kafka
-- `8086` - InfluxDB (if using)
+```bash
+# Install Node.js 18+ (required for frontend)
+# macOS with Homebrew
+brew install node@20
 
-#### Production Environment
-- `80/443` - HTTP/HTTPS traffic
-- `6443` - Kubernetes API server
-- Additional ports based on your specific configuration
+# Ubuntu/Debian using NodeSource
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-### Firewall Considerations
-- Allow outbound connections to GitHub for package downloads
-- Allow inbound connections on the specified ports
-- Consider corporate firewall/proxy settings
+# Verify installation
+node --version  # Expected: v20.x.x
+npm --version   # Expected: 10.x.x
+```
+
+#### Rust Toolchain
+
+```bash
+# Install Rust (for client development)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source `$HOME/.cargo/env`
+
+# Verify installation
+rustc --version  # Expected: rustc 1.70+
+cargo --version  # Expected: cargo 1.70+
+```
+
+### Container & Infrastructure Tools
+
+#### Docker & Docker Compose
+
+```bash
+# macOS - Install Docker Desktop
+# Download from: https://www.docker.com/products/docker-desktop/
+
+# Ubuntu/Debian
+sudo apt update
+sudo apt install docker.io docker-compose
+sudo systemctl start docker
+sudo usermod -aG docker `$USER`
+
+# Verify installation
+docker --version         # Expected: Docker version 24.0+
+docker-compose --version # Expected: Docker Compose version 2.0+
+```
+
+#### Kubernetes Tools (Optional)
+
+```bash
+# kubectl for Kubernetes deployment
+# macOS
+brew install kubectl
+
+# Ubuntu/Debian
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Verify
+kubectl version --client
+```
+
+## Database Dependencies
+
+### MongoDB
+
+OpenFrame requires MongoDB 7.x for primary data storage:
+
+```bash
+# macOS with Homebrew
+brew tap mongodb/brew
+brew install mongodb-community@7.0
+brew services start mongodb-community
+
+# Ubuntu/Debian
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+sudo apt update && sudo apt install -y mongodb-org
+sudo systemctl start mongod
+
+# Verify connection
+mongosh --version  # Expected: 2.0.x
+```
+
+### Redis (Optional for Caching)
+
+```bash
+# macOS
+brew install redis
+brew services start redis
+
+# Ubuntu/Debian  
+sudo apt install redis-server
+sudo systemctl start redis
+
+# Verify
+redis-cli ping  # Expected: PONG
+```
+
+## Environment Variables
+
+Create a `.env` file in your project root with these essential variables:
+
+```bash
+# Database Configuration
+MONGODB_URI=mongodb://localhost:27017/openframe
+REDIS_URL=redis://localhost:6379
+
+# Authentication
+JWT_SECRET=your-super-secure-jwt-secret-here
+OAUTH2_CLIENT_ID=your-oauth-client-id
+OAUTH2_CLIENT_SECRET=your-oauth-client-secret
+
+# Kafka Configuration (for local development)
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+
+# Application Ports
+API_SERVICE_PORT=8080
+GATEWAY_SERVICE_PORT=8081
+FRONTEND_PORT=3000
+
+# Development Mode
+SPRING_PROFILES_ACTIVE=dev
+NODE_ENV=development
+```
+
+> **Security Note**: Never commit real secrets to version control. Use placeholder values for development.
+
+## Verification Checklist
+
+Run these commands to verify your environment setup:
+
+### ✅ Java Ecosystem
+
+```bash
+java --version    # Should show Java 21
+mvn --version     # Should show Maven 3.8+
+echo `$JAVA_HOME`  # Should point to Java 21 installation
+```
+
+### ✅ Frontend Ecosystem
+
+```bash
+node --version    # Should show Node 20.x
+npm --version     # Should show npm 10.x
+npx --version     # Should show npx 10.x
+```
+
+### ✅ Rust Ecosystem
+
+```bash
+rustc --version   # Should show rustc 1.70+
+cargo --version   # Should show cargo 1.70+
+```
+
+### ✅ Container Platform
+
+```bash
+docker --version         # Should show Docker 24.0+
+docker-compose --version # Should show Docker Compose 2.0+
+docker run hello-world   # Should complete successfully
+```
+
+### ✅ Database Connectivity
+
+```bash
+# Test MongoDB connection
+mongosh --eval "db.adminCommand('hello')"
+# Expected output: { "isWritablePrimary": true, ... }
+
+# Test Redis connection (if installed)
+redis-cli ping
+# Expected output: PONG
+```
+
+## IDE & Development Tools
+
+### Recommended IDEs
+
+| IDE | Best For | Installation |
+|-----|----------|-------------|
+| **IntelliJ IDEA** | Java/Spring development | [jetbrains.com/idea](https://www.jetbrains.com/idea/) |
+| **VS Code** | Frontend, Rust, general dev | [code.visualstudio.com](https://code.visualstudio.com/) |
+| **Eclipse** | Alternative Java IDE | [eclipse.org](https://www.eclipse.org/) |
+
+### Essential VS Code Extensions
+
+```bash
+# Install useful extensions
+code --install-extension ms-vscode.vscode-typescript-next
+code --install-extension bradlc.vscode-tailwindcss  
+code --install-extension rust-lang.rust-analyzer
+code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
+code --install-extension ms-vscode.vscode-docker
+```
 
 ## Platform-Specific Notes
 
-### Windows
-- Enable WSL2 for better Docker performance
-- Consider using Git Bash or PowerShell Core
-- Ensure Windows Defender exclusions for development directories
+### macOS Developers
 
-### macOS
-- Install Homebrew for easier package management
-- Ensure Xcode Command Line Tools are installed
-- Consider using Docker Desktop for Mac
+- Use Homebrew for package management
+- Install Xcode Command Line Tools: `xcode-select --install`
+- For Apple Silicon, ensure Docker Desktop uses Apple Silicon containers
 
-### Linux
+### Windows Developers
+
+- Enable WSL2 and install Ubuntu 22.04
+- Run all commands from within WSL2
+- Install Windows Terminal for better command line experience
+- Use Docker Desktop with WSL2 backend
+
+### Linux Developers
+
 - Ensure your user is in the `docker` group
-- Install development packages: `build-essential`, `curl`, `git`
-- Consider using your distribution's package manager for tool installation
+- Consider using SDKMAN for Java version management
+- Use your distribution's package manager for system dependencies
 
-## Verification Steps
+## Network & Access Requirements
 
-After installing the prerequisites, verify your setup:
+### Required Outbound Connectivity
+
+Your development environment needs access to:
+
+- **Maven Central**: For Java dependencies
+- **npm Registry**: For Node.js packages  
+- **Docker Hub**: For container images
+- **GitHub**: For source code and releases
+- **MongoDB Atlas** (optional): For cloud database
+
+### Firewall & Port Configuration
+
+Ensure these ports are available locally:
+
+| Port | Service | Purpose |
+|------|---------|---------|
+| 3000 | Frontend | Web UI development |
+| 8080 | API Service | GraphQL/REST APIs |
+| 8081 | Gateway | API Gateway |
+| 8082 | Auth Server | OAuth2/OIDC |
+| 27017 | MongoDB | Database |
+| 6379 | Redis | Cache (optional) |
+| 9092 | Kafka | Event streaming (optional) |
+
+## Troubleshooting Common Issues
+
+### Java Issues
 
 ```bash
-# Check Java version
-java -version
+# If JAVA_HOME not set correctly
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64  # Linux
+export JAVA_HOME=`/usr/libexec/java_home -v 21`       # macOS
 
-# Check Maven version
-mvn -version
+# If Maven can't find Java 21
+mvn -version  # Check Java version used by Maven
+```
 
-# Check Node.js and npm versions
-node --version
-npm --version
+### Node.js Issues
 
-# Check Rust version (if applicable)
-rustc --version
-cargo --version
+```bash
+# Clear npm cache if installation fails
+npm cache clean --force
 
-# Check Docker version
-docker --version
-docker-compose --version
+# Update npm to latest
+npm install -g npm@latest
 
-# Check Git version
-git --version
+# Check node installation path
+which node
+which npm
+```
+
+### Docker Issues
+
+```bash
+# Start Docker daemon if not running
+sudo systemctl start docker    # Linux
+# Or start Docker Desktop       # macOS/Windows
+
+# Fix permission issues (Linux)
+sudo usermod -aG docker `$USER`
+newgrp docker
 ```
 
 ## Next Steps
 
-Once all prerequisites are met, proceed to:
-1. [Quick Start Guide](quick-start.md) for a rapid setup
-2. [Introduction](introduction.md) for a detailed overview
-3. [Development Setup](../development/setup/environment.md) for development environment configuration
-
-## Troubleshooting
-
-### Common Issues
-
-#### Java Installation Issues
-- Ensure JAVA_HOME is properly set
-- Verify PATH includes Java binaries
-- Use `alternatives` (Linux) or `java_home` (macOS) for version management
-
-#### Docker Issues
-- Ensure Docker daemon is running
-- Check Docker Desktop settings on Windows/macOS
-- Verify user permissions on Linux
-
-#### Network Issues
-- Check corporate proxy settings
-- Verify firewall configuration
-- Test connectivity to GitHub and other required services
-
-If you encounter issues not covered here, see our [Troubleshooting Guide](../operations/troubleshooting/common-issues.md).
+Once all prerequisites are installed and verified, proceed to the [Quick Start Guide](quick-start.md) to get OpenFrame running locally.
