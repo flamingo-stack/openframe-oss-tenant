@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;delaine.fay@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtYTdiZWY0NmQtZDYzYi00NTgyLWE4OGEtNmU3ZDVhYTNiNWFhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4NWZiZDc2ZS0yNmEzLTRmODctYTE1My00ZDljMjM4Njc5NWMiLCJzdWIiOiJhcm1hbmRvLm11ZWxsZXJAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMTU5ODEsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzg1ZmJkNzZlLTI2YTMtNGY4Ny1hMTUzLTRkOWMyMzg2Nzk1YyIsImV4cCI6MTc3MDMxNjg4MSwiaWF0IjoxNzcwMzE1OTgxLCJ1c2VySWQiOiJmNGQ1OTUzYy1lZjAzLTQ3YjYtYjkxNy1mYTUxODU5MjliOTgiLCJqdGkiOiJhYjE2NTE2Zi02OTBjLTQ4ZmQtOTVhOC0yM2Y5OGQ1NmM4YWQifQ.ID2vlfgvcBe-2XeashMlrrLv0wirzAzhUJ2EfdJSN-VDb4MIg6n6UFSeuynrhzA9CvW9MGqlorVWTFbAXf9vCGs1W_EUDDhprBbda8LCodVWGpyaI4Ox0HhxkqVyGS4SgvfyA4GHOEjntWjAEGQDFtNaHtDcCEt9EsH7cufjHZLdm6XbiWIqPXqDke1CFYDrnIcA0gSkdi5xpEjo94bpcEIc4q1XWL3L8_gZVS5BgJYKkt90agcuPkG0svJmDHjPNVK7x0e_OYJHQCpnL5PDqFnF3wXaLaHc_29O4WhCGR9E95TCXfRKx9ab7KPTQGn6YsHBt22VAvz97x75Bt3w8A</div>
+        <div>refresh_token: JTCZBhYgRpwU9YrHygO-YcUKmbTJUyGOYbDuJWjNKtAwhZiDGVpThSqYrQbQqwh_gZkZpPPES4qyzcDQZx5qagwoPJifesf87GAAEkfgsK9QT3TyQdub_vB5K4Cexspo</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtYTdiZWY0NmQtZDYzYi00NTgyLWE4OGEtNmU3ZDVhYTNiNWFhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4NWZiZDc2ZS0yNmEzLTRmODctYTE1My00ZDljMjM4Njc5NWMiLCJzdWIiOiJhcm1hbmRvLm11ZWxsZXJAeWFob28uY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzAzMTU5ODEsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzg1ZmJkNzZlLTI2YTMtNGY4Ny1hMTUzLTRkOWMyMzg2Nzk1YyIsImV4cCI6MTc3MDMxNjg4MSwiaWF0IjoxNzcwMzE1OTgxLCJ1c2VySWQiOiJmNGQ1OTUzYy1lZjAzLTQ3YjYtYjkxNy1mYTUxODU5MjliOTgiLCJqdGkiOiJhYjE2NTE2Zi02OTBjLTQ4ZmQtOTVhOC0yM2Y5OGQ1NmM4YWQifQ.ID2vlfgvcBe-2XeashMlrrLv0wirzAzhUJ2EfdJSN-VDb4MIg6n6UFSeuynrhzA9CvW9MGqlorVWTFbAXf9vCGs1W_EUDDhprBbda8LCodVWGpyaI4Ox0HhxkqVyGS4SgvfyA4GHOEjntWjAEGQDFtNaHtDcCEt9EsH7cufjHZLdm6XbiWIqPXqDke1CFYDrnIcA0gSkdi5xpEjo94bpcEIc4q1XWL3L8_gZVS5BgJYKkt90agcuPkG0svJmDHjPNVK7x0e_OYJHQCpnL5PDqFnF3wXaLaHc_29O4WhCGR9E95TCXfRKx9ab7KPTQGn6YsHBt22VAvz97x75Bt3w8A&#39; -b &#39;refresh_token=JTCZBhYgRpwU9YrHygO-YcUKmbTJUyGOYbDuJWjNKtAwhZiDGVpThSqYrQbQqwh_gZkZpPPES4qyzcDQZx5qagwoPJifesf87GAAEkfgsK9QT3TyQdub_vB5K4Cexspo&#39; -d &#39;{
+    &quot;email&quot;: &quot;delaine.fay@hotmail.com&quot;
+}&#39;
+</div>
