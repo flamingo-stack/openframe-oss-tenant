@@ -131,7 +131,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       <Button
         variant="device-action"
         leftIcon={<RemoteControlIcon className="h-5 w-5" />}
-        href={`/devices/details/${deviceId}/remote-desktop`}
+        navigateUrl={`/devices/details/${deviceId}/remote-desktop`}
         showExternalLinkOnHover
         disabled={!actionAvailability?.remoteControlEnabled}
       >
@@ -198,7 +198,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       <Button
         variant="device-action"
         leftIcon={<Folder className="h-5 w-5" />}
-        href={`/devices/details/${deviceId}/file-manager`}
+        navigateUrl={`/devices/details/${deviceId}/file-manager`}
         showExternalLinkOnHover
         disabled={!actionAvailability?.manageFilesEnabled}
       >
