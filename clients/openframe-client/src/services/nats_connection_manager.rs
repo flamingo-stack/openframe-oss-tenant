@@ -76,7 +76,7 @@ impl NatsConnectionManager {
                     }
                 }
             )
-            .custom_header("x-machine-id", &machine_id);
+            .custom_header("X-MACHINE-ID", &machine_id);
 
         // Only add TLS config in development mode
         if self.initial_configuration_service.is_local_mode()? {
