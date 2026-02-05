@@ -247,9 +247,9 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const renderRowActions = useCallback((log: UILogEntry) => (
     <Button
       variant="outline"
-      href={getLogDetailsUrl(log)}
+      navigateUrl={getLogDetailsUrl(log)}
+      showExternalLinkOnHover
       openInNewTab={true}
-      rightIcon={<ExternalLink className="w-4 h-4" />}
       className="bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
     >
       Details
