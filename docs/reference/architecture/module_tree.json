@@ -1,0 +1,406 @@
+{
+    "chat_client_services": {
+        "path": "clients/openframe-chat/src/services",
+        "components": [
+            "DialogGraphQLService",
+            "SupportedModelsService",
+            "TokenService"
+        ],
+        "children": {}
+    },
+    "api_service_core": {
+        "path": "openframe-oss-lib/openframe-api-service-core/src/main/java/com/openframe/api",
+        "components": [
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.config.ApiApplicationConfig.ApiApplicationConfig",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.config.AuthenticationConfig.AuthenticationConfig",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.config.SecurityConfig.SecurityConfig",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.config.RestTemplateConfig.RestTemplateConfig",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.DeviceController.DeviceController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.OrganizationController.OrganizationController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.UserController.UserController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.MeController.MeController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.InvitationController.InvitationController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.ApiKeyController.ApiKeyController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.AgentRegistrationSecretController.AgentRegistrationSecretController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.SSOConfigController.SSOConfigController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.HealthController.HealthController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.DeviceDataFetcher.DeviceDataFetcher",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.EventDataFetcher.EventDataFetcher",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.LogDataFetcher.LogDataFetcher",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.OrganizationDataFetcher.OrganizationDataFetcher",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.ToolsDataFetcher.ToolsDataFetcher",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.service.SSOConfigService.SSOConfigService",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.service.user.UserService.UserService"
+        ],
+        "children": {
+            "api_service_core_rest": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.DeviceController.DeviceController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.OrganizationController.OrganizationController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.UserController.UserController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.MeController.MeController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.InvitationController.InvitationController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.ApiKeyController.ApiKeyController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.AgentRegistrationSecretController.AgentRegistrationSecretController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.SSOConfigController.SSOConfigController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.HealthController.HealthController"
+                ],
+                "children": {}
+            },
+            "api_service_core_graphql": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.DeviceDataFetcher.DeviceDataFetcher",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.EventDataFetcher.EventDataFetcher",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.LogDataFetcher.LogDataFetcher",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.OrganizationDataFetcher.OrganizationDataFetcher",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.datafetcher.ToolsDataFetcher.ToolsDataFetcher"
+                ],
+                "children": {}
+            },
+            "api_service_core_services": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.service.user.UserService.UserService",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.service.SSOConfigService.SSOConfigService"
+                ],
+                "children": {}
+            }
+        }
+    },
+    "authorization_service_core": {
+        "path": "openframe-oss-lib/openframe-authorization-service-core/src/main/java/com/openframe/authz",
+        "components": [
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.AuthorizationServerConfig.AuthorizationServerConfig",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.DynamicClientRegistrationRepository.DynamicClientRegistrationRepository",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.tenant.TenantContext.TenantContext",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.tenant.TenantContextFilter.TenantContextFilter",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.LoginController.LoginController",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.PasswordResetController.PasswordResetController",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.TenantDiscoveryController.TenantDiscoveryController",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.TenantRegistrationController.TenantRegistrationController",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.InvitationRegistrationController.InvitationRegistrationController",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.SsoDiscoveryController.SsoDiscoveryController",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.keys.TenantKeyService.TenantKeyService",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.repository.MongoRegisteredClientRepository.MongoRegisteredClientRepository",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.service.auth.MongoAuthorizationService.MongoAuthorizationService",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.security.AuthSuccessHandler.AuthSuccessHandler",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.util.ResetTokenUtil.ResetTokenUtil",
+            "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.util.OidcUserUtils.OidcUserUtils"
+        ],
+        "children": {
+            "authorization_config": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.AuthorizationServerConfig.AuthorizationServerConfig",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.DynamicClientRegistrationRepository.DynamicClientRegistrationRepository",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.keys.TenantKeyService.TenantKeyService"
+                ],
+                "children": {}
+            },
+            "tenant_context": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.tenant.TenantContext.TenantContext",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.config.tenant.TenantContextFilter.TenantContextFilter"
+                ],
+                "children": {}
+            },
+            "authorization_controllers": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.LoginController.LoginController",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.PasswordResetController.PasswordResetController",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.TenantDiscoveryController.TenantDiscoveryController",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.TenantRegistrationController.TenantRegistrationController",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.InvitationRegistrationController.InvitationRegistrationController",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.controller.SsoDiscoveryController.SsoDiscoveryController"
+                ],
+                "children": {}
+            },
+            "oauth_persistence": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.repository.MongoRegisteredClientRepository.MongoRegisteredClientRepository",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.service.auth.MongoAuthorizationService.MongoAuthorizationService"
+                ],
+                "children": {}
+            },
+            "security_utilities": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.security.AuthSuccessHandler.AuthSuccessHandler",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.util.ResetTokenUtil.ResetTokenUtil",
+                    "deps.openframe-oss-lib.openframe-authorization-service-core.src.main.java.com.openframe.authz.util.OidcUserUtils.OidcUserUtils"
+                ],
+                "children": {}
+            }
+        }
+    },
+    "gateway_service_core": {
+        "path": "openframe-oss-lib/openframe-gateway-service-core/src/main/java/com/openframe/gateway",
+        "components": [
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.config.WebClientConfig.WebClientConfig",
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.config.ws.WebSocketGatewayConfig.WebSocketGatewayConfig",
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.security.GatewaySecurityConfig.GatewaySecurityConfig",
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.security.JwtAuthConfig.JwtAuthConfig",
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.filter.ApiKeyAuthenticationFilter.ApiKeyAuthenticationFilter",
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.security.filter.AddAuthorizationHeaderFilter.AddAuthorizationHeaderFilter",
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.security.filter.OriginSanitizerFilter.OriginSanitizerFilter",
+            "deps.openframe-oss-lib.openframe-gateway-service-core.src.main.java.com.openframe.gateway.security.tenant.IssuerUrlProvider.IssuerUrlProvider",
+            "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.IntegrationController.IntegrationController"
+        ],
+        "children": {}
+    },
+    "data_mongo_core": {
+        "path": "openframe-oss-lib/openframe-data-mongo/src/main/java/com/openframe/data",
+        "components": [
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.config.MongoConfig.MongoConfig",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.config.MongoIndexConfig.MongoIndexConfig",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.device.Device.Device",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.organization.Organization.Organization",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.user.User.User",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.oauth.OAuthToken.OAuthToken",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.oauth.MongoRegisteredClient.MongoRegisteredClient",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.repository.tenant.TenantRepository.TenantRepository",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.repository.oauth.OAuthTokenRepository.OAuthTokenRepository",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.reactive.repository.user.ReactiveUserRepository.ReactiveUserRepository",
+            "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.reactive.repository.oauth.ReactiveOAuthClientRepository.ReactiveOAuthClientRepository"
+        ],
+        "children": {
+            "data_mongo_device": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.device.Device.Device"
+                ],
+                "children": {}
+            },
+            "data_mongo_organization": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.organization.Organization.Organization"
+                ],
+                "children": {}
+            },
+            "data_mongo_user": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.user.User.User"
+                ],
+                "children": {}
+            },
+            "data_mongo_oauth": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.oauth.OAuthToken.OAuthToken",
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.document.oauth.MongoRegisteredClient.MongoRegisteredClient"
+                ],
+                "children": {}
+            },
+            "data_mongo_repositories": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.repository.tenant.TenantRepository.TenantRepository",
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.repository.oauth.OAuthTokenRepository.OAuthTokenRepository",
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.reactive.repository.user.ReactiveUserRepository.ReactiveUserRepository",
+                    "deps.openframe-oss-lib.openframe-data-mongo.src.main.java.com.openframe.data.reactive.repository.oauth.ReactiveOAuthClientRepository.ReactiveOAuthClientRepository"
+                ],
+                "children": {}
+            }
+        }
+    },
+    "kafka_integration_core": {
+        "path": "openframe-oss-lib/openframe-data-kafka/src/main/java/com/openframe/kafka",
+        "components": [
+            "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.OssKafkaConfig.OssKafkaConfig",
+            "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.KafkaTopicProperties.KafkaTopicProperties",
+            "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.OssTenantKafkaAutoConfiguration.OssTenantKafkaAutoConfiguration",
+            "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.OssTenantKafkaProperties.OssTenantKafkaProperties",
+            "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.producer.retry.KafkaRecoveryHandlerImpl.KafkaRecoveryHandlerImpl"
+        ],
+        "children": {
+            "kafka_configuration": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.OssKafkaConfig.OssKafkaConfig",
+                    "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.KafkaTopicProperties.KafkaTopicProperties",
+                    "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.OssTenantKafkaAutoConfiguration.OssTenantKafkaAutoConfiguration",
+                    "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.config.OssTenantKafkaProperties.OssTenantKafkaProperties"
+                ],
+                "children": {}
+            },
+            "kafka_producer_recovery": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-data-kafka.src.main.java.com.openframe.kafka.producer.retry.KafkaRecoveryHandlerImpl.KafkaRecoveryHandlerImpl"
+                ],
+                "children": {}
+            }
+        }
+    },
+    "stream_processing_core": {
+        "path": "openframe-oss-lib/openframe-stream-service-core/src/main/java/com/openframe/stream",
+        "components": [
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.config.KafkaConfig.KafkaConfig",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.config.KafkaStreamsConfig.KafkaStreamsConfig",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.listener.JsonKafkaListener.JsonKafkaListener",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.DebeziumMessageHandler.DebeziumMessageHandler",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.GenericMessageHandler.GenericMessageHandler",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.DebeziumKafkaMessageHandler.DebeziumKafkaMessageHandler",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.DebeziumCassandraMessageHandler.DebeziumCassandraMessageHandler",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.mapping.EventTypeMapper.EventTypeMapper",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.mapping.SourceEventTypes.SourceEventTypes",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.service.ActivityEnrichmentService.ActivityEnrichmentService",
+            "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.service.IntegratedToolDataEnrichmentService.IntegratedToolDataEnrichmentService"
+        ],
+        "children": {
+            "stream_config": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.config.KafkaConfig.KafkaConfig",
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.config.KafkaStreamsConfig.KafkaStreamsConfig"
+                ],
+                "children": {}
+            },
+            "kafka_listeners": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.listener.JsonKafkaListener.JsonKafkaListener"
+                ],
+                "children": {}
+            },
+            "message_handlers": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.GenericMessageHandler.GenericMessageHandler",
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.DebeziumMessageHandler.DebeziumMessageHandler",
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.DebeziumKafkaMessageHandler.DebeziumKafkaMessageHandler",
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.handler.DebeziumCassandraMessageHandler.DebeziumCassandraMessageHandler"
+                ],
+                "children": {}
+            },
+            "event_mapping": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.mapping.EventTypeMapper.EventTypeMapper",
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.mapping.SourceEventTypes.SourceEventTypes"
+                ],
+                "children": {}
+            },
+            "enrichment_services": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.service.ActivityEnrichmentService.ActivityEnrichmentService",
+                    "deps.openframe-oss-lib.openframe-stream-service-core.src.main.java.com.openframe.stream.service.IntegratedToolDataEnrichmentService.IntegratedToolDataEnrichmentService"
+                ],
+                "children": {}
+            }
+        }
+    },
+    "external_api_service_core": {
+        "path": "openframe-oss-lib/openframe-external-api-service-core/src/main/java/com/openframe/external",
+        "components": [
+            "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.config.OpenApiConfig.OpenApiConfig",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.DeviceController.DeviceController",
+            "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.EventController.EventController",
+            "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.LogController.LogController",
+            "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.OrganizationController.OrganizationController",
+            "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.ToolController.ToolController",
+            "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.IntegrationController.IntegrationController",
+            "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.service.RestProxyService.RestProxyService"
+        ],
+        "children": {
+            "external_api_controllers": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.EventController.EventController",
+                    "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.LogController.LogController",
+                    "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.ToolController.ToolController",
+                    "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.controller.IntegrationController.IntegrationController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.DeviceController.DeviceController",
+                    "deps.openframe-oss-lib.openframe-api-service-core.src.main.java.com.openframe.api.controller.OrganizationController.OrganizationController"
+                ],
+                "children": {}
+            },
+            "rest_proxy_service": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-external-api-service-core.src.main.java.com.openframe.external.service.RestProxyService.RestProxyService"
+                ],
+                "children": {}
+            }
+        }
+    },
+    "security_core": {
+        "path": "openframe-oss-lib/openframe-security-core/src/main/java/com/openframe/security",
+        "components": [
+            "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.config.JwtSecurityConfig.JwtSecurityConfig",
+            "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.jwt.JwtConfig.JwtConfig",
+            "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.oauth.SecurityConstants.SecurityConstants",
+            "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.pkce.PKCEUtils.PKCEUtils"
+        ],
+        "children": {
+            "security_jwt": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.config.JwtSecurityConfig.JwtSecurityConfig",
+                    "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.jwt.JwtConfig.JwtConfig"
+                ],
+                "children": {}
+            },
+            "security_constants": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.oauth.SecurityConstants.SecurityConstants"
+                ],
+                "children": {}
+            },
+            "security_pkce": {
+                "components": [
+                    "deps.openframe-oss-lib.openframe-security-core.src.main.java.com.openframe.security.pkce.PKCEUtils.PKCEUtils"
+                ],
+                "children": {}
+            }
+        }
+    },
+    "service_applications": {
+        "path": "openframe/services",
+        "components": [
+            "openframe-oss-tenant.openframe.services.openframe-api.src.main.java.com.openframe.api.ApiApplication.ApiApplication",
+            "openframe-oss-tenant.openframe.services.openframe-authorization-server.src.main.java.com.openframe.authz.OpenFrameAuthorizationServerApplication.OpenFrameAuthorizationServerApplication",
+            "openframe-oss-tenant.openframe.services.openframe-gateway.src.main.java.com.openframe.gateway.GatewayApplication.GatewayApplication",
+            "openframe-oss-tenant.openframe.services.openframe-stream.src.main.java.com.openframe.stream.StreamApplication.StreamApplication",
+            "openframe-oss-tenant.openframe.services.openframe-external-api.src.main.java.com.openframe.external.ExternalApiApplication.ExternalApiApplication",
+            "openframe-oss-tenant.openframe.services.openframe-management.src.main.java.com.openframe.management.ManagementApplication.ManagementApplication",
+            "openframe-oss-tenant.openframe.services.openframe-client.src.main.java.com.openframe.client.ClientApplication.ClientApplication",
+            "openframe-oss-tenant.openframe.services.openframe-config.src.main.java.com.openframe.config.ConfigServerApplication.ConfigServerApplication"
+        ],
+        "children": {
+            "api_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-api.src.main.java.com.openframe.api.ApiApplication.ApiApplication"
+                ],
+                "children": {}
+            },
+            "authorization_server_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-authorization-server.src.main.java.com.openframe.authz.OpenFrameAuthorizationServerApplication.OpenFrameAuthorizationServerApplication"
+                ],
+                "children": {}
+            },
+            "gateway_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-gateway.src.main.java.com.openframe.gateway.GatewayApplication.GatewayApplication"
+                ],
+                "children": {}
+            },
+            "stream_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-stream.src.main.java.com.openframe.stream.StreamApplication.StreamApplication"
+                ],
+                "children": {}
+            },
+            "external_api_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-external-api.src.main.java.com.openframe.external.ExternalApiApplication.ExternalApiApplication"
+                ],
+                "children": {}
+            },
+            "management_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-management.src.main.java.com.openframe.management.ManagementApplication.ManagementApplication"
+                ],
+                "children": {}
+            },
+            "client_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-client.src.main.java.com.openframe.client.ClientApplication.ClientApplication"
+                ],
+                "children": {}
+            },
+            "config_server_application": {
+                "components": [
+                    "openframe-oss-tenant.openframe.services.openframe-config.src.main.java.com.openframe.config.ConfigServerApplication.ConfigServerApplication"
+                ],
+                "children": {}
+            }
+        }
+    }
+}

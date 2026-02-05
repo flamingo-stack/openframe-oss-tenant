@@ -1,0 +1,36 @@
+{
+    "generation_info": {
+        "timestamp": "2026-02-05T04:59:37.726966",
+        "main_model": "gpt-5.2-chat-latest",
+        "generator_version": "1.0.1",
+        "repo_path": "/home/runner/work/openframe-oss-tenant/openframe-oss-tenant",
+        "commit_id": null
+    },
+    "statistics": {
+        "total_components": 8048,
+        "leaf_nodes": 664,
+        "max_depth": 3
+    },
+    "files_generated": [
+        "overview.md",
+        "module_tree.json",
+        "first_module_tree.json",
+        "security_jwt.md",
+        "authorization_service_core.md",
+        "authorization_controllers.md",
+        "service_applications.md",
+        "kafka_integration_core.md",
+        "security_core.md",
+        "gateway_service_core.md",
+        "stream_application.md",
+        "client_application.md",
+        "data_mongo_core.md",
+        "security_constants.md",
+        "api_service_core.md",
+        "data_mongo_organization.md",
+        "data_mongo_device.md",
+        "stream_processing_core.md",
+        "data_mongo_repositories.md",
+        "external_api_service_core.md"
+    ]
+}
