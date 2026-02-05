@@ -1,133 +1,111 @@
 # Introduction to OpenFrame
 
-OpenFrame is a distributed platform that creates a unified layer for data, APIs, automation, and AI on top of carefully selected open-source projects. Built with Java Spring Boot and Vue.js, it simplifies IT and security operations through a single, cohesive platform.
+Welcome to **OpenFrame**, the unified platform that integrates multiple MSP tools into a single AI-driven interface, automating IT support operations across the stack.
 
 ## What is OpenFrame?
 
-OpenFrame is an enterprise-grade platform that combines powerful microservices architecture with modern web technologies to provide:
+OpenFrame is part of Flamingo's AI-powered MSP platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation. Built on a modern cloud-native architecture, OpenFrame provides:
 
-- Real-time data processing and analytics
-- Unified API access through GraphQL
-- Automated deployment and monitoring
-- AI-powered insights and anomaly detection
-- Enterprise-grade security controls
-- High-performance event streaming
+- **Unified Device Management** - Monitor and manage devices across your entire IT infrastructure
+- **AI-Powered Automation** - Intelligent agents (Mingo AI) that automate ticket triage and infrastructure fixes  
+- **Multi-Tenant Architecture** - Secure, scalable platform supporting multiple organizations
+- **Open-Source First** - Built on proven open-source technologies with vendor-neutral approach
+- **Real-Time Streaming** - Event-driven architecture using Apache Kafka for instant insights
+- **Comprehensive APIs** - Both REST and GraphQL APIs for seamless integrations
+
+[![OpenFrame Preview Webinar](https://img.youtube.com/vi/bINdW0CQbvY/maxresdefault.jpg)](https://www.youtube.com/watch?v=bINdW0CQbvY)
 
 ## Key Features
 
-### 1. Unified Dashboard
-- Modern Vue.js-based interface
-- Real-time data visualization
-- Customizable dashboards
-- Role-based access control
+### 🤖 Autonomous AI Agents
+OpenFrame v0.5.2 introduces autonomous AI agents that can actually fix your infrastructure, eliminating the 12+ hours MSPs waste weekly on ticket triage.
 
-### 2. Smart Automation
-- Automated deployment pipelines
-- Self-healing capabilities
-- Predictive maintenance
-- Workflow automation
+[![Autonomous AI Agents That Actually Fix Your Infrastructure | OpenFrame v0.5.2](https://img.youtube.com/vi/jEkFcS4AcQ4/maxresdefault.jpg)](https://www.youtube.com/watch?v=jEkFcS4AcQ4)
 
-### 3. AI-Powered Insights
-- Real-time anomaly detection
-- Predictive analytics
-- AI assistants ("copilots")
-- Automated decision making
-
-### 4. Enterprise Security
-- OAuth 2.0 authentication
-- Role-based access control
-- End-to-end encryption
-- Audit logging
-
-### 5. High Performance
-- Handles 100,000 events/second
-- Sub-500ms latency
-- Scalable microservices
-- Distributed architecture
-
-## Technology Stack
-
-### Backend
-- **Core Runtime**: Spring Boot 3.3.0, OpenJDK 21, Spring Cloud 2023.0.3
-- **API Layer**: Netflix DGS Framework 7.0.0 (GraphQL)
-- **Gateway**: Spring Cloud Gateway with WebFlux
-- **Security**: Spring Security with OAuth 2.0/OpenID Connect
-- **Data Storage**: MongoDB 7.x, Cassandra 4.x, Apache Pinot 1.2.0
-- **Event Streaming**: Apache Kafka 3.6.0
-- **Stream Processing**: OpenFrame Stream Service with Kafka integration
-- **Caching**: Redis
-- **System Agent**: Rust-based cross-platform agent with Tokio runtime
-
-### Frontend
-- **Framework**: Vue 3 with Composition API and TypeScript
-- **State Management**: Pinia
-- **Routing**: Vue Router 4
-- **UI Framework**: PrimeVue 3.45.0
-- **GraphQL Client**: Apollo Client
-- **Build Tool**: Vite 5.0.10
-
-### Infrastructure
-- **Container Orchestration**: Kubernetes
-- **Service Mesh**: Istio
-- **Monitoring**: Prometheus, Grafana
-- **Logging**: Loki
-- **CI/CD**: GitHub Actions
-
-## System Architecture
+### 🏗️ Modern Architecture
+Built with cutting-edge technologies for scalability and performance:
 
 ```mermaid
-graph TB
-    subgraph Frontend
-        UI[Vue.js UI]
-        Store[Vuex Store]
-        Router[Vue Router]
-    end
-
-    subgraph Backend
-        Gateway[Spring Cloud Gateway]
-        Auth[Spring Security]
-        API[Spring Boot API]
-        Stream[Spring Kafka]
-        Data[Spring Data]
-    end
-
-    subgraph Data Layer
-        MongoDB[(MongoDB)]
-        Cassandra[(Cassandra)]
-        Pinot[(Apache Pinot)]
-        Redis[(Redis)]
-    end
-
-    UI --> Gateway
-    Gateway --> Auth
-    Auth --> API
-    API --> Stream
-    API --> Data
-    Data --> MongoDB
-    Data --> Cassandra
-    Data --> Pinot
-    Stream --> Redis
+graph TD
+    A[Frontend - Vue 3 + TypeScript] --> B[API Gateway]
+    B --> C[OpenFrame API Service]
+    B --> D[Authorization Server]
+    B --> E[External API Service]
+    
+    C --> F[MongoDB]
+    C --> G[Apache Pinot]
+    C --> H[Redis Cache]
+    
+    I[Stream Service] --> J[Apache Kafka]
+    J --> K[Cassandra]
+    J --> G
+    
+    L[OpenFrame Client - Rust] --> B
+    M[Integrated Tools] --> I
 ```
 
-## Getting Started
+### 🔒 Enterprise Security
+- **Multi-tenant OAuth2/OpenID Connect** with per-tenant signing keys
+- **JWT-based authentication** with secure HTTP-only cookies
+- **API key management** for external integrations
+- **SSO support** for Google, Microsoft, and custom providers
 
-To get started with OpenFrame:
+### 📊 Comprehensive Monitoring
+- **Real-time device status** and health monitoring
+- **Centralized logging** with advanced filtering and search
+- **Event streaming** for instant notifications and alerts
+- **Performance analytics** with Apache Pinot
 
-1. Review the [Development Setup Guide](../development/setup.md)
-2. Follow the [Architecture Overview](../development/architecture.md)
-3. Explore the [API Documentation](../api/overview.md)
+### 🔧 Tool Integration
+Seamlessly integrate with popular MSP tools:
+- **Fleet MDM** for device management
+- **Tactical RMM** for remote monitoring
+- **MeshCentral** for remote access
+- **Custom integrations** via open APIs
 
-## Support
+## Target Audience
 
-For additional support and resources:
+OpenFrame is designed for:
 
-- Visit our [GitHub repository](https://github.com/flamingo-stack/openframe-oss-tenant)
-- Join our community discussions
-- Contact our support team
+- **Managed Service Providers (MSPs)** looking to modernize their tool stack
+- **IT Teams** who want unified device and infrastructure management
+- **System Administrators** needing automated monitoring and maintenance
+- **DevOps Engineers** seeking cloud-native, scalable solutions
+- **Developers** building integrations with MSP platforms
 
-## Next Steps
+## Architecture Overview
 
-- [Development Setup](../development/setup.md)
-- [Architecture Overview](../development/architecture.md)
-- [API Documentation](../api/overview.md)
-- [Contributing Guidelines](../development/contributing.md) 
+OpenFrame follows a distributed microservices architecture:
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Frontend** | Vue 3 + TypeScript | Modern web interface with real-time updates |
+| **API Gateway** | Spring Cloud Gateway | Unified ingress, JWT auth, WebSocket proxying |
+| **API Service** | Spring Boot + Netflix DGS | GraphQL/REST APIs, business logic |
+| **Authorization Server** | Spring Authorization Server | OAuth2/OIDC, tenant management |
+| **Stream Service** | Apache Kafka + Spring | Real-time event processing |
+| **Client Agent** | Rust | Cross-platform system agent |
+| **Data Layer** | MongoDB + Cassandra + Pinot | Multi-model data storage |
+
+## Getting Started Path
+
+To get started with OpenFrame, follow these guides in order:
+
+1. **[Prerequisites](prerequisites.md)** - System requirements and dependencies
+2. **[Quick Start](quick-start.md)** - 5-minute setup and first steps
+3. **[First Steps](first-steps.md)** - Essential configuration and exploration
+
+## Community and Support
+
+Join the OpenMSP community for support and collaboration:
+
+- **Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Website**: [OpenMSP.ai](https://www.openmsp.ai/)
+- **OpenFrame**: [openframe.ai](https://openframe.ai)
+- **Flamingo Platform**: [flamingo.run](https://flamingo.run)
+
+> **Note**: We manage all development coordination through our OpenMSP Slack community rather than GitHub Issues or Discussions.
+
+## What's Next?
+
+Ready to dive in? Continue with the [Prerequisites Guide](prerequisites.md) to ensure your environment is ready for OpenFrame installation and deployment.
