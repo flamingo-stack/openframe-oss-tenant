@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;antonette.jones@hotmail.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtOWU2MzE4MGQtYWQ4NS00YWYzLTgwZmYtMGY5MmNmNTRlNmRiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjOTg1MjNmMC01MDZhLTQ3MTQtOGQwMy1jZGE3MmNkZDhlNTgiLCJzdWIiOiJzaW5hLmJvZ2lzaWNoQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwNDExMTM0LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9jOTg1MjNmMC01MDZhLTQ3MTQtOGQwMy1jZGE3MmNkZDhlNTgiLCJleHAiOjE3NzA0MTIwMzQsImlhdCI6MTc3MDQxMTEzNCwidXNlcklkIjoiNTUxMjI2NjMtNzNjYy00ZjFkLWJlYjctYmNmNWVlNTIwY2Q5IiwianRpIjoiNGYyZTU1NGYtNzI2Yi00OTk0LWFkMTktZTY3YzE0NGE0NDk0In0.hFKxB0hdFg3G53C4AqbVnv4DqusV8zhQxWtUux8YettULfoSd_eketeEu7eLsBwYSU9TQMLXbKohACCSSCHAj9dXNXv08UD30L5co70yahUE6quLwOBnw8IKX4B9TIB6yRD5F31xsOx6i3RqtcE_hCvWm85X5h8BQTzh5WjZHQn9P9xIeuxAv7XvMiSPRCTgr2D9nvNkj-6KmUU9vLTy67BRUgnmjJZjZVkMUaQpjPtbt-MHBzDwTYaPyPBNbp0az4g8i3QJmZfFBthwIEvQkZeMZa9RO1qQCS9EC66iyCPtXdel4ZVu-885fycXcQHlSMy66hU5z9LBWiYFWsce-g</div>
+        <div>refresh_token: 23sqL2GJn9OLfmPCNilHzQ8JVnj5U_UqN-F2MBkTDmiGojPQjePK61ztN8C-cXUDZWgGUB7AOfm7lfBRtfv3krFg2bKdC1xxz7UR9ieO8XJWLHgK--HUBFH_TRFITQfT</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtOWU2MzE4MGQtYWQ4NS00YWYzLTgwZmYtMGY5MmNmNTRlNmRiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJjOTg1MjNmMC01MDZhLTQ3MTQtOGQwMy1jZGE3MmNkZDhlNTgiLCJzdWIiOiJzaW5hLmJvZ2lzaWNoQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwNDExMTM0LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9jOTg1MjNmMC01MDZhLTQ3MTQtOGQwMy1jZGE3MmNkZDhlNTgiLCJleHAiOjE3NzA0MTIwMzQsImlhdCI6MTc3MDQxMTEzNCwidXNlcklkIjoiNTUxMjI2NjMtNzNjYy00ZjFkLWJlYjctYmNmNWVlNTIwY2Q5IiwianRpIjoiNGYyZTU1NGYtNzI2Yi00OTk0LWFkMTktZTY3YzE0NGE0NDk0In0.hFKxB0hdFg3G53C4AqbVnv4DqusV8zhQxWtUux8YettULfoSd_eketeEu7eLsBwYSU9TQMLXbKohACCSSCHAj9dXNXv08UD30L5co70yahUE6quLwOBnw8IKX4B9TIB6yRD5F31xsOx6i3RqtcE_hCvWm85X5h8BQTzh5WjZHQn9P9xIeuxAv7XvMiSPRCTgr2D9nvNkj-6KmUU9vLTy67BRUgnmjJZjZVkMUaQpjPtbt-MHBzDwTYaPyPBNbp0az4g8i3QJmZfFBthwIEvQkZeMZa9RO1qQCS9EC66iyCPtXdel4ZVu-885fycXcQHlSMy66hU5z9LBWiYFWsce-g&#39; -b &#39;refresh_token=23sqL2GJn9OLfmPCNilHzQ8JVnj5U_UqN-F2MBkTDmiGojPQjePK61ztN8C-cXUDZWgGUB7AOfm7lfBRtfv3krFg2bKdC1xxz7UR9ieO8XJWLHgK--HUBFH_TRFITQfT&#39; -d &#39;{
+    &quot;email&quot;: &quot;antonette.jones@hotmail.com&quot;
+}&#39;
+</div>
