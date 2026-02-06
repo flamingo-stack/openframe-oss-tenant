@@ -1,0 +1,99 @@
+<div>POST to http://localhost:8100/api/organizations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lucretia Wuckert&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(952) 404-5175&quot;,
+                &quot;email&quot;: &quot;roland.friesen@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;946 Kaye Gardens&quot;,
+            &quot;street2&quot;: &quot;Suite 849&quot;,
+            &quot;city&quot;: &quot;South Franciscoburgh&quot;,
+            &quot;state&quot;: &quot;West Virginia&quot;,
+            &quot;postalCode&quot;: &quot;69772&quot;,
+            &quot;country&quot;: &quot;Brazil&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        6
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        6
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtNzMwZjUyMDUtZjgzMy00YmM4LWI3YjgtNmI0NWJjZDU1ODFiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4MDE4MzRiNC05Zjg2LTRlMDktODZiOS1jMzEyYzhjMDNkNDIiLCJzdWIiOiJqYWUua3V0Y2hAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDQxMjQ2OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvODAxODM0YjQtOWY4Ni00ZTA5LTg2YjktYzMxMmM4YzAzZDQyIiwiZXhwIjoxNzcwNDEzMzY5LCJpYXQiOjE3NzA0MTI0NjksInVzZXJJZCI6IjBkMjgyNjU5LTFkNzEtNDk5MS1hZjFmLWE4MDQ0ZDU5OTQ3YiIsImp0aSI6ImI3NTA2MTljLTYzOWMtNGUzMy1iZGNhLWQ4YmVmZGJjNjIyNiJ9.ExvPXEXjLKNiY84mNPUIDt4pCgrlF4F8WdNHYGd8ULm_tQxV3vYFIMx2TH9KrpPuMQZBXnlchxl6TVD6cpGXWr6Ey9RWL-pLRmAqehJoDnDKZXe_22de81UTetlbhlF4NkMQPva_JvMmzVq98dEgCeMexbNDajNHQWujQ6b-b4q7ZYpN0rSzznz3rbcHYAqM4csFhXnk_co4IaZT11nG6cX6sMQHBvVVTTVBg_dCFFYV02oNITx8wX9wkAALDVXNvOiEKpvKfqmUYchZIefhvkXguxdtYZeoRnSU25vxiZkIgROsiKrQl_oRj8Fd5F_kslIMNt8Bt8RxjOSm8krifA</div>
+        <div>refresh_token: 3a9aOV-G_N-s7wOWB4ceZGNzHVRJyfXUug65z3Eva85yNcZPsk4xMaT2T4j0cP6eY2fKY00vBgb0_kD-lPP2CbmjF4NdhHi7sFga421GcQmzVT7xXU_XX5D-jnz3nHQI</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/organizations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtNzMwZjUyMDUtZjgzMy00YmM4LWI3YjgtNmI0NWJjZDU1ODFiIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4MDE4MzRiNC05Zjg2LTRlMDktODZiOS1jMzEyYzhjMDNkNDIiLCJzdWIiOiJqYWUua3V0Y2hAaG90bWFpbC5jb20iLCJhdWQiOiJvcGVuZnJhbWUtZ2F0ZXdheSIsIm5iZiI6MTc3MDQxMjQ2OSwicm9sZXMiOlsiT1dORVIiLCJBRE1JTiJdLCJpc3MiOiJodHRwOi8vb3BlbmZyYW1lLWF1dGhvcml6YXRpb24tc2VydmVyLm1pY3Jvc2VydmljZXMuc3ZjLmNsdXN0ZXIubG9jYWw6OTAwNS9zYXMvODAxODM0YjQtOWY4Ni00ZTA5LTg2YjktYzMxMmM4YzAzZDQyIiwiZXhwIjoxNzcwNDEzMzY5LCJpYXQiOjE3NzA0MTI0NjksInVzZXJJZCI6IjBkMjgyNjU5LTFkNzEtNDk5MS1hZjFmLWE4MDQ0ZDU5OTQ3YiIsImp0aSI6ImI3NTA2MTljLTYzOWMtNGUzMy1iZGNhLWQ4YmVmZGJjNjIyNiJ9.ExvPXEXjLKNiY84mNPUIDt4pCgrlF4F8WdNHYGd8ULm_tQxV3vYFIMx2TH9KrpPuMQZBXnlchxl6TVD6cpGXWr6Ey9RWL-pLRmAqehJoDnDKZXe_22de81UTetlbhlF4NkMQPva_JvMmzVq98dEgCeMexbNDajNHQWujQ6b-b4q7ZYpN0rSzznz3rbcHYAqM4csFhXnk_co4IaZT11nG6cX6sMQHBvVVTTVBg_dCFFYV02oNITx8wX9wkAALDVXNvOiEKpvKfqmUYchZIefhvkXguxdtYZeoRnSU25vxiZkIgROsiKrQl_oRj8Fd5F_kslIMNt8Bt8RxjOSm8krifA&#39; -b &#39;refresh_token=3a9aOV-G_N-s7wOWB4ceZGNzHVRJyfXUug65z3Eva85yNcZPsk4xMaT2T4j0cP6eY2fKY00vBgb0_kD-lPP2CbmjF4NdhHi7sFga421GcQmzVT7xXU_XX5D-jnz3nHQI&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Inc&quot;,
+    &quot;category&quot;: &quot;Software Development&quot;,
+    &quot;numberOfEmployees&quot;: 25,
+    &quot;websiteUrl&quot;: &quot;https://techsolutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lucretia Wuckert&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(952) 404-5175&quot;,
+                &quot;email&quot;: &quot;roland.friesen@yahoo.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;946 Kaye Gardens&quot;,
+            &quot;street2&quot;: &quot;Suite 849&quot;,
+            &quot;city&quot;: &quot;South Franciscoburgh&quot;,
+            &quot;state&quot;: &quot;West Virginia&quot;,
+            &quot;postalCode&quot;: &quot;69772&quot;,
+            &quot;country&quot;: &quot;Brazil&quot;
+        },
+        &quot;mailingAddress&quot;: null,
+        &quot;mailingAddressSameAsPhysical&quot;: true
+    },
+    &quot;monthlyRevenue&quot;: &quot;50000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        2,
+        6
+    ],
+    &quot;contractEndDate&quot;: [
+        2027,
+        2,
+        6
+    ]
+}&#39;
+</div>

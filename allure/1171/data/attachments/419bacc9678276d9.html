@@ -1,0 +1,32 @@
+<div>POST to http://localhost:8100/sas/invitations/accept</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;invitationId&quot;: &quot;6af5ee0c-b7d7-497d-ba00-aa547ed197d6&quot;,
+    &quot;firstName&quot;: &quot;Zana&quot;,
+    &quot;lastName&quot;: &quot;Kuphal&quot;,
+    &quot;password&quot;: &quot;Password123!&quot;,
+    &quot;switchTenant&quot;: false
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/sas/invitations/accept&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -d &#39;{
+    &quot;invitationId&quot;: &quot;6af5ee0c-b7d7-497d-ba00-aa547ed197d6&quot;,
+    &quot;firstName&quot;: &quot;Zana&quot;,
+    &quot;lastName&quot;: &quot;Kuphal&quot;,
+    &quot;password&quot;: &quot;Password123!&quot;,
+    &quot;switchTenant&quot;: false
+}&#39;
+</div>
