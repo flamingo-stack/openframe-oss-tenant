@@ -1,0 +1,8 @@
+flowchart TD
+    ExternalClient["External Clients & Agents"] --> Gateway["Gateway Service"]
+
+    Gateway --> ApiService["API Service"]
+    Gateway --> AuthzService["Authorization Service"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> ManagementService["Management Service"]
+    Gateway --> StreamService["Stream Service"]

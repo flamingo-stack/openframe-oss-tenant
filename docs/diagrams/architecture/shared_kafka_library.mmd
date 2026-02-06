@@ -1,0 +1,16 @@
+flowchart TD
+    Producers["Producers<br/>API / Client / Management"] -->|"publish messages"| KafkaCluster["OSS Tenant Kafka Cluster"]
+    KafkaCluster -->|"consume events"| StreamService["Stream Service"]
+
+    subgraph shared_kafka_library["Shared Kafka Library"]
+        KafkaConfig["Kafka Configuration"]
+        TopicConfig["Topic Properties & Auto-Creation"]
+        Models["Message Models"]
+        Recovery["Producer Recovery Handler"]
+    end
+
+    KafkaConfig --> Producers
+    TopicConfig --> KafkaCluster
+    Models --> Producers
+    Models --> StreamService
+    Recovery --> Producers

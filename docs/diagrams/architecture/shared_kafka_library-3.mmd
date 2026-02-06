@@ -1,0 +1,4 @@
+flowchart LR
+    Properties["KafkaTopicProperties"] --> Builder["TopicBuilder"]
+    Builder --> NewTopic["NewTopic"]
+    NewTopic --> KafkaAdmin["Kafka Admin API"]

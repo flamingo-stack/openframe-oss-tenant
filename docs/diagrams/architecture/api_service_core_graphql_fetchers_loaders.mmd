@@ -1,0 +1,22 @@
+flowchart TD
+    Client["GraphQL Client"] --> API["GraphQL API (DGS)"]
+
+    subgraph graphql_layer["GraphQL Layer"]
+        DF["DataFetchers"]
+        DL["DataLoaders"]
+    end
+
+    subgraph domain_layer["Domain Services"]
+        DeviceSvc["Device Service"]
+        EventSvc["Event Service"]
+        LogSvc["Log Service"]
+        OrgSvc["Organization Service"]
+        ToolSvc["Tool Service"]
+    end
+
+    API --> DF
+    DF --> DomainSvc["Domain Services"]
+    DomainSvc --> DB[("MongoDB / Data Stores")]
+
+    DF --> DL
+    DL --> DomainSvc

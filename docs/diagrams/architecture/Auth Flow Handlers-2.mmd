@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Browser
+    participant AuthServer
+    participant SuccessHandler
+    participant FlowHandler
+    participant DomainService
+
+    Browser->>AuthServer: OAuth2 / OIDC Callback
+    AuthServer->>SuccessHandler: onAuthenticationSuccess()
+    SuccessHandler->>SuccessHandler: Update lastLogin
+    SuccessHandler->>SuccessHandler: Maybe mark email verified
+    SuccessHandler->>FlowHandler: Delegate SSO flow
+    FlowHandler->>DomainService: Register user or tenant
+    DomainService-->>FlowHandler: Registration result
+    FlowHandler-->>Browser: Redirect to target tenant

@@ -1,0 +1,4 @@
+flowchart TD
+    MongoChange["Mongo Change Event"] --> Message["MachinePinotMessage"]
+    Message --> Kafka["Kafka Topic"]
+    Kafka --> Pinot["Pinot / Analytics"]

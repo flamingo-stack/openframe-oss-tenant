@@ -1,0 +1,4 @@
+flowchart LR
+    Timer["Scheduled Trigger"] --> Lock["ShedLock"]
+    Lock --> Check["Check Connector Health"]
+    Check --> Restart["Restart Failed Tasks"]

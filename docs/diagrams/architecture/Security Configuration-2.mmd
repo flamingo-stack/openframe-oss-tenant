@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant User
+    participant LoginPage
+    participant IdP["OIDC Provider"]
+    participant AuthzService["Authorization Service"]
+
+    User->>LoginPage: Open /login
+    LoginPage->>AuthzService: Start OAuth2 Login
+    AuthzService->>IdP: Authorization Request
+    IdP->>AuthzService: Authorization Code
+    AuthzService->>IdP: Token Request
+    IdP->>AuthzService: ID Token + Access Token
+    AuthzService->>AuthzService: Validate & Load User
+    AuthzService->>User: Login Success

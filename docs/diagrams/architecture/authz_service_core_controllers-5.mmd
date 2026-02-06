@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Browser
+    participant Controller as "InvitationRegistrationController"
+    participant SSO as "SsoInvitationService"
+
+    Browser->>Controller: GET /invitations/accept/sso
+    Controller->>SSO: startAccept(invitation)
+    SSO->>Controller: SsoAuthorizeData
+    Controller->>Browser: Set-Cookie + Redirect

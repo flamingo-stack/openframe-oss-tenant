@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer
+
+    Client->>Client: Generate state
+    Client->>Client: Generate code verifier
+    Client->>Client: Generate code challenge
+    Client->>AuthServer: Authorize request with challenge
+    AuthServer->>Client: Authorization code
+    Client->>AuthServer: Token request with verifier

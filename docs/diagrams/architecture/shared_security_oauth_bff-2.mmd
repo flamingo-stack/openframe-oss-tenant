@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "OAuth BFF"
+    participant Authz as "Authorization Server"
+
+    Browser->>BFF: GET /oauth/login?tenantId
+    BFF->>Authz: Redirect to /authorize (PKCE + state)
+    Authz->>Browser: Redirect with code + state
+    Browser->>BFF: GET /oauth/callback
+    BFF->>Authz: Exchange code for tokens
+    BFF->>Browser: Set auth cookies + redirect

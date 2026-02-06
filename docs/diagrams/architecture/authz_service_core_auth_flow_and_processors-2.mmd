@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant Authz as "Authorization Server"
+    participant Handler as "AuthSuccessHandler"
+    participant UserSvc as "User Service"
+    participant SSO as "SSO Flow Handler"
+
+    Browser->>Authz: OAuth2 / OIDC Login Callback
+    Authz->>Handler: onAuthenticationSuccess()
+    Handler->>UserSvc: Update lastLogin
+    Handler->>UserSvc: Mark email verified (if trusted IdP)
+    Handler->>SSO: Delegate SSO-specific flow
+    SSO->>Browser: Redirect to target tenant or app

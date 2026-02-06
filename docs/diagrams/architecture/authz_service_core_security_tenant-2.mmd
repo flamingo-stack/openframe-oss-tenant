@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant Filter as "TenantContextFilter"
+    participant Authz as "Authorization Server"
+    participant Keys as "TenantKeyService"
+
+    Browser->>Filter: Request /{tenant}/oauth2/authorize
+    Filter->>Filter: Resolve tenantId
+    Filter->>Authz: Proceed with tenant context
+    Authz->>Keys: Get or create RSA key for tenant
+    Keys->>Authz: RSA key pair
+    Authz->>Browser: Issue JWT (tenant-scoped claims)

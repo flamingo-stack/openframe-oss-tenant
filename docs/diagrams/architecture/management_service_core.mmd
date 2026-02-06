@@ -1,0 +1,12 @@
+flowchart TD
+    App["Management Service App"] --> Core["Management Service Core"]
+
+    Core --> Config["Configuration & Bootstrapping"]
+    Core --> Controllers["REST Controllers"]
+    Core --> Initializers["Startup Initializers"]
+    Core --> Schedulers["Distributed Schedulers"]
+    Core --> Hooks["Extension Hooks"]
+
+    Controllers --> DataLayer["Mongo & External Services"]
+    Initializers --> External["Debezium / NATS / Pinot / Tactical RMM"]
+    Schedulers --> Infra["Redis / Mongo / Debezium"]

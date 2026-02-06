@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Admin Request"] --> Controller["IntegratedToolController"]
+    Controller --> Service["Tool Management Logic"]
+    Service --> Repo["Integrated Tool Repository"]
+    Service --> Hook["Post Save Hooks"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Application Boot"] --> Props["Load Configuration Properties"]
+    Props --> Normalize["Normalize Keyspace Name"]
+    Normalize --> Ensure["Ensure Keyspace Exists"]
+    Ensure --> Session["Create CqlSession"]
+    Session --> Repos["Enable Cassandra Repositories"]

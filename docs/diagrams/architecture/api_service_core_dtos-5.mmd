@@ -1,0 +1,4 @@
+flowchart LR
+    Operator["Operator Action"] --> Request["Force Update Request"]
+    Request --> Processor["Domain Processor"]
+    Processor --> Response["ForceToolAgentUpdateResponse"]

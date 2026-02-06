@@ -1,0 +1,12 @@
+flowchart TD
+    Admin["Platform Operator"] --> API["Management REST Controllers"]
+    API --> Services["Management Domain Services"]
+    Services --> Init["Initializers"]
+    Services --> Schedulers["Schedulers"]
+    Init --> External["External Systems"]
+    Schedulers --> External
+    Services --> Data["MongoDB Repositories"]
+
+    External --> Kafka["Kafka / Debezium"]
+    External --> Nats["NATS Streams"]
+    External --> Pinot["Apache Pinot"]

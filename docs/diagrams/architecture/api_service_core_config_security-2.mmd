@@ -1,0 +1,11 @@
+flowchart TD
+    Startup["Application Startup"] --> Init["Data Initializer"]
+    Init --> OAuthStore["OAuth Client Repository"]
+
+    Request["Incoming Request"] --> GatewayAuth["Gateway Auth & JWT Validation"]
+    GatewayAuth --> ApiService["API Service"]
+
+    ApiService --> SecurityChain["Security Filter Chain"]
+    SecurityChain --> Principal["Auth Principal Resolver"]
+    Principal --> Controllers
+    Principal --> GraphQL

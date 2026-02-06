@@ -1,0 +1,4 @@
+flowchart TD
+    ProduceFail["Producer Failure"] --> RetryExhausted["Retries Exhausted"]
+    RetryExhausted --> Recovery["KafkaRecoveryHandlerImpl"]
+    Recovery --> Logs["Structured Error Logs"]

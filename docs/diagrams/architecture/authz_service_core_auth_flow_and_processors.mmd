@@ -1,0 +1,17 @@
+flowchart TD
+    User["User / Browser"] --> IdP["External IdP<br/>Google or Microsoft"]
+    IdP --> AuthzServer["Authorization Server"]
+
+    AuthzServer --> AuthSuccess["AuthSuccessHandler"]
+    AuthSuccess --> UserService["User Service"]
+
+    AuthSuccess --> SSOFlow["SSO Flow Handlers"]
+    SSOFlow --> InviteFlow["Invite SSO Handler"]
+    SSOFlow --> TenantRegFlow["Tenant Registration SSO Handler"]
+
+    AuthzServer --> ClientReg["OIDC Client Registration Strategies"]
+    ClientReg --> GoogleStrat["Google Strategy"]
+    ClientReg --> MicrosoftStrat["Microsoft Strategy"]
+
+    AuthzServer --> Processors["Registration & User Processors"]
+    Processors --> Defaults["Default No-Op Implementations"]

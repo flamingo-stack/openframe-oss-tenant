@@ -1,0 +1,10 @@
+flowchart LR
+    Client["Client UI"] --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service"]
+    ApiService --> GraphQL["GraphQL Layer"]
+
+    GraphQL --> DataFetchers["GraphQL DataFetchers"]
+    DataFetchers --> DataLoaders["GraphQL DataLoaders"]
+
+    DataLoaders --> SharedLib["api_lib_dtos_and_services"]
+    SharedLib --> DataCore["Shared Data Repositories"]

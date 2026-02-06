@@ -1,0 +1,4 @@
+flowchart LR
+    Scheduler["Scheduled Job"] --> Lock["ShedLock"]
+    Lock --> Task["Sync or Health Check"]
+    Task --> External["External System"]

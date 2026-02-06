@@ -1,0 +1,9 @@
+flowchart LR
+    User["User"] --> AuthUser["AuthUser"]
+    User --> OAuthToken["OAuthToken"]
+    Organization["Organization"] --> User
+    Organization --> Device["Device"]
+    Organization --> Tag["Tag"]
+    IntegratedToolAgent["IntegratedToolAgent"] --> ToolAgentAsset["ToolAgentAsset"]
+    Organization --> IntegratedToolAgent
+    CoreEvent["CoreEvent"] --> User

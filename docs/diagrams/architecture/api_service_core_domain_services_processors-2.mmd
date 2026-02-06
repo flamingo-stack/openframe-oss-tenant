@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service as "Domain Service"
+    participant Repo as "Repository"
+    participant Processor
+
+    Client->>Controller: HTTP or GraphQL Request
+    Controller->>Service: Invoke domain method
+    Service->>Repo: Query or persist data
+    Repo->>Service: Return entity
+    Service->>Processor: Post-process event
+    Service->>Controller: Return DTO
+    Controller->>Client: Response

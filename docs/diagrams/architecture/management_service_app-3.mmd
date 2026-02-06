@@ -1,0 +1,6 @@
+flowchart TD
+    Startup["Application Startup"] --> Initializers["Initializers"]
+    Initializers --> Mongo["MongoDB"]
+    Initializers --> Kafka["Kafka / Debezium"]
+    Initializers --> Nats["NATS"]
+    Initializers --> Tools["Integrated Tools"]

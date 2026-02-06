@@ -1,0 +1,12 @@
+flowchart TD
+    App["Application Startup"] --> Config["Shared Data Platform Config"]
+
+    Config --> Cassandra["Cassandra Configuration"]
+    Config --> Pinot["Pinot Configuration"]
+    Config --> ToolSdk["Tool SDK Configuration"]
+    Config --> Logger["Configuration Logger"]
+
+    Cassandra --> KeyspaceNorm["Keyspace Normalizer"]
+    Cassandra --> Session["Cassandra Session"]
+    Pinot --> BrokerConn["Broker Connection"]
+    Pinot --> ControllerConn["Controller Connection"]

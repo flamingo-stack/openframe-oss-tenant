@@ -1,0 +1,14 @@
+flowchart TD
+    Services["OpenFrame Services"] --> Repos["Mongo Repositories"]
+    Repos --> Docs["Mongo Documents"]
+    Docs --> DB[("MongoDB")]
+
+    subgraph shared_data_mongo_core["shared_data_mongo_core"]
+        Config["Mongo Configuration"]
+        Indexes["Index Management"]
+        Docs
+        Repos
+    end
+
+    Config --> Repos
+    Indexes --> DB

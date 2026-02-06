@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Client
+    participant API
+    participant IdP as "Identity Provider"
+
+    Client->>API: Authorization request
+    API->>IdP: Redirect user
+    IdP->>API: Authorization code
+    API->>IdP: Token exchange
+    API->>Client: TokenResponse

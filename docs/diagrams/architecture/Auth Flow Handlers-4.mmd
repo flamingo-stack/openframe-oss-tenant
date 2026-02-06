@@ -1,0 +1,5 @@
+flowchart LR
+    Cookie["of_sso_reg Cookie"] --> TenantHandler["TenantRegSsoHandler"]
+    TenantHandler --> Validate["Validate Tenant Context"]
+    Validate --> RegisterTenant["Create Tenant + Admin"]
+    RegisterTenant --> Redirect["Redirect to New Tenant"]

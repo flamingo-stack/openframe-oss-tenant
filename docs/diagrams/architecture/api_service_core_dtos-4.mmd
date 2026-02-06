@@ -1,0 +1,4 @@
+flowchart LR
+    AdminUI["Admin UI"] -->|"SSOConfigRequest"| API["SSO Controller"]
+    API -->|"stores config"| Service["SSOConfigService"]
+    API -->|"SSOConfigResponse"| AdminUI
