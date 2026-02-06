@@ -1,5 +1,0 @@
-flowchart TD
-    Req["Save Tool Request"] --> Persist["IntegratedToolService"]
-    Persist --> Debezium["DebeziumService"]
-    Persist --> Hooks["Post Save Hooks"]
-    Hooks --> End["Response"]

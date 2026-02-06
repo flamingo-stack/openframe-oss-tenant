@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant Browser
-    participant Controller as "TenantDiscoveryController"
-    participant Service as "TenantDiscoveryService"
-
-    Browser->>Controller: GET /tenant/discover?email=user@example.com
-    Controller->>Service: discoverTenantForEmail(email)
-    Service->>Controller: TenantDiscoveryResponse
-    Controller->>Browser: JSON response

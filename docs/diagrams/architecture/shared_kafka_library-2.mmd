@@ -1,7 +1,0 @@
-flowchart TD
-    AppStart["Application Startup"] --> CheckEnabled["spring.oss-tenant.kafka.enabled"]
-    CheckEnabled -->|"true"| AutoConfig["OssTenantKafkaAutoConfiguration"]
-    AutoConfig --> ProducerFactory["ProducerFactory"]
-    AutoConfig --> ConsumerFactory["ConsumerFactory"]
-    AutoConfig --> ListenerFactory["KafkaListenerContainerFactory"]
-    AutoConfig --> KafkaAdmin["KafkaAdmin"]

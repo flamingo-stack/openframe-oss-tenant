@@ -1,6 +1,0 @@
-flowchart LR
-    Token["ID Token"] --> Timestamp["Timestamp Validator"]
-    Timestamp --> OIDC["OIDC Validator"]
-    OIDC --> IssuerCheck["Microsoft Issuer Pattern"]
-    IssuerCheck -->|"Valid"| Accepted["Token Accepted"]
-    IssuerCheck -->|"Invalid"| Rejected["Authentication Failed"]

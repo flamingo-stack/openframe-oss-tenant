@@ -1,6 +1,0 @@
-flowchart TD
-    Client["API Client or UI"] -->|"JSON or GraphQL"| Controller["REST or GraphQL Controller"]
-    Controller -->|"binds to"| DTO["Core DTOs"]
-    DTO -->|"passed to"| Service["Domain Services"]
-    Service -->|"returns"| DTO
-    DTO -->|"serialized"| Client

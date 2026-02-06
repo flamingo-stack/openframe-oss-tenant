@@ -1,5 +1,0 @@
-flowchart LR
-    Client[Client Application] -->|"HTTP JSON"| Controllers[Authz Controllers]
-    Controllers -->|"binds to"| Dtos[Authz DTOs]
-    Dtos -->|"validated input"| Processors[Auth Processors]
-    Processors -->|"domain actions"| Services[Authz Services]

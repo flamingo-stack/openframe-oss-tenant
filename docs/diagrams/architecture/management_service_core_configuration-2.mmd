@@ -1,5 +1,0 @@
-flowchart TD
-    Start["Application Ready"] --> Check["Pinot Enabled?"]
-    Check -->|"Yes"| Load["Load Config Files"]
-    Load --> Deploy["Deploy Schemas & Tables"]
-    Check -->|"No"| End["Skip Deployment"]

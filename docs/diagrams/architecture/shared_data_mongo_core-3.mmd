@@ -1,9 +1,0 @@
-flowchart TD
-    BaseRepo["Base Repository Interfaces"] --> BlockingRepo["MongoRepository"]
-    BaseRepo --> ReactiveRepo["ReactiveMongoRepository"]
-
-    BlockingRepo --> CustomImpl["Custom Repository Implementations"]
-    ReactiveRepo --> CustomImpl
-
-    CustomImpl --> MongoTemplate["MongoTemplate"]
-    MongoTemplate --> DB[("MongoDB")]

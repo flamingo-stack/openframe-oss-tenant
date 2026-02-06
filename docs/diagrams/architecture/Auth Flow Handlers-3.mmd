@@ -1,5 +1,0 @@
-flowchart LR
-    Cookie["of_sso_invite Cookie"] --> InviteHandler["InviteSsoHandler"]
-    InviteHandler --> Decode["Decode Invitation Payload"]
-    Decode --> Register["Register User via Invitation"]
-    Register --> Redirect["Redirect to Tenant"]

@@ -1,7 +1,0 @@
-flowchart TD
-    Request["Incoming Request"] --> OriginFilter["Origin Sanitizer Filter"]
-    OriginFilter --> CorsFilter["CORS Filter"]
-    CorsFilter --> ApiKeyFilter["API Key Authentication Filter"]
-    ApiKeyFilter --> JwtFilter["JWT Authentication"]
-    JwtFilter --> AuthHeaderFilter["Add Authorization Header"]
-    AuthHeaderFilter --> Route["Forward to Backend Service"]

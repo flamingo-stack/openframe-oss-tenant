@@ -1,8 +1,0 @@
-flowchart TD
-    Browser["User Browser"] -->|"Login / SSO"| SecurityFilterChain["Spring Security Filter Chain"]
-    SecurityFilterChain --> OAuth2Login["OAuth2 / OIDC Login"]
-    OAuth2Login --> OidcUserService["Custom OIDC User Service"]
-    OidcUserService --> UserService["User Service"]
-    OidcUserService --> SSOConfigService["SSO Config Service"]
-    OidcUserService --> DomainPolicy["Global Domain Policy Lookup"]
-    OAuth2Login --> AuthSuccessHandler["Authentication Success Handler"]

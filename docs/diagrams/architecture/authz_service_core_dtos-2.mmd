@@ -1,4 +1,0 @@
-flowchart TD
-    Request[ResetRequest] -->|"email"| TokenIssued[Reset Token Generated]
-    TokenIssued --> Confirm[ResetConfirm]
-    Confirm -->|"new password"| PasswordUpdated[Password Updated]

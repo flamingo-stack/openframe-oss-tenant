@@ -1,8 +1,0 @@
-flowchart TD
-    App["Application Service"] --> SecConfig["JwtSecurityConfig"]
-    SecConfig --> JwtCfg["JwtConfig"]
-    SecConfig --> Encoder["JwtEncoder"]
-    SecConfig --> Decoder["JwtDecoder"]
-
-    OAuthFlow["OAuth2 Flow"] --> PKCE["PKCEUtils"]
-    OAuthFlow --> Constants["SecurityConstants"]
