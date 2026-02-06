@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/698629e21600f86dd8701a12</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Emmitt Greenfelder&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(770) 979-4791 x6785&quot;,
+                &quot;email&quot;: &quot;myra.jerde@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8981 Gusikowski Haven&quot;,
+            &quot;street2&quot;: &quot;Suite 806&quot;,
+            &quot;city&quot;: &quot;Abernathyfurt&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;52977&quot;,
+            &quot;country&quot;: &quot;Holy See (Vatican City State)&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;741 Ardath Course&quot;,
+            &quot;street2&quot;: &quot;Apt. 676&quot;,
+            &quot;city&quot;: &quot;Cleohaven&quot;,
+            &quot;state&quot;: &quot;Delaware&quot;,
+            &quot;postalCode&quot;: &quot;07632&quot;,
+            &quot;country&quot;: &quot;Micronesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        6
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        6
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZTYwYzI0MzMtMzAwZC00ZTU3LTg2YTYtMDEwNWYzODU5OGU4IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4NmZhMTNhNC0wN2FjLTQwODEtYjZjNC1kOTIyZDY4NmM2YTUiLCJzdWIiOiJ3YWx0ZXIuZXJkbWFuQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwNDAwMjI1LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy84NmZhMTNhNC0wN2FjLTQwODEtYjZjNC1kOTIyZDY4NmM2YTUiLCJleHAiOjE3NzA0MDExMjUsImlhdCI6MTc3MDQwMDIyNSwidXNlcklkIjoiOTlmZmM0NmQtYjQ1YS00ZWMyLTk1MDQtNGJlMjgyYTA2MjRmIiwianRpIjoiNzM1ZmFmYjMtZDNlNS00YTk4LTg1ZTYtNGNiMDUxYTgwNGFhIn0.LeCrRGwTsIEYRkwI1X72eZxRrEMrgL9fcYIPQMo0iOMBIctcIU1mqGTUCYSgXDdeIlsVklr7LPpqpzxhfyOOZT_pcLYYmO0G1rk6fZRLvpWvgGMJUcNb5UNm_J9iI06Szkrxkl20awG1frGCC20RGvddPyza5CUErw--wf1mh50sXtL_8dcgx3QIpo65pkjlnYtUgOW5XHKz8zrKuEvGEtCI6Gv7BgUPz-gVQfVsPMKdX4Y_qGym0wWTwo7FxfZDfcOY3OiXWbovSJsWvFSJA3-oG5vLJsCsbRfc-lnUjhQcZc2OwqQXuHkGmRsDrLXfjn9TKeOwAtv3W7cIXQ7tNg</div>
+        <div>refresh_token: EICC_RsScBXfoTDtTRl_LQol0DU2UgNwiFL2sJ4Qg45wDm074SWD_RJ5AlMjUB395YuzHeFCofx5KdGYU-SkO9xHNUGrD5xzjo0-fJMJs0uPVdUaNrBt751b8W52SYM2</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/698629e21600f86dd8701a12&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZTYwYzI0MzMtMzAwZC00ZTU3LTg2YTYtMDEwNWYzODU5OGU4IiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4NmZhMTNhNC0wN2FjLTQwODEtYjZjNC1kOTIyZDY4NmM2YTUiLCJzdWIiOiJ3YWx0ZXIuZXJkbWFuQGdtYWlsLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwNDAwMjI1LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy84NmZhMTNhNC0wN2FjLTQwODEtYjZjNC1kOTIyZDY4NmM2YTUiLCJleHAiOjE3NzA0MDExMjUsImlhdCI6MTc3MDQwMDIyNSwidXNlcklkIjoiOTlmZmM0NmQtYjQ1YS00ZWMyLTk1MDQtNGJlMjgyYTA2MjRmIiwianRpIjoiNzM1ZmFmYjMtZDNlNS00YTk4LTg1ZTYtNGNiMDUxYTgwNGFhIn0.LeCrRGwTsIEYRkwI1X72eZxRrEMrgL9fcYIPQMo0iOMBIctcIU1mqGTUCYSgXDdeIlsVklr7LPpqpzxhfyOOZT_pcLYYmO0G1rk6fZRLvpWvgGMJUcNb5UNm_J9iI06Szkrxkl20awG1frGCC20RGvddPyza5CUErw--wf1mh50sXtL_8dcgx3QIpo65pkjlnYtUgOW5XHKz8zrKuEvGEtCI6Gv7BgUPz-gVQfVsPMKdX4Y_qGym0wWTwo7FxfZDfcOY3OiXWbovSJsWvFSJA3-oG5vLJsCsbRfc-lnUjhQcZc2OwqQXuHkGmRsDrLXfjn9TKeOwAtv3W7cIXQ7tNg&#39; -b &#39;refresh_token=EICC_RsScBXfoTDtTRl_LQol0DU2UgNwiFL2sJ4Qg45wDm074SWD_RJ5AlMjUB395YuzHeFCofx5KdGYU-SkO9xHNUGrD5xzjo0-fJMJs0uPVdUaNrBt751b8W52SYM2&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Emmitt Greenfelder&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(770) 979-4791 x6785&quot;,
+                &quot;email&quot;: &quot;myra.jerde@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;8981 Gusikowski Haven&quot;,
+            &quot;street2&quot;: &quot;Suite 806&quot;,
+            &quot;city&quot;: &quot;Abernathyfurt&quot;,
+            &quot;state&quot;: &quot;Nebraska&quot;,
+            &quot;postalCode&quot;: &quot;52977&quot;,
+            &quot;country&quot;: &quot;Holy See (Vatican City State)&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;741 Ardath Course&quot;,
+            &quot;street2&quot;: &quot;Apt. 676&quot;,
+            &quot;city&quot;: &quot;Cleohaven&quot;,
+            &quot;state&quot;: &quot;Delaware&quot;,
+            &quot;postalCode&quot;: &quot;07632&quot;,
+            &quot;country&quot;: &quot;Micronesia&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        6
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        6
+    ]
+}&#39;
+</div>
