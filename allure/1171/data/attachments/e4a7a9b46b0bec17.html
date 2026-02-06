@@ -1,0 +1,29 @@
+<div>POST to http://localhost:8100/api/invitations</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;email&quot;: &quot;ami.wilderman@yahoo.com&quot;
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtY2VmNDRlYWYtOTk3OC00Y2YyLThlNzItN2IzMWIxZTcyMThhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4YzRlZjk0OC1lYmExLTQ3YTAtODAxNS0zOWU4MGI0YWVlZjciLCJzdWIiOiJicmFuZGEucm9nYWhuQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzA0MTEyMDcsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhjNGVmOTQ4LWViYTEtNDdhMC04MDE1LTM5ZTgwYjRhZWVmNyIsImV4cCI6MTc3MDQxMjEwNywiaWF0IjoxNzcwNDExMjA3LCJ1c2VySWQiOiJjMGM4OTRkNS02NTUwLTRlZTctOTRhNi0wN2NkMGFkZDEyZGMiLCJqdGkiOiJlZDY1Y2E2OS0yMjM2LTQ2N2YtYWVlMi0xMzhiNWZkYTkxNTYifQ.Y-0dcZb55Th8gvm42IZLOrONknx5hIDBxekaVasb3t0DU2Y2ayRg4kdWWnWbrfZYTMfU4FNO3Xr6yHu771vYHXEVNP2ftm72VAWl1wgwAN2RnbvAR6zLdIatPM4edHcac0dH3A6SCVa9MvfqlVRPQUSj_h-rcp-uMiMl2LsxHcvD1MnaCAtikr1-v41gJd8UBpvnwl5vEal_dBWM2DsgNonTSLdJ8yu5whNUlzOQzBpGaZw3ov3o0hIzxz6Yb3IhCJanKUGVXBf_wZm37UBUgI6LAGN0ybVxrX2NzZLm5AUNXMfBhbhUtmJrlS2WDJctCv0TAu-Q5xA1cbTZyRh96Q</div>
+        <div>refresh_token: J2Y3bW5vFBLcMR9bl57f1WHH4K3gaLFR6S6P65ZXm3VWoHkJo7QXmPMUihSUnolLVtZVa__zL67NCbx5tJGyBaA8D2QP_ug8QGM6UmoBjT4goBejwb3EzjAaLF15KS3f</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X POST &#39;http://localhost:8100/api/invitations&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtY2VmNDRlYWYtOTk3OC00Y2YyLThlNzItN2IzMWIxZTcyMThhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiI4YzRlZjk0OC1lYmExLTQ3YTAtODAxNS0zOWU4MGI0YWVlZjciLCJzdWIiOiJicmFuZGEucm9nYWhuQGhvdG1haWwuY29tIiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzA0MTEyMDcsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzhjNGVmOTQ4LWViYTEtNDdhMC04MDE1LTM5ZTgwYjRhZWVmNyIsImV4cCI6MTc3MDQxMjEwNywiaWF0IjoxNzcwNDExMjA3LCJ1c2VySWQiOiJjMGM4OTRkNS02NTUwLTRlZTctOTRhNi0wN2NkMGFkZDEyZGMiLCJqdGkiOiJlZDY1Y2E2OS0yMjM2LTQ2N2YtYWVlMi0xMzhiNWZkYTkxNTYifQ.Y-0dcZb55Th8gvm42IZLOrONknx5hIDBxekaVasb3t0DU2Y2ayRg4kdWWnWbrfZYTMfU4FNO3Xr6yHu771vYHXEVNP2ftm72VAWl1wgwAN2RnbvAR6zLdIatPM4edHcac0dH3A6SCVa9MvfqlVRPQUSj_h-rcp-uMiMl2LsxHcvD1MnaCAtikr1-v41gJd8UBpvnwl5vEal_dBWM2DsgNonTSLdJ8yu5whNUlzOQzBpGaZw3ov3o0hIzxz6Yb3IhCJanKUGVXBf_wZm37UBUgI6LAGN0ybVxrX2NzZLm5AUNXMfBhbhUtmJrlS2WDJctCv0TAu-Q5xA1cbTZyRh96Q&#39; -b &#39;refresh_token=J2Y3bW5vFBLcMR9bl57f1WHH4K3gaLFR6S6P65ZXm3VWoHkJo7QXmPMUihSUnolLVtZVa__zL67NCbx5tJGyBaA8D2QP_ug8QGM6UmoBjT4goBejwb3EzjAaLF15KS3f&#39; -d &#39;{
+    &quot;email&quot;: &quot;ami.wilderman@yahoo.com&quot;
+}&#39;
+</div>
