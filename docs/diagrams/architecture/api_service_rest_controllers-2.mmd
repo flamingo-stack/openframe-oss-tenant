@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Controller as "REST Controller"
+    participant Service as "Domain Service"
+    participant Repo as "Repository"
+
+    Client->>Controller: HTTP request
+    Controller->>Service: Validate and delegate
+    Service->>Repo: Persist or query data
+    Repo-->>Service: Domain entities
+    Service-->>Controller: DTO or result
+    Controller-->>Client: HTTP response

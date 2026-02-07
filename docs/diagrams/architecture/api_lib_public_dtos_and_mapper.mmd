@@ -1,0 +1,10 @@
+flowchart TD
+    Frontend["Frontend Clients"] --> ApiServices["API Services"]
+    ExternalApi["External API"] --> ApiServices
+
+    ApiServices --> Dtos["Api Lib Public Dtos And Mapper"]
+    Dtos --> DataLayer["Data Layer"]
+
+    subgraph shared["Shared Contract Layer"]
+        Dtos
+    end

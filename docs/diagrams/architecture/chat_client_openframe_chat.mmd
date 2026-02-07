@@ -1,0 +1,9 @@
+flowchart TD
+    UI["Frontend Chat UI"] --> Context["Debug Mode Context"]
+    UI --> DialogService["Dialog GraphQL Service"]
+    UI --> MockService["Mock Chat Service"]
+    DialogService --> TokenService["Token Service"]
+    SupportedModels["Supported Models Service"] --> TokenService
+    DialogService --> Backend["Chat GraphQL API"]
+    SupportedModels --> Backend
+    TokenService --> Tauri["Tauri Runtime"]

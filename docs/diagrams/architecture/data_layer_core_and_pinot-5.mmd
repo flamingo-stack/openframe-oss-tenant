@@ -1,0 +1,4 @@
+flowchart LR
+    Service["Secret Retriever"] --> ToolConfig["Integrated Tool"]
+    ToolConfig --> SDK["Tool SDK"]
+    SDK --> Secret["Registration Secret"]

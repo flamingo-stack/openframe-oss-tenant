@@ -1,0 +1,19 @@
+flowchart TD
+    UI["React UI Pages & Components"] --> Hooks["Application Hooks"]
+    Hooks --> Stores["Zustand Stores"]
+    Hooks --> ApiClients["API Clients"]
+
+    ApiClients --> CoreApi["Core API"]
+    ApiClients --> AuthApi["Auth & OAuth"]
+    ApiClients --> ChatApi["Chat & Mingo"]
+    ApiClients --> FleetApi["Fleet MDM"]
+    ApiClients --> TacticalApi["Tactical RMM"]
+
+    Stores --> UI
+
+    subgraph frontend_layer["Frontend Service App Logic And Api Clients"]
+        UI
+        Hooks
+        Stores
+        ApiClients
+    end

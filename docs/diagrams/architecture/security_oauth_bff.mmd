@@ -1,0 +1,7 @@
+flowchart TD
+    Frontend["Frontend Application"] -->|"/oauth/login"| Bff["Security Oauth Bff"]
+    Bff -->|"Authorize Redirect"| Authz["Authorization Server"]
+    Authz -->|"code + state"| Bff
+    Bff -->|"Set Auth Cookies"| Browser["User Browser"]
+    Browser -->|"Authenticated Requests"| Gateway["Gateway Service"]
+    Gateway -->|"JWT Validation"| Downstream["Backend Services"]

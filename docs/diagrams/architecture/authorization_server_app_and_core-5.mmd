@@ -1,0 +1,5 @@
+flowchart LR
+    Invite["Invitation Link"] --> SSO["SSO Login"]
+    SSO --> Handler["SSO Flow Handler"]
+    Handler --> User["User Created"]
+    User --> Tenant["Tenant Context"]

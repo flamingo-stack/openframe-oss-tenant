@@ -1,0 +1,4 @@
+flowchart LR
+    ServiceLayer["Domain Services"] --> CustomRepo["Custom Mongo Repository"]
+    CustomRepo --> QueryBuilder["Dynamic Query Builder"]
+    QueryBuilder --> MongoDB[("MongoDB")]

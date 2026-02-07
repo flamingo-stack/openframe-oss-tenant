@@ -1,0 +1,11 @@
+flowchart TD
+    Client["Client or Frontend"] -->|"OAuth Authorization"| AuthServer["Authorization Server"]
+    AuthServer -->|"Issues JWT"| JwtCore["Security Oauth And Jwt Core"]
+    JwtCore -->|"Signs Token"| JwtEncoder["JWT Encoder"]
+    JwtCore -->|"Verifies Token"| JwtDecoder["JWT Decoder"]
+
+    JwtEncoder -->|"RSA Private Key"| KeyMaterial["RSA Key Material"]
+    JwtDecoder -->|"RSA Public Key"| KeyMaterial
+
+    Gateway["API Gateway"] -->|"Validates JWT"| JwtDecoder
+    ApiService["API Services"] -->|"Validates JWT"| JwtDecoder

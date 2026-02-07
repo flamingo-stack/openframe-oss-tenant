@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant UI as Frontend UI
+    participant Token as Token Service
+    participant Dialog as Dialog GraphQL Service
+    participant API as Chat API
+
+    UI->>Token: Ensure token and API URL
+    Token-->>UI: Token ready
+    UI->>Dialog: Request dialog messages
+    Dialog->>API: GraphQL query with Bearer token
+    API-->>Dialog: Paginated messages
+    Dialog-->>UI: Aggregated message stream

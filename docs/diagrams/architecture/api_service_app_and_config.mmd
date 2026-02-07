@@ -1,0 +1,10 @@
+flowchart TD
+    Client[Client or Gateway] --> Gateway[API Gateway]
+    Gateway --> ApiApp["Api Service App And Config"]
+
+    ApiApp --> Controllers[REST Controllers]
+    ApiApp --> GraphQL[GraphQL Fetchers]
+    ApiApp --> DomainServices[Domain Services]
+
+    ApiApp --> DataLayer[Data Layer]
+    ApiApp --> Security[Security Infrastructure]

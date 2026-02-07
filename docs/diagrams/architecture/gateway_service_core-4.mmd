@@ -1,0 +1,5 @@
+flowchart TD
+    Req["External API Request"] --> CheckKey["Validate API Key"]
+    CheckKey --> Rate["Rate Limit Check"]
+    Rate -->|"Allowed"| Proxy["Forward Request"]
+    Rate -->|"Exceeded"| Reject["429 Response"]

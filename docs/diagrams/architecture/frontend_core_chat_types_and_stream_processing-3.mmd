@@ -1,0 +1,7 @@
+flowchart TD
+    Chunk["Incoming Chunk"] --> Buffer["Buffer Manager"]
+    Buffer --> Processor["Chunk Processor"]
+    Processor --> Actions["Parsed Actions"]
+    Actions --> Accumulator["Message Accumulator"]
+    Accumulator --> Transformer["Message Transformer"]
+    Transformer --> UI["Rendered Messages"]

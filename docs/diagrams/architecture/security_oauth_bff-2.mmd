@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant Bff as "Security Oauth Bff"
+    participant Authz as "Authorization Server"
+
+    Browser->>Bff: GET /oauth/login?tenantId
+    Bff->>Browser: Set state cookie + Redirect
+    Browser->>Authz: GET /authorize
+    Authz->>Browser: Redirect with code and state
+    Browser->>Bff: GET /oauth/callback
+    Bff->>Authz: Token Exchange
+    Authz->>Bff: Access + Refresh Tokens
+    Bff->>Browser: Set auth cookies + Redirect

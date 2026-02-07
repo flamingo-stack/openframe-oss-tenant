@@ -1,0 +1,9 @@
+flowchart LR
+    Properties["Kafka Properties"] --> ProducerFactory["ProducerFactory"]
+    ProducerFactory --> KafkaTemplate["KafkaTemplate"]
+
+    Properties --> ConsumerFactory["ConsumerFactory"]
+    ConsumerFactory --> ListenerFactory["Listener Container Factory"]
+
+    Properties --> Admin["KafkaAdmin"]
+    Topics["Topic Configurations"] --> Admin

@@ -1,0 +1,8 @@
+flowchart TD
+    Repo["Mongo Repositories"] --> Aspect["Machine Tag Event Aspect"]
+    Aspect --> Service["Machine Tag Event Service"]
+    Service --> Kafka["Kafka Devices Topic"]
+    Kafka --> Pinot["Apache Pinot"]
+
+    Pinot --> DeviceRepo["Pinot Client Device Repository"]
+    Pinot --> LogRepo["Pinot Client Log Repository"]

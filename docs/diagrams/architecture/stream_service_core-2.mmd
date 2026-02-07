@@ -1,0 +1,9 @@
+flowchart LR
+    ActivityTopic["Fleet Activities"] --> ActivityStream["Activity Stream"]
+    HostTopic["Host Activities"] --> HostStream["Host Activity Stream"]
+
+    ActivityStream --> Join["Left Join (5s Window)"]
+    HostStream --> Join
+
+    Join --> Enriched["Enriched Activity"]
+    Enriched --> OutTopic["Enriched Fleet Events Topic"]

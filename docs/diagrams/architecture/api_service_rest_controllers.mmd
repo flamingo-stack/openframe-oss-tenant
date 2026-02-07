@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Internal Client or Gateway"] -->|"HTTP REST"| Controller["Api Service Rest Controllers"]
+    Controller -->|"delegates"| DomainService["Domain Services and Processors"]
+    DomainService -->|"CRUD and Queries"| DataLayer["Data Layer and Repositories"]
+    Controller -->|"DTO Responses"| Client

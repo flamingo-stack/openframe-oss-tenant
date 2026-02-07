@@ -1,0 +1,40 @@
+graph TD
+    User["End User (Browser / Agent / Tool)"]
+
+    Frontend["Frontend Applications"]
+    ChatClient["OpenFrame Chat Client"]
+    Gateway["Gateway Service"]
+    Auth["Authorization Server"]
+    Api["API Service (REST + GraphQL)"]
+    ExternalApi["External API Service"]
+    ClientSvc["Client / Agent Service"]
+    Management["Management Service"]
+    Stream["Stream Service"]
+
+    Mongo["MongoDB"]
+    Kafka["Kafka"]
+    Redis["Redis Cache"]
+    Cassandra["Cassandra"]
+    Pinot["Apache Pinot"]
+
+    User --> Frontend
+    Frontend --> Gateway
+    ChatClient --> Gateway
+
+    Gateway --> Auth
+    Gateway --> Api
+    Gateway --> ExternalApi
+    Gateway --> ClientSvc
+
+    Api --> Mongo
+    Api --> Redis
+    Api --> Kafka
+
+    ClientSvc --> Kafka
+    Management --> Kafka
+
+    Kafka --> Stream
+    Stream --> Cassandra
+    Stream --> Pinot
+
+    Auth --> Mongo

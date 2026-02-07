@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Repo as Repository
+    participant Aspect as Event Aspect
+    participant Service as Event Service
+    participant Kafka as Kafka Producer
+
+    Repo->>Aspect: save() or saveAll()
+    Aspect->>Service: process change
+    Service->>Kafka: publish MachinePinotMessage

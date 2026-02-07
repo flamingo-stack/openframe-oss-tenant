@@ -1,0 +1,7 @@
+flowchart TD
+    Debezium["Debezium Message"] --> Payload["Payload"]
+    Payload --> Before["Before State"]
+    Payload --> After["After State"]
+    Payload --> Source["Source Metadata"]
+    Payload --> Operation["Operation Type"]
+    Payload --> Timestamp["Event Timestamp"]

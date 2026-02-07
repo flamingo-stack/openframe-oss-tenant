@@ -1,0 +1,9 @@
+flowchart TD
+    ClientService["Client / API Layer"] -->|"uses"| CoreModule["Core Shared Utils And Validation"]
+    CoreModule --> PageResponse["PageResponse<T>"]
+    CoreModule --> SlugUtil["Slug Utility"]
+    CoreModule --> EmailValidator["Email Validation"]
+
+    PageResponse --> Downstream["REST & GraphQL Responses"]
+    SlugUtil --> Identifiers["URL-safe Identifiers"]
+    EmailValidator --> ValidationLayer["Jakarta Validation Layer"]

@@ -1,0 +1,6 @@
+flowchart LR
+    AdminRequest["Admin Request"] --> SSOService["SSOConfigService"]
+    SSOService --> Validator["Domain Validation"]
+    SSOService --> Encryptor["Encryption Service"]
+    SSOService --> Repo["SSO Config Repository"]
+    SSOService --> Processor["SSOConfigProcessor"]

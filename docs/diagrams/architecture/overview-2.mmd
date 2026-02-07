@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant User["User"]
+    participant Frontend["Frontend"]
+    participant Gateway["Gateway"]
+    participant Auth["Authorization Server"]
+    participant Api["API Service"]
+    participant Data["Data Layer"]
+
+    User->>Frontend: Open Application
+    Frontend->>Gateway: API Request (JWT)
+    Gateway->>Auth: Validate Token
+    Auth-->>Gateway: Token Valid
+    Gateway->>Api: Forward Tenant Request
+    Api->>Data: Query / Persist Data
+    Data-->>Api: Result
+    Api-->>Gateway: Response
+    Gateway-->>Frontend: JSON / GraphQL Response

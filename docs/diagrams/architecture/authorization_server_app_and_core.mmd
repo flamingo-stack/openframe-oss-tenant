@@ -1,0 +1,18 @@
+flowchart TD
+    Browser["User Browser"] -->|"Login / OAuth Flow"| AuthServer["Authorization Server App And Core"]
+
+    AuthServer -->|"Issue Tokens"| Clients["OAuth Clients"]
+    AuthServer -->|"JWKS per Tenant"| Services["Downstream Services"]
+
+    AuthServer --> Mongo[("MongoDB")]
+
+    subgraph AuthCore["Authorization Server Core"]
+        SecurityCfg["Security Configuration"]
+        TenantCtx["Tenant Context"]
+        TokenSvc["Token & Key Services"]
+        OAuthStore["OAuth Persistence"]
+        SSOFlows["SSO & Registration Flows"]
+    end
+
+    AuthServer --> AuthCore
+    AuthCore --> Mongo

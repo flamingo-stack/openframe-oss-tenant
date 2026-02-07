@@ -1,0 +1,6 @@
+flowchart LR
+    Request["Incoming Request"] --> TenantResolver["Tenant Resolver"]
+    TenantResolver --> CacheCall["Cache Access"]
+    CacheCall --> KeyBuilder["Redis Key Builder"]
+    KeyBuilder --> RedisKey["Tenant-Scoped Redis Key"]
+    RedisKey --> Redis[("Redis")]

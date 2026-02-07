@@ -1,0 +1,3 @@
+flowchart LR
+    Gateway[API Gateway] -->|"JWT + Headers"| ApiSecurity[SecurityConfig]
+    ApiSecurity -->|"Authentication Context"| Controllers[REST and GraphQL]

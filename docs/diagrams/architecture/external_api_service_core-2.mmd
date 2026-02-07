@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant ExternalApi as "External Api Service Core"
+    participant ToolRepo as "Tool Repository"
+    participant Resolver as "Proxy Url Resolver"
+    participant Tool as "Integrated Tool API"
+
+    Client->>ExternalApi: HTTP request /tools/{toolId}/...
+    ExternalApi->>ToolRepo: Load tool configuration
+    ToolRepo-->>ExternalApi: Tool + credentials
+    ExternalApi->>Resolver: Resolve target URL
+    Resolver-->>ExternalApi: Target URI
+    ExternalApi->>Tool: Forward request with headers
+    Tool-->>ExternalApi: Response
+    ExternalApi-->>Client: Proxied response

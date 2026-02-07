@@ -1,0 +1,5 @@
+flowchart LR
+    App["Application Startup"] --> Config["Data Configuration"]
+    Config --> Cassandra["Cassandra Session"]
+    Config --> Pinot["Pinot Connections"]
+    Config --> SDK["Tool SDK Clients"]

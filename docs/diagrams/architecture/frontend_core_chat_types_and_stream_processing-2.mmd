@@ -1,0 +1,5 @@
+flowchart LR
+    Raw["Raw Message Data"] --> Segments["Message Segments"]
+    Segments --> Text["Text Segment"]
+    Segments --> Tool["Tool Execution Segment"]
+    Segments --> Approval["Approval Segment"]

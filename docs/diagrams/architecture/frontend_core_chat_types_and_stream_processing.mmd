@@ -1,0 +1,7 @@
+flowchart TD
+    UI["Frontend Chat UI"] --> Types["Frontend Core Chat Types And Stream Processing"]
+    Types --> Network["Realtime Network Layer"]
+    Network --> BackendChat["Chat & AI Services"]
+    BackendChat --> Network
+    Network --> Types
+    Types --> UI

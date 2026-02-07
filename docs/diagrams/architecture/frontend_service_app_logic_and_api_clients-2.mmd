@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant AuthApi
+
+    User->>Frontend: Enter email
+    Frontend->>AuthApi: Discover tenants
+    AuthApi-->>Frontend: Tenant + providers
+    User->>Frontend: Login / SSO
+    Frontend->>AuthApi: OAuth / Login
+    AuthApi-->>Frontend: Token / Cookie
+    Frontend->>Frontend: Store tokens & user

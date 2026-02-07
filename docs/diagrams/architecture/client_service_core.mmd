@@ -1,0 +1,16 @@
+flowchart TD
+    Agent["Client Agent"] -->|"HTTP"| ClientApi["Client Service Core"]
+    Agent -->|"NATS Events"| Nats["NATS / JetStream"]
+
+    ClientApi --> Auth["Agent Authentication"]
+    ClientApi --> Reg["Agent Registration"]
+
+    Nats --> Heartbeat["Heartbeat Listener"]
+    Nats --> Installed["Installed Agent Listener"]
+    Nats --> ToolConn["Tool Connection Listener"]
+    Nats --> ClientConn["Client Connection Listener"]
+
+    Heartbeat --> StatusSvc["Machine Status Service"]
+    ClientConn --> StatusSvc
+    Installed --> InstalledSvc["Installed Agent Service"]
+    ToolConn --> ToolSvc["Tool Connection Service"]

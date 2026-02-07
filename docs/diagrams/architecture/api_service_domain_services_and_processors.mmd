@@ -1,0 +1,7 @@
+flowchart TD
+    Controllers["API Controllers"] --> Services["Domain Services"]
+    Services --> Repositories["Data Repositories"]
+    Services --> Mappers["DTO Mappers"]
+    Services --> Processors["Domain Processors"]
+
+    Processors -.-> Extensions["Custom Tenant Overrides"]

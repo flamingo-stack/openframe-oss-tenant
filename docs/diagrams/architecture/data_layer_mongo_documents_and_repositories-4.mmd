@@ -1,0 +1,4 @@
+flowchart TD
+    BaseRepos["Base Repository Interfaces"] --> MongoRepos["Mongo Repositories"]
+    MongoRepos --> CustomImpl["Custom Repository Implementations"]
+    CustomImpl --> MongoTemplate["Mongo Template"]

@@ -1,0 +1,4 @@
+flowchart TD
+    TokenReq["Token Request"] --> TenantKeySvc["Tenant Key Service"]
+    TenantKeySvc -->|"Load or Create"| Key["RSA Key Pair"]
+    Key -->|"Sign JWT"| Token["JWT Access Token"]

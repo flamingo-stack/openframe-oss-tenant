@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> Resolver["Tenant Context Filter"]
+    Resolver -->|"Resolve Tenant"| Context["Tenant Context"]
+    Context -->|"ThreadLocal"| App["Application Logic"]
+    App -->|"Clear"| Context

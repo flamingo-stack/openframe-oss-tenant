@@ -1,0 +1,7 @@
+flowchart TD
+    App["Application Services"] --> CacheAbstraction["Spring Cache Abstraction"]
+    CacheAbstraction --> CacheManager["Redis Cache Manager"]
+    CacheManager --> Redis["Redis Cluster"]
+
+    CacheManager --> KeyBuilder["Redis Key Builder"]
+    KeyBuilder --> TenantContext["Tenant Context"]

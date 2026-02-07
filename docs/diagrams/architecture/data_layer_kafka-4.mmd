@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Service as Data-Producing Service
+    participant Kafka as Kafka Cluster
+    participant Stream as Stream Service
+
+    Service->>Kafka: Publish message
+    Kafka->>Stream: Deliver message
+    Stream->>Stream: Deserialize and enrich

@@ -1,0 +1,10 @@
+flowchart TD
+    Client["External Client"] -->|"X-API-Key"| Gateway["Gateway Service Core"]
+    Gateway --> ExternalApi["External Api Service Core"]
+
+    ExternalApi --> Controllers["REST Controllers"]
+    Controllers --> Services["API / Domain Services"]
+    Services --> DataLayer["Data Layer"]
+
+    ExternalApi --> Proxy["Rest Proxy Service"]
+    Proxy --> Tools["Integrated Tools"]

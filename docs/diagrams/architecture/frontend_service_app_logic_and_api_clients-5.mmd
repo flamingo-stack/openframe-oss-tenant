@@ -1,0 +1,6 @@
+flowchart LR
+    UserInput["User Message"] --> MingoHook
+    MingoHook --> ChatApi
+    ChatApi --> Stream["Streaming Response"]
+    Stream --> Store["MingoMessagesStore"]
+    Store --> UI["Chat UI"]

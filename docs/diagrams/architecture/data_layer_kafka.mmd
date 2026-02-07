@@ -1,0 +1,16 @@
+flowchart TD
+    Producers["Data Producers"] -->|"publish events"| KafkaCluster["Kafka Cluster"]
+    KafkaCluster -->|"consume events"| StreamService["Stream Service Core"]
+
+    subgraph data_layer_kafka["Data Layer Kafka"]
+        Config["Kafka Configuration"]
+        Topics["Topic Definitions"]
+        Models["Message Models"]
+        Recovery["Producer Recovery"]
+    end
+
+    Producers --> Config
+    Config --> KafkaCluster
+    Topics --> KafkaCluster
+    Models --> Producers
+    Recovery --> Producers

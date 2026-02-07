@@ -1,0 +1,5 @@
+flowchart TD
+    Frontend["Frontend GraphQL Clients"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiGraphql["Api Service Graphql Fetchers And Loaders"]
+    ApiGraphql --> DomainServices["Domain Services and Processors"]
+    DomainServices --> DataLayer["Data Layer"]

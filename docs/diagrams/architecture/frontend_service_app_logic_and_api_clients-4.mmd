@@ -1,0 +1,6 @@
+flowchart TD
+    LogsUI["Logs UI"] --> useLogs
+    useLogs --> ApiClient
+    ApiClient --> GraphQL["GraphQL Logs API"]
+    GraphQL --> useLogs
+    useLogs --> LogsUI

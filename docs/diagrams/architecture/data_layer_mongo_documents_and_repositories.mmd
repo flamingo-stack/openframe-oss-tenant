@@ -1,0 +1,7 @@
+flowchart TD
+    ApiServices["API Services"] --> MongoLayer["Data Layer Mongo Documents And Repositories"]
+    AuthServer["Authorization Server"] --> MongoLayer
+    ManagementService["Management Service"] --> MongoLayer
+    StreamService["Stream Service"] --> MongoLayer
+
+    MongoLayer --> MongoDB[("MongoDB")]

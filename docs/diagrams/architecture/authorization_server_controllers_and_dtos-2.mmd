@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Browser
+    participant AuthController as "Tenant Registration Controller"
+    participant SSOService as "SSO Registration Service"
+
+    Browser->>AuthController: GET /oauth/register/sso
+    AuthController->>SSOService: startRegistration(request)
+    SSOService-->>AuthController: SSO authorize data
+    AuthController->>Browser: Set-Cookie + Redirect to OAuth2 Provider

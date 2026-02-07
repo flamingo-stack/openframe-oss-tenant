@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Save Tool Request"] --> Controller["Integrated Tool Controller"]
+    Controller --> ToolService["Integrated Tool Service"]
+    ToolService --> Debezium["Debezium Service"]
+    ToolService --> Hooks["Post-Save Hooks"]

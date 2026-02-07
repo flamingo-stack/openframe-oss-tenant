@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client Browser or Frontend"] -->|"HTTP / JSON"| Controllers["Authorization Server Controllers"]
+    Controllers -->|"Validated DTOs"| Services["Authorization Domain Services"]
+    Services -->|"Domain Results"| Controllers
+    Controllers -->|"JSON / Redirect / Cookie"| Client

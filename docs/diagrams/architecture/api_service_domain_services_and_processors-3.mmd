@@ -1,0 +1,5 @@
+flowchart TD
+    UserController["User Controller"] --> UserService["UserService"]
+    UserService --> UserRepo["User Repository"]
+    UserService --> UserMapper["User Mapper"]
+    UserService --> UserProcessor["UserProcessor"]

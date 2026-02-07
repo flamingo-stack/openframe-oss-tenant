@@ -1,0 +1,6 @@
+flowchart LR
+    Request["API Request"] --> ApiClient
+    ApiClient -->|"401"| Refresh["Token Refresh"]
+    Refresh -->|"Success"| Retry["Retry Request"]
+    Refresh -->|"Failure"| Logout["Force Logout"]
+    Retry --> Response["API Response"]

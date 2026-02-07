@@ -1,0 +1,6 @@
+flowchart TD
+    OAuthFlow["OAuth Flow"] --> Authz["OAuth2 Authorization"]
+    Authz --> Mapper["Mongo Authorization Mapper"]
+    Mapper --> Mongo[("MongoDB")]
+    Mongo --> Mapper
+    Mapper --> Authz

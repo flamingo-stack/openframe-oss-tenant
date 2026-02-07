@@ -1,0 +1,4 @@
+flowchart LR
+    WsClient["WebSocket Client"] --> GatewayWs["Gateway WS Route"]
+    GatewayWs --> Filter["Tool WS Proxy Filter"]
+    Filter --> ToolBackend["Tool WebSocket Backend"]

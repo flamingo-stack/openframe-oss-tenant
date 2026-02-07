@@ -1,0 +1,5 @@
+flowchart LR
+    Query["devices query"] --> DeviceFetcher["Device Data Fetcher"]
+    DeviceFetcher --> DeviceService["Device Service"]
+    DeviceFetcher --> Mapper["GraphQL Device Mapper"]
+    DeviceFetcher -->|"nested fields"| DataLoaders["GraphQL Data Loaders"]

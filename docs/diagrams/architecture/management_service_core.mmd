@@ -1,0 +1,19 @@
+flowchart TD
+    Startup["Application Startup"] --> InitPhase["Initialization Phase"]
+    InitPhase --> ConfigInit["Configuration Initializers"]
+    InitPhase --> StreamInit["Stream Initialization"]
+    InitPhase --> ToolInit["Integrated Tool Setup"]
+
+    Runtime["Runtime Operations"] --> Schedulers["Scheduled Jobs"]
+    Runtime --> Controllers["Management REST APIs"]
+
+    ConfigInit --> PinotInit["Pinot Config Initializer"]
+    ConfigInit --> ClientConfigInit["Client Configuration Initializer"]
+
+    ToolInit --> ToolController["Integrated Tool Controller"]
+    ToolController --> DebeziumSvc["Debezium Service"]
+
+    Schedulers --> ApiKeySync["API Key Stats Sync"]
+    Schedulers --> DebeziumHealth["Debezium Health Check"]
+
+    Controllers --> ExternalSystems["External Systems"]
