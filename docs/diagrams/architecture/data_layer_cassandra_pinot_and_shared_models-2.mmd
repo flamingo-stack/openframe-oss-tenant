@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Repo as "Mongo Repositories"
+    participant Service as "MachineTagEventService"
+    participant Kafka as "Kafka"
+
+    Repo->>Service: Machine or Tag Saved
+    Service->>Service: Fetch Machine and Tags
+    Service->>Kafka: Publish MachinePinotMessage

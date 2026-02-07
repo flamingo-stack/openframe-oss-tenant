@@ -1,0 +1,5 @@
+flowchart LR
+    Source["Integrated Tool or API Call"] --> Persist["Device Persistence"]
+    Persist --> Update["Status Updated"]
+    Update --> Processor["postProcessStatusUpdated"]
+    Processor --> SideEffects["Logging or Custom Side Effects"]

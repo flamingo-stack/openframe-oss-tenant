@@ -1,0 +1,13 @@
+flowchart TD
+    KafkaTopics["Inbound Kafka Topics"] --> Listener["JsonKafkaListener"]
+    Listener --> Processor["GenericJsonMessageProcessor"]
+    Processor --> Handlers["Message Handlers"]
+    Handlers --> Enrichment["Enrichment Services"]
+    Enrichment --> Streams["Kafka Streams Topologies"]
+    Streams --> OutboundTopics["Outbound Kafka Topics"]
+
+    subgraph stream_app["Stream Service Application"]
+        Listener
+        Processor
+        Streams
+    end

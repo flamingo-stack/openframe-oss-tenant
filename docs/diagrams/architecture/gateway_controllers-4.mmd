@@ -1,0 +1,6 @@
+sequenceDiagram
+    participant Infra as "Internal Infrastructure"
+    participant Gateway as "Auth Probe Controller"
+
+    Infra->>Gateway: GET /internal/authz/probe
+    Gateway->>Infra: 200 OK

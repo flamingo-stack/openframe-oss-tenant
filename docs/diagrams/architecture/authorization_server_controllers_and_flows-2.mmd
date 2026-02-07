@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant Authz as "Authorization Server"
+    participant IdP as "SSO Provider"
+
+    Browser->>Authz: GET /invitations/accept/sso
+    Authz->>Browser: Set short-lived invite cookie
+    Authz->>Browser: Redirect to OAuth2 authorize
+    Browser->>IdP: Authenticate
+    IdP->>Authz: OIDC callback
+    Authz->>Authz: InviteSsoHandler
+    Authz->>Browser: Redirect to tenant context

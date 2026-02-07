@@ -1,0 +1,7 @@
+flowchart TD
+    Request["SaveToolRequest"] --> Controller["IntegratedToolController"]
+    Controller -->|"persist"| ToolService["IntegratedToolService"]
+    ToolService -->|"returns"| Tool["IntegratedTool"]
+    Controller -->|"sync connectors"| Debezium["Debezium Service"]
+    Controller -->|"notify"| Hooks["Post Save Hooks"]
+    Controller --> Response["HTTP Response"]

@@ -1,0 +1,7 @@
+flowchart TD
+    SourceTools["Integrated Tools<br/>Fleet, Tactical, MeshCentral"] --> KafkaTopics["Kafka Topics"]
+    KafkaTopics --> Deserializers["Stream Deserializers"]
+    Deserializers --> EventMapping["Event Mapping & Models"]
+    EventMapping --> Enrichment["Enrichment Services"]
+    Enrichment --> Storage["Data Stores & Analytics"]
+    Storage --> APIs["API & GraphQL Layers"]

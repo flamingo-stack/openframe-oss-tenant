@@ -1,0 +1,19 @@
+flowchart TD
+    AuthServer["Authorization Server"] -->|"requests signing key"| TenantKeyService["TenantKeyService"]
+    TenantKeyService -->|"loads or creates"| TenantKeyRepo["TenantKeyRepository"]
+    TenantKeyService -->|"encrypts private key"| EncryptionService["EncryptionService"]
+
+    AuthServer -->|"loads OAuth clients"| RegisteredClientRepo["MongoRegisteredClientRepository"]
+    RegisteredClientRepo --> MongoClient["MongoRegisteredClient"]
+
+    AuthServer -->|"persist auth state"| AuthorizationService["MongoAuthorizationService"]
+    AuthorizationService --> AuthorizationMapper["MongoAuthorizationMapper"]
+    AuthorizationMapper --> MongoAuth["MongoOAuth2Authorization"]
+
+    subgraph keys["Key Management"]
+        PemUtil["PemUtil"]
+        KeyGen["RsaAuthenticationKeyPairGenerator"]
+    end
+
+    TenantKeyService --> KeyGen
+    KeyGen --> PemUtil

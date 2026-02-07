@@ -1,0 +1,5 @@
+flowchart TD
+    JwtSecurityConfig["JwtSecurityConfig"] --> Encoder["NimbusJwtEncoder"]
+    JwtSecurityConfig --> Decoder["NimbusJwtDecoder"]
+    Encoder -->|"Signs JWT"| Token["JWT"]
+    Decoder -->|"Verifies JWT"| Token

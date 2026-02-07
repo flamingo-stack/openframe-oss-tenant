@@ -1,0 +1,5 @@
+flowchart TD
+    Filter["Query Filter"] --> Builder["Query Builder"]
+    Builder --> MongoQuery["Mongo Query"]
+    MongoQuery --> Cursor["Cursor Pagination"]
+    Cursor --> Results["Domain Results"]

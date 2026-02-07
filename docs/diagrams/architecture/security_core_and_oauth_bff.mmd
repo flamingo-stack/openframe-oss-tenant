@@ -1,0 +1,16 @@
+flowchart LR
+    Client["Client Application"] --> Gateway["API Gateway"]
+    Gateway --> ApiService["API Services"]
+    ApiService --> Authz["Authorization Server"]
+
+    subgraph security_core["Security Core and OAuth BFF"]
+        JwtConfig["JWT Configuration"]
+        JwtSecurity["JWT Encoder / Decoder"]
+        PKCE["PKCE Utilities"]
+        Constants["OAuth Security Constants"]
+    end
+
+    Gateway -->|"Validates JWT"| JwtSecurity
+    ApiService -->|"Decodes JWT"| JwtSecurity
+    Authz -->|"Issues JWT"| JwtSecurity
+    Authz -->|"Uses PKCE"| PKCE

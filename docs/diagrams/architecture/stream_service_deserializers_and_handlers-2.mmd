@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Kafka as "Kafka Topic"
+    participant D as "Deserializer"
+    participant E as "Enrichment Service"
+    participant H as "Message Handler"
+
+    Kafka->>D: Raw Debezium Event
+    D->>E: Normalized Event
+    E->>H: Enriched Event Data
+    H->>Kafka: Publish IntegratedToolEvent
+    H->>Kafka: OR Persist UnifiedLogEvent

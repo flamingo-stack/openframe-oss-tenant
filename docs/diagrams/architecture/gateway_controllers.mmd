@@ -1,0 +1,12 @@
+flowchart TD
+    Client["External Client or Agent"] --> GatewayController["Gateway Controllers"]
+    GatewayController --> IntegrationService["Integration Service"]
+    GatewayController --> RestProxyService["REST Proxy Service"]
+    IntegrationService --> ToolBackend["Integrated Tool API"]
+    RestProxyService --> ToolBackend
+
+    subgraph gateway_layer["Gateway Layer"]
+        GatewayController
+        IntegrationService
+        RestProxyService
+    end

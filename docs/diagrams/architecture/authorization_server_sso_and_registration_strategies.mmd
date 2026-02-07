@@ -1,0 +1,15 @@
+flowchart TD
+    Browser["User Browser"] --> IdP["External IdP"]
+    IdP --> AuthServer["Authorization Server"]
+
+    AuthServer --> AuthSuccess["AuthSuccessHandler"]
+    AuthSuccess --> UserSvc["User Service"]
+
+    AuthServer --> Strategy["Client Registration Strategy"]
+    Strategy --> GoogleStrat["Google Strategy"]
+    Strategy --> MicrosoftStrat["Microsoft Strategy"]
+
+    AuthServer --> Registration["Registration Processor"]
+    Registration --> Defaults["Default No-Op Processors"]
+
+    AuthServer --> Utils["Auth & OIDC Utilities"]

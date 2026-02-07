@@ -1,0 +1,19 @@
+flowchart TD
+    Controller["API Controllers"] --> UserService["User Service"]
+    Controller --> SSOService["SSO Config Service"]
+
+    UserService --> UserRepo["User Repository"]
+    UserService --> UserMapper["User Mapper"]
+    UserService --> UserProcessor["User Processor"]
+
+    SSOService --> SSORepo["SSO Config Repository"]
+    SSOService --> Encryption["Encryption Service"]
+    SSOService --> DomainValidation["Domain Validation Service"]
+    SSOService --> SSOProcessor["SSO Config Processor"]
+
+    UserProcessor --> DefaultUserProcessor["Default User Processor"]
+    SSOProcessor --> DefaultSSOProcessor["Default SSO Config Processor"]
+    InvitationProcessor --> DefaultInvitationProcessor["Default Invitation Processor"]
+
+    DomainValidation --> DomainExistenceValidator["Domain Existence Validator"]
+    DomainExistenceValidator --> DefaultDomainExistenceValidator["Default Domain Existence Validator"]

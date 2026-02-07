@@ -1,0 +1,9 @@
+flowchart TD
+    Client["External API Client"] -->|"HTTP Request"| Controller["External API DeviceController"]
+    Controller -->|"Build Criteria"| Criteria["DeviceFilterCriteria"]
+    Controller -->|"Query Devices"| Service["Domain Device Services"]
+    Service -->|"Map Domain Models"| Mapper["DTO Mapping Layer"]
+    Mapper -->|"Return Data"| DeviceDTOs["DeviceResponse / DevicesResponse"]
+    Service -->|"Aggregate Filters"| FilterAgg["DeviceFilterResponse"]
+    DeviceDTOs --> Client
+    FilterAgg --> Client

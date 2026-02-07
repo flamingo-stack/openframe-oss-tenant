@@ -1,0 +1,11 @@
+flowchart TD
+    Browser["Browser Client"] --> AuthControllers["Auth Controllers"]
+    AuthControllers --> DomainServices["Domain Services"]
+    AuthControllers --> SecurityFlows["SSO Flow Handlers"]
+    SecurityFlows --> OAuth["Spring Security OAuth2"]
+    OAuth --> Providers["External IdPs"]
+
+    subgraph auth_layer["Authorization Server"]
+        AuthControllers
+        SecurityFlows
+    end

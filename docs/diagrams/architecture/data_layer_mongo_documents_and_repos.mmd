@@ -1,0 +1,14 @@
+flowchart TD
+    ServiceLayer["API / Auth / Management Services"] --> Repositories["Mongo Repositories"]
+    Repositories --> CustomRepos["Custom Repository Implementations"]
+    CustomRepos --> Documents["Mongo Documents"]
+    Repositories --> Documents
+    Documents --> MongoDB[("MongoDB")]
+
+    subgraph config["Mongo Configuration"]
+        MongoConfig["MongoConfig"]
+        MongoIndexConfig["MongoIndexConfig"]
+    end
+
+    MongoConfig --> Repositories
+    MongoIndexConfig --> MongoDB

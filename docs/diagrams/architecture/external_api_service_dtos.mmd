@@ -1,0 +1,5 @@
+flowchart TD
+    Client["External API Client"] --> Controller["External API Controllers"]
+    Controller --> DTOs["External API DTOs"]
+    DTOs --> Services["Domain Services"]
+    Services --> DataLayer["Data Layer"]

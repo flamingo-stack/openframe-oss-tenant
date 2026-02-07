@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "OAuth BFF"
+    participant Authz as "Authorization Server"
+
+    Browser->>BFF: GET /oauth/login?tenantId=...
+    BFF->>Browser: 302 Redirect (authorize URL)<br/>Set state cookie
+    Browser->>Authz: Authorize request
+    Authz->>Browser: Redirect with code and state
+    Browser->>BFF: GET /oauth/callback?code=...&state=...
+    BFF->>Authz: Exchange code for tokens
+    Authz->>BFF: Access and refresh tokens
+    BFF->>Browser: 302 Redirect to app<br/>Set auth cookies

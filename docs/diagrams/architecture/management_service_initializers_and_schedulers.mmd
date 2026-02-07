@@ -1,0 +1,14 @@
+flowchart TD
+    AppStart["Application Startup"] --> InitPhase["Initializers"]
+    InitPhase --> AgentSecretInit["Agent Registration Secret"]
+    InitPhase --> ToolAgentInit["Integrated Tool Agents"]
+    InitPhase --> ClientConfigInit["Client Configuration"]
+    InitPhase --> NatsInit["NATS Streams"]
+    InitPhase --> TacticalInit["Tactical RMM Scripts"]
+
+    AppReady["Application Ready"] --> DebeziumInit["Debezium Connector Init"]
+
+    SchedulerPhase["Schedulers"] --> ApiKeySync["API Key Stats Sync"]
+    SchedulerPhase --> DebeziumHealth["Debezium Health Check"]
+
+    ToolSave["Integrated Tool Saved"] --> PostSaveHook["Post-Save Hook"]

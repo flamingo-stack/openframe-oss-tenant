@@ -1,0 +1,14 @@
+flowchart TD
+    Start["API Startup"] --> App["ApiApplication"]
+    App --> Config["Application Configuration"]
+    Config --> Security["SecurityConfig"]
+    Config --> AuthCtx["AuthenticationConfig"]
+    Config --> Scalars["GraphQL Scalars"]
+    Config --> Init["DataInitializer"]
+
+    Security --> Gateway["Gateway Service"]
+    AuthCtx --> Controllers["REST Controllers"]
+    AuthCtx --> GraphQL["GraphQL DataFetchers"]
+
+    Scalars --> GraphQL
+    Init --> DataLayer["Mongo OAuth Client Repository"]

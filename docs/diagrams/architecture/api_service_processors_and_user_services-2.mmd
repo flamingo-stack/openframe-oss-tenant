@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant API as "API Controller"
+    participant Service as "User Service"
+    participant Repo as "User Repository"
+    participant Processor as "User Processor"
+
+    API->>Service: listUsers(page, size)
+    Service->>Repo: findAll(pageable)
+    Repo->>Service: Page<User>
+    Service->>Processor: postProcessUserGet(response)
+    Service->>API: UserPageResponse

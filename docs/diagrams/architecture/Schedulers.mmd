@@ -1,0 +1,10 @@
+flowchart TD
+    SchedulerLayer["Schedulers Module"] --> ApiKeyScheduler["ApiKeyStatsSyncScheduler"]
+    SchedulerLayer --> DebeziumScheduler["DebeziumHealthCheckScheduler"]
+
+    ApiKeyScheduler --> ApiKeyService["ApiKeyStatsSyncService"]
+    DebeziumScheduler --> DebeziumService["DebeziumService"]
+
+    ApiKeyService --> RedisStore["Redis"]
+    ApiKeyService --> MongoStore["MongoDB"]
+    DebeziumService --> KafkaConnect["Debezium / Kafka Connect"]

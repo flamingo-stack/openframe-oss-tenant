@@ -1,0 +1,4 @@
+flowchart LR
+    Client["Client"] -->|"check tenant"| DiscoveryController["Tenant Discovery Controller"]
+    DiscoveryController -->|"resolve"| DiscoveryDTO["TenantDiscoveryResponse"]
+    DiscoveryController -->|"check availability"| AvailabilityDTO["TenantAvailabilityResponse"]

@@ -1,0 +1,31 @@
+flowchart TD
+    Frontend["Tenant Frontend<br/>(React + Hooks)"]
+    ChatClient["OpenFrame Chat Client"]
+    Gateway["Gateway Service"]
+    Authz["Authorization Server"]
+    Api["API Service"]
+    ExternalApi["External API Service"]
+    Management["Management Service"]
+    Stream["Stream Service"]
+    DataMongo["MongoDB"]
+    DataKafka["Kafka"]
+    DataPinot["Pinot / Analytics"]
+    DataCassandra["Cassandra"]
+
+    Frontend --> Gateway
+    ChatClient --> Gateway
+
+    Gateway --> Authz
+    Gateway --> Api
+    Gateway --> ExternalApi
+
+    Api --> Management
+    Api --> Stream
+
+    Stream --> DataKafka
+    Stream --> DataCassandra
+    Stream --> DataPinot
+
+    Api --> DataMongo
+    Management --> DataMongo
+    Authz --> DataMongo

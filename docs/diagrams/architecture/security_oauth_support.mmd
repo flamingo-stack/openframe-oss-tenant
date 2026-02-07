@@ -1,0 +1,17 @@
+flowchart LR
+    Browser["Browser or Frontend"] -->|"/oauth/login"| BFF["OAuth BFF Controller"]
+    BFF -->|"authorize redirect"| Authz["Authorization Server"]
+    Authz -->|"callback code"| BFF
+    BFF -->|"set cookies"| Browser
+
+    BFF --> Services["OAuth BFF Service"]
+    Services --> State["State and PKCE"]
+    Services --> Tokens["Token Exchange"]
+
+    subgraph Support["OAuth Support Components"]
+        Redirect["Redirect Target Resolver"]
+        DevTicket["Dev Ticket Store"]
+        Headers["Forwarded Headers Contributor"]
+    end
+
+    BFF --> Support

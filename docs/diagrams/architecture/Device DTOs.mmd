@@ -1,0 +1,25 @@
+classDiagram
+    class DeviceResponse {
+        String id
+        String machineId
+        String hostname
+        String displayName
+        String ip
+        String macAddress
+        String osUuid
+        String agentVersion
+        DeviceStatus status
+        Instant lastSeen
+        String organizationId
+        String serialNumber
+        String manufacturer
+        String model
+        DeviceType type
+        String osType
+        String osVersion
+        String osBuild
+        String timezone
+        Instant registeredAt
+        Instant updatedAt
+        List~TagResponse~ tags
+    }

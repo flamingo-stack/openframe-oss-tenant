@@ -1,0 +1,6 @@
+flowchart LR
+    Source["Integrated Tools"] --> KafkaIn["Inbound Kafka Topics"]
+    KafkaIn --> Listener["JsonKafkaListener"]
+    Listener --> Processor["Message Processor"]
+    Processor --> StreamLogic["Kafka Streams"]
+    StreamLogic --> KafkaOut["Outbound Topics"]

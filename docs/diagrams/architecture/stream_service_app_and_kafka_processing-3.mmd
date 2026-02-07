@@ -1,0 +1,4 @@
+flowchart TD
+    Config["KafkaStreamsConfiguration"] --> Serdes["Custom JSON SerDes"]
+    Config --> StateStore["Local State Store"]
+    Config --> Guarantees["At Least Once"]

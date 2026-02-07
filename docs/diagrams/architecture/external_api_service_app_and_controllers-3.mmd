@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming Request"] --> Lookup["IntegratedToolRepository"]
+    Lookup --> Validate["Tool Enabled?"]
+    Validate --> Resolve["ProxyUrlResolver"]
+    Resolve --> BuildHeaders["Build Tool Auth Headers"]
+    BuildHeaders --> HttpClient["Apache HttpClient"]
+    HttpClient --> ToolApi["Tool API"]
+    ToolApi --> Response["Raw HTTP Response"]

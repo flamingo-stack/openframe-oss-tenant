@@ -1,0 +1,11 @@
+flowchart TD
+    ExternalTools["External MSP Tools"] --> FleetDM["FleetDM API"]
+    ExternalTools --> TacticalRMM["Tactical RMM API"]
+
+    FleetDM --> FleetSDK["FleetMDM SDK Models"]
+    TacticalRMM --> TacticalSDK["TacticalRMM SDK Models & Parsers"]
+
+    FleetSDK --> OpenFrameServices["OpenFrame Services"]
+    TacticalSDK --> OpenFrameServices
+
+    OpenFrameServices --> DataLayer["Data & Domain Services"]

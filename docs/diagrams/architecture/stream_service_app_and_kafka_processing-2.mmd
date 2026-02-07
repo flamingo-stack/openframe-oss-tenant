@@ -1,0 +1,4 @@
+flowchart LR
+    Main["main()"] --> SpringBoot["SpringApplication.run"]
+    SpringBoot --> Kafka["@EnableKafka"]
+    SpringBoot --> Components["Component Scan"]

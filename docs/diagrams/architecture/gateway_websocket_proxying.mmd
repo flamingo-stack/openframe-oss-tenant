@@ -1,0 +1,14 @@
+flowchart TD
+    Client["WebSocket Client"] -->|"connects"| Gateway["Gateway Service"]
+
+    Gateway -->|"/ws/tools/agent/{toolId}"| AgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    Gateway -->|"/ws/tools/{toolId}"| ApiFilter["ToolApiWebSocketProxyUrlFilter"]
+    Gateway -->|"/ws/nats"| NatsBackend["NATS WebSocket"]
+
+    AgentFilter -->|"resolve URL"| ToolRepo["ReactiveIntegratedToolRepository"]
+    ApiFilter -->|"resolve URL"| ToolRepo
+
+    ToolRepo -->|"tool metadata"| ToolUrlService["ToolUrlService"]
+    ToolUrlService -->|"backend URL"| ProxyResolver["ProxyUrlResolver"]
+
+    ProxyResolver -->|"proxy to"| ToolBackend["Tool Backend WS"]

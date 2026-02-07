@@ -1,0 +1,13 @@
+flowchart TD
+    Client["Management API Client"] -->|"HTTP REST"| Controllers["Management Controllers"]
+
+    Controllers -->|"delegates"| DomainServices["Management Domain Services"]
+    DomainServices -->|"persist"| DataLayer["Data Layer"]
+
+    Controllers -->|"triggers"| Hooks["Post-Save Hooks"]
+    Controllers -->|"updates"| Debezium["Debezium Service"]
+
+    subgraph management_layer["Management Service"]
+        Controllers
+        DomainServices
+    end

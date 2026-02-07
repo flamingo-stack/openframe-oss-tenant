@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant Auth as Authorization Server
+    participant Keys as Tenant Key Service
+
+    User->>Auth: POST /oauth2/token
+    Auth->>Keys: getOrCreateActiveKey(tenantId)
+    Keys->>Auth: RSA Key (kid)
+    Auth->>Auth: Customize JWT claims
+    Auth->>User: JWT Access Token

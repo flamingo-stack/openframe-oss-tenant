@@ -1,0 +1,6 @@
+flowchart TD
+    Client["Frontend or External Client"] -->|"JSON request"| Controllers["Authorization Controllers"]
+    Controllers -->|"bind & validate"| DTOs["Authorization DTOs"]
+    DTOs -->|"validated data"| Processors["Registration and SSO Processors"]
+    Processors -->|"build response"| ResponseDTOs["Authorization DTO Responses"]
+    ResponseDTOs -->|"JSON response"| Client

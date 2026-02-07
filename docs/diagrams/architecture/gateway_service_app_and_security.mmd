@@ -1,0 +1,18 @@
+flowchart TD
+    Client["Client or Agent"] --> Gateway["Gateway Service"]
+
+    Gateway -->|"JWT Auth"| Security["Gateway Security Layer"]
+    Gateway -->|"API Key Auth"| ApiKeyFilter["API Key Filter"]
+    Gateway -->|"WebSocket"| WsProxy["WebSocket Proxy"]
+
+    Security --> Authz["Authorization Server"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> Management["Management Service"]
+
+    subgraph filters["Gateway Filters"]
+        Origin["Origin Sanitizer"]
+        AddAuth["Authorization Header Injector"]
+    end
+
+    Gateway --> filters

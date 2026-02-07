@@ -1,0 +1,22 @@
+flowchart TD
+    RestControllers["REST Controllers"] --> DomainServices["Core Domain Services"]
+    GraphQLFetchers["GraphQL DataFetchers"] --> DomainServices
+    DataLoaders["GraphQL DataLoaders"] --> DomainServices
+
+    DomainServices --> Repositories["Mongo Repositories"]
+    DomainServices --> Mappers["DTO Mappers"]
+
+    subgraph api_layer["API Layer"]
+        RestControllers
+        GraphQLFetchers
+        DataLoaders
+    end
+
+    subgraph domain_layer["Domain Services Layer"]
+        DomainServices
+        Mappers
+    end
+
+    subgraph data_layer["Data Layer"]
+        Repositories
+    end

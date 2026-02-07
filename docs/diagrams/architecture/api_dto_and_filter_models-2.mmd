@@ -1,0 +1,7 @@
+flowchart LR
+    ExternalAPI["External API"] --> DTOs
+    Frontend["Tenant Frontend"] --> DTOs
+    GraphQLLayer["GraphQL Layer"] --> DTOs
+
+    DTOs --> Services["Domain Services"]
+    Services --> Repos["Repositories"]

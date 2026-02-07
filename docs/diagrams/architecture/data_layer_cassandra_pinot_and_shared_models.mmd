@@ -1,0 +1,31 @@
+flowchart TD
+    AppServices["Application Services"] --> DataLayer["Data Layer Module"]
+
+    subgraph cassandra["Cassandra Support"]
+        CassandraConfig["CassandraConfig"]
+        KeyspaceNormalizer["CassandraKeyspaceNormalizer"]
+        CassandraHealth["CassandraHealthIndicator"]
+    end
+
+    subgraph pinot["Apache Pinot"]
+        PinotConfig["PinotConfig"]
+        DeviceRepo["PinotClientDeviceRepository"]
+        LogRepo["PinotClientLogRepository"]
+    end
+
+    subgraph events["Event Propagation"]
+        MachineTagService["MachineTagEventServiceImpl"]
+        Kafka["Kafka Topics"]
+    end
+
+    subgraph tools["Tool Integration"]
+        FleetSecret["FleetMdmAgentRegistrationSecretRetriever"]
+        TacticalSecret["TacticalRmmAgentRegistrationSecretRetriever"]
+    end
+
+    AppServices --> cassandra
+    AppServices --> pinot
+    cassandra --> events
+    events --> Kafka
+    pinot --> AppServices
+    tools --> AppServices

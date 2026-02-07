@@ -1,0 +1,10 @@
+flowchart LR
+    SourceEventTypes["Source Event Types"] --> EventTypeMapper["EventTypeMapper"]
+    EventTypeMapper --> UnifiedEventType["Unified Event Type"]
+
+    DebeziumPayload["Debezium CDC Payload"] --> ActivityMessage["ActivityMessage"]
+    DebeziumPayload --> HostActivityMessage["HostActivityMessage"]
+
+    ActivityMessage --> FleetActivityTypeMapping["FleetActivityTypeMapping"]
+
+    TimestampParser["TimestampParser"] --> StreamHandlers["Stream Handlers"]

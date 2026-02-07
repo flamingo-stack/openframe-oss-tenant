@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Frontend"] -->|"init SSO"| InitDTO["SsoTenantRegistrationInitRequest"]
+    InitDTO -->|"validated"| SSOProcessor["SSO Registration Processor"]
+    SSOProcessor -->|"redirect to IdP"| IdP["External Identity Provider"]
+    IdP -->|"callback"| AcceptDTO["SsoInvitationAcceptRequest"]

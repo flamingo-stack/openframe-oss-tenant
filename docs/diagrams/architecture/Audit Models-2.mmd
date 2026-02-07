@@ -1,0 +1,7 @@
+flowchart LR
+    SourceTools["Integrated Tools"] --> StreamService["Stream Service"]
+    StreamService --> DataStore["Analytics Store"]
+    DataStore --> ApiService["API Service"]
+    ApiService -->|"LogEvent"| ClientList["Logs List View"]
+    ApiService -->|"LogDetails"| ClientDetails["Log Details View"]
+    ApiService -->|"LogFilters"| ClientFilters["Filters UI"]

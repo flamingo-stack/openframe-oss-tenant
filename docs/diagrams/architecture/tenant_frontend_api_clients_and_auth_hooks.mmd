@@ -1,0 +1,14 @@
+flowchart TD
+    UI["Frontend Pages & Components"] --> Hooks["Auth Hooks"]
+    Hooks --> AuthStore["Auth Store"]
+    Hooks --> AuthApi["Auth API Client"]
+    Hooks --> ApiClient["Base API Client"]
+
+    ApiClient --> Gateway["Gateway Service"]
+    AuthApi --> Authz["Authorization Server"]
+
+    ApiClient --> FleetClient["Fleet API Client"]
+    ApiClient --> TacticalClient["Tactical API Client"]
+
+    FleetClient --> FleetSvc["Fleet MDM Backend"]
+    TacticalClient --> TacticalSvc["Tactical RMM Backend"]

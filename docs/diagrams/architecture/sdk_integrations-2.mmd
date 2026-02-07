@@ -1,0 +1,7 @@
+flowchart LR
+    Gateway["Gateway / External API"] --> Management["Management Service"]
+    Management --> SDK["sdk_integrations"]
+    SDK --> External["FleetDM / TacticalRMM"]
+
+    SDK --> Stream["Stream & Enrichment"]
+    Stream --> Data["Data Layer"]

@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Client
+    participant Authz as "Authorization Server"
+
+    Client->>Client: Generate state
+    Client->>Client: Generate code_verifier
+    Client->>Client: Generate code_challenge
+    Client->>Authz: Authorize request<br/>state + code_challenge
+    Authz->>Client: Authorization code
+    Client->>Authz: Token request<br/>code + code_verifier

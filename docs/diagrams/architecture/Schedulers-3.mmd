@@ -1,0 +1,5 @@
+flowchart TD
+    Trigger["Scheduled Trigger"] --> LockHC["Acquire ShedLock: debeziumHealthCheck"]
+    LockHC --> Check["checkAndRestartFailedTasks()"]
+    Check --> Restart["Restart Failed Tasks"]
+    Restart --> ReleaseHC["Release Lock"]

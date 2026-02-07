@@ -1,0 +1,12 @@
+flowchart TD
+    UI["Chat UI Components"] --> DebugCtx["DebugModeContext"]
+    UI --> TokenSvc["TokenService"]
+    UI --> DialogSvc["DialogGraphQLService"]
+    UI --> ModelsSvc["SupportedModelsService"]
+    UI --> MockSvc["MockChatService"]
+
+    TokenSvc -->|"provides token & API URL"| DialogSvc
+    TokenSvc -->|"provides token"| ModelsSvc
+
+    DialogSvc -->|"GraphQL"| Api["OpenFrame API<br/>Chat GraphQL"]
+    ModelsSvc -->|"REST"| Api

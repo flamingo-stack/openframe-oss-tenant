@@ -1,0 +1,4 @@
+flowchart LR
+    Controller["External Controller"] --> Mapper["DTO Mapper"]
+    Mapper --> Service["Domain Service"]
+    Service --> Repository["Data Layer"]

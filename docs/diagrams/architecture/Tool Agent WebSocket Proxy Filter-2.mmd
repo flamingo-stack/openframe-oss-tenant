@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Filter
+    participant Resolver
+    participant Agent
+
+    Client->>Gateway: WebSocket Upgrade Request
+    Gateway->>Filter: Match agent WS prefix
+    Filter->>Filter: Extract toolId from path
+    Filter->>Resolver: Resolve proxy URL
+    Resolver->>Agent: Determine backend endpoint
+    Gateway->>Agent: Proxy WebSocket connection

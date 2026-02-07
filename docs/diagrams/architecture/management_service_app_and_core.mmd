@@ -1,0 +1,12 @@
+flowchart TD
+    App["ManagementApplication"] --> Config["ManagementConfiguration"]
+    App --> Schedulers["Scheduled Jobs"]
+    App --> PinotInit["PinotConfigInitializer"]
+
+    Schedulers --> Redis["Redis Lock Provider"]
+    PinotInit --> Pinot["Pinot Controller"]
+
+    subgraph data_layer["Data Layer"]
+        Redis
+        Pinot
+    end

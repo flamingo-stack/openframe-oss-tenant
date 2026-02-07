@@ -1,0 +1,14 @@
+flowchart TD
+    Browser["Browser / Client"] -->|"Login / OAuth"| AuthServer["Authorization Server"]
+
+    AuthServer -->|"Resolve Tenant"| TenantFilter["Tenant Context Filter"]
+    TenantFilter --> TenantContext["Tenant Context"]
+
+    AuthServer --> SecurityCfg["Security Config"]
+    SecurityCfg --> LoginFlow["Form & SSO Login"]
+
+    LoginFlow --> TokenIssue["Token Issuance"]
+    TokenIssue --> JwkSource["Tenant JWK Source"]
+    JwkSource --> KeyService["Tenant Key Service"]
+
+    TokenIssue --> Client["JWT Access Token"]

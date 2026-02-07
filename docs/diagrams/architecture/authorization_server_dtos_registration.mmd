@@ -1,0 +1,4 @@
+flowchart LR
+    User["User"] -->|"submit registration"| Controller["Registration Controller"]
+    Controller -->|"bind request"| TenantRegDTO["TenantRegistrationRequest"]
+    TenantRegDTO -->|"validated input"| Processor["Registration Processor"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Scheduled Trigger"] --> Lock["Acquire ShedLock: apiKeyStatsSync"]
+    Lock --> Sync["syncStatsToMongo()"]
+    Sync --> Success["Log Success"]
+    Sync --> Error["Log Error"]
+    Success --> Release["Release Lock"]
+    Error --> Release

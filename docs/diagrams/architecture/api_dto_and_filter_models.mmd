@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Frontend / External Client"] --> API["API Service"]
+    API --> GraphQL["GraphQL DataFetchers"]
+    API --> REST["REST Controllers"]
+
+    GraphQL --> DTOs["API DTO and Filter Models"]
+    REST --> DTOs
+
+    DTOs --> Domain["Core Domain Services"]
+    Domain --> Data["Data Layer"]

@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming HTTP Request"] --> Controller["Integration Controller"]
+    Controller -->|"health or test"| IntegrationService["Integration Service"]
+    Controller -->|"proxy API"| RestProxyService["REST Proxy Service"]
+    Controller -->|"proxy agent"| RestProxyService

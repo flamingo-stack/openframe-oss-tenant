@@ -1,0 +1,14 @@
+flowchart TD
+    Client["GraphQL Client"] --> Gateway["API Gateway"]
+    Gateway --> GraphQLLayer["GraphQL DataFetchers"]
+
+    GraphQLLayer --> DeviceService["Device Domain Services"]
+    GraphQLLayer --> EventService["Event Domain Services"]
+    GraphQLLayer --> LogService["Log Domain Services"]
+    GraphQLLayer --> OrganizationService["Organization Domain Services"]
+    GraphQLLayer --> ToolService["Tool Domain Services"]
+
+    GraphQLLayer --> DataLoaders["GraphQL DataLoaders"]
+
+    DataLoaders --> Mongo["MongoDB"]
+    DataLoaders --> Pinot["Pinot / Analytics Stores"]

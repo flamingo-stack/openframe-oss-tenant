@@ -1,0 +1,7 @@
+flowchart TD
+    Client["WebSocket Client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> Filter["Tool Agent WebSocket Proxy Filter"]
+    Filter --> Repo["ReactiveIntegratedToolRepository"]
+    Filter --> UrlService["ToolUrlService"]
+    Filter --> Resolver["ProxyUrlResolver"]
+    Resolver --> Agent["Tool Agent Backend"]

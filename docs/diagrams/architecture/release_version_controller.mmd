@@ -1,0 +1,7 @@
+sequenceDiagram
+    participant Client
+    participant Controller as "ReleaseVersionController"
+    participant Service as "ReleaseVersionService"
+
+    Client->>Controller: POST /v1/cluster-registrations
+    Controller->>Service: process(imageTagVersion)

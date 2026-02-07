@@ -1,0 +1,5 @@
+flowchart TD
+    UI["React UI Components"] --> Hooks["Domain Hooks"]
+    Hooks --> Stores["Zustand Stores"]
+    Hooks --> ApiClients["Frontend API Clients"]
+    ApiClients --> Backend["Gateway / GraphQL / Chat APIs"]

@@ -1,0 +1,5 @@
+flowchart TD
+    DeviceUpdate["Device Status Update"] --> ApiService["API Domain Services"]
+    ApiService --> Processor["Device Status Processor"]
+    Processor --> LogOnly["Default: Debug Logging"]
+    Processor --> CustomLogic["Optional Custom Implementation"]

@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client
+    participant GraphQL as "GraphQL DataFetcher"
+    participant Loader as "DataLoader"
+    participant Service as "Domain Service"
+    participant DB as "Data Store"
+
+    Client->>GraphQL: Query devices
+    GraphQL->>Service: queryDevices(filters, pagination)
+    Service->>DB: Fetch devices
+    DB-->>Service: Device list
+    Service-->>GraphQL: Domain result
+    GraphQL->>Loader: Load tags, tools, agents
+    Loader->>DB: Batch fetch related data
+    DB-->>Loader: Batched results
+    Loader-->>GraphQL: Resolved fields
+    GraphQL-->>Client: GraphQL response

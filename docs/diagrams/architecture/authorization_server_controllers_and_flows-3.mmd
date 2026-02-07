@@ -1,0 +1,5 @@
+flowchart LR
+    User["User"] --> Request["Reset Request"]
+    Request --> Token["Reset Token Issued"]
+    Token --> Confirm["Reset Confirm"]
+    Confirm --> Updated["Password Updated"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Client["GraphQL Client"] --> Schema["GraphQL Schema"]
+    Schema --> Inputs["GraphQL Inputs<br/>This Module"]
+    Schema --> Outputs["GraphQL DTOs<br/>This Module"]
+
+    Inputs --> Fetchers["GraphQL DataFetchers"]
+    Fetchers --> Services["Domain Services"]
+    Services --> DomainDtos["Core Domain DTOs"]
+
+    Services --> Outputs
