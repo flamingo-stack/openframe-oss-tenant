@@ -1,0 +1,13 @@
+flowchart TD
+    Agent["Client Agent"] -->|"REST"| Controllers["Client Controllers"]
+    Controllers --> Services["Client Services"]
+    Services --> DataLayer["Data Layer"]
+
+    Agent -->|"NATS Events"| Listeners["NATS Listeners"]
+    Listeners --> Services
+
+    subgraph client_core["client_service_core"]
+        Controllers
+        Listeners
+        Services
+    end

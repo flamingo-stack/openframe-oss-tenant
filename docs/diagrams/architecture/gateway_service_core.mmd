@@ -1,0 +1,18 @@
+flowchart TD
+    Client["Client or Agent"] --> Gateway["Gateway Service"]
+
+    Gateway -->|"JWT Auth"| Authz["Authorization Server"]
+    Gateway -->|"REST Proxy"| ToolsAPI["Integrated Tool API"]
+    Gateway -->|"Agent Proxy"| ToolsAgent["Integrated Tool Agent"]
+    Gateway -->|"WebSocket"| ToolsWS["Tool WebSocket"]
+    Gateway -->|"NATS WS"| NatsWS["NATS WebSocket"]
+
+    subgraph security_layer["Security Layer"]
+        JwtAuth["JWT Validation"]
+        ApiKeyAuth["API Key Filter"]
+        RateLimit["Rate Limiting"]
+    end
+
+    Gateway --> JwtAuth
+    Gateway --> ApiKeyAuth
+    ApiKeyAuth --> RateLimit

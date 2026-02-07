@@ -1,0 +1,6 @@
+flowchart TD
+    Scheduler["DebeziumHealthCheckScheduler"] -->|"trigger"| Lock["Acquire Distributed Lock"]
+    Lock -->|"success"| Service["DebeziumService"]
+    Service --> Check["Check Connector Status"]
+    Check -->|"failed"| Restart["Restart Failed Tasks"]
+    Check -->|"healthy"| Done["No Action"]

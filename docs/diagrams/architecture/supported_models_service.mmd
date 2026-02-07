@@ -1,0 +1,6 @@
+flowchart TD
+    Request["loadSupportedModels"] --> Check["Already Loaded?"]
+    Check -->|Yes| End["Return"]
+    Check -->|No| Fetch["Fetch Models"]
+    Fetch --> Cache["Populate Map"]
+    Cache --> End

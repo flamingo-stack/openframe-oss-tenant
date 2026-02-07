@@ -1,0 +1,5 @@
+flowchart TD
+    ManagementService["Management Service"] --> Schedulers["Schedulers Module"]
+    Schedulers --> Redis["Redis"]
+    Schedulers --> Mongo["MongoDB"]
+    Schedulers --> Debezium["Debezium Connectors"]

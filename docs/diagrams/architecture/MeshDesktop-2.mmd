@@ -1,0 +1,6 @@
+flowchart TD
+    Attach["attach(canvas)"] --> Init["initializeDesktop"]
+    Init --> Listen["Register Input Listeners"]
+    Listen --> Active["Active Session"]
+    Active --> Detach["detach()"]
+    Detach --> Cleanup["Remove Listeners & Buffers"]

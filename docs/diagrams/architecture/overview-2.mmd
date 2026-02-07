@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant Authz as "Authorization Server"
+    participant Api as "API Service"
+
+    Browser->>Gateway: Request (JWT / Cookie)
+    Gateway->>Authz: Validate issuer & signature
+    Authz-->>Gateway: Valid principal
+    Gateway->>Api: Forward request + auth context
+    Api-->>Gateway: Response
+    Gateway-->>Browser: Response

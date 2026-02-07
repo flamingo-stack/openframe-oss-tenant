@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Frontend
+    participant Agent
+
+    Frontend->>Agent: KVM_INIT
+    Frontend->>Agent: COMPRESSION (JPEG, quality, scaling)
+    Frontend->>Agent: PAUSE (unpause)
+    Frontend->>Agent: REFRESH
+    Frontend->>Agent: DISPLAY_LIST

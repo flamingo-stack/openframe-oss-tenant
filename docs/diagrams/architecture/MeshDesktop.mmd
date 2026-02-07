@@ -1,0 +1,8 @@
+flowchart LR
+    UI["Frontend UI"] --> Canvas["HTMLCanvasElement"]
+    Canvas --> MeshDesktop["MeshDesktop"]
+    MeshDesktop --> Sender["Binary Sender"]
+    Sender --> Gateway["Gateway Service"]
+    Gateway --> Agent["Remote Agent"]
+    Agent --> Gateway
+    Gateway --> MeshDesktop

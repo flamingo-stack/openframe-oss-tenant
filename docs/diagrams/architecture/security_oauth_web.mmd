@@ -1,0 +1,9 @@
+flowchart TD
+    Browser["Browser / Frontend"] -->|"/oauth/login"| BffController["OAuth BFF Controller"]
+    BffController -->|"authorize redirect"| AuthServer["Authorization Server"]
+    AuthServer -->|"code + state"| BffCallback["/oauth/callback"]
+    BffCallback -->|"token exchange"| OAuthService["OAuth BFF Service"]
+    OAuthService -->|"access & refresh tokens"| CookieLayer["Auth Cookies"]
+    CookieLayer --> Browser
+
+    BffCallback -->|"optional"| DevTicketStore["OAuth Dev Ticket Store"]

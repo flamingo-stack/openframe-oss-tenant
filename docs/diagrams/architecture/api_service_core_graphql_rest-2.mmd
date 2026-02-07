@@ -1,0 +1,4 @@
+flowchart LR
+    Gateway["Gateway JWT Validation"] --> ApiService["API Service"]
+    ApiService --> JwtResolver["Issuer Resolver"]
+    JwtResolver --> JwtCache["JWT Provider Cache"]

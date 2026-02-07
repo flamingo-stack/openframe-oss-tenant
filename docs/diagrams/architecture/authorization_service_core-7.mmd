@@ -1,0 +1,4 @@
+flowchart TD
+    Start["Register Tenant"] --> Local["Password Registration"]
+    Start --> SSO["SSO Registration"]
+    SSO --> Tenant["Tenant Created"]

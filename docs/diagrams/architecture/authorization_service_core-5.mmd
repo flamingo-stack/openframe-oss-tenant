@@ -1,0 +1,4 @@
+flowchart LR
+    OAuthReq["OAuth2 Login"] --> Repo["DynamicClientRegistrationRepository"]
+    Repo --> Service["DynamicClientRegistrationService"]
+    Service --> Client["ClientRegistration"]

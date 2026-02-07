@@ -1,0 +1,9 @@
+flowchart LR
+    Client["WebSocket Client"] --> GatewayWS["Gateway WS Router"]
+
+    GatewayWS -->|"Tool Agent"| AgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    GatewayWS -->|"Tool API"| ApiFilter["ToolApiWebSocketProxyUrlFilter"]
+
+    AgentFilter --> ToolAgentWS["Tool Agent WS"]
+    ApiFilter --> ToolApiWS["Tool API WS"]
+    GatewayWS --> NatsWS["NATS WS"]

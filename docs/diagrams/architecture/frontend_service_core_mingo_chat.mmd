@@ -1,0 +1,9 @@
+flowchart TD
+    UI["Chat UI Components"] --> Hooks["React Hooks"]
+    Hooks --> ApiService["Mingo API Service"]
+    Hooks --> Store["Mingo Messages Store"]
+
+    ApiService --> ApiClient["Frontend ApiClient"]
+    ApiClient --> Backend["Chat API Backend"]
+
+    Store --> UI

@@ -1,0 +1,12 @@
+flowchart TD
+    ManagementService["Management Service Core"] --> Controllers["REST Controllers"]
+    ManagementService --> Initializers["Startup Initializers"]
+    ManagementService --> Schedulers["Distributed Schedulers"]
+    ManagementService --> ExternalSystems["External Systems"]
+
+    Controllers --> DataLayer["MongoDB & Redis"]
+    Initializers --> DataLayer
+    Schedulers --> DataLayer
+
+    Initializers --> ExternalSystems
+    Schedulers --> ExternalSystems

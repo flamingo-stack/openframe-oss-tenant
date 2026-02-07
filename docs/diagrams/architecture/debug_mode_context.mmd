@@ -1,0 +1,6 @@
+flowchart TD
+    Start["App Startup"] --> Fetch["invoke get_debug_mode"]
+    Fetch --> Success["Set debugMode true or false"]
+    Fetch --> Error["Fallback to false"]
+    Success --> Provide["Context Provider"]
+    Error --> Provide

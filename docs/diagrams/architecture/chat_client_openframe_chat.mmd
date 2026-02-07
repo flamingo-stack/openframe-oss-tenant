@@ -1,0 +1,9 @@
+flowchart TD
+    ClientUI["Desktop Chat UI"] --> ChatClient["chat_client_openframe_chat"]
+    ChatClient --> Gateway["OpenFrame Gateway"]
+    Gateway --> ApiService["OpenFrame API Service"]
+    ApiService --> GraphQL["Chat GraphQL API"]
+    ApiService --> RestApi["Chat REST API"]
+
+    ChatClient --> Tauri["Tauri Runtime"]
+    Tauri --> AuthZ["Authorization Server"]

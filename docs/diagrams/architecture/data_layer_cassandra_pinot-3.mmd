@@ -1,0 +1,7 @@
+flowchart LR
+    API["API / GraphQL Layer"] --> Repo["Pinot Repositories"]
+    Repo --> QB["PinotQueryBuilder"]
+    QB --> Query["Pinot SQL"]
+    Query --> Broker[("Pinot Broker")]
+    Broker --> Result["ResultSet"]
+    Result --> Projection["Domain Projections"]

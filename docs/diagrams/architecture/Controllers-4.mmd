@@ -1,0 +1,4 @@
+flowchart TD
+    Client["CI/CD or Cluster"] --> Controller["ReleaseVersionController"]
+    Controller --> Service["ReleaseVersionService"]
+    Service --> State["Update Cluster Version State"]

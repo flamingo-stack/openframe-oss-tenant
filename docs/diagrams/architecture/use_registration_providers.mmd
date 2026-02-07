@@ -1,0 +1,4 @@
+flowchart TD
+    UI["Registration UI"] -->|"use hook"| Hook["useRegistrationProviders"]
+    Hook -->|"HTTP request"| AuthApiClient["Auth API Client"]
+    AuthApiClient -->|"GET /registration/providers"| AuthService["Authorization Service"]

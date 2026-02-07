@@ -1,0 +1,18 @@
+flowchart TD
+    AppService["Application Service"] -->|"produce events"| Producer["OssTenantKafkaProducer"]
+    Producer -->|"send"| Kafka[("Kafka Cluster")]
+
+    Kafka -->|"consume"| Listener["Kafka Listener"]
+    Listener -->|"deserialize"| MessageModel["DebeziumMessage"]
+
+    Producer -->|"on failure"| Recovery["KafkaRecoveryHandlerImpl"]
+
+    subgraph kafka_config["Kafka Configuration Layer"]
+        Props["OssTenantKafkaProperties"]
+        Topics["KafkaTopicProperties"]
+        AutoConfig["OssTenantKafkaAutoConfiguration"]
+    end
+
+    AutoConfig --> Producer
+    AutoConfig --> Listener
+    AutoConfig --> Topics

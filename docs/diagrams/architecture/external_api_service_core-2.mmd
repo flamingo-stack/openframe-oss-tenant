@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant ExternalApi as "External API"
+    participant Proxy as "Rest Proxy Service"
+    participant Tool as "Integrated Tool"
+
+    Client->>ExternalApi: HTTP request /tools/{toolId}/path
+    ExternalApi->>Proxy: proxyApiRequest(toolId)
+    Proxy->>Tool: Forwarded HTTP request
+    Tool->>Proxy: HTTP response
+    Proxy->>ExternalApi: ResponseEntity
+    ExternalApi->>Client: HTTP response

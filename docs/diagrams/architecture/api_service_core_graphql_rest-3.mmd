@@ -1,0 +1,5 @@
+flowchart TD
+    Admin["Admin User"] --> SSOController["SSOConfigController"]
+    SSOController --> SSOService["SSOConfigService"]
+    SSOService --> Repo["SSOConfigRepository"]
+    SSOService --> Processor["SSOConfigProcessor"]

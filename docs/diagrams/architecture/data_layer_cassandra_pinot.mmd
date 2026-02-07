@@ -1,0 +1,16 @@
+flowchart TD
+    App["Application Services"] --> Config["Data Configuration"]
+    Config --> CassandraCfg["CassandraConfig"]
+    Config --> PinotCfg["PinotConfig"]
+
+    CassandraCfg --> Cassandra[("Cassandra Cluster")]
+    PinotCfg --> PinotBroker[("Pinot Broker")]
+    PinotCfg --> PinotController[("Pinot Controller")]
+
+    App --> DeviceRepo["PinotClientDeviceRepository"]
+    App --> LogRepo["PinotClientLogRepository"]
+
+    DeviceRepo --> PinotBroker
+    LogRepo --> PinotBroker
+
+    CassandraCfg --> Health["CassandraHealthIndicator"]

@@ -1,0 +1,10 @@
+flowchart LR
+    UI["React Components"] --> TokenSvc["TokenService"]
+    UI --> DialogSvc["DialogGraphQLService"]
+    DialogSvc --> Gateway["Gateway /chat/graphql"]
+
+    UI --> ModelsSvc["SupportedModelsService"]
+    ModelsSvc --> ApiCfg["/ai-configuration/supported-models"]
+
+    UI --> DebugCtx["DebugModeContext"]
+    DebugCtx --> Tauri["Tauri Commands"]

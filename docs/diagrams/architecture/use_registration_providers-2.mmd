@@ -1,0 +1,6 @@
+flowchart LR
+    Start["Component Mount"] --> Fetch["Fetch Providers"]
+    Fetch --> Success["Providers Returned"]
+    Fetch --> Failure["Error Occurred"]
+    Success --> StateReady["Update Providers State"]
+    Failure --> ErrorState["Set Error State"]

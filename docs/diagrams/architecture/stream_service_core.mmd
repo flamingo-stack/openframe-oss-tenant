@@ -1,0 +1,16 @@
+flowchart TD
+    KafkaIn["Inbound Kafka Topics"] --> Listener["JsonKafkaListener"]
+    Listener --> Processor["GenericJsonMessageProcessor"]
+    Processor --> Deserializer["Tool-Specific Deserializers"]
+    Deserializer --> Enrichment["IntegratedToolDataEnrichmentService"]
+    Enrichment --> Mapper["EventTypeMapper"]
+    Mapper --> Handler["DebeziumMessageHandlers"]
+
+    Handler --> KafkaOut["Outbound Kafka Topics"]
+    Handler --> Cassandra["Cassandra Storage"]
+
+    subgraph Streams["Kafka Streams"]
+        FleetAct["Fleet Activity Topic"] --> Joiner["ActivityEnrichmentService"]
+        HostAct["Fleet Host Activity Topic"] --> Joiner
+        Joiner --> EnrichedFleet["Enriched Fleet Events Topic"]
+    end

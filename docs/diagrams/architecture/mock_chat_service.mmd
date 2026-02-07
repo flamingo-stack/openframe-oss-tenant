@@ -1,0 +1,7 @@
+flowchart TD
+    Input["User Message"] --> Decide["Tool Execution?"]
+    Decide -->|Yes| Tool["Stream Tool Execution"]
+    Decide -->|No| Text["Stream Text Chunks"]
+    Tool --> FollowUp["Follow-up Text"]
+    Text --> End["Complete"]
+    FollowUp --> End

@@ -1,0 +1,5 @@
+flowchart LR
+    TenantContext["Tenant Context"] --> KeyBuilder["Openframe Redis Key Builder"]
+    KeyBuilder --> KeyPrefix["Tenant-Aware Prefix"]
+    KeyPrefix --> RedisKey["Final Redis Key"]
+    RedisKey --> RedisStore[("Redis")]

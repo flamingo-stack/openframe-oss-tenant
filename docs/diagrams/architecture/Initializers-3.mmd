@@ -1,0 +1,8 @@
+flowchart TD
+    Ready["Application Ready"] --> EnabledCheck["Pinot Enabled?"]
+    EnabledCheck -->|"No"| Skip["Skip Deployment"]
+    EnabledCheck -->|"Yes"| LoadConfigs["Load Schema & Table Configs"]
+
+    LoadConfigs --> DeploySchema["Deploy Schema"]
+    DeploySchema --> DeployTable["Deploy Table Config"]
+    DeployTable --> RetryLogic["Retry on Failure"]

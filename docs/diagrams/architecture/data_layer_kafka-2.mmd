@@ -1,0 +1,4 @@
+flowchart LR
+    Startup["Service Startup"] --> Config["KafkaTopicProperties"]
+    Config --> Admin["KafkaAdmin"]
+    Admin -->|"register topics"| Kafka[("Kafka Cluster")]

@@ -1,0 +1,9 @@
+flowchart LR
+    Tools["Integrated Tools / Agents"] --> KafkaIn["Kafka Inbound Topics"]
+    KafkaIn --> StreamCore["Stream Service Core"]
+    StreamCore --> Enrich["Event Enrichment"]
+    Enrich --> KafkaOut["Kafka Outbound Topics"]
+    Enrich --> Cassandra["Cassandra"]
+    Enrich --> Pinot["Pinot"]
+    Api["API Services"] --> Pinot
+    Api --> Cassandra

@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Management Client"] --> Controller["Management Controllers"]
+    Controller --> ToolService["IntegratedToolService"]
+    Controller --> ReleaseService["ReleaseVersionService"]
+    Controller --> DebeziumService["DebeziumService"]
+    Controller --> Hook["IntegratedToolPostSaveHook"]
+    ToolService --> DataStore["Mongo Data Layer"]
+    DebeziumService --> StreamInfra["Debezium / Kafka"]

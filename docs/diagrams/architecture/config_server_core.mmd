@@ -1,0 +1,4 @@
+flowchart TD
+    ClientService["OpenFrame Service"] -->|"HTTP GET /logging/*"| ConfigServer["Config Server"]
+    ConfigServer --> LoggingController["LoggingConfigController"]
+    LoggingController --> Classpath["Classpath logging resources"]

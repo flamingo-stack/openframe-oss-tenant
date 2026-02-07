@@ -1,0 +1,11 @@
+flowchart TD
+    Client["Frontend or API Client"] --> Gateway["OpenFrame Gateway"]
+    Gateway --> RestControllers["REST Controllers"]
+    Gateway --> GraphQL["GraphQL DGS Engine"]
+
+    RestControllers --> Services["Domain Services"]
+    GraphQL --> DataFetchers["GraphQL DataFetchers"]
+    DataFetchers --> Services
+
+    Services --> DataLoaders["GraphQL DataLoaders"]
+    Services --> DataLayer["Data Layer (Mongo, Cassandra, Pinot)"]

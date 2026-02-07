@@ -1,0 +1,6 @@
+flowchart TD
+    Scheduler["ApiKeyStatsSyncScheduler"] -->|"trigger"| Lock["Acquire Distributed Lock"]
+    Lock -->|"success"| Service["ApiKeyStatsSyncService"]
+    Service --> Redis["Read Stats from Redis"]
+    Service --> Mongo["Persist Stats to MongoDB"]
+    Mongo --> Log["Log Completion"]

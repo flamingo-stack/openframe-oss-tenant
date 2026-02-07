@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Service as "Requesting Service"
+    participant Config as "Config Server"
+    participant Controller as "LoggingConfigController"
+
+    Service->>Config: GET /logging/logback.xml
+    Config->>Controller: Route request
+    Controller->>Controller: Load classpath resource
+    Controller->>Controller: Rewrite resource URLs
+    Controller->>Service: Return XML content

@@ -1,0 +1,4 @@
+flowchart TD
+    HealthCheck["Actuator Health Endpoint"] --> Indicator["CassandraHealthIndicator"]
+    Indicator --> Query["system.local"]
+    Query --> Status["UP or DOWN"]

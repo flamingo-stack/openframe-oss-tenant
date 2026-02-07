@@ -1,0 +1,5 @@
+flowchart TD
+    CDC["Debezium Connector"] --> Kafka[("Kafka Topic")]
+    Kafka --> Consumer["Kafka Listener"]
+    Consumer --> DebeziumMsg["DebeziumMessage"]
+    DebeziumMsg --> Processor["Stream / Enrichment Service"]

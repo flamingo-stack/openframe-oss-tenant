@@ -1,0 +1,6 @@
+flowchart TD
+    Caller["UI or Hook"] --> Ensure["ensureTokenReady"]
+    Ensure --> Init["Initialize GraphQLClient"]
+    Init --> Request["GraphQL Request"]
+    Request --> Parse["Map to Typed Models"]
+    Parse --> Caller

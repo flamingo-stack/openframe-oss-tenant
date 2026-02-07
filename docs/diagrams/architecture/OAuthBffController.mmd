@@ -1,0 +1,11 @@
+flowchart LR
+    Browser["Browser Client"] -->|"/oauth/login"| Bff["OAuthBffController"]
+    Bff -->|"Authorize Redirect"| Authz["Authorization Server"]
+    Authz -->|"code + state"| Bff
+    Bff -->|"Set Cookies"| Browser
+
+    subgraph SecurityLayer["Security OAuth Layer"]
+        Bff --> Service["OAuthBffService"]
+        Bff --> Cookies["CookieService"]
+        Bff --> DevStore["OAuthDevTicketStore"]
+    end

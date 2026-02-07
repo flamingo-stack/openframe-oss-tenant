@@ -1,0 +1,4 @@
+flowchart TD
+    Invite["Invitation Link"] --> Accept["InvitationRegistrationController"]
+    Accept --> SSO["Optional SSO Flow"]
+    SSO --> User["User Created"]

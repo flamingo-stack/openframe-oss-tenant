@@ -1,0 +1,13 @@
+flowchart TD
+    UI["Auth Pages"] -->|"calls hooks"| AuthHooks["Auth Hooks"]
+
+    AuthHooks -->|"REST / OAuth"| AuthApi["Auth API Client"]
+    AuthHooks -->|"/me"| ApiClient["Core API Client"]
+
+    AuthApi --> Gateway["API Gateway"]
+    Gateway --> Authz["Authorization Server"]
+
+    AuthHooks --> Store["Auth Store"]
+    AuthHooks --> Storage["Token Storage"]
+
+    Authz --> Data["User & Tenant Data"]

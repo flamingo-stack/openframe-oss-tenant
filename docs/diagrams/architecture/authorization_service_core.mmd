@@ -1,0 +1,10 @@
+flowchart TD
+    Browser["User Browser"] -->|"login / oauth"| AuthServer["Authorization Server"]
+    AuthServer -->|"OIDC / OAuth2"| IdP["External IdP<br/>Google / Microsoft"]
+    AuthServer -->|"JWT Issuance"| JWKS["Tenant JWKS"]
+    AuthServer -->|"persist"| MongoDB[("MongoDB")]
+
+    subgraph authz_core["authorization_service_core"]
+        AuthServer
+        JWKS
+    end

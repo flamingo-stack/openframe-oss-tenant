@@ -1,0 +1,5 @@
+flowchart LR
+    Request["DISPLAY_LIST"] --> Agent
+    Agent --> Response["Display Metadata"]
+    Response --> ParseDisplay["parseDisplayList"]
+    ParseDisplay --> UIUpdate["onDisplayListChange"]

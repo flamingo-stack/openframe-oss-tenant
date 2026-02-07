@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Application Startup"] --> Normalize["CassandraKeyspaceNormalizer"]
+    Normalize --> Props["Normalized Keyspace Properties"]
+    Props --> InitCfg["CassandraConfig"]
+    InitCfg --> EnsureKS["Ensure Keyspace Exists"]
+    EnsureKS --> Session["CqlSessionFactoryBean"]
+    Session --> Ready["Cassandra Ready"]

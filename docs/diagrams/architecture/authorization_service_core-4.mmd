@@ -1,0 +1,5 @@
+flowchart TD
+    User["User"] --> Login["/login"]
+    Login --> Auth["Authentication"]
+    Auth --> Success["AuthSuccessHandler"]
+    Success --> Redirect["Target App"]

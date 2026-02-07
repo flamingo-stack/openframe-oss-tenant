@@ -1,0 +1,12 @@
+flowchart TD
+    AppService["Application Service"] --> CacheLayer["Spring Cache Abstraction"]
+    AppService --> RedisTemplate["Redis Template"]
+
+    CacheLayer --> CacheManager["Redis CacheManager"]
+    CacheManager --> RedisConnection["Redis Connection Factory"]
+
+    RedisTemplate --> RedisConnection
+
+    CacheManager --> KeyBuilder["Redis Key Builder"]
+    KeyBuilder --> RedisStore[("Redis Instance")]
+    RedisTemplate --> RedisStore

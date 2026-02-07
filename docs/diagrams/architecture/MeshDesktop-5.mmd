@@ -1,0 +1,6 @@
+flowchart TD
+    BinaryFrame["Binary Frame"] --> Parse["Parse Header"]
+    Parse --> Queue["Tile Queue"]
+    Queue --> Decode["JPEG Decode"]
+    Decode --> DrawQueue["Draw Queue"]
+    DrawQueue --> CanvasDraw["Canvas drawImage"]

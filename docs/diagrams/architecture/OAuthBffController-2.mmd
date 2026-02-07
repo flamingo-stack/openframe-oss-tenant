@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant U as User Browser
+    participant B as OAuthBffController
+    participant S as OAuthBffService
+    participant A as Authorization Server
+
+    U->>B: GET /oauth/login
+    B->>S: buildAuthorizeRedirect()
+    S-->>B: authorizeUrl + state
+    B->>U: 302 Redirect + state cookie
+    U->>A: Authorization Request
+    A->>U: Redirect with code + state
+    U->>B: GET /oauth/callback
+    B->>S: handleCallback()
+    S-->>B: TokenResponse
+    B->>U: 302 Redirect + auth cookies

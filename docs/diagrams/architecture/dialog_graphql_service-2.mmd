@@ -1,0 +1,4 @@
+flowchart LR
+    DialogSvc["DialogGraphQLService"] --> Gateway["/chat/graphql"]
+    Gateway --> Api["OpenFrame API"]
+    Api --> DialogSvc

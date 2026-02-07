@@ -1,0 +1,6 @@
+flowchart TD
+    Jwt["Incoming JWT"] --> Issuer["Extract Issuer"]
+    Issuer --> Cache["Issuer Manager Cache"]
+    Cache --> Decoder["JWT Decoder"]
+    Decoder --> Validator["Issuer & Signature Validation"]
+    Validator --> AuthContext["Authenticated Principal"]

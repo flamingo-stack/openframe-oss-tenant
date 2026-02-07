@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant User
+    participant UI
+    participant Hook as "useMingoDialog"
+    participant Store
+    participant API as "Chat API"
+
+    User->>UI: Enter message
+    UI->>Hook: sendMessage(content)
+    Hook->>API: POST /dialogs (if needed)
+    Hook->>API: POST /messages
+    API->>Hook: Message acknowledged
+    Hook->>Store: Update messages state
+    Store->>UI: Render updated conversation

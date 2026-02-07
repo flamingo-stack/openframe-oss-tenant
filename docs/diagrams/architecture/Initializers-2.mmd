@@ -1,0 +1,11 @@
+flowchart TD
+    LoadConfig["Load Agent JSON"] --> ExistsCheck["Agent Exists?"]
+
+    ExistsCheck -->|"No"| CreateAgent["Create Agent"]
+    ExistsCheck -->|"Yes"| UpdateAgent["Update Agent"]
+
+    UpdateAgent --> ReleaseCheck["Release Version?"]
+    ReleaseCheck -->|"Yes"| PreserveVersion["Preserve Existing Version"]
+    ReleaseCheck -->|"No"| CompareVersion["Compare Versions"]
+
+    CompareVersion -->|"Changed"| PublishEvent["Publish Update Event"]

@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Agent
+    participant ClientService
+    participant Processor
+
+    Agent->>ClientService: Register Agent Request
+    ClientService->>Processor: Process Registration
+    Processor->>Processor: Transform Agent ID
+    Processor->>ClientService: Registration Result
+    ClientService->>Agent: Registration Response

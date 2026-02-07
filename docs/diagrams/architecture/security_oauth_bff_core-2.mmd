@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant BFF
+    participant Auth as "Authorization Server"
+
+    Browser->>BFF: Initiate login
+    BFF->>BFF: Generate state<br/>Generate code_verifier
+    BFF->>Auth: Redirect with code_challenge
+    Auth->>Browser: Redirect with authorization code
+    Browser->>BFF: Authorization code + state
+    BFF->>Auth: Token request with code_verifier
+    Auth->>BFF: JWT access token

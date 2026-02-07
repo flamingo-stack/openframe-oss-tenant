@@ -1,0 +1,5 @@
+flowchart TD
+    Agent["Client or Tool Agent"] -->|"HTTPS / REST"| ClientService["Service Client Agent"]
+    ClientService -->|"Events"| Kafka["Kafka Producer"]
+    ClientService -->|"Security"| Security["Security Core"]
+    ClientService -->|"Persistence"| DataLayer["Data Layer"]

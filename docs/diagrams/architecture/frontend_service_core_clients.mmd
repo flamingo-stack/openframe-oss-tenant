@@ -1,0 +1,18 @@
+flowchart TD
+    UI["Frontend UI Components"] --> ApiClient["ApiClient"]
+    UI --> AuthApiClient["AuthApiClient"]
+    UI --> FleetApiClient["FleetApiClient"]
+    UI --> TacticalApiClient["TacticalApiClient"]
+    UI --> MeshDesktop["MeshDesktop"]
+
+    ApiClient --> RuntimeEnv["Runtime Configuration"]
+    ApiClient --> AuthApiClient
+
+    FleetApiClient --> ApiClient
+    TacticalApiClient --> ApiClient
+
+    ApiClient --> BackendApi["OpenFrame API"]
+    AuthApiClient --> AuthServer["Authorization Server"]
+    FleetApiClient --> FleetService["Fleet MDM Service"]
+    TacticalApiClient --> TacticalService["Tactical RMM Service"]
+    MeshDesktop --> MeshCentral["MeshCentral WebSocket"]

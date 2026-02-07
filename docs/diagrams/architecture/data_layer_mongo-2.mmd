@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant AuthService["Authorization Service"]
+    participant Repo["Mongo Repositories"]
+    participant DB[("MongoDB")]
+
+    Client->>AuthService: Login or Token Request
+    AuthService->>Repo: Find AuthUser or OAuth Client
+    Repo->>DB: Query Documents
+    DB->>Repo: Return Results
+    Repo->>AuthService: Domain Objects
+    AuthService->>Client: Auth Response

@@ -1,0 +1,7 @@
+flowchart TD
+    Start["TokenService Constructor"] --> Env["Load from Env"]
+    Start --> Listen["Listen token-update event"]
+    Start --> ApiUrl["invoke get_server_url"]
+
+    Listen --> UpdateToken["setToken"]
+    ApiUrl --> SetApi["setApiBaseUrl"]

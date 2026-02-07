@@ -1,0 +1,25 @@
+flowchart TD
+    User["User / MSP Admin"] --> Frontend["Frontend UI & Clients"]
+    Frontend --> Gateway["Gateway Service"]
+
+    Gateway --> Authz["Authorization Server"]
+    Gateway --> ApiCore["API Service Core"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientAgent["Client Agent Service"]
+
+    ApiCore --> ApiLib["API Lib Contracts"]
+    ApiCore --> DataMongo["MongoDB"]
+    ApiCore --> DataRedis["Redis"]
+    ApiCore --> DataCassandra["Cassandra"]
+    ApiCore --> DataPinot["Pinot"]
+
+    ClientAgent --> Kafka["Kafka"]
+    Stream["Stream Service"] --> Kafka
+    Stream --> DataCassandra
+    Stream --> DataPinot
+
+    Management["Management Service"] --> DataMongo
+    Management --> Kafka
+    Management --> ExternalSystems["Debezium / NATS / Tools"]
+
+    Authz --> DataMongo

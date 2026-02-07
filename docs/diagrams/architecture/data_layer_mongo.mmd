@@ -1,0 +1,11 @@
+flowchart TD
+    App["OpenFrame Services"] --> Config["Mongo Configuration"]
+    Config --> Docs["Mongo Documents"]
+    Docs --> Repo["Repositories"]
+    Repo --> Mongo[("MongoDB")]
+
+    subgraph data_layer_mongo["data_layer_mongo Module"]
+        Config
+        Docs
+        Repo
+    end

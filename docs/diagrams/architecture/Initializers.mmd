@@ -1,0 +1,19 @@
+flowchart TD
+    AppStart["Management Service Startup"] --> Initializers["Initializers Module"]
+
+    Initializers --> AgentSecretInit["AgentRegistrationSecretInitializer"]
+    Initializers --> ToolAgentInit["IntegratedToolAgentInitializer"]
+    Initializers --> ClientConfigInit["OpenFrameClientConfigurationInitializer"]
+    Initializers --> NatsInit["NatsStreamConfigurationInitializer"]
+    Initializers --> TacticalInit["TacticalRmmScriptsInitializer"]
+    Initializers --> DebeziumInit["DebeziumConnectorInitializer"]
+    Initializers --> PinotInit["PinotConfigInitializer"]
+
+    AgentSecretInit --> MongoDB["MongoDB"]
+    ToolAgentInit --> MongoDB
+    ClientConfigInit --> MongoDB
+
+    NatsInit --> NATS["NATS JetStream"]
+    TacticalInit --> TacticalRMM["Tactical RMM API"]
+    DebeziumInit --> Debezium["Debezium Connect"]
+    PinotInit --> Pinot["Apache Pinot Controller"]

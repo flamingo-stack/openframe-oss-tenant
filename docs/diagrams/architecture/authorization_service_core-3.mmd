@@ -1,0 +1,4 @@
+flowchart TD
+    TokenReq["Token Request"] --> Customizer["JWT Token Customizer"]
+    Customizer --> Claims["Custom Claims"]
+    Claims --> Token["Signed JWT"]

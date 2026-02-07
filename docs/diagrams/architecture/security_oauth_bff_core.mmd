@@ -1,0 +1,16 @@
+flowchart TD
+    Client["Frontend or BFF"] -->|"OAuth Authorization"| AuthServer["Authorization Server"]
+    AuthServer -->|"Authorization Code"| BFF["BFF / API"]
+    BFF -->|"Token Exchange"| AuthServer
+    AuthServer -->|"JWT Tokens"| BFF
+
+    subgraph security_oauth_bff_core["security_oauth_bff_core"]
+        JwtConfig["JWT Configuration"]
+        JwtSecurityConfig["JWT Encoder / Decoder"]
+        PKCEUtils["PKCE Utilities"]
+        SecurityConstants["OAuth Constants"]
+    end
+
+    BFF --> JwtSecurityConfig
+    BFF --> PKCEUtils
+    BFF --> SecurityConstants
