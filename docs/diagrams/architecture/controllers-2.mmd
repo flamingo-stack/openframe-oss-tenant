@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant IntegrationController
+    participant RestProxyService
+    participant ExternalTool
+
+    Client->>Gateway: HTTP Request /tools/{toolId}/...
+    Gateway->>IntegrationController: Route request
+    IntegrationController->>RestProxyService: proxyApiRequest(toolId, request, body)
+    RestProxyService->>ExternalTool: Forward HTTP request
+    ExternalTool-->>RestProxyService: HTTP response
+    RestProxyService-->>IntegrationController: ResponseEntity
+    IntegrationController-->>Client: HTTP response

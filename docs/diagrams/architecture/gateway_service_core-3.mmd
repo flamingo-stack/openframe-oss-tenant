@@ -1,0 +1,5 @@
+flowchart LR
+    WSClient["WebSocket Client"] --> GatewayWS["Gateway WS Route"]
+    GatewayWS --> JwtReader["JWT Claims Reader"]
+    JwtReader --> WSFilter["WS Proxy URL Filter"]
+    WSFilter --> WSUpstream["Tool / NATS WebSocket"]

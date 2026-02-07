@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant UI
+    participant Service
+    participant API
+
+    UI->>Service: getDialogMessages(dialogId)
+    loop While hasNextPage
+        Service->>API: Query messages(cursor, limit)
+        API-->>Service: Message edges + PageInfo
+    end
+    Service-->>UI: Aggregated MessagesConnection

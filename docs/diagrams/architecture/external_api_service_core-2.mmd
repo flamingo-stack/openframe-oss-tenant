@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client
+    participant ExternalAPI as External API Service
+    participant Proxy as RestProxyService
+    participant Tool as Integrated Tool API
+
+    Client->>ExternalAPI: HTTP request /tools/{toolId}/...
+    ExternalAPI->>Proxy: proxyApiRequest()
+    Proxy->>Proxy: Validate tool and status
+    Proxy->>Proxy: Resolve target URL
+    Proxy->>Tool: Forward HTTP request
+    Tool-->>Proxy: HTTP response
+    Proxy-->>ExternalAPI: ResponseEntity
+    ExternalAPI-->>Client: Proxied response

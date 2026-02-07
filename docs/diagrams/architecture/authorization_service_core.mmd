@@ -1,0 +1,18 @@
+flowchart TD
+    Client["Browser / Client App"] --> Gateway["Gateway Service"]
+    Gateway --> AuthServer["Authorization Service Core"]
+
+    AuthServer --> TenantCtx["Tenant Context Filter"]
+    TenantCtx --> Security["Spring Security Filter Chains"]
+
+    Security --> OAuth2["OAuth2 Authorization Server"]
+    OAuth2 --> Tokens["JWT Access & Refresh Tokens"]
+
+    OAuth2 --> MongoAuth["Mongo Authorization Service"]
+    OAuth2 --> Clients["Registered Client Repository"]
+
+    Tokens --> JWKS["Tenant Key Service"]
+    JWKS --> MongoKeys["TenantKey (Mongo)"]
+
+    AuthServer --> Users["User Service"]
+    Users --> MongoUsers["AuthUser (Mongo)"]

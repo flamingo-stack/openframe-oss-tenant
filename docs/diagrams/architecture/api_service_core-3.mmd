@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant UI as "Frontend"
+    participant GQL as "GraphQL API"
+    participant SVC as "Domain Service"
+
+    UI->>GQL: Query devices(filter, pagination)
+    GQL->>SVC: queryDevices()
+    SVC-->>GQL: Result set
+    GQL-->>UI: Connection<Edge<Device>>

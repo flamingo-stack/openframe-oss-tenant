@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant Auth as "Authorization Service"
+    participant IdP as "SSO Provider"
+
+    User->>Auth: Start registration / invitation
+    Auth->>User: Set SSO flow cookie
+    User->>IdP: Authenticate
+    IdP->>Auth: OIDC callback
+    Auth->>Auth: Complete tenant/user creation
+    Auth->>User: Redirect to tenant context

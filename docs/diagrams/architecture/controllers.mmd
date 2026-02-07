@@ -1,0 +1,18 @@
+flowchart TD
+    Client[External Client or Agent]
+    Gateway[Gateway Service]
+    IntegrationCtrl[Integration Controller]
+    AuthProbeCtrl[Internal Auth Probe Controller]
+    IntegrationSvc[Integration Service]
+    ProxySvc[Rest Proxy Service]
+    ToolApi[External Tool API]
+    ToolAgent[External Tool Agent]
+
+    Client -->|"HTTP Request"| Gateway
+    Gateway --> IntegrationCtrl
+    Gateway --> AuthProbeCtrl
+
+    IntegrationCtrl -->|"Health or Test"| IntegrationSvc
+    IntegrationCtrl -->|"Proxy API"| ProxySvc
+    ProxySvc --> ToolApi
+    ProxySvc --> ToolAgent

@@ -1,0 +1,8 @@
+flowchart LR
+    Producers["Producers<br/>Management Service<br/>Debezium CDC<br/>Agent Events"] --> Kafka["Kafka Cluster"]
+    Kafka --> Stream["Stream Service<br/>Kafka Streams"]
+    Stream --> Analytics["Pinot / Analytics"]
+
+    subgraph transport["data_kafka_transport"]
+        Kafka
+    end

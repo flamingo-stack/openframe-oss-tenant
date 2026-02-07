@@ -1,0 +1,24 @@
+graph TD
+    User["Tenant User / Admin"] --> Frontend["OpenFrame Frontend"]
+    Frontend --> Gateway["API Gateway"]
+
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Api["OpenFrame API Service"]
+    Gateway --> ExternalApi["External API Service"]
+
+    Api --> Mongo["MongoDB"]
+    Api --> Redis["Redis Cache"]
+
+    Api --> Kafka["Kafka Topics"]
+    ExternalApi --> Kafka
+
+    Kafka --> Stream["Stream Service"]
+    Stream --> Pinot["Pinot / Analytics"]
+    Stream --> Cassandra["Cassandra"]
+
+    Management["Management Service"] --> Mongo
+    Management --> Kafka
+
+    ClientAgent["Client / Agent Service"] --> Gateway
+
+    SDKs["SDK Integrations"] --> Api

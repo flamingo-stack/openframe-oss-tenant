@@ -1,0 +1,22 @@
+flowchart TD
+    Startup["Application Startup"] --> Init["Initializers"]
+    Init --> Secrets["Agent Registration Secret"]
+    Init --> Tools["Integrated Tool Agents"]
+    Init --> Streams["NATS Streams"]
+    Init --> ClientCfg["Client Configuration"]
+    Init --> Pinot["Pinot Schemas & Tables"]
+
+    API["Management REST API"] --> ToolCtrl["Integrated Tool Controller"]
+    API --> ReleaseCtrl["Release Version Controller"]
+
+    ToolCtrl --> ToolService["IntegratedToolService"]
+    ToolService --> Hooks["Post-Save Hooks"]
+    ToolService --> Debezium["Debezium Service"]
+
+    Schedulers["Schedulers"] --> ApiKeyJob["API Key Stats Sync"]
+    Schedulers --> DebeziumJob["Debezium Health Check"]
+
+    ApiKeyJob --> Redis["Redis"]
+    ApiKeyJob --> Mongo["MongoDB"]
+
+    DebeziumJob --> Debezium

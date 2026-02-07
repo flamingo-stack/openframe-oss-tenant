@@ -1,0 +1,4 @@
+flowchart LR
+    ServiceLayer["Service Layer"] --> Repository["Mongo Repository"]
+    Repository --> Converter["MappingMongoConverter"]
+    Converter --> MongoDB[("MongoDB")]

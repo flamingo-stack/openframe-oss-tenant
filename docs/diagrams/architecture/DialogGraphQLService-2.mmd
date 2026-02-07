@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant UI
+    participant Service
+    participant Token
+    participant API
+
+    UI->>Service: getResumableDialog()
+    Service->>Token: ensureTokenReady()
+    Service->>API: Query resumableDialog
+    API-->>Service: ResumableDialog | null
+    Service-->>UI: ResumableDialog | null

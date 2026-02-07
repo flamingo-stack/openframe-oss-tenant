@@ -1,0 +1,3 @@
+flowchart LR
+    Incoming["ChunkData"] --> Buffer["BufferManager"]
+    Buffer --> Flush["flush()"]

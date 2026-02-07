@@ -1,0 +1,6 @@
+flowchart TD
+    Network["Network Stream"] --> Buffer
+    Buffer --> ChunkProcessor
+    ChunkProcessor --> Accumulator
+    Accumulator --> Transformer
+    Transformer --> UI["Chat UI"]

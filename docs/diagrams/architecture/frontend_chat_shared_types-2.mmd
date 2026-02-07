@@ -1,0 +1,11 @@
+flowchart TD
+    API["API Types"]
+    Components["Component Types"]
+    Messages["Message Types"]
+    Network["Network Types"]
+    Processing["Processing Types"]
+
+    API --> Messages
+    Network --> Processing
+    Messages --> Components
+    Processing --> Components

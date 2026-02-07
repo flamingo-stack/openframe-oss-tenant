@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Kafka as Kafka Broker
+    participant Listener as JsonKafkaListener
+    participant Deser as Event Deserializer
+    participant Enrich as Enrichment Service
+    participant Handler as Message Handler
+
+    Kafka->>Listener: CommonDebeziumMessage + MessageType
+    Listener->>Deser: Route by MessageType
+    Deser->>Enrich: Extract agentId and context
+    Enrich->>Handler: Enriched Debezium Message
+    Handler->>Kafka: Publish Unified Event
+    Handler->>Handler: Persist to Cassandra

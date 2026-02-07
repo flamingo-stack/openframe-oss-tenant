@@ -1,0 +1,5 @@
+flowchart TD
+    ClientReq["Client Request"] --> Gateway["Gateway"]
+    Gateway --> Api
+    Gateway --> ExternalApi
+    Gateway --> Authz

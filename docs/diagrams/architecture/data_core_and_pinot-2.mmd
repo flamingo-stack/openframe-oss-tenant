@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Repo as "Mongo Repository"
+    participant Aspect as "MachineTagEventAspect"
+    participant Service as "MachineTagEventService"
+    participant Kafka as "Kafka"
+
+    Repo->>Aspect: save / saveAll
+    Aspect->>Service: process change
+    Service->>Kafka: publish MachinePinotMessage

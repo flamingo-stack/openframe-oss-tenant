@@ -1,0 +1,5 @@
+flowchart LR
+    UI["Chat UI Components"] --> Hooks["Chat Hooks"]
+    Hooks --> ApiTypes["api_types"]
+    ApiTypes --> Http["HTTP Chat API"]
+    ApiTypes --> Realtime["NATS / WebSocket Stream"]

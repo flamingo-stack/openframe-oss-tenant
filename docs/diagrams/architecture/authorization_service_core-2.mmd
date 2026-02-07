@@ -1,0 +1,6 @@
+flowchart LR
+    Request["JWKS or Token Request"] --> TenantCtx["TenantContext"]
+    TenantCtx --> KeySvc["TenantKeyService"]
+    KeySvc -->|"find or create"| MongoKey["TenantKey"]
+    KeySvc --> RSAKey["RSA Signing Key"]
+    RSAKey --> JWT["Signed JWT"]

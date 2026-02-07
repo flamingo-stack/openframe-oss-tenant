@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> TenantContext["Tenant Context"]
+    TenantContext --> KeyBuilder["Redis Key Builder"]
+    KeyBuilder --> CacheKey["tenant:cacheName::key"]
+    CacheKey --> Redis[("Redis")]

@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph ApiLayer["API Layer"]
+        RestControllers["REST Controllers"]
+        GraphQLFetchers["GraphQL DataFetchers"]
+    end
+
+    subgraph ServiceLayer["Service Layer"]
+        DomainServices["Domain Services"]
+        Processors["Post-Processors"]
+    end
+
+    subgraph InfraLayer["Infrastructure"]
+        SecurityCfg["Security Config"]
+        DataLoaders["GraphQL DataLoaders"]
+        Scalars["GraphQL Scalars"]
+    end
+
+    RestControllers --> DomainServices
+    GraphQLFetchers --> DomainServices
+    GraphQLFetchers --> DataLoaders
+    DomainServices --> Processors
+    ApiLayer --> InfraLayer

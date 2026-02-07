@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant UI as Chat UI
+    participant WS as WebSocket Client
+    participant BE as Backend Service
+
+    UI->>WS: Connect with WebSocketConfig
+    WS->>BE: Open connection
+    BE-->>WS: WebSocketMessage (chunk)
+    WS-->>UI: ChunkData
+    UI->>UI: Buffer and render stream

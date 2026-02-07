@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant UI as Chat UI
+    participant API as Chat API
+    participant WS as WebSocket/NATS
+    participant Proc as Stream Processor
+
+    UI->>API: ChatAPIRequest
+    API->>WS: Stream message chunks
+    WS->>Proc: ChunkData
+    Proc->>UI: MessageSegment[]

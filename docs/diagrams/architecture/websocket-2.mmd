@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Filter
+    participant Resolver
+    participant Backend
+
+    Client->>Gateway: WebSocket Handshake Request
+    Gateway->>Filter: Apply WebSocket Proxy Filter
+    Filter->>Resolver: Resolve Upstream URL using toolId
+    Resolver-->>Filter: Resolved WebSocket URL
+    Filter->>Backend: Proxy WebSocket Connection
+    Backend-->>Client: Bi-directional WebSocket Messages

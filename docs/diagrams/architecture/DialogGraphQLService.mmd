@@ -1,0 +1,6 @@
+flowchart LR
+    UI["Chat UI Components"] --> Service["DialogGraphQLService"]
+    Service --> Token["TokenService"]
+    Service --> API["Chat GraphQL API"]
+    API --> Service
+    Service --> UI

@@ -1,0 +1,23 @@
+flowchart TD
+    Gateway["API Gateway"] --> Api["Internal API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> Authz["Authorization Server"]
+
+    Api --> Data["Data Layer"]
+    ExternalApi --> Data
+    Authz --> Data
+    Management --> Data
+    Stream --> Data
+
+    Api --> Kafka["Kafka / Event Bus"]
+    Client --> Kafka
+    Stream --> Kafka
+
+    Management --> Kafka
+
+    Config["Config Server"] --> Api
+    Config --> Gateway
+    Config --> Authz
+    Config --> Client
+    Config --> Management
+    Config --> Stream

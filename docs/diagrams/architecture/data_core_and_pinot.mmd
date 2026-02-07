@@ -1,0 +1,14 @@
+flowchart TD
+    ApiService["API & External Services"] -->|"queries"| PinotRepos["Pinot Repositories"]
+    PinotRepos --> Pinot["Apache Pinot"]
+
+    Mongo["MongoDB"] --> Aspect["MachineTagEventAspect"]
+    Cassandra["Cassandra"] --> Aspect
+
+    Aspect --> EventService["MachineTagEventService"]
+    EventService --> Kafka["Kafka"]
+    Kafka --> Stream["Stream Service"]
+    Stream --> Pinot
+
+    Management["Management Service"] --> Secrets["Tool Secret Retrievers"]
+    Secrets --> Tools["FleetDM / TacticalRMM"]

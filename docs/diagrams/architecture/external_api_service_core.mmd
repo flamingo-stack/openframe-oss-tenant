@@ -1,0 +1,12 @@
+flowchart LR
+    Client[External Client] --> Gateway[Gateway Service]
+    Gateway --> ExternalApi[External API Service]
+
+    ExternalApi --> ApiCore[API Service Core]
+    ExternalApi --> DataLayer[Data Persistence]
+
+    ExternalApi --> ToolProxy[Integrated Tool APIs]
+
+    subgraph InternalServices[Internal Services]
+        ApiCore
+    end

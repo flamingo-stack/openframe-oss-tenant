@@ -1,0 +1,19 @@
+flowchart TD
+    Agent["Client Agent"] -->|"register"| AgentController["Agent Controller"]
+    Agent -->|"oauth token"| AgentAuthController["Agent Auth Controller"]
+
+    AgentController --> RegistrationService["Agent Registration Service"]
+    RegistrationService --> Processor["Registration Processor"]
+    RegistrationService --> Transformer["Tool Agent ID Transformers"]
+
+    subgraph messaging["NATS Messaging"]
+        Heartbeat["Heartbeat Events"]
+        ToolConn["Tool Connection Events"]
+        Installed["Installed Agent Events"]
+    end
+
+    messaging --> Listeners["NATS Listeners"]
+    Listeners --> StatusService["Machine Status Service"]
+    Listeners --> ToolService["Tool Connection Service"]
+
+    ToolAgentFile["Tool Agent File Controller"] --> Agent

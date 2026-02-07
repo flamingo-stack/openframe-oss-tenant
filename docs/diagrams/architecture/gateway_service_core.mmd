@@ -1,0 +1,18 @@
+flowchart TD
+    Client["Client / Agent / UI"] --> Gateway["Gateway Service"]
+
+    subgraph gateway_layer["Gateway Core"]
+        Security["Security & Auth"]
+        Filters["Gateway Filters"]
+        Routing["HTTP & WS Routing"]
+    end
+
+    Gateway --> Security
+    Gateway --> Filters
+    Gateway --> Routing
+
+    Routing --> ApiService["API Service"]
+    Routing --> ExternalApi["External API Service"]
+    Routing --> ClientService["Client / Agent Service"]
+    Routing --> Tools["Integrated Tools"]
+    Routing --> Nats["NATS WebSocket"]

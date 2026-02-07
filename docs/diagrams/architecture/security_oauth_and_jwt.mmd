@@ -1,0 +1,9 @@
+flowchart LR
+    Browser["Browser / Frontend"] -->|"OAuth Login"| Gateway["API Gateway"]
+    Gateway -->|"/oauth/login"| OAuthBFF["OAuth BFF Controller"]
+    OAuthBFF -->|"Authorize Redirect"| AuthServer["Authorization Server"]
+    AuthServer -->|"Auth Code"| OAuthBFF
+    OAuthBFF -->|"JWT Tokens"| Browser
+
+    AuthServer -->|"Issue JWT"| JwtEncoder["JWT Encoder"]
+    Gateway -->|"Validate JWT"| JwtDecoder["JWT Decoder"]

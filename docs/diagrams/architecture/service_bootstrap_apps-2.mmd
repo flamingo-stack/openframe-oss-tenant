@@ -1,0 +1,5 @@
+flowchart LR
+    ApiApp["ApiApplication"] --> Controllers["API Controllers"]
+    Controllers --> Services["Service Core"]
+    Services --> Mongo["Mongo / Cassandra / Pinot"]
+    Services --> Kafka["Kafka Producers"]

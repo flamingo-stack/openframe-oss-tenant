@@ -1,0 +1,8 @@
+flowchart TD
+    ServiceLayer["Service Layer"] -->|"cache read/write"| CacheLayer["Redis Cache"]
+    CacheLayer -->|"miss"| DataStores["Persistent Data Stores"]
+
+    subgraph data_layer["Data Layer"]
+        CacheLayer
+        DataStores
+    end

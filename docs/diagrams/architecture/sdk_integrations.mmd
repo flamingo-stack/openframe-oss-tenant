@@ -1,0 +1,13 @@
+flowchart LR
+    ExternalTools["External MSP Tools"] --> SDK["SDK Integrations"]
+    SDK --> ApiServices["API Services"]
+    SDK --> Management["Management Services"]
+    SDK --> Stream["Stream Processing"]
+
+    subgraph sdk_layer["sdk_integrations"]
+        FleetMDM["Fleet MDM SDK"]
+        TacticalRMM["Tactical RMM SDK"]
+    end
+
+    SDK --> FleetMDM
+    SDK --> TacticalRMM

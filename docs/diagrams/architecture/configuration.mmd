@@ -1,0 +1,8 @@
+flowchart TD
+    AppStartup["Application Startup"] --> ConfigLoad["Spring Configuration Phase"]
+    ConfigLoad --> MongoConfigNode["MongoConfig"]
+    MongoConfigNode -->|"spring.data.mongodb.enabled=true"| RepoEnable["Enable Mongo Repositories"]
+    RepoEnable --> Converter["MappingMongoConverter"]
+    Converter --> DotReplace["Map Key Dot Replacement"]
+    ConfigLoad --> IndexConfig["MongoIndexConfig"]
+    IndexConfig --> EnsureIndex["Ensure Indexes"]

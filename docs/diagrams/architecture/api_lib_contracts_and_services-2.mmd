@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant FE as Frontend
+    participant API as api_service_core
+    participant Lib as api_lib_contracts_and_services
+    participant DB as MongoDB
+
+    FE->>API: Query devices with filters
+    API->>Lib: Build DeviceFilterOptions
+    Lib->>DB: Query devices & aggregations
+    DB->>Lib: Filtered results
+    Lib->>API: DeviceFilters + filteredCount
+    API->>FE: GraphQL response

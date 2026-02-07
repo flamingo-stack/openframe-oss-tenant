@@ -1,0 +1,8 @@
+flowchart TD
+    UI["Chat UI Components"] --> NetworkTypes["network_types"]
+    NetworkTypes --> WSClient["WebSocket Client"]
+    NetworkTypes --> StreamProcessor["Stream Processor"]
+    NetworkTypes --> ApiClient["HTTP / GraphQL Client"]
+    WSClient --> Backend["Chat & Tool Services"]
+    StreamProcessor --> Backend
+    ApiClient --> Backend

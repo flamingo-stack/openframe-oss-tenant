@@ -1,0 +1,17 @@
+flowchart TD
+    UI["React UI Pages"] --> Hooks["Hooks & Stores"]
+    Hooks --> ApiClient["ApiClient"]
+    Hooks --> AuthClient["AuthApiClient"]
+    Hooks --> ToolClients["Tool API Clients"]
+
+    ApiClient --> Gateway["Gateway / API Service"]
+    AuthClient --> AuthSvc["Authorization Service"]
+    ToolClients --> Tools["Fleet / Tactical / MeshCentral"]
+
+    subgraph FrontendCore["Tenant Frontend Core"]
+        Hooks
+        ApiClient
+        AuthClient
+        ToolClients
+        Types["Shared Types"]
+    end

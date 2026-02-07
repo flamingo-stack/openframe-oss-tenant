@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant DB as "Database"
+    participant Debezium
+    participant Kafka
+    participant Stream as "Stream Service"
+    participant Pinot
+
+    DB->>Debezium: Data change event
+    Debezium->>Kafka: Publish DebeziumMessage
+    Kafka->>Stream: Consume event
+    Stream->>Kafka: Publish enriched message
+    Kafka->>Pinot: Ingest analytics event

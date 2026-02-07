@@ -1,0 +1,12 @@
+flowchart TD
+    Client[WebSocket Client] --> Gateway[OpenFrame Gateway]
+
+    Gateway -->|"/ws/tools/{toolId}"| ApiFilter[ToolApiWebSocketProxyUrlFilter]
+    Gateway -->|"/ws/tools/agent/{toolId}"| AgentFilter[ToolAgentWebSocketProxyUrlFilter]
+    Gateway -->|"/ws/nats"| NatsBroker[NATS WebSocket]
+
+    ApiFilter --> Resolver[Proxy URL Resolver]
+    AgentFilter --> Resolver
+
+    Resolver --> ToolApiBackend[Tool API Backend]
+    Resolver --> ToolAgentBackend[Tool Agent Backend]

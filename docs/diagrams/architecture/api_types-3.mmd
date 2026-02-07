@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Stream Start"] --> Segments["Accumulate Segments"]
+    Segments --> Approval["Approval Required?"]
+    Approval -->|"Yes"| Wait["Wait for Approval"]
+    Approval -->|"No"| Continue["Continue Streaming"]
+    Continue --> End["Stream End"]

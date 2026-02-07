@@ -1,0 +1,5 @@
+flowchart LR
+    ChatUI["Chat UI Components"] --> Types["frontend_chat_shared_types"]
+    Types --> Services["Chat Client Services"]
+    Services --> Gateway["Gateway & WebSocket"]
+    Gateway --> Backend["Chat / AI Backend"]

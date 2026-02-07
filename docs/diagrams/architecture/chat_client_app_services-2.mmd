@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant UI
+    participant Token as TokenService
+    participant Dialog as DialogGraphQLService
+    participant API as "Chat Backend"
+
+    UI->>Token: ensureTokenReady()
+    Token-->>UI: token + apiUrl
+    UI->>Dialog: getResumableDialog()
+    Dialog->>API: GraphQL query
+    API-->>Dialog: Dialog data
+    Dialog-->>UI: ResumableDialog

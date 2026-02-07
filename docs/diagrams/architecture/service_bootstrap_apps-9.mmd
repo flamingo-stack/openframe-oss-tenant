@@ -1,0 +1,4 @@
+flowchart LR
+    Kafka["Kafka Topics"] --> Stream["Stream Service"]
+    Stream --> Enrichment["Event Enrichment"]
+    Enrichment --> Data

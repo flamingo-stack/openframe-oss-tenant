@@ -1,0 +1,7 @@
+flowchart TD
+    Gateway["API Gateway"] --> ApiService["api_service_core"]
+    ApiService --> DataMongo["Mongo Persistence"]
+    ApiService --> DataKafka["Kafka / Streams"]
+    ApiService --> Authz["authorization_service_core"]
+    ApiService --> ExternalApi["external_api_service_core"]
+    ApiService --> Frontend["Tenant Frontend"]

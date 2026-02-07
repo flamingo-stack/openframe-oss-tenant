@@ -1,0 +1,8 @@
+flowchart TD
+    Caller["Upstream Service"] -->|"invokes"| EmailService["EmailService Interface"]
+
+    EmailService -->|"provider=hubspot-api"| HubSpot["HubSpot API Email Service"]
+    EmailService -->|"provider=smtp"| SMTP["SMTP Email Service"]
+
+    HubSpot -->|"HTTPS"| HubSpotAPI["HubSpot Marketing API"]
+    SMTP -->|"SMTP"| MailServer["SMTP Server"]

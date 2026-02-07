@@ -1,0 +1,7 @@
+flowchart LR
+    Request["Incoming Request"] --> OriginFilter["Origin Sanitizer"]
+    OriginFilter --> AuthHeader["Add Authorization Header"]
+    AuthHeader --> ApiKeyFilter["API Key Auth Filter"]
+    ApiKeyFilter --> SecurityChain["Spring Security"]
+    SecurityChain --> Route["Gateway Routing"]
+    Route --> Target["Downstream Service / Tool"]
