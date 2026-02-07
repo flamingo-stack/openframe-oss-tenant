@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/6986a638bff8f0049a6ad48a</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Vannessa Padberg Jr.&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(909) 918-5952 x7094&quot;,
+                &quot;email&quot;: &quot;jaleesa.morar@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;38600 Maximina River&quot;,
+            &quot;street2&quot;: &quot;Apt. 929&quot;,
+            &quot;city&quot;: &quot;Jacobsside&quot;,
+            &quot;state&quot;: &quot;Minnesota&quot;,
+            &quot;postalCode&quot;: &quot;42109&quot;,
+            &quot;country&quot;: &quot;Ghana&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5221 Simonis Wells&quot;,
+            &quot;street2&quot;: &quot;Suite 338&quot;,
+            &quot;city&quot;: &quot;Corwintown&quot;,
+            &quot;state&quot;: &quot;Hawaii&quot;,
+            &quot;postalCode&quot;: &quot;54343&quot;,
+            &quot;country&quot;: &quot;Svalbard &amp; Jan Mayen Islands&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        7
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        7
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtMTY2MzEwZDctNzJmNS00YTRlLTgxMDYtZGU3YTgzZWQ2ODBhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMzNiNjVjMy0zNWE3LTQyNzQtYjBkNS1mODRhZjk0YmJhMjIiLCJzdWIiOiJ0aGVyb24uZmF5QHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwNDMyMDU1LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9iMzNiNjVjMy0zNWE3LTQyNzQtYjBkNS1mODRhZjk0YmJhMjIiLCJleHAiOjE3NzA0MzI5NTUsImlhdCI6MTc3MDQzMjA1NSwidXNlcklkIjoiNzg1ZDhiMzctZmMyMS00ZmU5LTkyYjEtNDZkYWZhYTcwOWI3IiwianRpIjoiMmQzZDIzMDItOWM4Mi00NTk2LWFkZmYtZDU3MDMwZTc5YjhiIn0.V6iyUH9XJFwPG8m8CQbYAOVPcuNVPpP4bVP8Pafib6mb55XhV69r8SBFyHwROfrAu2u0PsvnIx3ok0GGr-8lOO50-ycI5y6UPAQhkszZoGe_TvsfZNUEUouz8bVyWiO56b05h2r-rJn419UIeyAF0v2rD1Eyp8MC0qng6jv5aNQuYlS12BJbJff0rzGd3xcCWTIUeCxPVLKcbFrPpGjwqj9KNTrxTM2hBJqr_XilAVtO_0zh5FBqVN18RSQq7cM218T7kR2-Jie0fHMOlINrOGpJpvbm9Flvb_onwWM2D55hpPGyVK18Vi8snnczGyuMlaOnJg4aRpGzI3l4J1GPIA</div>
+        <div>refresh_token: 6edbiOYQMQMMeorGafqlq7_YIJjJXVYrOeuIey5-GmiIEv63bpFcpYk3plQ4aCLiOeGfg-dIEseEjqyz4TFQoV2f_4CrLs81YONbROBZR5Yxiyv-IjTnW-cbO-wZ-VDN</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/6986a638bff8f0049a6ad48a&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtMTY2MzEwZDctNzJmNS00YTRlLTgxMDYtZGU3YTgzZWQ2ODBhIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiJiMzNiNjVjMy0zNWE3LTQyNzQtYjBkNS1mODRhZjk0YmJhMjIiLCJzdWIiOiJ0aGVyb24uZmF5QHlhaG9vLmNvbSIsImF1ZCI6Im9wZW5mcmFtZS1nYXRld2F5IiwibmJmIjoxNzcwNDMyMDU1LCJyb2xlcyI6WyJPV05FUiIsIkFETUlOIl0sImlzcyI6Imh0dHA6Ly9vcGVuZnJhbWUtYXV0aG9yaXphdGlvbi1zZXJ2ZXIubWljcm9zZXJ2aWNlcy5zdmMuY2x1c3Rlci5sb2NhbDo5MDA1L3Nhcy9iMzNiNjVjMy0zNWE3LTQyNzQtYjBkNS1mODRhZjk0YmJhMjIiLCJleHAiOjE3NzA0MzI5NTUsImlhdCI6MTc3MDQzMjA1NSwidXNlcklkIjoiNzg1ZDhiMzctZmMyMS00ZmU5LTkyYjEtNDZkYWZhYTcwOWI3IiwianRpIjoiMmQzZDIzMDItOWM4Mi00NTk2LWFkZmYtZDU3MDMwZTc5YjhiIn0.V6iyUH9XJFwPG8m8CQbYAOVPcuNVPpP4bVP8Pafib6mb55XhV69r8SBFyHwROfrAu2u0PsvnIx3ok0GGr-8lOO50-ycI5y6UPAQhkszZoGe_TvsfZNUEUouz8bVyWiO56b05h2r-rJn419UIeyAF0v2rD1Eyp8MC0qng6jv5aNQuYlS12BJbJff0rzGd3xcCWTIUeCxPVLKcbFrPpGjwqj9KNTrxTM2hBJqr_XilAVtO_0zh5FBqVN18RSQq7cM218T7kR2-Jie0fHMOlINrOGpJpvbm9Flvb_onwWM2D55hpPGyVK18Vi8snnczGyuMlaOnJg4aRpGzI3l4J1GPIA&#39; -b &#39;refresh_token=6edbiOYQMQMMeorGafqlq7_YIJjJXVYrOeuIey5-GmiIEv63bpFcpYk3plQ4aCLiOeGfg-dIEseEjqyz4TFQoV2f_4CrLs81YONbROBZR5Yxiyv-IjTnW-cbO-wZ-VDN&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Vannessa Padberg Jr.&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(909) 918-5952 x7094&quot;,
+                &quot;email&quot;: &quot;jaleesa.morar@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;38600 Maximina River&quot;,
+            &quot;street2&quot;: &quot;Apt. 929&quot;,
+            &quot;city&quot;: &quot;Jacobsside&quot;,
+            &quot;state&quot;: &quot;Minnesota&quot;,
+            &quot;postalCode&quot;: &quot;42109&quot;,
+            &quot;country&quot;: &quot;Ghana&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;5221 Simonis Wells&quot;,
+            &quot;street2&quot;: &quot;Suite 338&quot;,
+            &quot;city&quot;: &quot;Corwintown&quot;,
+            &quot;state&quot;: &quot;Hawaii&quot;,
+            &quot;postalCode&quot;: &quot;54343&quot;,
+            &quot;country&quot;: &quot;Svalbard &amp; Jan Mayen Islands&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        7
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        7
+    ]
+}&#39;
+</div>
