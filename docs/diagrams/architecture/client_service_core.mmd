@@ -1,0 +1,7 @@
+flowchart TD
+    Agent["Client Agent"] -->|"HTTP"| ClientAPI["Client Service Core"]
+    ClientAPI -->|"Persist & Update"| DataLayer["Mongo Persistence"]
+    Agent -->|"Events"| NATS["NATS / JetStream"]
+    NATS -->|"Consume"| Listeners["Client Event Listeners"]
+    Listeners -->|"Update State"| Services["Client Domain Services"]
+    Services -->|"Persist"| DataLayer

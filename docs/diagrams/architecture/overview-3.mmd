@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz
+    participant Api
+    participant Mongo
+
+    User->>Gateway: Request with JWT
+    Gateway->>Authz: Validate token
+    Authz-->>Gateway: Token valid
+    Gateway->>Api: Forward request
+    Api->>Mongo: Query or mutate data
+    Mongo-->>Api: Result
+    Api-->>Gateway: Response
+    Gateway-->>User: Final response

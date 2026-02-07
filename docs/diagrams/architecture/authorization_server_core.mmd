@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Client or Browser"] -->|"OAuth2 or OIDC Flow"| AuthServer["Authorization Server Core"]
+
+    AuthServer -->|"JWT Access Token"| Client
+    AuthServer -->|"JWKS per Tenant"| Client
+
+    AuthServer -->|"Persist Tokens"| MongoAuth["Mongo Authorization Storage"]
+    AuthServer -->|"Load Users"| UserService["User Service"]
+    AuthServer -->|"Resolve Tenant"| TenantContext["Tenant Context"]
+    AuthServer -->|"External Login"| IdP["External IdP (Google or Microsoft)"]

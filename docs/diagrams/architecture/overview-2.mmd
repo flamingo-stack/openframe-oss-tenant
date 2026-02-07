@@ -1,0 +1,14 @@
+flowchart TB
+    Entrypoints["Service Entrypoints"] --> ServiceCores["Service Core Libraries"]
+    ServiceCores --> Data["Persistence & Streaming"]
+
+    subgraph Entrypoints
+        ApiApp["API Application"]
+        GatewayApp["Gateway Application"]
+        AuthzApp["Authorization Server"]
+        ClientApp["Client Application"]
+        ExternalApiApp["External API"]
+        MgmtApp["Management Application"]
+        StreamApp["Stream Application"]
+        ConfigApp["Config Server"]
+    end

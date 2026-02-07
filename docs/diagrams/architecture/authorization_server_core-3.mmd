@@ -1,0 +1,5 @@
+flowchart TD
+    TokenRequest["Token Request"] --> KeyService["Tenant Key Service"]
+    KeyService -->|"Get or Create RSA Key"| KeyStore["Tenant Keys Store"]
+    KeyService --> JwtEncoder["JWT Encoder"]
+    JwtEncoder --> Token["Signed JWT"]

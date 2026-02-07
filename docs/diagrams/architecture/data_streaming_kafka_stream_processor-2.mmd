@@ -1,0 +1,7 @@
+flowchart LR
+    Listener["Kafka Listener"] --> Processor["Generic JSON Message Processor"]
+    Processor --> Deserializer["Tool-Specific Deserializers"]
+    Deserializer --> Mapper["Unified Event Type Mapper"]
+    Mapper --> Enrichment["Data Enrichment Services"]
+    Enrichment --> Handler["Message Handlers"]
+    Handler --> Destinations["Kafka / Cassandra"]

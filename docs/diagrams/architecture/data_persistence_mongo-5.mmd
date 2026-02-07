@@ -1,0 +1,5 @@
+flowchart TD
+    Query["Build Query"] --> Cursor["Apply Cursor Criteria"]
+    Cursor --> Sort["Apply Sort"]
+    Sort --> Limit["Apply Limit"]
+    Limit --> Execute["Execute Mongo Query"]

@@ -1,0 +1,10 @@
+flowchart TD
+    IntegratedTools["Integrated Tools<br/>(Fleet, Tactical, MeshCentral)"] -->|"CDC & Events"| KafkaInbound["Kafka Inbound Topics"]
+
+    KafkaInbound --> StreamProcessor["Data Streaming Kafka Stream Processor"]
+
+    StreamProcessor -->|"Unified Events"| KafkaOutbound["Kafka Outbound Topics"]
+    StreamProcessor -->|"Audit Logs"| Cassandra["Cassandra Storage"]
+
+    KafkaOutbound --> APIServices["API & External Services"]
+    Cassandra --> Analytics["Analytics & Reporting"]

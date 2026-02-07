@@ -1,0 +1,12 @@
+flowchart TD
+    ManagementApp["Management Service Core"] -->|"manages"| Tools["Integrated Tools"]
+    ManagementApp -->|"initializes"| Agents["Tool & Client Agents"]
+    ManagementApp -->|"controls"| Debezium["Debezium Connectors"]
+    ManagementApp -->|"configures"| Nats["NATS Streams"]
+    ManagementApp -->|"schedules"| Jobs["Distributed Schedulers"]
+
+    Tools --> Mongo[("MongoDB")]
+    Agents --> Mongo
+    Jobs --> Redis[("Redis / ShedLock")]
+    Debezium --> Kafka[("Kafka")]
+    Nats --> NatsServer[("NATS JetStream")]

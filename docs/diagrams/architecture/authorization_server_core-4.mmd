@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant AuthServer
+    participant IdP
+
+    User->>Browser: Click Login
+    Browser->>AuthServer: GET /login
+    AuthServer->>IdP: Redirect to Provider
+    IdP->>AuthServer: Authorization Code
+    AuthServer->>IdP: Exchange Code for Tokens
+    AuthServer->>Browser: Authenticated Session

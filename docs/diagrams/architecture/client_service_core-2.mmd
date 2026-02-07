@@ -1,0 +1,10 @@
+flowchart LR
+    NATS["NATS / JetStream"] --> Conn["Connection Listener"]
+    NATS --> Heartbeat["Heartbeat Listener"]
+    NATS --> Installed["Installed Agent Listener"]
+    NATS --> ToolConn["Tool Connection Listener"]
+
+    Conn --> StatusSvc["Machine Status Service"]
+    Heartbeat --> StatusSvc
+    Installed --> AgentSvc["Installed Agent Service"]
+    ToolConn --> ToolSvc["Tool Connection Service"]

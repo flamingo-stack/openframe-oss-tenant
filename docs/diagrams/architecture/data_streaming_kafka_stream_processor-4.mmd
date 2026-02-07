@@ -1,0 +1,4 @@
+flowchart LR
+    TransformedEvent["Transformed Event"] --> HandlerType["Operation Type"]
+    HandlerType -->|"Kafka"| KafkaHandler["Kafka Producer"]
+    HandlerType -->|"Cassandra"| CassandraHandler["Cassandra Repository"]

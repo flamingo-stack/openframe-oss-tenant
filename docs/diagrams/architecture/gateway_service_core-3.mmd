@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> JwtCheck["JWT Authentication"]
+    JwtCheck --> RoleCheck["Role Authorization"]
+    RoleCheck -->|"Allowed"| Route["Route to Service"]
+    RoleCheck -->|"Denied"| Reject["403 Forbidden"]

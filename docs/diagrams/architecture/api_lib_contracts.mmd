@@ -1,0 +1,6 @@
+flowchart TD
+    Client["API Consumers"] --> ApiService["API Service Core"]
+    ApiService --> Contracts["Api Lib Contracts"]
+    ExternalApi["External API Service Core"] --> Contracts
+    Gateway["Gateway Service Core"] --> Contracts
+    Contracts --> DataLayer["Data Persistence Mongo"]

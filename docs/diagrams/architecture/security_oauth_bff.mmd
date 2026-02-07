@@ -1,0 +1,7 @@
+flowchart TD
+    Frontend["Frontend Application"] -->|"/oauth/login"| Bff["Security Oauth Bff"]
+    Bff -->|"Authorize Redirect"| Authz["Authorization Server"]
+    Authz -->|"Authorization Code"| Bff
+    Bff -->|"Set Auth Cookies"| Frontend
+
+    Bff -->|"Refresh / Logout"| Authz

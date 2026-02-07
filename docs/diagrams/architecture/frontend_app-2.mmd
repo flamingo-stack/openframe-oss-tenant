@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant UI
+    participant API as "Api Client"
+    participant AUTH as "Auth API Client"
+    participant SERVER as "Backend Service"
+
+    UI->>API: Request resource
+    API->>SERVER: HTTP request with credentials
+    SERVER-->>API: 401 Unauthorized
+    API->>AUTH: Refresh access token
+    AUTH-->>API: Refresh success
+    API->>SERVER: Retry original request
+    SERVER-->>API: 200 OK
+    API-->>UI: Response data

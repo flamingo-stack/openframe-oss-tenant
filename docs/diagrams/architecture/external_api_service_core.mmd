@@ -1,0 +1,21 @@
+flowchart TD
+    Client["External Client"] -->|"API Key"| Gateway["Gateway Service"]
+    Gateway --> ExternalApi["External Api Service Core"]
+
+    ExternalApi --> DeviceCtrl["Device Controller"]
+    ExternalApi --> EventCtrl["Event Controller"]
+    ExternalApi --> LogCtrl["Log Controller"]
+    ExternalApi --> OrgCtrl["Organization Controller"]
+    ExternalApi --> ToolCtrl["Tool Controller"]
+    ExternalApi --> IntegrationCtrl["Integration Controller"]
+
+    DeviceCtrl --> ApiCore["Api Service Core"]
+    EventCtrl --> ApiCore
+    LogCtrl --> ApiCore
+    OrgCtrl --> ApiCore
+    ToolCtrl --> ApiCore
+
+    IntegrationCtrl --> ProxySvc["Rest Proxy Service"]
+    ProxySvc --> Tools["Integrated Tools"]
+
+    ApiCore --> DataLayer["Data Persistence"]

@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Agent
+    participant ClientAPI as "Client Service Core"
+    participant Data as "Mongo Persistence"
+
+    Agent->>ClientAPI: POST /api/agents/register
+    ClientAPI->>Data: Create or Update Machine
+    ClientAPI->>ClientAPI: Post-process Registration
+    ClientAPI-->>Agent: Registration Response

@@ -1,0 +1,4 @@
+flowchart LR
+    App["Spring Boot Application"] --> Config["MongoConfig"]
+    Config --> Blocking["Mongo Repositories"]
+    Config --> Reactive["Reactive Mongo Repositories"]

@@ -1,0 +1,5 @@
+flowchart LR
+    UI["Frontend App"] --> Api["API Service Core"]
+    Api --> Contracts["Api Lib Contracts"]
+    Contracts --> Mongo["Mongo Data Layer"]
+    Api --> External["External API Service Core"]

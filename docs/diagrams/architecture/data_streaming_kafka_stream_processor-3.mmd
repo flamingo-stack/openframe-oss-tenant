@@ -1,0 +1,9 @@
+flowchart TD
+    ActivityTopic["Fleet Activities"] --> ActivityStream["Activity Stream"]
+    HostTopic["Host Activities"] --> HostStream["Host Activity Stream"]
+
+    ActivityStream -->|"Left Join"| Join["Join Window"]
+    HostStream -->|"Left Join"| Join
+
+    Join --> Enriched["Enriched Activity Events"]
+    Enriched --> OutputTopic["Enriched Events Topic"]

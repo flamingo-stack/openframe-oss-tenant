@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming HTTP Request"] --> Filter["Tenant Context Filter"]
+    Filter --> Context["Tenant Context"]
+    Context --> Security["Security Filters"]
+    Security --> Controllers["Controllers and Services"]

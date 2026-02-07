@@ -1,0 +1,6 @@
+flowchart LR
+    Request["Incoming Request"] --> Validate["Validate Tool"]
+    Validate --> ResolveUrl["Resolve Target URL"]
+    ResolveUrl --> BuildHeaders["Build Auth Headers"]
+    BuildHeaders --> Forward["Forward HTTP Request"]
+    Forward --> Response["Return Tool Response"]

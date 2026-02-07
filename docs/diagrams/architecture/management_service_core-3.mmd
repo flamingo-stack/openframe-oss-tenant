@@ -1,0 +1,7 @@
+flowchart TD
+    Init["Startup"] --> Load["Load Agent Config Files"]
+    Load --> Exists{"Agent Exists?"}
+    Exists -->|"Yes"| Update["Update Agent"]
+    Exists -->|"No"| Create["Create Agent"]
+    Update --> CheckVersion{"Version Changed?"}
+    CheckVersion -->|"Yes"| Publish["Publish Update Event"]

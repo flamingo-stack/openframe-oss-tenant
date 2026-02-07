@@ -1,0 +1,11 @@
+flowchart TD
+    UI["Frontend UI"] --> ApiClient["Api Client"]
+    ApiClient --> AuthApiClient["Auth API Client"]
+    ApiClient --> FleetApiClient["Fleet API Client"]
+    ApiClient --> TacticalApiClient["Tactical API Client"]
+
+    AuthApiClient --> AuthServer["Authorization Server"]
+    ApiClient --> Gateway["Gateway Service"]
+
+    FleetApiClient --> FleetTool["Fleet Tool Service"]
+    TacticalApiClient --> TacticalTool["Tactical RMM Service"]

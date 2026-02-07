@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Controller as "IntegratedToolController"
+    participant ToolService
+    participant DebeziumService
+    participant Hook as "Post Save Hook"
+
+    Client->>Controller: POST /v1/tools/{id}
+    Controller->>ToolService: saveTool()
+    Controller->>DebeziumService: createOrUpdateConnectors()
+    Controller->>Hook: onToolSaved()
+    Controller->>Client: success response

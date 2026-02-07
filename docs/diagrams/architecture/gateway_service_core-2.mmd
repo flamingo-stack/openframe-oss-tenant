@@ -1,0 +1,4 @@
+flowchart LR
+    WsClient["WebSocket Client"] --> GatewayWs["Gateway WebSocket Layer"]
+    GatewayWs -->|"Resolve Tool URL"| Resolver["Proxy URL Resolver"]
+    Resolver --> ToolWs["Tool WebSocket Endpoint"]

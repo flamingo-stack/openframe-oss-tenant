@@ -1,0 +1,9 @@
+flowchart TD
+    Services["Application Services"] --> Repositories["Mongo Repositories"]
+    Repositories --> Documents["Mongo Documents"]
+    Documents --> Database[("MongoDB")]
+
+    subgraph persistence_layer["Data Persistence Mongo"]
+        Repositories
+        Documents
+    end

@@ -1,0 +1,5 @@
+flowchart TD
+    ExtReq["External API Request"] --> ApiKeyCheck["API Key Validation"]
+    ApiKeyCheck -->|"Valid"| RateLimit["Rate Limit Check"]
+    RateLimit -->|"Allowed"| Proxy["Proxy Request"]
+    RateLimit -->|"Exceeded"| Throttle["429 Response"]

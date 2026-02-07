@@ -1,0 +1,10 @@
+flowchart TD
+    Client[Client or Agent] --> Gateway["Gateway Service Core"]
+
+    Gateway -->|"HTTP Routes"| ApiServices["API and Client Services"]
+    Gateway -->|"External API"| ExternalApi["External API Services"]
+    Gateway -->|"Tool Proxy"| Tools["Integrated Tools"]
+    Gateway -->|"WebSocket"| WsEndpoints["Tool and NATS WebSockets"]
+
+    Gateway -->|"JWT Validation"| Authz["Authorization Server Core"]
+    Gateway -->|"API Key Validation"| ApiKeys["API Key and Rate Limit Services"]

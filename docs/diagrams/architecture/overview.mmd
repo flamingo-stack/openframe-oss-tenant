@@ -1,0 +1,23 @@
+flowchart TD
+    UI["Frontend & Clients"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> Api["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> Authz["Authorization Server Core"]
+
+    Api --> Mongo["Data Persistence Mongo"]
+    ExternalApi --> Mongo
+    Authz --> Mongo
+
+    ClientSvc["Client Service Core"] --> Mongo
+    ClientSvc --> NATS["NATS / JetStream"]
+
+    StreamSvc["Kafka Stream Processor"] --> Kafka["Kafka"]
+    Kafka --> StreamSvc
+
+    StreamSvc --> Cassandra["Cassandra"]
+    StreamSvc --> Api
+
+    Mgmt["Management Service Core"] --> Mongo
+    Mgmt --> Kafka
+    Mgmt --> NATS

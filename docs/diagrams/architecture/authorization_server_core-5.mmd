@@ -1,0 +1,4 @@
+flowchart TD
+    Invite["Invitation Sent"] --> Accept["Accept Invitation"]
+    Accept -->|"Local or SSO"| Register["Register User"]
+    Register --> UserCreated["User Created in Tenant"]

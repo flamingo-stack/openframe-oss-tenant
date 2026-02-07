@@ -1,0 +1,20 @@
+flowchart TD
+    Gateway["Gateway Service"] -->|"HTTP / GraphQL"| ApiService["Api Service Core"]
+
+    ApiService --> Controllers["REST Controllers"]
+    ApiService --> GraphQL["GraphQL DataFetchers"]
+
+    Controllers --> Services["Domain Services"]
+    GraphQL --> Services
+
+    Services --> Persistence["Mongo Data Persistence"]
+    Services --> AuthZ["Authorization Server Core"]
+    Services --> Streaming["Kafka Stream Processor"]
+
+    subgraph ApiService["Api Service Core"]
+        Controllers
+        GraphQL
+        DataLoaders["GraphQL DataLoaders"]
+        Services
+        Config["Security & App Config"]
+    end
