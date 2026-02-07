@@ -1,0 +1,12 @@
+flowchart LR
+    Client["Client App"] --> Gateway["Gateway Service"]
+    Gateway --> Authz["Authorization Server"]
+    Authz --> Jwt["JWT Issuance"]
+    Jwt --> Api["API Services"]
+
+    JwtConfig --> Authz
+    JwtConfig --> Gateway
+    JwtConfig --> Api
+
+    PKCEUtils --> Client
+    PKCEUtils --> Authz

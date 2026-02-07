@@ -1,0 +1,7 @@
+flowchart TD
+    Client["API Client"] --> Gateway["Gateway Service"]
+    Gateway --> ApiCore["API Service Core"]
+    ApiCore --> Contracts["API Contracts and Domain Services"]
+    Contracts --> DataMongo["Mongo Data Layer"]
+    Contracts --> DataRedis["Redis Cache Layer"]
+    Contracts --> StreamCore["Stream Processing Core"]

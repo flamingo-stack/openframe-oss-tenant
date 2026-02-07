@@ -1,0 +1,6 @@
+flowchart LR
+    Request["Save Tool Request"] --> Controller["IntegratedToolController"]
+    Controller --> Persist["IntegratedToolService.save"]
+    Persist --> Debezium["Create or Update Connectors"]
+    Persist --> Hooks["PostSave Hooks"]
+    Hooks --> End["End"]

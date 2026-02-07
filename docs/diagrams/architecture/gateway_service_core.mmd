@@ -1,0 +1,17 @@
+flowchart TD
+    Client["Client or Agent"] --> Gateway["Gateway Service Core"]
+
+    Gateway -->|"REST Proxy"| Tools["Integrated Tools"]
+    Gateway -->|"WebSocket Proxy"| ToolWS["Tool WebSockets"]
+    Gateway -->|"JWT Auth"| Authz["Authorization Server"]
+    Gateway -->|"API Key Auth"| ExternalAPI["External API"]
+
+    subgraph security_layer["Security Layer"]
+        Jwt["JWT Validation"]
+        ApiKey["API Key Filter"]
+        Cors["CORS Filters"]
+    end
+
+    Gateway --> Jwt
+    Gateway --> ApiKey
+    Gateway --> Cors

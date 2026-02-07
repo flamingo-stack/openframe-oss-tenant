@@ -1,0 +1,15 @@
+flowchart LR
+    Browser["Browser Client"] --> BFF["OAuth BFF Controller"]
+    BFF --> Gateway["Gateway Service"]
+    Gateway --> Authz["Authorization Server"]
+    Authz --> Gateway
+    Gateway --> BFF
+    BFF --> Browser
+
+    subgraph security_layer["Security & Session Handling"]
+        Cookies["Auth & State Cookies"]
+        PKCE["PKCE + State"]
+    end
+
+    BFF --> Cookies
+    BFF --> PKCE

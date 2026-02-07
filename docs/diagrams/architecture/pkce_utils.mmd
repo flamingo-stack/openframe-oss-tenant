@@ -1,0 +1,5 @@
+flowchart LR
+    Client["Client App"] -->|"generate state"| State["State"]
+    Client -->|"generate code verifier"| Verifier["Code Verifier"]
+    Verifier -->|"SHA-256"| Challenge["Code Challenge"]
+    Client --> Authz["Authorization Server"]

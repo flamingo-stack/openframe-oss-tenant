@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Application Ready"] --> Load["Load Pinot JSON Config"]
+    Load --> Resolve["Resolve Placeholders"]
+    Resolve --> DeploySchema["Deploy Schema"]
+    DeploySchema --> DeployTable["Deploy Table Config"]
+    DeployTable --> Done["Completed"]

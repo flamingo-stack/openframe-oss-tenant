@@ -1,0 +1,5 @@
+flowchart LR
+    Config["Mongo Configuration"] --> Docs["Domain Documents"]
+    Docs --> Filters["Query Filters"]
+    Filters --> Repos["Repositories"]
+    Repos --> Consumers["Services & Controllers"]

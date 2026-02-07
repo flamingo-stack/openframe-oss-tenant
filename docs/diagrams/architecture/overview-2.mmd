@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Authz
+    participant Api
+    participant Mongo
+    participant Kafka
+    participant Stream
+
+    Client->>Gateway: API Request
+    Gateway->>Authz: Validate JWT
+    Authz-->>Gateway: Token OK
+    Gateway->>Api: Forward Request
+    Api->>Mongo: Read / Write Data
+    Api->>Kafka: Emit Event
+    Kafka->>Stream: Consume Event
+    Stream->>Mongo: Persist Enriched Event

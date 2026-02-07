@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "OAuth BFF"
+    participant Authz as "Authorization Server"
+
+    Browser->>BFF: GET /oauth/login
+    BFF->>Browser: Set state cookie + Redirect to authorize URL
+    Browser->>Authz: OAuth authorize request
+    Authz->>Browser: Redirect with code + state
+    Browser->>BFF: GET /oauth/callback
+    BFF->>Authz: Token exchange
+    Authz->>BFF: Access + Refresh tokens
+    BFF->>Browser: Set auth cookies + Redirect to app

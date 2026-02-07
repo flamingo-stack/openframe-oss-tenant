@@ -1,0 +1,28 @@
+flowchart TD
+    Client["Client / Browser / Agent"]
+    Gateway["Gateway Service"]
+    Authz["Authorization Server"]
+    Api["API Service"]
+    Mgmt["Management Service"]
+    Stream["Stream Processing Service"]
+
+    Mongo["MongoDB"]
+    Redis["Redis"]
+    Kafka["Kafka"]
+
+    Client --> Gateway
+    Gateway --> Authz
+    Gateway --> Api
+    Gateway --> Mgmt
+
+    Api --> Mongo
+    Api --> Redis
+
+    Authz --> Mongo
+
+    Mgmt --> Mongo
+    Mgmt --> Kafka
+
+    Stream --> Kafka
+    Kafka --> Stream
+    Stream --> Mongo

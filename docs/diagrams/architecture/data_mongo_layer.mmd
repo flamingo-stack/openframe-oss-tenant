@@ -1,0 +1,7 @@
+flowchart TD
+    ApiServices["API & BFF Services"] --> DataMongo["Mongo Data Layer"]
+    AuthService["Authorization Server"] --> DataMongo
+    ManagementService["Management Service"] --> DataMongo
+    StreamService["Stream Processing"] --> DataMongo
+
+    DataMongo --> MongoDB[("MongoDB")]

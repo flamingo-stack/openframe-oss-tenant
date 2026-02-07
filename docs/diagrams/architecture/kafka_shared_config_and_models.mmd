@@ -1,0 +1,11 @@
+flowchart TD
+    App["Consuming Services"] --> AutoConfig["OssTenantKafkaAutoConfiguration"]
+    AutoConfig --> Props["OssTenantKafkaProperties"]
+    AutoConfig --> Topics["KafkaTopicProperties"]
+    AutoConfig --> Producer["KafkaTemplate & ProducerFactory"]
+    AutoConfig --> Consumer["KafkaListenerContainerFactory"]
+    AutoConfig --> Admin["KafkaAdmin"]
+
+    Producer --> Kafka[("Kafka Cluster")]
+    Consumer --> Kafka
+    Admin --> Kafka

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Tool as Integrated Tool
+    participant Kafka as Kafka
+    participant Stream as Stream Service
+    participant Cache as Redis Cache
+    participant Store as Cassandra
+
+    Tool->>Kafka: Emit Debezium Event
+    Kafka->>Stream: Consume Event
+    Stream->>Stream: Deserialize Event
+    Stream->>Cache: Resolve Agent & Org
+    Cache-->>Stream: Enrichment Data
+    Stream->>Stream: Map Unified Event Type
+    Stream->>Kafka: Publish Unified Event
+    Stream->>Store: Persist Event

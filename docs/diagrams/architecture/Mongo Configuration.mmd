@@ -1,0 +1,11 @@
+flowchart TD
+    App["Application Startup"] --> MongoConfig["MongoConfig"]
+    MongoConfig --> MongoConfiguration["MongoConfiguration"]
+    MongoConfig --> ReactiveMongoConfiguration["ReactiveMongoConfiguration"]
+
+    MongoConfiguration --> MappingConverter["MappingMongoConverter"]
+    ReactiveMongoConfiguration --> ReactiveRepos["Reactive Mongo Repositories"]
+
+    App --> MongoIndexConfig["MongoIndexConfig"]
+    MongoIndexConfig --> MongoTemplate["MongoTemplate"]
+    MongoTemplate --> Indexes["Ensured Indexes"]

@@ -1,0 +1,14 @@
+flowchart TD
+    AppService["Application Service"] -->|"Cacheable calls"| CacheManager["Spring Cache Manager"]
+    CacheManager -->|"Reads/Writes"| Redis[("Redis")]
+    AppService -->|"Direct access"| RedisTemplate["RedisTemplate"]
+    AppService -->|"Reactive access"| ReactiveRedisTemplate["Reactive RedisTemplate"]
+
+    subgraph redis_layer["Data Redis Cache Layer"]
+        CacheManager
+        RedisTemplate
+        ReactiveRedisTemplate
+        KeyBuilder["Tenant Aware Key Builder"]
+    end
+
+    CacheManager -->|"prefix keys"| KeyBuilder

@@ -1,0 +1,10 @@
+flowchart TD
+    Config["Application Properties"] --> JwtConfig["JwtConfig"]
+    JwtConfig --> JwtSecurityConfig["JwtSecurityConfig"]
+
+    JwtSecurityConfig --> Encoder["JwtEncoder"]
+    JwtSecurityConfig --> Decoder["JwtDecoder"]
+
+    PKCEUtils["PKCEUtils"] --> OAuthFlow["OAuth2 Authorization Flow"]
+
+    SecurityConstants["SecurityConstants"] --> ApiLayer["API / Gateway / BFF"]

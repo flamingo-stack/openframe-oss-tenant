@@ -1,0 +1,17 @@
+flowchart TD
+    Client["Client / Browser / Agent"] --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service"]
+    Gateway --> ExternalApi["External API"]
+
+    ApiService --> Authz["Authorization Server"]
+    ApiService --> DataMongo["Mongo Data Layer"]
+    ApiService --> CacheRedis["Redis Cache"]
+
+    Management["Management Service"] --> DataMongo
+    Management --> Kafka["Kafka Topics"]
+
+    Stream["Stream Service"] --> Kafka
+    Kafka --> Stream
+
+    Authz --> DataMongo
+    ExternalApi --> ApiService

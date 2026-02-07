@@ -1,0 +1,6 @@
+flowchart LR
+    Service["Application Service"] --> Repository["Mongo Repository"]
+    Repository --> Converter["MappingMongoConverter"]
+    Converter --> MongoDB[("MongoDB")]
+
+    MongoIndexConfig --> MongoDB
