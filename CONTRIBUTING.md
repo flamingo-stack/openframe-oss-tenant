@@ -1,97 +1,554 @@
-# Contributing to OpenFrame
+# Contributing to OpenFrame OSS Tenant
 
-Thank you for your interest in contributing to the OpenFrame project! We encourage both small and large contributions and appreciate your help in improving our platform.
+Thank you for your interest in contributing to OpenFrame! This guide will help you get started with contributing to the OpenFrame OSS Tenant repository.
 
-## Table of Contents
-1. Getting Started  
-2. Development Environment  
-3. Code Standards and Practices  
-4. Pull Requests  
-5. Issue Tracking  
-6. Communication  
-7. Contributor License Agreement (CLA)  
-8. Code of Conduct  
+## 📋 Table of Contents
 
---------------------------------------------------------------------------------
-## 1. Getting Started
+- [Getting Started](#getting-started)
+- [Development Environment](#development-environment)
+- [Project Structure](#project-structure)
+- [Making Contributions](#making-contributions)
+- [Code Standards](#code-standards)
+- [Testing Requirements](#testing-requirements)
+- [Documentation](#documentation)
+- [Community Guidelines](#community-guidelines)
 
-- Ensure you have the prerequisites installed:
-  - Java 21, Maven 3.9+, Docker & Docker Compose, Git 2.42+
-  - (Optional) Node.js + npm (for the front-end build)
+## 🚀 Getting Started
 
-- Fork the repository in GitHub, then clone your fork locally:  ```bash
-  git clone https://github.com/YOUR-USERNAME/openframe.git
-  cd openframe  ```
+### Prerequisites
 
---------------------------------------------------------------------------------
-## 2. Development Environment
+Before you begin, ensure you have:
 
-Below are brief steps for a standard dev environment:
+- **Java:** OpenJDK 21.0.1+ 
+- **Node.js:** 18+ with npm
+- **Rust:** 1.70+ with Cargo (for agent development)
+- **Docker:** 24.0+ with Docker Compose
+- **Git:** 2.42+
+- **GitHub Account:** For submitting pull requests
 
-1. Run Maven to build the backend libraries and services:   ```bash
-   mvn clean install   ```
-2. For the front-end (if you plan to make UI changes):   ```bash
-   cd services/openframe-frontend
-   npm install
-   npm run serve   ```
-3. Optionally launch the entire stack using Docker Compose:   ```bash
-   ./scripts/build-and-run.sh   ```
+### GitHub Packages Authentication
 
-Refer to [docs/deployment.md](docs/deployment.md) for more specific setup details.
+This project depends on `openframe-oss-lib` which is hosted on GitHub Packages. You'll need to authenticate:
 
---------------------------------------------------------------------------------
-## 3. Code Standards and Practices
+```bash
+export GITHUB_ACTOR=your-github-username
+export GITHUB_TOKEN=your-personal-access-token
+```
 
-- Code style:
-  - Use standard Java conventions, or the project’s .editorconfig / style plugin.
-  - For JavaScript/TypeScript front-end, follow Prettier/ESLint settings if available.
+**Creating a GitHub Personal Access Token:**
+1. Go to GitHub Settings → Developer settings → Personal access tokens
+2. Generate a new token with `read:packages` scope
+3. Use this token as your `GITHUB_TOKEN`
 
-- Testing:
-  - Write unit and integration tests where possible.
-  - Keep test coverage above the project threshold.
-  - For Java, we use JUnit or Testcontainers. For front-end, consider Jest or Cypress.
+## 🛠️ Development Environment
 
-- Commits:
-  - Use descriptive commit messages (e.g. “Fix login bug with JWT tokens”).
-  - Group related changes into a single commit; separate unrelated changes.
+### 1. Fork and Clone
 
---------------------------------------------------------------------------------
-## 4. Pull Requests
+```bash
+# Fork the repository on GitHub first, then clone your fork
+git clone https://github.com/YOUR-USERNAME/openframe-oss-tenant.git
+cd openframe-oss-tenant
 
-- Ensure all commits are rebased or squashed appropriately.
-- Include a clear description with:
-  - What problem you are addressing / what feature you are implementing
-  - How you tested it
-  - Any potential impacts on existing features
-- Reference the related issue if applicable (e.g., “Fixes #123”).
-- Make sure your PR passes all checks (CI, code style, test coverage).
+# Add the original repo as upstream
+git remote add upstream https://github.com/flamingo-stack/openframe-oss-tenant.git
+```
 
---------------------------------------------------------------------------------
-## 5. Issue Tracking
+### 2. Environment Setup
 
-- Issues are tracked on the GitHub Issues page.
-- If you find a bug, please create a new issue with:
-  - Steps to reproduce
-  - Expected vs. actual results
-  - Environment details (OS, Java version, etc.)
-- For enhancements, provide a clear vision of what you’re proposing.
+```bash
+# Set up authentication
+export GITHUB_ACTOR=your-github-username
+export GITHUB_TOKEN=your-github-token
 
---------------------------------------------------------------------------------
-## 6. Communication
+# Build the project
+mvn clean install
 
-- Join our official Slack/Discord for real-time discussions (links TBD).
-- Use the GitHub Discussion board for longer-form conversations.
-- Follow openframe.org blog or our social accounts for updates.
+# Verify everything builds correctly
+mvn test
+```
 
---------------------------------------------------------------------------------
-## 7. Contributor License Agreement (CLA)
+### 3. IDE Configuration
 
-By contributing to OpenFrame, you confirm that any code, documentation, or other output you submit is your own and that you have the right to share it under the license of this project. If a formal CLA is in place, please sign it before submitting a PR.
+**For IntelliJ IDEA:**
+- Import as a Maven project
+- Enable annotation processing
+- Set Project SDK to Java 21
+- Install the Lombok plugin
 
---------------------------------------------------------------------------------
-## 8. Code of Conduct
+**For VS Code:**
+- Install Java Extension Pack
+- Install Spring Boot Extension Pack
+- Install REST Client extension
 
-This project follows a standard Code of Conduct; please respect each other. Be kind, patient, and inclusive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for more details.
+## 📁 Project Structure
 
---------------------------------------------------------------------------------
-Thank you again for your contribution! Your input and ideas help improve OpenFrame for everyone. If you have any questions, feel free to reach out via GitHub issues or our community channels.
+Understanding the repository structure will help you navigate contributions:
+
+```text
+openframe-oss-tenant/
+├── openframe/
+│   ├── services/          # Service entrypoints (Spring Boot apps)
+│   │   ├── openframe-api/
+│   │   ├── openframe-authorization-server/
+│   │   ├── openframe-gateway/
+│   │   ├── openframe-management/
+│   │   └── openframe-frontend/
+│   └── shared/            # Shared configurations and utilities
+├── client/                # Rust agent source code
+├── docs/                  # Documentation
+├── scripts/               # Build and deployment scripts
+└── docker/                # Docker configurations
+```
+
+### Key Components to Understand
+
+- **Service Entrypoints**: Deployable Spring Boot applications
+- **Service Cores**: Business logic libraries (imported from openframe-oss-lib)
+- **Frontend**: Next.js/React web application
+- **Client Agent**: Rust-based cross-platform agent
+- **Shared Infrastructure**: Security, data layer, and common utilities
+
+## 🔄 Making Contributions
+
+### 1. Choose an Issue or Feature
+
+- Browse existing issues in our [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- Join the `#development` channel for coordination
+- **Note**: We don't use GitHub Issues - all coordination happens in Slack
+
+### 2. Create a Feature Branch
+
+```bash
+# Sync with upstream
+git fetch upstream
+git checkout main
+git merge upstream/main
+
+# Create your feature branch
+git checkout -b feature/your-feature-name
+
+# Or for bug fixes
+git checkout -b fix/issue-description
+```
+
+### 3. Development Workflow
+
+```bash
+# Make your changes
+# ... develop your feature ...
+
+# Run tests frequently
+mvn test
+
+# For frontend changes
+cd openframe/services/openframe-frontend
+npm run type-check
+npm run test
+
+# For client agent changes
+cd client
+cargo test
+```
+
+### 4. Commit Guidelines
+
+We follow conventional commit format:
+
+```bash
+git commit -m "feat: add device status monitoring dashboard"
+git commit -m "fix: resolve authentication token refresh issue" 
+git commit -m "docs: update API documentation for new endpoints"
+git commit -m "refactor: improve error handling in stream service"
+```
+
+**Commit Types:**
+- `feat:` - New features
+- `fix:` - Bug fixes  
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting)
+- `refactor:` - Code refactoring
+- `test:` - Adding or updating tests
+- `ci:` - CI/CD changes
+
+### 5. Submit Pull Request
+
+```bash
+# Push your branch
+git push origin feature/your-feature-name
+
+# Create pull request on GitHub
+# Target the main branch
+# Include a clear description of your changes
+```
+
+## 📝 Code Standards
+
+### Java (Backend Services)
+
+**Code Style:**
+- Follow Google Java Style Guide
+- Use meaningful variable and method names
+- Add JavaDoc for public APIs
+- Use `@SuppressWarnings` sparingly
+
+**Example:**
+```java
+/**
+ * Service for managing device registrations and status updates.
+ */
+@Service
+@Slf4j
+public class DeviceManagementService {
+    
+    /**
+     * Registers a new device for the specified tenant.
+     *
+     * @param tenantId the tenant identifier
+     * @param deviceInfo device registration information
+     * @return the registered device
+     * @throws DeviceRegistrationException if registration fails
+     */
+    public Device registerDevice(String tenantId, DeviceRegistrationInfo deviceInfo) {
+        log.info("Registering device {} for tenant {}", deviceInfo.getName(), tenantId);
+        
+        // Implementation...
+    }
+}
+```
+
+**Required Practices:**
+- Use `@Slf4j` for logging, not `System.out.println`
+- Validate inputs with `@Valid` and custom validators
+- Handle exceptions gracefully with proper error responses
+- Use Spring Security's `@PreAuthorize` for authorization
+- Always include tenant context in database queries
+
+### TypeScript (Frontend)
+
+**Code Style:**
+- Use TypeScript strict mode
+- Define interfaces for all data structures
+- Use functional components with hooks
+- Prefer composition over inheritance
+
+**Example:**
+```typescript
+interface DeviceStatusProps {
+  deviceId: string;
+  tenantId: string;
+  onStatusChange?: (status: DeviceStatus) => void;
+}
+
+export const DeviceStatusComponent: React.FC<DeviceStatusProps> = ({ 
+  deviceId, 
+  tenantId, 
+  onStatusChange 
+}) => {
+  const [status, setStatus] = useState<DeviceStatus>();
+  const { data, loading, error } = useDeviceStatusQuery({
+    variables: { deviceId, tenantId }
+  });
+
+  // Implementation...
+};
+```
+
+### Rust (Client Agent)
+
+**Code Style:**
+- Follow Rust standard conventions
+- Use `clippy` for code quality
+- Write comprehensive tests
+- Handle errors with `Result<T, E>`
+
+**Example:**
+```rust
+use tokio::time::{Duration, interval};
+use anyhow::Result;
+
+/// Manages device health monitoring and reporting
+pub struct DeviceMonitor {
+    client: ApiClient,
+    interval: Duration,
+}
+
+impl DeviceMonitor {
+    /// Creates a new device monitor with specified check interval
+    pub fn new(client: ApiClient, interval: Duration) -> Self {
+        Self { client, interval }
+    }
+    
+    /// Starts the monitoring loop
+    pub async fn start_monitoring(&self) -> Result<()> {
+        let mut timer = interval(self.interval);
+        
+        loop {
+            timer.tick().await;
+            
+            match self.check_device_health().await {
+                Ok(health) => self.report_health(health).await?,
+                Err(e) => log::error!("Health check failed: {}", e),
+            }
+        }
+    }
+}
+```
+
+## ✅ Testing Requirements
+
+### Backend Tests
+
+**Unit Tests:**
+```java
+@SpringBootTest
+@TestMethodOrder(OrderAnnotation.class)
+class DeviceManagementServiceTest {
+    
+    @MockBean
+    private DeviceRepository deviceRepository;
+    
+    @Autowired
+    private DeviceManagementService deviceService;
+    
+    @Test
+    void shouldRegisterDeviceSuccessfully() {
+        // Given
+        DeviceRegistrationInfo info = DeviceRegistrationInfo.builder()
+            .name("Test Device")
+            .type(DeviceType.WORKSTATION)
+            .build();
+            
+        // When
+        Device result = deviceService.registerDevice("tenant-1", info);
+        
+        // Then
+        assertThat(result.getName()).isEqualTo("Test Device");
+        assertThat(result.getTenantId()).isEqualTo("tenant-1");
+    }
+}
+```
+
+**Integration Tests:**
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(properties = {
+    "spring.datasource.url=jdbc:h2:mem:testdb",
+    "spring.kafka.bootstrap-servers=\${embedded.kafka.brokers}"
+})
+class DeviceApiIntegrationTest {
+    
+    @Autowired
+    private TestRestTemplate restTemplate;
+    
+    @Test
+    void shouldCreateDeviceViaApi() {
+        // Test implementation
+    }
+}
+```
+
+### Frontend Tests
+
+**Component Tests:**
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { DeviceStatusComponent } from './DeviceStatusComponent';
+
+describe('DeviceStatusComponent', () => {
+  it('should display device status correctly', async () => {
+    render(
+      <DeviceStatusComponent 
+        deviceId="device-1" 
+        tenantId="tenant-1" 
+      />
+    );
+    
+    expect(await screen.findByText('Online')).toBeInTheDocument();
+  });
+});
+```
+
+### Rust Tests
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::time::Duration;
+    
+    #[tokio::test]
+    async fn test_device_monitor_creation() {
+        let client = ApiClient::new("http://localhost:8080").unwrap();
+        let monitor = DeviceMonitor::new(client, Duration::from_secs(60));
+        
+        assert_eq!(monitor.interval, Duration::from_secs(60));
+    }
+}
+```
+
+### Test Coverage Requirements
+
+- **Backend**: Minimum 80% code coverage
+- **Frontend**: Minimum 70% component coverage  
+- **Rust**: All public APIs must have tests
+
+```bash
+# Check coverage
+mvn test jacoco:report
+npm run test:coverage
+cargo test --coverage
+```
+
+## 📚 Documentation
+
+### Code Documentation
+
+**Java:**
+```java
+/**
+ * Validates device configuration against tenant policies.
+ * 
+ * @param tenantId the tenant identifier for policy lookup
+ * @param config the device configuration to validate
+ * @return validation result with any policy violations
+ * @throws PolicyNotFoundException if tenant policies are not configured
+ * @since 1.2.0
+ */
+@ValidateInput
+public ValidationResult validateDeviceConfig(
+    @NotNull String tenantId, 
+    @Valid DeviceConfiguration config
+) throws PolicyNotFoundException {
+    // Implementation
+}
+```
+
+**TypeScript:**
+```typescript
+/**
+ * Hook for managing device status subscriptions
+ * @param deviceId - Unique device identifier
+ * @param options - Subscription options
+ * @returns Device status data and subscription controls
+ */
+export function useDeviceStatus(
+  deviceId: string,
+  options: SubscriptionOptions = {}
+): DeviceStatusResult {
+  // Implementation
+}
+```
+
+### README Updates
+
+If your changes require documentation updates:
+
+1. Update relevant sections in `docs/` directory
+2. Update API documentation for new endpoints
+3. Add examples for new features
+4. Update troubleshooting guides if needed
+
+## 🤝 Community Guidelines
+
+### Code of Conduct
+
+We follow the [OpenMSP Community Code of Conduct](https://www.openmsp.ai/). All contributors are expected to:
+
+- Be respectful and inclusive
+- Provide constructive feedback
+- Focus on the technical merits of contributions
+- Help newcomers learn and contribute
+
+### Communication Channels
+
+- **Primary**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Channels to join**:
+  - `#development` - Development coordination
+  - `#architecture` - Architectural discussions  
+  - `#general` - General community chat
+  - `#help` - Getting help and support
+
+### Getting Help
+
+**For Development Questions:**
+1. Check existing documentation first
+2. Search Slack history in relevant channels
+3. Ask in `#development` with context:
+   - What you're trying to achieve
+   - What you've already tried
+   - Relevant error messages or logs
+
+**For Architecture Decisions:**
+- Post in `#architecture` channel
+- Include technical context and trade-offs
+- Tag `@architecture-team` for complex decisions
+
+## 🚀 Advanced Contribution Topics
+
+### Working with Service Cores
+
+The business logic lives in `openframe-oss-lib` (separate repository). If your contribution requires changes to service cores:
+
+1. First discuss in `#architecture` Slack channel
+2. Changes may need to be made in the lib repository first
+3. Coordinate with maintainers for version updates
+
+### Multi-Tenant Considerations
+
+All contributions must maintain multi-tenant isolation:
+
+```java
+// Always include tenant context
+public List<Device> getDevices() {
+    String tenantId = TenantContext.getCurrentTenantId();
+    return deviceRepository.findByTenantId(tenantId);
+}
+
+// Database queries must filter by tenant
+@Query("{'tenantId': ?0, 'status': ?1}")
+List<Device> findByTenantAndStatus(String tenantId, DeviceStatus status);
+```
+
+### Performance Considerations
+
+- Database queries must use proper indexes
+- Cache frequently accessed data appropriately
+- Use pagination for large data sets
+- Implement proper rate limiting
+
+### Security Requirements
+
+- All endpoints must be authenticated
+- Use `@PreAuthorize` for authorization
+- Validate all inputs
+- Sanitize user-provided data
+- Follow OWASP security guidelines
+
+## ✅ Pull Request Checklist
+
+Before submitting your pull request, ensure:
+
+- [ ] Code follows style guidelines
+- [ ] Tests are written and passing
+- [ ] Documentation is updated
+- [ ] Multi-tenant isolation is maintained
+- [ ] Security considerations are addressed
+- [ ] Performance impact is considered
+- [ ] Breaking changes are clearly documented
+- [ ] Commit messages follow conventional format
+
+## 🙋 Questions?
+
+If you have questions about contributing:
+
+1. **First**: Check this guide and existing documentation
+2. **Then**: Ask in the appropriate Slack channel
+3. **For urgent issues**: Tag `@maintainers` in Slack
+
+Thank you for contributing to OpenFrame! Your contributions help build the future of open-source MSP platforms.
+
+---
+
+**Happy coding!** 🚀
+
+Built with 💛 by the [Flamingo](https://www.flamingo.run/about) team and the OpenMSP community.
