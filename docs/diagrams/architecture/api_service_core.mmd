@@ -1,0 +1,16 @@
+flowchart TD
+    Gateway["Gateway Service Core"] --> Api["Api Service Core"]
+
+    Api --> UserSvc["User Domain Services"]
+    Api --> OrgSvc["Organization Services"]
+    Api --> DeviceSvc["Device Services"]
+    Api --> ToolSvc["Tool Services"]
+    Api --> SsoSvc["SSO Configuration Service"]
+
+    UserSvc --> DataLayer["Mongo / Redis / Kafka"]
+    OrgSvc --> DataLayer
+    DeviceSvc --> DataLayer
+    ToolSvc --> DataLayer
+    SsoSvc --> DataLayer
+
+    Api --> Authz["Authorization Service Core"]

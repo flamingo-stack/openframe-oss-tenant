@@ -1,0 +1,19 @@
+flowchart TD
+    Agent["Client Agent"] -->|"OAuth Token"| AuthController["Agent Auth Controller"]
+    Agent -->|"Register"| AgentController["Agent Controller"]
+    Agent -->|"Download"| FileController["Tool Agent File Controller"]
+
+    subgraph listeners["Event Listeners"]
+        HeartbeatListener["Machine Heartbeat Listener"]
+        ClientConnListener["Client Connection Listener"]
+        ToolConnListener["Tool Connection Listener"]
+        InstalledListener["Installed Agent Listener"]
+    end
+
+    subgraph services["Domain Services"]
+        MachineStatusService["Machine Status Service"]
+        ToolConnectionService["Tool Connection Service"]
+        InstalledAgentService["Installed Agent Service"]
+    end
+
+    listeners -->|"Update state"| services

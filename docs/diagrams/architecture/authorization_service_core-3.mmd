@@ -1,0 +1,5 @@
+flowchart LR
+    JWKSRequest["JWKS Request"] --> TenantContext
+    TenantContext --> KeyService["Tenant Key Service"]
+    KeyService --> RSAKey["Active RSA Key"]
+    RSAKey --> JWKS["Tenant JWKS"]

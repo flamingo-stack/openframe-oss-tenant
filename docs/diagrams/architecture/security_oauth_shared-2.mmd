@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant BFF as "OAuth BFF"
+    participant Auth as "Authorization Server"
+
+    Client->>BFF: Start login
+    BFF->>BFF: Generate state
+    BFF->>BFF: Generate code verifier
+    BFF->>Auth: Redirect with code challenge
+    Auth->>Client: Authorization code
+    Client->>BFF: Callback with code and state
+    BFF->>Auth: Exchange code + verifier
+    Auth->>BFF: Access and refresh tokens

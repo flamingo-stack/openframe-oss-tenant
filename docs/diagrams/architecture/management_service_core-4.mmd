@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Save Tool Request"] --> Persist["Persist Tool"]
+    Persist --> Debezium["Update Debezium Connectors"]
+    Debezium --> Hooks["Run Post-Save Hooks"]
+    Hooks --> Response["Success Response"]

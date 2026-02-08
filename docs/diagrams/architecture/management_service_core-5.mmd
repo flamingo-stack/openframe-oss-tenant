@@ -1,0 +1,6 @@
+flowchart TD
+    Ready["Application Ready"] --> Load["Load Pinot Config Files"]
+    Load --> Validate["Validate JSON"]
+    Validate --> DeploySchema["Deploy Schema"]
+    DeploySchema --> DeployTable["Deploy Table Config"]
+    DeployTable --> Retry["Retry on Failure"]

@@ -1,0 +1,8 @@
+flowchart TD
+    Services["Service Cores"] --> DataLayer["Data Layer Mongo Redis Kafka"]
+
+    DataLayer --> Mongo["MongoDB"]
+    DataLayer --> Redis["Redis"]
+    DataLayer --> Kafka["Kafka"]
+
+    Kafka --> Stream["Stream Service Core"]

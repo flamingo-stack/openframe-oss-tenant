@@ -1,0 +1,4 @@
+flowchart LR
+    Scheduler["Scheduled Task"] --> Lock["Redis ShedLock"]
+    Lock -->|"Lock Acquired"| Execute["Run Job"]
+    Lock -->|"Lock Denied"| Skip["Skip Execution"]

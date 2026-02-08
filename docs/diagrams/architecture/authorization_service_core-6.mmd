@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant Authz as "Authorization Service"
+    participant IdP as "SSO Provider"
+
+    User->>Authz: Accept invitation (SSO)
+    Authz->>IdP: Redirect for authentication
+    IdP-->>Authz: OIDC callback
+    Authz->>Authz: Register user from invitation
+    Authz-->>User: Redirect to tenant

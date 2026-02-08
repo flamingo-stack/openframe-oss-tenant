@@ -1,0 +1,11 @@
+flowchart TD
+    Entry["Management Application"] --> Mgmt["Management Service Core"]
+
+    Mgmt --> DataLayer["Data Layer (MongoDB, Redis)"]
+    Mgmt --> StreamLayer["Streaming (Kafka, NATS)"]
+    Mgmt --> Debezium["Debezium Connectors"]
+    Mgmt --> Pinot["Apache Pinot"]
+    Mgmt --> Tools["Integrated External Tools"]
+
+    StreamLayer --> Clients["Client & Agent Services"]
+    Tools --> Clients

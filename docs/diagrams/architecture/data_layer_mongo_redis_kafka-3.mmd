@@ -1,0 +1,4 @@
+flowchart LR
+    Service["Service"] --> Cache["Spring Cache"]
+    Cache --> RedisTemplate["Redis Template"]
+    RedisTemplate --> Redis[("Redis")]

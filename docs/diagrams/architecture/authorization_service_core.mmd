@@ -1,0 +1,10 @@
+flowchart LR
+    Frontend["Frontend Applications"] --> Gateway["Gateway Service Core"]
+    Client["Client & Agent Services"] --> Gateway
+
+    Gateway --> Authz["Authorization Service Core"]
+
+    Authz --> Mongo[("MongoDB")]
+    Authz --> Redis[("Redis Cache")]
+
+    Gateway --> APIs["API Service Core"]

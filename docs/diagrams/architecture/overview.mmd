@@ -1,0 +1,24 @@
+flowchart TD
+    User["User / Technician"] --> Frontend["Frontend App OpenFrame"]
+    Agent["Client / Tool Agent"] --> Gateway["Gateway Service Core"]
+
+    Frontend --> Gateway
+    Gateway --> Api["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> Authz["Authorization Service Core"]
+    Gateway --> ClientSvc["Client Agent Service Core"]
+
+    Api --> Data["Data Layer (Mongo / Redis / Kafka)"]
+    ExternalApi --> Data
+    Authz --> Data
+    ClientSvc --> Data
+
+    Stream["Stream Service Core"] --> Data
+    Stream --> Kafka["Kafka Topics"]
+
+    Management["Management Service Core"] --> Data
+    Management --> Kafka
+
+    Security["Security OAuth Shared"] --> Gateway
+    Security --> Authz
+    Security --> Api

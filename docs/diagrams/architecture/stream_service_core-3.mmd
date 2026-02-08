@@ -1,0 +1,7 @@
+flowchart TD
+    A["Fleet Activities Topic"] --> B["Activity Stream"]
+    C["Host Activities Topic"] --> D["Host Activity Stream"]
+    B --> E["Left Join"]
+    D --> E
+    E --> F["Add Headers"]
+    F --> G["Enriched Activities Topic"]

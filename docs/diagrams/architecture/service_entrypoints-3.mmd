@@ -1,0 +1,4 @@
+flowchart LR
+    AuthzApp["Authorization Server"] --> Login["Login & SSO"]
+    Login --> Tokens["Token Issuance"]
+    Tokens --> Clients["Clients & Gateways"]

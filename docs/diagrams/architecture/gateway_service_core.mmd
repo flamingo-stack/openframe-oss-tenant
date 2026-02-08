@@ -1,0 +1,12 @@
+flowchart TD
+    Client["Web UI / External Client"] --> Gateway["Gateway Service Core"]
+    Agent["Tool Agent"] --> Gateway
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> Authz["Authorization Service Core"]
+    Gateway --> ClientService["Client Agent Service Core"]
+
+    ApiService --> DataLayer["Mongo / Redis / Kafka"]
+    ExternalApi --> DataLayer
+    ClientService --> DataLayer

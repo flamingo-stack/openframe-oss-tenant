@@ -1,0 +1,4 @@
+flowchart LR
+    Client --> Gateway
+    Gateway -->|"Validated JWT"| Api
+    Api -->|"Resolve Principal"| Controllers

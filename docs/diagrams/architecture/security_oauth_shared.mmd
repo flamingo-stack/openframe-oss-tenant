@@ -1,0 +1,9 @@
+flowchart TD
+    Frontend["Frontend Application"] -->|"OAuth login"| Gateway["Gateway Service"]
+    Gateway -->|"uses"| SecurityOauthShared["Security Oauth Shared"]
+    Gateway -->|"authorize / token"| AuthServer["Authorization Service"]
+    AuthServer -->|"JWTs"| Gateway
+    Gateway -->|"cookies"| Frontend
+
+    AuthServer -->|"JWT verify"| SecurityOauthShared
+    ApiService["API Service"] -->|"JWT decode"| SecurityOauthShared

@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Application Startup"] --> LoadCfg["Load Agent Configurations"]
+    LoadCfg --> Check["Agent Exists?"]
+    Check -->|"No"| Create["Create Agent"]
+    Check -->|"Yes"| Update["Update Agent"]
+    Update --> Version["Version Changed?"]
+    Version -->|"Yes"| Publish["Publish Update Event"]
+    Version -->|"No"| End["End"]

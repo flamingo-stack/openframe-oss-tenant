@@ -1,0 +1,19 @@
+flowchart LR
+    InboundKafka["Inbound Kafka Topics"] --> Listener["Json Kafka Listener"]
+    Listener --> Processor["Generic JSON Message Processor"]
+    Processor --> Deserializers["Tool Event Deserializers"]
+    Deserializers --> Mapper["Event Type Mapper"]
+    Mapper --> Enrichment["Data Enrichment Services"]
+    Enrichment --> Handlers["Debezium Message Handlers"]
+
+    Handlers --> OutKafka["Outbound Kafka Topics"]
+    Handlers --> Cassandra["Cassandra Event Store"]
+
+    subgraph Streams["Kafka Streams"]
+        ActivityStream["Activity Stream"] --> Join["Activity + Host Join"]
+        HostStream["Host Activity Stream"] --> Join
+        Join --> EnrichedActivity["Enriched Activity Events"]
+    end
+
+    InboundKafka --> Streams
+    Streams --> OutKafka

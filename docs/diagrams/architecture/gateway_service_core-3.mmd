@@ -1,0 +1,11 @@
+flowchart TD
+    Req["Incoming Request"] --> CheckPath["External API Path?"]
+    CheckPath -->|No| PassThrough["Continue"]
+    CheckPath -->|Yes| CheckKey["X-API-Key Present"]
+    CheckKey -->|No| Reject401["401 Unauthorized"]
+    CheckKey -->|Yes| ValidateKey["Validate API Key"]
+    ValidateKey -->|Invalid| Reject401
+    ValidateKey -->|Valid| RateLimit["Check Rate Limits"]
+    RateLimit -->|Exceeded| Reject429["429 Too Many Requests"]
+    RateLimit -->|Allowed| Enrich["Add User Context Headers"]
+    Enrich --> Forward["Forward to External API"]

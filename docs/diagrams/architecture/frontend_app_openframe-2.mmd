@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant UI
+    participant ApiClient
+    participant AuthApi as "Auth API Client"
+    participant Gateway
+
+    UI->>ApiClient: request()
+    ApiClient->>Gateway: HTTP request
+    Gateway-->>ApiClient: 401 Unauthorized
+    ApiClient->>AuthApi: refresh token
+    AuthApi-->>ApiClient: new tokens
+    ApiClient->>Gateway: retry request
+    Gateway-->>ApiClient: 200 OK
+    ApiClient-->>UI: response data

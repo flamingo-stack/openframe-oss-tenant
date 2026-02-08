@@ -1,0 +1,4 @@
+flowchart LR
+    TokenRequest --> KeyService
+    KeyService -->|"Load or Create"| TenantKey[("Tenant Key")]
+    TenantKey --> JWT["Signed JWT"]

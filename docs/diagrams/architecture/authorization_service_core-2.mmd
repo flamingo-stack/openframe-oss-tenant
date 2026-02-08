@@ -1,0 +1,15 @@
+flowchart TD
+    Request["Incoming Auth Request"] --> TenantFilter["Tenant Context Filter"]
+    TenantFilter --> SecurityChains["Security Filter Chains"]
+
+    SecurityChains -->|"OAuth2 / OIDC"| AuthServer["Authorization Server Config"]
+    SecurityChains -->|"Login & SSO"| DefaultSecurity["Default Security Config"]
+
+    AuthServer --> TokenCustomizer["JWT Token Customizer"]
+    TokenCustomizer --> Keys["Tenant Key Service"]
+
+    DefaultSecurity --> SSO["SSO Login & Provisioning"]
+    SSO --> UserService["User Service"]
+
+    AuthServer --> OAuthStore["Mongo Authorization Service"]
+    OAuthStore --> Mongo[("MongoDB")]

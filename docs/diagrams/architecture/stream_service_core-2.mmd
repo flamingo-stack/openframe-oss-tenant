@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Kafka as Kafka Broker
+    participant Listener as Json Kafka Listener
+    participant Processor as Message Processor
+    participant Deser as Event Deserializer
+    participant Handler as Message Handler
+
+    Kafka->>Listener: Publish Debezium Event
+    Listener->>Processor: process(message, messageType)
+    Processor->>Deser: deserialize by MessageType
+    Deser->>Handler: structured event + metadata
+    Handler->>Kafka: publish enriched event

@@ -1,0 +1,15 @@
+flowchart TD
+    UI["Frontend UI"] --> Services["Application Services"]
+    Services --> ApiClient["Central API Client"]
+
+    ApiClient --> AuthApi["Auth API Client"]
+    ApiClient --> FleetApi["Fleet API Client"]
+    ApiClient --> TacticalApi["Tactical API Client"]
+
+    AuthApi --> Gateway["Gateway Service Core"]
+    FleetApi --> Gateway
+    TacticalApi --> Gateway
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> AuthService["Authorization Service Core"]

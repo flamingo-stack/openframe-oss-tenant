@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant UI as Chat UI
+    participant Token as Token Service
+    participant Dialog as Dialog GraphQL Service
+    participant Tauri as Tauri Backend
+
+    UI->>Token: ensureTokenReady()
+    Token->>Tauri: get_token
+    Token->>Tauri: get_server_url
+
+    UI->>Dialog: getResumableDialog()
+    Dialog->>Token: ensureTokenReady()
+    Dialog->>Backend: GraphQL query
+    Backend-->>Dialog: Dialog data
+    Dialog-->>UI: Resumable dialog

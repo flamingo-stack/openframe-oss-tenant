@@ -1,0 +1,8 @@
+flowchart TD
+    Producer["Kafka Producer"] --> Topic["Kafka Topic"]
+    Topic --> Consumer["Kafka Consumer"]
+
+    subgraph config["Kafka Auto Configuration"]
+        Producer
+        Consumer
+    end

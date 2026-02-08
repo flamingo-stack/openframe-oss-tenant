@@ -1,0 +1,4 @@
+flowchart TD
+    OAuthEvent["OAuth2 Flow"] --> AuthService["Mongo Authorization Service"]
+    AuthService --> Mapper["Authorization Mapper"]
+    Mapper --> Mongo[("MongoDB")]

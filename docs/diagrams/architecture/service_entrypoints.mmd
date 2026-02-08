@@ -1,0 +1,13 @@
+flowchart TD
+    User["User / Agent / Client"] --> Gateway["Gateway Service"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> Authz["Authorization Service"]
+
+    Api --> Data["Data Layer"]
+    ExternalApi --> Data
+    Authz --> Data
+
+    Stream["Stream Service"] --> Data
+    Management["Management Service"] --> Data
+    Client["Client Service"] --> Gateway

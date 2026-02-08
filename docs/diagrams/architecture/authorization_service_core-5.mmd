@@ -1,0 +1,4 @@
+flowchart LR
+    Login["SSO Login"] --> ClientRepo["Dynamic Client Registration Repository"]
+    ClientRepo --> Strategy["Provider Strategy"]
+    Strategy --> Registration["Client Registration"]

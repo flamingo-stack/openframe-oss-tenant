@@ -1,0 +1,4 @@
+flowchart LR
+    App["Service"] --> Repo["Mongo Repositories"]
+    Repo --> Template["MongoTemplate"]
+    Template --> MongoDB[("MongoDB")]
