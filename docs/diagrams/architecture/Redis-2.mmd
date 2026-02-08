@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Service
+    participant Cache
+    participant Redis
+
+    Service->>Cache: Request cached data
+    Cache->>Redis: Lookup key
+    Redis-->>Cache: Cache hit or miss
+    Cache-->>Service: Return cached value

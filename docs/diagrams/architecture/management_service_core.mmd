@@ -1,0 +1,21 @@
+flowchart TD
+    Startup["Application Startup"] --> Init["Initializers"]
+    Init --> DataLayer["Data Layer"]
+    Init --> Streams["NATS Streams"]
+    Init --> Pinot["Pinot Analytics"]
+
+    Api["Internal API Calls"] --> Controllers["Management Controllers"]
+    Controllers --> Services["Management Services"]
+
+    Schedulers["Scheduled Jobs"] --> Services
+    Services --> External["External Systems"]
+
+    subgraph external_systems["External Systems"]
+        Debezium["Debezium"]
+        Tactical["Tactical RMM"]
+        PinotCtl["Pinot Controller"]
+    end
+
+    Services --> Debezium
+    Services --> Tactical
+    Services --> PinotCtl

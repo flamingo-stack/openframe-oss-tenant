@@ -1,0 +1,7 @@
+flowchart TD
+    Browser["User Browser"] -->|"login / sso"| Authz["Authorization Server Core"]
+    Authz -->|"JWT access token"| Gateway["Gateway Service Core"]
+    Gateway -->|"validated request"| Api["API Service Core"]
+
+    Authz -->|"JWKs per tenant"| Gateway
+    Authz -->|"OIDC metadata"| Browser

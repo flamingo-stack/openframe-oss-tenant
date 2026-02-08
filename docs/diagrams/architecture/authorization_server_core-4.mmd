@@ -1,0 +1,5 @@
+flowchart TD
+    TokenReq["Token Request"] --> JwtEncoder["JWT Encoder"]
+    JwtEncoder --> KeyService["Tenant Key Service"]
+    KeyService -->|"get or create"| Key["RSA Key Pair"]
+    Key --> Jwt["Signed JWT"]

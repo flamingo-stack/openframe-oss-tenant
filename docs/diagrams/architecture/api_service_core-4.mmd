@@ -1,0 +1,5 @@
+flowchart LR
+    Query["GraphQL Query"] --> Filters["Filter Inputs"]
+    Filters --> Service["Domain Service"]
+    Service --> Result["Query Result"]
+    Result --> Connection["Connection / Edges"]

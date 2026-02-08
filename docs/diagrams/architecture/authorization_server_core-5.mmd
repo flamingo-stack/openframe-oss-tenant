@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant Authz as "Authorization Server Core"
+    participant IdP as "External IdP"
+
+    User->>Browser: Click Sign In
+    Browser->>Authz: /oauth2/authorize
+    Authz->>IdP: Redirect for authentication
+    IdP-->>Authz: ID Token
+    Authz->>Authz: Auto-provision if needed
+    Authz-->>Browser: Authenticated session

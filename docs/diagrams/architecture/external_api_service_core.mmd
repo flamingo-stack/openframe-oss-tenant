@@ -1,0 +1,21 @@
+flowchart TD
+    Client[External Client] --> Gateway[Gateway Service Core]
+    Gateway --> ExternalApi[External Api Service Core]
+
+    ExternalApi --> DeviceCtrl[Device Controller]
+    ExternalApi --> EventCtrl[Event Controller]
+    ExternalApi --> LogCtrl[Log Controller]
+    ExternalApi --> OrgCtrl[Organization Controller]
+    ExternalApi --> ToolCtrl[Tool Controller]
+    ExternalApi --> IntegrationCtrl[Integration Controller]
+
+    DeviceCtrl --> ApiServices[Api Service Core]
+    EventCtrl --> ApiServices
+    LogCtrl --> ApiServices
+    OrgCtrl --> ApiServices
+    ToolCtrl --> ApiServices
+
+    IntegrationCtrl --> RestProxy[Rest Proxy Service]
+    RestProxy --> IntegratedTools[Integrated Tools]
+
+    ApiServices --> DataLayer[Data Layer]

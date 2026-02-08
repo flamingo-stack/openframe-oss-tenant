@@ -1,0 +1,4 @@
+flowchart TD
+    Producer["Kafka Producer"] --> Error["Send Failure"]
+    Error --> Recovery["Recovery Handler"]
+    Recovery --> Logs["Structured Error Logs"]

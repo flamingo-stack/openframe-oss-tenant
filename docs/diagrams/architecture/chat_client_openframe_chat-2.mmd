@@ -1,0 +1,4 @@
+flowchart TD
+    Rust["Tauri Backend"] -->|"token-update"| TokenService
+    TokenService -->|"Bearer Token"| Network["Network Services"]
+    TokenService -->|"API Base URL"| Network

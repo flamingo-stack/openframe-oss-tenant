@@ -1,0 +1,5 @@
+flowchart LR
+    UI["Logs UI"] --> LogsHook["useLogs"]
+    LogsHook --> GraphQL["GraphQL API"]
+    GraphQL --> LogsData["Log Entries"]
+    LogsData --> UI

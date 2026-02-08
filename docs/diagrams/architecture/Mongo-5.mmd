@@ -1,0 +1,10 @@
+flowchart TD
+    Input["Filter + Search"] --> BuildCriteria["Build Criteria List"]
+    BuildCriteria --> SoftDelete["Exclude Deleted"]
+    BuildCriteria --> BusinessFilters["Category / Employees / Contract"]
+    BuildCriteria --> Search["Text Search"]
+    SoftDelete --> Combine["Combine with AND"]
+    BusinessFilters --> Combine
+    Search --> Combine
+    Combine --> MongoQuery["Mongo Query"]
+    MongoQuery --> Results["Organization Results"]

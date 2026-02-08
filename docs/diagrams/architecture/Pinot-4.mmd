@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Service as Service Layer
+    participant Repo as Pinot Repository
+    participant Broker as Pinot Broker
+
+    Service->>Repo: Request data with filters
+    Repo->>Repo: Build SQL query
+    Repo->>Broker: Execute query
+    Broker-->>Repo: ResultSet
+    Repo-->>Service: Mapped projections

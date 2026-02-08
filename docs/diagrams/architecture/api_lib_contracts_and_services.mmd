@@ -1,0 +1,7 @@
+flowchart TD
+    DataLayer["Data Layer"] --> ApiLib["Api Lib Contracts And Services"]
+    ApiLib --> ApiService["Api Service Core"]
+    ApiLib --> ExternalApi["External Api Service Core"]
+    ApiLib --> StreamService["Stream Service Core"]
+    ApiService --> Frontend["Frontend Application"]
+    ExternalApi --> Integrations["External Integrations"]

@@ -1,0 +1,4 @@
+flowchart TD
+    HealthProbe["Health Endpoint"] --> CassandraQuery["Query system.local"]
+    CassandraQuery -->|"Success"| HealthUp["Health UP"]
+    CassandraQuery -->|"Failure"| HealthDown["Health DOWN"]

@@ -1,0 +1,4 @@
+flowchart LR
+    Properties["Application Properties"] --> MongoConfig
+    MongoConfig --> Converter["MappingMongoConverter"]
+    Converter --> Documents["Mongo Documents"]

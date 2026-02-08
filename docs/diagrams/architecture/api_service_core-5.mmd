@@ -1,0 +1,5 @@
+flowchart TD
+    GraphQLResolver["Field Resolver"] --> DataLoader["Batch Loader"]
+    DataLoader --> Repository["Repository"]
+    Repository --> DataLoader
+    DataLoader --> GraphQLResolver

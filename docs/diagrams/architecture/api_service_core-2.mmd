@@ -1,0 +1,4 @@
+flowchart LR
+    Request["Incoming Request"] --> GatewayJWT["JWT Validation (Gateway)"]
+    GatewayJWT --> ApiJWT["JwtAuthenticationProvider Cache"]
+    ApiJWT --> Controllers["Controllers / GraphQL"]

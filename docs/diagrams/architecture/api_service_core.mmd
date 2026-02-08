@@ -1,0 +1,20 @@
+flowchart TD
+    Client["Frontend / Internal Clients"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiService["Api Service Core"]
+
+    ApiService --> DataLayer["Data Layer"]
+    ApiService --> Authz["Authorization Server Core"]
+
+    subgraph api_layer["Api Service Core"]
+        RestControllers["REST Controllers"]
+        GraphQL["GraphQL DGS"]
+        Services["Domain Services"]
+        DataLoaders["GraphQL DataLoaders"]
+    end
+
+    Gateway --> RestControllers
+    Gateway --> GraphQL
+    RestControllers --> Services
+    GraphQL --> Services
+    Services --> DataLayer
+    GraphQL --> DataLoaders

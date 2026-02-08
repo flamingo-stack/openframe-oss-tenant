@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz as "Authorization Server"
+    participant Api as "API Service"
+    participant Data as "Data Layer"
+
+    User->>Gateway: HTTPS Request
+    Gateway->>Authz: Validate JWT
+    Authz-->>Gateway: Token Valid
+    Gateway->>Api: Forward Request
+    Api->>Data: Read / Write
+    Data-->>Api: Result
+    Api-->>Gateway: Response
+    Gateway-->>User: Final Response

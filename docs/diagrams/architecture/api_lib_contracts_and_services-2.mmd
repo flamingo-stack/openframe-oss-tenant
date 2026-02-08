@@ -1,0 +1,5 @@
+flowchart LR
+    Client["Client Request"] --> FilterOptions["Log Filter Options"]
+    FilterOptions --> QueryEngine["Query Engine"]
+    QueryEngine --> LogEvent["Log Event"]
+    QueryEngine --> LogDetails["Log Details"]

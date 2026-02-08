@@ -1,0 +1,17 @@
+flowchart TD
+    Request[Incoming Request]
+    CheckPath[Check External API Path]
+    ValidateKey[Validate API Key]
+    RateLimit[Check Rate Limit]
+    Enrich[Add User Context Headers]
+    Forward[Forward to External API]
+    Reject[Reject Request]
+
+    Request --> CheckPath
+    CheckPath -->|Not External API| Forward
+    CheckPath -->|External API| ValidateKey
+    ValidateKey -->|Invalid| Reject
+    ValidateKey -->|Valid| RateLimit
+    RateLimit -->|Exceeded| Reject
+    RateLimit -->|Allowed| Enrich
+    Enrich --> Forward

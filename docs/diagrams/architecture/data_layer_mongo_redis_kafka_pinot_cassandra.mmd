@@ -1,0 +1,12 @@
+flowchart TD
+    ApiServices["API & Service Layer"] --> MongoDB["MongoDB"]
+    ApiServices --> Redis["Redis Cache"]
+
+    MongoDB --> Kafka["Kafka Topics"]
+    Kafka --> Pinot["Apache Pinot"]
+
+    Kafka --> StreamServices["Stream Service"]
+    StreamServices --> Cassandra["Cassandra"]
+
+    ManagementServices["Management Service"] --> MongoDB
+    ManagementServices --> Kafka

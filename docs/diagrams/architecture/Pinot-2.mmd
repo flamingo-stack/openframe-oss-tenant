@@ -1,0 +1,5 @@
+flowchart LR
+    ApiLayer["API Layer"] -->|"Filter Requests"| DeviceRepo["PinotClientDeviceRepository"]
+    DeviceRepo -->|"SQL Aggregation"| PinotBroker["Pinot Broker"]
+    PinotBroker -->|"ResultSet"| DeviceRepo
+    DeviceRepo -->|"Filter Options"| ApiLayer

@@ -1,0 +1,10 @@
+flowchart TD
+    AppServices["Application Services"] --> Repositories["Mongo Repositories"]
+    Repositories --> MongoTemplate["MongoTemplate"]
+    Repositories --> ReactiveRepos["Reactive Mongo Repositories"]
+    MongoTemplate --> MongoDB[("MongoDB Cluster")]
+    ReactiveRepos --> MongoDB
+
+    Config["Mongo Configuration"] --> Repositories
+    Config --> ReactiveRepos
+    Indexes["Mongo Index Configuration"] --> MongoDB

@@ -1,0 +1,13 @@
+flowchart TD
+    User["User Browser"] --> UI["Frontend App Openframe Frontend"]
+
+    UI --> Auth["Authorization Server Core"]
+    UI --> Gateway["Gateway Service Core"]
+    UI --> API["API Service Core"]
+    UI --> ExternalAPI["External API Service Core"]
+
+    Gateway --> Auth
+    Gateway --> API
+    Gateway --> ExternalAPI
+
+    API --> DataLayer["Data Layer"]

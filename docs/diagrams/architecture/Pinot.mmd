@@ -1,0 +1,5 @@
+flowchart TD
+    StreamServices["Stream Services"] -->|"Ingest Events"| PinotCluster["Apache Pinot Cluster"]
+    ApiServices["API Services"] -->|"Analytical Queries"| PinotModule["Pinot Module"]
+    PinotModule -->|"SQL Queries"| PinotCluster
+    PinotModule -->|"Projections"| ApiServices

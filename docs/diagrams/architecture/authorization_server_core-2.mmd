@@ -1,0 +1,12 @@
+flowchart TD
+    Controllers["REST & MVC Controllers"] --> Security["Security Configuration"]
+    Security --> OAuth["OAuth2 Authorization Server"]
+    OAuth --> Tokens["JWT Encoding & Custom Claims"]
+    OAuth --> Clients["Registered Clients"]
+    OAuth --> Authorizations["OAuth2 Authorizations"]
+
+    Tokens --> Keys["Tenant Key Service"]
+    Clients --> Mongo["MongoDB"]
+    Authorizations --> Mongo
+
+    Security --> TenantCtx["Tenant Context Filter"]

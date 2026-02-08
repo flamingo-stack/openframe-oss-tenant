@@ -1,0 +1,5 @@
+flowchart LR
+    ApiLayer["API Layer"] -->|"Log Queries"| LogRepo["PinotClientLogRepository"]
+    LogRepo -->|"Dynamic SQL"| PinotBroker["Pinot Broker"]
+    PinotBroker -->|"ResultSet"| LogRepo
+    LogRepo -->|"Log Projections"| ApiLayer

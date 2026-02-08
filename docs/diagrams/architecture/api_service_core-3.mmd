@@ -1,0 +1,9 @@
+flowchart TD
+    Admin["Admin Client"] --> OrgCtrl["OrganizationController"]
+    Admin --> UserCtrl["UserController"]
+    Admin --> SsoCtrl["SSOConfigController"]
+    Admin --> ApiKeyCtrl["ApiKeyController"]
+
+    OrgCtrl --> OrgService["Organization Services"]
+    UserCtrl --> UserService["User Service"]
+    SsoCtrl --> SsoService["SSOConfigService"]

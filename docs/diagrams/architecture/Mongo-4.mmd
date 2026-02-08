@@ -1,0 +1,18 @@
+classDiagram
+    class Organization {
+        String id
+        String name
+        String organizationId
+        Boolean isDefault
+        String category
+        Integer numberOfEmployees
+        BigDecimal monthlyRevenue
+        LocalDate contractStartDate
+        LocalDate contractEndDate
+        Instant createdAt
+        Instant updatedAt
+        Boolean deleted
+        Instant deletedAt
+        isContractActive()
+        isDeleted()
+    }

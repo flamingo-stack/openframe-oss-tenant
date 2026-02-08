@@ -1,0 +1,5 @@
+flowchart LR
+    Input["User Message"] --> MockSvc["Mock Chat Service"]
+    MockSvc --> Text["Text Segments"]
+    MockSvc --> ToolExec["Tool Execution Events"]
+    MockSvc --> Error["Simulated Errors"]

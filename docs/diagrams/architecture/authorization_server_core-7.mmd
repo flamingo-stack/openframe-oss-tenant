@@ -1,0 +1,5 @@
+flowchart TD
+    Invite["Invitation Link"] --> Accept["Accept Invitation"]
+    Accept -->|"password"| LocalUser["Create Local User"]
+    Accept -->|"SSO"| SsoFlow["SSO Invite Flow"]
+    SsoFlow --> UserCreated["User Linked to Tenant"]

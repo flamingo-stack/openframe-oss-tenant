@@ -1,0 +1,18 @@
+flowchart TD
+    User["User / Agent / Integration"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> Authz["Authorization Server Core"]
+    Gateway --> Api["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> ClientSvc["Client Agent Service Core"]
+
+    ClientSvc --> StreamSvc["Stream Service Core"]
+    Api --> StreamSvc
+
+    Api --> DataLayer["Data Layer"]
+    ExternalApi --> DataLayer
+    Authz --> DataLayer
+    StreamSvc --> DataLayer
+    ManagementSvc["Management Service Core"] --> DataLayer
+
+    Frontend["Frontend App OpenFrame"] --> Gateway

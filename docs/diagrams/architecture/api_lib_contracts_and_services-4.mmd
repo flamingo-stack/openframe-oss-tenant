@@ -1,0 +1,5 @@
+flowchart LR
+    MachineIds["Machine IDs"] --> Service["Batch Service"]
+    Service --> Repository["Repository"]
+    Repository --> Service
+    Service --> Results["Grouped Results"]

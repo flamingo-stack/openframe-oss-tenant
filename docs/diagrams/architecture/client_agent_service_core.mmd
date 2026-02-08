@@ -1,0 +1,10 @@
+flowchart TD
+    Agent["Client Agent"] -->|"REST APIs"| ClientService["Client Agent Service Core"]
+
+    ClientService -->|"Registration & Status"| DataLayer["Data Layer"]
+    ClientService -->|"Auth Tokens"| Security["Security OAuth Core"]
+
+    Agent -->|"Events"| NATS["NATS JetStream"]
+    NATS -->|"Machine & Tool Events"| ClientService
+
+    ClientService -->|"Downstream Events"| StreamService["Stream Service Core"]

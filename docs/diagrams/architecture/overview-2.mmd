@@ -1,0 +1,8 @@
+flowchart LR
+    Mongo["MongoDB"] --> Kafka["Kafka"]
+    Kafka --> Pinot["Apache Pinot"]
+    Kafka --> Cassandra["Cassandra"]
+
+    Redis["Redis"] --> Api["API Services"]
+    Mongo --> Api
+    Cassandra --> Api

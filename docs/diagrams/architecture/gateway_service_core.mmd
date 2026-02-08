@@ -1,0 +1,16 @@
+flowchart TD
+    Client[Frontend UI / Agents / External Clients]
+    Gateway[Gateway Service Core]
+
+    ApiService[API Service Core]
+    ExternalApi[External API Service Core]
+    Authz[Authorization Server Core]
+    Tools[Integrated Tools]
+    Nats[NATS WebSocket]
+
+    Client --> Gateway
+    Gateway --> ApiService
+    Gateway --> ExternalApi
+    Gateway --> Authz
+    Gateway --> Tools
+    Gateway --> Nats

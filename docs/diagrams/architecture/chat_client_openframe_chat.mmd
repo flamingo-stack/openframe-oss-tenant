@@ -1,0 +1,14 @@
+flowchart LR
+    User["End User"] --> UI["OpenFrame Chat UI"]
+    UI --> Client["Chat Client Openframe Chat"]
+
+    Client --> TokenSvc["Token Service"]
+    Client --> DialogSvc["Dialog GraphQL Service"]
+    Client --> ModelSvc["Supported Models Service"]
+
+    DialogSvc --> Gateway["Gateway Service Core"]
+    Gateway --> Api["API Service Core"]
+
+    TokenSvc --> Authz["Authorization Server Core"]
+
+    Api --> DataLayer["Data Layer"]

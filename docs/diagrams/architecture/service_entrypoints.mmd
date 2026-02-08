@@ -1,0 +1,10 @@
+flowchart TD
+    Gateway["Gateway Service"] -->|"Routes Requests"| Api["API Service"]
+    Gateway -->|"OAuth / OIDC"| Authz["Authorization Server"]
+    Api -->|"Reads / Writes"| Data["Data Layer"]
+    ExternalApi["External API Service"] -->|"Proxy Access"| Api
+    ClientSvc["Client Agent Service"] -->|"Agent Events"| StreamSvc["Stream Service"]
+    StreamSvc -->|"Kafka Streams"| Data
+    ManagementSvc["Management Service"] -->|"Admin Operations"| Data
+    ConfigSvc["Config Service"] -->|"Configuration"| Api
+    ConfigSvc -->|"Configuration"| Gateway

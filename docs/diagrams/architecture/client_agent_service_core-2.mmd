@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Agent
+    participant NATS
+    participant ClientService as "Client Agent Service Core"
+
+    Agent->>NATS: Publish machine.heartbeat
+    NATS->>ClientService: Deliver heartbeat event
+    ClientService->>ClientService: Update machine status

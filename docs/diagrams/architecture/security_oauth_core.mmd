@@ -1,0 +1,12 @@
+flowchart TD
+    Browser["Browser or Frontend App"] -->|"/oauth/login"| BFF["OAuth BFF Controller"]
+    BFF -->|"Authorize Redirect"| Authz["Authorization Server"]
+    Authz -->|"Authorization Code"| BFF
+    BFF -->|"Token Exchange"| Authz
+    BFF -->|"Set Auth Cookies"| Browser
+
+    subgraph security_core["Security Oauth Core"]
+        BFF
+        PKCE["PKCE Utilities"]
+        JWT["JWT Encoder and Decoder"]
+    end

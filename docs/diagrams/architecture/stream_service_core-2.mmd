@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Tool as "Integrated Tool"
+    participant Kafka as "Kafka"
+    participant Listener as "Json Kafka Listener"
+    participant Processor as "Message Processor"
+    participant Handler as "Message Handler"
+
+    Tool->>Kafka: Publish CDC or Tool Event
+    Kafka->>Listener: Consume Message
+    Listener->>Processor: process(message, type)
+    Processor->>Handler: Dispatch to handler
+    Handler->>Kafka: Publish Unified Event
+    Handler->>Cassandra: Persist Unified Log

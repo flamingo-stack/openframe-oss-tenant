@@ -1,0 +1,8 @@
+flowchart TD
+    ConfigProps["Kafka Properties"] --> AutoConfig["Kafka Auto Configuration"]
+    AutoConfig --> ProducerFactory["Producer Factory"]
+    AutoConfig --> ConsumerFactory["Consumer Factory"]
+    AutoConfig --> KafkaAdmin["Kafka Admin"]
+    KafkaAdmin --> Topics["Kafka Topics"]
+    ProducerFactory --> Producer["Kafka Producer"]
+    ConsumerFactory --> Listener["Kafka Listener Containers"]

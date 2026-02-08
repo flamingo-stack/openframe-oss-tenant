@@ -1,0 +1,4 @@
+flowchart LR
+    Config["Configured Keyspace Name"] --> Normalize["Replace Dashes with Underscores"]
+    Normalize --> CreateIfMissing["CREATE KEYSPACE IF NOT EXISTS"]
+    CreateIfMissing --> Ready["Keyspace Ready for Use"]

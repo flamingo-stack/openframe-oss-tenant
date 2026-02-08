@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> Filter["Tenant Context Filter"]
+    Filter -->|"path / query / session"| TenantId["Resolve Tenant ID"]
+    TenantId --> Context["ThreadLocal TenantContext"]
+    Context --> Downstream["Security, Services, Repositories"]

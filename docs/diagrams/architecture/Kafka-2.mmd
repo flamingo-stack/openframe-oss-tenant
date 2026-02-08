@@ -1,0 +1,6 @@
+flowchart LR
+    Properties["Tenant Kafka Properties"] --> AutoConfig["Auto Configuration"]
+    AutoConfig --> Template["Kafka Template"]
+    AutoConfig --> Admin["Kafka Admin"]
+    AutoConfig --> ListenerFactory["Listener Factory"]
+    Admin --> TopicCreate["Auto Topic Creation"]

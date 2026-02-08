@@ -1,0 +1,6 @@
+flowchart TD
+    Start["SSO Registration Start"] --> Cookie["Short-lived SSO Cookie"]
+    Cookie --> IdP["External IdP"]
+    IdP --> Callback["OAuth2 Callback"]
+    Callback --> TenantCreate["Create Tenant & User"]
+    TenantCreate --> Redirect["Redirect to Tenant Context"]

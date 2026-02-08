@@ -1,0 +1,6 @@
+flowchart TD
+    User["User"] --> ChatUI["Mingo Chat UI"]
+    ChatUI --> MingoHooks["useMingoDialog"]
+    MingoHooks --> ChatAPI["Chat API"]
+    ChatAPI --> MingoHooks
+    MingoHooks --> Store["Mingo Messages Store"]

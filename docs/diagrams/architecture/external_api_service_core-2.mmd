@@ -1,0 +1,7 @@
+flowchart LR
+    Request[Incoming Request] --> Validator[Tool Validation]
+    Validator --> UrlResolver[Proxy Url Resolver]
+    UrlResolver --> HeaderBuilder[Auth Header Builder]
+    HeaderBuilder --> HttpClient[HTTP Client]
+    HttpClient --> ToolApi[Tool API]
+    ToolApi --> HttpClient --> Response[External Response]

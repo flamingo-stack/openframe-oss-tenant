@@ -1,0 +1,4 @@
+flowchart TD
+    Startup["Application Startup"] --> IndexConfig["MongoIndexConfig"]
+    IndexConfig --> EnsureIndexes["Ensure Indexes"]
+    EnsureIndexes --> MongoDB[("MongoDB")]

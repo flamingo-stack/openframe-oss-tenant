@@ -1,0 +1,16 @@
+flowchart TD
+    ServiceLayer["Application Services"] --> CacheAbstraction["Spring Cache Abstraction"]
+    CacheAbstraction --> RedisCacheManager["Redis Cache Manager"]
+    ServiceLayer --> RedisTemplates["Redis Templates"]
+    RedisCacheManager --> RedisServer["Redis Server"]
+    RedisTemplates --> RedisServer
+
+    subgraph RedisModule["Redis Module"]
+        RedisConfigNode["Redis Configuration"]
+        CacheConfigNode["Cache Configuration"]
+        KeyBuilderNode["Redis Key Builder"]
+    end
+
+    RedisConfigNode --> RedisTemplates
+    CacheConfigNode --> RedisCacheManager
+    KeyBuilderNode --> CacheConfigNode

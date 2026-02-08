@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant Frontend as "Frontend App"
+    participant Auth as "Authorization Server"
+
+    User->>Frontend: Enter email / credentials
+    Frontend->>Auth: Discover tenants / Login / SSO redirect
+    Auth-->>Frontend: Tokens or auth cookies
+    Frontend->>Frontend: Store tokens and user state
+    Frontend-->>User: Redirect to dashboard

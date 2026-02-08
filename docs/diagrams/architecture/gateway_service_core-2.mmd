@@ -1,0 +1,11 @@
+flowchart LR
+    WsClient[WebSocket Client]
+    WsGateway[WebSocket Gateway]
+    ToolApi[Tool API WS]
+    ToolAgent[Tool Agent WS]
+    NatsWs[NATS WS]
+
+    WsClient --> WsGateway
+    WsGateway --> ToolApi
+    WsGateway --> ToolAgent
+    WsGateway --> NatsWs

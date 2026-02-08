@@ -1,0 +1,4 @@
+flowchart LR
+    RawEvent["Raw Tool Event"] --> Enrich["Data Enrichment"]
+    Enrich --> Unified["Unified Event"]
+    Unified --> Destinations["Kafka / Cassandra"]

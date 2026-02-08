@@ -1,0 +1,4 @@
+flowchart TD
+    SourceDB["Source Database"] --> Debezium["Debezium Connector"]
+    Debezium --> KafkaTopic["Kafka Topic"]
+    KafkaTopic --> Consumer["Stream Consumer"]
