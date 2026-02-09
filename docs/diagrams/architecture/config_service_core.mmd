@@ -1,0 +1,9 @@
+flowchart TD
+    ClientService["OpenFrame Service"] -->|"requests config"| ConfigServer["Config Service Core"]
+    ConfigServer -->|"reads"| ClasspathConfigs["Classpath Config Resources"]
+    ConfigServer -->|"serves"| ClientService
+
+    subgraph config_layer["Configuration Layer"]
+        ConfigServer
+        ClasspathConfigs
+    end

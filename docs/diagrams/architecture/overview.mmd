@@ -1,0 +1,23 @@
+flowchart TD
+    Client[Clients and Agents] --> Gateway[Gateway Service Core]
+
+    Gateway --> Authz[Authorization Service Core]
+    Gateway --> Api[API Service Core]
+    Gateway --> ExternalApi[External API Service Core]
+    Gateway --> ClientSvc[Tenant Client Service Core]
+
+    Api --> DataMongo[Data Persistence Mongo]
+    Api --> DataPlatform[Data Platform and Pinot]
+    Api --> Kafka[Kafka Infrastructure]
+
+    ExternalApi --> DataPlatform
+    ExternalApi --> Kafka
+
+    ClientSvc --> Kafka
+
+    Kafka --> Stream[Stream Processing Service Core]
+    Stream --> DataPlatform
+
+    Management[Management Service Core] --> Kafka
+    Management --> DataPlatform
+    Management --> DataMongo

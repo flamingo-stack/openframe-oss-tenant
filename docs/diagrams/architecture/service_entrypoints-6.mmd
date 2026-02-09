@@ -1,0 +1,4 @@
+flowchart LR
+    ExternalApiApp["External API Service"] --> ExternalCore["External API Service Core"]
+    ExternalApiApp --> ApiCore["Internal API"]
+    ExternalApiApp --> DataLayer["Data & Persistence"]

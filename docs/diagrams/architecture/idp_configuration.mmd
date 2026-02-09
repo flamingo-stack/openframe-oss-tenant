@@ -1,0 +1,7 @@
+flowchart TD
+    Scheduler["Idp Configuration Scheduler"] -->|"Startup Trigger"| CheckClient["Check Existing Client"]
+    CheckClient -->|"Client Exists"| Skip["Skip Initialization"]
+    CheckClient -->|"Client Missing"| EncodeSecret["Encode Client Secret"]
+    EncodeSecret --> BuildClient["Build OAuth Client"]
+    BuildClient --> SaveClient["Save Client to MongoDB"]
+    SaveClient --> Complete["Initialization Complete"]

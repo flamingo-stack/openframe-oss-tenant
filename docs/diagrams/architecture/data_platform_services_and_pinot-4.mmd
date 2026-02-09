@@ -1,0 +1,4 @@
+flowchart LR
+    Query["Analytics Query"] --> PinotClient["Pinot Client Repository"]
+    PinotClient --> Broker["Pinot Broker"]
+    Broker --> Result["Aggregated Results"]

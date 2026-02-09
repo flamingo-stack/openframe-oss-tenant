@@ -1,0 +1,4 @@
+flowchart LR
+    ClientApp["Client Service"] --> ClientCore["Tenant Client Service Core"]
+    ClientApp --> Security["Security & Auth"]
+    ClientApp --> Kafka["Kafka Producers"]

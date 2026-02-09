@@ -1,0 +1,4 @@
+flowchart TD
+    Config["Cassandra Configuration"] --> Keyspace["Keyspace Normalizer"]
+    Keyspace --> Session["Cassandra Session"]
+    Session --> Health["Health Indicator"]

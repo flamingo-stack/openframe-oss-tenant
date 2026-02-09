@@ -1,0 +1,13 @@
+flowchart TD
+    Client[Browser or Client App] --> Authz[Authorization Service Core]
+    Authz --> IdP[External IdP<br/>Google or Microsoft]
+    Authz --> Mongo[(MongoDB)]
+    Authz --> Gateway[Gateway Service Core]
+    Gateway --> APIs[API Services]
+
+    subgraph authz_core["Authorization Service Core"]
+        AuthServer[OAuth2 and OIDC Server]
+        TenantCtx[Tenant Context Resolution]
+        SSO[SSO and Registration Flows]
+        Tokens[JWT Issuance]
+    end

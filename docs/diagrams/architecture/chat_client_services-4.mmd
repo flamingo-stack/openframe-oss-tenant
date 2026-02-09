@@ -1,0 +1,6 @@
+flowchart LR
+    Input["User Message"] --> Decide{"Show Tool Execution?"}
+    Decide -->|"Yes"| ToolStart["EXECUTING_TOOL"]
+    ToolStart --> ToolEnd["EXECUTED_TOOL"]
+    ToolEnd --> Text["Follow-up Text"]
+    Decide -->|"No"| Stream["Stream Text Chunks"]

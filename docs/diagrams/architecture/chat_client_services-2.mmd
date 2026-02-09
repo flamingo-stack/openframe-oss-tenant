@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Client
+    participant TokenService
+    participant Tauri
+
+    Client->>TokenService: ensureTokenReady()
+    TokenService->>Tauri: get_token
+    Tauri-->>TokenService: token
+    TokenService->>Tauri: get_server_url
+    Tauri-->>TokenService: apiBaseUrl

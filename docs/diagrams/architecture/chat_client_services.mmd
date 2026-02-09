@@ -1,0 +1,13 @@
+flowchart LR
+    UI["Chat UI Components"] --> Services["Chat Client Services"]
+
+    Services --> TokenService["Token Service"]
+    Services --> GraphQL["Dialog GraphQL Service"]
+    Services --> Models["Supported Models Service"]
+    Services --> DebugCtx["Debug Mode Context"]
+    Services --> MockChat["Mock Chat Service"]
+
+    TokenService --> Tauri["Tauri Runtime"]
+    GraphQL --> Gateway["Gateway Service Core"]
+    Gateway --> API["API Service Core"]
+    API --> Auth["Authorization Service Core"]

@@ -1,0 +1,15 @@
+flowchart TD
+    Client["Client Application"] -->|"OAuth2 Authorization"| AuthServer["Authorization Server"]
+    AuthServer -->|"JWT Access Token"| Gateway["Gateway Service"]
+    Gateway -->|"Forward JWT"| ApiService["API Service"]
+
+    subgraph security_core["Security Oauth Support"]
+        JwtConfig["JWT Configuration"]
+        JwtSecurityConfig["JWT Encoder and Decoder"]
+        PKCEUtils["PKCE Utilities"]
+        SecurityConstants["OAuth Constants"]
+    end
+
+    AuthServer --> JwtSecurityConfig
+    JwtSecurityConfig --> Gateway
+    PKCEUtils --> Client

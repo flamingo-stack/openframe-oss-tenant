@@ -1,0 +1,12 @@
+flowchart TD
+    Repositories["Transactional Repositories"] --> Aspect["Machine Tag Event Aspect"]
+    Aspect --> Service["Machine Tag Event Service"]
+    Service --> Kafka["Kafka Topics"]
+
+    Kafka --> PinotIngest["Pinot Ingestion"]
+
+    Cassandra["Cassandra"] --> DataLayer["Data Platform Services And Pinot"]
+    Mongo["MongoDB"] --> DataLayer
+
+    DataLayer --> PinotQuery["Pinot Client Repositories"]
+    PinotQuery --> API["API And External Services"]

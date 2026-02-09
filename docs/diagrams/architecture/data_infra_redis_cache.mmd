@@ -1,0 +1,7 @@
+flowchart TD
+    Services["Application Services"] --> CacheLayer["Data Infra Redis Cache"]
+    CacheLayer --> Redis[("Redis")]
+
+    subgraph infra["Data Infrastructure"]
+        CacheLayer
+    end

@@ -1,0 +1,15 @@
+flowchart LR
+    User["User"] --> AuthUser["Auth User"]
+    User --> OAuthToken["OAuth Token"]
+
+    Organization["Organization"] --> ContactPerson["Contact Person"]
+
+    Device["Device"] --> MachineTag["Machine Tag"]
+    Device --> Alert["Alert"]
+    Device --> SecurityAlert["Security Alert"]
+    Device --> ComplianceRequirement["Compliance Requirement"]
+
+    CoreEvent["Core Event"] --> ExternalEvent["External Application Event"]
+
+    IntegratedToolAgent["Integrated Tool Agent"] --> ToolAgentAsset["Tool Agent Asset"]
+    IntegratedToolAgent --> DownloadConfig["Download Configuration"]

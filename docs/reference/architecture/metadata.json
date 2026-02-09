@@ -1,0 +1,39 @@
+{
+    "generation_info": {
+        "timestamp": "2026-02-09T06:41:50.434367",
+        "main_model": "gpt-5.2-chat-latest",
+        "generator_version": "1.0.1",
+        "repo_path": "/home/runner/work/openframe-oss-tenant/openframe-oss-tenant",
+        "commit_id": null
+    },
+    "statistics": {
+        "total_components": 8068,
+        "leaf_nodes": 678,
+        "max_depth": 3
+    },
+    "files_generated": [
+        "overview.md",
+        "module_tree.json",
+        "first_module_tree.json",
+        "api_service_core/api_service_core.md",
+        "security_oauth_support/security_oauth_support.md",
+        "config_service_core/config_service_core.md",
+        "notification_mail/notification_mail.md",
+        "service_entrypoints/service_entrypoints.md",
+        "stream_processing_service_core/stream_processing_service_core.md",
+        "data_platform_services_and_pinot/data_platform_services_and_pinot.md",
+        "data_persistence_mongo/data_persistence_mongo.md",
+        "core_shared_utilities/core_shared_utilities.md",
+        "api_lib_contracts/api_lib_contracts.md",
+        "idp_configuration/idp_configuration.md",
+        "data_infra_redis_cache/data_infra_redis_cache.md",
+        "chat_client_services/chat_client_services.md",
+        "gateway_service_core/gateway_service_core.md",
+        "authorization_service_core/authorization_service_core.md",
+        "data_infra_kafka_and_topics/data_infra_kafka_and_topics.md",
+        "security_oauth_bff/security_oauth_bff.md",
+        "frontend_chat_core_types/frontend_chat_core_types.md",
+        "external_api_service_core/external_api_service_core.md",
+        "management_service_core/management_service_core.md"
+    ]
+}

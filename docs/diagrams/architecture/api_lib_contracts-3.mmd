@@ -1,0 +1,6 @@
+flowchart TD
+    CreateRequest[Create Organization Request] --> Mapper[Organization Mapper]
+    UpdateRequest[Update Organization Request] --> Mapper
+
+    Mapper --> Entity[Organization Entity]
+    Entity --> Response[Organization Response]

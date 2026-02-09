@@ -1,0 +1,23 @@
+flowchart LR
+    Producers[Application Services] --> Kafka[Kafka Cluster]
+    Kafka --> Consumers[Stream And Analytics Services]
+
+    subgraph producers_layer["Producers"]
+        Api[API Services]
+        Tenant[Tenant Client Services]
+        Debezium[Debezium Connectors]
+    end
+
+    subgraph consumers_layer["Consumers"]
+        Stream[Stream Processing Service]
+        Pinot[Pinot Ingestion]
+        Enrichment[Data Enrichment]
+    end
+
+    Api --> Kafka
+    Tenant --> Kafka
+    Debezium --> Kafka
+
+    Kafka --> Stream
+    Kafka --> Pinot
+    Kafka --> Enrichment

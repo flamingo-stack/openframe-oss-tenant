@@ -1,0 +1,10 @@
+flowchart TD
+    Services["Platform Services"] --> CoreUtils["Core Shared Utilities"]
+
+    CoreUtils --> PageResponse["Page Response"]
+    CoreUtils --> SlugUtil["Slug Utility"]
+    CoreUtils --> EmailValidator["Email Validation"]
+
+    PageResponse --> APIs["API & External Services"]
+    SlugUtil --> Identifiers["Stable Identifiers"]
+    EmailValidator --> Validation["Request Validation"]

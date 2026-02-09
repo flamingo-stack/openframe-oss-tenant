@@ -1,0 +1,13 @@
+flowchart TD
+    Client["External Client"] --> Api["External Api Service Core"]
+
+    Api --> DeviceSvc["Device Service"]
+    Api --> EventSvc["Event Service"]
+    Api --> LogSvc["Log Service"]
+    Api --> OrgSvc["Organization Service"]
+    Api --> ToolSvc["Tool Service"]
+
+    Api --> ProxySvc["Rest Proxy Service"]
+    ProxySvc --> ToolApi["Integrated Tool API"]
+
+    Api --> OpenApi["OpenAPI / Swagger"]

@@ -1,0 +1,10 @@
+flowchart LR
+    Tool[Integrated Tools] --> Kafka[Kafka Topics]
+    Agents[Agents] --> Kafka
+
+    Kafka --> Stream[Stream Processing Service Core]
+    Stream --> Cassandra[Cassandra]
+    Stream --> KafkaOut[Enriched Kafka Topics]
+
+    KafkaOut --> Pinot[Apache Pinot]
+    Pinot --> Api[API and External API Services]

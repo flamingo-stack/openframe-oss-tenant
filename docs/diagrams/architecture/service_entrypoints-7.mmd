@@ -1,0 +1,4 @@
+flowchart LR
+    GatewayApp["Gateway Service"] --> GatewayCore["Gateway Service Core"]
+    GatewayApp --> Security["JWT & API Key Security"]
+    GatewayApp --> Api["Downstream Services"]

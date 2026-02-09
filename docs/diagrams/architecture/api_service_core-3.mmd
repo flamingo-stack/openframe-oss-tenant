@@ -1,0 +1,4 @@
+flowchart LR
+    Gateway[Gateway Validates JWT] --> ApiCore[Api Service Core]
+    ApiCore --> JwtCache[JWT Provider Cache]
+    JwtCache --> Issuer[Issuer-based Decoder]

@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Client
+    participant Controller as "LoggingConfigController"
+    participant Classpath as "Classpath Resource"
+
+    Client->>Controller: GET /logging/{filename}
+    Controller->>Classpath: Load logging/{filename}
+    Classpath-->>Controller: XML content
+    Controller->>Controller: Rewrite resource URLs
+    Controller-->>Client: XML response

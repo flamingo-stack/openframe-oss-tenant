@@ -1,0 +1,7 @@
+flowchart LR
+    Req["External Request"] --> Ctrl["Integration Controller"]
+    Ctrl --> Proxy["Rest Proxy Service"]
+    Proxy --> Resolver["Proxy Url Resolver"]
+    Proxy --> ToolRepo["Integrated Tool Repository"]
+    Proxy --> ToolApi["Tool External API"]
+    ToolApi --> Proxy --> Resp["External Response"]

@@ -1,0 +1,8 @@
+flowchart TD
+    Browser["Browser Client"] -->|"GET /oauth/login"| BFF["Security Oauth Bff"]
+    BFF -->|"Authorize Redirect"| Authz["Authorization Service"]
+    Authz -->|"Redirect with code"| BFF
+    BFF -->|"Set Auth Cookies"| Browser
+
+    BFF -->|"Token Exchange"| Authz
+    BFF -->|"Refresh / Revoke"| Authz

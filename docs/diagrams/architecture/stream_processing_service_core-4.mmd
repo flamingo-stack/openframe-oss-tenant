@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Tool as Integrated Tool
+    participant Kafka as Kafka
+    participant Stream as Stream Processing Service Core
+    participant Store as Cassandra
+
+    Tool->>Kafka: Publish CDC/Event
+    Kafka->>Stream: Consume Inbound Message
+    Stream->>Stream: Deserialize and Map Event Type
+    Stream->>Stream: Enrich with Device and Org Data
+    Stream->>Kafka: Publish Unified Event
+    Stream->>Store: Persist Unified Log Event

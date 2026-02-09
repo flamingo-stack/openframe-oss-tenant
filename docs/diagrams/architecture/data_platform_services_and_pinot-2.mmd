@@ -1,0 +1,5 @@
+flowchart LR
+    Repo["Repository Save"] --> Aspect["AOP Interceptor"]
+    Aspect --> Service["Event Service"]
+    Service --> Builder["Pinot Message Builder"]
+    Builder --> Kafka["Kafka Device Topic"]

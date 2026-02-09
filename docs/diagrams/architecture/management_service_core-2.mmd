@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Application Startup"] --> SecretInit["Agent Registration Secret"]
+    SecretInit --> AgentInit["Tool Agent Configurations"]
+    AgentInit --> StreamInit["NATS Streams"]
+    StreamInit --> ClientInit["Client Configuration"]
+    ClientInit --> ScriptInit["Tactical RMM Scripts"]
+    ScriptInit --> DebeziumInit["Debezium Connector Initialization"]
+    DebeziumInit --> Ready["System Ready"]

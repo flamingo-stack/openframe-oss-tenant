@@ -1,0 +1,8 @@
+flowchart TD
+    Caller["Platform Services"] --> EmailService["Email Service Interface"]
+
+    EmailService -->|"provider = smtp"| Smtp["SMTP Email Service"]
+    EmailService -->|"provider = hubspot-api"| Hubspot["HubSpot API Email Service"]
+
+    Hubspot -->|"HTTPS"| HubspotApi["HubSpot Email API"]
+    Smtp -->|"SMTP"| MailServer["Mail Server"]

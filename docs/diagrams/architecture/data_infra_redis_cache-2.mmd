@@ -1,0 +1,5 @@
+flowchart LR
+    App["Service Method"] --> Cache["Spring Cache"]
+    Cache --> Builder["Redis Key Builder"]
+    Builder --> Key["Tenant-Aware Key"]
+    Key --> Redis[("Redis")]

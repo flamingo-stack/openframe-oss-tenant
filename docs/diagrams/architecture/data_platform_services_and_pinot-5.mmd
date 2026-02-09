@@ -1,0 +1,4 @@
+flowchart TD
+    ToolConfig["Integrated Tool Config"] --> Retriever["Secret Retriever"]
+    Retriever --> SDK["Tool SDK Client"]
+    SDK --> Secret["Enrollment Secret"]

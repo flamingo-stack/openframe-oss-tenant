@@ -1,0 +1,11 @@
+flowchart TD
+    Controllers[REST Controllers] --> Services[Application Services]
+    DataFetchers[GraphQL Data Fetchers] --> Services
+
+    Services --> Repos[Repositories]
+    Services --> External[External and Platform Services]
+
+    DataLoaders[GraphQL Data Loaders] --> Repos
+
+    Config[Configuration and Security] --> Controllers
+    Config --> DataFetchers

@@ -1,0 +1,5 @@
+flowchart LR
+    ApiApp["API Application"] --> ApiCore["API Service Core"]
+    ApiApp --> DataLayer["Mongo & Data Services"]
+    ApiApp --> Kafka["Kafka Integration"]
+    ApiApp --> Core["Core Utilities"]

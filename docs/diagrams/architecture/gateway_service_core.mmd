@@ -1,0 +1,17 @@
+flowchart TD
+    Client["Clients and Agents"] --> Gateway["Gateway Service Core"]
+
+    Gateway -->|"JWT Auth"| AuthZ["Authorization Service"]
+    Gateway -->|"API Proxy"| ApiService["API Service"]
+    Gateway -->|"External API"| ExternalApi["External API Service"]
+    Gateway -->|"Tool Proxy"| Tools["Integrated Tools"]
+    Gateway -->|"WebSocket"| Nats["NATS WS Endpoint"]
+
+    subgraph SecurityLayer["Security and Filters"]
+        Jwt["JWT Validation"]
+        ApiKey["API Key Auth"]
+        RateLimit["Rate Limiting"]
+        Cors["CORS and Origin Filters"]
+    end
+
+    Gateway --> SecurityLayer

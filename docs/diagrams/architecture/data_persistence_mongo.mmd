@@ -1,0 +1,14 @@
+flowchart TD
+    ServiceLayer[Service Layer] --> Repositories[Mongo Repositories]
+    Repositories --> MongoTemplate[MongoTemplate]
+    Repositories --> ReactiveRepos[Reactive Repositories]
+    MongoTemplate --> MongoDB[(MongoDB)]
+    ReactiveRepos --> MongoDB
+
+    subgraph config_layer["Configuration"]
+        MongoConfig["Mongo Configuration"]
+        MongoIndexConfig["Mongo Index Configuration"]
+    end
+
+    MongoConfig --> Repositories
+    MongoIndexConfig --> MongoDB

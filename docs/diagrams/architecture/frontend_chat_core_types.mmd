@@ -1,0 +1,8 @@
+flowchart TD
+    UI["Chat UI Components"] --> Types["Frontend Chat Core Types"]
+    Hooks["Chat Hooks"] --> Types
+    Network["Network Layer"] --> Types
+    Processor["Stream & Chunk Processors"] --> Types
+
+    Types --> API["Chat API"]
+    Types --> WS["WebSocket & NATS"]

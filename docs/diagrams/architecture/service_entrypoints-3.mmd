@@ -1,0 +1,4 @@
+flowchart LR
+    AuthApp["Authorization Server"] --> AuthCore["Authorization Service Core"]
+    AuthApp --> DataLayer["Mongo & OAuth Data"]
+    AuthApp --> Notification["Email & Notifications"]

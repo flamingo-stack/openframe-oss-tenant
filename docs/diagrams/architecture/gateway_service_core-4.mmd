@@ -1,0 +1,5 @@
+flowchart TD
+    ExtReq["External API Request"] --> ApiKeyFilter["API Key Filter"]
+    ApiKeyFilter -->|"Valid"| RateLimiter["Rate Limit Service"]
+    RateLimiter -->|"Allowed"| Proxy["REST Proxy"]
+    RateLimiter -->|"Exceeded"| Reject["429 Response"]

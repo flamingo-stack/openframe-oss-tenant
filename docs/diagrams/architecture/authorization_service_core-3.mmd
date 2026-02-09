@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant Authz as Authorization Service Core
+    participant IdP as External IdP
+
+    User->>Authz: Start Login
+    Authz->>IdP: Redirect to IdP Authorization
+    IdP-->>Authz: Authorization Code
+    Authz->>IdP: Token Exchange
+    IdP-->>Authz: ID Token and Claims
+    Authz-->>User: Authenticated Session

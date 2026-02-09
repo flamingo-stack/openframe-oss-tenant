@@ -1,0 +1,6 @@
+flowchart TD
+    Input["Email Input"] --> NullCheck["Null Check"]
+    NullCheck -->|"Null"| Invalid["Invalid"]
+    NullCheck -->|"Not Null"| RegexMatch["Regex Match"]
+    RegexMatch -->|"Matches"| Valid["Valid"]
+    RegexMatch -->|"No Match"| Invalid

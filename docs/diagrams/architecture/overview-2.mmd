@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Authz
+    participant Api
+    participant Data
+
+    Client->>Gateway: HTTP or WebSocket Request
+    Gateway->>Authz: Validate JWT or API Key
+    Authz-->>Gateway: Auth Context
+    Gateway->>Api: Forward Authorized Request
+    Api->>Data: Query or Mutation
+    Data-->>Api: Result
+    Api-->>Gateway: API Response
+    Gateway-->>Client: Final Response

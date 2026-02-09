@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Service as "Platform Service"
+    participant Mail as "Notification Mail"
+    participant Provider as "Email Provider"
+
+    Service->>Mail: Trigger email action
+    Mail->>Mail: Build link from template
+    Mail->>Provider: Send email request
+    Provider-->>Mail: Delivery result
+    Mail-->>Service: Log outcome

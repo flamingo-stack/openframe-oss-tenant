@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer as "Authorization Server"
+
+    Client->>Client: Generate state
+    Client->>Client: Generate code verifier
+    Client->>Client: Generate code challenge
+    Client->>AuthServer: Authorization request with code challenge
+    AuthServer-->>Client: Authorization code
+    Client->>AuthServer: Token request with code verifier
+    AuthServer-->>Client: Access token (JWT)

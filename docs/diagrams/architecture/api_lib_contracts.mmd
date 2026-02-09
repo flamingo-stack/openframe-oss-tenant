@@ -1,0 +1,8 @@
+flowchart TD
+    Client[API Clients] --> ApiService[Api Service Core]
+    Client --> ExternalApi[External Api Service Core]
+
+    ApiService --> Contracts[Api Lib Contracts]
+    ExternalApi --> Contracts
+
+    Contracts --> DataLayer[Data Persistence and Data Services]

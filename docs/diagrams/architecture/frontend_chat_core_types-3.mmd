@@ -1,0 +1,5 @@
+flowchart TD
+    Chunk["Incoming Chunk"] --> Processor["Chunk Processor"]
+    Processor --> Accumulator["Accumulator State"]
+    Accumulator --> Transformer["Message Transformer"]
+    Transformer --> Output["Processed Message"]

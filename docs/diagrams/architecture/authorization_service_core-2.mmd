@@ -1,0 +1,5 @@
+flowchart LR
+    Request[Incoming HTTP Request] --> Filter[Tenant Context Filter]
+    Filter --> Context[Tenant Context<br/>ThreadLocal]
+    Context --> Security[Security Filters and Controllers]
+    Security --> Clear[Context Cleared After Request]

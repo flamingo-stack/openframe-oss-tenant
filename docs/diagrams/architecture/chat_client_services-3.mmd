@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Request Messages"] --> Ensure["Ensure Token Ready"]
+    Ensure --> Init["Initialize GraphQL Client"]
+    Init --> Query["Execute GraphQL Query"]
+    Query --> Page["Process Page"]
+    Page --> More{"Has Next Page?"}
+    More -->|"Yes"| Query
+    More -->|"No"| Done["Return Messages"]

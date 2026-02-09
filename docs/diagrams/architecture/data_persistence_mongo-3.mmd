@@ -1,0 +1,5 @@
+flowchart TD
+    Service["Service Layer"] --> Repo["Spring Data Repository"]
+    Repo --> BaseRepo["Base Repository Interface"]
+    Repo --> CustomRepo["Custom Repository Implementation"]
+    CustomRepo --> MongoTemplate

@@ -1,0 +1,7 @@
+flowchart TD
+    Client[Client UI or Internal Service] --> Gateway[Gateway Service Core]
+    Gateway --> ApiCore[Api Service Core]
+
+    ApiCore --> Authz[Authorization Service Core]
+    ApiCore --> Data[Data Persistence and Platform Services]
+    ApiCore --> Stream[Stream Processing Service Core]

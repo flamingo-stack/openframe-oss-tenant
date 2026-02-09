@@ -1,0 +1,22 @@
+flowchart TD
+    App["Management Application"] --> Config["Configuration Layer"]
+    App --> Init["Initializers"]
+    App --> Api["Management APIs"]
+    App --> Schedulers["Schedulers"]
+
+    Config --> Security["Password Encoding"]
+    Config --> Locking["Distributed Locks"]
+    Config --> Pinot["Pinot Bootstrap"]
+
+    Init --> Secrets["Agent Registration Secret"]
+    Init --> Agents["Integrated Tool Agents"]
+    Init --> Streams["NATS Streams"]
+    Init --> ClientCfg["Client Configuration"]
+    Init --> Scripts["Tactical RMM Scripts"]
+    Init --> DebeziumInit["Debezium Connectors"]
+
+    Api --> ToolsApi["Integrated Tool Controller"]
+    Api --> ReleaseApi["Release Version Controller"]
+
+    Schedulers --> ApiKeyStats["API Key Stats Sync"]
+    Schedulers --> DebeziumHealth["Debezium Health Check"]
