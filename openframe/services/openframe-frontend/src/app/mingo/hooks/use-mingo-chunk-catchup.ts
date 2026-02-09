@@ -7,37 +7,42 @@ import {
   type NatsMessageType,
   type UseChunkCatchupOptions as CoreChunkCatchupOptions,
   type UseChunkCatchupReturn,
+  type ChatType,
   CHAT_TYPE,
 } from '@flamingo-stack/openframe-frontend-core'
 import { apiClient } from '@lib/api-client'
-import { API_ENDPOINTS } from '../../tickets/constants'
 
 export type { ChunkData, NatsMessageType, UseChunkCatchupReturn }
 
-interface UseChunkCatchupOptions {
+interface UseMingoChunkCatchupOptions {
   dialogId: string | null
   onChunkReceived: (chunk: ChunkData, messageType: NatsMessageType) => void
 }
 
-export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOptions): UseChunkCatchupReturn {
+export function useMingoChunkCatchup({ dialogId, onChunkReceived }: UseMingoChunkCatchupOptions): UseChunkCatchupReturn {
   const fetchChunks = useCallback(async (
     dialogId: string,
-    chatType: typeof CHAT_TYPE[keyof typeof CHAT_TYPE],
+    chatType: ChatType,
     fromSequenceId?: number | null
   ): Promise<ChunkData[]> => {
-    let url = `${API_ENDPOINTS.DIALOG_CHUNKS}/${dialogId}/chunks?chatType=${chatType}`
-    if (fromSequenceId !== null && fromSequenceId !== undefined) {
-      url += `&fromSequenceId=${fromSequenceId}`
-    }
-    
-    const response = await apiClient.get<ChunkData[]>(url)
-    
-    if (!response.ok) {
-      console.error(`Failed to fetch ${chatType} chunks:`, response.status)
+    try {
+      let url = `/chat/api/v1/dialogs/${dialogId}/chunks?chatType=${chatType}`
+      if (fromSequenceId !== null && fromSequenceId !== undefined) {
+        url += `&fromSequenceId=${fromSequenceId}`
+      }
+      
+      const response = await apiClient.get<ChunkData[]>(url)
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch ${chatType} chunks:`, response.error)
+        return []
+      }
+      
+      return response.data || []
+    } catch (error) {
+      console.error(`Error fetching ${chatType} chunks:`, error)
       return []
     }
-    
-    return response.data || []
   }, [])
 
   const options = useMemo<CoreChunkCatchupOptions>(() => ({

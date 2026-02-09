@@ -20,23 +20,23 @@ import { isSaasTenantMode } from '@lib/app-mode'
 import { useMingoDialog } from './hooks/use-mingo-dialog'
 import { useMingoDialogs } from './hooks/use-mingo-dialogs'
 import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection'
-import { useProcessedMessages } from './hooks/use-processed-messages'
-import { useMingoRealtimeProcessor } from './hooks/use-mingo-realtime-processor'
-import { useMingoDialogDetailsStore } from './stores/mingo-dialog-details-store'
-import { useMingoBackgroundMessagesStore } from './stores/mingo-background-messages-store'
-import { DialogNatsSubscription } from './components/dialog-nats-subscription'
-import type { Message } from './types'
+import { useMingoChat } from './hooks/use-mingo-chat'
+import { useMingoRealtimeSubscription, DialogSubscription } from './hooks/use-mingo-realtime-subscription'
+import { useMingoMessagesStore } from './stores/mingo-messages-store'
 
 export default function Mingo() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [subscribedDialogIds, setSubscribedDialogIds] = useState<string[]>([])
   
   const {
-    isCreatingDialog,
-    isSendingMessage,
-    createDialog,
-    sendMessage,
+    activeDialogId,
+    setActiveDialogId,
+    resetUnread,
+    incrementUnread,
+  } = useMingoMessagesStore()
+
+  const {
+    isCreatingDialog: legacyCreatingDialog,
     resetDialog
   } = useMingoDialog()
 
@@ -53,100 +53,43 @@ export default function Mingo() {
     isLoadingDialog,
     isLoadingMessages,
     isSelectingDialog,
-    rawMessagesCount
+    rawMessagesCount,
+    handleApprove,
+    handleReject,
+    approvalStatuses
   } = useMingoDialogSelection()
 
   const {
-    currentDialogId,
-    addRealtimeMessage,
-    setDialogTyping,
-    getDialogTyping,
-    clearCurrent,
-    removeWelcomeMessages
-  } = useMingoDialogDetailsStore()
-
-  const {
-    setActiveDialogId,
-    incrementUnreadCount,
-    resetUnreadCount,
-    setBackgroundTyping,
-    initializeDialog,
-    preserveStreamingMessage
-  } = useMingoBackgroundMessagesStore()
-
-  const {
     messages: processedMessages,
-    pendingApprovals,
+    createDialog,
+    sendMessage,
+    approvals: pendingApprovals,
+    processChunk,
+    isCreatingDialog,
+    isTyping,
     assistantType
-  } = useProcessedMessages()
-
-  const isCurrentDialogTyping = currentDialogId ? getDialogTyping(currentDialogId) : false
-
-  const { processChunk, getDialogStreamingMessage } = useMingoRealtimeProcessor({
-    activeDialogId: currentDialogId,
-    onActiveStreamStart: () => {
-      if (currentDialogId) {
-        setDialogTyping(currentDialogId, true)
-      }
-    },
-    onActiveStreamEnd: () => {
-      if (currentDialogId) {
-        setDialogTyping(currentDialogId, false)
-      }
-    },
-    onActiveError: (error: string) => {
-      if (currentDialogId) {
-        setDialogTyping(currentDialogId, false)
-      }
-      console.error('[Mingo] Active dialog error:', error)
-    },
-    onBackgroundStreamStart: (dialogId: string) => {
-      setBackgroundTyping(dialogId, true)
-      setDialogTyping(dialogId, true)
-    },
-    onBackgroundStreamEnd: (dialogId: string) => {
-      setBackgroundTyping(dialogId, false)
-      setDialogTyping(dialogId, false)
-    },
-    onBackgroundUnreadIncrement: (dialogId: string) => {
-      incrementUnreadCount(dialogId)
-    },
+  } = useMingoChat(activeDialogId, {
+    handleApprove,
+    handleReject,
+    approvalStatuses
   })
 
-  const handleChunkReceived = useCallback((dialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
-    processChunk(chunk, messageType, dialogId)
-  }, [processChunk])
+  const {
+    subscribeToDialog,
+    subscribedDialogs
+  } = useMingoRealtimeSubscription(activeDialogId)
 
-  const createWelcomeMessage = useCallback((): Message => {
-    if (!currentDialogId) throw new Error('No dialog ID')
+  const createDialogChunkProcessor = useCallback((targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
+    if (targetDialogId !== activeDialogId) {
+      incrementUnread(targetDialogId)
+    }
     
-    return {
-      id: `welcome-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      dialogId: currentDialogId,
-      chatType: 'ADMIN_AI_CHAT',
-      dialogMode: 'DEFAULT',
-      createdAt: new Date().toISOString(),
-      owner: {
-        type: 'ASSISTANT',
-        model: 'mingo'
-      },
-      messageData: {
-        type: 'TEXT',
-        text: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?"
-      }
-    }
-  }, [currentDialogId])
-
-  const addWelcomeMessageIfNeeded = useCallback(() => {
-    if (currentDialogId) {
-      const welcomeMessage = createWelcomeMessage()
-      addRealtimeMessage(welcomeMessage)
-    }
-  }, [currentDialogId, createWelcomeMessage, addRealtimeMessage])
+    processChunk(targetDialogId, chunk, messageType)
+  }, [activeDialogId, incrementUnread, processChunk])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && currentDialogId) {
+      if (event.key === 'Escape' && activeDialogId) {
         const currentUrl = new URL(window.location.href)
         currentUrl.searchParams.delete('dialogId')
         router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
@@ -155,7 +98,7 @@ export default function Mingo() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentDialogId, router])
+  }, [activeDialogId, router])
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
@@ -164,69 +107,34 @@ export default function Mingo() {
     }
   }, [router])
 
-  const selectDialogInternal = useCallback((dialogId: string) => {
-    if (currentDialogId && currentDialogId !== dialogId) {
-      const streamingMessage = getDialogStreamingMessage(currentDialogId)
-      if (streamingMessage) {
-        preserveStreamingMessage(currentDialogId, streamingMessage)
-      }
-    }
-
-    initializeDialog(dialogId)
-    resetUnreadCount(dialogId)
-    setActiveDialogId(dialogId)
-    
-    setSubscribedDialogIds(prev => {
-      if (prev.includes(dialogId)) {
-        return prev
-      }
-      return [...prev, dialogId]
-    })
-    
-    selectDialog(dialogId)
-  }, [
-    currentDialogId,
-    getDialogStreamingMessage,
-    preserveStreamingMessage,
-    initializeDialog,
-    resetUnreadCount,
-    setActiveDialogId,
-    selectDialog
-  ])
-
   const handleDialogSelect = useCallback(async (dialogId: string) => {
-    if (dialogId === currentDialogId) return
+    if (dialogId === activeDialogId) return
 
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('dialogId', dialogId)
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
-
-    selectDialogInternal(dialogId)
-  }, [
-    currentDialogId,
-    router,
-    selectDialogInternal
-  ])
+    
+    setActiveDialogId(dialogId)
+    resetUnread(dialogId)
+    subscribeToDialog(dialogId)
+    
+    selectDialog(dialogId)
+  }, [activeDialogId, router, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog])
 
   useEffect(() => {
     const urlDialogId = searchParams.get('dialogId')
-    if (urlDialogId && urlDialogId !== currentDialogId) {
-      selectDialogInternal(urlDialogId)
-    } else if (!urlDialogId && currentDialogId) {
-      clearCurrent()
-      setActiveDialogId(null)
+    
+    if (urlDialogId !== activeDialogId) {
+      if (urlDialogId) {
+        setActiveDialogId(urlDialogId)
+        resetUnread(urlDialogId)
+        subscribeToDialog(urlDialogId)
+        selectDialog(urlDialogId)
+      } else {
+        setActiveDialogId(null)
+      }
     }
-  }, [searchParams, currentDialogId, selectDialogInternal, clearCurrent, setActiveDialogId])
-
-  useEffect(() => {
-    if (currentDialogId && 
-        !isLoadingDialog && 
-        !isLoadingMessages && 
-        !isSelectingDialog &&
-        rawMessagesCount === 0) {
-      addWelcomeMessageIfNeeded()
-    }
-  }, [currentDialogId, isLoadingDialog, isLoadingMessages, isSelectingDialog, rawMessagesCount, addWelcomeMessageIfNeeded])
+  }, [searchParams])
 
   const handleNewChat = useCallback(async () => {
     resetDialog()
@@ -237,61 +145,20 @@ export default function Mingo() {
   }, [resetDialog, createDialog, handleDialogSelect])
 
   const handleSendMessage = useCallback(async (message: string) => {
-    if (!currentDialogId || !message.trim()) return
-
-    removeWelcomeMessages()
-
-    const optimisticMessage: Message = {
-      id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      dialogId: currentDialogId,
-      chatType: 'ADMIN_AI_CHAT',
-      dialogMode: 'DEFAULT',
-      createdAt: new Date().toISOString(),
-      owner: {
-        type: 'ADMIN'
-      },
-      messageData: {
-        type: 'TEXT',
-        text: message.trim()
-      }
-    }
-
-    addRealtimeMessage(optimisticMessage)
+    if (!activeDialogId || !message.trim()) return
     
-    const emptyAssistantMessage: Message = {
-      id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      dialogId: currentDialogId,
-      chatType: 'ADMIN_AI_CHAT',
-      dialogMode: 'DEFAULT',
-      createdAt: new Date().toISOString(),
-      owner: {
-        type: 'ASSISTANT',
-        model: 'mingo'
-      },
-      messageData: {
-        type: 'TEXT',
-        text: ''
-      }
-    }
-    
-    addRealtimeMessage(emptyAssistantMessage)
-    
-    setDialogTyping(currentDialogId, true)
-    
-    const success = await sendMessage(message, currentDialogId)
-    
+    const success = await sendMessage(message.trim())
     if (!success) {
       console.warn('[Mingo] Failed to send message')
-      setDialogTyping(currentDialogId, false)
     }
-  }, [sendMessage, currentDialogId, addRealtimeMessage, removeWelcomeMessages, setDialogTyping])
+  }, [activeDialogId, sendMessage])
 
   if (!isSaasTenantMode()) {
     return null
   }
 
   return (
-    <AppLayout mainClassName="p-0">
+    <AppLayout mainClassName="p-0 sm:p-0">
       <ContentPageContainer
         padding="none"
         showHeader={false}
@@ -299,21 +166,20 @@ export default function Mingo() {
         contentClassName="h-full flex flex-col"
       >
         {/* 
-          NATS Subscriptions - one component per subscribed dialog
+          Simplified NATS Subscriptions with multi-topic support
           
-          Key behaviors:
-          1. Each dialog gets its own subscription component
-          2. Subscriptions PERSIST when switching dialogs (component stays mounted)
-          3. All subscriptions share the same NATS websocket connection URL
-             (connection sharing is handled by the core NATS library)
-          4. Chunks from background dialogs update unread counts
+          Key improvements:
+          1. Single DialogSubscription component per subscribed dialog
+          2. Multi-topic support (message + admin-message)
+          3. Automatic connection sharing via core hooks
+          4. Proper background dialog handling with unread counts
         */}
-        {subscribedDialogIds.map(dialogId => (
-          <DialogNatsSubscription
+        {Array.from(subscribedDialogs).map(dialogId => (
+          <DialogSubscription
             key={dialogId}
             dialogId={dialogId}
-            isActive={dialogId === currentDialogId}
-            onChunkReceived={handleChunkReceived}
+            isActive={dialogId === activeDialogId}
+            processChunk={createDialogChunkProcessor}
           />
         ))}
 
@@ -324,7 +190,7 @@ export default function Mingo() {
             isCreatingDialog={isCreatingDialog}
             onDialogSelect={handleDialogSelect}
             dialogs={dialogs}
-            activeDialogId={currentDialogId || undefined}
+            activeDialogId={activeDialogId || undefined}
             isLoading={isLoadingDialogs}
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
@@ -335,11 +201,11 @@ export default function Mingo() {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
-              {currentDialogId ? (
+              {activeDialogId ? (
                 <ChatMessageList
                   messages={processedMessages}
-                  dialogId={currentDialogId}
-                  isTyping={isCurrentDialogTyping}
+                  dialogId={activeDialogId}
+                  isTyping={isTyping}
                   isLoading={isLoadingDialog || isLoadingMessages || isSelectingDialog}
                   assistantType={assistantType}
                   pendingApprovals={pendingApprovals}
@@ -367,13 +233,13 @@ export default function Mingo() {
             </div>
 
             {/* Message Input - Only show when dialog is selected */}
-            {currentDialogId && (
+            {activeDialogId && (
               <div className="flex-shrink-0 px-6 pb-4">
                 <ChatInput
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
-                  sending={isSendingMessage || isCurrentDialogTyping}
+                  sending={isTyping}
                   disabled={isCreatingDialog || isSelectingDialog}
                   autoFocus={false}
                   className="bg-ods-card rounded-lg"

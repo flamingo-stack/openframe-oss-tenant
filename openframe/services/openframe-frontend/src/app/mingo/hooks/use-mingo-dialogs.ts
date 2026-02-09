@@ -6,7 +6,7 @@ import { apiClient } from '@lib/api-client'
 import { GET_MINGO_DIALOGS_QUERY } from '../queries/dialogs-queries'
 import type { DialogItem } from '@flamingo-stack/openframe-frontend-core'
 import type { DialogNode, DialogsResponse, UseMingoDialogsOptions } from '../types'
-import { useMingoBackgroundMessagesStore } from '../stores/mingo-background-messages-store'
+import { useMingoMessagesStore } from '../stores/mingo-messages-store'
 
 function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): DialogItem {
   return {
@@ -19,7 +19,7 @@ function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): Dia
 
 export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
   const { enabled = true, search, limit = 20 } = options
-  const { unreadCounts, getUnreadCount } = useMingoBackgroundMessagesStore()
+  const { getUnread } = useMingoMessagesStore()
 
   const query = useInfiniteQuery({
     queryKey: ['mingo-dialogs', { search, limit }],
@@ -64,9 +64,9 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
     
     const allDialogs = query.data.pages.flatMap(page => page.dialogs)
     return allDialogs.map(dialog => 
-      transformToDialogItem(dialog, getUnreadCount(dialog.id))
+      transformToDialogItem(dialog, getUnread(dialog.id))
     )
-  }, [query.data?.pages, unreadCounts, getUnreadCount])
+  }, [query.data?.pages, getUnread])
 
   return {
     dialogs: dialogsWithUnread,

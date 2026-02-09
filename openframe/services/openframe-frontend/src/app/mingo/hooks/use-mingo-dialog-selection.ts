@@ -1,35 +1,91 @@
 'use client'
 
-import React from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query'
+import { 
+  processHistoricalMessagesWithErrors,
+  type HistoricalMessage
+} from '@flamingo-stack/openframe-frontend-core'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
-import { useMingoDialogDetailsStore } from '../stores/mingo-dialog-details-store'
-import { useMingoBackgroundMessagesStore } from '../stores/mingo-background-messages-store'
+import { useMingoMessagesStore } from '../stores/mingo-messages-store'
 import { GET_MINGO_DIALOG_QUERY, GET_DIALOG_MESSAGES_QUERY } from '../queries/dialogs-queries'
-import { CHAT_TYPE } from '../../tickets/constants'
-import type { DialogResponse, MessagesResponse, MessagePage, Message } from '../types'
+import { CHAT_TYPE, ASSISTANT_CONFIG, APPROVAL_STATUS, MESSAGE_TYPE } from '../../tickets/constants'
+import type { ApprovalStatus } from '../../tickets/constants'
+import { MingoApiService } from '../services/mingo-api-service'
+import type { DialogResponse, MessagesResponse, MessagePage } from '../types'
 
 export function useMingoDialogSelection() {
+  const { toast } = useToast()
+  const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({})
+  
   const {
-    currentDialogId,
-    setCurrentDialogId,
-    setCurrentDialog,
-    setAdminMessages,
-    setPagination,
+    activeDialogId,
+    setActiveDialogId,
+    setMessages,
     setLoadingDialog,
-    setLoadingMessages
-  } = useMingoDialogDetailsStore()
-
-  const { moveBackgroundToActive } = useMingoBackgroundMessagesStore()
+    setLoadingMessages,
+    setPagination,
+    updateApprovalStatusInMessages
+  } = useMingoMessagesStore()
+  
+  const approveRequestMutation = MingoApiService.approveRequestMutation()
+  const rejectRequestMutation = MingoApiService.rejectRequestMutation()
+  
+  const handleApprove = useCallback((requestId?: string) => {
+    if (!requestId || !activeDialogId) return
+    
+    approveRequestMutation.mutate(requestId, {
+      onSuccess: () => {
+        setApprovalStatuses(prev => ({
+          ...prev,
+          [requestId]: APPROVAL_STATUS.APPROVED
+        }))
+        
+        updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.APPROVED)
+      },
+      onError: (error) => {
+        toast({
+          title: "Approval Failed",
+          description: error instanceof Error ? error.message : "Unable to approve request",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
+    })
+  }, [approveRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages])
+  
+  const handleReject = useCallback((requestId?: string) => {
+    if (!requestId || !activeDialogId) return
+    
+    rejectRequestMutation.mutate(requestId, {
+      onSuccess: () => {
+        setApprovalStatuses(prev => ({
+          ...prev,
+          [requestId]: APPROVAL_STATUS.REJECTED
+        }))
+        
+        updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.REJECTED)
+      },
+      onError: (error) => {
+        toast({
+          title: "Rejection Failed",
+          description: error instanceof Error ? error.message : "Unable to reject request",
+          variant: "destructive",
+          duration: 5000
+        })
+      }
+    })
+  }, [rejectRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages])
 
   const dialogQuery = useQuery({
-    queryKey: ['mingo-dialog', currentDialogId],
+    queryKey: ['mingo-dialog', activeDialogId],
     queryFn: async () => {
-      if (!currentDialogId) return null
+      if (!activeDialogId) return null
 
       const response = await apiClient.post<DialogResponse>('/chat/graphql', {
         query: GET_MINGO_DIALOG_QUERY,
-        variables: { id: currentDialogId }
+        variables: { id: activeDialogId }
       })
 
       if (!response.ok || !response.data?.data?.dialog) {
@@ -38,19 +94,19 @@ export function useMingoDialogSelection() {
 
       return response.data.data.dialog
     },
-    enabled: !!currentDialogId,
+    enabled: !!activeDialogId,
     staleTime: 30 * 1000,
   })
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: ['mingo-dialog-messages', currentDialogId],
+    queryKey: ['mingo-dialog-messages', activeDialogId],
     queryFn: async ({ pageParam }: { pageParam: string | undefined }): Promise<MessagePage> => {
-      if (!currentDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } }
+      if (!activeDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } }
 
       const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
         query: GET_DIALOG_MESSAGES_QUERY,
         variables: { 
-          dialogId: currentDialogId, 
+          dialogId: activeDialogId, 
           cursor: pageParam,
           limit: 100
         }
@@ -70,73 +126,86 @@ export function useMingoDialogSelection() {
       return lastPage.pageInfo.hasNextPage ? lastPage.pageInfo.endCursor : undefined
     },
     initialPageParam: undefined as string | undefined,
-    enabled: !!currentDialogId,
+    enabled: !!activeDialogId,
     staleTime: 30 * 1000,
   })
 
   const selectDialogMutation = useMutation({
     mutationFn: async (dialogId: string) => {
-      setCurrentDialog(null)
-      setAdminMessages([])
+      // Don't clear messages - let them persist for fast switching
+      // Only clear pagination state for new queries
       setPagination(false, null, null)
       
       setLoadingDialog(true)
       setLoadingMessages(true)
       
-      setCurrentDialogId(dialogId)
+      setActiveDialogId(dialogId)
       
       return dialogId
     }
   })
 
-  React.useEffect(() => {
-    if (dialogQuery.data) {
-      setCurrentDialog(dialogQuery.data)
-    }
-  }, [dialogQuery.data, setCurrentDialog])
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage && !messagesQuery.isLoading) {
       messagesQuery.fetchNextPage()
     }
   }, [messagesQuery.hasNextPage, messagesQuery.isFetchingNextPage, messagesQuery.isLoading, messagesQuery.fetchNextPage])
 
-  React.useEffect(() => {
-    if (messagesQuery.data?.pages && currentDialogId) {
-      const allAdminMessages = messagesQuery.data.pages.flatMap(page => page.messages)
-      const backgroundMessages = moveBackgroundToActive(currentDialogId)
-      const messageMap = new Map<string, Message>()
-
-      allAdminMessages.forEach(msg => messageMap.set(msg.id, msg))
+  useEffect(() => {
+    if (messagesQuery.data?.pages && activeDialogId) {
+      const allGraphQLMessages = messagesQuery.data.pages.flatMap(page => page.messages)
       
-      backgroundMessages.forEach(msg => {
-        const existing = messageMap.get(msg.id)
+      // Extract approval statuses from GraphQL messages
+      const extractedStatuses = allGraphQLMessages.reduce<Record<string, ApprovalStatus>>((acc, msg) => {
+        const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData]
         
-        if (msg.owner?.type === 'ASSISTANT' && 
-            (!msg.messageData?.text || msg.messageData.text === '') &&
-            msg.id.startsWith('typing-')) {
-          messageMap.set(msg.id, msg)
-          return
-        }
-        
-        if (msg.id.startsWith('nats-') && existing) {
-          const backgroundText = msg.messageData?.text || ''
-          const existingText = existing.messageData?.text || ''
-          if (backgroundText.length > existingText.length) {
-            messageMap.set(msg.id, msg)
+        messageDataArray.forEach((data: any) => {
+          if (data?.type === MESSAGE_TYPE.APPROVAL_RESULT && data.approvalRequestId) {
+            acc[data.approvalRequestId] = data.approved ? APPROVAL_STATUS.APPROVED : APPROVAL_STATUS.REJECTED
           }
-          return
-        }
+        })
         
-        if (!existing) {
-          messageMap.set(msg.id, msg)
-        }
-      })
+        return acc
+      }, {})
       
-      const combinedMessages = Array.from(messageMap.values())
+      if (Object.keys(extractedStatuses).length > 0) {
+        setApprovalStatuses(prev => ({ ...prev, ...extractedStatuses }))
+      }
+    }
+  }, [messagesQuery.data?.pages, activeDialogId])
+
+  useEffect(() => {
+    if (messagesQuery.data?.pages && activeDialogId) {
+      const allGraphQLMessages = messagesQuery.data.pages.flatMap(page => page.messages)
+      
+      // Convert GraphQL messages to HistoricalMessage format
+      const historicalMessages: HistoricalMessage[] = allGraphQLMessages
+        .filter(msg => msg.chatType === CHAT_TYPE.ADMIN)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .map(msg => ({
+          id: msg.id,
+          dialogId: msg.dialogId,
+          chatType: msg.chatType,
+          createdAt: msg.createdAt,
+          owner: msg.owner,
+          messageData: msg.messageData,
+        }))
       
-      setAdminMessages(combinedMessages)
+      const assistantConfig = ASSISTANT_CONFIG.MINGO
+      const { messages: coreMessages } = processHistoricalMessagesWithErrors(historicalMessages, {
+        assistantName: assistantConfig.name,
+        assistantType: assistantConfig.type,
+        chatTypeFilter: CHAT_TYPE.ADMIN,
+        onApprove: handleApprove,
+        onReject: handleReject,
+        approvalStatuses: Object.fromEntries(
+          Object.entries(approvalStatuses).map(([k, v]) => [k, v as any])
+        )
+      })
+
+      if (messagesQuery.isFetched && coreMessages.length > 0) {
+        setMessages(activeDialogId, coreMessages)
+      }
 
       const lastPage = messagesQuery.data.pages[messagesQuery.data.pages.length - 1]
       if (lastPage) {
@@ -147,7 +216,7 @@ export function useMingoDialogSelection() {
         )
       }
     }
-  }, [messagesQuery.data?.pages, currentDialogId, setAdminMessages, setPagination, moveBackgroundToActive])
+  }, [messagesQuery.data?.pages, activeDialogId])
 
   return {
     selectDialog: selectDialogMutation.mutate,
@@ -158,6 +227,10 @@ export function useMingoDialogSelection() {
     dialogError: dialogQuery.error?.message || null,
     messagesError: messagesQuery.error?.message || null,
     refetchDialog: dialogQuery.refetch,
-    refetchMessages: messagesQuery.refetch
+    refetchMessages: messagesQuery.refetch,
+    // Approval handlers for real-time processing
+    handleApprove,
+    handleReject,
+    approvalStatuses
   }
 }

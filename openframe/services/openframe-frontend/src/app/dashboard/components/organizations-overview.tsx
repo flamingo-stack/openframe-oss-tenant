@@ -1,10 +1,8 @@
 'use client'
 
 import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core'
-import { useBatchImages } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { featureFlags } from '@lib/feature-flags'
+import { getFullImageUrl } from '@lib/image-url'
 import { useRouter } from 'next/navigation'
-import { useMemo } from 'react'
 import { useOrganizationsOverview } from '../hooks/use-organizations-overview'
 
 const OrganizationsSkeleton = () => (
@@ -44,13 +42,6 @@ export function OrganizationsOverviewSection() {
   const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(100)
   const router = useRouter()
 
-  const imageUrls = useMemo(() => 
-    featureFlags.organizationImages.displayEnabled()
-      ? rows.map(org => org.imageUrl).filter(Boolean)
-      : [], 
-    [rows]
-  )
-  const fetchedImageUrls = useBatchImages(imageUrls)
 
   return (
     <div className="space-y-4">
@@ -72,7 +63,7 @@ export function OrganizationsOverviewSection() {
           <div className="text-ods-error font-['DM_Sans'] text-[14px]">{error}</div>
         ) : (
           rows.map((org) => {
-            const fetchedImageUrl = org.imageUrl ? fetchedImageUrls[org.imageUrl] : undefined
+            const fullImageUrl = getFullImageUrl(org.imageUrl)
 
             return (
               <div
@@ -82,7 +73,7 @@ export function OrganizationsOverviewSection() {
                 {/* Organization column - Now using OrganizationCard */}
                 <OrganizationCard
                   organization={org}
-                  fetchedImageUrl={fetchedImageUrl}
+                  fetchedImageUrl={fullImageUrl}
                   onClick={() => router.push(`/devices?organizationIds=${org.organizationId}`)}
                   deviceCount={org.total}
                 />

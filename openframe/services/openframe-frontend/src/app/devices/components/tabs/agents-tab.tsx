@@ -15,7 +15,8 @@ const agentTypeToToolType: Record<string, string> = {
   'tacticalrmm-agent': 'TACTICAL_RMM',
   'meshcentral-agent': 'MESHCENTRAL',
   'openframe-chat': 'OPENFRAME_CHAT',
-  'openframe-client': 'OPENFRAME_CLIENT'
+  'openframe-client': 'OPENFRAME_CLIENT',
+  'osqueryd': 'OSQUERY'
 }
 
 export function AgentsTab({ device }: AgentsTabProps) {
@@ -54,6 +55,13 @@ export function AgentsTab({ device }: AgentsTabProps) {
         hasConnection: true
       })
     }
+  })
+
+  // Sort agents to show those with agentToolId first
+  combinedAgents.sort((a, b) => {
+    if (a.agentToolId && !b.agentToolId) return -1
+    if (!a.agentToolId && b.agentToolId) return 1
+    return 0
   })
 
   const hasAgents = combinedAgents.length > 0

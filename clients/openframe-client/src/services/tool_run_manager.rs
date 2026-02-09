@@ -568,8 +568,69 @@ impl ToolRunManager {
                     }
                 }
 
-                // For non-Windows platforms, skip Console session type tools
-                #[cfg(not(windows))]
+// macOS: Handle session types
+                #[cfg(target_os = "macos")]
+                {
+                    use crate::models::SessionType;
+                    use crate::platform::user_session::{get_console_user, launch_as_user};
+
+                    match tool.session_type {
+                        SessionType::User => {
+                            info!(tool_id = %tool.tool_agent_id, "Launching as USER session (GUI) on macOS");
+
+                            let Some(user) = get_console_user() else {
+                                error!(tool_id = %tool.tool_agent_id, "No console user - retrying in {}s", RETRY_DELAY_SECONDS);
+                                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                continue;
+                            };
+
+                            match launch_as_user(&command_path, &processed_args, &user).await {
+                                Ok(mut child) => {
+                                    info!(tool_id = %tool.tool_agent_id, "Launched as user {}, PID: {:?}", user.username, child.id());
+
+                                    // Capture stdout/stderr
+                                    if let Some(stdout) = child.stdout.take() {
+                                        let tid = tool.tool_agent_id.clone();
+                                        tokio::spawn(async move {
+                                            let mut lines = BufReader::new(stdout).lines();
+                                            while let Ok(Some(line)) = lines.next_line().await {
+                                                info!(tool_id = %tid, "[STDOUT] {}", line);
+                                            }
+                                        });
+                                    }
+                                    if let Some(stderr) = child.stderr.take() {
+                                        let tid = tool.tool_agent_id.clone();
+                                        tokio::spawn(async move {
+                                            let mut lines = BufReader::new(stderr).lines();
+                                            while let Ok(Some(line)) = lines.next_line().await {
+                                                warn!(tool_id = %tid, "[STDERR] {}", line);
+                                            }
+                                        });
+                                    }
+
+                                    let status = child.wait().await;
+                                    warn!(tool_id = %tool.tool_agent_id, "Exited: {:?}, restarting in {}s", status, RETRY_DELAY_SECONDS);
+                                }
+                                Err(e) => {
+                                    error!(tool_id = %tool.tool_agent_id, "Failed to launch as user: {:#}", e);
+                                }
+                            }
+
+                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            continue;
+                        }
+                        SessionType::Console => {
+                            info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
+                            return;
+                        }
+                        SessionType::Service => {
+                            // Continue to standard spawn below
+                        }
+                    }
+                }
+
+                // For other Unix platforms, skip Console session type
+                #[cfg(all(unix, not(target_os = "macos")))]
                 {
                     use crate::models::SessionType;
                     if tool.session_type == SessionType::Console {

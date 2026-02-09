@@ -1,6 +1,6 @@
 'use client'
 
-import { DetailPageContainer, DeviceType, LoadError, NotFoundError, SelectCard } from '@flamingo-stack/openframe-frontend-core'
+import { DetailPageContainer, DeviceType, LoadError, NotFoundError, SelectableDeviceCard } from '@flamingo-stack/openframe-frontend-core'
 import { PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { Button, ListLoader, SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
@@ -207,7 +207,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
                 const deviceType = device.type?.toLowerCase() as DeviceType
                 const isSelected = selectedIds.has(id || '')
                 return (
-                  <SelectCard
+                  <SelectableDeviceCard
                     key={id}
                     title={device.displayName || device.hostname}
                     type={deviceType}
