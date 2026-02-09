@@ -179,13 +179,9 @@ jobs:
           cache: 'maven'
           overwrite-settings: false
 
-      - name: Copy settings.xml
-        run: |
-          cp .mvn/settings.xml .m2/settings.xml
-
       - name: Build Test JAR
         run: |
-          mvn clean package -pl openframe/services/openframe-test -am -DskipTests
+          mvn clean package -pl openframe/services/openframe-test -am -DskipTests -s .mvn/settings.xml
 
       - name: Bootstrap Openframe
         working-directory: cli
