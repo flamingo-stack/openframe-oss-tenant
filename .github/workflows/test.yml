@@ -184,14 +184,16 @@ jobs:
       - name: Setup Telepresence
         uses: ./.github/steps/setup-telepresence
 
+      - name: Build Test JAR
+        run: |
+          mvn clean package -pl openframe/services/openframe-test -am -DskipTests
+
       - name: Run Tests
         id: tests
         env:
           API_BASE_URL: http://localhost:8100
         run: |
-          cd openframe-e2e-tests
-          mvn test -Dgroups="start"
-          mvn test -Dgroups="authorized,unauthorized"
+          java -jar openframe/services/openframe-test/target/openframe-test-1.0.0-SNAPSHOT-jar-with-dependencies.jar
         continue-on-error: true
 
       - name: Generate and Deploy Allure Report
