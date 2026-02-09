@@ -180,6 +180,8 @@ jobs:
           overwrite-settings: false
 
       - name: Build Test JAR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mvn clean package -pl openframe/services/openframe-test -am -DskipTests -s .mvn/settings.xml
 
