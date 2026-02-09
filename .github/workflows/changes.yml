@@ -19,6 +19,8 @@ on:
         value: ${{ jobs.changes.outputs.openframe-management }}
       openframe-stream: 
         value: ${{ jobs.changes.outputs.openframe-stream }}
+      openframe-test:
+        value: ${{ jobs.changes.outputs.openframe-test }}
       openframe-frontend: 
         value: ${{ jobs.changes.outputs.openframe-frontend }}
       authentik-postgresql: 
