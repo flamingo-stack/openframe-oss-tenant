@@ -171,7 +171,11 @@ jobs:
           docker-password: ${{ secrets.DOCKER_PASSWORD }}
           docker-email: "dmtkov@flamingo.cx"
 
-      - name: Run tests scripts
+      - name: Build Test JAR
+        run: |
+          mvn clean package -pl openframe/services/openframe-test -am -DskipTests
+
+      - name: Bootstrap Openframe
         working-directory: cli
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -182,10 +186,6 @@ jobs:
 
       - name: Setup Telepresence
         uses: ./.github/steps/setup-telepresence
-
-      - name: Build Test JAR
-        run: |
-          mvn clean package -pl openframe/services/openframe-test -am -DskipTests
 
       - name: Run Tests
         id: tests
