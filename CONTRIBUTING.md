@@ -1,97 +1,459 @@
-# Contributing to OpenFrame
+# Contributing to OpenFrame OSS Tenant
 
-Thank you for your interest in contributing to the OpenFrame project! We encourage both small and large contributions and appreciate your help in improving our platform.
+Thank you for your interest in contributing to OpenFrame! This guide will help you get started with contributing to the open-source backbone of the OpenFrame platform.
 
 ## Table of Contents
-1. Getting Started  
-2. Development Environment  
-3. Code Standards and Practices  
-4. Pull Requests  
-5. Issue Tracking  
-6. Communication  
-7. Contributor License Agreement (CLA)  
-8. Code of Conduct  
 
---------------------------------------------------------------------------------
-## 1. Getting Started
+- [Getting Started](#getting-started)
+- [Development Environment](#development-environment)
+- [Contributing Workflow](#contributing-workflow)
+- [Code Standards](#code-standards)
+- [Testing Requirements](#testing-requirements)
+- [Pull Request Process](#pull-request-process)
+- [Community Guidelines](#community-guidelines)
+- [Getting Help](#getting-help)
 
-- Ensure you have the prerequisites installed:
-  - Java 21, Maven 3.9+, Docker & Docker Compose, Git 2.42+
-  - (Optional) Node.js + npm (for the front-end build)
+## Getting Started
 
-- Fork the repository in GitHub, then clone your fork locally:  ```bash
-  git clone https://github.com/YOUR-USERNAME/openframe.git
-  cd openframe  ```
+OpenFrame OSS Tenant is the multi-tenant, open-source backbone of the OpenFrame platform. Before contributing, please:
 
---------------------------------------------------------------------------------
-## 2. Development Environment
+1. **Join our community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+2. **Read the documentation**: [docs/README.md](docs/README.md)
+3. **Understand the architecture**: [Architecture Overview](docs/development/architecture/overview.md)
+4. **Review open issues**: Check GitHub Issues for good first issues
 
-Below are brief steps for a standard dev environment:
+### What We're Looking For
 
-1. Run Maven to build the backend libraries and services:   ```bash
-   mvn clean install   ```
-2. For the front-end (if you plan to make UI changes):   ```bash
-   cd services/openframe-frontend
+We welcome contributions in these areas:
+
+- 🐛 **Bug fixes** — Improving stability and reliability
+- 📚 **Documentation** — Better guides, examples, and API docs
+- ✨ **Features** — New functionality that aligns with our roadmap
+- 🧪 **Testing** — Improved test coverage and quality
+- 🔧 **Tooling** — Developer experience improvements
+- 🌐 **Integrations** — Support for additional MSP tools
+
+## Development Environment
+
+### Prerequisites
+
+Before setting up your development environment, ensure you have:
+
+- **Java**: OpenJDK 21.0.1+ 
+- **Node.js**: 18+ with npm
+- **Rust**: 1.70+ with Cargo
+- **Docker**: 24.0+ with Docker Compose
+- **Git**: 2.42+
+- **Maven**: 3.8+
+
+### Setup Instructions
+
+1. **Fork and clone the repository**:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/openframe-oss-tenant.git
+   cd openframe-oss-tenant
+   ```
+
+2. **Set up GitHub authentication** (required for dependencies):
+   ```bash
+   export GITHUB_ACTOR=your-github-username
+   export GITHUB_TOKEN=your-github-token
+   ```
+
+3. **Build the backend services**:
+   ```bash
+   mvn clean install
+   ```
+
+4. **Start the frontend development server**:
+   ```bash
+   cd openframe/services/openframe-frontend
    npm install
-   npm run serve   ```
-3. Optionally launch the entire stack using Docker Compose:   ```bash
-   ./scripts/build-and-run.sh   ```
+   npm run dev
+   ```
 
-Refer to [docs/deployment.md](docs/deployment.md) for more specific setup details.
+5. **Build the Rust client agents** (optional):
+   ```bash
+   cd client
+   cargo build --release
+   ```
 
---------------------------------------------------------------------------------
-## 3. Code Standards and Practices
+6. **Start the application**:
+   ```bash
+   # In the root directory
+   mvn spring-boot:run
+   ```
 
-- Code style:
-  - Use standard Java conventions, or the project’s .editorconfig / style plugin.
-  - For JavaScript/TypeScript front-end, follow Prettier/ESLint settings if available.
+The application will be available at `https://localhost`.
 
-- Testing:
-  - Write unit and integration tests where possible.
-  - Keep test coverage above the project threshold.
-  - For Java, we use JUnit or Testcontainers. For front-end, consider Jest or Cypress.
+### Development Tools
 
-- Commits:
-  - Use descriptive commit messages (e.g. “Fix login bug with JWT tokens”).
-  - Group related changes into a single commit; separate unrelated changes.
+We recommend using:
+- **IDE**: IntelliJ IDEA (Ultimate preferred) or VS Code
+- **Java**: Use the included `.editorconfig` for formatting
+- **Frontend**: Vue.js DevTools browser extension
+- **Database**: MongoDB Compass for database inspection
+- **API Testing**: Postman or GraphQL Playground
 
---------------------------------------------------------------------------------
-## 4. Pull Requests
+## Contributing Workflow
 
-- Ensure all commits are rebased or squashed appropriately.
-- Include a clear description with:
-  - What problem you are addressing / what feature you are implementing
-  - How you tested it
-  - Any potential impacts on existing features
-- Reference the related issue if applicable (e.g., “Fixes #123”).
-- Make sure your PR passes all checks (CI, code style, test coverage).
+### 1. Create an Issue
 
---------------------------------------------------------------------------------
-## 5. Issue Tracking
+Before starting work:
+- Check if an issue already exists
+- Create a new issue describing the problem or feature
+- Wait for maintainer feedback before starting work
+- Get assigned to avoid duplicate work
 
-- Issues are tracked on the GitHub Issues page.
-- If you find a bug, please create a new issue with:
-  - Steps to reproduce
-  - Expected vs. actual results
-  - Environment details (OS, Java version, etc.)
-- For enhancements, provide a clear vision of what you’re proposing.
+### 2. Create a Feature Branch
 
---------------------------------------------------------------------------------
-## 6. Communication
+```bash
+git checkout -b feature/your-feature-name
+# or
+git checkout -b fix/issue-description
+```
 
-- Join our official Slack/Discord for real-time discussions (links TBD).
-- Use the GitHub Discussion board for longer-form conversations.
-- Follow openframe.org blog or our social accounts for updates.
+**Branch naming conventions**:
+- `feature/` — New features
+- `fix/` — Bug fixes  
+- `docs/` — Documentation improvements
+- `refactor/` — Code improvements without behavior changes
+- `test/` — Test improvements
 
---------------------------------------------------------------------------------
-## 7. Contributor License Agreement (CLA)
+### 3. Make Your Changes
 
-By contributing to OpenFrame, you confirm that any code, documentation, or other output you submit is your own and that you have the right to share it under the license of this project. If a formal CLA is in place, please sign it before submitting a PR.
+- Follow our [Code Standards](#code-standards)
+- Write tests for new functionality
+- Update documentation as needed
+- Keep commits focused and atomic
 
---------------------------------------------------------------------------------
-## 8. Code of Conduct
+### 4. Test Your Changes
 
-This project follows a standard Code of Conduct; please respect each other. Be kind, patient, and inclusive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for more details.
+```bash
+# Run backend tests
+mvn test
 
---------------------------------------------------------------------------------
-Thank you again for your contribution! Your input and ideas help improve OpenFrame for everyone. If you have any questions, feel free to reach out via GitHub issues or our community channels.
+# Run frontend tests
+cd openframe/services/openframe-frontend
+npm run test
+npm run type-check
+
+# Run Rust tests
+cd client
+cargo test
+
+# Integration tests (if applicable)
+mvn verify
+```
+
+### 5. Submit a Pull Request
+
+See [Pull Request Process](#pull-request-process) below.
+
+## Code Standards
+
+### Java Backend
+
+- **Java Version**: Target Java 21
+- **Style**: Follow Google Java Style Guide
+- **Framework**: Spring Boot 3.3+ with dependency injection
+- **Documentation**: Use Javadoc for public APIs
+- **Logging**: Use SLF4J with structured logging
+
+```java
+@Service
+public class ExampleService {
+    private static final Logger log = LoggerFactory.getLogger(ExampleService.class);
+    
+    /**
+     * Processes the given request and returns a response.
+     * 
+     * @param request the request to process
+     * @return the processed response
+     * @throws ServiceException if processing fails
+     */
+    public ResponseDto processRequest(RequestDto request) throws ServiceException {
+        log.info("Processing request: {}", request.getId());
+        // Implementation here
+    }
+}
+```
+
+### Frontend (Vue.js)
+
+- **TypeScript**: Use TypeScript for all new code
+- **Style**: Use Prettier with ESLint
+- **Components**: Use Composition API with `<script setup>`
+- **Styling**: Use CSS modules or scoped styles
+- **Testing**: Write unit tests for components
+
+```vue
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import type { User } from '@/types'
+
+interface Props {
+  user: User
+}
+
+const props = defineProps<Props>()
+const count = ref(0)
+
+const displayName = computed(() => 
+  `${props.user.firstName} ${props.user.lastName}`
+)
+</script>
+
+<template>
+  <div class="user-card">
+    <h3>{{ displayName }}</h3>
+    <button @click="count++">Count: {{ count }}</button>
+  </div>
+</template>
+
+<style scoped>
+.user-card {
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+</style>
+```
+
+### Rust Client
+
+- **Edition**: Use Rust 2021 edition
+- **Style**: Use `rustfmt` with default settings
+- **Error Handling**: Use `Result` types and proper error propagation
+- **Async**: Use Tokio for async operations
+- **Documentation**: Use doc comments for public APIs
+
+```rust
+use anyhow::Result;
+use tokio::time::{sleep, Duration};
+
+/// Represents a system agent for the OpenFrame platform.
+pub struct SystemAgent {
+    id: String,
+    endpoint: String,
+}
+
+impl SystemAgent {
+    /// Creates a new system agent with the given configuration.
+    pub fn new(id: String, endpoint: String) -> Self {
+        Self { id, endpoint }
+    }
+    
+    /// Starts the agent and begins monitoring system metrics.
+    pub async fn start(&self) -> Result<()> {
+        log::info!("Starting agent: {}", self.id);
+        
+        loop {
+            self.collect_metrics().await?;
+            sleep(Duration::from_secs(30)).await;
+        }
+    }
+    
+    async fn collect_metrics(&self) -> Result<()> {
+        // Implementation here
+        Ok(())
+    }
+}
+```
+
+### Database and API
+
+- **GraphQL**: Use Netflix DGS framework
+- **MongoDB**: Use Spring Data MongoDB with proper indexing
+- **Caching**: Use Redis for frequently accessed data
+- **Security**: Validate all inputs and use parameterized queries
+
+## Testing Requirements
+
+### Test Coverage
+
+We maintain high test coverage standards:
+- **Backend**: Minimum 80% line coverage
+- **Frontend**: Minimum 70% line coverage
+- **Critical paths**: 100% coverage required
+
+### Test Types
+
+**Backend Testing**:
+```bash
+# Unit tests
+mvn test
+
+# Integration tests  
+mvn verify
+
+# Specific service tests
+mvn test -Dtest=ApiServiceTest
+```
+
+**Frontend Testing**:
+```bash
+# Unit tests
+npm run test
+
+# Component tests
+npm run test:unit
+
+# Type checking
+npm run type-check
+
+# E2E tests (when available)
+npm run test:e2e
+```
+
+**Rust Testing**:
+```bash
+# Unit tests
+cargo test
+
+# Integration tests
+cargo test --tests
+
+# Documentation tests
+cargo test --doc
+```
+
+### Writing Good Tests
+
+- **Arrange, Act, Assert**: Structure tests clearly
+- **Descriptive names**: Test names should explain the scenario
+- **Independent tests**: Tests should not depend on each other
+- **Mock external dependencies**: Use mocks for databases, APIs, etc.
+
+Example test structure:
+```java
+@Test
+void shouldReturnUserWhenValidIdProvided() {
+    // Arrange
+    String userId = "user-123";
+    User expectedUser = new User(userId, "John Doe");
+    when(userRepository.findById(userId)).thenReturn(Optional.of(expectedUser));
+    
+    // Act
+    Optional<User> result = userService.getUser(userId);
+    
+    // Assert
+    assertThat(result).isPresent();
+    assertThat(result.get().getName()).isEqualTo("John Doe");
+}
+```
+
+## Pull Request Process
+
+### Before Submitting
+
+- [ ] Tests pass locally
+- [ ] Code follows style guidelines
+- [ ] Documentation is updated
+- [ ] Commit messages are clear
+- [ ] Branch is up to date with main
+
+### PR Template
+
+When creating a pull request, please include:
+
+```markdown
+## Description
+Brief description of the changes and why they are needed.
+
+## Type of Change
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
+
+## Testing
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing completed
+
+## Checklist
+- [ ] Code follows style guidelines
+- [ ] Self-review completed
+- [ ] Documentation updated
+- [ ] No new warnings introduced
+
+## Related Issues
+Closes #(issue number)
+```
+
+### Review Process
+
+1. **Automated checks**: CI/CD pipeline runs tests and linting
+2. **Maintainer review**: Core team member reviews the code
+3. **Community review**: Other contributors may provide feedback
+4. **Approval**: At least one maintainer approval required
+5. **Merge**: Maintainer merges after approval
+
+### Review Criteria
+
+Reviewers will check for:
+- **Functionality**: Does the code work as intended?
+- **Security**: Are there any security vulnerabilities?
+- **Performance**: Will this impact system performance?
+- **Maintainability**: Is the code clean and well-documented?
+- **Compatibility**: Does this break existing functionality?
+
+## Community Guidelines
+
+### Code of Conduct
+
+We follow the [Contributor Covenant](https://www.contributor-covenant.org/):
+- **Be respectful**: Treat everyone with respect and kindness
+- **Be inclusive**: Welcome people of all backgrounds and experience levels
+- **Be collaborative**: Work together towards common goals
+- **Be constructive**: Provide helpful feedback and suggestions
+
+### Communication
+
+- **Slack**: Join [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for real-time discussion
+- **GitHub Issues**: Use for bug reports and feature requests
+- **Pull Requests**: Use for code review discussions
+- **Documentation**: Update docs for any user-facing changes
+
+### Recognition
+
+Contributors are recognized in:
+- **Release notes**: Significant contributions mentioned
+- **Contributors page**: All contributors listed on GitHub
+- **Community shoutouts**: Recognition in Slack and blog posts
+
+## Getting Help
+
+### Resources
+
+- **[Documentation](docs/README.md)**: Comprehensive guides and API docs
+- **[Architecture Overview](docs/development/architecture/overview.md)**: Understanding the system design
+- **[Getting Started](docs/getting-started/introduction.md)**: New developer onboarding
+- **[OpenMSP Community](https://www.openmsp.ai/)**: Community resources and support
+
+### Support Channels
+
+1. **Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+   - `#general` — General discussion
+   - `#development` — Development questions
+   - `#help` — Get help with issues
+
+2. **GitHub Issues**: For bug reports and feature requests
+
+3. **Documentation**: Check existing docs before asking questions
+
+### Mentorship
+
+New contributors can request mentorship:
+- Tag `@openframe-mentors` in Slack
+- Mention mentorship interest in your first issue or PR
+- Attend virtual office hours (announced in Slack)
+
+## Thank You
+
+Your contributions help make OpenFrame better for the entire MSP community. Whether you're fixing a typo, adding a feature, or helping other users, every contribution matters.
+
+---
+
+**Questions?** Join our [Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) or check the [documentation](docs/README.md).
