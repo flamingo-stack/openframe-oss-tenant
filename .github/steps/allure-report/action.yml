@@ -26,9 +26,9 @@ runs:
     - name: Generate Allure Report
       shell: bash
       run: |
-        if [ -d "openframe/services/openframe-test/target/allure-results" ] && [ "$(ls -A openframe/services/openframe-test/target/allure-results 2>/dev/null)" ]; then
+        if [ -d "allure-results" ] && [ "$(ls -A allure-results 2>/dev/null)" ]; then
           echo "📊 Generating Allure report from test results..."
-          allure generate -c openframe/services/openframe-test/target/allure-results -o _site
+          allure generate -c allure-results -o _site
           echo "✅ Report generated successfully"
         else
           echo "⚠️  No test results found, creating placeholder page..."
