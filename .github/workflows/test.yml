@@ -171,6 +171,18 @@ jobs:
           docker-password: ${{ secrets.DOCKER_PASSWORD }}
           docker-email: "dmtkov@flamingo.cx"
 
+      - name: Set up JDK 21 for E2E tests
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          overwrite-settings: false
+
+      - name: Copy settings.xml
+        run: |
+          cp .mvn/settings.xml .m2/settings.xml
+
       - name: Build Test JAR
         run: |
           mvn clean package -pl openframe/services/openframe-test -am -DskipTests
