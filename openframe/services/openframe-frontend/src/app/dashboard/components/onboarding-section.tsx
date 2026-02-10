@@ -21,6 +21,26 @@ export function OnboardingSection() {
   const router = useRouter()
   const { completionStatus, isLoading } = useOnboardingCompletion()
 
+  const handleOrganizationAction = React.useCallback(async () => {
+    router.push('/organizations/edit/new')
+  }, [router])
+
+  const handleDeviceAction = React.useCallback(async () => {
+    router.push('/devices/new')
+  }, [router])
+
+  const handleTeamAction = React.useCallback(async () => {
+    router.push('/settings?tab=company-and-users')
+  }, [router])
+
+  const handleSsoAction = React.useCallback(async () => {
+    router.push('/settings?tab=sso-configuration')
+  }, [router])
+
+  const handleKnowledgeBaseAction = React.useCallback(async () => {
+    window.open('https://www.flamingo.run/knowledge-base', '_blank', 'noopener,noreferrer')
+  }, [])
+
   const onboardingSteps: OnboardingStepConfig[] = [
     {
       id: 'organizations-setup',
@@ -29,9 +49,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <OrganizationsIcon color={color} className="w-6 h-6" />,
       actionText: 'Add Organization',
       completedText: 'Add Organization',
-      onAction: async () => {
-        router.push('/organizations/edit/new')
-      }
+      onAction: handleOrganizationAction
     },
     {
       id: 'device-management',
@@ -40,9 +58,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <DevicesIcon color={color} className="w-6 h-6" />,
       actionText: 'Add Device',
       completedText: 'Add Device',
-      onAction: async () => {
-        router.push('/devices/new')
-      }
+      onAction: handleDeviceAction
     },
     {
       id: 'company-and-team',
@@ -51,9 +67,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <UsersGroupIcon color={color} className="w-6 h-6" />,
       actionText: 'Invite Users',
       completedText: 'Invite Users',
-      onAction: async () => {
-        router.push('/settings?tab=company-and-users')
-      }
+      onAction: handleTeamAction
     },
     {
       id: 'sso-configuration',
@@ -62,9 +76,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <SSOConfigurationIcon color={color} className="w-6 h-6" />,
       actionText: 'Add SSO IdP',
       completedText: 'Add SSO IdP',
-      onAction: async () => {
-        router.push('/settings?tab=sso-configuration')
-      }
+      onAction: handleSsoAction
     },
     {
       id: 'knowledge-base',
@@ -73,9 +85,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <DocumentIcon color={color} className="w-6 h-6" />,
       actionText: 'Knowledge Base',
       completedText: 'Knowledge Base',
-      onAction: async () => {
-        window.open('https://www.flamingo.run/knowledge-base', '_blank', 'noopener,noreferrer')
-      }
+      onAction: handleKnowledgeBaseAction
       // No checkComplete - auto-completes when clicked
     }
   ]
