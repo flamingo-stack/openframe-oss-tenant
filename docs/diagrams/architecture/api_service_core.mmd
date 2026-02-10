@@ -1,0 +1,14 @@
+flowchart TD
+    Gateway["Gateway Service Core"] --> Api["Api Service Core"]
+
+    Api --> RestControllers["REST Controllers"]
+    Api --> GraphQL["GraphQL DGS Layer"]
+
+    RestControllers --> Services["Domain Services"]
+    GraphQL --> DataFetchers["GraphQL Data Fetchers"]
+
+    DataFetchers --> DataLoaders["GraphQL Data Loaders"]
+    Services --> Repositories["Data Repositories"]
+
+    Repositories --> Mongo["MongoDB"]
+    Services --> Kafka["Kafka / Events"]

@@ -1,0 +1,17 @@
+flowchart TD
+    TenantFilter[Tenant Context Filter] --> SecurityChains[Security Filter Chains]
+
+    SecurityChains --> OAuthServer[OAuth2 Authorization Server]
+    SecurityChains --> LoginFlow[Form Login and SSO Login]
+
+    OAuthServer --> Jwt[JWT Encoder and Decoder]
+    Jwt --> TenantKeys[Tenant Key Service]
+
+    OAuthServer --> AuthzService[Authorization Service]
+    AuthzService --> AuthzRepo[(Mongo OAuth Authorizations)]
+
+    LoginFlow --> UserSvc[User Service]
+    LoginFlow --> SsoFlows[SSO Flow Handlers]
+
+    SsoFlows --> TenantReg[Tenant Registration]
+    SsoFlows --> InviteReg[Invitation Registration]

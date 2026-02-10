@@ -1,0 +1,19 @@
+flowchart TD
+    Agent["Machine Agent"] -->|"register"| AgentController["Agent Controller"]
+    Agent -->|"oauth token"| AgentAuthController["Agent Auth Controller"]
+
+    Agent -->|"heartbeat"| NATS["NATS"]
+    Agent -->|"tool connection"| NATS
+    Agent -->|"installed agent"| NATS
+
+    NATS --> HeartbeatListener["Machine Heartbeat Listener"]
+    NATS --> ToolConnectionListener["Tool Connection Listener"]
+    NATS --> InstalledAgentListener["Installed Agent Listener"]
+
+    HeartbeatListener --> MachineStatusService["Machine Status Service"]
+    ToolConnectionListener --> ToolConnectionService["Tool Connection Service"]
+    InstalledAgentListener --> InstalledAgentService["Installed Agent Service"]
+
+    MachineStatusService --> DataStore["Mongo Data Persistence"]
+    ToolConnectionService --> DataStore
+    InstalledAgentService --> DataStore

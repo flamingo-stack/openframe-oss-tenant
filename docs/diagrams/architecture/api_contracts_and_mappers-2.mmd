@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Client Request"] --> FilterOptions["Filter Options DTOs"]
+    FilterOptions --> Query["Query Execution"]
+    Query --> Filters["Filter Facets DTOs"]
+    Filters --> Response["API Response"]

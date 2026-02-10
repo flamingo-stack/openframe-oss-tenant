@@ -1,0 +1,7 @@
+flowchart LR
+    Frontend["Frontend Application"] -->|"/oauth/login"| BFF["Security Core And Oauth Bff"]
+    BFF -->|"Authorize Redirect"| Authz["Authorization Server"]
+    Authz -->|"Authorization Code"| BFF
+    BFF -->|"JWT Tokens"| Frontend
+
+    BFF -->|"JWT Decode / Verify"| JwtCore["JWT Security Core"]

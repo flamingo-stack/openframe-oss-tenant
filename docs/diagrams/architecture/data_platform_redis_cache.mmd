@@ -1,0 +1,16 @@
+flowchart TD
+    ServiceCore["Service Core Modules"] --> CacheAbstraction["Spring Cache Abstraction"]
+    ServiceCore --> DirectRedis["Direct Redis Access"]
+
+    CacheAbstraction --> CacheManager["Redis Cache Manager"]
+    CacheManager --> Redis["Redis Server"]
+
+    DirectRedis --> RedisTemplate["RedisTemplate"]
+    DirectRedis --> ReactiveRedisTemplate["Reactive Redis Template"]
+
+    RedisTemplate --> Redis
+    ReactiveRedisTemplate --> Redis
+
+    CacheManager --> KeyBuilder["Tenant-Aware Key Builder"]
+    RedisTemplate --> KeyBuilder
+    ReactiveRedisTemplate --> KeyBuilder

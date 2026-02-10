@@ -1,0 +1,4 @@
+flowchart LR
+    Stream["Streaming Segments"] --> Accumulator["Segment Accumulator"]
+    Accumulator --> Message["Rendered Message"]
+    Message --> UI

@@ -1,0 +1,7 @@
+flowchart LR
+    Client["API Clients"] --> ApiLayer["API Service Core"]
+    ApiLayer --> Contracts["Api Contracts And Mappers"]
+    Contracts --> Domain["Domain Models"]
+    Domain --> Persistence["Data Persistence"]
+
+    ExternalApi["External API Service"] --> Contracts

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Operator
+    participant Service as "Service Entrypoint"
+    participant Spring as "Spring Boot"
+    participant Modules as "Core Modules"
+
+    Operator->>Service: Start service
+    Service->>Spring: Initialize application context
+    Spring->>Modules: Component scan and wiring
+    Modules->>Spring: Beans initialized
+    Spring->>Service: Application ready

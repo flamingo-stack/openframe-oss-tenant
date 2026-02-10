@@ -1,0 +1,4 @@
+flowchart LR
+    Request[Incoming Request] --> PathCheck[Path and Query Inspection]
+    PathCheck --> SessionCheck[Session Lookup]
+    SessionCheck --> TenantContext[Tenant Context]

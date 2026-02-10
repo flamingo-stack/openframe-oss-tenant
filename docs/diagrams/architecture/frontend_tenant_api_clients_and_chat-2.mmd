@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant UI
+    participant ApiClient
+    participant Backend
+
+    UI->>ApiClient: request()
+    ApiClient->>Backend: HTTP request
+    Backend-->>ApiClient: 401 Unauthorized
+    ApiClient->>Backend: Refresh token
+    Backend-->>ApiClient: New token
+    ApiClient->>Backend: Retry request
+    Backend-->>ApiClient: 200 OK
+    ApiClient-->>UI: Response

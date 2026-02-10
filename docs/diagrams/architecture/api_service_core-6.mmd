@@ -1,0 +1,4 @@
+flowchart TD
+    CoreService["Core Service"] --> Processor["Processor Interface"]
+    Processor --> DefaultImpl["Default Processor"]
+    Processor --> CustomImpl["Tenant Override"]

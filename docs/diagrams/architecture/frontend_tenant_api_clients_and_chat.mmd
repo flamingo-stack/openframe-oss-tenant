@@ -1,0 +1,15 @@
+flowchart TD
+    UI["Frontend UI Components"] --> ApiClient["Api Client"]
+    UI --> AuthClient["Auth Api Client"]
+    UI --> FleetClient["Fleet Api Client"]
+    UI --> TacticalClient["Tactical Api Client"]
+    UI --> MingoStore["Mingo Messages Store"]
+    UI --> DialogStore["Dialog Details Store"]
+
+    ApiClient --> Gateway["Gateway Service"]
+    AuthClient --> Authz["Authorization Server"]
+    FleetClient --> Tools["Integrated Tools"]
+    TacticalClient --> Tools
+
+    MingoStore --> ChatApi["Chat API"]
+    DialogStore --> ChatApi

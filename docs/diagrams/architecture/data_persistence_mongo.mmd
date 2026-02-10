@@ -1,0 +1,15 @@
+flowchart TD
+    Services["Application Services"] --> Repositories["Mongo Repositories"]
+    Repositories --> MongoTemplate["MongoTemplate"]
+    MongoTemplate --> MongoDB[("MongoDB")]
+
+    subgraph Documents["Domain Documents"]
+        UserDoc["User / AuthUser"]
+        OrgDoc["Organization"]
+        DeviceDoc["Device / MachineTag"]
+        EventDoc["CoreEvent"]
+        OAuthDoc["OAuthToken / RegisteredClient"]
+        ToolDoc["Integrated Tool / Tag"]
+    end
+
+    Repositories --> Documents

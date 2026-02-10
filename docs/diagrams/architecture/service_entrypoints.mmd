@@ -1,0 +1,21 @@
+flowchart TD
+    User["User or Client"] --> Gateway["Gateway Service"]
+
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> Authz["Authorization Server"]
+
+    Api --> DataMongo["Mongo Data Layer"]
+    Api --> Kafka["Kafka Platform"]
+
+    ExternalApi --> Api
+
+    ClientSvc["Client Service"] --> Gateway
+
+    ManagementSvc["Management Service"] --> DataMongo
+    ManagementSvc --> Kafka
+
+    StreamSvc["Stream Processing Service"] --> Kafka
+    StreamSvc --> DataMongo
+
+    ConfigSvc["Config Service"] --> All["All Services"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Internal Client"] --> OrgController["Organization Controller"]
+    OrgController --> OrgService["Organization Command Service"]
+    OrgService --> Mapper["Organization Mapper"]
+    OrgService --> Repository["Organization Repository"]

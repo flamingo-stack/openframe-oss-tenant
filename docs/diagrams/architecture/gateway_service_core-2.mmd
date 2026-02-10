@@ -1,0 +1,6 @@
+flowchart LR
+    WSClient["WebSocket Client"] --> GatewayWS["WebSocket Gateway"]
+
+    GatewayWS -->|"/ws/tools/agent/{toolId}"| AgentProxy["Tool Agent WebSocket"]
+    GatewayWS -->|"/ws/tools/{toolId}"| ApiProxy["Tool API WebSocket"]
+    GatewayWS -->|"/ws/nats"| NatsWS["NATS Server"]

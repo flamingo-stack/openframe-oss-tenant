@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "Security Core And Oauth Bff"
+    participant Authz as "Authorization Server"
+
+    Browser->>BFF: GET /oauth/login
+    BFF->>BFF: Generate state and PKCE challenge
+    BFF->>Browser: 302 Redirect to authorize endpoint
+    Browser->>Authz: Authorize request
+    Authz->>Browser: Redirect with code and state
+    Browser->>BFF: GET /oauth/callback
+    BFF->>Authz: Token exchange
+    Authz->>BFF: Access and refresh tokens
+    BFF->>Browser: Set auth cookies and redirect

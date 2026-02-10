@@ -1,0 +1,25 @@
+flowchart TD
+    User["User / Browser"] --> Gateway["Gateway Service Core"]
+    Agent["Machine Agent"] --> Gateway
+
+    Gateway --> Authz["Authorization Server Core"]
+    Gateway --> Api["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> ClientSvc["Client Service Core"]
+
+    Api --> Mongo["Mongo Data Persistence"]
+    Api --> Redis["Redis Cache"]
+
+    ExternalApi --> Api
+
+    ClientSvc --> NATS["NATS / JetStream"]
+    ClientSvc --> Mongo
+
+    Kafka["Kafka Platform"] --> Stream["Stream Processing Service Core"]
+    Stream --> Mongo
+    Stream --> Kafka
+
+    Management["Management Service Core"] --> Mongo
+    Management --> Kafka
+
+    Frontend["Tenant Frontend"] --> Gateway

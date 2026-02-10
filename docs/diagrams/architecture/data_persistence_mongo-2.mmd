@@ -1,0 +1,8 @@
+flowchart LR
+    Client["Client Request"] --> Filter["Query Filter"]
+    Filter --> Query["Mongo Query"]
+    Query --> CursorCheck["Cursor Present?"]
+    CursorCheck -->|"Yes"| ApplyCursor["Apply ObjectId Criteria"]
+    CursorCheck -->|"No"| Execute["Execute Query"]
+    ApplyCursor --> Execute
+    Execute --> Results["Paginated Results"]

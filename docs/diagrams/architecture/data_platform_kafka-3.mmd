@@ -1,0 +1,5 @@
+flowchart TD
+    CDCEvent["Debezium Event"] --> Payload["Payload"]
+    Payload --> Before["Before State"]
+    Payload --> After["After State"]
+    Payload --> Meta["Source Metadata"]

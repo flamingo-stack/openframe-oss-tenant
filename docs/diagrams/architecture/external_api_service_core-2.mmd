@@ -1,0 +1,7 @@
+flowchart LR
+    Req["GET /devices"] --> Ctrl["Device Controller"]
+    Ctrl --> FilterSvc["Device Filter Service"]
+    Ctrl --> DeviceSvc["Device Service"]
+    DeviceSvc --> Repo["Device Repository"]
+    Ctrl --> Mapper["Device Mapper"]
+    Mapper --> Resp["Devices Response"]

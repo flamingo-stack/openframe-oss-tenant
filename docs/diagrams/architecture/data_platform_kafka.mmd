@@ -1,0 +1,14 @@
+flowchart TD
+    Producers["Producers<br/>Client and Management Services"] -->|"publish events"| Kafka["Kafka Cluster"]
+    CDC["Debezium CDC"] -->|"database change events"| Kafka
+    Kafka -->|"consume streams"| Stream["Stream Processing Service"]
+
+    subgraph data_platform_kafka["Data Platform Kafka"]
+        Config["Kafka Configuration"]
+        Topics["Topic Auto Provisioning"]
+        Models["Shared Message Models"]
+        Recovery["Producer Recovery Handler"]
+    end
+
+    Config --> Kafka
+    Topics --> Kafka

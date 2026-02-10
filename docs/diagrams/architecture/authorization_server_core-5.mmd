@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant Authz as Authorization Server Core
+    participant IdP as SSO Provider
+
+    User->>Authz: Accept Invitation
+    Authz->>IdP: Redirect to SSO
+    IdP->>Authz: Authenticate User
+    Authz->>Authz: Create User from Invitation
+    Authz->>User: Redirect to Tenant

@@ -1,0 +1,8 @@
+flowchart TD
+    Jwt["Incoming JWT"] --> Issuer["Extract Issuer"]
+    Issuer --> Cache["Issuer Manager Cache"]
+    Cache -->|"Hit"| AuthManager["Reactive Auth Manager"]
+    Cache -->|"Miss"| ResolveIssuer["Resolve Issuer URLs"]
+    ResolveIssuer --> BuildDecoder["Build JWT Decoder"]
+    BuildDecoder --> AuthManager
+    AuthManager --> AuthResult["Authentication Result"]

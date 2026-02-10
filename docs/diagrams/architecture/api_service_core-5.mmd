@@ -1,0 +1,5 @@
+flowchart LR
+    Machine["Machine"] --> DataFetcher["Device Data Fetcher"]
+    DataFetcher --> DataLoader["DataLoader"]
+    DataLoader --> Service["Domain Service"]
+    Service --> Repository["Repository"]

@@ -1,0 +1,9 @@
+flowchart LR
+    A["Activity Topic"] --> K1["Activity Stream"]
+    B["Host Activity Topic"] --> K2["Host Activity Stream"]
+
+    K1 --> J["Windowed Join"]
+    K2 --> J
+
+    J --> H["Header Enrichment"]
+    H --> O["Enriched Activity Topic"]

@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> Gateway["Gateway"]
+    Gateway -->|"JWT + Headers"| ApiService["Api Service Core"]
+    ApiService -->|"Resolve Issuer"| JwtCache["JWT Provider Cache"]
+    ApiService --> Controllers["Controllers / Data Fetchers"]

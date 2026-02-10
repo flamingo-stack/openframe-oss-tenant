@@ -1,0 +1,19 @@
+flowchart TD
+    Client["Browser / Agent / External Client"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> Security["Security Filters"]
+    Security --> Routing["Gateway Routing"]
+
+    Routing --> ApiService["API Service Core"]
+    Routing --> ExternalApi["External API Service Core"]
+    Routing --> ClientService["Client Service Core"]
+    Routing --> ToolApi["Integrated Tool APIs"]
+    Routing --> ToolAgent["Tool Agent Services"]
+    Routing --> Nats["NATS WebSocket"]
+
+    subgraph security_layer["Security Layer"]
+        Security --> JwtAuth["JWT Authentication"]
+        Security --> ApiKeyAuth["API Key Authentication"]
+        Security --> RateLimit["Rate Limiting"]
+        Security --> Cors["CORS and Header Filters"]
+    end

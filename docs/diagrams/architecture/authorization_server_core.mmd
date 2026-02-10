@@ -1,0 +1,6 @@
+flowchart LR
+    Browser[User Browser] --> Gateway[Gateway Service]
+    Gateway --> Authz[Authorization Server Core]
+    Authz --> Mongo[(MongoDB)]
+    Authz --> IdP[External IdP<br/>Google or Microsoft]
+    Gateway --> Api[API Services]

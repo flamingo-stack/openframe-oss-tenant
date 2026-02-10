@@ -1,0 +1,5 @@
+flowchart TD
+    TokenRequest[Token Request] --> ResolveTenant[Tenant Context]
+    ResolveTenant --> KeyService[Tenant Key Service]
+    KeyService --> MongoKeys[(Tenant Keys)]
+    KeyService --> JwtSign[JWT Signing]
