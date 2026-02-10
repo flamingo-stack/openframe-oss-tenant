@@ -30,6 +30,11 @@ export const DEFAULT_VISIBLE_STATUSES = [
   DEVICE_STATUS.PENDING,
 ] as const satisfies string[]
 
+export const DEFAULT_DASHBOARD_STATUSES = [
+  DEVICE_STATUS.ONLINE,
+  DEVICE_STATUS.OFFLINE,
+] as const satisfies string[]
+
 export type DefaultVisibleStatus = typeof DEFAULT_VISIBLE_STATUSES[number]
 
 /**

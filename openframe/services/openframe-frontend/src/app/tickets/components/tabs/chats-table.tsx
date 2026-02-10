@@ -9,56 +9,61 @@ import { useCursorPaginationState, useTablePagination } from "@flamingo-stack/op
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo } from "react"
 import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup'
-import { useArchiveResolved } from '../../hooks/use-archive-resolved'
-import { useDialogsStore } from '../../stores/dialogs-store'
+import { useArchiveResolvedMutation } from '../../hooks/use-archive-resolved-mutation'
+import { useDialogsQuery } from '../../hooks/use-dialogs-query'
 import { ClientDialogOwner, Dialog } from '../../types/dialog.types'
 import { getDialogTableColumns } from '../dialog-table-columns'
 
 interface ChatsTableProps {
   isArchived: boolean
+  statusFilters?: string[]
+  onStatusFilterChange?: (status: string[]) => void
 }
 
-export function ChatsTable({ isArchived }: ChatsTableProps) {
+export function ChatsTable({ 
+  isArchived, 
+  statusFilters, 
+  onStatusFilterChange 
+}: ChatsTableProps) {
   const router = useRouter()
 
   // Lazy organization lookup - doesn't block initial render
   const { lookup: organizationLookup, fetchOrganizationNames } = useOrganizationLookup()
+  const archiveResolvedMutation = useArchiveResolvedMutation()
 
-  // Get the appropriate data from store based on isArchived
   const {
-    currentDialogs,
-    archivedDialogs,
-    currentPageInfo,
-    archivedPageInfo,
-    currentHasLoadedBeyondFirst,
-    archivedHasLoadedBeyondFirst,
-    isLoadingCurrent,
-    isLoadingArchived,
-    currentError,
-    archivedError,
-    currentStatusFilters,
-    archivedStatusFilters,
-    fetchDialogs,
-    goToNextPage,
-    goToFirstPage
-  } = useDialogsStore()
+    searchInput,
+    setSearchInput,
+    hasLoadedBeyondFirst,
+    handleNextPage: handleNextPageHook,
+    handleResetToFirstPage: handleResetToFirstPageHook,
+    params: paginationParams
+  } = useCursorPaginationState({
+    onInitialLoad: (search, cursor) => {},
+    onSearchChange: (search) => {}
+  })
 
-  const currentFilters = isArchived ? archivedStatusFilters : currentStatusFilters
+  const {
+    dialogs,
+    pageInfo,
+    isLoading,
+    error,
+    hasNextPage,
+    endCursor,
+    startCursor
+  } = useDialogsQuery({
+    archived: isArchived,
+    search: paginationParams.search,
+    statusFilters,
+    cursor: paginationParams.cursor
+  })
 
-  // Select the right data based on mode
-  const dialogs = isArchived ? archivedDialogs : currentDialogs
-  const pageInfo = isArchived ? archivedPageInfo : currentPageInfo
-  const storeHasLoadedBeyondFirst = isArchived ? archivedHasLoadedBeyondFirst : currentHasLoadedBeyondFirst
-  const isLoading = isArchived ? isLoadingArchived : isLoadingCurrent
-  const error = isArchived ? archivedError : currentError
-
-  // Lazily fetch organization names after dialogs are loaded (non-blocking)
   useEffect(() => {
     if (dialogs.length === 0) return
 
     // Extract unique organization IDs from loaded dialogs
     const organizationIds = dialogs
-      .map(dialog => {
+      .map((dialog: Dialog) => {
         const isClientOwner = 'machine' in (dialog.owner || {})
         if (isClientOwner) {
           const clientOwner = dialog.owner as ClientDialogOwner
@@ -66,31 +71,15 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
         }
         return undefined
       })
-      .filter((id): id is string => !!id)
+      .filter((id: string | undefined): id is string => !!id)
 
     // Dedupe
-    const uniqueIds = [...new Set(organizationIds)]
+    const uniqueIds = Array.from(new Set(organizationIds))
 
     if (uniqueIds.length > 0) {
-      fetchOrganizationNames(uniqueIds)
+      fetchOrganizationNames(uniqueIds as string[])
     }
   }, [dialogs, fetchOrganizationNames])
-
-  // Unified cursor pagination state management
-  const {
-    searchInput,
-    setSearchInput,
-    hasLoadedBeyondFirst,
-    handleNextPage,
-    handleResetToFirstPage,
-    params
-  } = useCursorPaginationState({
-    onInitialLoad: (search, cursor) => fetchDialogs(isArchived, search, true, cursor),
-    onSearchChange: (search) => fetchDialogs(isArchived, search)
-  })
-
-  // Archive resolved only available for current chats
-  const { archiveResolvedDialogs, isArchiving } = useArchiveResolved()
 
   const columns = useMemo(() => getDialogTableColumns({ organizationLookup, isArchived }), [organizationLookup, isArchived])
 
@@ -99,45 +88,44 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
   }, [router])
 
   const handleArchiveResolved = useCallback(async () => {
-    const success = await archiveResolvedDialogs(dialogs)
-    if (success) {
-      await fetchDialogs(isArchived, params.search || '', true)
-    }
-  }, [archiveResolvedDialogs, dialogs, fetchDialogs, isArchived, params])
+    await archiveResolvedMutation.mutateAsync(dialogs)
+  }, [archiveResolvedMutation, dialogs])
 
-  const handleFilterChange = useCallback(async (columnFilters: Record<string, any[]>) => {
+  const handleFilterChange = useCallback((columnFilters: Record<string, string[]>) => {
     if (isArchived) return
     
-    const statusFilters = columnFilters.status || []
-    await fetchDialogs(false, params.search || '', true, null, statusFilters)
-  }, [fetchDialogs, isArchived, params])
+    const newStatusFilters = columnFilters.status || []
+    
+    if (onStatusFilterChange) {
+      onStatusFilterChange(newStatusFilters)
+    }
+  }, [isArchived, onStatusFilterChange])
 
   const hasResolvedDialogs = useMemo(() => {
-    return !isArchived && dialogs.some(d => d.status === 'RESOLVED')
+    return !isArchived && dialogs.some((d: Dialog) => d.status === 'RESOLVED')
   }, [dialogs, isArchived])
 
   const onNext = useCallback(() => {
-    if (pageInfo?.endCursor) {
-      handleNextPage(pageInfo.endCursor, () => goToNextPage(isArchived))
+    if (hasNextPage && endCursor) {
+      handleNextPageHook(endCursor, () => Promise.resolve())
     }
-  }, [pageInfo, handleNextPage, goToNextPage, isArchived])
+  }, [hasNextPage, endCursor, handleNextPageHook])
 
   const onReset = useCallback(() => {
-    handleResetToFirstPage(() => goToFirstPage(isArchived))
-  }, [handleResetToFirstPage, goToFirstPage, isArchived])
+    handleResetToFirstPageHook(() => Promise.resolve())
+  }, [handleResetToFirstPageHook])
 
-  // Use store's hasLoadedBeyondFirst OR hook's (both track the same thing, store is source of truth for dialogs)
   const cursorPagination = useTablePagination(
     pageInfo ? {
       type: 'server',
-      hasNextPage: pageInfo.hasNextPage,
-      hasLoadedBeyondFirst: storeHasLoadedBeyondFirst || hasLoadedBeyondFirst,
-      startCursor: pageInfo.startCursor,
-      endCursor: pageInfo.endCursor,
+      hasNextPage: hasNextPage,
+      hasLoadedBeyondFirst: hasLoadedBeyondFirst,
+      startCursor: startCursor,
+      endCursor: endCursor,
       itemCount: dialogs.length,
       itemName: 'chats',
-      onNext,
-      onReset,
+      onNext: onNext,
+      onReset: onReset,
       showInfo: true
     } : null
   )
@@ -152,9 +140,9 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
       label: 'Archive Resolved',
       icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
       onClick: handleArchiveResolved,
-      disabled: isArchiving || isLoading
+      disabled: archiveResolvedMutation.isPending || isLoading
     }
-  ], [handleArchiveResolved, isArchiving, isLoading])
+  ], [handleArchiveResolved, archiveResolvedMutation.isPending, isLoading])
 
   const filterGroups = columns.filter(column => column.filterable).map(column => ({
     id: column.key,
@@ -175,7 +163,7 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
       onMobileFilterChange={handleFilterChange}
       mobileFilterGroups={filterGroups}
       // TODO: This is a hack to get the filters to work, replace in future
-      currentMobileFilters={{ status: currentFilters || [] }}
+      currentMobileFilters={{ status: statusFilters || [] }}
     >
       <Table
         data={dialogs}
@@ -186,7 +174,7 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
         emptyMessage={emptyMessage}
         onRowClick={handleRowClick}
         // TODO: This is a hack to get the filters to work, replace in future
-        filters={{ status: currentFilters || [] }}
+        filters={{ status: statusFilters || [] }}
         onFilterChange={handleFilterChange}
         showFilters={!isArchived}
         rowClassName="mb-1"
@@ -197,10 +185,10 @@ export function ChatsTable({ isArchived }: ChatsTableProps) {
 }
 
 // Wrapper components for tab navigation
-export function CurrentChats() {
-  return <ChatsTable isArchived={false} />
+export function CurrentChats(props: Omit<ChatsTableProps, 'isArchived'>) {
+  return <ChatsTable isArchived={false} {...props} />
 }
 
-export function ArchivedChats() {
-  return <ChatsTable isArchived={true} />
+export function ArchivedChats(props: Omit<ChatsTableProps, 'isArchived'>) {
+  return <ChatsTable isArchived={true} {...props} />
 }

@@ -28,20 +28,27 @@ export const getTabComponent = (tabId: string): React.ComponentType | null => {
   return tab?.component || null
 }
 
-export function TicketsTabNavigation() {
+interface TicketsTabNavigationProps {
+  activeTab?: string
+  onTabChange?: (tab: string) => void
+}
+
+export function TicketsTabNavigation({ activeTab, onTabChange }: TicketsTabNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
 
   // Clear all tab-specific params when switching tabs (clean slate for each tab)
-  const handleTabChange = useCallback((tabId: string) => {
+  const defaultHandleTabChange = useCallback((tabId: string) => {
     // Navigate to clean URL with only the tab param
     router.replace(`${pathname}?tab=${tabId}`)
   }, [router, pathname])
 
+  const handleTabChange = onTabChange || defaultHandleTabChange
+
   return (
     <TabNavigation
-      urlSync={true}
-      defaultTab="current"
+      urlSync={false}
+      activeTab={activeTab || "current"}
       tabs={TICKETS_TABS}
       onTabChange={handleTabChange}
     />
