@@ -43,12 +43,6 @@ const OrganizationsSkeleton = function OrganizationsSkeleton() {
 
 /**
  * Organizations Overview Section
- * 
- * Performance optimizations:
- * - React Query with single optimized query (replaces 20+ API calls cascade)
- * - useCallback for stable function references
- * - Memoized image URL processing
- * - Optimized skeleton loading component
  */
 export function OrganizationsOverviewSection() {
   const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(10)
@@ -58,7 +52,6 @@ export function OrganizationsOverviewSection() {
     router.push(`/devices?organizationIds=${organizationId}`)
   }, [router])
 
-  // Memoized organization row rendering
   const organizationRows = useMemo(() => {
     if (loading && rows.length === 0) {
       return <OrganizationsSkeleton />
