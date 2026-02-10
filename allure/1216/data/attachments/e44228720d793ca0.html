@@ -1,0 +1,113 @@
+<div>PUT to http://localhost:8100/api/organizations/698b2f82ef161429004303a9</div>
+
+<h4>Body</h4>
+<div>
+    <pre class="preformated-text">
+{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lela Runolfsson&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(912) 850-2233&quot;,
+                &quot;email&quot;: &quot;glenn.jaskolski@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;426 Pacocha Club&quot;,
+            &quot;street2&quot;: &quot;Suite 267&quot;,
+            &quot;city&quot;: &quot;Lake Kiaraport&quot;,
+            &quot;state&quot;: &quot;Alabama&quot;,
+            &quot;postalCode&quot;: &quot;77420&quot;,
+            &quot;country&quot;: &quot;Macedonia&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;246 Benjamin Unions&quot;,
+            &quot;street2&quot;: &quot;Suite 538&quot;,
+            &quot;city&quot;: &quot;West Damonborough&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;42399&quot;,
+            &quot;country&quot;: &quot;Libyan Arab Jamahiriya&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        10
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        10
+    ]
+}    </pre>
+</div>
+
+<h4>Headers</h4>
+<div>
+        <div>Accept: */*</div>
+        <div>Content-Type: application/json</div>
+</div>
+
+
+<h4>Cookies</h4>
+<div>
+        <div>access_token: eyJraWQiOiJraWQtZDhiMmM5OWUtOWM2Yy00OWQ2LTg2MGYtNjYyZDMwMjk2OGViIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzYzdmZGU0Ni0yNGU4LTRjYTktYTVmMi0wM2M3NzQ0MWExYWEiLCJzdWIiOiJhdXRvQGZsYW1pbmdvLmN4IiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzA3MjkzNDIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzNjN2ZkZTQ2LTI0ZTgtNGNhOS1hNWYyLTAzYzc3NDQxYTFhYSIsImV4cCI6MTc3MDczMDI0MiwiaWF0IjoxNzcwNzI5MzQyLCJ1c2VySWQiOiJlZmQ0N2JkMS00Y2QxLTQ1NjQtOTA2OC1hZjlmZWY3NzdkNjQiLCJqdGkiOiJmNTNhZTdkYy01OWE2LTQ4N2UtOWM0Yy1iZGE0MWRjMjU4YzIifQ.MJ_JtO38BhFTzY5vpQVLgIBeW1M5tPHTAedGnXzWIaeWHE-xFaxDdG1ab5G8T9J2QeQeOhbq0gdKyGbRxP2Wie2LdL1UuFgpAD_GjRIsvHCp0-rVTbOg0va6UUfF9fLsK760azythhfSg-djHnsbdLI6WlcZUJ-rZeKFM9h94-CPmSk8hndXYzIMa69BguiwFuIcIg8VKuFK4yaNTQOk3_bNL0KDZDdGB81wXa2EiuvQda3j-CHUUhiJxA10PuulWT5QqrbYmEmWJDSiRTqy1oQf-t5Ig9KbM9tLcuP-hTG3jYvZkCVTdXcdxWozEN-34EbN5jGW8RDp8zeKBwhy9g</div>
+        <div>refresh_token: 9wEpqWSLhgzENbpKWy1FHcgCn4od9mkyJU_12mKpo3jZ3gIaGf42qjvRcczTuN01-v9XPseqaNNHUKkgGQhZhGdg_-8Bu-Z5wEnE9Bpz3ZZM9ixB4necJlUxxKyF26kZ</div>
+</div>
+
+<h4>Curl</h4>
+<div>
+curl -v -X PUT &#39;http://localhost:8100/api/organizations/698b2f82ef161429004303a9&#39; -H &#39;Accept: */*&#39; -H &#39;Content-Type: application/json&#39; -b &#39;access_token=eyJraWQiOiJraWQtZDhiMmM5OWUtOWM2Yy00OWQ2LTg2MGYtNjYyZDMwMjk2OGViIiwiYWxnIjoiUlMyNTYifQ.eyJ0ZW5hbnRfaWQiOiIzYzdmZGU0Ni0yNGU4LTRjYTktYTVmMi0wM2M3NzQ0MWExYWEiLCJzdWIiOiJhdXRvQGZsYW1pbmdvLmN4IiwiYXVkIjoib3BlbmZyYW1lLWdhdGV3YXkiLCJuYmYiOjE3NzA3MjkzNDIsInJvbGVzIjpbIk9XTkVSIiwiQURNSU4iXSwiaXNzIjoiaHR0cDovL29wZW5mcmFtZS1hdXRob3JpemF0aW9uLXNlcnZlci5taWNyb3NlcnZpY2VzLnN2Yy5jbHVzdGVyLmxvY2FsOjkwMDUvc2FzLzNjN2ZkZTQ2LTI0ZTgtNGNhOS1hNWYyLTAzYzc3NDQxYTFhYSIsImV4cCI6MTc3MDczMDI0MiwiaWF0IjoxNzcwNzI5MzQyLCJ1c2VySWQiOiJlZmQ0N2JkMS00Y2QxLTQ1NjQtOTA2OC1hZjlmZWY3NzdkNjQiLCJqdGkiOiJmNTNhZTdkYy01OWE2LTQ4N2UtOWM0Yy1iZGE0MWRjMjU4YzIifQ.MJ_JtO38BhFTzY5vpQVLgIBeW1M5tPHTAedGnXzWIaeWHE-xFaxDdG1ab5G8T9J2QeQeOhbq0gdKyGbRxP2Wie2LdL1UuFgpAD_GjRIsvHCp0-rVTbOg0va6UUfF9fLsK760azythhfSg-djHnsbdLI6WlcZUJ-rZeKFM9h94-CPmSk8hndXYzIMa69BguiwFuIcIg8VKuFK4yaNTQOk3_bNL0KDZDdGB81wXa2EiuvQda3j-CHUUhiJxA10PuulWT5QqrbYmEmWJDSiRTqy1oQf-t5Ig9KbM9tLcuP-hTG3jYvZkCVTdXcdxWozEN-34EbN5jGW8RDp8zeKBwhy9g&#39; -b &#39;refresh_token=9wEpqWSLhgzENbpKWy1FHcgCn4od9mkyJU_12mKpo3jZ3gIaGf42qjvRcczTuN01-v9XPseqaNNHUKkgGQhZhGdg_-8Bu-Z5wEnE9Bpz3ZZM9ixB4necJlUxxKyF26kZ&#39; -d &#39;{
+    &quot;name&quot;: &quot;Tech Solutions Co&quot;,
+    &quot;category&quot;: &quot;Software Solutions&quot;,
+    &quot;numberOfEmployees&quot;: 22,
+    &quot;websiteUrl&quot;: &quot;https://tech-solutions.com&quot;,
+    &quot;notes&quot;: &quot;Premier client with semi-annual contract&quot;,
+    &quot;contactInformation&quot;: {
+        &quot;contacts&quot;: [
+            {
+                &quot;contactName&quot;: &quot;Lela Runolfsson&quot;,
+                &quot;title&quot;: &quot;CEO&quot;,
+                &quot;phone&quot;: &quot;(912) 850-2233&quot;,
+                &quot;email&quot;: &quot;glenn.jaskolski@hotmail.com&quot;
+            }
+        ],
+        &quot;physicalAddress&quot;: {
+            &quot;street1&quot;: &quot;426 Pacocha Club&quot;,
+            &quot;street2&quot;: &quot;Suite 267&quot;,
+            &quot;city&quot;: &quot;Lake Kiaraport&quot;,
+            &quot;state&quot;: &quot;Alabama&quot;,
+            &quot;postalCode&quot;: &quot;77420&quot;,
+            &quot;country&quot;: &quot;Macedonia&quot;
+        },
+        &quot;mailingAddress&quot;: {
+            &quot;street1&quot;: &quot;246 Benjamin Unions&quot;,
+            &quot;street2&quot;: &quot;Suite 538&quot;,
+            &quot;city&quot;: &quot;West Damonborough&quot;,
+            &quot;state&quot;: &quot;New Mexico&quot;,
+            &quot;postalCode&quot;: &quot;42399&quot;,
+            &quot;country&quot;: &quot;Libyan Arab Jamahiriya&quot;
+        },
+        &quot;mailingAddressSameAsPhysical&quot;: false
+    },
+    &quot;monthlyRevenue&quot;: &quot;55000.00&quot;,
+    &quot;contractStartDate&quot;: [
+        2026,
+        3,
+        10
+    ],
+    &quot;contractEndDate&quot;: [
+        2026,
+        9,
+        10
+    ]
+}&#39;
+</div>
