@@ -30,7 +30,7 @@ interface UseMingoChat {
   
   // Actions
   createDialog: () => Promise<string | null>
-  sendMessage: (content: string) => Promise<boolean>
+  sendMessage: (content: string, targetDialogId?: string) => Promise<boolean>
   
   // Approval system
   approvals: MessageSegment[]
@@ -124,26 +124,6 @@ export function useMingoChat(
     updateStreamingMessageSegments(effectiveDialogId, segments)
   }, [dialogId, getStreamingMessage, updateStreamingMessageSegments])
   
-  // Add welcome message for empty dialogs
-  const addWelcomeMessage = useCallback(() => {
-    if (!dialogId) return
-    
-    const currentMessages = getMessages(dialogId)
-    
-    if (currentMessages.length === 0) {
-      const welcomeMessage: CoreMessage = {
-        id: `welcome-${dialogId}`,
-        role: 'assistant',
-        name: 'Mingo',
-        timestamp: new Date(),
-        content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
-        assistantType: 'mingo'
-      }
-      
-      addMessage(dialogId, welcomeMessage)
-    }
-  }, [dialogId, getMessages, addMessage])
-
   const addErrorMessage = useCallback((errorText: string, targetDialogId?: string) => {
     const effectiveDialogId = targetDialogId || dialogId
     if (!effectiveDialogId) return
@@ -168,12 +148,6 @@ export function useMingoChat(
     }
   }, [dialogId, getMessages, updateMessage, addMessage])
   
-  useEffect(() => {
-    if (dialogId) {
-      addWelcomeMessage()
-    }
-  }, [dialogId, messagesByDialog, addWelcomeMessage])
-
   const messages = useMemo((): ProcessedMessage[] => {
     if (!dialogId) return []
 
@@ -337,14 +311,6 @@ export function useMingoChat(
       setCreatingDialog(true)
       
       const result = await createDialogMutation.mutateAsync()
-      
-      toast({
-        title: "Chat Created",
-        description: "New chat session started successfully",
-        variant: "success",
-        duration: 3000
-      })
-      
       queryClient.invalidateQueries({ queryKey: ['mingo-dialogs'] })
       
       return result.id
@@ -356,14 +322,15 @@ export function useMingoChat(
     }
   }, [isCreatingDialog, setCreatingDialog, createDialogMutation, toast, queryClient])
   
-  const sendMessage = useCallback(async (content: string): Promise<boolean> => {
-    if (!dialogId || !content.trim()) return false
+  const sendMessage = useCallback(async (content: string, targetDialogId?: string): Promise<boolean> => {
+    const effectiveDialogId = targetDialogId || dialogId
+    if (!effectiveDialogId || !content.trim()) return false
     if (isTyping) return false
-    
+
     try {
-      setTyping(dialogId, true)
-      removeWelcomeMessages(dialogId)
-      
+      setTyping(effectiveDialogId, true)
+      removeWelcomeMessages(effectiveDialogId)
+
       const optimisticMessage: CoreMessage = {
         id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         role: 'user',
@@ -371,23 +338,23 @@ export function useMingoChat(
         name: 'You',
         timestamp: new Date()
       }
-      
-      addMessage(dialogId, optimisticMessage)
-      await sendMessageMutation.mutateAsync({ dialogId, content: content.trim() })
-      
+
+      addMessage(effectiveDialogId, optimisticMessage)
+      await sendMessageMutation.mutateAsync({ dialogId: effectiveDialogId, content: content.trim() })
+
       return true
     } catch (error) {
       console.error('[MingoChat] Failed to send message:', error)
-      
-      setTyping(dialogId, false)
-      
+
+      setTyping(effectiveDialogId, false)
+
       toast({
         title: "Send Failed",
         description: error instanceof Error ? error.message : 'Failed to send message',
         variant: "destructive",
         duration: 5000
       })
-      
+
       return false
     }
   }, [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast])

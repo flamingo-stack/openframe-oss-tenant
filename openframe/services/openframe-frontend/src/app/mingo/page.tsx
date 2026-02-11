@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AppLayout } from '../components/app-layout'
 import { 
@@ -28,11 +28,14 @@ export default function Mingo() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
+  const [isDraftChat, setIsDraftChat] = useState(false)
+
   const {
     activeDialogId,
     setActiveDialogId,
     resetUnread,
     incrementUnread,
+    addMessage,
   } = useMingoMessagesStore()
 
   const {
@@ -79,6 +82,30 @@ export default function Mingo() {
     subscribedDialogs
   } = useMingoRealtimeSubscription(activeDialogId)
 
+  const draftWelcomeMessages = useMemo(() => [{
+    id: 'welcome-draft',
+    role: 'assistant' as const,
+    name: 'Mingo',
+    content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
+    assistantType: 'mingo' as const,
+    timestamp: new Date(),
+  }], [])
+
+  const isAnyLoading = isLoadingDialog || isLoadingMessages || isSelectingDialog
+
+  const displayMessages = useMemo(() => {
+    // Draft mode: always show welcome message
+    if (isDraftChat) return draftWelcomeMessages
+
+    // Dialog finished loading but has no messages: show welcome
+    if (activeDialogId && processedMessages.length === 0 && !isAnyLoading) {
+      return draftWelcomeMessages
+    }
+
+    // Default: show actual messages (cached or freshly loaded)
+    return processedMessages
+  }, [isDraftChat, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages])
+
   const createDialogChunkProcessor = useCallback((targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
     if (targetDialogId !== activeDialogId) {
       incrementUnread(targetDialogId)
@@ -89,16 +116,20 @@ export default function Mingo() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && activeDialogId) {
-        const currentUrl = new URL(window.location.href)
-        currentUrl.searchParams.delete('dialogId')
-        router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+      if (event.key === 'Escape') {
+        if (isDraftChat) {
+          setIsDraftChat(false)
+        } else if (activeDialogId) {
+          const currentUrl = new URL(window.location.href)
+          currentUrl.searchParams.delete('dialogId')
+          router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeDialogId, router])
+  }, [activeDialogId, isDraftChat, router])
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
@@ -109,6 +140,8 @@ export default function Mingo() {
 
   const handleDialogSelect = useCallback(async (dialogId: string) => {
     if (dialogId === activeDialogId) return
+
+    setIsDraftChat(false)
 
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('dialogId', dialogId)
@@ -126,6 +159,7 @@ export default function Mingo() {
     
     if (urlDialogId !== activeDialogId) {
       if (urlDialogId) {
+        setIsDraftChat(false)
         setActiveDialogId(urlDialogId)
         resetUnread(urlDialogId)
         subscribeToDialog(urlDialogId)
@@ -136,22 +170,59 @@ export default function Mingo() {
     }
   }, [searchParams])
 
-  const handleNewChat = useCallback(async () => {
+  const handleNewChat = useCallback(() => {
     resetDialog()
-    const newDialogId = await createDialog()
-    if (newDialogId) {
-      handleDialogSelect(newDialogId)
-    }
-  }, [resetDialog, createDialog, handleDialogSelect])
+    setActiveDialogId(null)
+    setIsDraftChat(true)
+
+
+
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.delete('dialogId')
+    router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+  }, [resetDialog, setActiveDialogId, router])
 
   const handleSendMessage = useCallback(async (message: string) => {
-    if (!activeDialogId || !message.trim()) return
-    
+    if (!message.trim()) return
+
+    if (isDraftChat) {
+      const newDialogId = await createDialog()
+      if (!newDialogId) return
+
+      // Pre-seed welcome message BEFORE setting activeDialogId
+      // so processedMessages.length > 0 when queries trigger, preventing skeleton
+      addMessage(newDialogId, {
+        id: `welcome-${newDialogId}`,
+        role: 'assistant',
+        name: 'Mingo',
+        timestamp: new Date(),
+        content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
+        assistantType: 'mingo',
+      })
+
+      setIsDraftChat(false)
+      setActiveDialogId(newDialogId)
+      resetUnread(newDialogId)
+      subscribeToDialog(newDialogId)
+
+      const currentUrl = new URL(window.location.href)
+      currentUrl.searchParams.set('dialogId', newDialogId)
+      router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+
+      const success = await sendMessage(message.trim(), newDialogId)
+      if (!success) {
+        console.warn('[Mingo] Failed to send message')
+      }
+      return
+    }
+
+    if (!activeDialogId) return
+
     const success = await sendMessage(message.trim())
     if (!success) {
       console.warn('[Mingo] Failed to send message')
     }
-  }, [activeDialogId, sendMessage])
+  }, [isDraftChat, activeDialogId, createDialog, sendMessage, setActiveDialogId, resetUnread, subscribeToDialog, router, addMessage])
 
   if (!isSaasTenantMode()) {
     return null
@@ -201,19 +272,19 @@ export default function Mingo() {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
-              {activeDialogId ? (
+              {(activeDialogId || isDraftChat) ? (
                 <ChatMessageList
-                  messages={processedMessages}
-                  dialogId={activeDialogId}
-                  isTyping={isTyping}
-                  isLoading={isLoadingDialog || isLoadingMessages || isSelectingDialog}
+                  messages={displayMessages}
+                  dialogId={activeDialogId || 'draft'}
+                  isTyping={isDraftChat ? false : isTyping}
+                  isLoading={!isDraftChat && isAnyLoading && processedMessages.length === 0}
                   assistantType={assistantType}
-                  pendingApprovals={pendingApprovals}
+                  pendingApprovals={isDraftChat ? [] : pendingApprovals}
                   showAvatars={false}
                   autoScroll={true}
                 />
               ) : (
-                /* Welcome message when no dialog is selected */
+                /* Empty state when no dialog is selected */
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                   <div className="text-center space-y-6">
                     <div className="space-y-4">
@@ -232,16 +303,15 @@ export default function Mingo() {
               )}
             </div>
 
-            {/* Message Input - Only show when dialog is selected */}
-            {activeDialogId && (
+            {/* Message Input - Show when dialog is selected or in draft mode */}
+            {(activeDialogId || isDraftChat) && (
               <div className="flex-shrink-0 px-6 pb-4">
                 <ChatInput
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
-                  sending={isTyping}
-                  disabled={isCreatingDialog || isSelectingDialog}
-                  autoFocus={false}
+                  sending={isTyping || isCreatingDialog || isSelectingDialog}
+                  autoFocus={isDraftChat}
                   className="bg-ods-card rounded-lg"
                 />
               </div>

@@ -93,7 +93,6 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
                 imageUrl={organization?.imageUrl}
                 organizationName={organization?.name || 'Organization'}
                 size="lg"
-                refreshKey={organization?.id}
               />
             )}
             <div>
