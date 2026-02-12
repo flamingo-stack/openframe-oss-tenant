@@ -320,13 +320,6 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const chatData = useMemo(() => processMessages(messages, CHAT_TYPE.CLIENT), [messages, processMessages])
   const adminChatData = useMemo(() => processMessages(adminMessages, CHAT_TYPE.ADMIN), [adminMessages, processMessages])
 
-  // Auto-scroll logic
-  const shouldAutoScroll = useMemo(() => {
-    const shouldScroll = messages.length > prevMessageLength.current
-    prevMessageLength.current = messages.length
-    return shouldScroll
-  }, [messages.length])
-
   const headerActions = useMemo(() => {
     if (!dialog) return null
     
@@ -405,7 +398,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
             <ChatMessageList
               messages={chatData.messages}
-              autoScroll={shouldAutoScroll}
+              autoScroll={true}
               showAvatars={false}
               isTyping={isClientChatTyping}
               pendingApprovals={chatData.pendingApprovals}

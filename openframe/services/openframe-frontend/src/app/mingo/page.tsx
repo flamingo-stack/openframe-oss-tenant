@@ -5,12 +5,10 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useCallback, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AppLayout } from '../components/app-layout'
-import { 
-  ChatMessageList, 
+import {
+  ChatMessageList,
   ContentPageContainer,
   MingoIcon,
-  type ChunkData,
-  type NatsMessageType,
 } from '@flamingo-stack/openframe-frontend-core'
 import {
   ChatSidebar,
@@ -34,7 +32,6 @@ export default function Mingo() {
     activeDialogId,
     setActiveDialogId,
     resetUnread,
-    incrementUnread,
     addMessage,
   } = useMingoMessagesStore()
 
@@ -67,15 +64,10 @@ export default function Mingo() {
     createDialog,
     sendMessage,
     approvals: pendingApprovals,
-    processChunk,
     isCreatingDialog,
     isTyping,
     assistantType
-  } = useMingoChat(activeDialogId, {
-    handleApprove,
-    handleReject,
-    approvalStatuses
-  })
+  } = useMingoChat(activeDialogId)
 
   const {
     subscribeToDialog,
@@ -105,14 +97,6 @@ export default function Mingo() {
     // Default: show actual messages (cached or freshly loaded)
     return processedMessages
   }, [isDraftChat, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages])
-
-  const createDialogChunkProcessor = useCallback((targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
-    if (targetDialogId !== activeDialogId) {
-      incrementUnread(targetDialogId)
-    }
-    
-    processChunk(targetDialogId, chunk, messageType)
-  }, [activeDialogId, incrementUnread, processChunk])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -250,7 +234,9 @@ export default function Mingo() {
             key={dialogId}
             dialogId={dialogId}
             isActive={dialogId === activeDialogId}
-            processChunk={createDialogChunkProcessor}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            approvalStatuses={approvalStatuses}
           />
         ))}
 

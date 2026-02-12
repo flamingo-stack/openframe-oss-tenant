@@ -23,6 +23,7 @@ export function useMingoDialogSelection() {
     activeDialogId,
     setActiveDialogId,
     setMessages,
+    getMessages,
     setLoadingDialog,
     setLoadingMessages,
     setPagination,
@@ -203,7 +204,9 @@ export function useMingoDialogSelection() {
         )
       })
 
-      if (messagesQuery.isFetched && coreMessages.length > 0) {
+      const allPagesLoaded = !messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage
+      const existingMessages = getMessages(activeDialogId)
+      if (messagesQuery.isFetched && allPagesLoaded && coreMessages.length > 0 && existingMessages.length === 0) {
         setMessages(activeDialogId, coreMessages)
       }
 
