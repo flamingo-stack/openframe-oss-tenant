@@ -13,7 +13,6 @@ ARG GITHUB_TOKEN
 
 # Copy dependency manifests first for best layer caching
 COPY package.json ./
-COPY .npmrc ./.npmrc
 
 # Install dependencies (no lockfile in repo) + cache npm download artifacts
 RUN --mount=type=cache,target=/root/.npm \
