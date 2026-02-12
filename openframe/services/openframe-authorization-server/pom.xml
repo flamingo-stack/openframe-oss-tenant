@@ -32,7 +32,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-        
+
+        <dependency>
+            <groupId>com.openframe.oss</groupId>
+            <artifactId>openframe-data-redis</artifactId>
+            <version>${openframe.libs.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
