@@ -25,7 +25,7 @@ import { useMingoMessagesStore } from './stores/mingo-messages-store'
 export default function Mingo() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   const [isDraftChat, setIsDraftChat] = useState(false)
 
   const {
@@ -86,15 +86,12 @@ export default function Mingo() {
   const isAnyLoading = isLoadingDialog || isLoadingMessages || isSelectingDialog
 
   const displayMessages = useMemo(() => {
-    // Draft mode: always show welcome message
     if (isDraftChat) return draftWelcomeMessages
 
-    // Dialog finished loading but has no messages: show welcome
     if (activeDialogId && processedMessages.length === 0 && !isAnyLoading) {
       return draftWelcomeMessages
     }
 
-    // Default: show actual messages (cached or freshly loaded)
     return processedMessages
   }, [isDraftChat, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages])
 
@@ -130,17 +127,17 @@ export default function Mingo() {
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('dialogId', dialogId)
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
-    
+
     setActiveDialogId(dialogId)
     resetUnread(dialogId)
     subscribeToDialog(dialogId)
-    
+
     selectDialog(dialogId)
   }, [activeDialogId, router, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog])
 
   useEffect(() => {
     const urlDialogId = searchParams.get('dialogId')
-    
+
     if (urlDialogId !== activeDialogId) {
       if (urlDialogId) {
         setIsDraftChat(false)
@@ -159,8 +156,6 @@ export default function Mingo() {
     setActiveDialogId(null)
     setIsDraftChat(true)
 
-
-
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.delete('dialogId')
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
@@ -173,8 +168,6 @@ export default function Mingo() {
       const newDialogId = await createDialog()
       if (!newDialogId) return
 
-      // Pre-seed welcome message BEFORE setting activeDialogId
-      // so processedMessages.length > 0 when queries trigger, preventing skeleton
       addMessage(newDialogId, {
         id: `welcome-${newDialogId}`,
         role: 'assistant',
@@ -221,13 +214,7 @@ export default function Mingo() {
         contentClassName="h-full flex flex-col"
       >
         {/* 
-          Simplified NATS Subscriptions with multi-topic support
-          
-          Key improvements:
-          1. Single DialogSubscription component per subscribed dialog
-          2. Multi-topic support (message + admin-message)
-          3. Automatic connection sharing via core hooks
-          4. Proper background dialog handling with unread counts
+          NATS Subscriptions and per-dialog message processor
         */}
         {Array.from(subscribedDialogs).map(dialogId => (
           <DialogSubscription
@@ -275,7 +262,7 @@ export default function Mingo() {
                   <div className="text-center space-y-6">
                     <div className="space-y-4">
                       <div className="flex justify-center">
-                        <MingoIcon className="w-10 h-10" eyesColor='var(--ods-flamingo-cyan-base)' cornerColor='var(--ods-flamingo-cyan-base)'/>
+                        <MingoIcon className="w-10 h-10" eyesColor='var(--ods-flamingo-cyan-base)' cornerColor='var(--ods-flamingo-cyan-base)' />
                       </div>
                       <h1 className="font-['DM_Sans'] font-bold text-2xl text-ods-text-primary">
                         Hi! I'm Mingo AI
@@ -289,7 +276,7 @@ export default function Mingo() {
               )}
             </div>
 
-            {/* Message Input - Show when dialog is selected or in draft mode */}
+            {/* Message Input */}
             {(activeDialogId || isDraftChat) && (
               <div className="flex-shrink-0 px-6 pb-4">
                 <ChatInput
