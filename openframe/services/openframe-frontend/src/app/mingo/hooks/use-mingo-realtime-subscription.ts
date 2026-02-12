@@ -305,7 +305,6 @@ function useDialogChunkProcessor(
       setTyping(dialogId, true)
       ensureAssistantMessage()
       updateStreamingMessageSegments(dialogId, segments)
-      incrementUnread(dialogId)
     },
 
     onError: (error: string) => {
@@ -317,7 +316,7 @@ function useDialogChunkProcessor(
 
     onApprove,
     onReject
-  }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageSegments, incrementUnread, addErrorMessage, onApprove, onReject])
+  }), [dialogId, ensureAssistantMessage, setTyping, setStreamingMessage, updateStreamingMessageSegments, addErrorMessage, onApprove, onReject])
 
   const { processChunk: processorProcessChunk } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
