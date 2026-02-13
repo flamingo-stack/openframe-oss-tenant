@@ -252,7 +252,7 @@ export function FileManagerContainer({
   }, [deleteContext, deleteItems, closeDeleteModal])
 
   return (
-    <div className="flex flex-col h-full gap-6 pt-6">
+    <div className="flex flex-col h-full gap-4">
       <div className="flex flex-col gap-2">
         <Button
           variant="ghost"

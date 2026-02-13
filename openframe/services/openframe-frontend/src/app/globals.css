@@ -1,6 +1,6 @@
 /* All @import statements must come first */
 @import '@flamingo-stack/openframe-frontend-core/styles';
-@import 'xterm/css/xterm.css';
+@import '@xterm/xterm/css/xterm.css';
 
 @tailwind base;
 @tailwind components;
